@@ -1,0 +1,76 @@
+##Basic Usage
+- Switch to the brush tool, and draw with the mouse by holding <kbd>LMB</kbd> over the canvas. If you have a tablet connected, just draw on the tablet
+- To erase, switch to the eraser tool, and draw over the parts you want to erase. For tablets, you can switch to the eraser tool, or you can just use your pen's eraser while the brush tool is selected
+- You can move around the canvas by holding the <kbd>MMB</kbd>/mouse wheel button. For tablets, pen button 1 is assigned to the middle mouse button. You can change this by going to Menu->Settings->Tablet->Middle click pen button
+- To zoom in/out, use the scroll wheel, or hold the control key and <kbd>MMB</kbd> (pen button 1 on a tablet) and drag the mouse up/down
+- Save your file by going to Menu->Save, or pressing <kbd>Ctrl</kbd> + <kbd>S</kbd>. The shortcut for Save As is <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
+- Open files by going to Menu->Open, or dragging a file into the window. If the file isn't a .infpnt file, the app will assume that you meant to add a file/image to the canvas, and the file will just be included in the canvas instead
+
+##Online Collaboration
+- Before hosting/connecting, you should go to Menu->Settings->General->Display Name, and change your name that will appear to others online
+- To host the file you're currently on, go to Menu->Host. Copy the lobby address that pops up, and send it to anyone you want to join the lobby. Once you press "Host" in this popup menu, the lobby will be open
+- To connect to a lobby, go to Menu->Connect, paste the lobby address into the given textbox, and press "Connect"
+- If either the host or the client need to get the lobby address again, it will be available in Menu->Lobby Info after your enter the lobby
+- IMPORTANT NOTE: There is a chance that, even with both people online, you are not able to connect to each other. This could be due to router/firewall settings. I am not hosting any relay (TURN) servers for this app, and rely completely on whether a direct connection can be established between the host and client (STUN)
+- Once connected, a chat bubble will pop up on the bottom left. Click that to open the chatbox, type your message, then press the "Send" button. You can also press <kbd>F2</kbd> to open the chatbox, and <kbd>Enter</kbd> to send the message. If you want to cancel the message, press <kbd>Esc</kbd>, or press the chat bubble button again
+- Once connected, a list icon will appear at the top right of the screen. Click that to view a list of players on the server. You can jump to any other player's location through this list
+
+##Shortcuts
+- To view all available shortcuts/keybinds, go to Menu->Settings->Keybinds
+- Note that, for macOS users, the "META" key is the command key
+- Shortcuts can be remapped by pressing the button containing the shortcut text, then pressing the new key combination for the shortcut while the button is highlighted
+
+##Tools
+- Brush tool
+	- Pressure sensitive if a tablet is being used
+		- You can disable pen pressure sensitivity by unticking the checkbox at Menu->Tablet->Pen pressure affects brush size
+		-  Change the pen smoothing by going to Menu->Tablet->Smoothing sampling time
+	- The size slider on the right changes the size of the brush. All size properties for all tools are relative to the current zoom level
+- Eraser tool
+	- Erases complete objects when they are touched by the eraser. Can't erase portions of an object
+- Textbox tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to place a textbox
+	- Hold <kbd>Shift</kbd> while creating the textbox to make the textbox a square
+	- Once a textbox is placed, the program will switch to the Edit tool automatically, and you will be able to type text into the box
+- Ellipse tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to place an ellipse
+	- Hold <kbd>Shift</kbd> while creating the ellipse to create a circle
+	- You can change the properties of the ellipse between "Fill Only", "Outline Only", and "Fill and Outline". Outlines will use the main/top color on the left toolbar, which is the same as the one used for the brush tool. Fills will use the secondary/bottom color on the left toolbar
+- Rectangle tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to place a rectangle
+	- Hold <kbd>Shift</kbd> while creating the rectangle to create a square
+	- You can change the properties of the rectangle between "Fill Only", "Outline Only", and "Fill and Outline". Outlines will use the main/top color on the left toolbar, which is the same as the one used for the brush tool. Fills will use the secondary/bottom color on the left toolbar
+- Rectangle Select Tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to select objects within a rectangle.
+	- Once <kbd>LMB</kbd> is released, the objects will be selected
+	- Move selected objects by holding <kbd>LMB</kbd> above the blue selection rectangle and moving the mouse to the desired position
+	- Change the objects' size by dragging the cyan circle at the corner of the selection rectangle
+	- Rotate the object by dragging the smaller of the two orange circles at the center of the rectangle
+	- To change the center of rotation, drag the larger of the two orange circles at the center of the rectangle to the new center of rotation
+	- You can copy (<kbd>Ctrl</kbd> + <kbd>C</kbd>), cut (<kbd>Ctrl</kbd> + <kbd>X</kbd>), and paste (<kbd>Ctrl</kbd> + <kbd>V</kbd>) objects that are selected with this tool. The paste will not change the objects' size, but it will move the objects to the position of the cursor when you paste
+	- Press <kbd>Esc</kbd> or click anywhere out of the selection to unselect the objects
+- Edit/Cursor Tool
+	- You can click on any object except a brush stroke to edit it when this tool is selected. Any relevant properties to the object will pop up on the right when you select it
+	- If an image/file on the canvas is clicked with this tool, you can download the file to your computer
+- Color Select Tool (Eyedropper)
+	- Click anywhere on the canvas with this tool to copy the color of the cursor's position
+- Screenshot Tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to select an area to take a screenshot of
+	- You can modify the screenshot area after placing it by dragging the cyan circles on the boundaries of the rectangle
+	- Click anywhere outside of the circles to cancel the screenshot
+	- You can change the dimensions of the screenshot, the file format of the screenshot, and later take the screenshot with the menu on the right. The dimensions can be anything, as long as they fit the aspect ratio of the screenshot area (the program will do this automatically), and as long as they aren't bigger than what the file format or your computer's memory allows
+	- Note: Even though creating extremely large images is possible with this tool, I cannot guarantee that the program you use to display the image later won't crash if the image is too large!
+##Bookmarks
+- You can open the bookmark window by clicking the bookmark icon on the very top right of the screen
+- Move your camera to the place you want to bookmark, give the bookmark a name in the given textbox, and press the + button next to the textbox
+- To jump to the bookmark later, open the bookmark window, and double click on the name of the bookmark you want to jump to in the list
+- To remove a bookmark, click the name of the bookmark in the list, and press the X button
+##Color Palettes
+- Click the color button on the left toolbar to open the color picker. The top color button, initially white, is for the brush color and outlines. The bottom color button, initially black, is for fill color (if applicable)
+- In the color picker window, you can use, create, and edit color palettes
+- To create a palette, press the small + button next to the dropdown, give the palette a name, and press the "Create" button. To remove a color palette, press the small X button next to the dropdown. You cannot remove the default color palette
+- To add a color to the palette, press the large + button with the color you want to add picked. To remove a color from the palette, select the color from the palette, and press the large X button
+##Quick Menu
+- Right click anywhere on the canvas to open the quick menu. Right click again to close the quick menu
+- To change the colors shown in the inner circle of the quick menu, select a different palette in the color picker menu
+- Drag the small circle in the outer circle of the quick menu to rotate the canvas. If you hover over the outer circle while dragging, the rotation will snap to a set of common angles (0 degrees, 45 degrees, 90 degrees...)

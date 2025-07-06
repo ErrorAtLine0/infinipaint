@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>InfiniPaint</title>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                height: 100%;
+                width: 100%;
+            }
+
+            canvas.emscripten {
+                display: block;
+                height: 100%;
+                width: 100%
+            }
+
+            @-webkit-keyframes rotation {
+                from {-webkit-transform: rotate(0deg);}
+                to {-webkit-transform: rotate(360deg);}
+            }
+            @-moz-keyframes rotation {
+                from {-moz-transform: rotate(0deg);}
+                to {-moz-transform: rotate(360deg);}
+            }
+            @-o-keyframes rotation {
+                from {-o-transform: rotate(0deg);}
+                to {-o-transform: rotate(360deg);}
+            }
+            @keyframes rotation {
+                from {transform: rotate(0deg);}
+                to {transform: rotate(360deg);}
+            }
+
+        </style>
+    </head>
+    <body>
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+        <script type='text/javascript'>
+            var canvasElement = document.getElementById('canvas');
+            // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+            // application robust, you may want to override this behavior before shipping!
+            // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+            canvasElement.addEventListener("webglcontextlost", (e) => {
+                alert('WebGL context lost. You will need to reload the page.');
+                e.preventDefault();
+            }, false);
+
+            var Module = {
+                print(...args) {
+                    console.log(...args);
+                },
+                canvas: canvasElement,
+                setStatus(text) {
+                    console.log(text)
+                },
+                totalDependencies: 0,
+                monitorRunDependencies(left) {
+                    this.totalDependencies = Math.max(this.totalDependencies, left);
+                    Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+                }
+            };
+            Module.setStatus('Downloading...');
+            window.onerror = () => {
+                Module.setStatus('Exception thrown');
+                Module.setStatus = (text) => {
+                    if(text)
+                        console.error('[post-exception status] ' + text);
+                };
+            };
+        </script>
+        {{{ SCRIPT }}}
+    </body>
+</html>

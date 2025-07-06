@@ -1,0 +1,95 @@
+id: com.erroratline0.infinipaint
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: infinipaint
+build-options:
+  build-args:
+    - --share=network
+modules:
+  - name: libdatachannel
+    buildsystem: cmake
+    config-opts:
+      - -DNO_MEDIA=ON
+      - -DCMAKE_BUILD_TYPE=Release
+    sources:
+      - type: git
+        tag: v0.23.1
+        url: https://github.com/paullouisageneau/libdatachannel.git
+  - name: oneTBB
+    buildsystem: cmake
+    config-opts:
+      - -DTBB_TEST=OFF
+    sources:
+      - type: git
+        tag: v2022.0.0
+        url: https://github.com/uxlfoundation/oneTBB.git
+  - name: SDL3
+    buildsystem: cmake
+    config-opts:
+        - -DCMAKE_BUILD_TYPE=Release
+        - -DSDL_SHARED=ON
+        - -DSDL_STATIC=OFF
+        - -DSDL_TEST_LIBRARY=OFF
+        - -DSDL_TESTS=OFF
+        - -DSDL_DISABLE_INSTALL_DOCS=OFF
+        - -DSDL_INSTALL_TESTS=OFF
+        - -DSDL_WAYLAND=OFF
+        - -DSDL_X11=ON
+    sources:
+      - type: git
+        tag: release-3.2.12
+        url: https://github.com/libsdl-org/SDL.git
+  - name: Skia
+    buildsystem: simple
+    build-commands:
+      - python3 tools/git-sync-deps
+      - bin/gn gen out/Static --args='is_official_build=true skia_use_system_expat=false skia_use_system_freetype2=false skia_use_system_harfbuzz=false skia_use_system_icu=false skia_use_system_libjpeg_turbo=false skia_use_system_libpng=false skia_use_system_libwebp=false skia_use_system_zlib=false'
+      - ninja -C out/Static skia svg skunicode_core skunicode_icu skparagraph skresources skshaper
+      - mkdir /app/Skia
+      - mv out /app/Skia
+      - mv include /app/Skia
+      - mv src /app/Skia
+      - mv modules /app/Skia
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/google/skia/archive/aefbd9403c1b3032ad4cd0281ef312ed262c7125.zip
+        sha256: e10c67a96828b9f36364e2459cdee3e3b381a3875ff78db2b30e7b6fe69509bb
+  - name: infinipaint
+    buildsystem: cmake
+    builddir: true
+    config-opts:
+        - -DLINK_SKIA_MANUALLY=ON
+        - -DSKIA_INCLUDE=/app/Skia
+        - -DSKIA_LIB=/app/Skia/out/Static/libskia.a
+        - -DSKIA_SVG_LIB=/app/Skia/out/Static/libsvg.a
+        - -DSKIA_RESOURCES_LIB=/app/Skia/out/Static/libskresources.a
+        - -DSKIA_SHAPER_LIB=/app/Skia/out/Static/libskshaper.a
+        - -DSKIA_UNICODE_ICU_LIB=/app/Skia/out/Static/libskunicode_core.a
+        - -DSKIA_UNICODE_CORE_LIB=/app/Skia/out/Static/libskunicode_icu.a
+        - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
+        - -DCMAKE_BUILD_TYPE=Release
+        - -DTBB_NOT_ONETBB=ON
+    sources:
+      - type: dir
+        # branch: master
+        path: ..
+cleanup:
+  - /Skia
+  - /include
+  - /lib/debug
+  - /lib/pkgconfig
+  - /lib/cmake
+  - /lib/cmake
+  - /lib/libupb.a
+  - /bin/proto*
+  - /lib/*.a
+        
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --device=all
+  - --share=network
+  - --filesystem=home:create

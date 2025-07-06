@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+
+Name=InfiniPaint
+Comment=Infinite canvas program
+Categories=Graphics;VectorGraphics;
+
+Icon=com.erroratline0.infinipaint
+Exec=infinipaint %F
+Terminal=false
+
+MimeType=application/x-com.erroratline0.infinipaint.infpnt

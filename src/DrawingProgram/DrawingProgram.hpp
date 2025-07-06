@@ -1,0 +1,121 @@
+#pragma once
+#include "../DrawData.hpp"
+#include "cereal/archives/portable_binary.hpp"
+#include <include/core/SkCanvas.h>
+#include <include/core/SkPath.h>
+#include <include/core/SkVertices.h>
+#include <Helpers/SCollision.hpp>
+#include <Helpers/Hashes.hpp>
+#include <list>
+#include <Helpers/Random.hpp>
+#include "BrushTool.hpp"
+#include "EraserTool.hpp"
+#include "RectSelectTool.hpp"
+#include "RectDrawTool.hpp"
+#include "EllipseDrawTool.hpp"
+#include "TextBoxTool.hpp"
+#include "InkDropperTool.hpp"
+#include "ScreenshotTool.hpp"
+#include "EditTool.hpp"
+#include "ImageTool.hpp"
+#include "../CollabList.hpp"
+
+class World;
+
+#define DRAG_POINT_RADIUS 10.0f
+
+class DrawingProgram {
+    public:
+        DrawingProgram(World& initWorld);
+        void init_client_callbacks();
+        void toolbar_gui();
+        void tool_options_gui();
+        void update();
+        void draw(SkCanvas* canvas, const DrawData& drawData);
+        void initialize_draw_data(cereal::PortableBinaryInputArchive& a);
+        std::unordered_set<ServerClientID> get_used_resources();
+        ClientPortionID get_max_id(ServerPortionID serverID);
+        void write_to_file(cereal::PortableBinaryOutputArchive& a);
+        World& world;
+
+        void free_collider_memory();
+        void allocate_collider_memory();
+
+        bool colliderAllocated = false;
+
+        CollabList<std::shared_ptr<DrawComponent>, ServerClientID> components;
+
+        Vector4f* get_foreground_color_ptr();
+    private:
+        void draw_cache(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawComponent>& lastComp);
+
+        void check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
+        void check_all_collisions(const SCollision::ColliderCollection<WorldScalar>& checkAgainst);
+        void check_all_collisions_transform(const SCollision::ColliderCollection<float>& checkAgainst);
+
+        void add_variable_width_line(SkPath& p, const DrawData& drawData, const WorldVec& p1, const WorldVec& p2, float w1, float w2);
+        void reset_selection();
+        void reset_tools();
+
+        void drag_drop_update();
+
+        void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
+
+        void add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp);
+        void add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps);
+
+        BrushTool brushTool;
+        EraserTool eraserTool;
+        RectSelectTool rectSelectTool;
+        RectDrawTool rectDrawTool;
+        EllipseDrawTool ellipseDrawTool;
+        TextBoxTool textBoxTool;
+        InkDropperTool inkDropperTool;
+        ScreenshotTool screenshotTool;
+        EditTool editTool;
+        ImageTool imageTool;
+
+        bool temporaryEraser = false;
+
+        enum Tool : int {
+            TOOL_BRUSH = 0,
+            TOOL_ERASER,
+            TOOL_RECTSELECT,
+            TOOL_RECTANGLE,
+            TOOL_ELLIPSE,
+            TOOL_TEXTBOX,
+            TOOL_INKDROPPER,
+            TOOL_SCREENSHOT,
+            TOOL_EDIT
+        };
+
+        struct GlobalControls {
+            float relativeWidth = 15.0f;
+
+            Vector4f foregroundColor{0.9f, 0.9f, 0.9f, 1.0f};
+            Vector4f backgroundColor{0.0f, 0.0f, 0.0f, 1.0f};
+            int previousSelected = 0;
+            WorldVec previousMouseWorldPos = {0, 0};
+            WorldVec currentMouseWorldPos = {0, 0};
+            int selectedTool = 0;
+            bool leftClick = false;
+            bool leftClickHeld = false;
+            bool leftClickReleased = false;
+            bool cursorHoveringOverCanvas = false;
+
+            int colorEditing = 0;
+        } controls;
+
+        uint32_t nextID = 0;
+        
+        friend class InkDropperTool;
+        friend class RectDrawTool;
+        friend class EllipseDrawTool;
+        friend class BrushTool;
+        friend class EraserTool;
+        friend class RectSelectTool;
+        friend class TextBoxTool;
+        friend class ScreenshotTool;
+        friend class EditTool;
+        friend class ImageTool;
+};

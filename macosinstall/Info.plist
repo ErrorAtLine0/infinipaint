@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.erroratline0.infinipaint</string>
+	<key>CFBundleName</key>
+	<string>InfiniPaint</string>
+	<key>CFBundleDisplayName</key>
+	<string>InfiniPaint</string>
+	<key>CFBundleSpokenName</key>
+	<string>InfiniPaint</string>
+	<key>CFBundleVersion</key>
+	<string>0.0.1</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.0.1</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright (c) 2025 Yousef Khadadeh</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en-US</string>
+	<key>CFBundleExecutable</key>
+	<string>infinipaint</string>
+	<key>CFBundleIconFile</key>
+	<string>appicon</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>InfiniPaint Canvas</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.erroratline0.infpnt</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeIdentifier</key>
+			<string>com.erroratline0.infpnt</string>
+			<key>UTTypeDescription</key>
+			<string>InfiniPaint Canvas</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>infpnt</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

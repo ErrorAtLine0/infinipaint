@@ -1,0 +1,1 @@
+Third party libraries are used in this project. The licenses for these libraries are included in data/third_party_licenses. This directory includes licenses for direct dependencies, as well as for some of the dependencies for libraries used by this project.
