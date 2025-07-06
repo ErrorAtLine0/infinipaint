@@ -51,7 +51,11 @@ cpack -G NSIS
 ## Emscripten
 You can use Emscripten to build a web version of this program. Keep in mind that this version might be more buggy. In addition, I have only tried building it on a Linux machine.
 
-After cloning the repository, `cd` into the repo, then run:
+After cloning the repository, `cd` into the repo, then update the git submodules to get `datachannel-wasm`:
+```
+git submodule update --init --recursive
+```
+Then run:
 ```
 ./conan/export_libs.sh
 conan install . --profile:host=conan/profiles/emscripten --profile:build=default --build=missing
@@ -66,7 +70,7 @@ These commands will generate a javascript file containing the entire program. An
 
 Alternatively, you could compile a version of this program that is entirely contained in a single HTML file. This is not ideal for hosting, as the entire HTML file has to be downloaded before anything can be displayed to the user. However, you can open this file in any browser without a need for a web server.
 
-After cloning the repository, `cd` into the repo, then run:
+After cloning the repository and updating the git submodules, `cd` into the repo, then run:
 ```
 ./conan/export_libs.sh
 conan install . --profile:host=conan/profiles/emscripten --profile:build=default --build=missing
