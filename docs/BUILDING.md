@@ -1,7 +1,6 @@
-##Building
+## Building
 This program is written in C++, and uses [conan](https://conan.io) to fetch dependencies.
-
-##Linux
+## Linux
 After cloning the repository, `cd` into the repo, then run:
 ```
 ./conan/export_libs.sh
@@ -15,7 +14,7 @@ source generators/deactivate_conanbuild.sh
 After building the project, you should place the `data` folder located in the root of the repository next to the `infinipaint` executable before running it. What I usually do is create a symbolic link of the data folder and place it in the build directory.
 
 You can also build in Debug mode by setting the `build_type` in the `conan install` command to `Debug`, and also by setting `CMAKE_BUILD_TYPE=Debug` when running CMake.
-##macOS
+## macOS
 After cloning the repository, `cd` into the repo, then run:
 ```
 ./conan/export_libs.sh
@@ -30,7 +29,7 @@ This will build an app bundle that contains all the data necessary to run the pr
 ```
 cpack -G DragNDrop
 ```
-##Windows
+## Windows
 The windows version of this program is built on Visual Studio 2022's compiler.
 
 After cloning the repository, `cd` into the repo, then run:
@@ -49,8 +48,7 @@ You can create an NSIS installer of the application by running:
 ```
 cpack -G NSIS
 ```
-
-##Emscripten
+## Emscripten
 You can use Emscripten to build a web version of this program. Keep in mind that this version might be more buggy. In addition, I have only tried building it on a Linux machine.
 
 After cloning the repository, `cd` into the repo, then run:
