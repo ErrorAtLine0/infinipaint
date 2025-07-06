@@ -1,12 +1,11 @@
-##Basic Usage
+## Basic Usage
 - Switch to the brush tool, and draw with the mouse by holding <kbd>LMB</kbd> over the canvas. If you have a tablet connected, just draw on the tablet
 - To erase, switch to the eraser tool, and draw over the parts you want to erase. For tablets, you can switch to the eraser tool, or you can just use your pen's eraser while the brush tool is selected
 - You can move around the canvas by holding the <kbd>MMB</kbd>/mouse wheel button. For tablets, pen button 1 is assigned to the middle mouse button. You can change this by going to Menu->Settings->Tablet->Middle click pen button
 - To zoom in/out, use the scroll wheel, or hold the control key and <kbd>MMB</kbd> (pen button 1 on a tablet) and drag the mouse up/down
 - Save your file by going to Menu->Save, or pressing <kbd>Ctrl</kbd> + <kbd>S</kbd>. The shortcut for Save As is <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
 - Open files by going to Menu->Open, or dragging a file into the window. If the file isn't a .infpnt file, the app will assume that you meant to add a file/image to the canvas, and the file will just be included in the canvas instead
-
-##Online Collaboration
+## Online Collaboration
 - Before hosting/connecting, you should go to Menu->Settings->General->Display Name, and change your name that will appear to others online
 - To host the file you're currently on, go to Menu->Host. Copy the lobby address that pops up, and send it to anyone you want to join the lobby. Once you press "Host" in this popup menu, the lobby will be open
 - To connect to a lobby, go to Menu->Connect, paste the lobby address into the given textbox, and press "Connect"
@@ -14,13 +13,11 @@
 - IMPORTANT NOTE: There is a chance that, even with both people online, you are not able to connect to each other. This could be due to router/firewall settings. I am not hosting any relay (TURN) servers for this app, and rely completely on whether a direct connection can be established between the host and client (STUN)
 - Once connected, a chat bubble will pop up on the bottom left. Click that to open the chatbox, type your message, then press the "Send" button. You can also press <kbd>F2</kbd> to open the chatbox, and <kbd>Enter</kbd> to send the message. If you want to cancel the message, press <kbd>Esc</kbd>, or press the chat bubble button again
 - Once connected, a list icon will appear at the top right of the screen. Click that to view a list of players on the server. You can jump to any other player's location through this list
-
-##Shortcuts
+## Shortcuts
 - To view all available shortcuts/keybinds, go to Menu->Settings->Keybinds
 - Note that, for macOS users, the "META" key is the command key
 - Shortcuts can be remapped by pressing the button containing the shortcut text, then pressing the new key combination for the shortcut while the button is highlighted
-
-##Tools
+## Tools
 - Brush tool
 	- Pressure sensitive if a tablet is being used
 		- You can disable pen pressure sensitivity by unticking the checkbox at Menu->Tablet->Pen pressure affects brush size
@@ -60,17 +57,17 @@
 	- Click anywhere outside of the circles to cancel the screenshot
 	- You can change the dimensions of the screenshot, the file format of the screenshot, and later take the screenshot with the menu on the right. The dimensions can be anything, as long as they fit the aspect ratio of the screenshot area (the program will do this automatically), and as long as they aren't bigger than what the file format or your computer's memory allows
 	- Note: Even though creating extremely large images is possible with this tool, I cannot guarantee that the program you use to display the image later won't crash if the image is too large!
-##Bookmarks
+## Bookmarks
 - You can open the bookmark window by clicking the bookmark icon on the very top right of the screen
 - Move your camera to the place you want to bookmark, give the bookmark a name in the given textbox, and press the + button next to the textbox
 - To jump to the bookmark later, open the bookmark window, and double click on the name of the bookmark you want to jump to in the list
 - To remove a bookmark, click the name of the bookmark in the list, and press the X button
-##Color Palettes
+## Color Palettes
 - Click the color button on the left toolbar to open the color picker. The top color button, initially white, is for the brush color and outlines. The bottom color button, initially black, is for fill color (if applicable)
 - In the color picker window, you can use, create, and edit color palettes
 - To create a palette, press the small + button next to the dropdown, give the palette a name, and press the "Create" button. To remove a color palette, press the small X button next to the dropdown. You cannot remove the default color palette
 - To add a color to the palette, press the large + button with the color you want to add picked. To remove a color from the palette, select the color from the palette, and press the large X button
-##Quick Menu
+## Quick Menu
 - Right click anywhere on the canvas to open the quick menu. Right click again to close the quick menu
 - To change the colors shown in the inner circle of the quick menu, select a different palette in the color picker menu
 - Drag the small circle in the outer circle of the quick menu to rotate the canvas. If you hover over the outer circle while dragging, the rotation will snap to a set of common angles (0 degrees, 45 degrees, 90 degrees...)
