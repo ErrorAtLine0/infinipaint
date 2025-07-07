@@ -92,4 +92,4 @@ finish-args:
   - --socket=x11
   - --device=all
   - --share=network
-  - --filesystem=home:create
+  - --filesystem=home
