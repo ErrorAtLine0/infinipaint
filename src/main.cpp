@@ -674,6 +674,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
             case SDL_EVENT_PEN_MOTION: {
                 mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
+                mS.m->input.mouse.set_pos({event->pmotion.x, event->pmotion.y});
                 break;
             }
             case SDL_EVENT_PEN_DOWN: {
@@ -681,11 +682,13 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.mouse.leftDown = true;
                 mS.m->input.mouse.leftClicks = 1;
                 mS.m->input.pen.isEraser = event->ptouch.eraser;
+                mS.m->input.mouse.set_pos({event->ptouch.x, event->ptouch.y});
                 break;
             }
             case SDL_EVENT_PEN_AXIS: {
                 if(event->paxis.axis == SDL_PEN_AXIS_PRESSURE)
                     mS.m->input.pen.pressure = event->paxis.value;
+                mS.m->input.mouse.set_pos({event->paxis.x, event->paxis.y});
                 break;
             }
             case SDL_EVENT_PEN_UP: {
@@ -693,14 +696,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.mouse.leftDown = false;
                 mS.m->input.pen.isEraser = event->ptouch.eraser;
                 mS.m->input.pen.pressure = 0.0;
+                mS.m->input.mouse.set_pos({event->ptouch.x, event->ptouch.y});
                 break;
             }
             case SDL_EVENT_PEN_BUTTON_UP: {
                 mS.m->input.set_pen_button_up(event->pbutton);
+                mS.m->input.mouse.set_pos({event->pbutton.x, event->pbutton.y});
                 break;
             }
             case SDL_EVENT_PEN_BUTTON_DOWN: {
                 mS.m->input.set_pen_button_down(event->pbutton);
+                mS.m->input.mouse.set_pos({event->pbutton.x, event->pbutton.y});
                 break;
             }
             default:
