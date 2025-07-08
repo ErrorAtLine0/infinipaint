@@ -192,7 +192,7 @@ class Toolbar {
         };
         static NativeFilePicker nativeFilePicker;
 
-        std::optional<size_t> keybindWaiting;
+        std::optional<unsigned> keybindWaiting;
 
         std::filesystem::path testing;
 

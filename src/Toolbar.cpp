@@ -1223,7 +1223,7 @@ void Toolbar::options_menu() {
                                         if(keybindWaiting.has_value()) {
                                             main.input.stop_key_input();
                                             if(main.input.lastPressedKeybind) {
-                                                size_t v = keybindWaiting.value();
+                                                unsigned v = keybindWaiting.value();
 
                                                 Vector2ui32 newKey = main.input.lastPressedKeybind.value();
                                                 main.input.keyAssignments.erase(newKey);
@@ -1238,7 +1238,7 @@ void Toolbar::options_menu() {
                                         }
 
                                         gui.push_id("keybind entries");
-                                        for(size_t i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
+                                        for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
                                             gui.push_id(i);
                                             CLAY({
                                                 .layout = {

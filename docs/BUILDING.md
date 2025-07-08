@@ -37,10 +37,10 @@ After cloning the repository, `cd` into the repo, then run:
 .\conan\export_libs.bat
 conan install . --build=missing -pr=conan/profiles/win-x86_64
 cd build
-source generators/conanbuild.sh
-cmake ../.. -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+.\generators\conanbuild.sh
+cmake .. -DCMAKE_TOOLCHAIN_FILE="generators\conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release
-source generators/deactivate_conanbuild.sh
+.\generators\deactivate_conanbuild.sh
 ```
 After building the project, you should place the `data` folder located in the root of the repository next to the `infinipaint.exe` executable before running it.
 
