@@ -220,6 +220,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["useNativeFilePicker"] = useNativeFilePicker;
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
+    toRet["jumpTransitionEasing"] = jumpTransitionEasing;
 
     json tablet;
     tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
@@ -269,6 +270,7 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("useNativeFilePicker").get_to(useNativeFilePicker);
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
+    j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
 
     j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
     j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);
