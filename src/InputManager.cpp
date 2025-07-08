@@ -73,6 +73,7 @@ void InputManager::text_input_silence_everything() {
     for(auto& p : keys) {
         p.pressed = false;
         p.repeat = false;
+        // Not silencing p.held, as that causes double presses on some keyboards
     }
     text.newInput.clear();
 }
