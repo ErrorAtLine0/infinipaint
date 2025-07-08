@@ -73,7 +73,6 @@ void InputManager::text_input_silence_everything() {
     for(auto& p : keys) {
         p.pressed = false;
         p.repeat = false;
-        p.held = false;
     }
     text.newInput.clear();
 }
