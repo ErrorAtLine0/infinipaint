@@ -1,1 +1,0 @@
-This repository does not accept pull requests at this time. Any issue reports are welcome.
