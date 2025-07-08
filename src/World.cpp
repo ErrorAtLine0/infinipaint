@@ -69,7 +69,9 @@ void World::init_client_callbacks() {
         bool isDirectConnect;
         message(isDirectConnect, ownID, userColor);
         if(!isDirectConnect) {
-            message(displayName, clients);
+            std::string fileDisplayName;
+            message(displayName, fileDisplayName, clients);
+            set_name(fileDisplayName);
             drawProg.initialize_draw_data(message);
             message(bMan);
         }
@@ -83,14 +85,14 @@ void World::init_client_callbacks() {
         message(id, displayName, cursorColor);
         clients[id].displayName = displayName;
         clients[id].cursorColor = cursorColor;
-        add_chat_message(displayName + " joined", Toolbar::ChatMessage::COLOR_JOIN);
+        add_chat_message(clients[id].displayName + " joined", Toolbar::ChatMessage::COLOR_JOIN);
     });
     con.client_add_recv_callback(CLIENT_USER_DISCONNECT, [&](cereal::PortableBinaryInputArchive& message) {
         ServerPortionID id;
         message(id);
         auto it = clients.find(id);
         if(it != clients.end()) {
-            add_chat_message(displayName + " left", Toolbar::ChatMessage::COLOR_JOIN);
+            add_chat_message(clients[id].displayName + " left", Toolbar::ChatMessage::COLOR_JOIN);
             clients.erase(id);
         }
     });

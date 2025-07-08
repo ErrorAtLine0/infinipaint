@@ -100,6 +100,7 @@ class MainProgram {
         void set_tab_to_close(size_t tabToClose);
         bool network_being_used();
         bool net_server_hosted();
+        void update_display_names();
 
         void save_config();
         void load_config();

@@ -16,5 +16,6 @@ class MainServer {
         World& world;
         void ensure_display_name_unique(std::string& displayName);
         ServerData data;
+        std::string fileDisplayName;
         std::chrono::steady_clock::time_point lastKeepAliveSent;
 };

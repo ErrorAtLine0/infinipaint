@@ -259,6 +259,8 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("useNativeFilePicker").get_to(useNativeFilePicker);
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
+
+    main.update_display_names();
 }
 
 void Toolbar::update() {
@@ -1121,7 +1123,8 @@ void Toolbar::options_menu() {
                                 switch(generalSettingsOptions) {
                                     case GSETTINGS_GENERAL: {
                                         gui.input_text_field("display name input", "Display Name", &main.displayName);
-                                        gui.text_label("Note: Changes in display name dont affect canvas that is currently open");
+                                        main.update_display_names();
+                                        gui.text_label("Note: Changes in display name dont affect canvases that are connected online");
                                         #ifndef __EMSCRIPTEN__
                                             gui.checkbox_field("native file pick", "Use Native File Picker", &useNativeFilePicker);
                                         #endif

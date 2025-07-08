@@ -81,6 +81,9 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(newClient.displayName, isDirectConnect);
         ensure_display_name_unique(newClient.displayName);
 
+        if(isDirectConnect)
+            fileDisplayName = newClient.displayName;
+
         newClient.id.first = Random::get().int_range<ServerPortionID>(1, std::numeric_limits<ServerPortionID>::max());
         client.customID = newClient.id.first;
         newClient.id.second = data.get_max_id(newClient.id.first);
@@ -88,7 +91,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         if(isDirectConnect)
             netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.id.first, newClient.cursorColor);
         else {
-            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.id.first, newClient.cursorColor, newClient.displayName, clients, data);
+            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.id.first, newClient.cursorColor, newClient.displayName, fileDisplayName, clients, data);
             for(auto& [id, rData] : data.resources)
                 netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE, id, rData);
         }

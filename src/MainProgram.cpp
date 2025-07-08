@@ -148,6 +148,13 @@ void MainProgram::update() {
     return;
 }
 
+void MainProgram::update_display_names() {
+    for(auto& w : worlds) {
+        if(!w->network_being_used())
+            w->displayName = displayName;
+    }
+}
+
 void MainProgram::new_tab(const World::OpenWorldInfo& tabInfo, bool createSameThread) {
     newTabToOpenInfo = tabInfo;
     if(createSameThread)
