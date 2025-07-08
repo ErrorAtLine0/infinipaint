@@ -613,8 +613,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             case SDL_EVENT_MOUSE_MOTION:
                 mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
-                if(!mS.m->input.pen.inProximity)
-					mS.m->input.mouse.set_pos({event->motion.x * mS.m->window.scale, event->motion.y * mS.m->window.scale});
+                #ifdef _WIN32
+                    if(!mS.m->toolbar.tabletOptions.ignoreMouseMovementWhenPenInProximity || !mS.m->input.pen.inProximity)
+                #endif
+                    {
+					    mS.m->input.mouse.set_pos({event->motion.x * mS.m->window.scale, event->motion.y * mS.m->window.scale});
+                    }
                 break;
             case SDL_EVENT_MOUSE_BUTTON_UP:
                 if(event->button.button == 1)
@@ -675,8 +679,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
             case SDL_EVENT_PEN_MOTION: {
                 mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
-                if(mS.m->input.pen.inProximity)
-					mS.m->input.mouse.set_pos({event->pmotion.x, event->pmotion.y});
+				mS.m->input.mouse.set_pos({event->pmotion.x, event->pmotion.y});
                 break;
             }
             case SDL_EVENT_PEN_DOWN: {

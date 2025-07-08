@@ -220,6 +220,16 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["useNativeFilePicker"] = useNativeFilePicker;
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
+
+    json tablet;
+    tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
+    tablet["smoothingSamplingTime"] = tabletOptions.smoothingSamplingTime;
+    tablet["middleClickButton"] = tabletOptions.middleClickButton;
+    tablet["rightClickButton"] = tabletOptions.rightClickButton;
+    tablet["ignoreMouseMovementWhenPenInProximity"] = tabletOptions.ignoreMouseMovementWhenPenInProximity;
+
+    toRet["tablet"] = tablet;
+
     return toRet;
 }
 
@@ -259,6 +269,12 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("useNativeFilePicker").get_to(useNativeFilePicker);
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
+
+    j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
+    j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);
+    j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);
+    j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);
+    j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);
 
     main.update_display_names();
 }
@@ -1150,6 +1166,9 @@ void Toolbar::options_menu() {
                                         gui.slider_scalar_field("smoothing time", "Smoothing sampling time", &tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, 3);
                                         gui.input_scalar_field<uint8_t>("middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
                                         gui.input_scalar_field<uint8_t>("right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
+                                        #ifdef _WIN32
+                                            gui.checkbox_field("mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity (may fix some issues on Windows, dont check if not required)", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
+                                        #endif
                                         gui.pop_id();
                                         break;
                                     }
