@@ -451,6 +451,22 @@ void Toolbar::top_toolbar() {
                     save_as_func();
                 if(gui.text_button_wide("open file", "Open"))
                     open_world_file(World::CONNECTIONTYPE_LOCAL, "", "");
+                if(gui.text_button_wide("add image or file to canvas", "Add Image/File to Canvas")) {
+                    #ifdef __EMSCRIPTEN__
+                        emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
+                            if(!buffer.empty()) {
+                                World* world = (World*)callbackData;
+                                world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                            }
+                        }, main.world.get());
+                    #else
+                        open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
+                            auto wLock = w.lock();
+                            if(wLock)
+                                wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
+                        });
+                    #endif
+                }
                 if(main.world->network_being_used()) {
                     if(gui.text_button_wide("lobby info", "Lobby Info")) {
                         optionsMenuOpen = true;

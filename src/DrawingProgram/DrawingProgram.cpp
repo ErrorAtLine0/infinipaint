@@ -274,6 +274,11 @@ void DrawingProgram::update() {
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;
     controls.currentMouseWorldPos = world.get_mouse_world_pos();
 
+    if(addFileInNextFrame) {
+        add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);
+        addFileInNextFrame = false;
+    }
+
     drag_drop_update();
 
     if(world.main.input.key(InputManager::KEY_DRAW_TOOL_BRUSH).pressed)
@@ -341,29 +346,63 @@ void DrawingProgram::update() {
 void DrawingProgram::drag_drop_update() {
     if(controls.cursorHoveringOverCanvas) {
         for(auto& droppedItem : world.main.input.droppedItems) {
-            if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData)) {
-                ServerClientID imageID = world.rMan.add_resource_file(droppedItem.droppedData);
-                std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
-                Vector2f imTrueDim = display->get_dimensions();
-                auto img(std::make_shared<DrawImage>());
-                img->coords = world.drawData.cam.c;
-                float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-                float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-                Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
-                Vector2f dropPos = world.main.input.mouse.pos;
-                // dropPos = droppedItem.pos; // Doesnt work properly with emscripten
-                img->d.p1 = dropPos - imDim;
-                img->d.p2 = dropPos + imDim;
-                img->d.imageID = imageID;
-                img->initialize_draw_data(*this);
-                img->finalize_update(colliderAllocated);
-                uint64_t placement = components.client_list().size();
-                components.client_insert(placement, img);
-                img->client_send_place(*this, placement);
-                add_undo_place_component(placement, img);
-            }
+            if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData))
+                add_file_to_canvas_by_path(droppedItem.droppedData, world.main.input.mouse.pos, true);
         }
     }
+}
+
+void DrawingProgram::add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread) {
+    if(addInSameThread)
+        add_file_to_canvas_by_path_execute(filePath, dropPos);
+    else if(!addFileInNextFrame) {
+        addFileInfo = {filePath, dropPos};
+        addFileInNextFrame = true;
+    }
+}
+
+void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos) {
+    ServerClientID imageID = world.rMan.add_resource_file(filePath);
+    std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
+    Vector2f imTrueDim = display->get_dimensions();
+    auto img(std::make_shared<DrawImage>());
+    img->coords = world.drawData.cam.c;
+    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+    Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
+    img->d.p1 = dropPos - imDim;
+    img->d.p2 = dropPos + imDim;
+    img->d.imageID = imageID;
+    img->initialize_draw_data(*this);
+    img->finalize_update(colliderAllocated);
+    uint64_t placement = components.client_list().size();
+    components.client_insert(placement, img);
+    img->client_send_place(*this, placement);
+    add_undo_place_component(placement, img);
+}
+
+void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
+    ResourceData newResource;
+    newResource.data = std::make_shared<std::string>(fileBuffer);
+    newResource.name = fileName;
+    ServerClientID imageID = world.rMan.add_resource(newResource);
+
+    std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
+    Vector2f imTrueDim = display->get_dimensions();
+    auto img(std::make_shared<DrawImage>());
+    img->coords = world.drawData.cam.c;
+    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+    Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
+    img->d.p1 = dropPos - imDim;
+    img->d.p2 = dropPos + imDim;
+    img->d.imageID = imageID;
+    img->initialize_draw_data(*this);
+    img->finalize_update(colliderAllocated);
+    uint64_t placement = components.client_list().size();
+    components.client_insert(placement, img);
+    img->client_send_place(*this, placement);
+    add_undo_place_component(placement, img);
 }
 
 void DrawingProgram::reset_tools() {

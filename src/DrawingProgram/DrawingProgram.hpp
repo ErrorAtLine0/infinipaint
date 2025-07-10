@@ -41,12 +41,20 @@ class DrawingProgram {
         void free_collider_memory();
         void allocate_collider_memory();
 
+        void add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread);
+        void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
+
         bool colliderAllocated = false;
 
         CollabList<std::shared_ptr<DrawComponent>, ServerClientID> components;
 
         Vector4f* get_foreground_color_ptr();
     private:
+        std::atomic<bool> addFileInNextFrame = false;
+        std::pair<std::string, Vector2f> addFileInfo;
+
+        void add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos);
+
         void draw_cache(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawComponent>& lastComp);
 
         void check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
