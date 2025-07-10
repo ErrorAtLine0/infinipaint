@@ -46,11 +46,14 @@ void NetLibrary::init() {
             j.at("signalingServer").get_to<std::string>(signalingAddr);
 
             std::vector<std::string> stunList = j.at("stunList").get<std::vector<std::string>>();
+            std::vector<nlohmann::json> turnList = j.at("turnList");
             for(std::string& s : stunList) {
                 if(s.substr(0, 5).compare("stun:"))
                     s.insert(0, "stun:");
                 config.iceServers.emplace_back(s);
             }
+            for(const nlohmann::json& turnServer : turnList)
+                config.iceServers.emplace_back(turnServer["url"].get<std::string>(), turnServer["port"].get<uint16_t>(), turnServer["username"].get<std::string>(), turnServer["credential"].get<std::string>());
         }
         catch(...) {
             throw std::runtime_error("[NetLibrary::init] Invalid config/p2p.json");
