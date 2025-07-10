@@ -346,8 +346,13 @@ void DrawingProgram::update() {
 void DrawingProgram::drag_drop_update() {
     if(controls.cursorHoveringOverCanvas) {
         for(auto& droppedItem : world.main.input.droppedItems) {
-            if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData))
+            if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData)) {
+#ifdef __EMSCRIPTEN_
                 add_file_to_canvas_by_path(droppedItem.droppedData, world.main.input.mouse.pos, true);
+#else
+                add_file_to_canvas_by_path(droppedItem.droppedData, droppedItem.pos, true);
+#endif
+            }
         }
     }
 }
