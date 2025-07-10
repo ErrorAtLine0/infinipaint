@@ -10,7 +10,7 @@
 - To host the file you're currently on, go to Menu->Host. Copy the lobby address that pops up, and send it to anyone you want to join the lobby. Once you press "Host" in this popup menu, the lobby will be open
 - To connect to a lobby, go to Menu->Connect, paste the lobby address into the given textbox, and press "Connect"
 - If either the host or the client need to get the lobby address again, it will be available in Menu->Lobby Info after your enter the lobby
-- IMPORTANT NOTE: There is a chance that, even with both people online, you are not able to connect to each other. This could be due to router/firewall settings. I am not hosting any relay (TURN) servers for this app, and rely completely on whether a direct connection can be established between the host and client (STUN)
+- IMPORTANT NOTE: There is a chance that, even with both people online, you are not able to connect to each other. This could be due to router/firewall settings. I am hosting one relay (TURN) server for this app, but I rely mostly on whether a direct connection can be established between the host and client (STUN).
 - Once connected, a chat bubble will pop up on the bottom left. Click that to open the chatbox, type your message, then press the "Send" button. You can also press <kbd>F2</kbd> to open the chatbox, and <kbd>Enter</kbd> to send the message. If you want to cancel the message, press <kbd>Esc</kbd>, or press the chat bubble button again
 - Once connected, a list icon will appear at the top right of the screen. Click that to view a list of players on the server. You can jump to any other player's location through this list
 ## Shortcuts
