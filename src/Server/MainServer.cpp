@@ -70,7 +70,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     netServer = std::make_shared<NetServer>(serverLocalID);
     NetLibrary::register_server(netServer);
 
-    netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isDirectConnect;
         ClientData newClient;
         Vector3f hsv;
@@ -85,7 +85,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             fileDisplayName = newClient.displayName;
 
         newClient.id.first = Random::get().int_range<ServerPortionID>(1, std::numeric_limits<ServerPortionID>::max());
-        client.customID = newClient.id.first;
+        client->customID = newClient.id.first;
         newClient.id.second = data.get_max_id(newClient.id.first);
         netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_USER_CONNECT, newClient.id.first, newClient.displayName, newClient.cursorColor);
         if(isDirectConnect)
@@ -97,29 +97,29 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         }
         clients.emplace(newClient.id.first, newClient);
     });
-    netServer->add_recv_callback(SERVER_MOVE_MOUSE, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
-        auto& c = clients[client.customID];
+    netServer->add_recv_callback(SERVER_MOVE_MOUSE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        auto& c = clients[client->customID];
         message(c.camCoords, c.windowSize, c.cursorPos);
         netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_MOUSE, c.id.first, c.camCoords, c.windowSize, c.cursorPos);
     });
-    netServer->add_recv_callback(SERVER_PLACE_COMPONENT, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_PLACE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         uint64_t placement;
         DrawComponentType type;
         message(placement, type);
         auto newComp = DrawComponent::allocate_comp_type(type);
         message(newComp->coords, *newComp);
-        ServerClientID id = clients[client.customID].get_next_id();
+        ServerClientID id = clients[client->customID].get_next_id();
         placement = std::min<uint64_t>(placement, data.components.size());
         data.components.insert(data.components.begin() + placement, {id, newComp});
         newComp->server_send_place(*this, id, placement);
     });
-    netServer->add_recv_callback(SERVER_ERASE_COMPONENT, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_ERASE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ServerClientID compToRemove;
         message(compToRemove);
         std::erase_if(data.components, [&](auto& c){ return c.first == compToRemove; });
         DrawComponent::server_send_erase(*this, compToRemove);
     });
-    netServer->add_recv_callback(SERVER_TRANSFORM_COMPONENT, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_TRANSFORM_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isTemp;
         ServerClientID idToTransform;
         message(isTemp, idToTransform);
@@ -135,7 +135,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
                 comp->server_send_transform_final(*this, idToTransform);
         }
     });
-    netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isTemp;
         ServerClientID idToTransform;
         message(isTemp, idToTransform);
@@ -151,8 +151,8 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
                 comp->server_send_update_final(*this, idToTransform);
         }
     });
-    netServer->add_recv_callback(SERVER_RESOURCE_INIT, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
-        auto& c = clients[client.customID];
+    netServer->add_recv_callback(SERVER_RESOURCE_INIT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        auto& c = clients[client->customID];
         ServerClientID newID = c.get_next_id();
         if(c.pendingResourceData.empty())
             c.pendingResourceID.emplace(newID);
@@ -162,10 +162,10 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             c.pendingResourceData.pop();
         }
     });
-    netServer->add_recv_callback(SERVER_RESOURCE_DATA, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_RESOURCE_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ResourceData resourceData;
         message(resourceData);
-        auto& c = clients[client.customID];
+        auto& c = clients[client->customID];
         if(c.pendingResourceID.empty()) {
             c.pendingResourceData.emplace();
             c.pendingResourceData.back() = std::move(resourceData);
@@ -176,31 +176,31 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             c.pendingResourceID.pop();
         }
     });
-    netServer->add_recv_callback(SERVER_CHAT_MESSAGE, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_CHAT_MESSAGE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::string chatMessage;
         Vector4f c{1.0f, 1.0f, 1.0f, 1.0f};
         message(chatMessage);
         netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, chatMessage, c);
     });
-    netServer->add_recv_callback(SERVER_NEW_BOOKMARK, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_NEW_BOOKMARK, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::string name;
         message(name);
         Bookmark& b = data.bookmarks[name];
         message(b);
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_NEW_BOOKMARK, name, b);
     });
-    netServer->add_recv_callback(SERVER_REMOVE_BOOKMARK, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_REMOVE_BOOKMARK, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::string name;
         message(name);
         data.bookmarks.erase(name);
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_REMOVE_BOOKMARK, name);
     });
-    netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](NetServer::ClientData& client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });
-    netServer->add_disconnect_callback([&](NetServer::ClientData& client) {
-        auto it = clients.find(client.customID);
+    netServer->add_disconnect_callback([&](std::shared_ptr<NetServer::ClientData> client) {
+        auto it = clients.find(client->customID);
         if(it != clients.end()) {
-            netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_USER_DISCONNECT, client.customID);
+            netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_USER_DISCONNECT, client->customID);
             clients.erase(it);
         }
     });

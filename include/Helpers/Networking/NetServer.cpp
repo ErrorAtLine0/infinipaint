@@ -14,18 +14,24 @@ NetServer::NetServer(const std::string& serverLocalID) {
 void NetServer::update() {
     if(isDisconnected)
         return;
-    std::erase_if(clients, [&](auto& client) {
-        bool timedOut = std::chrono::steady_clock::now() - client->lastMessageTime > NetLibrary::TIMEOUT_DURATION;
-        if(client->setToDisconnect || timedOut) {
-            if(disconnectCallback)
-                disconnectCallback(*client);
-            if(timedOut)
+    for(auto& client : clients) {
+        if(client) {
+            bool timedOut = std::chrono::steady_clock::now() - client->lastMessageTime > NetLibrary::TIMEOUT_DURATION;
+            if(timedOut) {
+                client->setToDisconnect = true;
                 Logger::get().log("INFO", "Connection timed out");
-            return true;
+            }
+            if(client->setToDisconnect)
+                disconnectCallback(client);
+            else {
+                client->parse_received_messages(*this);
+                client->send_queued_messages(*this);
+            }
         }
-        client->parse_received_messages(*this);
-        client->send_queued_messages(*this);
-        return false;
+    }
+
+    std::erase_if(clients, [&](auto& client) {
+        return !client || client->setToDisconnect.load();
     });
 
     std::scoped_lock clientAddLock(clientsToAddMutex);
@@ -171,7 +177,7 @@ void NetServer::ClientData::parse_received_messages(NetServer& server) {
                 cereal::PortableBinaryInputArchive completeArchive(completeStrm);
                 MessageCommandType completeCommandID;
                 completeArchive(completeCommandID);
-                server.recvCallbacks[completeCommandID](*this, completeArchive);
+                server.recvCallbacks[completeCommandID](shared_from_this(), completeArchive);
                 spfm.partialFragmentMessage.clear();
                 spfm.partialFragmentMessageLoc = 0;
             }
@@ -181,7 +187,7 @@ void NetServer::ClientData::parse_received_messages(NetServer& server) {
             }
         }
         else
-            server.recvCallbacks[commandID](*this, inArchive);
+            server.recvCallbacks[commandID](shared_from_this(), inArchive);
 
         receivedMessages.pop();
     }

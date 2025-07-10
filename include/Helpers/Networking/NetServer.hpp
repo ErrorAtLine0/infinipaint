@@ -12,10 +12,10 @@
 class NetServer : public std::enable_shared_from_this<NetServer> {
     public:
         struct ClientData;
-        typedef std::function<void(ClientData&, cereal::PortableBinaryInputArchive&)> NetServerRecvCallback;
-        typedef std::function<void(ClientData&)> NetServerConnectCallback;
-        typedef std::function<void(ClientData&)> NetServerDisconnectCallback;
-        struct ClientData {
+        typedef std::function<void(std::shared_ptr<ClientData>, cereal::PortableBinaryInputArchive&)> NetServerRecvCallback;
+        typedef std::function<void(std::shared_ptr<ClientData>)> NetServerConnectCallback;
+        typedef std::function<void(std::shared_ptr<ClientData>)> NetServerDisconnectCallback;
+        struct ClientData : public std::enable_shared_from_this<ClientData> {
             std::unordered_map<std::string, std::queue<std::shared_ptr<std::stringstream>>> messages;
             struct PartialFragmentMessage {
                 std::string partialFragmentMessage;
@@ -53,7 +53,10 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
         NetServer(const std::string& serverLocalID);
         ~NetServer();
         void update();
-        template <typename... Args> void send_items_to_client(ClientData& client, const std::string& channel, Args&&... items) {
+        template <typename... Args> void send_items_to_client(std::shared_ptr<ClientData> client, const std::string& channel, Args&&... items) {
+            if(!client)
+                return;
+
             auto ss(std::make_shared<std::stringstream>());
             {
                 cereal::PortableBinaryOutputArchive m(*ss);
@@ -61,7 +64,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             }
 
             std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
-            auto& messageQueue = client.messageQueues[channel];
+            auto& messageQueue = client->messageQueues[channel];
             if(fragmentedMessage.empty())
                 messageQueue.emplace(ss);
             else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
@@ -70,27 +73,26 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             }
         }
         template <typename... Args> void send_items_to_all_clients(const std::string& channel, Args&&... items) {
-            send_items_to_client_if([&](const ClientData& c) {
+            send_items_to_client_if([&](std::shared_ptr<ClientData> c) {
                 return true;
             }, channel, items...);
         }
-        template <typename... Args> void send_items_to_all_clients_except(ClientData& client, const std::string& channel, Args&&... items) {
-            send_items_to_client_if([&](const ClientData& c) {
-                return (&c) != (&client);
+        template <typename... Args> void send_items_to_all_clients_except(std::shared_ptr<ClientData> client, const std::string& channel, Args&&... items) {
+            send_items_to_client_if([&](std::shared_ptr<ClientData> c) {
+                return c != client;
             }, channel, items...);
         }
-        template <typename... Args> void send_items_to_client_if(std::function<bool(const ClientData&)> clientChecker, const std::string& channel, Args&&... items) {
+        template <typename... Args> void send_items_to_client_if(std::function<bool(std::shared_ptr<ClientData>)> clientChecker, const std::string& channel, Args&&... items) {
             auto ss(std::make_shared<std::stringstream>());
             {
                 cereal::PortableBinaryOutputArchive m(*ss);
                 (m(items), ...);
             }
 
-
             std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
 
             for(auto& client : clients) {
-                if(clientChecker(*client)) {
+                if(client && clientChecker(client)) {
                     auto& messageQueue = client->messageQueues[channel];
                     if(fragmentedMessage.empty())
                         messageQueue.emplace(ss);
