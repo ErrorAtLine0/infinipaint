@@ -34,7 +34,7 @@ class NetLibrary {
     private:
         static constexpr size_t FRAGMENT_MESSAGE_STRIDE = 4096;
         static constexpr size_t MAX_BUFFERED_DATA_PER_CHANNEL = 65500;
-        static constexpr std::chrono::seconds TIMEOUT_DURATION = std::chrono::seconds(15);
+        static constexpr std::chrono::seconds TIMEOUT_DURATION = std::chrono::seconds(30);
 
         static void finish_client_registration(std::shared_ptr<NetClient> client);
 
