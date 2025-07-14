@@ -39,7 +39,7 @@ void DrawCamera::set_viewing_area(Vector2f viewingAreaNew) {
             changed();
     }
     float maxDim = std::max(viewingAreaNew.x(), viewingAreaNew.y());
-    WorldScalar a = WorldScalar(maxDim * 0.5f) * c.inverseScale;
+    WorldScalar a = WorldScalar(maxDim * 0.708f) * c.inverseScale;
     WorldVec center = c.from_space(viewingAreaNew * 0.5f);
     viewingAreaGenerousCollider = SCollision::AABB<WorldScalar>(center - WorldVec{a, a}, center + WorldVec{a, a});
 }
