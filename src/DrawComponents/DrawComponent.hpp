@@ -16,7 +16,12 @@
 #define CLIENT_DRAWCOMP_DELAY_TIMER_DURATION 5.0f
 
 #define DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR 20
-#define DRAWCOMP_MIN_SHIFT_BEFORE_DISAPPEAR 9
+#define DRAWCOMP_MIN_SHIFT_BEFORE_DISAPPEAR 11
+#define DRAWCOMP_MIPMAP_LEVEL_ONE 1
+#define DRAWCOMP_MIPMAP_LEVEL_TWO 2
+#define DRAWCOMP_MIPMAP_LEVEL_THREE 3
+#define DRAWCOMP_MIPMAP_LEVEL_FOUR 4
+#define DRAWCOMP_MIPMAP_LEVEL_FIVE 5
 
 class DrawingProgram;
 
@@ -40,6 +45,7 @@ class DrawComponent {
                 float scale;
             } transformData;
             bool shouldDraw = true;
+            unsigned mipmapLevel = 0;
         } drawSetupData;
 
         void canvas_do_calculated_transform(SkCanvas* canvas);

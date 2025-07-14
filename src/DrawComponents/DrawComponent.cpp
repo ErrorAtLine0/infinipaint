@@ -188,6 +188,18 @@ void DrawComponent::calculate_draw_transform(const DrawData& drawData) {
     if(drawSetupData.shouldDraw) {
         drawSetupData.shouldDraw = updateDraw || !worldAABB || SCollision::collide(*worldAABB, drawData.cam.viewingAreaGenerousCollider);
         if(drawSetupData.shouldDraw) {
+            if(drawData.mipMapLevelFive > coords.inverseScale)
+                drawSetupData.mipmapLevel = 5;
+            if(drawData.mipMapLevelFour > coords.inverseScale)
+                drawSetupData.mipmapLevel = 4;
+            else if(drawData.mipMapLevelThree > coords.inverseScale)
+                drawSetupData.mipmapLevel = 3;
+            else if(drawData.mipMapLevelTwo > coords.inverseScale)
+                drawSetupData.mipmapLevel = 2;
+            else if(drawData.mipMapLevelOne > coords.inverseScale)
+                drawSetupData.mipmapLevel = 1;
+            else
+                drawSetupData.mipmapLevel = 0;
             drawSetupData.transformData.translation = -coords.to_space(drawData.cam.c.pos);
             drawSetupData.transformData.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
             drawSetupData.transformData.scale = static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale);

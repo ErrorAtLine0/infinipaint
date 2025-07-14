@@ -12,6 +12,7 @@
 #endif
 
 #define AABB_PRECHECK_BVH_LEVELS 2
+#define DEFAULT_SMOOTHNESS 5
 
 void DrawBrushStroke::save(cereal::PortableBinaryOutputArchive& a) const {
     a(d.points, d.color, d.hasRoundCaps);
@@ -50,7 +51,7 @@ Vector2f two_dim_vec_slerp(const Vector2f& v1, const Vector2f& v2) {
 }
 
 void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(drawSetupData.shouldDraw) {
+    if(drawSetupData.shouldDraw && vertices) {
         //bool deepPrecheck = false;
         //for(auto& aabb : precheckAABBLevels) {
         //    if(SCollision::collide(drawData.cam.viewingAreaGenerousCollider, aabb)) {
@@ -68,7 +69,10 @@ void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
             canvas->saveLayerAlphaf(nullptr, d.color.w());
         paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), 1.0f});
         canvas_do_calculated_transform(canvas);
-        canvas->drawVertices(vertices, SkBlendMode::kClear, paint);
+        if(drawSetupData.mipmapLevel == 0)
+            canvas->drawVertices(vertices, SkBlendMode::kClear, paint);
+        else
+            canvas->drawVertices(verticesMipMap[drawSetupData.mipmapLevel - 1], SkBlendMode::kClear, paint);
         //SkPaint p2(SkColor4f{1, 0, 0, 1});
         //p2.setStroke(true);
         //SkPaint p3(SkColor4f{0, 1, 0, 1});
@@ -83,14 +87,38 @@ void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void DrawBrushStroke::initialize_draw_data(DrawingProgram& drawP) {
-    std::vector<SkPoint> vertexData;
-    create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
-        vertexData.emplace_back(a.x(), a.y());
-        vertexData.emplace_back(b.x(), b.y());
-        vertexData.emplace_back(c.x(), c.y());
-        return false;
-    });
-    vertices_to_draw_data(vertexData);
+    if(!d.points.empty()) {
+        std::vector<SkPoint> vertexData;
+        std::vector<DrawBrushStrokePoint> points = smooth_points(0, d.points.size() - 1, DEFAULT_SMOOTHNESS);
+        auto triangleFunc = [&](Vector2f a, Vector2f b, Vector2f c) {
+            vertexData.emplace_back(a.x(), a.y());
+            vertexData.emplace_back(b.x(), b.y());
+            vertexData.emplace_back(c.x(), c.y());
+            return false;
+        };
+
+        create_triangles(triangleFunc, points, 0);
+        vertices_to_draw_data(vertices, vertexData);
+        vertexData.clear();
+
+        create_triangles(triangleFunc, points, 2);
+        vertices_to_draw_data(verticesMipMap[0], vertexData);
+        vertexData.clear();
+
+        create_triangles(triangleFunc, points, 4);
+        vertices_to_draw_data(verticesMipMap[1], vertexData);
+        vertexData.clear();
+
+        create_triangles(triangleFunc, points, 6);
+        vertices_to_draw_data(verticesMipMap[2], vertexData);
+        vertexData.clear();
+
+        create_triangles(triangleFunc, points, 10);
+        vertices_to_draw_data(verticesMipMap[3], vertexData);
+
+        create_triangles(triangleFunc, points, 30);
+        vertices_to_draw_data(verticesMipMap[4], vertexData);
+    }
 }
 
 std::vector<size_t> DrawBrushStroke::get_wedge_indices(const std::vector<DrawBrushStrokePoint>& points) {
@@ -108,7 +136,7 @@ std::vector<size_t> DrawBrushStroke::get_wedge_indices(const std::vector<DrawBru
     return toRet;
 }
 
-std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points(size_t beginIndex, size_t endIndex) {
+std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) {
     std::vector<DrawBrushStrokePoint>& points = d.points;
 
     size_t pointsSize = endIndex - beginIndex + 1;
@@ -134,8 +162,6 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points(size_t beginInd
 
         toRet.emplace_back(p1);
 
-        const unsigned numOfDivisions = 5; // How smooth the stroke should be
-
         float tMove = 1.0 / static_cast<float>(numOfDivisions);
         for(unsigned d = 1; d < numOfDivisions; d++) {
             float t = tMove * static_cast<float>(d);
@@ -154,7 +180,7 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points(size_t beginInd
     return toRet;
 }
 
-std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points_avg(size_t beginIndex, size_t endIndex) {
+std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points_avg(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) {
     std::vector<DrawBrushStrokePoint>& points = d.points;
 
     size_t pointsSize = endIndex - beginIndex + 1;
@@ -166,8 +192,6 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points_avg(size_t begi
     for(size_t i = beginIndex; i < endIndex; i++) {
         const DrawBrushStrokePoint& p1 = points[i];
         const DrawBrushStrokePoint& p2 = points[i + 1];
-
-        const unsigned numOfDivisions = 5; // How smooth the stroke should be
 
         float tMove = 1.0 / static_cast<float>(numOfDivisions);
         for(unsigned d = 0; d < numOfDivisions; d++) {
@@ -185,7 +209,7 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points_avg(size_t begi
     return toRet;
 }
 
-void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc) {
+void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& points, unsigned skipVertexCount) {
     const int ARC_SMOOTHNESS = 10;
     const int CIRCLE_SMOOTHNESS = 20;
     std::vector<DrawBrushStrokePoint>& pointsN = d.points;
@@ -199,9 +223,9 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
     if(pointsN.size() < 2)
         return;
 
-    std::vector<DrawBrushStrokePoint> points = smooth_points(0, pointsN.size() - 1);
     std::vector<size_t> wedgeIndices = get_wedge_indices(points);
     for(size_t i = 0; i < wedgeIndices.size() - 1; i++) {
+
         size_t pointsBegin = wedgeIndices[i];
         size_t pointsEnd = wedgeIndices[i + 1];
 
@@ -227,6 +251,10 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
         }
 
         for(size_t j = pointsBegin + 1; j < pointsEnd; j++) {
+            j += skipVertexCount;
+            if(j >= pointsEnd)
+                j = pointsEnd - 1;
+
             Vector2f v1 = points[j - 1].pos - points[j].pos;
             Vector2f v2 = points[j].pos - points[j + 1].pos;
             Vector2f perp = perpendicular_vec2((v1 + v2).eval()).normalized();
@@ -318,11 +346,14 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
 
 void DrawBrushStroke::create_collider(bool colliderAllocated) {
     using namespace SCollision;
+    if(d.points.empty())
+        return;
     ColliderCollection<float> strokeObjects;
+    std::vector<DrawBrushStrokePoint> points = smooth_points(0, d.points.size() - 1, DEFAULT_SMOOTHNESS);
     create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
         strokeObjects.triangle.emplace_back(a, b, c);
         return false;
-    });
+    }, points, 0);
     strokeObjects.recalculate_bounds();
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
@@ -346,11 +377,11 @@ void DrawBrushStroke::add_precheck_aabb_level(size_t level, const std::vector<SC
     }
 }
 
-void DrawBrushStroke::vertices_to_draw_data(const std::vector<SkPoint>& vertexData) {
+void DrawBrushStroke::vertices_to_draw_data(sk_sp<SkVertices>& vertexDataPtr, const std::vector<SkPoint>& vertexData) {
     if((d.points.size() == 1 && d.hasRoundCaps) || d.points.size() >= 2)
-        vertices = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, vertexData.size(), vertexData.data(), nullptr, nullptr);
+        vertexDataPtr = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, vertexData.size(), vertexData.data(), nullptr, nullptr);
     else
-        vertices = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, 0, nullptr, nullptr, nullptr);
+        vertexDataPtr = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, 0, nullptr, nullptr, nullptr);
 }
 
 void DrawBrushStroke::update(DrawingProgram& drawP) {
@@ -374,10 +405,11 @@ bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollectio
         return false;
 
     bool toRet = false;
+    std::vector<DrawBrushStrokePoint> points = smooth_points(0, d.points.size() - 1, DEFAULT_SMOOTHNESS);
     create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
         toRet = SCollision::collide(checkAgainst, SCollision::Triangle<float>{a, b, c});
         return toRet;
-    });
+    }, points, 0);
     return toRet;
 }
 

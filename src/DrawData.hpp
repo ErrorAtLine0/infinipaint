@@ -16,4 +16,9 @@ struct DrawData {
     bool clampDrawBetween = true;
     WorldScalar clampDrawMinimum;
     WorldScalar clampDrawMaximum;
+    WorldScalar mipMapLevelOne;
+    WorldScalar mipMapLevelTwo;
+    WorldScalar mipMapLevelThree;
+    WorldScalar mipMapLevelFour;
+    WorldScalar mipMapLevelFive;
 };

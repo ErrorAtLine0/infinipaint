@@ -320,8 +320,15 @@ WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, Wor
 
 void World::draw(SkCanvas* canvas) {
     drawData.clampDrawBetween = true;
+
     drawData.clampDrawMinimum = drawData.cam.c.inverseScale >> DRAWCOMP_MIN_SHIFT_BEFORE_DISAPPEAR;
+    drawData.mipMapLevelOne = drawData.cam.c.inverseScale >> DRAWCOMP_MIPMAP_LEVEL_ONE;
+    drawData.mipMapLevelTwo = drawData.cam.c.inverseScale >> DRAWCOMP_MIPMAP_LEVEL_TWO;
+    drawData.mipMapLevelThree = drawData.cam.c.inverseScale >> DRAWCOMP_MIPMAP_LEVEL_THREE;
+    drawData.mipMapLevelFour = drawData.cam.c.inverseScale >> DRAWCOMP_MIPMAP_LEVEL_FOUR;
+    drawData.mipMapLevelFive = drawData.cam.c.inverseScale >> DRAWCOMP_MIPMAP_LEVEL_FOUR;
     drawData.clampDrawMaximum = drawData.cam.c.inverseScale << DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR;
+
     drawProg.draw(canvas, drawData);
 
     for(auto& [id, data] : clients) {

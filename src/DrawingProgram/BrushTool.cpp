@@ -173,9 +173,11 @@ void BrushTool::gui_toolbox() {
 
 void BrushTool::commit_stroke() {
     if(controls.intermediateItem) {
-        controls.intermediateItem->client_send_update_final(drawP, controls.intermediateID);
-        controls.intermediateItem->final_update(drawP);
-        controls.intermediateItem = nullptr; 
+        if(!controls.intermediateItem->d.points.empty()) {
+            controls.intermediateItem->client_send_update_final(drawP, controls.intermediateID);
+            controls.intermediateItem->final_update(drawP);
+            controls.intermediateItem = nullptr; 
+        }
     }
 }
 
