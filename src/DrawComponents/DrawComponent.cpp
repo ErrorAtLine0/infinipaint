@@ -95,7 +95,7 @@ void DrawComponent::check_timers(DrawingProgram& drawP) {
         if(transformDur > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
             coords = *delayedCoordinateSpace;
             delayedCoordinateSpace = nullptr;
-            finalize_update(drawP.colliderAllocated);
+            finalize_update(drawP);
         }
     }
     if(delayedUpdatePtr) {
@@ -109,13 +109,21 @@ void DrawComponent::check_timers(DrawingProgram& drawP) {
 }
 
 void DrawComponent::temp_update(DrawingProgram& drawP) {
+    drawP.compCache.preupdate_component(this);
+    worldAABB = std::nullopt;
     initialize_draw_data(drawP);
+    updateDraw = true;
+}
+
+void DrawComponent::transform_temp_update(DrawingProgram& drawP) {
+    drawP.compCache.preupdate_component(this);
+    worldAABB = std::nullopt;
     updateDraw = true;
 }
 
 void DrawComponent::final_update(DrawingProgram& drawP) {
     initialize_draw_data(drawP);
-    finalize_update(drawP.colliderAllocated);
+    finalize_update(drawP);
     updateDraw = true;
 }
 
@@ -143,8 +151,9 @@ void DrawComponent::client_send_transform_final(DrawingProgram& drawP, ServerCli
     drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, false, id, this->coords);
 }
 
-void DrawComponent::finalize_update(bool colliderAllocated) {
-    create_collider(colliderAllocated);
+void DrawComponent::finalize_update(DrawingProgram& drawP) {
+    drawP.compCache.preupdate_component(this);
+    create_collider(drawP.colliderAllocated);
     updateDraw = true;
 }
 

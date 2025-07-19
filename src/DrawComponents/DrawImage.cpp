@@ -62,7 +62,7 @@ void DrawImage::update(DrawingProgram& drawP) {
     std::shared_ptr<ResourceDisplay> display = drawP.world.drawData.rMan->get_display_data(d.imageID);
     if(display) {
         if(display->update_draw())// && bounds_draw_check(drawP.world.drawData, collisionTree))
-            updateDraw = true;
+            temp_update(drawP);
     }
 }
 

@@ -268,13 +268,13 @@ void TextBoxTool::tool_update() {
 // Passing a function in, just in case we have to do something before editing the text
 void TextBoxTool::edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox) {
     toRun();
-    textBox->update_contained_string();
+    textBox->update_contained_string(drawP);
     update_textbox_network(textBox);
 }
 
 void TextBoxTool::update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox) {
     textBox->client_send_update_temp(drawP, drawP.components.get_id(textBox));
-    textBox->updateDraw = true;
+    textBox->temp_update(drawP);
 }
 
 void TextBoxTool::commit() {

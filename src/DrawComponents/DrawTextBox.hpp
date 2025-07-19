@@ -36,7 +36,7 @@ class DrawTextBox : public DrawComponent {
         virtual void create_collider(bool colliderAllocated) override;
         virtual void update_from_delayed_ptr() override;
         void init_text_box(DrawingProgram& drawP);
-        void update_contained_string();
+        void update_contained_string(DrawingProgram& drawP);
         void set_textbox_string(const std::string& str);
         Vector2f get_mouse_pos(DrawingProgram& drawP);
 

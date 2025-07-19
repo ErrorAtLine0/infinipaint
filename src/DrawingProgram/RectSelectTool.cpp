@@ -148,7 +148,7 @@ void RectSelectTool::tool_update() {
                     auto newCoords = item.oldCoords;
                     newCoords.translate(translationVec);
                     item.comp->coords = newCoords;
-                    item.comp->updateDraw = true;
+                    item.comp->transform_temp_update(drawP);
                     item.comp->client_send_transform_temp(drawP, item.id);
                     item.comp->lastTransformTime = std::chrono::steady_clock::now();
                 }
@@ -185,7 +185,7 @@ void RectSelectTool::tool_update() {
                         newCoords.scale_about(controls.scaleCenterPoint, scaleAmount, flipScale);
                         item.comp->coords = newCoords;
                         item.comp->client_send_transform_temp(drawP, item.id);
-                        item.comp->updateDraw = true;
+                        item.comp->transform_temp_update(drawP);
                         item.comp->lastTransformTime = std::chrono::steady_clock::now();
                     }
                 }
@@ -212,7 +212,7 @@ void RectSelectTool::tool_update() {
                     auto newCoords = item.oldCoords;
                     newCoords.rotate_about(controls.rotationCenter, controls.rotationPointAngle);
                     item.comp->coords = newCoords;
-                    item.comp->updateDraw = true;
+                    item.comp->transform_temp_update(drawP);
                     item.comp->client_send_transform_temp(drawP, item.id);
                     item.comp->lastTransformTime = std::chrono::steady_clock::now();
                 }
@@ -322,7 +322,7 @@ void RectSelectTool::commit_transformation() {
     std::vector<CoordSpaceHelper> finalCoords;
     for(auto& item : controls.selectedItems) {
         item.comp->client_send_transform_final(drawP, item.id);
-        item.comp->finalize_update(drawP.colliderAllocated);
+        item.comp->finalize_update(drawP);
         finalCoords.emplace_back(item.comp->coords);
     }
 
@@ -333,7 +333,7 @@ void RectSelectTool::commit_transformation() {
             for(auto& item : sItems) {
                 item.comp->coords = item.oldCoords;
                 item.comp->client_send_transform_final(drawP, drawP.components.get_id(item.comp));
-                item.comp->finalize_update(drawP.colliderAllocated);
+                item.comp->finalize_update(drawP);
             }
             drawP.reset_tools();
             return true;
@@ -342,7 +342,7 @@ void RectSelectTool::commit_transformation() {
             for(auto [item, finalCoord]  : std::views::zip(sItems, finalCoords)) {
                 item.comp->coords = finalCoord;
                 item.comp->client_send_transform_final(drawP, drawP.components.get_id(item.comp));
-                item.comp->finalize_update(drawP.colliderAllocated);
+                item.comp->finalize_update(drawP);
             }
             drawP.reset_tools();
             return true;

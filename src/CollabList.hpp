@@ -13,11 +13,15 @@ template <typename T, typename IDType> class CollabList {
             T obj;
         };
 
+        typedef std::shared_ptr<ObjectInfo> ObjectInfoPtr;
+
         const std::vector<std::shared_ptr<ObjectInfo>>& client_list() const { return clientSideList; }
         std::vector<std::shared_ptr<ObjectInfo>>& client_list() { return clientSideList; }
         const std::vector<std::shared_ptr<ObjectInfo>>& server_list() const { return serverSideList; }
 
         std::function<void()> updateCallback;
+        std::function<void(const ObjectInfoPtr& c)> clientInsertCallback;
+        std::function<void(const ObjectInfoPtr& c)> clientEraseCallback;
 
         void set_server_from_client_list() {
             serverSideList = clientSideList;
@@ -51,6 +55,8 @@ template <typename T, typename IDType> class CollabList {
         void client_erase_if(const std::function<bool(uint64_t, const std::shared_ptr<ObjectInfo>&)>& func) {
             for(int64_t i = 0; i < (int64_t)clientSideList.size(); i++) {
                 if(func((uint64_t)i, clientSideList[i])) {
+                    if(clientEraseCallback)
+                        clientEraseCallback(clientSideList[i]);
                     clientSideList.erase(clientSideList.begin() + i);
                     i--;
                     if(updateCallback)
@@ -66,6 +72,8 @@ template <typename T, typename IDType> class CollabList {
             newObj->obj = item;
             uint64_t minPos = std::min<uint64_t>(static_cast<uint64_t>(clientSideList.size()), pos);
             clientSideList.insert(clientSideList.begin() + minPos, newObj);
+            if(clientInsertCallback)
+                clientInsertCallback(newObj);
             if(updateCallback)
                 updateCallback();
             return newObj->id;
@@ -73,6 +81,8 @@ template <typename T, typename IDType> class CollabList {
         void client_erase(const T& item, IDType& erasedID) {
             std::erase_if(clientSideList, [&](const auto& obj) {
                 if(obj->obj == item) {
+                    if(clientEraseCallback)
+                        clientEraseCallback(obj);
                     erasedID = obj->id;
                     obj->syncIgnore = true;
                     if(updateCallback)
@@ -88,7 +98,7 @@ template <typename T, typename IDType> class CollabList {
                 return clientObj->id == id;
             });
             if(foundInClient != clientSideList.end()) {
-                std::shared_ptr<ObjectInfo>& o = *foundInClient;
+                ObjectInfoPtr& o = *foundInClient;
                 serverSideList.insert(serverSideList.begin() + pos, o);
                 o->syncIgnore = false;
                 sync();
@@ -101,6 +111,8 @@ template <typename T, typename IDType> class CollabList {
             serverSideList.insert(serverSideList.begin() + pos, newObj);
             uint64_t minPos = std::min<uint64_t>(pos, clientSideList.size());
             clientSideList.insert(clientSideList.begin() + minPos, newObj);
+            if(clientInsertCallback)
+                clientInsertCallback(newObj);
             sync();
             return true;
         }
@@ -115,6 +127,8 @@ template <typename T, typename IDType> class CollabList {
             std::erase_if(clientSideList, [&](const auto& obj) {
                 if(obj->id == id) {
                     obj->syncIgnore = false;
+                    if(clientEraseCallback)
+                        clientEraseCallback(obj);
                     return true;
                 }
                 return false;
@@ -128,12 +142,14 @@ template <typename T, typename IDType> class CollabList {
             newObj->obj = item;
             serverSideList.emplace_back(newObj);
             clientSideList.emplace_back(newObj);
+            if(clientInsertCallback)
+                clientInsertCallback(newObj);
             if(updateCallback)
                 updateCallback();
         }
     private:
         void sync() {
-            std::vector<std::pair<uint64_t, std::shared_ptr<ObjectInfo>>> ignoredToReinsert;
+            std::vector<std::pair<uint64_t, ObjectInfoPtr>> ignoredToReinsert;
             for(uint64_t i = 0; i < clientSideList.size(); i++)
                 if(clientSideList[i]->syncIgnore)
                     ignoredToReinsert.emplace_back(std::pair<uint64_t, std::shared_ptr<ObjectInfo>>{i, clientSideList[i]});
@@ -151,6 +167,6 @@ template <typename T, typename IDType> class CollabList {
                 updateCallback();
         }
         std::function<IDType()> getNewIDFunc;
-        std::vector<std::shared_ptr<ObjectInfo>> clientSideList;
-        std::vector<std::shared_ptr<ObjectInfo>> serverSideList;
+        std::vector<ObjectInfoPtr> clientSideList;
+        std::vector<ObjectInfoPtr> serverSideList;
 };

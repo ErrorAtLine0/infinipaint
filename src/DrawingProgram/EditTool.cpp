@@ -141,7 +141,6 @@ void EditTool::tool_update() {
     }
     else {
         std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();
-        a->updateDraw = true;
         if(a) {
             bool isMovingPoint = false;
             bool clickedAway = false;

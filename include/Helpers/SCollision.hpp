@@ -38,6 +38,9 @@ namespace SCollision {
             bool operator==(const AABB<T>& other) const {
                 return min == other.min && max == other.max;
             }
+            bool fully_contains_aabb(const AABB<T>& other) const {
+                return other.min.x() >= min.x() && other.min.y() >= min.y() && other.max.x() <= max.x() && other.max.y() <= max.y();
+            }
             template <typename S> AABB<S> transform(const std::function<Vector<S, 2>(const Vector<T, 2>&)>& transformFunc, const std::function<S(const T&)>& transformLinearFunc) const {
                 Vector<S, 2> aabb1 = transformFunc(min);
                 Vector<S, 2> aabb2 = transformFunc(max);

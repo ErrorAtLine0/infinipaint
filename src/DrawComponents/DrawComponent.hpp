@@ -68,6 +68,7 @@ class DrawComponent {
 
 #ifndef IS_SERVER
         bool selected = false;
+
         bool updateDraw = true;
 
         bool globalCollisionCheck = false;
@@ -99,8 +100,9 @@ class DrawComponent {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         void temp_update(DrawingProgram& drawP);
         void final_update(DrawingProgram& drawP);
+        void transform_temp_update(DrawingProgram& drawP);
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
-        virtual void finalize_update(bool colliderAllocated);
+        virtual void finalize_update(DrawingProgram& drawP);
         virtual void update(DrawingProgram& drawP) = 0;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) = 0;
         bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, bool colliderAllocated);

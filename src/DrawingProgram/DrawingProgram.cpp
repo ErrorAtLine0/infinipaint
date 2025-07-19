@@ -46,6 +46,12 @@ DrawingProgram::DrawingProgram(World& initWorld):
         if(&world == world.main.world.get())
             world.main.drawProgCache.refresh = true;
     };
+    components.clientInsertCallback = [&](const CollabListType::ObjectInfoPtr& c) {
+        compCache.add_component(c);
+    };
+    components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {
+        compCache.erase_component(c);
+    };
 }
 
 void DrawingProgram::init_client_callbacks() {
@@ -82,10 +88,9 @@ void DrawingProgram::init_client_callbacks() {
         float dur = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - comp->lastTransformTime).count();
         if(dur > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION){
             comp->delayedCoordinateSpace = nullptr;
-            comp->updateDraw = true;
             message(comp->coords);
             if(!isTemp)
-                comp->finalize_update(colliderAllocated); // No need to update draw data during transformation
+                comp->finalize_update(*this); // No need to update draw data during transformation
         }
         else {
             comp->delayedCoordinateSpace = std::make_shared<CoordSpaceHelper>();
@@ -122,16 +127,23 @@ void DrawingProgram::allocate_collider_memory() {
     colliderAllocated = true;
 }
 
-void DrawingProgram::check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
+void DrawingProgram::parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func) {
 #ifdef __EMSCRIPTEN__
-    std::for_each(components.client_list().begin(), components.client_list().end(), [&](auto& c) {
-        c->obj->globalCollisionCheck = c->obj->collides_with(world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, colliderAllocated);
-    });
+    std::for_each(components.client_list().begin(), components.client_list().end(), func);
 #else
-    std::for_each(std::execution::par_unseq, components.client_list().begin(), components.client_list().end(), [&](auto& c) {
-        c->obj->globalCollisionCheck = c->obj->collides_with(world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, colliderAllocated);
-    });
+    std::for_each(std::execution::par_unseq, components.client_list().begin(), components.client_list().end(), func);
 #endif
+}
+
+void DrawingProgram::check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
+    for(auto& c : components.client_list())
+        c->obj->globalCollisionCheck = false;
+    compCache.traverse_bvh_run_function(checkAgainstWorld.bounds, [&](SCollision::AABB<WorldScalar>* nodeAABB, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+        for(auto& c : comps) {
+            c->obj->globalCollisionCheck = c->obj->collides_with(world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, colliderAllocated);
+        }
+        return true;
+    });
 }
 
 void DrawingProgram::check_all_collisions(const SCollision::ColliderCollection<WorldScalar>& checkAgainst) {
@@ -232,9 +244,8 @@ void DrawingProgram::tool_options_gui() {
             default:
                 break;
         }
+        t.gui.checkbox_field("Disable Draw Cache", "Disable Cache", &disableCache);
     }
-
-
 }
 
 void DrawingProgram::update() {
@@ -341,6 +352,8 @@ void DrawingProgram::update() {
         c->obj->check_timers(*this);
         c->obj->update(*this);
     }
+
+    compCache.update(components.client_list());
 }
 
 void DrawingProgram::drag_drop_update() {
@@ -378,8 +391,7 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& fileP
     img->d.p1 = dropPos - imDim;
     img->d.p2 = dropPos + imDim;
     img->d.imageID = imageID;
-    img->initialize_draw_data(*this);
-    img->finalize_update(colliderAllocated);
+    img->final_update(*this);
     uint64_t placement = components.client_list().size();
     components.client_insert(placement, img);
     img->client_send_place(*this, placement);
@@ -402,8 +414,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     img->d.p1 = dropPos - imDim;
     img->d.p2 = dropPos + imDim;
     img->d.imageID = imageID;
-    img->initialize_draw_data(*this);
-    img->finalize_update(colliderAllocated);
+    img->final_update(*this);
     uint64_t placement = components.client_list().size();
     components.client_insert(placement, img);
     img->client_send_place(*this, placement);
@@ -430,8 +441,7 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
         auto newComp = DrawComponent::allocate_comp_type(t);
         a(newComp->coords, *newComp);
         components.init_emplace_back(id, newComp);
-        newComp->initialize_draw_data(*this);
-        newComp->finalize_update(colliderAllocated);
+        newComp->final_update(*this);
     }
 }
 
@@ -455,8 +465,7 @@ void DrawingProgram::add_undo_place_component(uint64_t placement, const std::sha
             if(components.get_id(comp) != ServerClientID{0, 0})
                 return false;
             components.client_insert(placement, comp);
-            comp->initialize_draw_data(*this); // Method to recover after an undo that happened while drawing a component
-            comp->finalize_update(colliderAllocated);
+            comp->final_update(*this); // Method to recover after an undo that happened while drawing a component
             comp->client_send_place(*this, placement);
             reset_tools();
             return true;
@@ -489,8 +498,7 @@ void DrawingProgram::add_undo_place_components(uint64_t placement, const std::ve
                     return false;
             for(auto& c : comps | std::views::reverse) {
                 components.client_insert(placement, c);
-                c->initialize_draw_data(*this); // Method to recover after an undo that happened while drawing a component
-                c->finalize_update(colliderAllocated);
+                c->final_update(*this); // Method to recover after an undo that happened while drawing a component
                 c->client_send_place(*this, placement);
             }
             reset_tools();
@@ -530,36 +538,31 @@ void DrawingProgram::write_to_file(cereal::PortableBinaryOutputArchive& a) {
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(drawData.dontUseDrawProgCache) {
-        for(auto& c : components.client_list()) {
+        parallel_loop_all_components([&](auto& c) {
             c->obj->calculate_draw_transform(drawData);
+        });
+        for(auto& c : components.client_list())
             c->obj->draw(canvas, drawData);
-        }
     }
-    else if(world.main.drawProgCache.refresh)
-        draw_cache(canvas, drawData, nullptr);
     else {
-        bool caughtFirstUpdated = false;
+        if(disableCache) {
+            parallel_loop_all_components([&](auto& c) {
+                c->obj->calculate_draw_transform(drawData);
+            });
+        }
+        else {
+            for(auto& c : components.client_list())
+                c->obj->drawSetupData.shouldDraw = false;
+            compCache.traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](SCollision::AABB<WorldScalar>* nodeAABB, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+                for(auto& c : comps)
+                    c->obj->calculate_draw_transform(drawData);
+                return true;
+            });
+        }
         for(auto& c : components.client_list()) {
-            if(caughtFirstUpdated) {
-                c->obj->calculate_draw_transform(drawData);
-                c->obj->draw(canvas, drawData);
-            }
-            else if(c->obj == world.main.drawProgCache.firstCompUpdate) {
-                canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
-                c->obj->calculate_draw_transform(drawData);
-                c->obj->draw(canvas, drawData);
-                caughtFirstUpdated = true;
-            }
-            else if(c->obj->updateDraw) {
-                draw_cache(canvas, drawData, c->obj);
-                c->obj->calculate_draw_transform(drawData);
-                c->obj->draw(canvas, drawData);
-                caughtFirstUpdated = true;
-            }
+            c->obj->draw(canvas, drawData);
             c->obj->updateDraw = false;
         }
-        if(!caughtFirstUpdated)
-            canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
     }
 
     switch(controls.selectedTool) {
@@ -602,15 +605,9 @@ Vector4f* DrawingProgram::get_foreground_color_ptr() {
 void DrawingProgram::draw_cache(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawComponent>& lastComp) {
     SkCanvas* cacheCanvas = world.main.drawProgCache.canvas;
     cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-#ifdef __EMSCRIPTEN__
-    std::for_each(components.client_list().begin(), components.client_list().end(), [&](auto& c) {
+    parallel_loop_all_components([&](auto& c) {
         c->obj->calculate_draw_transform(drawData);
     });
-#else
-    std::for_each(std::execution::par_unseq, components.client_list().begin(), components.client_list().end(), [&](auto& c) {
-        c->obj->calculate_draw_transform(drawData);
-    });
-#endif
     for(auto& c : components.client_list()) {
         if(c->obj == lastComp)
             break;

@@ -93,9 +93,9 @@ void DrawTextBox::set_textbox_string(const std::string& str) {
     textboxUpdate = false;
 }
 
-void DrawTextBox::update_contained_string() {
+void DrawTextBox::update_contained_string(DrawingProgram& drawP) {
     d.currentText = textBox.get_string();
-    updateDraw = true;
+    temp_update(drawP);
 }
 
 Vector2f DrawTextBox::get_mouse_pos(DrawingProgram& drawP) {

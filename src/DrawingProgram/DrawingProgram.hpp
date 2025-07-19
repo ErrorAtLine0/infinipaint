@@ -1,5 +1,6 @@
 #pragma once
 #include "../DrawData.hpp"
+#include "DrawingProgramCache.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <include/core/SkCanvas.h>
 #include <include/core/SkPath.h>
@@ -44,9 +45,15 @@ class DrawingProgram {
         void add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread);
         void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
 
+        void parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func);
+
         bool colliderAllocated = false;
 
-        CollabList<std::shared_ptr<DrawComponent>, ServerClientID> components;
+        DrawingProgramCache compCache;
+
+        typedef CollabList<std::shared_ptr<DrawComponent>, ServerClientID> CollabListType;
+
+        CollabListType components;
 
         Vector4f* get_foreground_color_ptr();
     private:
@@ -71,6 +78,8 @@ class DrawingProgram {
 
         void add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp);
         void add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps);
+
+        bool disableCache = true;
 
         BrushTool brushTool;
         EraserTool eraserTool;
