@@ -28,6 +28,9 @@
     #include <poolstl.hpp>
 #endif
 
+template <typename T> void parallel_loop_vector_any_type() {
+}
+
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     components([&](){ return world.get_new_id(); }),
@@ -51,6 +54,9 @@ DrawingProgram::DrawingProgram(World& initWorld):
     };
     components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {
         compCache.erase_component(c);
+    };
+    components.clientServerLastPosShiftCallback = [&](uint64_t lastShiftPos) {
+        compCache.invalidate_cache_before_pos(lastShiftPos);
     };
 }
 
@@ -138,10 +144,9 @@ void DrawingProgram::parallel_loop_all_components(std::function<void(const std::
 void DrawingProgram::check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
     for(auto& c : components.client_list())
         c->obj->globalCollisionCheck = false;
-    compCache.traverse_bvh_run_function(checkAgainstWorld.bounds, [&](SCollision::AABB<WorldScalar>* nodeAABB, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
-        for(auto& c : comps) {
+    compCache.traverse_bvh_run_function(checkAgainstWorld.bounds, [&](DrawingProgramCache::BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+        for(auto& c : comps)
             c->obj->globalCollisionCheck = c->obj->collides_with(world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, colliderAllocated);
-        }
         return true;
     });
 }
@@ -553,7 +558,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         else {
             for(auto& c : components.client_list())
                 c->obj->drawSetupData.shouldDraw = false;
-            compCache.traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](SCollision::AABB<WorldScalar>* nodeAABB, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+            compCache.traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](DrawingProgramCache::BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
                 for(auto& c : comps)
                     c->obj->calculate_draw_transform(drawData);
                 return true;

@@ -11,6 +11,7 @@ template <typename T, typename IDType> class CollabList {
             bool syncIgnore;
             IDType id;
             T obj;
+            uint64_t pos;
         };
 
         typedef std::shared_ptr<ObjectInfo> ObjectInfoPtr;
@@ -22,6 +23,7 @@ template <typename T, typename IDType> class CollabList {
         std::function<void()> updateCallback;
         std::function<void(const ObjectInfoPtr& c)> clientInsertCallback;
         std::function<void(const ObjectInfoPtr& c)> clientEraseCallback;
+        std::function<void(uint64_t oldPos)> clientServerLastPosShiftCallback;
 
         void set_server_from_client_list() {
             serverSideList = clientSideList;
@@ -53,6 +55,7 @@ template <typename T, typename IDType> class CollabList {
         }
 
         void client_erase_if(const std::function<bool(uint64_t, const std::shared_ptr<ObjectInfo>&)>& func) {
+            bool erasedSomething = false;
             for(int64_t i = 0; i < (int64_t)clientSideList.size(); i++) {
                 if(func((uint64_t)i, clientSideList[i])) {
                     if(clientEraseCallback)
@@ -61,8 +64,11 @@ template <typename T, typename IDType> class CollabList {
                     i--;
                     if(updateCallback)
                         updateCallback();
+                    erasedSomething = true;
                 }
             }
+            if(erasedSomething)
+                complete_client_pos_refresh(false);
         }
 
         IDType client_insert(uint64_t pos, const T& item) {
@@ -70,15 +76,20 @@ template <typename T, typename IDType> class CollabList {
             newObj->syncIgnore = true;
             newObj->id = getNewIDFunc();
             newObj->obj = item;
-            uint64_t minPos = std::min<uint64_t>(static_cast<uint64_t>(clientSideList.size()), pos);
-            clientSideList.insert(clientSideList.begin() + minPos, newObj);
+            newObj->pos = std::min<uint64_t>(static_cast<uint64_t>(clientSideList.size()), pos);
+            clientSideList.insert(clientSideList.begin() + newObj->pos, newObj);
+
+            client_pos_refresh_after_insert(newObj->pos);
+
             if(clientInsertCallback)
                 clientInsertCallback(newObj);
             if(updateCallback)
                 updateCallback();
+
             return newObj->id;
         }
         void client_erase(const T& item, IDType& erasedID) {
+            bool erasedSomething = false;
             std::erase_if(clientSideList, [&](const auto& obj) {
                 if(obj->obj == item) {
                     if(clientEraseCallback)
@@ -87,10 +98,13 @@ template <typename T, typename IDType> class CollabList {
                     obj->syncIgnore = true;
                     if(updateCallback)
                         updateCallback();
+                    erasedSomething = true;
                     return true;
                 }
                 return false;
             });
+            if(erasedSomething)
+                complete_client_pos_refresh(false);
         }
 
         bool server_insert(uint64_t pos, IDType id, const T& item) {
@@ -108,11 +122,16 @@ template <typename T, typename IDType> class CollabList {
             newObj->syncIgnore = false;
             newObj->id = id;
             newObj->obj = item;
+            newObj->pos = std::min<uint64_t>(pos, clientSideList.size());
             serverSideList.insert(serverSideList.begin() + pos, newObj);
-            uint64_t minPos = std::min<uint64_t>(pos, clientSideList.size());
-            clientSideList.insert(clientSideList.begin() + minPos, newObj);
+            clientSideList.insert(clientSideList.begin() + newObj->pos, newObj);
+
+            for(uint64_t i = newObj->pos + 1; i < static_cast<uint64_t>(clientSideList.size()); i++)
+                clientSideList[i]->pos++;
+
             if(clientInsertCallback)
                 clientInsertCallback(newObj);
+
             sync();
             return true;
         }
@@ -140,14 +159,38 @@ template <typename T, typename IDType> class CollabList {
             newObj->syncIgnore = false;
             newObj->id = id;
             newObj->obj = item;
+            newObj->pos = clientSideList.size() - 1;
+
             serverSideList.emplace_back(newObj);
             clientSideList.emplace_back(newObj);
+
             if(clientInsertCallback)
                 clientInsertCallback(newObj);
             if(updateCallback)
                 updateCallback();
         }
     private:
+        void complete_client_pos_refresh(bool syncFromServer) {
+            uint64_t lastShiftPos = 0;
+            bool shiftHappened = false;
+            for(uint64_t i = 0; i < clientSideList.size(); i++) {
+                auto& c = clientSideList[i];
+                if(c->pos != i) {
+                    lastShiftPos = std::max(lastShiftPos, c->pos);
+                    lastShiftPos = std::max(lastShiftPos, i);
+                    shiftHappened = true;
+                    c->pos = i;
+                }
+            }
+            if(syncFromServer && shiftHappened && clientServerLastPosShiftCallback)
+                clientServerLastPosShiftCallback(lastShiftPos);
+        }
+
+        void client_pos_refresh_after_insert(uint64_t posToRefreshAfter) {
+            for(uint64_t i = posToRefreshAfter + 1; i < static_cast<uint64_t>(clientSideList.size()); i++)
+                clientSideList[i]->pos = i;
+        }
+
         void sync() {
             std::vector<std::pair<uint64_t, ObjectInfoPtr>> ignoredToReinsert;
             for(uint64_t i = 0; i < clientSideList.size(); i++)
@@ -165,6 +208,7 @@ template <typename T, typename IDType> class CollabList {
             }
             if(updateCallback)
                 updateCallback();
+            complete_client_pos_refresh(true);
         }
         std::function<IDType()> getNewIDFunc;
         std::vector<ObjectInfoPtr> clientSideList;

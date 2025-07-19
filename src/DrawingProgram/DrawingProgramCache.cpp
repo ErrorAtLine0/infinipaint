@@ -20,6 +20,7 @@ void DrawingProgramCache::update(const std::vector<CollabListType::ObjectInfoPtr
 
 void DrawingProgramCache::add_component(const CollabListType::ObjectInfoPtr& c) {
     unsortedComponents.emplace_back(c);
+    invalidate_cache_before_pos(c->pos);
 }
 
 void DrawingProgramCache::erase_component(const CollabListType::ObjectInfoPtr& c) {
@@ -33,6 +34,7 @@ void DrawingProgramCache::erase_component(const CollabListType::ObjectInfoPtr& c
         if(bvhNodePair.first)
             bvhNodePair.first->components.erase(bvhNodePair.second);
     }
+    invalidate_cache_before_pos(c->pos);
 }
 
 std::pair<DrawingProgramCache::BVHNode*, std::vector<DrawingProgramCache::CollabListType::ObjectInfoPtr>::iterator> DrawingProgramCache::get_bvh_node_fully_containing_recursive(BVHNode& bvhNode, DrawComponent* c) {
@@ -52,13 +54,13 @@ std::pair<DrawingProgramCache::BVHNode*, std::vector<DrawingProgramCache::Collab
     return {nullptr, bvhNode.components.end()};
 }
 
-void DrawingProgramCache::traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(SCollision::AABB<WorldScalar>* bounds, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
+void DrawingProgramCache::traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
     f(nullptr, unsortedComponents);
     traverse_bvh_run_function_recursive(bvhRoot, aabb, f);
 }
 
-void DrawingProgramCache::traverse_bvh_run_function_recursive(BVHNode& bvhNode, const SCollision::AABB<WorldScalar>& aabb, std::function<bool(SCollision::AABB<WorldScalar>* bounds, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
-    if(SCollision::collide(aabb, bvhNode.bounds) && f(&bvhNode.bounds, bvhNode.components)) {
+void DrawingProgramCache::traverse_bvh_run_function_recursive(BVHNode& bvhNode, const SCollision::AABB<WorldScalar>& aabb, std::function<bool(BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
+    if(SCollision::collide(aabb, bvhNode.bounds) && f(&bvhNode, bvhNode.components)) {
         for(auto& p : bvhNode.children)
             traverse_bvh_run_function_recursive(p, aabb, f);
     }
@@ -68,14 +70,17 @@ void DrawingProgramCache::preupdate_component(DrawComponent* c) {
     auto it = std::find_if(unsortedComponents.begin(), unsortedComponents.end(), [&](const auto& comp) {
         return comp->obj.get() == c;
     });
-    if(it != unsortedComponents.end())
+    if(it != unsortedComponents.end()) {
+        invalidate_cache_before_pos((*it)->pos);
         return;
+    }
     else {
         if(!c->worldAABB.has_value())
             return;
         auto bvhNodePair = get_bvh_node_fully_containing_recursive(bvhRoot, c);
         if(bvhNodePair.first) {
             unsortedComponents.emplace_back(*bvhNodePair.second);
+            invalidate_cache_before_pos((*bvhNodePair.second)->pos);
             bvhNodePair.first->components.erase(bvhNodePair.second);
         }
     }
@@ -116,4 +121,19 @@ void DrawingProgramCache::build_bvh_node(BVHNode& node, std::vector<CollabListTy
         if(!p.empty())
             build_bvh_node(node.children.emplace_back(), p);
     }
+}
+
+void DrawingProgramCache::invalidate_cache_before_pos(uint64_t placementToInvalidateAt) {
+    // We could use worldAABB of component to invalidate specific areas. However, that comes with some issues:
+    // - The AABB couldve been changed from the last frame, so the current worldAABB doesnt actually represent what we should update
+    // - The worldAABB might not be calculated yet, or mightve been invalidated (worldAABB = nullopt)
+    // For now, we will ignore worldAABB and just clear cache by placement in list
+
+    std::erase_if(nodesWithCachedSurfaces, [&](auto& n) {
+        if(placementToInvalidateAt <= n->drawCache.value().lastDrawnComponentPlacement) {
+            n->drawCache = std::nullopt;
+            return true;
+        }
+        return false;
+    });
 }
