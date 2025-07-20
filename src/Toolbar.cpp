@@ -221,6 +221,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
     toRet["jumpTransitionEasing"] = jumpTransitionEasing;
+    toRet["disableDrawCache"] = main.drawProgCache.disableDrawCache;
 
     json tablet;
     tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
@@ -271,6 +272,7 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
     j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
+    j.at("disableDrawCache").get_to(main.drawProgCache.disableDrawCache);
 
     j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
     j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);
@@ -1156,6 +1158,7 @@ void Toolbar::options_menu() {
                             }) {
                                 switch(generalSettingsOptions) {
                                     case GSETTINGS_GENERAL: {
+                                        gui.push_id("general settings");
                                         gui.input_text_field("display name input", "Display Name", &main.displayName);
                                         main.update_display_names();
                                         gui.text_label("Note: Changes in display name dont affect canvases that are connected online");
@@ -1166,9 +1169,11 @@ void Toolbar::options_menu() {
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.checkbox_field("changebrushwidthwithspeed", "Change brush size with mouse speed", &velocityAffectsBrushWidth);
+                                        gui.pop_id();
                                         break;
                                     }
                                     case GSETTINGS_APPEARANCE: {
+                                        gui.push_id("appearance settings");
                                         if(gui.radio_button_field("grid type no grid", "No Grid", (main.grid.gridType == GridManager::GRIDTYPE_NONE))) main.grid.gridType = GridManager::GRIDTYPE_NONE;
                                         if(gui.radio_button_field("grid type circle grid", "Circle Dot Grid", (main.grid.gridType == GridManager::GRIDTYPE_CIRCLEDOT))) main.grid.gridType = GridManager::GRIDTYPE_CIRCLEDOT;
                                         if(gui.radio_button_field("grid type square grid", "Square Dot Grid", (main.grid.gridType == GridManager::GRIDTYPE_SQUAREDOT))) main.grid.gridType = GridManager::GRIDTYPE_SQUAREDOT;
@@ -1176,6 +1181,7 @@ void Toolbar::options_menu() {
                                         gui.input_scalar_field("GUI Scale", "GUI Scale", &guiScale, 0.5f, 3.0f, 1);
                                         gui.input_scalar_field<uint16_t>("GUI Font Size", "GUI Font Size", &io->fontSize, 10, 30);
                                         gui.text_label("Note: Changing font size may break UI in some cases.");
+                                        gui.pop_id();
                                         break;
                                     }
                                     case GSETTINGS_TABLET: {
@@ -1303,6 +1309,7 @@ void Toolbar::options_menu() {
                                         break;
                                     }
                                     case GSETTINGS_DEBUG: {
+                                        gui.push_id("debug settings menu");
                                         gui.checkbox_field("show performance metrics", "Show Metrics", &showPerformance);
                                         gui.input_scalar_fields("jump transition easing", "Jump Easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, 2);
                                         #ifndef __EMSCRIPTEN__
@@ -1310,6 +1317,8 @@ void Toolbar::options_menu() {
                                             gui.text_label("Note: Requires restart to take effect. May cause bugs on Intel Graphics");
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
+                                        gui.checkbox_field("Disable Draw Cache", "Disable BVH Draw Cache", &main.drawProgCache.disableDrawCache);
+                                        gui.pop_id();
                                         break;
                                     }
                                 }

@@ -55,6 +55,7 @@ class DrawingProgram {
 
         CollabListType components;
 
+
         Vector4f* get_foreground_color_ptr();
     private:
         std::atomic<bool> addFileInNextFrame = false;
@@ -79,7 +80,7 @@ class DrawingProgram {
         void add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp);
         void add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps);
 
-        bool disableCache = true;
+        void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache);
 
         BrushTool brushTool;
         EraserTool eraserTool;
@@ -135,4 +136,5 @@ class DrawingProgram {
         friend class ScreenshotTool;
         friend class EditTool;
         friend class ImageTool;
+        friend class DrawingProgramCache;
 };

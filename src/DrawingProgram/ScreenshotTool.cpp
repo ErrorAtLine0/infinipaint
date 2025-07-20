@@ -181,6 +181,8 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
     WorldScalar newInverseScale = (vectorZoom.x() + vectorZoom.y()) * WorldScalar(0.5);
 
     drawP.world.drawData.cam.set_based_on_properties(drawP.world, topLeft, newInverseScale, controls.coords.rotation);
+    drawP.world.drawData.cam.set_viewing_area(sectionImageSize.cast<float>());
+    drawP.world.drawData.refresh_draw_optimizing_values();
 
     GridManager::GridType oldGridType = drawP.world.main.grid.gridType;
     drawP.world.main.takingScreenshot = true;

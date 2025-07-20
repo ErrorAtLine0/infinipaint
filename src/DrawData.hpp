@@ -21,4 +21,5 @@ struct DrawData {
     WorldScalar mipMapLevelThree;
     WorldScalar mipMapLevelFour;
     WorldScalar mipMapLevelFive;
+    void refresh_draw_optimizing_values();
 };

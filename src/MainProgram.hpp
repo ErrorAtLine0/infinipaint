@@ -35,6 +35,7 @@ class MainProgram {
             sk_sp<SkSurface> surface;
             std::shared_ptr<DrawComponent> firstCompUpdate = nullptr;
             SkCanvas* canvas;
+            bool disableDrawCache = false;
         } drawProgCache;
 
         struct Window {

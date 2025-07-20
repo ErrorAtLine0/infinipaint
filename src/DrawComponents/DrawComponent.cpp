@@ -127,6 +127,12 @@ void DrawComponent::final_update(DrawingProgram& drawP) {
     updateDraw = true;
 }
 
+void DrawComponent::final_update_dont_invalidate_cache(DrawingProgram& drawP) {
+    initialize_draw_data(drawP);
+    finalize_update(drawP, false);
+    updateDraw = true;
+}
+
 void DrawComponent::client_send_place(DrawingProgram& drawP, uint64_t placement) {
     drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_PLACE_COMPONENT, placement, get_type(), this->coords, *this);
 }
@@ -151,8 +157,9 @@ void DrawComponent::client_send_transform_final(DrawingProgram& drawP, ServerCli
     drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, false, id, this->coords);
 }
 
-void DrawComponent::finalize_update(DrawingProgram& drawP) {
-    drawP.compCache.preupdate_component(this);
+void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache) {
+    if(invalidateCache)
+        drawP.compCache.preupdate_component(this);
     create_collider(drawP.colliderAllocated);
     updateDraw = true;
 }
