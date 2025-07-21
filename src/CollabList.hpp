@@ -77,6 +77,8 @@ template <typename T, typename IDType> class CollabList {
             newObj->id = getNewIDFunc();
             newObj->obj = item;
             newObj->pos = std::min<uint64_t>(static_cast<uint64_t>(clientSideList.size()), pos);
+            item->collabListInfo = newObj;
+
             clientSideList.insert(clientSideList.begin() + newObj->pos, newObj);
 
             client_pos_refresh_after_insert(newObj->pos);
@@ -123,6 +125,8 @@ template <typename T, typename IDType> class CollabList {
             newObj->id = id;
             newObj->obj = item;
             newObj->pos = std::min<uint64_t>(pos, clientSideList.size());
+            item->collabListInfo = newObj;
+
             serverSideList.insert(serverSideList.begin() + pos, newObj);
             clientSideList.insert(clientSideList.begin() + newObj->pos, newObj);
 
@@ -160,6 +164,7 @@ template <typename T, typename IDType> class CollabList {
             newObj->id = id;
             newObj->obj = item;
             newObj->pos = clientSideList.size() - 1;
+            item->collabListInfo = newObj;
 
             serverSideList.emplace_back(newObj);
             clientSideList.emplace_back(newObj);

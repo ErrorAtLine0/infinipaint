@@ -5,6 +5,8 @@
 #include "../SharedTypes.hpp"
 #include "../CoordSpaceHelper.hpp"
 #include "../Server/MainServer.hpp"
+#include "../CollabList.hpp"
+#include "../DrawingProgram/DrawingProgramCache.hpp"
 
 #ifndef IS_SERVER
 #include "../DrawData.hpp"
@@ -64,6 +66,9 @@ class DrawComponent {
         std::chrono::time_point<std::chrono::steady_clock> tempServerTransformTimer;
         bool serverIsTempTransform = false;
 
+        std::weak_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo> collabListInfo;
+        std::weak_ptr<DrawingProgramCache::BVHNode> parentBvhNode;
+
         void server_update(MainServer& server, ServerClientID id);
 
 #ifndef IS_SERVER
@@ -100,7 +105,6 @@ class DrawComponent {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         void temp_update(DrawingProgram& drawP);
         void final_update(DrawingProgram& drawP);
-        void final_update_dont_invalidate_cache(DrawingProgram& drawP);
         void transform_temp_update(DrawingProgram& drawP);
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
         virtual void finalize_update(DrawingProgram& drawP, bool invalidateCache = true);

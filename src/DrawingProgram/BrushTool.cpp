@@ -106,9 +106,9 @@ void BrushTool::tool_update() {
             controls.intermediateItem->d.hasRoundCaps = controls.hasRoundCaps;
             controls.intermediateItem->coords = drawP.world.drawData.cam.c;
             controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
-            controls.intermediateItem->temp_update(drawP);
             uint64_t placement = drawP.components.client_list().size();
             controls.intermediateID = drawP.components.client_insert(placement, controls.intermediateItem);
+            controls.intermediateItem->temp_update(drawP);
             controls.intermediateItem->client_send_place(drawP, placement);
             // NOTE: The data isnt finallized at this point, so a BVH isn't generated for an object that you undo while youre drawing (this isnt just for brush strokes)
             // The fix for now is to generate a BVH for an object when you redo it

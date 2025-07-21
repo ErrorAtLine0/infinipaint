@@ -109,14 +109,14 @@ void DrawComponent::check_timers(DrawingProgram& drawP) {
 }
 
 void DrawComponent::temp_update(DrawingProgram& drawP) {
-    drawP.compCache.preupdate_component(this);
+    drawP.compCache.preupdate_component(collabListInfo.lock());
     worldAABB = std::nullopt;
     initialize_draw_data(drawP);
     updateDraw = true;
 }
 
 void DrawComponent::transform_temp_update(DrawingProgram& drawP) {
-    drawP.compCache.preupdate_component(this);
+    drawP.compCache.preupdate_component(collabListInfo.lock());
     worldAABB = std::nullopt;
     updateDraw = true;
 }
@@ -124,12 +124,6 @@ void DrawComponent::transform_temp_update(DrawingProgram& drawP) {
 void DrawComponent::final_update(DrawingProgram& drawP) {
     initialize_draw_data(drawP);
     finalize_update(drawP);
-    updateDraw = true;
-}
-
-void DrawComponent::final_update_dont_invalidate_cache(DrawingProgram& drawP) {
-    initialize_draw_data(drawP);
-    finalize_update(drawP, false);
     updateDraw = true;
 }
 
@@ -159,7 +153,7 @@ void DrawComponent::client_send_transform_final(DrawingProgram& drawP, ServerCli
 
 void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache) {
     if(invalidateCache)
-        drawP.compCache.preupdate_component(this);
+        drawP.compCache.preupdate_component(collabListInfo.lock());
     create_collider(drawP.colliderAllocated);
     updateDraw = true;
 }

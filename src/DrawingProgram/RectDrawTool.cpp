@@ -10,9 +10,7 @@
 
 RectDrawTool::RectDrawTool(DrawingProgram& initDrawP):
     drawP(initDrawP)
-{
-    controls.intermediateItem = std::make_shared<DrawRectangle>();
-}
+{}
 
 void RectDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
@@ -114,9 +112,9 @@ void RectDrawTool::tool_update() {
                 controls.intermediateItem->d.fillStrokeMode = static_cast<uint8_t>(controls.fillStrokeMode);
                 controls.intermediateItem->coords = drawP.world.drawData.cam.c;
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
-                controls.intermediateItem->temp_update(drawP);
                 uint64_t placement = drawP.components.client_list().size();
                 controls.intermediateID = drawP.components.client_insert(placement, controls.intermediateItem);
+                controls.intermediateItem->temp_update(drawP);
                 controls.intermediateItem->client_send_place(drawP, placement);
                 drawP.add_undo_place_component(placement, controls.intermediateItem);
                 controls.drawStage = 1;

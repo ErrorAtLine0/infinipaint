@@ -13,7 +13,6 @@
 EllipseDrawTool::EllipseDrawTool(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {
-    controls.intermediateItem = std::make_shared<DrawEllipse>();
 }
 
 void EllipseDrawTool::gui_toolbox() {

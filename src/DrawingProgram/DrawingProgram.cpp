@@ -146,7 +146,7 @@ void DrawingProgram::parallel_loop_all_components(std::function<void(const std::
 void DrawingProgram::check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
     for(auto& c : components.client_list())
         c->obj->globalCollisionCheck = false;
-    compCache.traverse_bvh_run_function(checkAgainstWorld.bounds, [&](DrawingProgramCache::BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+    compCache.traverse_bvh_run_function(checkAgainstWorld.bounds, [&](const std::shared_ptr<DrawingProgramCache::BVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         for(auto& c : comps)
             c->obj->globalCollisionCheck = c->obj->collides_with(world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, colliderAllocated);
         return true;
@@ -447,8 +447,9 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
         auto newComp = DrawComponent::allocate_comp_type(t);
         a(newComp->coords, *newComp);
         components.init_emplace_back(id, newComp);
-        newComp->final_update_dont_invalidate_cache(*this);
+        newComp->final_update(*this);
     }
+    compCache.force_rebuild();
 }
 
 void DrawingProgram::reset_selection() {
@@ -607,9 +608,9 @@ void DrawingProgram::draw_components_to_canvas(SkCanvas* canvas, const DrawData&
     for(auto& c : components.client_list())
         c->obj->drawSetupData.shouldDraw = false;
 
-    std::vector<DrawingProgramCache::BVHNode*> cachedNodesToDraw;
+    std::vector<std::shared_ptr<DrawingProgramCache::BVHNode>> cachedNodesToDraw;
 
-    compCache.traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](DrawingProgramCache::BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+    compCache.traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCache::BVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         if(!dontUseCache && node && node->drawCache && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
             cachedNodesToDraw.emplace_back(node);
             return false;
@@ -622,7 +623,7 @@ void DrawingProgram::draw_components_to_canvas(SkCanvas* canvas, const DrawData&
     for(uint64_t i = 0; i < components.client_list().size(); i++) {
         auto& c = components.client_list()[i];
         c->obj->draw(canvas, drawData);
-        for(DrawingProgramCache::BVHNode* bvhNode : cachedNodesToDraw) {
+        for(const std::shared_ptr<DrawingProgramCache::BVHNode>& bvhNode : cachedNodesToDraw) {
             auto& drawCache = bvhNode->drawCache.value();
             if(drawCache.lastDrawnComponentPlacement == i) {
                 canvas->save();

@@ -15,25 +15,33 @@
 
 DrawingProgramCache::DrawingProgramCache(DrawingProgram& initDrawP):
     drawP(initDrawP)
-{}
+{
+    lastBvhBuildTime = std::chrono::steady_clock::now();
+}
 
 void DrawingProgramCache::build(std::vector<CollabListType::ObjectInfoPtr> components) {
-    bvhRoot = BVHNode();
+    bvhRoot = std::make_shared<BVHNode>();
     unsortedComponents.clear();
     nodesWithCachedSurfaces.clear();
     std::erase_if(components, [&](auto& c) {
         if(!c->obj->worldAABB || c->obj->updateDraw) {
             unsortedComponents.emplace_back(c);
+            c->obj->parentBvhNode.reset();
             return true;
         }
         return false;
     });
     build_bvh_node(bvhRoot, components);
+    lastBvhBuildTime = std::chrono::steady_clock::now();
 }
 
 void DrawingProgramCache::update() {
-    if(unsortedComponents.size() >= 750)
-        build(drawP.components.client_list());
+    if(unsortedComponents.size() >= 750 && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(7))
+        force_rebuild();
+}
+
+void DrawingProgramCache::force_rebuild() {
+    build(drawP.components.client_list());
 }
 
 void DrawingProgramCache::add_component(const CollabListType::ObjectInfoPtr& c) {
@@ -42,84 +50,73 @@ void DrawingProgramCache::add_component(const CollabListType::ObjectInfoPtr& c) 
 }
 
 void DrawingProgramCache::erase_component(const CollabListType::ObjectInfoPtr& c) {
-    auto it = std::find(unsortedComponents.begin(), unsortedComponents.end(), c);
-    if(it != unsortedComponents.end())
-        unsortedComponents.erase(it);
-    else {
-        if(!c->obj->worldAABB.has_value())
-            return;
-        auto bvhNodePair = get_bvh_node_fully_containing_recursive(bvhRoot, c->obj.get());
-        if(bvhNodePair.first)
-            bvhNodePair.first->components.erase(bvhNodePair.second);
+    auto parentBvhNode = c->obj->parentBvhNode.lock();
+    if(parentBvhNode) {
+        std::erase(parentBvhNode->components, c);
+        c->obj->parentBvhNode.reset();
     }
+    else
+        std::erase(unsortedComponents, c);
     invalidate_cache_before_pos(c->pos);
 }
 
-std::pair<DrawingProgramCache::BVHNode*, std::vector<DrawingProgramCache::CollabListType::ObjectInfoPtr>::iterator> DrawingProgramCache::get_bvh_node_fully_containing_recursive(BVHNode& bvhNode, DrawComponent* c) {
+std::pair<std::shared_ptr<DrawingProgramCache::BVHNode>, std::vector<DrawingProgramCache::CollabListType::ObjectInfoPtr>::iterator> DrawingProgramCache::get_bvh_node_fully_containing_recursive(const std::shared_ptr<BVHNode>& bvhNode, DrawComponent* c) {
     SCollision::AABB<WorldScalar>& cAABB = c->worldAABB.value();
-    if(!bvhNode.bounds.fully_contains_aabb(cAABB))
-        return {nullptr, bvhNode.components.end()};
-    auto it = std::find_if(bvhNode.components.begin(), bvhNode.components.end(), [&](const auto& comp) {
+    if(!bvhNode->bounds.fully_contains_aabb(cAABB))
+        return {nullptr, bvhNode->components.end()};
+    auto it = std::find_if(bvhNode->components.begin(), bvhNode->components.end(), [&](const auto& comp) {
         return comp->obj.get() == c;
     });
-    if(it != bvhNode.components.end())
-        return {&bvhNode, it};
-    for(auto& p : bvhNode.children) {
+    if(it != bvhNode->components.end())
+        return {bvhNode, it};
+    for(auto& p : bvhNode->children) {
         auto toRet = get_bvh_node_fully_containing_recursive(p, c);
         if(toRet.first)
             return toRet;
     }
-    return {nullptr, bvhNode.components.end()};
+    return {nullptr, bvhNode->components.end()};
 }
 
-void DrawingProgramCache::traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
+void DrawingProgramCache::traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<BVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
     f(nullptr, unsortedComponents);
     traverse_bvh_run_function_recursive(bvhRoot, aabb, f);
 }
 
-void DrawingProgramCache::traverse_bvh_run_function_recursive(BVHNode& bvhNode, const SCollision::AABB<WorldScalar>& aabb, std::function<bool(BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
-    if(SCollision::collide(aabb, bvhNode.bounds) && f(&bvhNode, bvhNode.components)) {
-        for(auto& p : bvhNode.children)
+void DrawingProgramCache::traverse_bvh_run_function_recursive(const std::shared_ptr<BVHNode>& bvhNode, const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<BVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
+    if(bvhNode && SCollision::collide(aabb, bvhNode->bounds) && f(bvhNode, bvhNode->components)) {
+        for(auto& p : bvhNode->children)
             traverse_bvh_run_function_recursive(p, aabb, f);
     }
 }
 
-void DrawingProgramCache::preupdate_component(DrawComponent* c) {
-    auto it = std::find_if(unsortedComponents.begin(), unsortedComponents.end(), [&](const auto& comp) {
-        return comp->obj.get() == c;
-    });
-    if(it != unsortedComponents.end()) {
-        invalidate_cache_before_pos((*it)->pos);
-        return;
+void DrawingProgramCache::preupdate_component(const CollabListType::ObjectInfoPtr& c) {
+    auto parentBvhNode = c->obj->parentBvhNode.lock();
+    if(parentBvhNode) {
+        unsortedComponents.emplace_back(c);
+        std::erase(parentBvhNode->components, c);
+        c->obj->parentBvhNode.reset();
     }
-    else {
-        if(!c->worldAABB.has_value())
-            return;
-        auto bvhNodePair = get_bvh_node_fully_containing_recursive(bvhRoot, c);
-        if(bvhNodePair.first) {
-            unsortedComponents.emplace_back(*bvhNodePair.second);
-            invalidate_cache_before_pos((*bvhNodePair.second)->pos);
-            bvhNodePair.first->components.erase(bvhNodePair.second);
-        }
-    }
+    invalidate_cache_before_pos(c->pos);
 }
 
-void DrawingProgramCache::build_bvh_node(BVHNode& node, std::vector<CollabListType::ObjectInfoPtr> components) {
+void DrawingProgramCache::build_bvh_node(const std::shared_ptr<BVHNode>& bvhNode, std::vector<CollabListType::ObjectInfoPtr> components) {
     if(components.empty())
         return;
 
-    node.bounds = components.front()->obj->worldAABB.value();
+    bvhNode->bounds = components.front()->obj->worldAABB.value();
     for(auto& c : components)
-        node.bounds.include_aabb_in_bounds(c->obj->worldAABB.value());
+        bvhNode->bounds.include_aabb_in_bounds(c->obj->worldAABB.value());
 
-    build_bvh_node_coords_and_resolution(node);
+    build_bvh_node_coords_and_resolution(*bvhNode);
 
     if(components.size() < 100) {
-        node.components = components;
+        bvhNode->components = components;
+        for(auto& c : bvhNode->components)
+            c->obj->parentBvhNode = bvhNode;
         return;
     }
 
-    WorldVec boundsCenter = node.bounds.center();
+    WorldVec boundsCenter = bvhNode->bounds.center();
 
     std::array<std::vector<CollabListType::ObjectInfoPtr>, 4> parts;
 
@@ -133,13 +130,15 @@ void DrawingProgramCache::build_bvh_node(BVHNode& node, std::vector<CollabListTy
             parts[2].emplace_back(c);
         else if(cAABB.min.x() > boundsCenter.x() && cAABB.max.x() > boundsCenter.x() && cAABB.min.y() > boundsCenter.y() && cAABB.max.y() > boundsCenter.y())
             parts[3].emplace_back(c);
-        else
-            node.components.emplace_back(c);
+        else {
+            bvhNode->components.emplace_back(c);
+            c->obj->parentBvhNode = bvhNode;
+        }
     }
 
     for(auto& p : parts) {
         if(!p.empty())
-            build_bvh_node(node.children.emplace_back(), p);
+            build_bvh_node(bvhNode->children.emplace_back(std::make_shared<BVHNode>()), p);
     }
 }
 
@@ -184,8 +183,8 @@ void DrawingProgramCache::invalidate_cache_before_pos(uint64_t placementToInvali
 }
 
 void DrawingProgramCache::refresh_all_draw_cache(SkCanvas* canvas, const DrawData& drawData) {
-    std::deque<BVHNode*> nodeFlatList; // We want to render children before parents, so that parents can make use of the cached children
-    traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](DrawingProgramCache::BVHNode* node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+    std::deque<std::shared_ptr<BVHNode>> nodeFlatList; // We want to render children before parents, so that parents can make use of the cached children
+    traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](std::shared_ptr<DrawingProgramCache::BVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         if(node && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
             if(!node->drawCache)
                 nodeFlatList.emplace_front(node);
@@ -194,17 +193,17 @@ void DrawingProgramCache::refresh_all_draw_cache(SkCanvas* canvas, const DrawDat
         return true;
     });
     if(!nodeFlatList.empty())
-        refresh_draw_cache(*nodeFlatList.front(), drawData);
+        refresh_draw_cache(nodeFlatList.front(), drawData);
 }
 
-void DrawingProgramCache::refresh_draw_cache(BVHNode& bvhNode, const DrawData& drawData) {
-    if(bvhNode.children.empty() && bvhNode.components.empty())
+void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<BVHNode>& bvhNode, const DrawData& drawData) {
+    if(bvhNode->children.empty() && bvhNode->components.empty())
         return;
 
-    bvhNode.drawCache = std::nullopt;
+    bvhNode->drawCache = std::nullopt;
     BVHNode::DrawCacheData drawCache;
 
-    SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode.resolution.x(), bvhNode.resolution.y());
+    SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode->resolution.x(), bvhNode->resolution.y());
     #ifdef USE_SKIA_BACKEND_GRAPHITE
         drawCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
     #elif USE_SKIA_BACKEND_GANESH
@@ -219,25 +218,26 @@ void DrawingProgramCache::refresh_draw_cache(BVHNode& bvhNode, const DrawData& d
     cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
 
     DrawData cacheDrawData = drawData;
-    cacheDrawData.cam.c = bvhNode.coords;
+    cacheDrawData.cam.c = bvhNode->coords;
     cacheDrawData.cam.changed = nullptr;
-    cacheDrawData.cam.set_viewing_area(bvhNode.resolution.cast<float>());
+    cacheDrawData.cam.set_viewing_area(bvhNode->resolution.cast<float>());
     cacheDrawData.refresh_draw_optimizing_values();
     drawP.draw_components_to_canvas(cacheCanvas, cacheDrawData, false);
 
     drawCache.lastDrawnComponentPlacement = drawP.components.client_list().size() - 1;
     drawCache.lastRenderTime = std::chrono::steady_clock::now();
 
-    bvhNode.drawCache = drawCache; // Set the drawCache after rendering is done, so that the draw function doesnt assume we have this node cached
+    bvhNode->drawCache = drawCache; // Set the drawCache after rendering is done, so that the draw function doesnt assume we have this node cached
 
     while(nodesWithCachedSurfaces.size() >= MAXIMUM_DRAW_CACHE_SURFACES) {
-        BVHNode* leastUsedNode = *nodesWithCachedSurfaces.begin();
-        for(BVHNode* n : nodesWithCachedSurfaces) {
+        std::shared_ptr<BVHNode> leastUsedNode = *nodesWithCachedSurfaces.begin();
+        for(const std::shared_ptr<BVHNode>& n : nodesWithCachedSurfaces) {
             if(n->drawCache.value().lastRenderTime < leastUsedNode->drawCache.value().lastRenderTime)
                 leastUsedNode = n;
         }
+        leastUsedNode->drawCache = std::nullopt;
         nodesWithCachedSurfaces.erase(leastUsedNode);
     }
 
-    nodesWithCachedSurfaces.emplace(&bvhNode);
+    nodesWithCachedSurfaces.emplace(bvhNode);
 }
