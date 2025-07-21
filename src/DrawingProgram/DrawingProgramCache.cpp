@@ -24,7 +24,7 @@ void DrawingProgramCache::build(std::vector<CollabListType::ObjectInfoPtr> compo
     unsortedComponents.clear();
     nodesWithCachedSurfaces.clear();
     std::erase_if(components, [&](auto& c) {
-        if(!c->obj->worldAABB || c->obj->updateDraw) {
+        if(!c->obj->worldAABB) {
             unsortedComponents.emplace_back(c);
             c->obj->parentBvhNode.reset();
             return true;
@@ -36,7 +36,7 @@ void DrawingProgramCache::build(std::vector<CollabListType::ObjectInfoPtr> compo
 }
 
 void DrawingProgramCache::update() {
-    if(unsortedComponents.size() >= 1000 && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(7))
+    if(unsortedComponents.size() >= 1000 && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(5))
         force_rebuild();
 }
 

@@ -112,19 +112,16 @@ void DrawComponent::temp_update(DrawingProgram& drawP) {
     drawP.compCache.preupdate_component(collabListInfo.lock());
     worldAABB = std::nullopt;
     initialize_draw_data(drawP);
-    updateDraw = true;
 }
 
 void DrawComponent::transform_temp_update(DrawingProgram& drawP) {
     drawP.compCache.preupdate_component(collabListInfo.lock());
     worldAABB = std::nullopt;
-    updateDraw = true;
 }
 
 void DrawComponent::final_update(DrawingProgram& drawP) {
     initialize_draw_data(drawP);
     finalize_update(drawP);
-    updateDraw = true;
 }
 
 void DrawComponent::client_send_place(DrawingProgram& drawP) {
@@ -161,7 +158,6 @@ void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache)
     if(invalidateCache)
         drawP.compCache.preupdate_component(collabListInfo.lock());
     create_collider(drawP.colliderAllocated);
-    updateDraw = true;
 }
 
 bool DrawComponent::collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, bool colliderAllocated) {
@@ -202,7 +198,7 @@ void DrawComponent::canvas_do_calculated_transform(SkCanvas* canvas) {
 void DrawComponent::calculate_draw_transform(const DrawData& drawData) {
     drawSetupData.shouldDraw = !drawData.clampDrawBetween || ((drawData.clampDrawMaximum >= coords.inverseScale) && (drawData.clampDrawMinimum < coords.inverseScale));
     if(drawSetupData.shouldDraw) {
-        drawSetupData.shouldDraw = updateDraw || !worldAABB || SCollision::collide(*worldAABB, drawData.cam.viewingAreaGenerousCollider);
+        drawSetupData.shouldDraw = !worldAABB || SCollision::collide(*worldAABB, drawData.cam.viewingAreaGenerousCollider);
         if(drawSetupData.shouldDraw) {
             if(drawData.mipMapLevelTwo > coords.inverseScale)
                 drawSetupData.mipmapLevel = 2;

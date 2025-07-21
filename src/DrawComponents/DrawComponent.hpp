@@ -72,8 +72,6 @@ class DrawComponent {
 #ifndef IS_SERVER
         bool selected = false;
 
-        bool updateDraw = true;
-
         bool globalCollisionCheck = false;
 
         std::chrono::time_point<std::chrono::steady_clock> lastTransformTime;

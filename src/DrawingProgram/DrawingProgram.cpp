@@ -572,9 +572,6 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             draw_components_to_canvas(drawProgCacheCanvas, drawData, false);
             canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
         }
-
-        for(auto& c : components.client_list())
-            c->obj->updateDraw = false;
     }
 
     switch(controls.selectedTool) {
