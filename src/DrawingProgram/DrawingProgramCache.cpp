@@ -85,25 +85,29 @@ void DrawingProgramCache::traverse_bvh_collision_check(const SCollision::Collide
     traverse_bvh_collision_check_recursive(bvhRoot, checkAgainstWorld, checkAgainstCam);
 }
 
-void DrawingProgramCache::traverse_bvh_collision_check_recursive_tiny(const std::shared_ptr<BVHNode>& bvhNode, bool collided) {
+void DrawingProgramCache::traverse_bvh_collision_check_recursive_tiny(const std::shared_ptr<BVHNode>& bvhNode) {
     if(bvhNode) {
         for(auto& c : bvhNode->components)
-            c->obj->globalCollisionCheck = collided;
+            c->obj->globalCollisionCheck = true;
         for(auto& p : bvhNode->children)
-            traverse_bvh_collision_check_recursive_tiny(p, collided);
+            traverse_bvh_collision_check_recursive_tiny(p);
     }
 }
 
 void DrawingProgramCache::traverse_bvh_collision_check_recursive(const std::shared_ptr<BVHNode>& bvhNode, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
     if(bvhNode) {
-        auto& camCoords = drawP.world.drawData.cam.c;
-        if((camCoords.inverseScale >> DRAWCOMP_COLLIDE_MIN_SHIFT_TINY) >= bvhNode->coords.inverseScale)
-            traverse_bvh_collision_check_recursive_tiny(bvhNode, SCollision::collide(checkAgainstCam, camCoords.to_space(bvhNode->bounds.min)));
-        else {
-            for(auto& c : bvhNode->components)
-                c->obj->globalCollisionCheck = c->obj->collides_with(drawP.world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, drawP.colliderAllocated);
-            for(auto& p : bvhNode->children)
-                traverse_bvh_collision_check_recursive(p, checkAgainstWorld, checkAgainstCam);
+        if(SCollision::collide(checkAgainstWorld.bounds, bvhNode->bounds)) {
+            auto& camCoords = drawP.world.drawData.cam.c;
+            if((camCoords.inverseScale >> DRAWCOMP_COLLIDE_MIN_SHIFT_TINY) >= bvhNode->coords.inverseScale) {
+                if(SCollision::collide(checkAgainstCam, camCoords.to_space(bvhNode->bounds.min)))
+                    traverse_bvh_collision_check_recursive_tiny(bvhNode);
+            }
+            else {
+                for(auto& c : bvhNode->components)
+                    c->obj->globalCollisionCheck = c->obj->collides_with(drawP.world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, drawP.colliderAllocated);
+                for(auto& p : bvhNode->children)
+                    traverse_bvh_collision_check_recursive(p, checkAgainstWorld, checkAgainstCam);
+            }
         }
     }
 }
