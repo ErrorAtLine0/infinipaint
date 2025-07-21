@@ -458,8 +458,10 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
         auto newComp = DrawComponent::allocate_comp_type(t);
         a(newComp->coords, *newComp);
         components.init_emplace_back(id, newComp);
-        newComp->final_update(*this);
     }
+    parallel_loop_all_components([&](const auto& c){
+        c->obj->final_update(*this, false);
+    });
     compCache.force_rebuild();
 }
 

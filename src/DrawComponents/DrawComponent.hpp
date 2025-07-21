@@ -100,7 +100,7 @@ class DrawComponent {
         virtual void create_collider(bool colliderAllocated) = 0;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         void temp_update(DrawingProgram& drawP);
-        void final_update(DrawingProgram& drawP);
+        void final_update(DrawingProgram& drawP, bool invalidateCache = true); // invalidateCache = false version should be thread safe
         void transform_temp_update(DrawingProgram& drawP);
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
         virtual void finalize_update(DrawingProgram& drawP, bool invalidateCache = true);

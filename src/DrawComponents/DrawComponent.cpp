@@ -119,9 +119,9 @@ void DrawComponent::transform_temp_update(DrawingProgram& drawP) {
     worldAABB = std::nullopt;
 }
 
-void DrawComponent::final_update(DrawingProgram& drawP) {
+void DrawComponent::final_update(DrawingProgram& drawP, bool invalidateCache) {
     initialize_draw_data(drawP);
-    finalize_update(drawP);
+    finalize_update(drawP, invalidateCache);
 }
 
 void DrawComponent::client_send_place(DrawingProgram& drawP) {
