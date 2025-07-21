@@ -32,7 +32,7 @@ void EraserTool::tool_update() {
         drawP.components.client_erase_if([&](uint64_t oldPlacement, const auto& c) {
             if(c->obj->globalCollisionCheck) {
                 erasedComponents.emplace_back(oldPlacement, c->obj);
-                DrawComponent::client_send_erase(drawP, c->id);
+                c->obj->client_send_erase(drawP);
                 return true;
             }
             return false;
@@ -48,7 +48,7 @@ void EraserTool::tool_update() {
 
                 for(auto& comp : erasedCompVal | std::views::reverse) {
                     drawP.components.client_insert(comp.first, comp.second);
-                    comp.second->client_send_place(drawP, comp.first);
+                    comp.second->client_send_place(drawP);
                 }
                 drawP.reset_tools();
                 return true;
@@ -60,8 +60,8 @@ void EraserTool::tool_update() {
 
                 for(auto& comp : erasedCompVal) {
                     ServerClientID compID;
+                    comp.second->client_send_erase(drawP);
                     drawP.components.client_erase(comp.second, compID);
-                    DrawComponent::client_send_erase(drawP, compID);
                 }
                 drawP.reset_tools();
                 return true;

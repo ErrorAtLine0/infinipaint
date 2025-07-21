@@ -127,28 +127,34 @@ void DrawComponent::final_update(DrawingProgram& drawP) {
     updateDraw = true;
 }
 
-void DrawComponent::client_send_place(DrawingProgram& drawP, uint64_t placement) {
-    drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_PLACE_COMPONENT, placement, get_type(), this->coords, *this);
+void DrawComponent::client_send_place(DrawingProgram& drawP) {
+    //if(collabListInfo.lock()) If this fails, then there's a real issue
+        drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_PLACE_COMPONENT, collabListInfo.lock()->pos, get_type(), this->coords, *this);
 }
 
-void DrawComponent::client_send_erase(DrawingProgram& drawP, ServerClientID id) {
-    drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_ERASE_COMPONENT, id);
+void DrawComponent::client_send_erase(DrawingProgram& drawP) {
+    if(collabListInfo.lock())
+        drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_ERASE_COMPONENT, collabListInfo.lock()->id);
 }
 
-void DrawComponent::client_send_update_temp(DrawingProgram& drawP, ServerClientID id) {
-    drawP.world.con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, true, id, *this);
+void DrawComponent::client_send_update_temp(DrawingProgram& drawP) {
+    if(collabListInfo.lock())
+        drawP.world.con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, true, collabListInfo.lock()->id, *this);
 }
 
-void DrawComponent::client_send_update_final(DrawingProgram& drawP, ServerClientID id) {
-    drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, false, id, *this);
+void DrawComponent::client_send_update_final(DrawingProgram& drawP) {
+    if(collabListInfo.lock())
+        drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, false, collabListInfo.lock()->id, *this);
 }
 
-void DrawComponent::client_send_transform_temp(DrawingProgram& drawP, ServerClientID id) {
-    drawP.world.con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, true, id, this->coords);
+void DrawComponent::client_send_transform_temp(DrawingProgram& drawP) {
+    if(collabListInfo.lock())
+        drawP.world.con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, true, collabListInfo.lock()->id, this->coords);
 }
 
-void DrawComponent::client_send_transform_final(DrawingProgram& drawP, ServerClientID id) {
-    drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, false, id, this->coords);
+void DrawComponent::client_send_transform_final(DrawingProgram& drawP) {
+    if(collabListInfo.lock())
+        drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, false, collabListInfo.lock()->id, this->coords);
 }
 
 void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache) {

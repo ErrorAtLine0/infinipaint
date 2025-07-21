@@ -70,18 +70,14 @@ void EllipseDrawTool::commit_edit_updates(const std::shared_ptr<DrawEllipse>& a,
     drawP.world.undo.push(UndoManager::UndoRedoPair{
         [&, a, pData]() {
             a->d = pData;
-            ServerClientID compID = drawP.components.get_id(a);
-            if(compID != ServerClientID{0, 0})
-                a->client_send_update_final(drawP, compID);
+            a->client_send_update_final(drawP);
             a->final_update(drawP);
             drawP.reset_tools();
             return true;
         },
         [&, a, cData]() {
-            ServerClientID compID = drawP.components.get_id(a);
             a->d = cData;
-            if(compID != ServerClientID{0, 0})
-                a->client_send_update_final(drawP, compID);
+            a->client_send_update_final(drawP);
             a->final_update(drawP);
             drawP.reset_tools();
             return true;
@@ -114,7 +110,7 @@ void EllipseDrawTool::tool_update() {
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
                 uint64_t placement = drawP.components.client_list().size();
                 drawP.components.client_insert(placement, controls.intermediateItem);
-                controls.intermediateItem->client_send_place(drawP, placement);
+                controls.intermediateItem->client_send_place(drawP);
                 drawP.add_undo_place_component(placement, controls.intermediateItem);
                 controls.intermediateItem->temp_update(drawP);
                 controls.drawStage = 1;
@@ -131,7 +127,7 @@ void EllipseDrawTool::tool_update() {
                 }
                 controls.intermediateItem->d.p1 = cwise_vec_min(controls.startAt, newPos);
                 controls.intermediateItem->d.p2 = cwise_vec_max(controls.startAt, newPos);
-                controls.intermediateItem->client_send_update_temp(drawP, drawP.components.get_id(controls.intermediateItem));
+                controls.intermediateItem->client_send_update_temp(drawP);
                 controls.intermediateItem->temp_update(drawP);
             }
             else {
@@ -145,7 +141,7 @@ void EllipseDrawTool::tool_update() {
 
 void EllipseDrawTool::commit() {
     if(controls.intermediateItem) {
-        controls.intermediateItem->client_send_update_final(drawP, drawP.components.get_id(controls.intermediateItem));
+        controls.intermediateItem->client_send_update_final(drawP);
         controls.intermediateItem->final_update(drawP);
         controls.intermediateItem = nullptr;
     }

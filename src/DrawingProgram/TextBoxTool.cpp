@@ -57,20 +57,16 @@ void TextBoxTool::commit_edit_updates(const std::shared_ptr<DrawTextBox>& a, std
             a->d = pData;
             a->set_textbox_string(pData.currentText);
             a->d.editing = false;
-            ServerClientID compID = drawP.components.get_id(a);
-            if(compID != ServerClientID{0, 0})
-                a->client_send_update_final(drawP, compID);
+            a->client_send_update_final(drawP);
             a->final_update(drawP);
             drawP.reset_tools();
             return true;
         },
         [&, a, cData]() {
-            ServerClientID compID = drawP.components.get_id(a);
             a->d = cData;
             a->set_textbox_string(cData.currentText);
             a->d.editing = false;
-            if(compID != ServerClientID{0, 0})
-                a->client_send_update_final(drawP, compID);
+            a->client_send_update_final(drawP);
             a->final_update(drawP);
             drawP.reset_tools();
             return true;
@@ -86,7 +82,7 @@ void TextBoxTool::edit_start(const std::shared_ptr<DrawTextBox>& a, std::any& pr
     cur.pos = cur.selectionBeginPos = cur.selectionEndPos = textbox.getPosition(p);
     prevData = a->d;
     a->d.editing = true;
-    a->client_send_update_temp(drawP, drawP.components.get_id(a));
+    a->client_send_update_temp(drawP);
     drawP.editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
     drawP.editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});
 }
@@ -232,7 +228,7 @@ void TextBoxTool::tool_update() {
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
                 uint64_t placement = drawP.components.client_list().size();
                 drawP.components.client_insert(placement, controls.intermediateItem);
-                controls.intermediateItem->client_send_place(drawP, placement);
+                controls.intermediateItem->client_send_place(drawP);
                 drawP.add_undo_place_component(placement, controls.intermediateItem);
                 controls.drawStage = 1;
             }
@@ -257,7 +253,7 @@ void TextBoxTool::tool_update() {
                 drawP.editTool.edit_start(i);
             }
             else {
-                controls.intermediateItem->client_send_update_temp(drawP, drawP.components.get_id(controls.intermediateItem));
+                controls.intermediateItem->client_send_update_temp(drawP);
                 controls.intermediateItem->temp_update(drawP);
             }
             break;
@@ -273,13 +269,13 @@ void TextBoxTool::edit_text(std::function<void()> toRun, const std::shared_ptr<D
 }
 
 void TextBoxTool::update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox) {
-    textBox->client_send_update_temp(drawP, drawP.components.get_id(textBox));
+    textBox->client_send_update_temp(drawP);
     textBox->temp_update(drawP);
 }
 
 void TextBoxTool::commit() {
     if(controls.intermediateItem) {
-        controls.intermediateItem->client_send_update_final(drawP, drawP.components.get_id(controls.intermediateItem));
+        controls.intermediateItem->client_send_update_final(drawP);
         controls.intermediateItem->final_update(drawP);
         //controls.intermediateItem->currentlyUpdating = true; // It remains true, as we are about to start writing into the text box we just placed
         controls.intermediateItem = nullptr;

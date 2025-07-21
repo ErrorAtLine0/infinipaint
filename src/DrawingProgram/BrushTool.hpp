@@ -35,7 +35,6 @@ class BrushTool {
             std::deque<SmoothingPoint> penSmoothingData;
 
             std::shared_ptr<DrawBrushStroke> intermediateItem;
-            ServerClientID intermediateID;
             bool isDrawing = false;
             bool hasRoundCaps = true;
             bool drawingMinimumRelativeToSize = true;

@@ -99,7 +99,7 @@ void RectSelectTool::tool_update() {
                 drawP.components.client_erase_if([&](uint64_t oldPlacement, const auto& c) {
                     if(c->obj->selected) {
                         erasedCompVal.emplace_back(std::pair<uint64_t, std::shared_ptr<DrawComponent>>{oldPlacement, c->obj});
-                        DrawComponent::client_send_erase(drawP, c->id);
+                        c->obj->client_send_erase(drawP);
                         return true;
                     }
                     return false;
@@ -112,7 +112,7 @@ void RectSelectTool::tool_update() {
 
                         for(auto& comp : erasedCompVal | std::views::reverse) {
                             drawP.components.client_insert(comp.first, comp.second);
-                            comp.second->client_send_place(drawP, comp.first);
+                            comp.second->client_send_place(drawP);
                         }
                         drawP.reset_tools();
                         return true;
@@ -124,8 +124,8 @@ void RectSelectTool::tool_update() {
 
                         for(auto& comp : erasedCompVal) {
                             ServerClientID compID;
+                            comp.second->client_send_erase(drawP);
                             drawP.components.client_erase(comp.second, compID);
-                            DrawComponent::client_send_erase(drawP, compID);
                         }
                         drawP.reset_tools();
                         return true;
@@ -149,7 +149,7 @@ void RectSelectTool::tool_update() {
                     newCoords.translate(translationVec);
                     item.comp->coords = newCoords;
                     item.comp->transform_temp_update(drawP);
-                    item.comp->client_send_transform_temp(drawP, item.id);
+                    item.comp->client_send_transform_temp(drawP);
                     item.comp->lastTransformTime = std::chrono::steady_clock::now();
                 }
             }
@@ -184,7 +184,7 @@ void RectSelectTool::tool_update() {
                         auto newCoords = item.oldCoords;
                         newCoords.scale_about(controls.scaleCenterPoint, scaleAmount, flipScale);
                         item.comp->coords = newCoords;
-                        item.comp->client_send_transform_temp(drawP, item.id);
+                        item.comp->client_send_transform_temp(drawP);
                         item.comp->transform_temp_update(drawP);
                         item.comp->lastTransformTime = std::chrono::steady_clock::now();
                     }
@@ -213,7 +213,7 @@ void RectSelectTool::tool_update() {
                     newCoords.rotate_about(controls.rotationCenter, controls.rotationPointAngle);
                     item.comp->coords = newCoords;
                     item.comp->transform_temp_update(drawP);
-                    item.comp->client_send_transform_temp(drawP, item.id);
+                    item.comp->client_send_transform_temp(drawP);
                     item.comp->lastTransformTime = std::chrono::steady_clock::now();
                 }
             }
@@ -251,7 +251,7 @@ void RectSelectTool::paste_clipboard() {
 
             drawP.components.client_insert(placement, newC);
             newC->final_update(drawP);
-            newC->client_send_place(drawP, placement);
+            newC->client_send_place(drawP);
             placedComponents.emplace_back(newC);
         }
         set_selected_items();
@@ -321,7 +321,7 @@ void RectSelectTool::set_selected_items() {
 void RectSelectTool::commit_transformation() {
     std::vector<CoordSpaceHelper> finalCoords;
     for(auto& item : controls.selectedItems) {
-        item.comp->client_send_transform_final(drawP, item.id);
+        item.comp->client_send_transform_final(drawP);
         item.comp->finalize_update(drawP);
         finalCoords.emplace_back(item.comp->coords);
     }
@@ -332,7 +332,7 @@ void RectSelectTool::commit_transformation() {
         [&, sItems, finalCoords]() {
             for(auto& item : sItems) {
                 item.comp->coords = item.oldCoords;
-                item.comp->client_send_transform_final(drawP, drawP.components.get_id(item.comp));
+                item.comp->client_send_transform_final(drawP);
                 item.comp->finalize_update(drawP);
             }
             drawP.reset_tools();
@@ -341,7 +341,7 @@ void RectSelectTool::commit_transformation() {
         [&, sItems, finalCoords]() {
             for(auto [item, finalCoord]  : std::views::zip(sItems, finalCoords)) {
                 item.comp->coords = finalCoord;
-                item.comp->client_send_transform_final(drawP, drawP.components.get_id(item.comp));
+                item.comp->client_send_transform_final(drawP);
                 item.comp->finalize_update(drawP);
             }
             drawP.reset_tools();

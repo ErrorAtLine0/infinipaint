@@ -400,7 +400,7 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& fileP
     img->final_update(*this);
     uint64_t placement = components.client_list().size();
     components.client_insert(placement, img);
-    img->client_send_place(*this, placement);
+    img->client_send_place(*this);
     add_undo_place_component(placement, img);
 }
 
@@ -423,7 +423,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     img->final_update(*this);
     uint64_t placement = components.client_list().size();
     components.client_insert(placement, img);
-    img->client_send_place(*this, placement);
+    img->client_send_place(*this);
     add_undo_place_component(placement, img);
 }
 
@@ -461,19 +461,17 @@ void DrawingProgram::add_undo_place_component(uint64_t placement, const std::sha
     world.undo.push(UndoManager::UndoRedoPair{
         [&, comp]() {
             ServerClientID compID;
+            comp->client_send_erase(*this);
             components.client_erase(comp, compID);
-            if(compID == ServerClientID{0, 0})
-                return false;
-            DrawComponent::client_send_erase(*this, compID);
             reset_tools();
             return true;
         },
         [&, comp, placement]() {
-            if(components.get_id(comp) != ServerClientID{0, 0})
+            if(comp->collabListInfo.lock())
                 return false;
             components.client_insert(placement, comp);
             comp->final_update(*this); // Method to recover after an undo that happened while drawing a component
-            comp->client_send_place(*this, placement);
+            comp->client_send_place(*this);
             reset_tools();
             return true;
         }
@@ -483,30 +481,27 @@ void DrawingProgram::add_undo_place_component(uint64_t placement, const std::sha
 void DrawingProgram::add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps) {
     world.undo.push(UndoManager::UndoRedoPair{
         [&, comps]() {
-            std::vector<ServerClientID> compIDs;
-            for(auto& c : comps) {
-                ServerClientID compID;
-                components.client_erase(c, compID);
-                compIDs.emplace_back(compID);
-            }
             bool toRet = true;
-            for(auto& compID : compIDs) {
-                if(compID == ServerClientID{0, 0})
+            for(auto& c : comps) {
+                if(!c->collabListInfo.lock())
                     toRet = false;
-                else
-                    DrawComponent::client_send_erase(*this, compID);
+                else {
+                    ServerClientID compID;
+                    c->client_send_erase(*this);
+                    components.client_erase(c, compID);
+                }
             }
             reset_tools();
             return toRet;
         },
         [&, comps, placement]() {
             for(auto& c : comps) 
-                if(components.get_id(c) != ServerClientID{0, 0})
+                if(c->collabListInfo.lock())
                     return false;
             for(auto& c : comps | std::views::reverse) {
                 components.client_insert(placement, c);
                 c->final_update(*this); // Method to recover after an undo that happened while drawing a component
-                c->client_send_place(*this, placement);
+                c->client_send_place(*this);
             }
             reset_tools();
             return true;

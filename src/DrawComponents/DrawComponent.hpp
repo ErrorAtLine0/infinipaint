@@ -87,12 +87,12 @@ class DrawComponent {
         bool bounds_draw_check(const DrawData& drawData) const;
 
         void check_timers(DrawingProgram& drawP);
-        void client_send_place(DrawingProgram& drawP, uint64_t placement);
-        static void client_send_erase(DrawingProgram& drawP, ServerClientID id);
-        void client_send_update_temp(DrawingProgram& drawP, ServerClientID id);
-        void client_send_update_final(DrawingProgram& drawP, ServerClientID id);
-        void client_send_transform_temp(DrawingProgram& drawP, ServerClientID id);
-        void client_send_transform_final(DrawingProgram& drawP, ServerClientID id);
+        void client_send_place(DrawingProgram& drawP);
+        void client_send_erase(DrawingProgram& drawP);
+        void client_send_update_temp(DrawingProgram& drawP);
+        void client_send_update_final(DrawingProgram& drawP);
+        void client_send_transform_temp(DrawingProgram& drawP);
+        void client_send_transform_final(DrawingProgram& drawP);
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
 
