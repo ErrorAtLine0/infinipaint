@@ -57,9 +57,14 @@ DrawingProgram::DrawingProgram(World& initWorld):
     };
     components.clientInsertCallback = [&](const CollabListType::ObjectInfoPtr& c) {
         compCache.add_component(c);
+        DrawComponentType t = c->obj->get_type();
+        if(t == DRAWCOMPONENT_IMAGE || t == DRAWCOMPONENT_TEXTBOX)
+            updateableComponents.emplace(c->obj);
     };
     components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {
         compCache.erase_component(c);
+        delayedUpdateTransformComponents.erase(c->obj);
+        updateableComponents.erase(c->obj);
     };
     components.clientServerLastPosShiftCallback = [&](uint64_t lastShiftPos) {
         compCache.invalidate_cache_before_pos(lastShiftPos);
@@ -87,6 +92,7 @@ void DrawingProgram::init_client_callbacks() {
         else {
             comp->delayedUpdatePtr = DrawComponent::allocate_comp_type(comp->get_type());
             message(*comp->delayedUpdatePtr);
+            delayedUpdateTransformComponents.emplace(comp);
         }
     });
     world.con.client_add_recv_callback(CLIENT_TRANSFORM_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
@@ -107,6 +113,7 @@ void DrawingProgram::init_client_callbacks() {
         else {
             comp->delayedCoordinateSpace = std::make_shared<CoordSpaceHelper>();
             message(*comp->delayedCoordinateSpace);
+            delayedUpdateTransformComponents.emplace(comp);
         }
     });
     world.con.client_add_recv_callback(CLIENT_PLACE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
@@ -125,6 +132,18 @@ void DrawingProgram::init_client_callbacks() {
         message(cToRemove);
         components.server_erase(cToRemove);
     });
+}
+
+void DrawingProgram::check_delayed_update_transform_timers() {
+    std::erase_if(delayedUpdateTransformComponents, [&](auto& comp) {
+        comp->check_timers(*this);
+        return !comp->delayedUpdatePtr && !comp->delayedCoordinateSpace;
+    });
+}
+
+void DrawingProgram::check_updateable_components() {
+    for(auto& comp : updateableComponents)
+        comp->update(*this);
 }
 
 void DrawingProgram::free_collider_memory() {
@@ -354,10 +373,8 @@ void DrawingProgram::update() {
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;
 
-    for(auto& c : components.client_list()) {
-        c->obj->check_timers(*this);
-        c->obj->update(*this);
-    }
+    check_delayed_update_transform_timers();
+    check_updateable_components();
 
     compCache.update();
 }
