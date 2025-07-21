@@ -47,7 +47,7 @@ class DrawBrushStroke : public DrawComponent {
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 
         sk_sp<SkVertices> vertices;
-        std::array<sk_sp<SkVertices>, 5> verticesMipMap;
+        std::array<sk_sp<SkVertices>, 3> verticesMipMap;
         SCollision::BVHContainer<float> collisionTree;
 
     private:

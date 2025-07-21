@@ -101,23 +101,12 @@ void DrawBrushStroke::initialize_draw_data(DrawingProgram& drawP) {
         vertices_to_draw_data(vertices, vertexData);
         vertexData.clear();
 
-        create_triangles(triangleFunc, points, 2);
+        create_triangles(triangleFunc, points, 4);
         vertices_to_draw_data(verticesMipMap[0], vertexData);
         vertexData.clear();
 
-        create_triangles(triangleFunc, points, 4);
-        vertices_to_draw_data(verticesMipMap[1], vertexData);
-        vertexData.clear();
-
-        create_triangles(triangleFunc, points, 6);
-        vertices_to_draw_data(verticesMipMap[2], vertexData);
-        vertexData.clear();
-
-        create_triangles(triangleFunc, points, 10);
-        vertices_to_draw_data(verticesMipMap[3], vertexData);
-
         create_triangles(triangleFunc, points, 30);
-        vertices_to_draw_data(verticesMipMap[4], vertexData);
+        vertices_to_draw_data(verticesMipMap[1], vertexData);
     }
 }
 

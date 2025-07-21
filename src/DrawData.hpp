@@ -18,8 +18,5 @@ struct DrawData {
     WorldScalar clampDrawMaximum;
     WorldScalar mipMapLevelOne;
     WorldScalar mipMapLevelTwo;
-    WorldScalar mipMapLevelThree;
-    WorldScalar mipMapLevelFour;
-    WorldScalar mipMapLevelFive;
     void refresh_draw_optimizing_values();
 };
