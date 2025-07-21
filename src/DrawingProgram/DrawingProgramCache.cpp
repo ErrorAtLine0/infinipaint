@@ -36,7 +36,7 @@ void DrawingProgramCache::build(std::vector<CollabListType::ObjectInfoPtr> compo
 }
 
 void DrawingProgramCache::update() {
-    if(unsortedComponents.size() >= 750 && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(7))
+    if(unsortedComponents.size() >= 1000 && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(7))
         force_rebuild();
 }
 

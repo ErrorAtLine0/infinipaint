@@ -43,7 +43,7 @@ class DrawComponent {
                 float rotation;
                 float scale;
             } transformData;
-            bool shouldDraw = true;
+            bool shouldDraw = false;
             unsigned mipmapLevel = 0;
         } drawSetupData;
 
