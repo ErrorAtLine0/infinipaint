@@ -176,7 +176,7 @@ bool DrawComponent::collides_with_cam_coords(const CoordSpaceHelper& camCoords, 
 bool DrawComponent::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam, bool colliderAllocated) {
     if((camCoords.inverseScale << DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR) < coords.inverseScale) // Object is too large, just dismiss the collision
         return false;
-    else if((camCoords.inverseScale >> DRAWCOMP_MIN_SHIFT_BEFORE_DISAPPEAR) >= coords.inverseScale) {
+    else if((camCoords.inverseScale >> DRAWCOMP_COLLIDE_MIN_SHIFT_TINY) >= coords.inverseScale) {
         if(!worldAABB)
             return false;
         return SCollision::collide(checkAgainstCam, camCoords.to_space(worldAABB->min));

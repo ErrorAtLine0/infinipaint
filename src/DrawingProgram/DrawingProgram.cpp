@@ -163,13 +163,7 @@ void DrawingProgram::parallel_loop_all_components(std::function<void(const std::
 }
 
 void DrawingProgram::check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
-    for(auto& c : components.client_list())
-        c->obj->globalCollisionCheck = false;
-    compCache.traverse_bvh_run_function(checkAgainstWorld.bounds, [&](const std::shared_ptr<DrawingProgramCache::BVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
-        for(auto& c : comps)
-            c->obj->globalCollisionCheck = c->obj->collides_with(world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, colliderAllocated);
-        return true;
-    });
+    compCache.traverse_bvh_collision_check(checkAgainstWorld, checkAgainstCam);
 }
 
 void DrawingProgram::check_all_collisions(const SCollision::ColliderCollection<WorldScalar>& checkAgainst) {

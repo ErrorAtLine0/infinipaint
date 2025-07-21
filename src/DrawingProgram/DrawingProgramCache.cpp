@@ -77,6 +77,37 @@ std::pair<std::shared_ptr<DrawingProgramCache::BVHNode>, std::vector<DrawingProg
     return {nullptr, bvhNode->components.end()};
 }
 
+void DrawingProgramCache::traverse_bvh_collision_check(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
+    for(auto& c : drawP.components.client_list())
+        c->obj->globalCollisionCheck = false;
+    for(auto& c : unsortedComponents)
+        c->obj->globalCollisionCheck = c->obj->collides_with(drawP.world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, drawP.colliderAllocated);
+    traverse_bvh_collision_check_recursive(bvhRoot, checkAgainstWorld, checkAgainstCam);
+}
+
+void DrawingProgramCache::traverse_bvh_collision_check_recursive_tiny(const std::shared_ptr<BVHNode>& bvhNode, bool collided) {
+    if(bvhNode) {
+        for(auto& c : bvhNode->components)
+            c->obj->globalCollisionCheck = collided;
+        for(auto& p : bvhNode->children)
+            traverse_bvh_collision_check_recursive_tiny(p, collided);
+    }
+}
+
+void DrawingProgramCache::traverse_bvh_collision_check_recursive(const std::shared_ptr<BVHNode>& bvhNode, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
+    if(bvhNode) {
+        auto& camCoords = drawP.world.drawData.cam.c;
+        if((camCoords.inverseScale >> DRAWCOMP_COLLIDE_MIN_SHIFT_TINY) >= bvhNode->coords.inverseScale)
+            traverse_bvh_collision_check_recursive_tiny(bvhNode, SCollision::collide(checkAgainstCam, camCoords.to_space(bvhNode->bounds.min)));
+        else {
+            for(auto& c : bvhNode->components)
+                c->obj->globalCollisionCheck = c->obj->collides_with(drawP.world.drawData.cam.c, checkAgainstWorld, checkAgainstCam, drawP.colliderAllocated);
+            for(auto& p : bvhNode->children)
+                traverse_bvh_collision_check_recursive(p, checkAgainstWorld, checkAgainstCam);
+        }
+    }
+}
+
 void DrawingProgramCache::traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<BVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f) {
     f(nullptr, unsortedComponents);
     traverse_bvh_run_function_recursive(bvhRoot, aabb, f);
