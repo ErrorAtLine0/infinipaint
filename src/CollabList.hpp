@@ -163,11 +163,12 @@ template <typename T, typename IDType> class CollabList {
             newObj->syncIgnore = false;
             newObj->id = id;
             newObj->obj = item;
-            newObj->pos = clientSideList.size() - 1;
             item->collabListInfo = newObj;
 
             serverSideList.emplace_back(newObj);
             clientSideList.emplace_back(newObj);
+
+            newObj->pos = clientSideList.size() - 1;
 
             if(clientInsertCallback)
                 clientInsertCallback(newObj);

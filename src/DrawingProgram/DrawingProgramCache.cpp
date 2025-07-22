@@ -11,7 +11,9 @@
     #include <include/gpu/ganesh/SkSurfaceGanesh.h>
 #endif
 
-#define MAXIMUM_DRAW_CACHE_SURFACES 32
+#define MAXIMUM_DRAW_CACHE_SURFACES 64
+
+std::unordered_set<std::shared_ptr<DrawingProgramCache::BVHNode>> DrawingProgramCache::nodesWithCachedSurfaces;
 
 DrawingProgramCache::DrawingProgramCache(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -22,7 +24,7 @@ DrawingProgramCache::DrawingProgramCache(DrawingProgram& initDrawP):
 void DrawingProgramCache::build(std::vector<CollabListType::ObjectInfoPtr> components) {
     bvhRoot = std::make_shared<BVHNode>();
     unsortedComponents.clear();
-    nodesWithCachedSurfaces.clear();
+    clear_own_cached_surfaces();
     std::erase_if(components, [&](auto& c) {
         if(!c->obj->worldAABB) {
             unsortedComponents.emplace_back(c);
@@ -33,6 +35,12 @@ void DrawingProgramCache::build(std::vector<CollabListType::ObjectInfoPtr> compo
     });
     build_bvh_node(bvhRoot, components);
     lastBvhBuildTime = std::chrono::steady_clock::now();
+}
+
+void DrawingProgramCache::clear_own_cached_surfaces() {
+    std::erase_if(nodesWithCachedSurfaces, [&](auto& s) {
+        return s->drawCache.value().attachedDrawP == &drawP;
+    });
 }
 
 void DrawingProgramCache::update() {
@@ -257,10 +265,10 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<BVHNode>& bvh
     cacheDrawData.cam.changed = nullptr;
     cacheDrawData.cam.set_viewing_area(bvhNode->resolution.cast<float>());
     cacheDrawData.refresh_draw_optimizing_values();
-    drawP.draw_components_to_canvas(cacheCanvas, cacheDrawData, false);
 
-    drawCache.lastDrawnComponentPlacement = drawP.components.client_list().size() - 1;
+    drawCache.lastDrawnComponentPlacement = drawP.draw_components_to_canvas(cacheCanvas, cacheDrawData, false);
     drawCache.lastRenderTime = std::chrono::steady_clock::now();
+    drawCache.attachedDrawP = &drawP;
 
     bvhNode->drawCache = drawCache; // Set the drawCache after rendering is done, so that the draw function doesnt assume we have this node cached
 

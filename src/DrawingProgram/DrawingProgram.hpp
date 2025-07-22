@@ -86,7 +86,7 @@ class DrawingProgram {
         void add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp);
         void add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps);
 
-        void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache);
+        uint64_t draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache);
 
         BrushTool brushTool;
         EraserTool eraserTool;

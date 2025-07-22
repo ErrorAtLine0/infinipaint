@@ -30,12 +30,13 @@ class DrawingProgramCache {
                 uint64_t lastDrawnComponentPlacement;
                 sk_sp<SkSurface> surface;
                 std::chrono::steady_clock::time_point lastRenderTime;
+                DrawingProgram* attachedDrawP;
             };
 
             std::optional<DrawCacheData> drawCache;
         };
 
-        std::unordered_set<std::shared_ptr<BVHNode>> nodesWithCachedSurfaces;
+        static std::unordered_set<std::shared_ptr<BVHNode>> nodesWithCachedSurfaces;
 
         void traverse_bvh_collision_check(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
         void traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<BVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f);
@@ -46,6 +47,7 @@ class DrawingProgramCache {
 
         void invalidate_cache_before_pos(uint64_t placementToInvalidateAt);
     private:
+        void clear_own_cached_surfaces();
         void traverse_bvh_collision_check_recursive(const std::shared_ptr<BVHNode>& bvhNode, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
         void traverse_bvh_collision_check_recursive_tiny(const std::shared_ptr<BVHNode>& bvhNode);
 
