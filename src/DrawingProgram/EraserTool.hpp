@@ -10,10 +10,13 @@ class EraserTool {
         EraserTool(DrawingProgram& initDrawP);
         void gui_toolbox();
         void tool_update();
+        void reset_tool();
         void draw(SkCanvas* canvas, const DrawData& drawData);
     private:
+        std::unordered_set<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfoPtr> erasedComponents;
+        std::unordered_set<std::shared_ptr<DrawingProgramCache::BVHNode>> erasedBVHNodes;
 
-        std::vector<std::pair<uint64_t, std::shared_ptr<DrawComponent>>> erasedComponents; // <placement order, object>
+        void move_erased_components_from_bvh_nodes_recursive(const std::shared_ptr<DrawingProgramCache::BVHNode>& bvhNode);
 
         DrawingProgram& drawP;
 };

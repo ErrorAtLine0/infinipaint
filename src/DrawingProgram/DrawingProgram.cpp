@@ -66,6 +66,16 @@ DrawingProgram::DrawingProgram(World& initWorld):
         delayedUpdateTransformComponents.erase(c->obj);
         updateableComponents.erase(c->obj);
     };
+    components.clientEraseSetCallback = [&](const std::unordered_set<CollabListType::ObjectInfoPtr>& comps) {
+        for(auto& c : comps) {
+            delayedUpdateTransformComponents.erase(c->obj);
+            updateableComponents.erase(c->obj);
+        }
+    };
+    components.clientInsertOrderedVectorCallback = [&](const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+        for(auto& c : comps)
+            components.clientInsertCallback(c);
+    };
     components.clientServerLastPosShiftCallback = [&](uint64_t lastShiftPos) {
         compCache.invalidate_cache_before_pos(lastShiftPos);
     };
@@ -445,6 +455,7 @@ void DrawingProgram::reset_tools() {
     rectDrawTool.reset_tool();
     ellipseDrawTool.reset_tool();
     editTool.reset_tool();
+    eraserTool.reset_tool();
     reset_selection();
 }
 
@@ -611,7 +622,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     }
 }
 
-uint64_t DrawingProgram::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache) {
+void DrawingProgram::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache, uint64_t* lastDrawnComponentPlacement) {
     uint64_t lastComponentDrawn = 0;
 
     std::vector<std::shared_ptr<DrawingProgramCache::BVHNode>> cachedNodesToDraw;
@@ -681,7 +692,8 @@ uint64_t DrawingProgram::draw_components_to_canvas(SkCanvas* canvas, const DrawD
         canvas->restore();
     }
 
-    return lastComponentDrawn;
+    if(lastDrawnComponentPlacement)
+        *lastDrawnComponentPlacement = lastComponentDrawn;
 }
 
 Vector4f* DrawingProgram::get_foreground_color_ptr() {
