@@ -274,12 +274,11 @@ void TextBoxTool::update_textbox_network(const std::shared_ptr<DrawTextBox>& tex
 }
 
 void TextBoxTool::commit() {
-    if(controls.intermediateItem) {
+    if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         controls.intermediateItem->client_send_update_final(drawP);
         controls.intermediateItem->final_update(drawP);
-        //controls.intermediateItem->currentlyUpdating = true; // It remains true, as we are about to start writing into the text box we just placed
-        controls.intermediateItem = nullptr;
     }
+    controls.intermediateItem = nullptr; 
 }
 
 void TextBoxTool::draw(SkCanvas* canvas, const DrawData& drawData) {

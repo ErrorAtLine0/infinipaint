@@ -66,7 +66,7 @@ void EditTool::add_point_handle(const HandleData& handle) {
 
 void EditTool::reset_tool() {
     auto a = controls.compToEdit.lock();
-    if(a) {
+    if(a && a->collabListInfo.lock()) {
         switch(a->get_type()) {
             case DRAWCOMPONENT_TEXTBOX:
                 drawP.textBoxTool.commit_edit_updates(std::static_pointer_cast<DrawTextBox>(a), controls.prevData);

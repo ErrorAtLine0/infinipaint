@@ -16,7 +16,6 @@
 BrushTool::BrushTool(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {
-    controls.intermediateItem = std::make_shared<DrawBrushStroke>();
 }
 
 void BrushTool::reset_tool() {
@@ -172,13 +171,13 @@ void BrushTool::gui_toolbox() {
 }
 
 void BrushTool::commit_stroke() {
-    if(controls.intermediateItem) {
+    if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         if(!controls.intermediateItem->d.points.empty()) {
             controls.intermediateItem->client_send_update_final(drawP);
             controls.intermediateItem->final_update(drawP);
-            controls.intermediateItem = nullptr; 
         }
     }
+    controls.intermediateItem = nullptr; 
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {

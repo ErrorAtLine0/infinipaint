@@ -140,11 +140,11 @@ void RectDrawTool::tool_update() {
 }
 
 void RectDrawTool::commit_rectangle() {
-    if(controls.intermediateItem) {
+    if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         controls.intermediateItem->client_send_update_final(drawP);
         controls.intermediateItem->final_update(drawP);
-        controls.intermediateItem = nullptr;
     }
+    controls.intermediateItem = nullptr; 
 }
 
 void RectDrawTool::draw(SkCanvas* canvas, const DrawData& drawData) {

@@ -140,11 +140,11 @@ void EllipseDrawTool::tool_update() {
 }
 
 void EllipseDrawTool::commit() {
-    if(controls.intermediateItem) {
+    if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         controls.intermediateItem->client_send_update_final(drawP);
         controls.intermediateItem->final_update(drawP);
-        controls.intermediateItem = nullptr;
     }
+    controls.intermediateItem = nullptr; 
 }
 
 void EllipseDrawTool::draw(SkCanvas* canvas, const DrawData& drawData) {
