@@ -49,7 +49,8 @@ DrawingProgram::DrawingProgram(World& initWorld):
     inkDropperTool(*this),
     screenshotTool(*this),
     editTool(*this),
-    imageTool(*this)
+    imageTool(*this),
+    selection(*this)
 {
     components.updateCallback = [&]() {
         if(&world == world.main.world.get())
@@ -170,18 +171,6 @@ void DrawingProgram::allocate_collider_memory() {
 
 void DrawingProgram::parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func) {
     parallel_loop_container(components.client_list(), func);
-}
-
-void DrawingProgram::check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
-    compCache.traverse_bvh_collision_check(checkAgainstWorld, checkAgainstCam);
-}
-
-void DrawingProgram::check_all_collisions(const SCollision::ColliderCollection<WorldScalar>& checkAgainst) {
-    check_all_collisions_base(checkAgainst, world.drawData.cam.c.world_collider_to_coords<SCollision::ColliderCollection<float>>(checkAgainst));
-}
-
-void DrawingProgram::check_all_collisions_transform(const SCollision::ColliderCollection<float>& checkAgainst) {
-    check_all_collisions_base(world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(checkAgainst), checkAgainst);
 }
 
 std::unordered_set<ServerClientID> DrawingProgram::get_used_resources() {
@@ -339,8 +328,6 @@ void DrawingProgram::update() {
         controls.selectedTool = TOOL_SCREENSHOT;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EDIT).pressed)
         controls.selectedTool = TOOL_EDIT;
-    else if(world.main.input.key(InputManager::KEY_PASTE).pressed)
-        rectSelectTool.paste_clipboard();
 
     switch(controls.selectedTool) {
         case TOOL_BRUSH:
@@ -381,6 +368,7 @@ void DrawingProgram::update() {
     check_updateable_components();
 
     compCache.update();
+    selection.update();
 }
 
 void DrawingProgram::drag_drop_update() {
@@ -473,7 +461,7 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
     parallel_loop_all_components([&](const auto& c){
         c->obj->final_update(*this, false);
     });
-    compCache.force_rebuild();
+    compCache.force_rebuild(components.client_list());
 }
 
 void DrawingProgram::reset_selection() {
@@ -583,9 +571,10 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         else {
             SkCanvas* drawProgCacheCanvas = world.main.drawProgCache.surface->getCanvas();
             drawProgCacheCanvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
-            compCache.refresh_all_draw_cache(drawProgCacheCanvas, drawData);
-            draw_components_to_canvas(drawProgCacheCanvas, drawData, false);
+            compCache.refresh_all_draw_cache(drawData);
+            compCache.draw_components_to_canvas(drawProgCacheCanvas, drawData);
             canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
+            selection.draw(canvas, drawData);
         }
     }
 
@@ -622,96 +611,6 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     }
 }
 
-void DrawingProgram::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache, uint64_t* lastDrawnComponentPlacement) {
-    uint64_t lastComponentDrawn = 0;
-
-    std::vector<std::shared_ptr<DrawingProgramCache::BVHNode>> cachedNodesToDraw;
-    std::vector<CollabListType::ObjectInfoPtr> uncachedCompsToDraw;
-
-    compCache.traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCache::BVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
-        if(!dontUseCache && node && node->drawCache && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
-            cachedNodesToDraw.emplace_back(node);
-            return false;
-        }
-
-        for(auto& c : comps)
-            c->obj->calculate_draw_transform(drawData);
-        
-        uncachedCompsToDraw.insert(uncachedCompsToDraw.end(), comps.begin(), comps.end());
-
-        return true;
-    });
-
-    std::sort(uncachedCompsToDraw.begin(), uncachedCompsToDraw.end(), [](auto& a, auto& b) {
-        return a->pos < b->pos;
-    });
-    std::sort(cachedNodesToDraw.begin(), cachedNodesToDraw.end(), [](auto& a, auto& b) {
-        return a->drawCache.value().lastDrawnComponentPlacement < b->drawCache.value().lastDrawnComponentPlacement;
-    });
-    size_t nextCacheToRender = 0;
-    for(auto& c : uncachedCompsToDraw) {
-        for(;;) {
-            if(nextCacheToRender >= cachedNodesToDraw.size() || c->pos < cachedNodesToDraw[nextCacheToRender]->drawCache.value().lastDrawnComponentPlacement)
-                break;
-            auto& bvhNode = cachedNodesToDraw[nextCacheToRender];
-            auto& drawCache = bvhNode->drawCache.value();
-            canvas->save();
-            bvhNode->coords.transform_sk_canvas(canvas, drawData);
-            drawCache.lastRenderTime = std::chrono::steady_clock::now();
-
-            lastComponentDrawn = std::max(lastComponentDrawn, drawCache.lastDrawnComponentPlacement);
-        
-            SkPaint p;
-            p.setBlendMode(SkBlendMode::kSrc);
-
-            // Note, no mipmaps here. You might need to generate mipmaps in the future (withDefaultMipmaps)
-            canvas->drawImage(drawCache.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &p);
-
-            canvas->restore();
-            nextCacheToRender++;
-        }
-        c->obj->draw(canvas, drawData);
-        c->obj->drawSetupData.shouldDraw = false;
-        lastComponentDrawn = std::max(lastComponentDrawn, c->pos);
-    }
-    for(;nextCacheToRender < cachedNodesToDraw.size(); nextCacheToRender++) {
-        auto& bvhNode = cachedNodesToDraw[nextCacheToRender];
-        auto& drawCache = bvhNode->drawCache.value();
-        canvas->save();
-        bvhNode->coords.transform_sk_canvas(canvas, drawData);
-        drawCache.lastRenderTime = std::chrono::steady_clock::now();
-
-        lastComponentDrawn = std::max(lastComponentDrawn, drawCache.lastDrawnComponentPlacement);
-
-        SkPaint p;
-        p.setBlendMode(SkBlendMode::kSrc);
-
-        // Note, no mipmaps here. You might need to generate mipmaps in the future (withDefaultMipmaps)
-        canvas->drawImage(drawCache.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &p);
-
-        canvas->restore();
-    }
-
-    if(lastDrawnComponentPlacement)
-        *lastDrawnComponentPlacement = lastComponentDrawn;
-}
-
 Vector4f* DrawingProgram::get_foreground_color_ptr() {
     return &controls.foregroundColor;
-}
-
-void DrawingProgram::draw_cache(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawComponent>& lastComp) {
-    SkCanvas* cacheCanvas = world.main.drawProgCache.canvas;
-    cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-    parallel_loop_all_components([&](auto& c) {
-        c->obj->calculate_draw_transform(drawData);
-    });
-    for(auto& c : components.client_list()) {
-        if(c->obj == lastComp)
-            break;
-        c->obj->draw(cacheCanvas, drawData);
-    }
-    canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
-    world.main.drawProgCache.firstCompUpdate = lastComp;
-    world.main.drawProgCache.refresh = false;
 }

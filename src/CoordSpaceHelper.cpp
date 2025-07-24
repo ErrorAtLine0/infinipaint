@@ -114,24 +114,21 @@ Vector2f CoordSpaceHelper::get_mouse_pos(const World& w) const {
     return to_space(w.drawData.cam.c.from_space(w.main.input.mouse.pos));
 }
 
-//SkMatrix CoordSpaceHelper::get_sk_matrix(const DrawData& drawData) const {
-//    //WorldTransform newTransform = drawData.cam.transform * inverseTransform;
-//    //const auto& newMat = newTransform.matrix();
-//    //return SkMatrix::MakeAll(newMat(0, 0), newMat(0, 1), newMat(0, 2),
-//    //                         newMat(1, 0), newMat(1, 1), newMat(1, 2),
-//    //                         0.0f, 0.0f, 1.0f);
-//    return SkMatrix::I();
-//}
-//
-//SkMatrix CoordSpaceHelper::get_sk_matrix_temp(const WorldTransform& tempTransform, const DrawData& drawData) const {
-//    //WorldTransform newTransform = drawData.cam.transform * tempTransform * inverseTransform;
-//    //const auto& newMat = newTransform.matrix();
-//    //return SkMatrix::MakeAll(newMat(0, 0), newMat(0, 1), newMat(0, 2),
-//    //                         newMat(1, 0), newMat(1, 1), newMat(1, 2),
-//    //                         0.0f, 0.0f, 1.0f);
-//    return SkMatrix::I();
-//}
-//
+CoordSpaceHelper CoordSpaceHelper::other_coord_space_to_this_space(const CoordSpaceHelper& other) const {
+    CoordSpaceHelper toRet;
+    toRet.pos = (other.pos - pos) / inverseScale;
+    toRet.rotation = other.rotation;
+    toRet.inverseScale = other.inverseScale / inverseScale;
+    return toRet;
+}
+
+CoordSpaceHelper CoordSpaceHelper::other_coord_space_from_this_space(const CoordSpaceHelper& other) const {
+    CoordSpaceHelper toRet;
+    toRet.pos = (other.pos * inverseScale) + pos;
+    toRet.rotation = other.rotation;
+    toRet.inverseScale = other.inverseScale * inverseScale;
+    return toRet;
+}
 
 void CoordSpaceHelper::transform_sk_canvas(SkCanvas* canvas, const DrawData& drawData) const {
     Vector2f translateSpace = -to_space(drawData.cam.c.pos);

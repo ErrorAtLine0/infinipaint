@@ -123,36 +123,49 @@ void EditTool::edit_start(const std::shared_ptr<DrawComponent>& comp) {
 }
 
 void EditTool::tool_update() {
-    using namespace SCollision;
-    ColliderCollection<float> ci;
-    ci.circle.emplace_back(Circle<float>{drawP.world.main.input.mouse.pos, 1.0f});
-    ci.recalculate_bounds();
-
     if(!controls.isEditing) {
+        SCollision::AABB<WorldScalar> mouseAABB{drawP.world.get_mouse_world_pos() - WorldVec{0.5f, 0.5f}, drawP.world.get_mouse_world_pos() + WorldVec{0.5f, 0.5f}};
+        SCollision::ColliderCollection<WorldScalar> cMouseAABB;
+        cMouseAABB.aabb.emplace_back(mouseAABB);
+        cMouseAABB.recalculate_bounds();
+
         if(drawP.controls.leftClick) {
-            drawP.check_all_collisions_transform(ci);
-            for(auto& comp : drawP.components.client_list() | std::views::reverse) {
-                if(comp->obj->globalCollisionCheck) {
-                    edit_start(comp->obj);
-                    break;
+            CollabListType::ObjectInfoPtr lastSelectedObj;
+            uint64_t lastPos = 0;
+
+            drawP.compCache.traverse_bvh_run_function(mouseAABB, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {
+                for(auto& c : components) {
+                    if(c->pos > lastPos && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cMouseAABB, drawP.colliderAllocated)) {
+                        lastSelectedObj = c;
+                        lastPos = c->pos;
+                    }
                 }
-            }
+                return true;
+            });
+
+            if(lastSelectedObj)
+                edit_start(lastSelectedObj->obj);
         }
     }
     else {
+        SCollision::Circle<float> mouseCircle{drawP.world.main.input.mouse.pos, 1.0f};
+        SCollision::ColliderCollection<float> cMouseCircle;
+        cMouseCircle.circle.emplace_back(mouseCircle);
+        cMouseCircle.recalculate_bounds();
+
         std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();
         if(a) {
             bool isMovingPoint = false;
             bool clickedAway = false;
             if(!controls.pointDragging && drawP.controls.leftClick) {
                 for(HandleData& h : controls.pointHandles) {
-                    if(SCollision::collide(ci, Circle<float>(drawP.world.drawData.cam.c.to_space(a->coords.from_space(*h.p)), DRAG_POINT_RADIUS))) {
+                    if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(a->coords.from_space(*h.p)), DRAG_POINT_RADIUS))) {
                         controls.pointDragging = &h;
                         isMovingPoint = true;
                         break;
                     }
                 }
-                if(!isMovingPoint && !a->collides_with_cam_coords(drawP.world.drawData.cam.c, ci, drawP.colliderAllocated))
+                if(!isMovingPoint && !a->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle, drawP.colliderAllocated))
                     clickedAway = true;
             }
             else if(controls.pointDragging) {

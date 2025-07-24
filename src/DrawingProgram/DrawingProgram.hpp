@@ -19,6 +19,7 @@
 #include "ScreenshotTool.hpp"
 #include "EditTool.hpp"
 #include "ImageTool.hpp"
+#include "DrawingProgramSelection.hpp"
 #include "../CollabList.hpp"
 
 class World;
@@ -51,8 +52,6 @@ class DrawingProgram {
 
         DrawingProgramCache compCache;
 
-        typedef CollabList<std::shared_ptr<DrawComponent>, ServerClientID> CollabListType;
-
         CollabListType components;
 
         std::unordered_set<std::shared_ptr<DrawComponent>> updateableComponents;
@@ -69,13 +68,6 @@ class DrawingProgram {
 
         void add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos);
 
-        void draw_cache(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawComponent>& lastComp);
-
-        void check_all_collisions_base(const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
-        void check_all_collisions(const SCollision::ColliderCollection<WorldScalar>& checkAgainst);
-        void check_all_collisions_transform(const SCollision::ColliderCollection<float>& checkAgainst);
-
-        void add_variable_width_line(SkPath& p, const DrawData& drawData, const WorldVec& p1, const WorldVec& p2, float w1, float w2);
         void reset_selection();
         void reset_tools();
 
@@ -85,8 +77,6 @@ class DrawingProgram {
 
         void add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp);
         void add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps);
-
-        void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, bool dontUseCache, uint64_t* lastDrawnComponentPlacement = nullptr);
 
         BrushTool brushTool;
         EraserTool eraserTool;
@@ -98,6 +88,8 @@ class DrawingProgram {
         ScreenshotTool screenshotTool;
         EditTool editTool;
         ImageTool imageTool;
+
+        DrawingProgramSelection selection;
 
         bool temporaryEraser = false;
 

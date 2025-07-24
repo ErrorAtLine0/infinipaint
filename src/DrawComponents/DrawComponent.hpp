@@ -6,7 +6,6 @@
 #include "../CoordSpaceHelper.hpp"
 #include "../Server/MainServer.hpp"
 #include "../CollabList.hpp"
-#include "../DrawingProgram/DrawingProgramCache.hpp"
 
 #ifndef IS_SERVER
 #include "../DrawData.hpp"
@@ -24,6 +23,10 @@
 #define DRAWCOMP_MIPMAP_LEVEL_TWO 5
 
 class DrawingProgram;
+class DrawComponent;
+class DrawingProgramCacheBVHNode;
+
+typedef CollabList<std::shared_ptr<DrawComponent>, ServerClientID> CollabListType;
 
 class DrawComponent {
     public:
@@ -64,15 +67,13 @@ class DrawComponent {
         std::chrono::time_point<std::chrono::steady_clock> tempServerTransformTimer;
         bool serverIsTempTransform = false;
 
-        std::weak_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo> collabListInfo;
-        std::weak_ptr<DrawingProgramCache::BVHNode> parentBvhNode;
+        std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
+        std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
 
         void server_update(MainServer& server, ServerClientID id);
 
 #ifndef IS_SERVER
         bool selected = false;
-
-        bool globalCollisionCheck = false;
 
         std::chrono::time_point<std::chrono::steady_clock> lastTransformTime;
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
@@ -115,4 +116,3 @@ class DrawComponent {
         virtual void allocate_collider() = 0;
 #endif
 };
-

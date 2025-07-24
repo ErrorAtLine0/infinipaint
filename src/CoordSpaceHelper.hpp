@@ -32,6 +32,9 @@ class CoordSpaceHelper {
         Vector2f dir_to_space(const WorldVec& coord) const;
         Vector2f normalized_dir_to_space(const WorldVec& coord) const;
 
+        CoordSpaceHelper other_coord_space_to_this_space(const CoordSpaceHelper& other) const;
+        CoordSpaceHelper other_coord_space_from_this_space(const CoordSpaceHelper& other) const;
+
         template <typename S, typename T> S collider_to_world(const T& collider) const {
             return collider.template transform<WorldScalar>(
                 [&coords = *this](const Vector2f& a) {

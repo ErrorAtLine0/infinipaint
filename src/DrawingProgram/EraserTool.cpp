@@ -31,7 +31,7 @@ void EraserTool::reset_tool() {
 
         drawP.world.undo.push(UndoManager::UndoRedoPair{
             [&, erasedCompVal = erasedComponents]() {
-                std::vector<DrawingProgram::CollabListType::ObjectInfoPtr> sortedObjects(erasedCompVal.begin(), erasedCompVal.end());
+                std::vector<CollabListType::ObjectInfoPtr> sortedObjects(erasedCompVal.begin(), erasedCompVal.end());
                 std::sort(sortedObjects.begin(), sortedObjects.end(), [](auto& a, auto& b) {
                     return a->pos < b->pos;
                 });
@@ -61,7 +61,7 @@ void EraserTool::reset_tool() {
 
                 drawP.reset_tools();
 
-                drawP.compCache.force_rebuild();
+                drawP.compCache.force_rebuild(drawP.components.client_list());
 
                 return true;
             }
@@ -97,10 +97,7 @@ void EraserTool::tool_update() {
             std::erase_if(comps, [&](auto& c) {
                 if(c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC, drawP.colliderAllocated)) {
                     erasedComponents.emplace(c);
-                    if(c->obj->worldAABB)
-                        drawP.compCache.invalidate_cache_at_aabb_before_pos(c->obj->worldAABB.value(), c->obj->collabListInfo.lock()->pos);
-                    else
-                        drawP.compCache.invalidate_cache_before_pos(c->obj->collabListInfo.lock()->pos);
+                    drawP.compCache.invalidate_cache_at_aabb_before_pos(c->obj->worldAABB.value(), c->obj->collabListInfo.lock()->pos);
                     return true;
                 }
                 return false;
@@ -112,7 +109,7 @@ void EraserTool::tool_update() {
         reset_tool();
 }
 
-void EraserTool::move_erased_components_from_bvh_nodes_recursive(const std::shared_ptr<DrawingProgramCache::BVHNode>& bvhNode) {
+void EraserTool::move_erased_components_from_bvh_nodes_recursive(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
     for(auto& c : bvhNode->components)
         erasedComponents.emplace(c);
     for(auto& p : bvhNode->children)
