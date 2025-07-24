@@ -33,7 +33,9 @@ void RectSelectTool::gui_toolbox() {
 }
 
 void RectSelectTool::reset_tool() {
+    drawP.selection.deselect_all();
     controls = RectSelectControls();
+    drawP.compCache.disableRefresh = false;
 }
 
 void RectSelectTool::tool_update() {
@@ -41,10 +43,16 @@ void RectSelectTool::tool_update() {
         case 0: {
             drawP.compCache.disableRefresh = false;
             if(drawP.controls.leftClick) {
-                reset_tool();
-                controls.coords = drawP.world.drawData.cam.c;
-                controls.selectStartAt = controls.coords.get_mouse_pos(drawP.world);
-                controls.selectionMode = 1;
+                if(drawP.selection.is_something_selected()) {
+                    if(!drawP.selection.mouse_collided_with_selection_aabb())
+                        reset_tool();
+                }
+                else {
+                    reset_tool();
+                    controls.coords = drawP.world.drawData.cam.c;
+                    controls.selectStartAt = controls.coords.get_mouse_pos(drawP.world);
+                    controls.selectionMode = 1;
+                }
             }
             break;
         }
@@ -62,6 +70,7 @@ void RectSelectTool::tool_update() {
                 drawP.selection.add_from_cam_coord_collider_to_selection(cC);
 
                 controls.selectionMode = 0;
+                drawP.compCache.disableRefresh = true;
             }
             break;
         }

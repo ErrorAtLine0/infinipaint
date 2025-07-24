@@ -22,19 +22,7 @@
 #include "../World.hpp"
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
-#include <execution>
-#ifdef __APPLE__
-    #define POOLSTL_STD_SUPPLEMENT
-    #include <poolstl.hpp>
-#endif
-
-template <typename ContainerType> void parallel_loop_container(ContainerType& c, std::function<void(typename ContainerType::value_type&)> func) {
-#ifdef __EMSCRIPTEN__
-    std::for_each(c.begin(), c.end(), func);
-#else
-    std::for_each(std::execution::par_unseq, c.begin(), c.end(), func);
-#endif
-}
+#include <Helpers/Parallel.hpp>
 
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
@@ -444,7 +432,6 @@ void DrawingProgram::reset_tools() {
     ellipseDrawTool.reset_tool();
     editTool.reset_tool();
     eraserTool.reset_tool();
-    reset_selection();
 }
 
 void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a) {
@@ -462,11 +449,6 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
         c->obj->final_update(*this, false);
     });
     compCache.force_rebuild(components.client_list());
-}
-
-void DrawingProgram::reset_selection() {
-    for(auto& c : components.client_list())
-        c->obj->selected = false;
 }
 
 void DrawingProgram::add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp) {
@@ -573,8 +555,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             drawProgCacheCanvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             compCache.refresh_all_draw_cache(drawData);
             compCache.draw_components_to_canvas(drawProgCacheCanvas, drawData);
+            selection.draw_components(drawProgCacheCanvas, drawData);
             canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
-            selection.draw(canvas, drawData);
+            selection.draw_gui(canvas, drawData);
         }
     }
 

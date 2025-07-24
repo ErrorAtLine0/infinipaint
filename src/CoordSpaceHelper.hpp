@@ -25,7 +25,13 @@ class CoordSpaceHelper {
         CoordSpaceHelper(const WorldVec& initPos, const WorldScalar& initInverseScale, double initRotation);
 
         Vector2f to_space(const WorldVec& coord) const;
+
+
         WorldVec from_space(Vector2f coord) const;
+
+        WorldVec from_space_world(const WorldVec& coord) const;
+        WorldVec to_space_world(const WorldVec& coord) const;
+
         WorldScalar scalar_from_space(float coord) const;
         float scalar_to_space(const WorldScalar& coord) const;
         WorldVec dir_from_space(Vector2f coord) const;

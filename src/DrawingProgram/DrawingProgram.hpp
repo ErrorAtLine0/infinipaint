@@ -68,7 +68,6 @@ class DrawingProgram {
 
         void add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos);
 
-        void reset_selection();
         void reset_tools();
 
         void drag_drop_update();
@@ -135,4 +134,5 @@ class DrawingProgram {
         friend class EditTool;
         friend class ImageTool;
         friend class DrawingProgramCache;
+        friend class DrawingProgramSelection;
 };

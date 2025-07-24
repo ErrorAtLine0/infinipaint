@@ -12,12 +12,29 @@ CoordSpaceHelper::CoordSpaceHelper(const WorldVec& initPos, const WorldScalar& i
     rotation(initRotation)
 {}
 
+WorldVec rotate_world_coord(const WorldVec& a, double rotationAngle) {
+    FixedPoint::Number<boost::multiprecision::cpp_int, 15> s = FixedPoint::Number<boost::multiprecision::cpp_int, 15>(std::sin(rotationAngle));
+    FixedPoint::Number<boost::multiprecision::cpp_int, 15> c = FixedPoint::Number<boost::multiprecision::cpp_int, 15>(std::cos(rotationAngle));
+    return {
+        a.x().multiply_different_precision(c) - a.y().multiply_different_precision(s),
+        a.x().multiply_different_precision(s) + a.y().multiply_different_precision(c)
+    };
+}
+
 Vector2f CoordSpaceHelper::to_space(const WorldVec& coord) const {
     return (Rotation2D<double>(-rotation) * ((coord - pos) / inverseScale).cast<double>()).cast<float>();
 }
 
 WorldVec CoordSpaceHelper::from_space(Vector2f coord) const {
     return ((Rotation2D<double>(rotation) * coord.cast<double>()).cast<WorldScalar>() * inverseScale + pos);
+}
+
+WorldVec CoordSpaceHelper::to_space_world(const WorldVec& coord) const {
+    return rotate_world_coord(((coord - pos) / inverseScale), -rotation);
+}
+
+WorldVec CoordSpaceHelper::from_space_world(const WorldVec& coord) const {
+    return rotate_world_coord(coord, rotation) * inverseScale + pos;
 }
 
 WorldScalar CoordSpaceHelper::scalar_from_space(float coord) const {

@@ -73,8 +73,6 @@ class DrawComponent {
         void server_update(MainServer& server, ServerClientID id);
 
 #ifndef IS_SERVER
-        bool selected = false;
-
         std::chrono::time_point<std::chrono::steady_clock> lastTransformTime;
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
 

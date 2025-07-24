@@ -2,6 +2,9 @@
 #include "DrawingProgram.hpp"
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include <Helpers/MathExtras.hpp>
+#include <Helpers/SCollision.hpp>
+#include <Helpers/Parallel.hpp>
 
 DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     cache(initDrawP),
@@ -56,21 +59,24 @@ bool DrawingProgramSelection::is_something_selected() {
 
 void DrawingProgramSelection::calculate_aabb() {
     if(is_something_selected()) {
-        selectionAABB = (*selectedSet.begin())->obj->worldAABB.value();
+        initialSelectionAABB = (*selectedSet.begin())->obj->worldAABB.value();
         for(auto& c : selectedSet)
-            selectionAABB.include_aabb_in_bounds(c->obj->worldAABB.value());
+            initialSelectionAABB.include_aabb_in_bounds(c->obj->worldAABB.value());
     }
 }
 
 void DrawingProgramSelection::deselect_all() {
-    for(auto& obj : selectedSet) {
-        obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
-        obj->obj->final_update(drawP);
+    if(is_something_selected()) {
+        std::vector<CollabListType::ObjectInfoPtr> a(selectedSet.begin(), selectedSet.end());
+        parallel_loop_container(a, [&](auto& obj) {
+            obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
+            obj->obj->final_update(drawP, false);
+        });
+        selectedSet.clear();
+        cache.clear();
+        selectionTransformCoords = CoordSpaceHelper();
+        drawP.compCache.force_rebuild(drawP.components.client_list());
     }
-    selectedSet.clear();
-    cache.clear();
-    selectionTransformCoords = CoordSpaceHelper();
-    drawP.compCache.force_rebuild(drawP.components.client_list());
 }
 
 void DrawingProgramSelection::update() {
@@ -79,26 +85,39 @@ void DrawingProgramSelection::update() {
             cache.force_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()));
         if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
             deselect_all();
-        if(drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held)
-            selectionTransformCoords.translate(WorldVec{0, -drawP.world.drawData.cam.c.inverseScale});
-        if(drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held)
-            selectionTransformCoords.translate(WorldVec{0, drawP.world.drawData.cam.c.inverseScale});
-        if(drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held)
-            selectionTransformCoords.translate(WorldVec{-drawP.world.drawData.cam.c.inverseScale, 0});
-        if(drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held)
-            selectionTransformCoords.translate(WorldVec{drawP.world.drawData.cam.c.inverseScale, 0});
         if(drawP.world.main.input.key(InputManager::KEY_TEXT_CTRL).held)
             selectionTransformCoords.scale_about_double(selectionTransformCoords.pos, 1.01);
         if(drawP.world.main.input.key(InputManager::KEY_TEXT_SHIFT).held)
             selectionTransformCoords.scale_about_double(selectionTransformCoords.pos, 0.99);
+
+        selectionRectMin = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
+        selectionRectMax = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
+
+        rebuild_cam_space();
+        if(drawP.controls.leftClick && mouse_collided_with_selection_aabb())
+            translation.happening = true;
+        else if(drawP.controls.leftClickHeld && translation.happening)
+            selectionTransformCoords.translate(drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.input.mouse.move));
+        else
+            translation.happening = false;
     }
 }
 
-bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
-    return false;
+void DrawingProgramSelection::rebuild_cam_space() {
+    std::array<WorldVec, 4> collideRectTriangleVerticesWorld = triangle_from_rect_points(selectionRectMin, selectionRectMax);
+    SCollision::ColliderCollection<WorldScalar> collideRectWorld;
+    collideRectWorld.triangle.emplace_back(collideRectTriangleVerticesWorld[0], collideRectTriangleVerticesWorld[1], collideRectTriangleVerticesWorld[2]);
+    collideRectWorld.triangle.emplace_back(collideRectTriangleVerticesWorld[0], collideRectTriangleVerticesWorld[2], collideRectTriangleVerticesWorld[3]);
+    collideRectWorld.recalculate_bounds();
+
+    camSpaceSelection = drawP.world.drawData.cam.c.world_collider_to_coords<SCollision::ColliderCollection<float>>(collideRectWorld);
 }
 
-void DrawingProgramSelection::draw(SkCanvas* canvas, const DrawData& drawData) {
+bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
+    return SCollision::collide(camSpaceSelection, drawP.world.main.input.mouse.pos);
+}
+
+void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {
     if(is_something_selected()) {
         DrawData selectionDrawData = drawData;
         selectionDrawData.cam.c = selectionTransformCoords.other_coord_space_to_this_space(selectionDrawData.cam.c);
@@ -107,13 +126,20 @@ void DrawingProgramSelection::draw(SkCanvas* canvas, const DrawData& drawData) {
 
         cache.refresh_all_draw_cache(selectionDrawData);
         cache.draw_components_to_canvas(canvas, selectionDrawData);
+    }
+}
 
+void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawData) {
+    if(is_something_selected() && !camSpaceSelection.triangle.empty()) {
         canvas->save();
-        selectionTransformCoords.transform_sk_canvas(canvas, selectionDrawData);
-        Vector2f minRectPos = selectionTransformCoords.to_space(selectionAABB.min);
-        Vector2f maxRectPos = selectionTransformCoords.to_space(selectionAABB.max);
-        SkPaint p{SkColor4f{0.0f, 0.0f, 1.0f, 0.3f}};
-        canvas->drawRect(SkRect::MakeLTRB(minRectPos.x(), minRectPos.y(), maxRectPos.x(), maxRectPos.y()), p);
+        SkPath selectionRectPath;
+        selectionRectPath.moveTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[0]));
+        selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[1]));
+        selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[2]));
+        selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[1].p[2]));
+        selectionRectPath.close();
+        SkPaint p{SkColor4f{0.3f, 0.6f, 0.9f, 0.4f}};
+        canvas->drawPath(selectionRectPath, p);
         canvas->restore();
     }
 }
