@@ -12,8 +12,11 @@ class DrawingProgramSelection {
         void draw_components(SkCanvas* canvas, const DrawData& drawData);
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
         bool is_something_selected();
-        bool mouse_collided_with_selection_aabb();
+        bool mouse_collided_with_selection();
     private:
+        bool mouse_collided_with_selection_aabb();
+        bool mouse_collided_with_scale_point();
+
         void calculate_aabb();
         void rebuild_cam_space();
 
@@ -28,7 +31,18 @@ class DrawingProgramSelection {
         DrawingProgramCache cache;
         DrawingProgram& drawP;
 
-        struct TranslationData {
-            bool happening = false;
-        } translation;
+        enum class TransformOperation {
+            NONE = 0,
+            TRANSLATE,
+            SCALE,
+            ROTATE
+        } transformOpHappening;
+
+        struct ScaleData {
+            CoordSpaceHelper startingSelectionTransformCoords;
+            WorldVec startPos;
+            WorldVec centerPos;
+            WorldVec currentPos;
+            Vector2f handlePoint;
+        } scaleData;
 };

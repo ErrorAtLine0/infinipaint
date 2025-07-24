@@ -44,7 +44,7 @@ void RectSelectTool::tool_update() {
             drawP.compCache.disableRefresh = false;
             if(drawP.controls.leftClick) {
                 if(drawP.selection.is_something_selected()) {
-                    if(!drawP.selection.mouse_collided_with_selection_aabb())
+                    if(!drawP.selection.mouse_collided_with_selection())
                         reset_tool();
                 }
                 else {
@@ -70,7 +70,6 @@ void RectSelectTool::tool_update() {
                 drawP.selection.add_from_cam_coord_collider_to_selection(cC);
 
                 controls.selectionMode = 0;
-                drawP.compCache.disableRefresh = true;
             }
             break;
         }

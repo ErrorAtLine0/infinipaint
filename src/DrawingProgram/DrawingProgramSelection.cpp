@@ -14,8 +14,6 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC) {
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
-    drawP.compCache.disableRefresh = true;
-
     std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
 
     std::function<void(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> fullyCollidedFunc = [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
@@ -93,13 +91,61 @@ void DrawingProgramSelection::update() {
         selectionRectMin = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
         selectionRectMax = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
 
+        scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(initialSelectionAABB.max));
+
         rebuild_cam_space();
-        if(drawP.controls.leftClick && mouse_collided_with_selection_aabb())
-            translation.happening = true;
-        else if(drawP.controls.leftClickHeld && translation.happening)
-            selectionTransformCoords.translate(drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.input.mouse.move));
-        else
-            translation.happening = false;
+
+        switch(transformOpHappening) {
+            case TransformOperation::NONE:
+                if(drawP.controls.leftClick) {
+                    if(mouse_collided_with_scale_point()) {
+                        scaleData.currentPos = scaleData.startPos = drawP.world.get_mouse_world_pos();
+                        scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
+                        scaleData.startingSelectionTransformCoords = selectionTransformCoords;
+                        transformOpHappening = TransformOperation::SCALE;
+                    }
+                    else if(mouse_collided_with_selection_aabb())
+                        transformOpHappening = TransformOperation::TRANSLATE;
+                    else
+                        deselect_all();
+                }
+                break;
+            case TransformOperation::TRANSLATE:
+                if(drawP.controls.leftClickHeld)
+                    selectionTransformCoords.translate(drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.input.mouse.move));
+                else
+                    transformOpHappening = TransformOperation::NONE;
+                break;
+            case TransformOperation::SCALE:
+                if(drawP.controls.leftClickHeld) {
+                    WorldVec centerToScaleStart = scaleData.startPos - scaleData.centerPos;
+                    Vector2f centerToScaleStartInCamSpace = drawP.world.drawData.cam.c.normalized_dir_to_space(centerToScaleStart.normalized());
+                    Vector2f scaleCenterPointInCamSpace = drawP.world.drawData.cam.c.to_space(scaleData.centerPos);
+                    scaleData.currentPos = drawP.world.drawData.cam.c.from_space(project_point_on_line(drawP.world.main.input.mouse.pos, scaleCenterPointInCamSpace, (scaleCenterPointInCamSpace + centerToScaleStartInCamSpace).eval()));
+
+                    WorldVec centerToScaleCurrent = scaleData.currentPos - scaleData.centerPos;
+
+                    WorldScalar centerToScaleStartNorm = centerToScaleStart.norm();
+                    WorldScalar centerToScaleCurrentNorm = centerToScaleCurrent.norm();
+                    bool isAnyNumberZero = centerToScaleCurrentNorm == WorldScalar(0) || centerToScaleStartNorm == WorldScalar(0);
+                    if(!isAnyNumberZero) {
+                        bool flipScale = centerToScaleStartNorm < centerToScaleCurrentNorm;
+                        WorldScalar scaleAmount;
+                        if(flipScale)
+                            scaleAmount = centerToScaleCurrentNorm / centerToScaleStartNorm;
+                        else
+                            scaleAmount = centerToScaleStartNorm / centerToScaleCurrentNorm;
+
+                        selectionTransformCoords = scaleData.startingSelectionTransformCoords;
+                        selectionTransformCoords.scale_about(scaleData.centerPos, scaleAmount, flipScale);
+                    }
+                }
+                else
+                    transformOpHappening = TransformOperation::NONE;
+                break;
+            case TransformOperation::ROTATE:
+                break;
+        }
     }
 }
 
@@ -113,8 +159,16 @@ void DrawingProgramSelection::rebuild_cam_space() {
     camSpaceSelection = drawP.world.drawData.cam.c.world_collider_to_coords<SCollision::ColliderCollection<float>>(collideRectWorld);
 }
 
+bool DrawingProgramSelection::mouse_collided_with_selection() {
+    return mouse_collided_with_selection_aabb() || mouse_collided_with_scale_point();
+}
+
 bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
     return SCollision::collide(camSpaceSelection, drawP.world.main.input.mouse.pos);
+}
+
+bool DrawingProgramSelection::mouse_collided_with_scale_point() {
+    return SCollision::collide(SCollision::Circle(scaleData.handlePoint, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos);
 }
 
 void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {
@@ -131,7 +185,6 @@ void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& 
 
 void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawData) {
     if(is_something_selected() && !camSpaceSelection.triangle.empty()) {
-        canvas->save();
         SkPath selectionRectPath;
         selectionRectPath.moveTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[0]));
         selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[1]));
@@ -140,6 +193,7 @@ void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawDat
         selectionRectPath.close();
         SkPaint p{SkColor4f{0.3f, 0.6f, 0.9f, 0.4f}};
         canvas->drawPath(selectionRectPath, p);
-        canvas->restore();
+
+        drawP.draw_drag_circle(canvas, scaleData.handlePoint, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
     }
 }
