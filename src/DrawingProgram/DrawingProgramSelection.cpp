@@ -6,6 +6,9 @@
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Parallel.hpp>
 
+#define ROTATION_POINT_RADIUS_MULTIPLIER 0.7f
+#define ROTATION_POINTS_DISTANCE 20.0f
+
 DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     cache(initDrawP),
     drawP(initDrawP)
@@ -49,6 +52,7 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
     for(auto& obj : selectedSet)
         cache.add_component(obj);
     calculate_aabb();
+    calculate_initial_rotate_center_location();
 }
 
 bool DrawingProgramSelection::is_something_selected() {
@@ -74,6 +78,7 @@ void DrawingProgramSelection::deselect_all() {
         cache.clear();
         selectionTransformCoords = CoordSpaceHelper();
         drawP.compCache.force_rebuild(drawP.components.client_list());
+        transformOpHappening = TransformOperation::NONE;
     }
 }
 
@@ -83,15 +88,15 @@ void DrawingProgramSelection::update() {
             cache.force_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()));
         if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
             deselect_all();
-        if(drawP.world.main.input.key(InputManager::KEY_TEXT_CTRL).held)
-            selectionTransformCoords.scale_about_double(selectionTransformCoords.pos, 1.01);
-        if(drawP.world.main.input.key(InputManager::KEY_TEXT_SHIFT).held)
-            selectionTransformCoords.scale_about_double(selectionTransformCoords.pos, 0.99);
 
-        selectionRectMin = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
-        selectionRectMax = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
+        selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
+        selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
+        selectionRectPoints[2] = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
+        selectionRectPoints[3] = selectionTransformCoords.from_space_world(initialSelectionAABB.top_right());
 
         scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(initialSelectionAABB.max));
+        rotateData.centerHandlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(rotateData.centerPos));
+        rotateData.handlePoint = get_rotation_point_pos_from_angle(rotateData.rotationAngle);
 
         rebuild_cam_space();
 
@@ -101,8 +106,15 @@ void DrawingProgramSelection::update() {
                     if(mouse_collided_with_scale_point()) {
                         scaleData.currentPos = scaleData.startPos = drawP.world.get_mouse_world_pos();
                         scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
-                        scaleData.startingSelectionTransformCoords = selectionTransformCoords;
+                        startingSelectionTransformCoords = selectionTransformCoords;
                         transformOpHappening = TransformOperation::SCALE;
+                    }
+                    else if(mouse_collided_with_rotate_center_handle_point())
+                        transformOpHappening = TransformOperation::ROTATE_RELOCATE_CENTER;
+                    else if(mouse_collided_with_rotate_handle_point()) {
+                        rotateData.rotationAngle = 0.0;
+                        startingSelectionTransformCoords = selectionTransformCoords;
+                        transformOpHappening = TransformOperation::ROTATE;
                     }
                     else if(mouse_collided_with_selection_aabb())
                         transformOpHappening = TransformOperation::TRANSLATE;
@@ -113,8 +125,10 @@ void DrawingProgramSelection::update() {
             case TransformOperation::TRANSLATE:
                 if(drawP.controls.leftClickHeld)
                     selectionTransformCoords.translate(drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.input.mouse.move));
-                else
+                else {
                     transformOpHappening = TransformOperation::NONE;
+                    calculate_initial_rotate_center_location();
+                }
                 break;
             case TransformOperation::SCALE:
                 if(drawP.controls.leftClickHeld) {
@@ -136,31 +150,50 @@ void DrawingProgramSelection::update() {
                         else
                             scaleAmount = centerToScaleStartNorm / centerToScaleCurrentNorm;
 
-                        selectionTransformCoords = scaleData.startingSelectionTransformCoords;
+                        selectionTransformCoords = startingSelectionTransformCoords;
                         selectionTransformCoords.scale_about(scaleData.centerPos, scaleAmount, flipScale);
                     }
                 }
+                else {
+                    transformOpHappening = TransformOperation::NONE;
+                    calculate_initial_rotate_center_location();
+                }
+                break;
+            case TransformOperation::ROTATE_RELOCATE_CENTER:
+                if(drawP.controls.leftClickHeld)
+                    rotateData.centerPos = selectionTransformCoords.to_space_world(drawP.world.get_mouse_world_pos());
                 else
                     transformOpHappening = TransformOperation::NONE;
                 break;
             case TransformOperation::ROTATE:
+                if(drawP.controls.leftClickHeld) {
+                    Vector2f rotationPointDiff = drawP.world.main.input.mouse.pos - rotateData.centerHandlePoint;
+                    rotateData.rotationAngle = std::atan2(rotationPointDiff.y(), rotationPointDiff.x());
+                    selectionTransformCoords = startingSelectionTransformCoords;
+                    selectionTransformCoords.rotate_about(selectionTransformCoords.from_space_world(rotateData.centerPos), rotateData.rotationAngle);
+                }
+                else
+                    transformOpHappening = TransformOperation::NONE;
                 break;
         }
     }
 }
 
 void DrawingProgramSelection::rebuild_cam_space() {
-    std::array<WorldVec, 4> collideRectTriangleVerticesWorld = triangle_from_rect_points(selectionRectMin, selectionRectMax);
     SCollision::ColliderCollection<WorldScalar> collideRectWorld;
-    collideRectWorld.triangle.emplace_back(collideRectTriangleVerticesWorld[0], collideRectTriangleVerticesWorld[1], collideRectTriangleVerticesWorld[2]);
-    collideRectWorld.triangle.emplace_back(collideRectTriangleVerticesWorld[0], collideRectTriangleVerticesWorld[2], collideRectTriangleVerticesWorld[3]);
+    collideRectWorld.triangle.emplace_back(selectionRectPoints[0], selectionRectPoints[1], selectionRectPoints[2]);
+    collideRectWorld.triangle.emplace_back(selectionRectPoints[0], selectionRectPoints[2], selectionRectPoints[3]);
     collideRectWorld.recalculate_bounds();
 
     camSpaceSelection = drawP.world.drawData.cam.c.world_collider_to_coords<SCollision::ColliderCollection<float>>(collideRectWorld);
 }
 
+void DrawingProgramSelection::calculate_initial_rotate_center_location() {
+    rotateData.centerPos = initialSelectionAABB.center();
+}
+
 bool DrawingProgramSelection::mouse_collided_with_selection() {
-    return mouse_collided_with_selection_aabb() || mouse_collided_with_scale_point();
+    return mouse_collided_with_selection_aabb() || mouse_collided_with_scale_point() || mouse_collided_with_rotate_center_handle_point() || mouse_collided_with_rotate_handle_point();
 }
 
 bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
@@ -169,6 +202,18 @@ bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
 
 bool DrawingProgramSelection::mouse_collided_with_scale_point() {
     return SCollision::collide(SCollision::Circle(scaleData.handlePoint, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos);
+}
+
+bool DrawingProgramSelection::mouse_collided_with_rotate_center_handle_point() {
+    return SCollision::collide(SCollision::Circle(rotateData.centerHandlePoint, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos);
+}
+
+bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
+    return SCollision::collide(SCollision::Circle(rotateData.handlePoint, DRAG_POINT_RADIUS * ROTATION_POINT_RADIUS_MULTIPLIER), drawP.world.main.input.mouse.pos);
+}
+
+Vector2f DrawingProgramSelection::get_rotation_point_pos_from_angle(double angle) {
+    return Vector2f{rotateData.centerHandlePoint + ROTATION_POINTS_DISTANCE * Vector2f{std::cos(angle), std::sin(angle)}};
 }
 
 void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {
@@ -194,6 +239,11 @@ void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawDat
         SkPaint p{SkColor4f{0.3f, 0.6f, 0.9f, 0.4f}};
         canvas->drawPath(selectionRectPath, p);
 
-        drawP.draw_drag_circle(canvas, scaleData.handlePoint, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
+        if(transformOpHappening == TransformOperation::NONE || transformOpHappening == TransformOperation::ROTATE || transformOpHappening == TransformOperation::ROTATE_RELOCATE_CENTER)
+            drawP.draw_drag_circle(canvas, rotateData.centerHandlePoint, {0.9f, 0.5f, 0.1f, 1.0f}, drawData);
+        if(transformOpHappening == TransformOperation::NONE || transformOpHappening == TransformOperation::ROTATE)
+            drawP.draw_drag_circle(canvas, rotateData.handlePoint, {0.9f, 0.5f, 0.1f, 1.0f}, drawData, ROTATION_POINT_RADIUS_MULTIPLIER);
+        if(transformOpHappening == TransformOperation::NONE || transformOpHappening == TransformOperation::SCALE)
+            drawP.draw_drag_circle(canvas, scaleData.handlePoint, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
     }
 }

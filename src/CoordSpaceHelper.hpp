@@ -74,6 +74,8 @@ class CoordSpaceHelper {
         //float scalar_to_space(WorldScalar coord) const;
         std::vector<Vector2f> to_space(const std::vector<WorldVec>& coord) const;
         std::vector<WorldVec> from_space(const std::vector<Vector2f>& coord) const;
+        std::vector<WorldVec> to_space_world(const std::vector<WorldVec>& coord) const;
+        std::vector<WorldVec> from_space_world(const std::vector<WorldVec>& coord) const;
 
         void translate(const WorldVec& translation);
         void scale(const WorldScalar& scaleAmount);

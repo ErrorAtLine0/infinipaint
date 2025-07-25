@@ -555,7 +555,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             drawProgCacheCanvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             compCache.refresh_all_draw_cache(drawData);
             compCache.draw_components_to_canvas(drawProgCacheCanvas, drawData);
+            drawProgCacheCanvas->saveLayerAlphaf(nullptr, 1.0f);
             selection.draw_components(drawProgCacheCanvas, drawData);
+            drawProgCacheCanvas->restore();
             canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
             selection.draw_gui(canvas, drawData);
         }

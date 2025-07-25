@@ -16,15 +16,19 @@ class DrawingProgramSelection {
     private:
         bool mouse_collided_with_selection_aabb();
         bool mouse_collided_with_scale_point();
+        bool mouse_collided_with_rotate_center_handle_point();
+        bool mouse_collided_with_rotate_handle_point();
 
         void calculate_aabb();
+        void calculate_initial_rotate_center_location();
         void rebuild_cam_space();
+
+        Vector2f get_rotation_point_pos_from_angle(double angle);
 
         SCollision::AABB<WorldScalar> initialSelectionAABB;
         SCollision::ColliderCollection<float> camSpaceSelection;
 
-        WorldVec selectionRectMin;
-        WorldVec selectionRectMax;
+        std::array<WorldVec, 4> selectionRectPoints;
 
         CoordSpaceHelper selectionTransformCoords;
         std::unordered_set<CollabListType::ObjectInfoPtr> selectedSet;
@@ -35,14 +39,23 @@ class DrawingProgramSelection {
             NONE = 0,
             TRANSLATE,
             SCALE,
+            ROTATE_RELOCATE_CENTER,
             ROTATE
-        } transformOpHappening;
+        } transformOpHappening = TransformOperation::NONE;
+
+        CoordSpaceHelper startingSelectionTransformCoords;
 
         struct ScaleData {
-            CoordSpaceHelper startingSelectionTransformCoords;
             WorldVec startPos;
             WorldVec centerPos;
             WorldVec currentPos;
             Vector2f handlePoint;
         } scaleData;
+
+        struct RotationData {
+            WorldVec centerPos;
+            Vector2f centerHandlePoint;
+            Vector2f handlePoint;
+            double rotationAngle;
+        } rotateData;
 };

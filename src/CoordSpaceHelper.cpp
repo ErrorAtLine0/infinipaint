@@ -127,22 +127,36 @@ std::vector<WorldVec> CoordSpaceHelper::from_space(const std::vector<Vector2f>& 
     return toRet;
 }
 
+std::vector<WorldVec> CoordSpaceHelper::to_space_world(const std::vector<WorldVec>& coord) const {
+    std::vector<WorldVec> toRet(coord.size());
+    for(size_t i = 0; i < coord.size(); i++)
+        toRet[i] = to_space_world(coord[i]);
+    return toRet;
+}
+
+std::vector<WorldVec> CoordSpaceHelper::from_space_world(const std::vector<WorldVec>& coord) const {
+    std::vector<WorldVec> toRet(coord.size());
+    for(size_t i = 0; i < coord.size(); i++)
+        toRet[i] = from_space_world(coord[i]);
+    return toRet;
+}
+
 Vector2f CoordSpaceHelper::get_mouse_pos(const World& w) const {
     return to_space(w.drawData.cam.c.from_space(w.main.input.mouse.pos));
 }
 
 CoordSpaceHelper CoordSpaceHelper::other_coord_space_to_this_space(const CoordSpaceHelper& other) const {
     CoordSpaceHelper toRet;
-    toRet.pos = (other.pos - pos) / inverseScale;
-    toRet.rotation = other.rotation;
+    toRet.pos = to_space_world(other.pos);
+    toRet.rotation = other.rotation - rotation;
     toRet.inverseScale = other.inverseScale / inverseScale;
     return toRet;
 }
 
 CoordSpaceHelper CoordSpaceHelper::other_coord_space_from_this_space(const CoordSpaceHelper& other) const {
     CoordSpaceHelper toRet;
-    toRet.pos = (other.pos * inverseScale) + pos;
-    toRet.rotation = other.rotation;
+    toRet.pos = from_space_world(other.pos);
+    toRet.rotation = other.rotation + rotation;
     toRet.inverseScale = other.inverseScale * inverseScale;
     return toRet;
 }
