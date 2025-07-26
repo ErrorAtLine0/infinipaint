@@ -28,6 +28,15 @@ class DrawingProgramCacheBVHNode;
 
 typedef CollabList<std::shared_ptr<DrawComponent>, ServerClientID> CollabListType;
 
+void save(cereal::PortableBinaryOutputArchive& a, const CollabListType::ObjectInfo& o);
+void load(cereal::PortableBinaryInputArchive& a, CollabListType::ObjectInfo& o);
+
+struct SendOrderedComponentVectorOp {
+    std::vector<CollabListType::ObjectInfoPtr>* v;
+    void save(cereal::PortableBinaryOutputArchive& a) const;
+    void load(cereal::PortableBinaryInputArchive& a);
+};
+
 class DrawComponent {
     public:
         static std::shared_ptr<DrawComponent> allocate_comp_type(DrawComponentType type);
@@ -48,24 +57,22 @@ class DrawComponent {
                 float scale;
             } transformData;
             bool shouldDraw = false;
-            unsigned mipmapLevel = 0;
+            uint8_t mipmapLevel = 0;
         } drawSetupData;
 
         void canvas_do_calculated_transform(SkCanvas* canvas);
         void calculate_draw_transform(const DrawData& drawData);
 
         void server_send_place(MainServer& server, ServerClientID id, uint64_t placement);
+        static void server_send_place_many(MainServer& server, std::vector<CollabListType::ObjectInfoPtr>& comps);
         static void server_send_erase(MainServer& server, ServerClientID id);
+        static void server_send_erase_set(MainServer& server, const std::unordered_set<ServerClientID>& ids);
         void server_send_update_temp(MainServer& server, ServerClientID id);
         void server_send_update_final(MainServer& server, ServerClientID id);
-        void server_send_transform_temp(MainServer& server, ServerClientID id);
-        void server_send_transform_final(MainServer& server, ServerClientID id);
+        void server_send_transform(MainServer& server, ServerClientID id);
 
         std::chrono::time_point<std::chrono::steady_clock> tempServerUpdateTimer;
         bool serverIsTempUpdate = false;
-
-        std::chrono::time_point<std::chrono::steady_clock> tempServerTransformTimer;
-        bool serverIsTempTransform = false;
 
         std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
         std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
@@ -77,17 +84,17 @@ class DrawComponent {
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
 
         std::shared_ptr<DrawComponent> delayedUpdatePtr = nullptr;
-        std::shared_ptr<CoordSpaceHelper> delayedCoordinateSpace = nullptr;
 
         bool bounds_draw_check(const DrawData& drawData) const;
 
         void check_timers(DrawingProgram& drawP);
+        static void client_send_place_many(DrawingProgram& drawP, std::vector<CollabListType::ObjectInfoPtr>& comps);
         void client_send_place(DrawingProgram& drawP);
         void client_send_erase(DrawingProgram& drawP);
+        static void client_send_erase_set(DrawingProgram& drawP, const std::unordered_set<ServerClientID>& ids);
         void client_send_update_temp(DrawingProgram& drawP);
         void client_send_update_final(DrawingProgram& drawP);
-        void client_send_transform_temp(DrawingProgram& drawP);
-        void client_send_transform_final(DrawingProgram& drawP);
+        void client_send_transform(DrawingProgram& drawP);
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
 

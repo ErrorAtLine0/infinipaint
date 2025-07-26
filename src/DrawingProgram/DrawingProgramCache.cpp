@@ -49,9 +49,45 @@ void DrawingProgramCache::clear_own_cached_surfaces() {
     });
 }
 
-void DrawingProgramCache::update() {
-    if(!disableRefresh && unsortedComponents.size() >= 1000 && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(5))
-        force_rebuild(drawP.components.client_list());
+bool DrawingProgramCache::check_if_rebuild_should_occur() {
+    return (unsortedComponents.size() >= MINIMUM_COMPONENTS_TO_START_REBUILD && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(5));
+}
+
+void DrawingProgramCache::test_rebuild(const std::vector<CollabListType::ObjectInfoPtr>& comps, bool force) {
+    if(force || check_if_rebuild_should_occur())
+        force_rebuild(comps);
+}
+
+void DrawingProgramCache::test_rebuild_dont_include_set(const std::vector<CollabListType::ObjectInfoPtr>& comps, const std::unordered_set<CollabListType::ObjectInfoPtr>& objsToNotInclude, bool force) {
+    if(force || check_if_rebuild_should_occur())
+        force_rebuild_dont_include_objs(comps, objsToNotInclude);
+}
+
+void DrawingProgramCache::test_rebuild_dont_include_set_dont_include_nodes(const std::vector<CollabListType::ObjectInfoPtr>& comps, const std::unordered_set<CollabListType::ObjectInfoPtr>& objsToNotInclude, const std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>>& nodesToNotInclude, bool force) {
+    if(force || check_if_rebuild_should_occur()) {
+        auto objsToNotIncludeNew = objsToNotInclude;
+        move_components_from_bvh_nodes_to_set(objsToNotIncludeNew, nodesToNotInclude);
+        force_rebuild_dont_include_objs(comps, objsToNotIncludeNew);
+    }
+}
+
+void DrawingProgramCache::move_components_from_bvh_nodes_to_set(std::unordered_set<CollabListType::ObjectInfoPtr>& s, const std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>>& bvhNodes) {
+    for(auto& b : bvhNodes)
+        move_components_from_bvh_node_to_set(s, b);
+}
+
+void DrawingProgramCache::move_components_from_bvh_node_to_set(std::unordered_set<CollabListType::ObjectInfoPtr>& s, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
+    for(auto& c : bvhNode->components)
+        s.emplace(c);
+    for(auto& p : bvhNode->children)
+        move_components_from_bvh_node_to_set(s, p);
+}
+
+void DrawingProgramCache::force_rebuild_dont_include_objs(std::vector<CollabListType::ObjectInfoPtr> componentsToBuild, const std::unordered_set<CollabListType::ObjectInfoPtr>& objsToNotInclude) {
+    std::erase_if(componentsToBuild, [&objsToNotInclude](auto& c) {
+        return objsToNotInclude.contains(c);
+    });
+    build(componentsToBuild);
 }
 
 void DrawingProgramCache::force_rebuild(const std::vector<CollabListType::ObjectInfoPtr>& componentsToBuild) {
@@ -151,7 +187,7 @@ void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCac
 
     build_bvh_node_coords_and_resolution(*bvhNode);
 
-    if(components.size() < 100) {
+    if(components.size() < MAXIMUM_COMPONENTS_IN_SINGLE_NODE) {
         bvhNode->components = components;
         for(auto& c : bvhNode->components)
             c->obj->parentBvhNode = bvhNode;

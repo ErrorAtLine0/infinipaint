@@ -55,13 +55,15 @@ class DrawingProgram {
         CollabListType components;
 
         std::unordered_set<std::shared_ptr<DrawComponent>> updateableComponents;
-        std::unordered_set<std::shared_ptr<DrawComponent>> delayedUpdateTransformComponents;
+        std::unordered_set<std::shared_ptr<DrawComponent>> delayedUpdateComponents;
 
         Vector4f* get_foreground_color_ptr();
     private:
 
-        void check_delayed_update_transform_timers();
+        void check_delayed_update_timers();
         void check_updateable_components();
+
+        void force_rebuild_cache();
 
         std::atomic<bool> addFileInNextFrame = false;
         std::pair<std::string, Vector2f> addFileInfo;

@@ -9,6 +9,7 @@ class DrawComponent;
 class ServerData {
     public:
         std::vector<std::pair<ServerClientID, std::shared_ptr<DrawComponent>>> components;
+        std::unordered_map<ServerClientID, std::shared_ptr<DrawComponent>> idToComponentMap;
         std::unordered_map<ServerClientID, ResourceData> resources;
         std::unordered_map<std::string, Bookmark> bookmarks;
         void save(cereal::PortableBinaryOutputArchive& a) const;

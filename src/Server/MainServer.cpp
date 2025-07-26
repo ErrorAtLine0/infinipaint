@@ -13,6 +13,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <Helpers/Serializers.hpp>
 #include <Helpers/Random.hpp>
 #include <chrono>
@@ -40,6 +41,7 @@ void ServerData::load(cereal::PortableBinaryInputArchive& a) {
         auto newComp = DrawComponent::allocate_comp_type(t);
         a(newComp->coords, *newComp);
         components.emplace_back(id, newComp);
+        idToComponentMap.emplace(id, newComp);
     }
     a(bookmarks);
 }
@@ -60,8 +62,10 @@ ClientPortionID ServerData::get_max_id(ServerPortionID serverID) const {
 MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     world(initWorld)
 {
-    for(auto& c : world.drawProg.components.client_list())
+    for(auto& c : world.drawProg.components.client_list()) {
         data.components.emplace_back(c->id, c->obj->copy());
+        data.idToComponentMap.emplace(data.components.back().first, data.components.back().second);
+    }
     data.bookmarks = world.bMan.bookmark_list();
     data.resources = world.rMan.resource_list();
 
@@ -102,7 +106,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(c.camCoords, c.windowSize, c.cursorPos);
         netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_MOUSE, c.id.first, c.camCoords, c.windowSize, c.cursorPos);
     });
-    netServer->add_recv_callback(SERVER_PLACE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_PLACE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         uint64_t placement;
         DrawComponentType type;
         message(placement, type);
@@ -111,39 +115,93 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         ServerClientID id = clients[client->customID].get_next_id();
         placement = std::min<uint64_t>(placement, data.components.size());
         data.components.insert(data.components.begin() + placement, {id, newComp});
+        data.idToComponentMap.emplace(id, newComp);
         newComp->server_send_place(*this, id, placement);
     });
-    netServer->add_recv_callback(SERVER_ERASE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_PLACE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        auto& cli = clients[client->customID];
+
+        std::vector<CollabListType::ObjectInfoPtr> objOrderedVector;
+        SendOrderedComponentVectorOp a{&objOrderedVector};
+        message(a);
+
+        std::vector<std::pair<ServerClientID, std::shared_ptr<DrawComponent>>> objOrderedComponentPairs;
+        for(auto& o : objOrderedVector) {
+            o->id = cli.get_next_id();
+            objOrderedComponentPairs.emplace_back(o->id, o->obj);
+        }
+
+        uint64_t startPoint = 0;
+
+        if(objOrderedVector.empty())
+            return;
+
+        data.idToComponentMap.emplace(objOrderedVector.front()->id, objOrderedVector.front()->obj);
+
+        for(uint64_t i = 1; i < static_cast<uint64_t>(objOrderedVector.size()); i++) {
+            auto& obj = objOrderedVector[i];
+            data.idToComponentMap.emplace(obj->id, obj->obj);
+            if(obj->pos - objOrderedVector[startPoint]->pos != (i - startPoint)) {
+                uint64_t insertPosition = std::min(data.components.size(), objOrderedVector[startPoint]->pos);
+                data.components.insert(data.components.begin() + insertPosition, objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.begin() + i);
+                startPoint = i;
+            }
+        }
+
+        data.components.insert(data.components.begin() + std::min(data.components.size(), objOrderedVector[startPoint]->pos), objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.end());
+
+        startPoint = 0;
+
+        for(uint64_t i = 0; i < data.components.size(); i++) {
+            if(startPoint >= objOrderedVector.size())
+                break;
+            auto& [id, c] = data.components[i];
+            auto& o = objOrderedVector[startPoint];
+            if(c == o->obj) {
+                o->id = id;
+                o->pos = i;
+                startPoint++;
+            }
+        }
+
+        DrawComponent::server_send_place_many(*this, objOrderedVector);
+    });
+    netServer->add_recv_callback(SERVER_ERASE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ServerClientID compToRemove;
         message(compToRemove);
-        std::erase_if(data.components, [&](auto& c){ return c.first == compToRemove; });
         DrawComponent::server_send_erase(*this, compToRemove);
+        data.idToComponentMap.erase(compToRemove);
+        std::erase_if(data.components, [&](auto& p) {
+            return p.first == compToRemove;
+        });
+    });
+    netServer->add_recv_callback(SERVER_ERASE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        std::unordered_set<ServerClientID> idsToRemove;
+        message(idsToRemove);
+        DrawComponent::server_send_erase_set(*this, idsToRemove);
+        for(auto& id : idsToRemove)
+            data.idToComponentMap.erase(id);
+        std::erase_if(data.components, [&](auto& p) {
+            return idsToRemove.contains(p.first);
+        });
     });
     netServer->add_recv_callback(SERVER_TRANSFORM_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        bool isTemp;
         ServerClientID idToTransform;
-        message(isTemp, idToTransform);
-        auto a = std::find_if(data.components.begin(), data.components.end(), [&](auto& c) {
-            return (c.first == idToTransform);
-        });
-        if(a != data.components.end()) {
-            std::shared_ptr<DrawComponent>& comp = (*a).second;
+        message(idToTransform);
+        auto it = data.idToComponentMap.find(idToTransform);
+        if(it != data.idToComponentMap.end()) {
+            std::shared_ptr<DrawComponent>& comp = it->second;
             message(comp->coords);
-            if(isTemp)
-                comp->server_send_transform_temp(*this, idToTransform);
-            else
-                comp->server_send_transform_final(*this, idToTransform);
+            comp->server_send_transform(*this, idToTransform);
         }
     });
     netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isTemp;
         ServerClientID idToTransform;
         message(isTemp, idToTransform);
-        auto a = std::find_if(data.components.begin(), data.components.end(), [&](auto& c) {
-            return (c.first == idToTransform);
-        });
-        if(a != data.components.end()) {
-            std::shared_ptr<DrawComponent>& comp = (*a).second;
+        auto it = data.idToComponentMap.find(idToTransform);
+        if(it != data.idToComponentMap.end()) {
+            std::shared_ptr<DrawComponent>& comp = it->second;
             message(*comp);
             if(isTemp)
                 comp->server_send_update_temp(*this, idToTransform);

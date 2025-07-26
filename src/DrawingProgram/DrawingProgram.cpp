@@ -23,6 +23,7 @@
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
 #include <Helpers/Parallel.hpp>
+#include <cereal/types/unordered_set.hpp>
 
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
@@ -52,14 +53,8 @@ DrawingProgram::DrawingProgram(World& initWorld):
     };
     components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {
         compCache.erase_component(c);
-        delayedUpdateTransformComponents.erase(c->obj);
+        delayedUpdateComponents.erase(c->obj);
         updateableComponents.erase(c->obj);
-    };
-    components.clientEraseSetCallback = [&](const std::unordered_set<CollabListType::ObjectInfoPtr>& comps) {
-        for(auto& c : comps) {
-            delayedUpdateTransformComponents.erase(c->obj);
-            updateableComponents.erase(c->obj);
-        }
     };
     components.clientInsertOrderedVectorCallback = [&](const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         for(auto& c : comps)
@@ -75,10 +70,10 @@ void DrawingProgram::init_client_callbacks() {
         bool isTemp;
         ServerClientID id;
         message(isTemp, id);
-        std::shared_ptr<DrawComponent>* compPtr = components.get_item_by_id(id);
-        if(!compPtr)
+        auto objPtr = components.get_item_by_id(id);
+        if(!objPtr)
             return;
-        std::shared_ptr<DrawComponent>& comp = *compPtr;
+        std::shared_ptr<DrawComponent>& comp = objPtr->obj;
         float dur = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - comp->lastUpdateTime).count();
         if(dur > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION){
             comp->delayedUpdatePtr = nullptr;
@@ -91,31 +86,22 @@ void DrawingProgram::init_client_callbacks() {
         else {
             comp->delayedUpdatePtr = DrawComponent::allocate_comp_type(comp->get_type());
             message(*comp->delayedUpdatePtr);
-            delayedUpdateTransformComponents.emplace(comp);
+            delayedUpdateComponents.emplace(comp);
         }
     });
     world.con.client_add_recv_callback(CLIENT_TRANSFORM_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        bool isTemp;
         ServerClientID id;
-        message(isTemp, id);
-        std::shared_ptr<DrawComponent>* compPtr = components.get_item_by_id(id);
-        if(!compPtr)
+        message(id);
+        auto objPtr = components.get_item_by_id(id);
+        if(!objPtr)
             return;
-        std::shared_ptr<DrawComponent>& comp = *compPtr;
-        float dur = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - comp->lastTransformTime).count();
-        if(dur > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION){
-            comp->delayedCoordinateSpace = nullptr;
-            message(comp->coords);
-            if(!isTemp)
-                comp->finalize_update(*this); // No need to update draw data during transformation
-        }
-        else {
-            comp->delayedCoordinateSpace = std::make_shared<CoordSpaceHelper>();
-            message(*comp->delayedCoordinateSpace);
-            delayedUpdateTransformComponents.emplace(comp);
-        }
+        if(selection.is_selected(objPtr)) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
+            return;
+        std::shared_ptr<DrawComponent>& comp = objPtr->obj;
+        message(comp->coords);
+        comp->finalize_update(*this); // No need to update draw data during transformation
     });
-    world.con.client_add_recv_callback(CLIENT_PLACE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
+    world.con.client_add_recv_callback(CLIENT_PLACE_SINGLE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
         uint64_t insertPosition;
         DrawComponentType type;
         message(insertPosition, type);
@@ -126,17 +112,42 @@ void DrawingProgram::init_client_callbacks() {
         if(didntExistPreviously)
             newObj->final_update(*this);
     });
-    world.con.client_add_recv_callback(CLIENT_ERASE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        ServerClientID cToRemove;
-        message(cToRemove);
-        components.server_erase(cToRemove);
+    world.con.client_add_recv_callback(CLIENT_PLACE_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
+        std::vector<CollabListType::ObjectInfoPtr> sortedPlacedComponents;
+
+        SendOrderedComponentVectorOp a{&sortedPlacedComponents};
+        message(a);
+
+        std::vector<bool> didntExistPreviously = components.server_insert_ordered_vector(sortedPlacedComponents);
+        if(sortedPlacedComponents.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD) {
+            parallel_loop_container(sortedPlacedComponents, [&](const auto& c){
+                c->obj->final_update(*this, false);
+            });
+            force_rebuild_cache();
+        }
+        else {
+            for(size_t i = 0; i < sortedPlacedComponents.size(); i++) {
+                if(didntExistPreviously[i])
+                    sortedPlacedComponents[i]->obj->final_update(*this);
+            }
+        }
+    });
+    world.con.client_add_recv_callback(CLIENT_ERASE_SINGLE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
+        ServerClientID idToErase;
+        message(idToErase);
+        components.server_erase(idToErase);
+    });
+    world.con.client_add_recv_callback(CLIENT_ERASE_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
+        std::unordered_set<ServerClientID> idsToErase;
+        message(idsToErase);
+        components.server_erase_set(idsToErase);
     });
 }
 
-void DrawingProgram::check_delayed_update_transform_timers() {
-    std::erase_if(delayedUpdateTransformComponents, [&](auto& comp) {
+void DrawingProgram::check_delayed_update_timers() {
+    std::erase_if(delayedUpdateComponents, [&](auto& comp) {
         comp->check_timers(*this);
-        return !comp->delayedUpdatePtr && !comp->delayedCoordinateSpace;
+        return !comp->delayedUpdatePtr;
     });
 }
 
@@ -352,11 +363,26 @@ void DrawingProgram::update() {
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;
 
-    check_delayed_update_transform_timers();
+    check_delayed_update_timers();
     check_updateable_components();
 
-    compCache.update();
     selection.update();
+
+    if(controls.selectedTool == TOOL_ERASER)
+        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool.erasedComponents, eraserTool.erasedBVHNodes);
+    else if(controls.selectedTool == TOOL_RECTSELECT)
+        compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set());
+    else
+        compCache.test_rebuild(components.client_list());
+}
+
+void DrawingProgram::force_rebuild_cache() {
+    if(controls.selectedTool == TOOL_ERASER)
+        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool.erasedComponents, eraserTool.erasedBVHNodes, true);
+    else if(controls.selectedTool == TOOL_RECTSELECT)
+        compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
+    else
+        compCache.test_rebuild(components.client_list(), true);
 }
 
 void DrawingProgram::drag_drop_update() {
@@ -448,7 +474,7 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
     parallel_loop_all_components([&](const auto& c){
         c->obj->final_update(*this, false);
     });
-    compCache.force_rebuild(components.client_list());
+    compCache.test_rebuild(components.client_list(), true);
 }
 
 void DrawingProgram::add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp) {
@@ -476,15 +502,17 @@ void DrawingProgram::add_undo_place_components(uint64_t placement, const std::ve
     world.undo.push(UndoManager::UndoRedoPair{
         [&, comps]() {
             bool toRet = true;
+            std::unordered_set<ServerClientID> idsToErase;
             for(auto& c : comps) {
                 if(!c->collabListInfo.lock())
                     toRet = false;
                 else {
+                    idsToErase.emplace(c->collabListInfo.lock()->id);
                     ServerClientID compID;
-                    c->client_send_erase(*this);
                     components.client_erase(c, compID);
                 }
             }
+            DrawComponent::client_send_erase_set(*this, idsToErase);
             reset_tools();
             return toRet;
         },

@@ -35,13 +35,11 @@ void RectSelectTool::gui_toolbox() {
 void RectSelectTool::reset_tool() {
     drawP.selection.deselect_all();
     controls = RectSelectControls();
-    drawP.compCache.disableRefresh = false;
 }
 
 void RectSelectTool::tool_update() {
     switch(controls.selectionMode) {
         case 0: {
-            drawP.compCache.disableRefresh = false;
             if(drawP.controls.leftClick) {
                 if(drawP.selection.is_something_selected()) {
                     if(!drawP.selection.mouse_collided_with_selection())

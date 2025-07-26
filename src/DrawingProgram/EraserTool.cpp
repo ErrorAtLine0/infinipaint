@@ -22,16 +22,17 @@ void EraserTool::gui_toolbox() {
 
 void EraserTool::reset_tool() {
     if(!erasedComponents.empty()) {
-        for(auto& bvhNode : erasedBVHNodes)
-            move_erased_components_from_bvh_nodes_recursive(bvhNode);
+        DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
 
+        std::unordered_set<ServerClientID> idsToErase;
         for(auto& c : erasedComponents)
-            c->obj->client_send_erase(drawP);
+            idsToErase.emplace(c->id);
+        DrawComponent::client_send_erase_set(drawP, idsToErase);
         drawP.components.client_erase_set(erasedComponents);
 
         drawP.world.undo.push(UndoManager::UndoRedoPair{
-            [&, erasedCompVal = erasedComponents]() {
-                std::vector<CollabListType::ObjectInfoPtr> sortedObjects(erasedCompVal.begin(), erasedCompVal.end());
+            [&, erasedComponents = erasedComponents]() {
+                std::vector<CollabListType::ObjectInfoPtr> sortedObjects(erasedComponents.begin(), erasedComponents.end());
                 std::sort(sortedObjects.begin(), sortedObjects.end(), [](auto& a, auto& b) {
                     return a->pos < b->pos;
                 });
@@ -41,27 +42,27 @@ void EraserTool::reset_tool() {
                         return false;
 
                 drawP.components.client_insert_ordered_vector(sortedObjects);
-
-                for(auto& comp : sortedObjects)
-                    comp->obj->client_send_place(drawP);
+                DrawComponent::client_send_place_many(drawP, sortedObjects);
 
                 drawP.reset_tools();
 
                 return true;
             },
-            [&, erasedCompVal = erasedComponents]() {
-                for(auto& comp : erasedCompVal)
+            [&, erasedComponents = erasedComponents]() {
+                for(auto& comp : erasedComponents)
                     if(!comp->obj->collabListInfo.lock())
                         return false;
 
-                for(auto& comp : erasedCompVal)
-                    comp->obj->client_send_erase(drawP);
+                std::unordered_set<ServerClientID> idsToErase;
+                for(auto& c : erasedComponents)
+                    idsToErase.emplace(c->id);
 
-                drawP.components.client_erase_set(erasedCompVal);
+                DrawComponent::client_send_erase_set(drawP, idsToErase);
+                drawP.components.client_erase_set(erasedComponents);
 
                 drawP.reset_tools();
 
-                drawP.compCache.force_rebuild(drawP.components.client_list());
+                drawP.force_rebuild_cache();
 
                 return true;
             }
@@ -69,7 +70,6 @@ void EraserTool::reset_tool() {
     }
     erasedComponents.clear();
     erasedBVHNodes.clear();
-    drawP.compCache.disableRefresh = false;
 }
 
 void EraserTool::tool_update() {
@@ -81,8 +81,6 @@ void EraserTool::tool_update() {
         SCollision::ColliderCollection<float> cC;
         SCollision::generate_wide_line(cC, prevMousePos, drawP.world.main.input.mouse.pos, drawP.controls.relativeWidth * 2.0f, true);
         auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
-
-        drawP.compCache.disableRefresh = true;
 
         drawP.compCache.traverse_bvh_erase_function(cCWorld.bounds, [&](const auto& bvhNode, auto& comps) {
             if(bvhNode &&
@@ -107,13 +105,6 @@ void EraserTool::tool_update() {
     }
     else
         reset_tool();
-}
-
-void EraserTool::move_erased_components_from_bvh_nodes_recursive(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
-    for(auto& c : bvhNode->components)
-        erasedComponents.emplace(c);
-    for(auto& p : bvhNode->children)
-        move_erased_components_from_bvh_nodes_recursive(p);
 }
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {

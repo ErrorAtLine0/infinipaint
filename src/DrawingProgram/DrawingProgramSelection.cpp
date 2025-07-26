@@ -14,6 +14,10 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
+const std::unordered_set<CollabListType::ObjectInfoPtr>& DrawingProgramSelection::get_selected_set() {
+    return selectedSet;
+}
+
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC) {
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
@@ -73,19 +77,26 @@ void DrawingProgramSelection::deselect_all() {
         parallel_loop_container(a, [&](auto& obj) {
             obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
             obj->obj->final_update(drawP, false);
+            obj->obj->client_send_transform(drawP);
         });
         selectedSet.clear();
         cache.clear();
         selectionTransformCoords = CoordSpaceHelper();
-        drawP.compCache.force_rebuild(drawP.components.client_list());
+        drawP.force_rebuild_cache();
         transformOpHappening = TransformOperation::NONE;
     }
 }
 
+bool DrawingProgramSelection::is_selected(const CollabListType::ObjectInfoPtr& objToCheck) {
+    return selectedSet.contains(objToCheck);
+}
+
 void DrawingProgramSelection::update() {
     if(is_something_selected()) {
-        if(cache.get_unsorted_component_list().size() >= 1000 && (std::chrono::steady_clock::now() - cache.get_last_bvh_build_time()) >= std::chrono::seconds(5))
-            cache.force_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()));
+
+        if(cache.check_if_rebuild_should_occur())
+            cache.test_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()), true);
+
         if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
             deselect_all();
 
