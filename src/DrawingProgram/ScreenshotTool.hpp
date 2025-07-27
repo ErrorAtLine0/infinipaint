@@ -15,6 +15,7 @@ class ScreenshotTool {
         void tool_update();
         void draw(SkCanvas* canvas, const DrawData& drawData);
         void reset_tool();
+        bool prevent_undo_or_redo();
     private:
         void commit_rect();
         void take_screenshot(const std::filesystem::path& filePath);

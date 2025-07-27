@@ -19,6 +19,8 @@ class RectDrawTool {
         void commit_edit_updates(const std::shared_ptr<DrawRectangle>& a, std::any& prevData);
         bool edit_update(const std::shared_ptr<DrawRectangle>& a);
         bool edit_gui(const std::shared_ptr<DrawRectangle>& a);
+
+        bool prevent_undo_or_redo();
     private:
         void commit_rectangle();
 

@@ -107,6 +107,10 @@ void EraserTool::tool_update() {
         reset_tool();
 }
 
+bool EraserTool::prevent_undo_or_redo() {
+    return drawP.controls.leftClickHeld;
+}
+
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawData.main->toolbar.io->hoverObstructed) {
         SkColor4f c = drawP.world.main.canvasTheme.toolFrontColor;

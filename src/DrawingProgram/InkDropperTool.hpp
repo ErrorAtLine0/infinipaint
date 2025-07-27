@@ -11,6 +11,7 @@ class InkDropperTool {
         void gui_toolbox();
         void tool_update();
         void draw(SkCanvas* canvas, const DrawData& drawData);
+        bool prevent_undo_or_redo();
     private:
 
         DrawingProgram& drawP;

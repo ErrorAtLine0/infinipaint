@@ -219,6 +219,10 @@ void EditTool::tool_update() {
     }
 }
 
+bool EditTool::prevent_undo_or_redo() {
+    return controls.isEditing;
+}
+
 void EditTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(controls.isEditing) {
         std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();

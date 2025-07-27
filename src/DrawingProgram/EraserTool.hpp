@@ -13,6 +13,8 @@ class EraserTool {
         void reset_tool();
         void draw(SkCanvas* canvas, const DrawData& drawData);
 
+        bool prevent_undo_or_redo();
+
         std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents;
         std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>> erasedBVHNodes;
     private:

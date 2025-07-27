@@ -392,6 +392,32 @@ void DrawingProgram::update() {
         compCache.test_rebuild(components.client_list());
 }
 
+bool DrawingProgram::prevent_undo_or_redo() {
+    switch(controls.selectedTool) {
+        case TOOL_BRUSH:
+            return brushTool.prevent_undo_or_redo();
+        case TOOL_ERASER:
+            return eraserTool.prevent_undo_or_redo();
+        case TOOL_RECTSELECT:
+            return rectSelectTool.prevent_undo_or_redo();
+        case TOOL_RECTANGLE:
+            return rectDrawTool.prevent_undo_or_redo();
+        case TOOL_ELLIPSE:
+            return ellipseDrawTool.prevent_undo_or_redo();
+        case TOOL_TEXTBOX:
+            return textBoxTool.prevent_undo_or_redo();
+        case TOOL_INKDROPPER:
+            return inkDropperTool.prevent_undo_or_redo();
+        case TOOL_SCREENSHOT:
+            return screenshotTool.prevent_undo_or_redo();
+        case TOOL_EDIT:
+            return editTool.prevent_undo_or_redo();
+        default:
+            break;
+    };
+    return false;
+}
+
 void DrawingProgram::force_rebuild_cache() {
     if(controls.selectedTool == TOOL_ERASER)
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool.erasedComponents, eraserTool.erasedBVHNodes, true);

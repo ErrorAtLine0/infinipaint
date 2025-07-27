@@ -22,6 +22,7 @@ class EditTool {
         void draw(SkCanvas* canvas, const DrawData& drawData);
         void add_point_handle(const HandleData& handle);
         void edit_start(const std::shared_ptr<DrawComponent>& comp);
+        bool prevent_undo_or_redo();
 
         struct EditControls {
             std::vector<HandleData> pointHandles;

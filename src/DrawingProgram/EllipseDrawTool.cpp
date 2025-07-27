@@ -139,6 +139,10 @@ void EllipseDrawTool::tool_update() {
     }
 }
 
+bool EllipseDrawTool::prevent_undo_or_redo() {
+    return controls.intermediateItem != nullptr;
+}
+
 void EllipseDrawTool::commit() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         controls.intermediateItem->client_send_update_final(drawP);

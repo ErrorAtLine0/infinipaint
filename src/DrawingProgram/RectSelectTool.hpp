@@ -14,10 +14,11 @@ class RectSelectTool {
         void tool_update();
         void draw(SkCanvas* canvas, const DrawData& drawData);
         void reset_tool();
+
+        bool prevent_undo_or_redo();
     private:
         struct RectSelectControls {
             int selectionMode = 0;
-
 
             CoordSpaceHelper coords;
 

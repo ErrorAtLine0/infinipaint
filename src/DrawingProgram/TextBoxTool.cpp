@@ -261,6 +261,10 @@ void TextBoxTool::tool_update() {
     }
 }
 
+bool TextBoxTool::prevent_undo_or_redo() {
+    return controls.intermediateItem != nullptr;
+}
+
 // Passing a function in, just in case we have to do something before editing the text
 void TextBoxTool::edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox) {
     toRun();

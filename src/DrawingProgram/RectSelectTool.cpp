@@ -74,6 +74,10 @@ void RectSelectTool::tool_update() {
     }
 }
 
+bool RectSelectTool::prevent_undo_or_redo() {
+    return drawP.selection.is_something_selected() || controls.selectionMode == 1;
+}
+
 void RectSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(controls.selectionMode == 1) {
         canvas->save();

@@ -19,6 +19,8 @@ class TextBoxTool {
         void commit_edit_updates(const std::shared_ptr<DrawTextBox>& a, std::any& prevData);
         bool edit_update(const std::shared_ptr<DrawTextBox>& a);
         bool edit_gui(const std::shared_ptr<DrawTextBox>& a);
+
+        bool prevent_undo_or_redo();
     private:
         void edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox);
         void update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox);

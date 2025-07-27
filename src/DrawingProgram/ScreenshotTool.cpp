@@ -324,6 +324,10 @@ void ScreenshotTool::commit_rect() {
     controls.circles[7] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2, (controls.rectY1 + controls.rectY2) * 0.5})), DRAG_POINT_RADIUS};
 }
 
+bool ScreenshotTool::prevent_undo_or_redo() {
+    return false;
+}
+
 void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(controls.selectionMode == 1 || controls.selectionMode == 2) {
         canvas->save();

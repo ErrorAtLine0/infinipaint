@@ -73,5 +73,9 @@ void InkDropperTool::tool_update() {
     }
 }
 
+bool InkDropperTool::prevent_undo_or_redo() {
+    return false;
+}
+
 void InkDropperTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }

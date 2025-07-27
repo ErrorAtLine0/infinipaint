@@ -168,6 +168,10 @@ void BrushTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool BrushTool::prevent_undo_or_redo() {
+    return controls.intermediateItem != nullptr;
+}
+
 void BrushTool::commit_stroke() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         if(!controls.intermediateItem->d.points.empty()) {

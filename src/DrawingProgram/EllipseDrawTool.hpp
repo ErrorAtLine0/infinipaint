@@ -19,6 +19,8 @@ class EllipseDrawTool {
         void commit_edit_updates(const std::shared_ptr<DrawEllipse>& a, std::any& prevData);
         bool edit_update(const std::shared_ptr<DrawEllipse>& a);
         bool edit_gui(const std::shared_ptr<DrawEllipse>& a);
+
+        bool prevent_undo_or_redo();
     private:
         void commit();
 

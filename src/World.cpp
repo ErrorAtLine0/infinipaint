@@ -144,7 +144,7 @@ void World::focus_update() {
     mousePreviousWorldVec = drawData.cam.c.from_space(main.input.mouse.pos);
     mouseWorldMove = drawData.cam.c.from_space(main.input.mouse.move);
 
-    if(!clientStillConnecting) {
+    if(!clientStillConnecting && !drawProg.prevent_undo_or_redo()) {
         if(main.input.key(InputManager::KEY_UNDO).repeat)
             undo.undo();
         else if(main.input.key(InputManager::KEY_REDO).repeat)

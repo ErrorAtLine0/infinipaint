@@ -139,6 +139,10 @@ void RectDrawTool::tool_update() {
     }
 }
 
+bool RectDrawTool::prevent_undo_or_redo() {
+    return controls.intermediateItem != nullptr;
+}
+
 void RectDrawTool::commit_rectangle() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         controls.intermediateItem->client_send_update_final(drawP);

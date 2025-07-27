@@ -19,6 +19,7 @@ class BrushTool {
         void tool_update();
         void reset_tool();
         void draw(SkCanvas* canvas, const DrawData& drawData);
+        bool prevent_undo_or_redo();
     private:
         void commit_stroke();
         bool extensive_point_checking_back(const Vector2f& newPoint);
