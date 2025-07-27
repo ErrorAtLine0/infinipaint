@@ -23,50 +23,7 @@ void EraserTool::gui_toolbox() {
 void EraserTool::reset_tool() {
     if(!erasedComponents.empty()) {
         DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
-
-        std::unordered_set<ServerClientID> idsToErase1;
-        for(auto& c : erasedComponents)
-            idsToErase1.emplace(c->id);
-        DrawComponent::client_send_erase_set(drawP, idsToErase1);
-        drawP.components.client_erase_set(erasedComponents);
-
-        drawP.world.undo.push(UndoManager::UndoRedoPair{
-            [&, erasedComponents = erasedComponents]() {
-                std::vector<CollabListType::ObjectInfoPtr> sortedObjects(erasedComponents.begin(), erasedComponents.end());
-                std::sort(sortedObjects.begin(), sortedObjects.end(), [](auto& a, auto& b) {
-                    return a->pos < b->pos;
-                });
-
-                for(auto& comp : sortedObjects)
-                    if(comp->obj->collabListInfo.lock())
-                        return false;
-
-                drawP.components.client_insert_ordered_vector(sortedObjects);
-                DrawComponent::client_send_place_many(drawP, sortedObjects);
-
-                drawP.reset_tools();
-
-                return true;
-            },
-            [&, erasedComponents = erasedComponents]() {
-                for(auto& comp : erasedComponents)
-                    if(!comp->obj->collabListInfo.lock())
-                        return false;
-
-                std::unordered_set<ServerClientID> idsToErase;
-                for(auto& c : erasedComponents)
-                    idsToErase.emplace(c->id);
-
-                DrawComponent::client_send_erase_set(drawP, idsToErase);
-                drawP.components.client_erase_set(erasedComponents);
-
-                drawP.reset_tools();
-
-                drawP.force_rebuild_cache();
-
-                return true;
-            }
-        });
+        drawP.client_erase_set(erasedComponents);
     }
     erasedComponents.clear();
     erasedBVHNodes.clear();

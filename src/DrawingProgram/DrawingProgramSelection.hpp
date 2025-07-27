@@ -17,6 +17,7 @@ class DrawingProgramSelection {
         bool is_selected(const CollabListType::ObjectInfoPtr& objToCheck);
         const std::unordered_set<CollabListType::ObjectInfoPtr>& get_selected_set();
     private:
+        void delete_all();
         bool mouse_collided_with_selection_aabb();
         bool mouse_collided_with_scale_point();
         bool mouse_collided_with_rotate_center_handle_point();

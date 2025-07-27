@@ -61,6 +61,7 @@ class DrawingProgram {
 
         Vector4f* get_foreground_color_ptr();
     private:
+        void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
 
         void check_delayed_update_timers();
         void check_updateable_components();
@@ -79,6 +80,7 @@ class DrawingProgram {
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
 
         void add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo);
+        void add_undo_erase_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
 
         BrushTool brushTool;
         EraserTool eraserTool;

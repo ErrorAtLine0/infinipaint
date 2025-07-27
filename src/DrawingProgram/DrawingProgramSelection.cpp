@@ -172,14 +172,25 @@ bool DrawingProgramSelection::is_selected(const CollabListType::ObjectInfoPtr& o
     return selectedSet.contains(objToCheck);
 }
 
+void DrawingProgramSelection::delete_all() {
+    if(is_something_selected()) {
+        drawP.client_erase_set(selectedSet);
+        selectedSet.clear();
+        cache.clear();
+        transformOpHappening = TransformOperation::NONE;
+        selectionTransformCoords = CoordSpaceHelper();
+    }
+}
+
 void DrawingProgramSelection::update() {
     if(is_something_selected()) {
-
         if(cache.check_if_rebuild_should_occur())
             cache.test_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()), true);
 
         if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
             deselect_all();
+        else if(drawP.world.main.input.key(InputManager::KEY_DRAW_DELETE).pressed)
+            delete_all();
 
         selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
         selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());

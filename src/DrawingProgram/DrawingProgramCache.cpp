@@ -51,7 +51,7 @@ void DrawingProgramCache::clear_own_cached_surfaces() {
 }
 
 bool DrawingProgramCache::check_if_rebuild_should_occur() {
-    return (unsortedComponents.size() >= MINIMUM_COMPONENTS_TO_START_REBUILD && (std::chrono::steady_clock::now() - lastBvhBuildTime) >= std::chrono::seconds(5));
+    return (unsortedComponents.size() >= MINIMUM_COMPONENTS_TO_START_REBUILD);
 }
 
 void DrawingProgramCache::test_rebuild(const std::vector<CollabListType::ObjectInfoPtr>& comps, bool force) {
@@ -105,10 +105,7 @@ const std::chrono::steady_clock::time_point& DrawingProgramCache::get_last_bvh_b
 
 void DrawingProgramCache::add_component(const CollabListType::ObjectInfoPtr& c) {
     unsortedComponents.emplace_back(c);
-    if(c->obj->worldAABB)
-        invalidate_cache_at_aabb_before_pos(c->obj->worldAABB.value(), c->pos);
-    else
-        invalidate_cache_before_pos(c->pos);
+    invalidate_cache_at_optional_aabb_before_pos(c->obj->worldAABB, c->pos);
 }
 
 void DrawingProgramCache::erase_component(const CollabListType::ObjectInfoPtr& c) {
@@ -119,7 +116,7 @@ void DrawingProgramCache::erase_component(const CollabListType::ObjectInfoPtr& c
     }
     else
         std::erase(unsortedComponents, c);
-    invalidate_cache_before_pos(c->pos);
+    invalidate_cache_at_optional_aabb_before_pos(c->obj->worldAABB, c->pos);
 }
 
 std::pair<std::shared_ptr<DrawingProgramCacheBVHNode>, std::vector<CollabListType::ObjectInfoPtr>::iterator> DrawingProgramCache::get_bvh_node_fully_containing_recursive(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, DrawComponent* c) {
@@ -259,6 +256,13 @@ void DrawingProgramCache::invalidate_cache_before_pos(uint64_t placementToInvali
         }
         return false;
     });
+}
+
+void DrawingProgramCache::invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt) {
+    if(aabb)
+        invalidate_cache_at_aabb_before_pos(aabb.value(), placementToInvalidateAt);
+    else
+        invalidate_cache_before_pos(placementToInvalidateAt);
 }
 
 void DrawingProgramCache::invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt) {

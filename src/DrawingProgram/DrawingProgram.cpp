@@ -519,6 +519,15 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
     compCache.test_rebuild(components.client_list(), true);
 }
 
+void DrawingProgram::client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents) {
+    std::unordered_set<ServerClientID> idsToErase;
+    for(auto& c : erasedComponents)
+        idsToErase.emplace(c->id);
+    DrawComponent::client_send_erase_set(*this, idsToErase);
+    components.client_erase_set(erasedComponents);
+    add_undo_erase_components(erasedComponents);
+}
+
 void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo) {
     world.undo.push(UndoManager::UndoRedoPair{
         [&, objToUndo]() {
@@ -531,9 +540,46 @@ void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPt
             if(objToUndo->obj->collabListInfo.lock())
                 return false;
             components.client_insert(objToUndo);
-            objToUndo->obj->final_update(*this); // Method to recover after an undo that happened while drawing a component
             objToUndo->obj->client_send_place(*this);
             reset_tools();
+            return true;
+        }
+    });
+}
+
+void DrawingProgram::add_undo_erase_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& erasedComponents) {
+    world.undo.push(UndoManager::UndoRedoPair{
+        [&, erasedComponents = erasedComponents]() {
+            std::vector<CollabListType::ObjectInfoPtr> sortedObjects(erasedComponents.begin(), erasedComponents.end());
+            std::sort(sortedObjects.begin(), sortedObjects.end(), [](auto& a, auto& b) {
+                return a->pos < b->pos;
+            });
+
+            for(auto& comp : sortedObjects)
+                if(comp->obj->collabListInfo.lock())
+                    return false;
+
+            components.client_insert_ordered_vector(sortedObjects);
+            DrawComponent::client_send_place_many(*this, sortedObjects);
+
+            reset_tools();
+
+            return true;
+        },
+        [&, erasedComponents = erasedComponents]() {
+            for(auto& comp : erasedComponents)
+                if(!comp->obj->collabListInfo.lock())
+                    return false;
+
+            std::unordered_set<ServerClientID> idsToErase;
+            for(auto& c : erasedComponents)
+                idsToErase.emplace(c->id);
+
+            DrawComponent::client_send_erase_set(*this, idsToErase);
+            components.client_erase_set(erasedComponents);
+
+            reset_tools();
+
             return true;
         }
     });

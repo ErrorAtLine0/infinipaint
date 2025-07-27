@@ -55,6 +55,7 @@ class DrawingProgramCache {
         void preupdate_component(const CollabListType::ObjectInfoPtr& c);
         void invalidate_cache_before_pos(uint64_t placementToInvalidateAt);
         void invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt);
+        void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);
         void clear();
         void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, uint64_t* lastDrawnComponentPlacement = nullptr);
         const std::vector<CollabListType::ObjectInfoPtr>& get_unsorted_component_list() const;
