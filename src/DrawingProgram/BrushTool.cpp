@@ -106,12 +106,12 @@ void BrushTool::tool_update() {
             controls.intermediateItem->coords = drawP.world.drawData.cam.c;
             controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
             uint64_t placement = drawP.components.client_list().size();
-            drawP.components.client_insert(placement, controls.intermediateItem);
+            auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
             controls.intermediateItem->temp_update(drawP);
             controls.intermediateItem->client_send_place(drawP);
             // NOTE: The data isnt finallized at this point, so a BVH isn't generated for an object that you undo while youre drawing (this isnt just for brush strokes)
             // The fix for now is to generate a BVH for an object when you redo it
-            drawP.add_undo_place_component(placement, controls.intermediateItem); 
+            drawP.add_undo_place_component(objAdd);
             controls.addedTemporaryPoint = false;
         }
         else {
@@ -165,8 +165,6 @@ void BrushTool::gui_toolbox() {
     t.gui.text_label_centered("Brush");
     t.gui.checkbox_field("hasroundcaps", "Round Caps", &controls.hasRoundCaps);
     t.gui.slider_scalar_field("relwidth", "Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
-    //t.gui.checkbox_field("drawminrel", "Drawing Min Relative To Size", &controls.drawingMinimumRelativeToSize);
-    //t.gui.checkbox_field("midwayinterp", "Midway Interpolation", &controls.midwayInterpolation);
     t.gui.pop_id();
 }
 

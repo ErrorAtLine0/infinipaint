@@ -53,6 +53,7 @@ DrawingProgram::DrawingProgram(World& initWorld):
     };
     components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {
         compCache.erase_component(c);
+        selection.erase_component(c);
         delayedUpdateComponents.erase(c->obj);
         updateableComponents.erase(c->obj);
     };
@@ -140,18 +141,12 @@ void DrawingProgram::init_client_callbacks() {
         message(a);
 
         std::vector<bool> didntExistPreviously = components.server_insert_ordered_vector(sortedPlacedComponents);
-        if(sortedPlacedComponents.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD) {
-            parallel_loop_container(sortedPlacedComponents, [&](const auto& c){
-                c->obj->final_update(*this, false);
-            });
+        bool isSingleThread = sortedPlacedComponents.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
+        parallel_loop_container(sortedPlacedComponents, [&](const auto& c){
+            c->obj->final_update(*this, isSingleThread);
+        }, isSingleThread);
+        if(!isSingleThread)
             force_rebuild_cache();
-        }
-        else {
-            for(size_t i = 0; i < sortedPlacedComponents.size(); i++) {
-                if(didntExistPreviously[i])
-                    sortedPlacedComponents[i]->obj->final_update(*this);
-            }
-        }
     });
     world.con.client_add_recv_callback(CLIENT_ERASE_SINGLE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
         ServerClientID idToErase;
@@ -443,9 +438,9 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& fileP
     img->d.imageID = imageID;
     img->final_update(*this);
     uint64_t placement = components.client_list().size();
-    components.client_insert(placement, img);
+    auto objAdd = components.client_insert(placement, img);
     img->client_send_place(*this);
-    add_undo_place_component(placement, img);
+    add_undo_place_component(objAdd);
 }
 
 void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
@@ -466,9 +461,9 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     img->d.imageID = imageID;
     img->final_update(*this);
     uint64_t placement = components.client_list().size();
-    components.client_insert(placement, img);
+    auto objAdd = components.client_insert(placement, img);
     img->client_send_place(*this);
-    add_undo_place_component(placement, img);
+    add_undo_place_component(objAdd);
 }
 
 void DrawingProgram::reset_tools() {
@@ -498,59 +493,24 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
     compCache.test_rebuild(components.client_list(), true);
 }
 
-void DrawingProgram::add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp) {
+void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo) {
     world.undo.push(UndoManager::UndoRedoPair{
-        [&, comp]() {
-            ServerClientID compID;
-            comp->client_send_erase(*this);
-            components.client_erase(comp, compID);
+        [&, objToUndo]() {
+            objToUndo->obj->client_send_erase(*this);
+            components.client_erase(objToUndo);
             reset_tools();
             return true;
         },
-        [&, comp, placement]() {
-            if(comp->collabListInfo.lock())
+        [&, objToUndo]() {
+            if(objToUndo->obj->collabListInfo.lock())
                 return false;
-            components.client_insert(placement, comp);
-            comp->final_update(*this); // Method to recover after an undo that happened while drawing a component
-            comp->client_send_place(*this);
+            components.client_insert(objToUndo);
+            objToUndo->obj->final_update(*this); // Method to recover after an undo that happened while drawing a component
+            objToUndo->obj->client_send_place(*this);
             reset_tools();
             return true;
         }
     });
-}
-
-void DrawingProgram::add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps) {
-    world.undo.push(UndoManager::UndoRedoPair{
-        [&, comps]() {
-            bool toRet = true;
-            std::unordered_set<ServerClientID> idsToErase;
-            for(auto& c : comps) {
-                if(!c->collabListInfo.lock())
-                    toRet = false;
-                else {
-                    idsToErase.emplace(c->collabListInfo.lock()->id);
-                    ServerClientID compID;
-                    components.client_erase(c, compID);
-                }
-            }
-            DrawComponent::client_send_erase_set(*this, idsToErase);
-            reset_tools();
-            return toRet;
-        },
-        [&, comps, placement]() {
-            for(auto& c : comps) 
-                if(c->collabListInfo.lock())
-                    return false;
-            for(auto& c : comps | std::views::reverse) {
-                components.client_insert(placement, c);
-                c->final_update(*this); // Method to recover after an undo that happened while drawing a component
-                c->client_send_place(*this);
-            }
-            reset_tools();
-            return true;
-        }
-    });
-
 }
 
 ClientPortionID DrawingProgram::get_max_id(ServerPortionID serverID) {

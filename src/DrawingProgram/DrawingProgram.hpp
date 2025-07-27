@@ -76,8 +76,7 @@ class DrawingProgram {
 
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
 
-        void add_undo_place_component(uint64_t placement, const std::shared_ptr<DrawComponent>& comp);
-        void add_undo_place_components(uint64_t placement, const std::vector<std::shared_ptr<DrawComponent>>& comps);
+        void add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo);
 
         BrushTool brushTool;
         EraserTool eraserTool;

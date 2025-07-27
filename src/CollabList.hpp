@@ -56,7 +56,7 @@ template <typename T, typename IDType> class CollabList {
                 complete_client_pos_refresh(false);
         }
 
-        IDType client_insert(uint64_t pos, const T& item) {
+        ObjectInfoPtr client_insert(uint64_t pos, const T& item) {
             auto newObj(std::make_shared<ObjectInfo>());
             newObj->syncIgnore = true;
             newObj->id = getNewIDFunc();
@@ -74,16 +74,35 @@ template <typename T, typename IDType> class CollabList {
             if(updateCallback)
                 updateCallback();
 
-            return newObj->id;
+            return newObj;
         }
-        void client_erase(const T& item, IDType& erasedID) {
+
+        IDType client_insert(const ObjectInfoPtr& objInfoToInsert) {
+            objInfoToInsert->syncIgnore = true;
+            objInfoToInsert->id = getNewIDFunc();
+            objInfoToInsert->pos = std::min<uint64_t>(static_cast<uint64_t>(clientSideList.size()), objInfoToInsert->pos);
+            objInfoToInsert->obj->collabListInfo = objInfoToInsert;
+
+            clientSideList.insert(clientSideList.begin() + objInfoToInsert->pos, objInfoToInsert);
+            idToObjectMap.emplace(objInfoToInsert->id, objInfoToInsert);
+
+            client_pos_refresh_after_insert(objInfoToInsert->pos);
+
+            if(clientInsertCallback)
+                clientInsertCallback(objInfoToInsert);
+            if(updateCallback)
+                updateCallback();
+
+            return objInfoToInsert->id;
+        }
+
+        void client_erase(const ObjectInfoPtr& objToErase) {
             bool erasedSomething = false;
             std::erase_if(clientSideList, [&](const auto& obj) {
-                if(obj->obj == item) {
+                if(obj->obj == objToErase->obj) {
                     if(clientEraseCallback)
                         clientEraseCallback(obj);
-                    erasedID = obj->id;
-                    idToObjectMap.erase(erasedID);
+                    idToObjectMap.erase(objToErase->id);
                     obj->syncIgnore = true;
                     obj->obj->collabListInfo.reset();
                     erasedSomething = true;

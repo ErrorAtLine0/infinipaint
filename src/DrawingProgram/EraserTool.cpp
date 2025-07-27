@@ -24,10 +24,10 @@ void EraserTool::reset_tool() {
     if(!erasedComponents.empty()) {
         DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
 
-        std::unordered_set<ServerClientID> idsToErase;
+        std::unordered_set<ServerClientID> idsToErase1;
         for(auto& c : erasedComponents)
-            idsToErase.emplace(c->id);
-        DrawComponent::client_send_erase_set(drawP, idsToErase);
+            idsToErase1.emplace(c->id);
+        DrawComponent::client_send_erase_set(drawP, idsToErase1);
         drawP.components.client_erase_set(erasedComponents);
 
         drawP.world.undo.push(UndoManager::UndoRedoPair{

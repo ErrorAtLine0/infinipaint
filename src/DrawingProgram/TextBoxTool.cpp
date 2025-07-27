@@ -227,9 +227,9 @@ void TextBoxTool::tool_update() {
                 controls.intermediateItem->coords = drawP.world.drawData.cam.c;
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
                 uint64_t placement = drawP.components.client_list().size();
-                drawP.components.client_insert(placement, controls.intermediateItem);
+                auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
                 controls.intermediateItem->client_send_place(drawP);
-                drawP.add_undo_place_component(placement, controls.intermediateItem);
+                drawP.add_undo_place_component(objAdd);
                 controls.drawStage = 1;
             }
             break;

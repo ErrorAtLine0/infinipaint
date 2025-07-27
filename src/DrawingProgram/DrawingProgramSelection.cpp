@@ -18,6 +18,13 @@ const std::unordered_set<CollabListType::ObjectInfoPtr>& DrawingProgramSelection
     return selectedSet;
 }
 
+void DrawingProgramSelection::erase_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+    if(is_selected(objToCheck)) {
+        cache.erase_component(objToCheck);
+        selectedSet.erase(objToCheck);
+    }
+}
+
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC) {
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
@@ -32,7 +39,7 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
         }
     };
     drawP.compCache.traverse_bvh_erase_function(cCWorld.bounds, [&](const auto& bvhNode, auto& comps) {
-        if(bvhNode &&
+        if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max)) &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right())) &&
@@ -78,10 +85,24 @@ void DrawingProgramSelection::deselect_all() {
         for(auto& transformedObj : a)
             transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
 
+        selectedSet.clear();
+        cache.clear();
+        transformOpHappening = TransformOperation::NONE;
+
+        bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
         parallel_loop_container(a, [&](auto& obj) {
             obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
-            obj->obj->final_update(drawP, false);
-        });
+            obj->obj->finalize_update(drawP, false);
+        }, isSingleThread);
+        if(!isSingleThread)
+            drawP.force_rebuild_cache();
+        else {
+            for(auto& obj : a)
+                drawP.compCache.add_component(obj);
+        }
+
+        selectionTransformCoords = CoordSpaceHelper();
+
         std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
         std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
         for(auto& transformedObj : a) {
@@ -101,17 +122,19 @@ void DrawingProgramSelection::deselect_all() {
                         return false;
                 }
 
+                bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
                 parallel_loop_container(transformsFrom, [&](auto& p) {
                     auto& [comp, coords] = p;
                     comp->obj->coords = coords;
-                    comp->obj->finalize_update(drawP, false);
-                });
+                    comp->obj->finalize_update(drawP, isSingleThread);
+                }, isSingleThread);
 
                 DrawComponent::client_send_transform_many(drawP, transformsToSend);
 
                 drawP.reset_tools();
 
-                drawP.force_rebuild_cache();
+                if(!isSingleThread)
+                    drawP.force_rebuild_cache();
 
                 return true;
             },
@@ -125,28 +148,23 @@ void DrawingProgramSelection::deselect_all() {
                         return false;
                 }
 
+                bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
                 parallel_loop_container(transformsTo, [&](auto& p) {
                     auto& [comp, coords] = p;
                     comp->obj->coords = coords;
-                    comp->obj->finalize_update(drawP, false);
-                });
+                    comp->obj->finalize_update(drawP, isSingleThread);
+                }, isSingleThread);
 
                 DrawComponent::client_send_transform_many(drawP, transformsToSend);
 
                 drawP.reset_tools();
 
-                drawP.force_rebuild_cache();
+                if(!isSingleThread)
+                    drawP.force_rebuild_cache();
 
                 return true;
             }
         });
-
-
-        selectedSet.clear();
-        cache.clear();
-        selectionTransformCoords = CoordSpaceHelper();
-        drawP.force_rebuild_cache();
-        transformOpHappening = TransformOperation::NONE;
     }
 }
 

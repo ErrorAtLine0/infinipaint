@@ -28,7 +28,6 @@ class RectDrawTool {
             int fillStrokeMode = 1;
             int drawStage = 0;
             std::shared_ptr<DrawRectangle> intermediateItem;
-            ServerClientID intermediateID;
         } controls;
 
         DrawingProgram& drawP;

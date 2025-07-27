@@ -13,6 +13,7 @@ class DrawingProgramSelection {
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
         bool is_something_selected();
         bool mouse_collided_with_selection();
+        void erase_component(const CollabListType::ObjectInfoPtr& objToCheck);
         bool is_selected(const CollabListType::ObjectInfoPtr& objToCheck);
         const std::unordered_set<CollabListType::ObjectInfoPtr>& get_selected_set();
     private:
