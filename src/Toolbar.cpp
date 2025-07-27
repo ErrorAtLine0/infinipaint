@@ -410,9 +410,9 @@ void Toolbar::top_toolbar() {
         if(main.world->network_being_used() && gui.svg_icon_button("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
             playerMenuOpen = !playerMenuOpen;
         if(gui.svg_icon_button("Menu Undo Button", "data/icons/undo.svg"))
-            main.world->undo.undo();
+            main.world->undo_with_checks();
         if(gui.svg_icon_button("Menu Redo Button", "data/icons/redo.svg"))
-            main.world->undo.redo();
+            main.world->redo_with_checks();
         if(gui.svg_icon_button("Bookmark Menu Button", "data/icons/bookmark.svg", bookMenu.popupOpen)) {
             if(bookMenu.popupOpen)
                 bookMenu.popupOpen = false;

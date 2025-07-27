@@ -78,6 +78,9 @@ class World {
         void save_to_file(const std::filesystem::path& fileName);
         void load_from_file(const std::filesystem::path& fileName, std::string_view buffer);
 
+        void undo_with_checks();
+        void redo_with_checks();
+
         ServerPortionID ownID;
 
         std::filesystem::path filePath;

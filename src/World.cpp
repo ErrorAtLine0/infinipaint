@@ -144,12 +144,20 @@ void World::focus_update() {
     mousePreviousWorldVec = drawData.cam.c.from_space(main.input.mouse.pos);
     mouseWorldMove = drawData.cam.c.from_space(main.input.mouse.move);
 
-    if(!clientStillConnecting && !drawProg.prevent_undo_or_redo()) {
-        if(main.input.key(InputManager::KEY_UNDO).repeat)
-            undo.undo();
-        else if(main.input.key(InputManager::KEY_REDO).repeat)
-            undo.redo();
-    }
+    if(main.input.key(InputManager::KEY_UNDO).repeat)
+        undo_with_checks();
+    else if(main.input.key(InputManager::KEY_REDO).repeat)
+        redo_with_checks();
+}
+
+void World::undo_with_checks() {
+    if(!clientStillConnecting && !drawProg.prevent_undo_or_redo())
+        undo.undo();
+}
+
+void World::redo_with_checks() {
+    if(!clientStillConnecting && !drawProg.prevent_undo_or_redo())
+        undo.redo();
 }
 
 void World::unfocus_update() {
