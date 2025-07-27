@@ -83,8 +83,8 @@ void DrawComponent::server_send_update_final(MainServer& server, ServerClientID 
     serverIsTempUpdate = false;
 }
 
-void DrawComponent::server_send_transform(MainServer& server, ServerClientID id) {
-    server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_COMPONENT, id, this->coords);
+void DrawComponent::server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms) {
+    server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
 }
 
 void DrawComponent::server_update(MainServer& server, ServerClientID id) {
@@ -156,9 +156,8 @@ void DrawComponent::client_send_update_final(DrawingProgram& drawP) {
         drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, false, collabListInfo.lock()->id, *this);
 }
 
-void DrawComponent::client_send_transform(DrawingProgram& drawP) {
-    if(collabListInfo.lock())
-        drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_COMPONENT, collabListInfo.lock()->id, this->coords);
+void DrawComponent::client_send_transform_many(DrawingProgram& drawP, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms) {
+    drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_MANY_COMPONENTS, transforms);
 }
 
 void DrawComponent::client_send_erase(DrawingProgram& drawP) {

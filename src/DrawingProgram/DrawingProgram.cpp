@@ -89,17 +89,38 @@ void DrawingProgram::init_client_callbacks() {
             delayedUpdateComponents.emplace(comp);
         }
     });
-    world.con.client_add_recv_callback(CLIENT_TRANSFORM_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        ServerClientID id;
-        message(id);
-        auto objPtr = components.get_item_by_id(id);
-        if(!objPtr)
-            return;
-        if(selection.is_selected(objPtr)) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
-            return;
-        std::shared_ptr<DrawComponent>& comp = objPtr->obj;
-        message(comp->coords);
-        comp->finalize_update(*this); // No need to update draw data during transformation
+    world.con.client_add_recv_callback(CLIENT_TRANSFORM_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
+        std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transforms;
+        message(transforms);
+        if(transforms.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD) {
+            std::atomic<size_t> objsActuallyTransformed = 0;
+            parallel_loop_container(transforms, [&](auto& p) {
+                auto& [id, coords] = p;
+                auto objPtr = components.get_item_by_id(id);
+                if(!objPtr || selection.is_selected(objPtr)) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
+                    return;
+                std::shared_ptr<DrawComponent>& comp = objPtr->obj;
+                if(comp->coords == coords)
+                    return;
+                comp->coords = coords;
+                objsActuallyTransformed++;
+                comp->finalize_update(*this, false);
+            });
+            if(objsActuallyTransformed != 0)
+                force_rebuild_cache();
+        }
+        else {
+            for(auto& [id, coords] : transforms) {
+                auto objPtr = components.get_item_by_id(id);
+                if(!objPtr || selection.is_selected(objPtr)) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
+                    continue;
+                std::shared_ptr<DrawComponent>& comp = objPtr->obj;
+                if(comp->coords == coords)
+                    return;
+                comp->coords = coords;
+                comp->finalize_update(*this); // No need to update draw data during transformation
+            }
+        }
     });
     world.con.client_add_recv_callback(CLIENT_PLACE_SINGLE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
         uint64_t insertPosition;

@@ -153,6 +153,14 @@ CoordSpaceHelper CoordSpaceHelper::other_coord_space_to_this_space(const CoordSp
     return toRet;
 }
 
+bool CoordSpaceHelper::operator==(const CoordSpaceHelper& otherCoords) const {
+    return rotation == otherCoords.rotation && pos == otherCoords.pos && inverseScale == otherCoords.inverseScale;
+}
+
+bool CoordSpaceHelper::operator!=(const CoordSpaceHelper& otherCoords) const {
+    return rotation != otherCoords.rotation || pos != otherCoords.pos || inverseScale != otherCoords.inverseScale;
+}
+
 CoordSpaceHelper CoordSpaceHelper::other_coord_space_from_this_space(const CoordSpaceHelper& other) const {
     CoordSpaceHelper toRet;
     toRet.pos = from_space_world(other.pos);

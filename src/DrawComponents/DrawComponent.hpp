@@ -69,7 +69,7 @@ class DrawComponent {
         static void server_send_erase_set(MainServer& server, const std::unordered_set<ServerClientID>& ids);
         void server_send_update_temp(MainServer& server, ServerClientID id);
         void server_send_update_final(MainServer& server, ServerClientID id);
-        void server_send_transform(MainServer& server, ServerClientID id);
+        static void server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::chrono::time_point<std::chrono::steady_clock> tempServerUpdateTimer;
         bool serverIsTempUpdate = false;
@@ -94,7 +94,7 @@ class DrawComponent {
         static void client_send_erase_set(DrawingProgram& drawP, const std::unordered_set<ServerClientID>& ids);
         void client_send_update_temp(DrawingProgram& drawP);
         void client_send_update_final(DrawingProgram& drawP);
-        void client_send_transform(DrawingProgram& drawP);
+        static void client_send_transform_many(DrawingProgram& drawP, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
 

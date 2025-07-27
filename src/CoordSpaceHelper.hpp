@@ -24,8 +24,10 @@ class CoordSpaceHelper {
         CoordSpaceHelper();
         CoordSpaceHelper(const WorldVec& initPos, const WorldScalar& initInverseScale, double initRotation);
 
-        Vector2f to_space(const WorldVec& coord) const;
+        bool operator==(const CoordSpaceHelper& otherCoords) const;
+        bool operator!=(const CoordSpaceHelper& otherCoords) const;
 
+        Vector2f to_space(const WorldVec& coord) const;
 
         WorldVec from_space(Vector2f coord) const;
 

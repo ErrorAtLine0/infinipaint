@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "Helpers/Parallel.hpp"
 #include <chrono>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
@@ -177,7 +178,7 @@ void DrawingProgramCache::preupdate_component(const CollabListType::ObjectInfoPt
     invalidate_cache_before_pos(c->pos);
 }
 
-void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::vector<CollabListType::ObjectInfoPtr> components) {
+void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {
     if(components.empty())
         return;
 

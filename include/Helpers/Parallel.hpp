@@ -5,7 +5,7 @@
     #include <poolstl.hpp>
 #endif
 
-template <typename ContainerType> void parallel_loop_container(ContainerType& c, std::function<void(typename ContainerType::value_type&)> func) {
+template <typename ContainerType> void parallel_loop_container(const ContainerType& c, std::function<void(const typename ContainerType::value_type&)> func) {
 #ifdef __EMSCRIPTEN__
     std::for_each(c.begin(), c.end(), func);
 #else

@@ -74,11 +74,74 @@ void DrawingProgramSelection::calculate_aabb() {
 void DrawingProgramSelection::deselect_all() {
     if(is_something_selected()) {
         std::vector<CollabListType::ObjectInfoPtr> a(selectedSet.begin(), selectedSet.end());
+        std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsFrom;
+        for(auto& transformedObj : a)
+            transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
+
         parallel_loop_container(a, [&](auto& obj) {
             obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
             obj->obj->final_update(drawP, false);
-            obj->obj->client_send_transform(drawP);
         });
+        std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
+        std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+        for(auto& transformedObj : a) {
+            transformsToSend.emplace_back(transformedObj->id, transformedObj->obj->coords);
+            transformsTo.emplace_back(transformedObj, transformedObj->obj->coords);
+        }
+        DrawComponent::client_send_transform_many(drawP, transformsToSend);
+
+        drawP.world.undo.push(UndoManager::UndoRedoPair{
+            [&, transformsFrom = transformsFrom]() {
+                std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+                for(auto& [comp, coords] : transformsFrom) {
+                    auto lockObjInfo = comp->obj->collabListInfo.lock();
+                    if(lockObjInfo)
+                        transformsToSend.emplace_back(lockObjInfo->id, coords);
+                    else
+                        return false;
+                }
+
+                parallel_loop_container(transformsFrom, [&](auto& p) {
+                    auto& [comp, coords] = p;
+                    comp->obj->coords = coords;
+                    comp->obj->finalize_update(drawP, false);
+                });
+
+                DrawComponent::client_send_transform_many(drawP, transformsToSend);
+
+                drawP.reset_tools();
+
+                drawP.force_rebuild_cache();
+
+                return true;
+            },
+            [&, transformsTo = transformsTo]() {
+                std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+                for(auto& [comp, coords] : transformsTo) {
+                    auto lockObjInfo = comp->obj->collabListInfo.lock();
+                    if(lockObjInfo)
+                        transformsToSend.emplace_back(lockObjInfo->id, coords);
+                    else
+                        return false;
+                }
+
+                parallel_loop_container(transformsTo, [&](auto& p) {
+                    auto& [comp, coords] = p;
+                    comp->obj->coords = coords;
+                    comp->obj->finalize_update(drawP, false);
+                });
+
+                DrawComponent::client_send_transform_many(drawP, transformsToSend);
+
+                drawP.reset_tools();
+
+                drawP.force_rebuild_cache();
+
+                return true;
+            }
+        });
+
+
         selectedSet.clear();
         cache.clear();
         selectionTransformCoords = CoordSpaceHelper();

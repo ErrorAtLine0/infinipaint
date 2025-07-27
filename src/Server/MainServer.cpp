@@ -185,15 +185,15 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             return idsToRemove.contains(p.first);
         });
     });
-    netServer->add_recv_callback(SERVER_TRANSFORM_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        ServerClientID idToTransform;
-        message(idToTransform);
-        auto it = data.idToComponentMap.find(idToTransform);
-        if(it != data.idToComponentMap.end()) {
-            std::shared_ptr<DrawComponent>& comp = it->second;
-            message(comp->coords);
-            comp->server_send_transform(*this, idToTransform);
+    netServer->add_recv_callback(SERVER_TRANSFORM_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+        message(transformsToSend);
+        for(auto& t : transformsToSend) {
+            auto it = data.idToComponentMap.find(t.first);
+            if(it != data.idToComponentMap.end())
+                it->second->coords = t.second;
         }
+        DrawComponent::server_send_transform_many(*this, transformsToSend);
     });
     netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isTemp;

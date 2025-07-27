@@ -70,7 +70,8 @@ class DrawingProgramCache {
         void build(std::vector<CollabListType::ObjectInfoPtr> components);
         void traverse_bvh_run_function_recursive(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f);
         std::pair<std::shared_ptr<DrawingProgramCacheBVHNode>, std::vector<CollabListType::ObjectInfoPtr>::iterator> get_bvh_node_fully_containing_recursive(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, DrawComponent* c);
-        void build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::vector<CollabListType::ObjectInfoPtr> components);
+
+        void build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components);
 
         std::chrono::steady_clock::time_point lastBvhBuildTime;
         std::shared_ptr<DrawingProgramCacheBVHNode> bvhRoot;
