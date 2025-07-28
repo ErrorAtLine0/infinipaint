@@ -39,6 +39,8 @@ enum ClientCommands : MessageCommandType {
     CLIENT_REMOVE_BOOKMARK
 };
 
-// NOTE: Change these values whenever savefile is incompatible with previous version
+// NOTE: Do not change savefile header length
 #define SAVEFILE_HEADER_LEN 12
-#define SAVEFILE_HEADER "INFPNT000001"
+// NOTE: Change these values whenever savefile is incompatible with previous version
+#define SAVEFILE_HEADER    "INFPNT000002"
+#define SAVEFILE_HEADER_V1 "INFPNT000001"

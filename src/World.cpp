@@ -13,6 +13,7 @@
 #include <Helpers/Logger.hpp>
 #include <cereal/types/vector.hpp>
 #include <Helpers/Networking/NetLibrary.hpp>
+#include <zstd.h>
 
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
@@ -223,16 +224,27 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     clientStillConnecting = true;
 }
 
-void World::download_file(const std::filesystem::path& fileName) {
+void World::save_to_file(const std::filesystem::path& fileName) {
     try {
         filePath = force_extension_on_path(fileName, FILE_EXTENSION);
 
         std::stringstream f;
         f.write(SAVEFILE_HEADER, SAVEFILE_HEADER_LEN);
-        cereal::PortableBinaryOutputArchive a(f);
-        SaveLoadFileOp op{.world = this};
-        a(op);
-        Logger::get().log("USERINFO", "File saved");
+
+        {
+            std::stringstream fWorldDataToCompress;
+            {
+                cereal::PortableBinaryOutputArchive a(fWorldDataToCompress);
+                SaveLoadFileOp op{.world = this};
+                a(op);
+            }
+
+            std::vector<char> compressedData(ZSTD_compressBound(fWorldDataToCompress.view().size()));
+            size_t trueCompressedSize = ZSTD_compress(compressedData.data(), compressedData.size(), fWorldDataToCompress.view().data(), fWorldDataToCompress.view().size(), ZSTD_CLEVEL_DEFAULT);
+            std::string_view compressedF(compressedData.data(), trueCompressedSize);
+
+            f << compressedF;
+        }
 
         set_name(filePath.stem().string());
 
@@ -242,26 +254,13 @@ void World::download_file(const std::filesystem::path& fileName) {
                 "application/octet-stream",
                 f.view()
             );
+        #else
+            std::ofstream fi(filePath, std::ios::out | std::ios::binary);
+            fi << f.view();
+            fi.close();
         #endif
-    }
-    catch(const std::exception& e) {
-        Logger::get().log("WORLDFATAL", std::string("Save error: ") + e.what());
-    }
-}
 
-void World::save_to_file(const std::filesystem::path& fileName) {
-    try {
-        filePath = force_extension_on_path(fileName, FILE_EXTENSION);
-
-        std::ofstream f(filePath, std::ios::out | std::ios::binary);
-        f.write(SAVEFILE_HEADER, SAVEFILE_HEADER_LEN);
-        cereal::PortableBinaryOutputArchive a(f);
-        SaveLoadFileOp op{.world = this};
-        a(op);
-        f.close();
         Logger::get().log("USERINFO", "File saved");
-
-        set_name(filePath.stem().string());
     }
     catch(const std::exception& e) {
         Logger::get().log("WORLDFATAL", std::string("Save error: ") + e.what());
@@ -271,34 +270,38 @@ void World::save_to_file(const std::filesystem::path& fileName) {
 void World::load_from_file(const std::filesystem::path& fileName, std::string_view buffer) {
     filePath = force_extension_on_path(fileName, FILE_EXTENSION);
 
+    std::string byteDataFromFile;
 
     if(buffer.empty()) {
-        std::ifstream f(filePath, std::ios::in | std::ios::binary);
-        std::string fileHeader;
-        fileHeader.resize(SAVEFILE_HEADER_LEN);
-        f.read(fileHeader.data(), SAVEFILE_HEADER_LEN);
-        if(fileHeader != std::string(SAVEFILE_HEADER))
-            throw std::runtime_error("[World::load_from_file] File does not have correct header");
-
-        cereal::PortableBinaryInputArchive a(f);
-        SaveLoadFileOp op{.world = this};
-        a(op);
-        f.close();
-        nextClientID = std::max(rMan.get_max_id(ownID), drawProg.get_max_id(ownID));
+        byteDataFromFile = read_file_to_string(fileName);
+        buffer = byteDataFromFile;
     }
-    else {
-        ByteMemStream f((char*)buffer.data(), buffer.size());
-        std::string fileHeader;
-        fileHeader.resize(SAVEFILE_HEADER_LEN);
-        f.read(fileHeader.data(), SAVEFILE_HEADER_LEN);
-        if(fileHeader != std::string(SAVEFILE_HEADER))
-            throw std::runtime_error("[World::load_from_file] File does not have correct header");
 
-        cereal::PortableBinaryInputArchive a(f);
-        SaveLoadFileOp op{.world = this};
-        a(op);
-        nextClientID = std::max(rMan.get_max_id(ownID), drawProg.get_max_id(ownID));
+    if(buffer.size() < SAVEFILE_HEADER_LEN)
+        throw std::runtime_error("[World::load_from_file] File too small");
+
+    std::string_view fileHeader = buffer.substr(0, SAVEFILE_HEADER_LEN);
+    std::string_view uncompressedDataView;
+    std::vector<char> uncompressedDataVector;
+
+    if(fileHeader == SAVEFILE_HEADER) {
+        uncompressedDataVector.resize(ZSTD_getFrameContentSize(buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN));
+        size_t trueUncompressedSize = ZSTD_decompress(uncompressedDataVector.data(), uncompressedDataVector.size(), buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN);
+        uncompressedDataView = std::string_view(uncompressedDataVector.data(), trueUncompressedSize);
     }
+    else if(fileHeader == SAVEFILE_HEADER_V1)
+        uncompressedDataView = std::string_view(buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN);
+    else
+        throw std::runtime_error("[World::load_from_file] File does not have correct header");
+
+
+
+    ByteMemStream f((char*)uncompressedDataView.data(), uncompressedDataView.size());
+
+    cereal::PortableBinaryInputArchive a(f);
+    SaveLoadFileOp op{.world = this};
+    a(op);
+    nextClientID = std::max(rMan.get_max_id(ownID), drawProg.get_max_id(ownID));
 
     Logger::get().log("USERINFO", "File loaded");
     set_name(filePath.stem().string());

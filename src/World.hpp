@@ -74,7 +74,6 @@ class World {
         ConnectionType conType;
         bool clientStillConnecting = false;
 
-        void download_file(const std::filesystem::path& fileName);
         void save_to_file(const std::filesystem::path& fileName);
         void load_from_file(const std::filesystem::path& fileName, std::string_view buffer);
 

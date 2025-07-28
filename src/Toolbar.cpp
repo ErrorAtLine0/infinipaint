@@ -342,13 +342,8 @@ void Toolbar::update() {
 void Toolbar::save_func() {
     if(main.world->filePath == std::filesystem::path())
         save_as_func();
-    else {
-        #ifdef __EMSCRIPTEN__
-            main.world->download_file(main.world->filePath.string());
-        #else
-            main.world->save_to_file(main.world->filePath.string());
-        #endif
-    }
+    else
+        main.world->save_to_file(main.world->filePath.string());
 }
 
 void Toolbar::save_as_func() {
@@ -1390,7 +1385,7 @@ void Toolbar::options_menu() {
                 gui.input_text_field("file name", "File Name", &downloadNameSet);
                 gui.left_to_right_line_layout([&]() {
                     if(gui.text_button_wide("download save button", "Save")) {
-                        main.world->download_file(downloadNameSet);
+                        main.world->save_to_file(downloadNameSet);
                         optionsMenuOpen = false;
                     }
                     if(gui.text_button_wide("cancel", "Cancel"))
