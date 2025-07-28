@@ -85,9 +85,7 @@ void DrawingProgramSelection::deselect_all() {
         for(auto& transformedObj : a)
             transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
 
-        selectedSet.clear();
-        cache.clear();
-        transformOpHappening = TransformOperation::NONE;
+        reset_selection_data();
 
         bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
         parallel_loop_container(a, [&](auto& obj) {
@@ -101,7 +99,7 @@ void DrawingProgramSelection::deselect_all() {
                 drawP.compCache.add_component(obj);
         }
 
-        selectionTransformCoords = CoordSpaceHelper();
+        reset_transform_data();
 
         std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
         std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
@@ -175,10 +173,8 @@ bool DrawingProgramSelection::is_selected(const CollabListType::ObjectInfoPtr& o
 void DrawingProgramSelection::delete_all() {
     if(is_something_selected()) {
         drawP.client_erase_set(selectedSet);
-        selectedSet.clear();
-        cache.clear();
-        transformOpHappening = TransformOperation::NONE;
-        selectionTransformCoords = CoordSpaceHelper();
+        reset_selection_data();
+        reset_transform_data();
     }
 }
 
@@ -207,7 +203,7 @@ void DrawingProgramSelection::update() {
             case TransformOperation::NONE:
                 if(drawP.controls.leftClick) {
                     if(mouse_collided_with_scale_point()) {
-                        scaleData.currentPos = scaleData.startPos = drawP.world.get_mouse_world_pos();
+                        scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
                         scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
                         startingSelectionTransformCoords = selectionTransformCoords;
                         transformOpHappening = TransformOperation::SCALE;
@@ -219,15 +215,20 @@ void DrawingProgramSelection::update() {
                         startingSelectionTransformCoords = selectionTransformCoords;
                         transformOpHappening = TransformOperation::ROTATE;
                     }
-                    else if(mouse_collided_with_selection_aabb())
+                    else if(mouse_collided_with_selection_aabb()) {
+                        translateData.startPos = drawP.world.get_mouse_world_pos();
+                        startingSelectionTransformCoords = selectionTransformCoords;
                         transformOpHappening = TransformOperation::TRANSLATE;
+                    }
                     else
                         deselect_all();
                 }
                 break;
             case TransformOperation::TRANSLATE:
-                if(drawP.controls.leftClickHeld)
-                    selectionTransformCoords.translate(drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.input.mouse.move));
+                if(drawP.controls.leftClickHeld) {
+                    selectionTransformCoords = startingSelectionTransformCoords;
+                    selectionTransformCoords.translate(drawP.world.get_mouse_world_pos() - translateData.startPos);
+                }
                 else {
                     transformOpHappening = TransformOperation::NONE;
                     calculate_initial_rotate_center_location();
@@ -349,4 +350,17 @@ void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawDat
         if(transformOpHappening == TransformOperation::NONE || transformOpHappening == TransformOperation::SCALE)
             drawP.draw_drag_circle(canvas, scaleData.handlePoint, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
     }
+}
+
+void DrawingProgramSelection::reset_selection_data() {
+    selectedSet.clear();
+    cache.clear();
+}
+
+void DrawingProgramSelection::reset_transform_data() {
+    selectionTransformCoords = CoordSpaceHelper();
+    transformOpHappening = TransformOperation::NONE;
+    translateData = TranslationData();
+    scaleData = ScaleData();
+    rotateData = RotationData();
 }

@@ -49,6 +49,10 @@ class DrawingProgramSelection {
 
         CoordSpaceHelper startingSelectionTransformCoords;
 
+        struct TranslationData {
+            WorldVec startPos;
+        } translateData;
+
         struct ScaleData {
             WorldVec startPos;
             WorldVec centerPos;
@@ -60,6 +64,9 @@ class DrawingProgramSelection {
             WorldVec centerPos;
             Vector2f centerHandlePoint;
             Vector2f handlePoint;
-            double rotationAngle;
+            double rotationAngle = 0.0;
         } rotateData;
+
+        void reset_selection_data();
+        void reset_transform_data();
 };
