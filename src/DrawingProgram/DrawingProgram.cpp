@@ -173,18 +173,6 @@ void DrawingProgram::check_updateable_components() {
         comp->update(*this);
 }
 
-void DrawingProgram::free_collider_memory() {
-    for(auto& c : components.client_list())
-        c->obj->free_collider();
-    colliderAllocated = false;
-}
-
-void DrawingProgram::allocate_collider_memory() {
-    for(auto& c : components.client_list())
-        c->obj->allocate_collider();
-    colliderAllocated = true;
-}
-
 void DrawingProgram::parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func) {
     parallel_loop_container(components.client_list(), func);
 }

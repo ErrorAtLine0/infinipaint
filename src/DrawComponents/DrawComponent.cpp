@@ -172,19 +172,19 @@ void DrawComponent::client_send_erase_set(DrawingProgram& drawP, const std::unor
 void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache) {
     if(invalidateCache && collabListInfo.lock())
         drawP.compCache.preupdate_component(collabListInfo.lock());
-    create_collider(drawP.colliderAllocated);
+    create_collider();
 }
 
-bool DrawComponent::collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, bool colliderAllocated) {
-    return collides_with(camCoords, checkAgainstWorld, camCoords.world_collider_to_coords<SCollision::ColliderCollection<float>>(checkAgainstWorld), colliderAllocated);
+bool DrawComponent::collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) {
+    return collides_with(camCoords, checkAgainstWorld, camCoords.world_collider_to_coords<SCollision::ColliderCollection<float>>(checkAgainstWorld));
 }
 
-bool DrawComponent::collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam, bool colliderAllocated) {
-    return collides_with(camCoords, camCoords.collider_to_world<SCollision::ColliderCollection<WorldScalar>>(checkAgainstCam), checkAgainstCam, colliderAllocated);
+bool DrawComponent::collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) {
+    return collides_with(camCoords, camCoords.collider_to_world<SCollision::ColliderCollection<WorldScalar>>(checkAgainstCam), checkAgainstCam);
 }
 
 // We could just send one of the checkAgainst colliders, since they represent the same thing, but sending both saves on redundant transformations, since we can save both of the versions on the executor side
-bool DrawComponent::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam, bool colliderAllocated) {
+bool DrawComponent::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
     if((camCoords.inverseScale << DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR) < coords.inverseScale) // Object is too large, just dismiss the collision
         return false;
     else if((camCoords.inverseScale >> DRAWCOMP_COLLIDE_MIN_SHIFT_TINY) >= coords.inverseScale) {
@@ -200,7 +200,7 @@ bool DrawComponent::collides_with(const CoordSpaceHelper& camCoords, const SColl
         [&coords = coords](const WorldScalar& a) {
             return coords.scalar_to_space(a);
         });
-        return collides_within_coords(c, colliderAllocated);
+        return collides_within_coords(c);
     }
 }
 

@@ -46,7 +46,7 @@ void EraserTool::tool_update() {
                 return true;
             }
             std::erase_if(comps, [&](auto& c) {
-                if(c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC, drawP.colliderAllocated)) {
+                if(c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                     erasedComponents.emplace(c);
                     drawP.compCache.invalidate_cache_at_aabb_before_pos(c->obj->worldAABB.value(), c->obj->collabListInfo.lock()->pos);
                     return true;

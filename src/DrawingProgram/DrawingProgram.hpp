@@ -40,17 +40,12 @@ class DrawingProgram {
         void write_to_file(cereal::PortableBinaryOutputArchive& a);
         World& world;
 
-        void free_collider_memory();
-        void allocate_collider_memory();
-
         bool prevent_undo_or_redo();
 
         void add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread);
         void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
 
         void parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func);
-
-        bool colliderAllocated = false;
 
         DrawingProgramCache compCache;
 

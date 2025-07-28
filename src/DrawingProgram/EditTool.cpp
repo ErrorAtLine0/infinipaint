@@ -135,7 +135,7 @@ void EditTool::tool_update() {
 
             drawP.compCache.traverse_bvh_run_function(mouseAABB, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {
                 for(auto& c : components) {
-                    if(c->pos > lastPos && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cMouseAABB, drawP.colliderAllocated)) {
+                    if(c->pos > lastPos && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cMouseAABB)) {
                         lastSelectedObj = c;
                         lastPos = c->pos;
                     }
@@ -165,7 +165,7 @@ void EditTool::tool_update() {
                         break;
                     }
                 }
-                if(!isMovingPoint && !a->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle, drawP.colliderAllocated))
+                if(!isMovingPoint && !a->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
                     clickedAway = true;
             }
             else if(controls.pointDragging) {

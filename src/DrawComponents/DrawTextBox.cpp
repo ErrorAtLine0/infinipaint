@@ -106,11 +106,11 @@ void DrawTextBox::initialize_draw_data(DrawingProgram& drawP) {
     init_text_box(drawP);
 }
 
-bool DrawTextBox::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) {
+bool DrawTextBox::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {
     return collisionTree.is_collide(checkAgainst);
 }
 
-void DrawTextBox::create_collider(bool colliderAllocated) {
+void DrawTextBox::create_collider() {
     using namespace SCollision;
     ColliderCollection<float> strokeObjects;
     std::array<Vector2f, 4> newT = triangle_from_rect_points(d.p1, d.p2);
@@ -119,12 +119,6 @@ void DrawTextBox::create_collider(bool colliderAllocated) {
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
     calculate_world_bounds();
-}
-
-void DrawTextBox::free_collider() {
-}
-
-void DrawTextBox::allocate_collider() {
 }
 
 SCollision::AABB<float> DrawTextBox::get_obj_coord_bounds() const {

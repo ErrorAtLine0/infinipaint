@@ -333,7 +333,7 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
     }
 }
 
-void DrawBrushStroke::create_collider(bool colliderAllocated) {
+void DrawBrushStroke::create_collider() {
     using namespace SCollision;
     if(d.points.empty())
         return;
@@ -348,12 +348,12 @@ void DrawBrushStroke::create_collider(bool colliderAllocated) {
     collisionTree.calculate_bvh_recursive(strokeObjects);
     precheckAABBLevels.clear();
     add_precheck_aabb_level(0, collisionTree.children);
-    if(!colliderAllocated) {
-        collisionTree.objects.aabb.clear();
-        collisionTree.objects.circle.clear();
-        collisionTree.objects.triangle.clear();
-        collisionTree.children.clear();
-    }
+
+    collisionTree.objects.aabb.clear();
+    collisionTree.objects.circle.clear();
+    collisionTree.objects.triangle.clear();
+    collisionTree.children.clear();
+
     calculate_world_bounds();
 }
 
@@ -376,10 +376,7 @@ void DrawBrushStroke::vertices_to_draw_data(sk_sp<SkVertices>& vertexDataPtr, co
 void DrawBrushStroke::update(DrawingProgram& drawP) {
 }
 
-bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) {
-    if(colliderAllocated)
-        return collisionTree.is_collide(checkAgainst);
-
+bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {
     if(!SCollision::collide(checkAgainst, collisionTree.objects.bounds))
         return false;
 
@@ -400,17 +397,6 @@ bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollectio
         return toRet;
     }, points, 0);
     return toRet;
-}
-
-void DrawBrushStroke::free_collider() {
-    collisionTree.objects.aabb.clear();
-    collisionTree.objects.circle.clear();
-    collisionTree.objects.triangle.clear();
-    collisionTree.children.clear();
-}
-
-void DrawBrushStroke::allocate_collider() {
-    create_collider(true);
 }
 
 SCollision::AABB<float> DrawBrushStroke::get_obj_coord_bounds() const {

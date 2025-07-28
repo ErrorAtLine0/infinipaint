@@ -64,7 +64,7 @@ void DrawRectangle::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
 }
 
-bool DrawRectangle::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) {
+bool DrawRectangle::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {
     return collisionTree.is_collide(checkAgainst);
 }
 
@@ -80,7 +80,7 @@ void DrawRectangle::create_draw_data() {
     }
 }
 
-void DrawRectangle::create_collider(bool colliderAllocated) {
+void DrawRectangle::create_collider() {
     using namespace SCollision;
     ColliderCollection<float> strokeObjects;
     if(d.fillStrokeMode == 0) {
@@ -109,12 +109,6 @@ void DrawRectangle::create_collider(bool colliderAllocated) {
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
     calculate_world_bounds();
-}
-
-void DrawRectangle::free_collider() {
-}
-
-void DrawRectangle::allocate_collider() {
 }
 
 SCollision::AABB<float> DrawRectangle::get_obj_coord_bounds() const {

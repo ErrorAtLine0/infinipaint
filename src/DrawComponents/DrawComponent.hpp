@@ -103,7 +103,7 @@ class DrawComponent {
         virtual SCollision::AABB<float> get_obj_coord_bounds() const = 0;
 
         virtual std::shared_ptr<DrawComponent> copy() const = 0;
-        virtual void create_collider(bool colliderAllocated) = 0;
+        virtual void create_collider() = 0;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         void temp_update(DrawingProgram& drawP);
         void final_update(DrawingProgram& drawP, bool invalidateCache = true); // invalidateCache = false version should be thread safe
@@ -111,13 +111,10 @@ class DrawComponent {
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
         virtual void finalize_update(DrawingProgram& drawP, bool invalidateCache = true);
         virtual void update(DrawingProgram& drawP) = 0;
-        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) = 0;
-        bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, bool colliderAllocated);
-        bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam, bool colliderAllocated);
-        bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam, bool colliderAllocated);
+        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) = 0;
+        bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld);
+        bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam);
+        bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
         virtual void update_from_delayed_ptr() = 0;
-
-        virtual void free_collider() = 0;
-        virtual void allocate_collider() = 0;
 #endif
 };

@@ -70,7 +70,7 @@ void DrawImage::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
 }
 
-bool DrawImage::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) {
+bool DrawImage::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {
     return collisionTree.is_collide(checkAgainst);
 }
 
@@ -78,7 +78,7 @@ void DrawImage::create_draw_data() {
     imRect = SkRect::MakeLTRB(d.p1.x(), d.p1.y(), d.p2.x(), d.p2.y());
 }
 
-void DrawImage::create_collider(bool colliderAllocated) {
+void DrawImage::create_collider() {
     using namespace SCollision;
     ColliderCollection<float> strokeObjects;
     std::array<Vector2f, 4> newT = triangle_from_rect_points(d.p1, d.p2);
@@ -87,12 +87,6 @@ void DrawImage::create_collider(bool colliderAllocated) {
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
     calculate_world_bounds();
-}
-
-void DrawImage::free_collider() {
-}
-
-void DrawImage::allocate_collider() {
 }
 
 SCollision::AABB<float> DrawImage::get_obj_coord_bounds() const {

@@ -93,7 +93,7 @@ bool TextBoxTool::edit_update(const std::shared_ptr<DrawTextBox>& a) {
     mousePointCollection.recalculate_bounds();
 
     a->textBox.setWidth(std::abs(a->d.p2.x() - a->d.p1.x()));
-    a->create_collider(drawP.colliderAllocated);
+    a->create_collider();
 
     InputManager& input = drawP.world.main.input;
     auto& textbox = a->textBox;
@@ -103,7 +103,7 @@ bool TextBoxTool::edit_update(const std::shared_ptr<DrawTextBox>& a) {
     bool movedHeld = false;
 
     bool collidesWithBox = false;
-    if(a->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection, drawP.colliderAllocated)) {
+    if(a->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection)) {
         //drawP.world.main.input.cursorIcon = InputManager::SystemCursorType::TEXT;
         collidesWithBox = true;
     }

@@ -65,11 +65,11 @@ void DrawEllipse::initialize_draw_data(DrawingProgram& drawP) {
 void DrawEllipse::update(DrawingProgram& drawP) {
 }
 
-bool DrawEllipse::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst, bool colliderAllocated) {
+bool DrawEllipse::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {
     return collisionTree.is_collide(checkAgainst);
 }
 
-void DrawEllipse::create_collider(bool colliderAllocated) {
+void DrawEllipse::create_collider() {
     using namespace SCollision;
     ColliderCollection<float> strokeObjects;
 
@@ -126,12 +126,6 @@ void DrawEllipse::create_collider(bool colliderAllocated) {
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
     calculate_world_bounds();
-}
-
-void DrawEllipse::free_collider() {
-}
-
-void DrawEllipse::allocate_collider() {
 }
 
 SCollision::AABB<float> DrawEllipse::get_obj_coord_bounds() const {
