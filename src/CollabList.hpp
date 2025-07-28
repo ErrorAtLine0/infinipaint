@@ -77,6 +77,29 @@ template <typename T, typename IDType> class CollabList {
             return newObj;
         }
 
+        std::vector<ObjectInfoPtr> client_insert_ordered_vector_items(uint64_t pos, const std::vector<T>& items) {
+            std::vector<ObjectInfoPtr> itemsToPushIn;
+            for(auto& item : items) {
+                auto& newObj = itemsToPushIn.emplace_back(std::make_shared<ObjectInfo>());
+                newObj->syncIgnore = true;
+                newObj->id = getNewIDFunc();
+                newObj->obj = item;
+                item->collabListInfo = newObj;
+                idToObjectMap.emplace(newObj->id, newObj);
+            }
+
+            clientSideList.insert(clientSideList.begin() + pos, itemsToPushIn.begin(), itemsToPushIn.end());
+
+            complete_client_pos_refresh(false);
+
+            if(clientInsertOrderedVectorCallback)
+                clientInsertOrderedVectorCallback(itemsToPushIn);
+            if(updateCallback)
+                updateCallback();
+
+            return itemsToPushIn;
+        }
+
         IDType client_insert(const ObjectInfoPtr& objInfoToInsert) {
             objInfoToInsert->syncIgnore = true;
             objInfoToInsert->id = getNewIDFunc();

@@ -22,6 +22,9 @@ class DrawingProgramSelection {
         bool mouse_collided_with_scale_point();
         bool mouse_collided_with_rotate_center_handle_point();
         bool mouse_collided_with_rotate_handle_point();
+        void selection_to_clipboard();
+        void paste_clipboard();
+        void set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection);
 
         void calculate_aabb();
         void calculate_initial_rotate_center_location();

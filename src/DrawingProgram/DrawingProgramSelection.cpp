@@ -59,7 +59,11 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
         return false;
     });
 
-    selectedSet = selectedComponents;
+    set_to_selection(selectedComponents);
+}
+
+void DrawingProgramSelection::set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection) {
+    selectedSet = newSelection;
     for(auto& obj : selectedSet)
         cache.add_component(obj);
     calculate_aabb();
@@ -178,15 +182,26 @@ void DrawingProgramSelection::delete_all() {
     }
 }
 
+// NOTE: Only run this if no transformations happened
+void DrawingProgramSelection::selection_to_clipboard() {
+    auto& clipboard = drawP.world.main.clipboard;
+    std::unordered_set<ServerClientID> resourceSet;
+    for(auto& c : selectedSet)
+        c->obj->get_used_resources(resourceSet);
+    std::vector<CollabListType::ObjectInfoPtr> compVecSort(selectedSet.begin(), selectedSet.end());
+    std::sort(compVecSort.begin(), compVecSort.end(), [&](auto& a, auto& b) {
+        return a->pos < b->pos;
+    });
+    clipboard.components.clear();
+    for(auto& c : compVecSort)
+        clipboard.components.emplace_back(c->obj);
+    clipboard.pos = initialSelectionAABB.center();
+}
+
 void DrawingProgramSelection::update() {
     if(is_something_selected()) {
         if(cache.check_if_rebuild_should_occur())
             cache.test_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()), true);
-
-        if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
-            deselect_all();
-        else if(drawP.world.main.input.key(InputManager::KEY_DRAW_DELETE).pressed)
-            delete_all();
 
         selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
         selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
@@ -280,7 +295,50 @@ void DrawingProgramSelection::update() {
                     transformOpHappening = TransformOperation::NONE;
                 break;
         }
+
+        if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
+            deselect_all();
+        else if(drawP.world.main.input.key(InputManager::KEY_DRAW_DELETE).pressed)
+            delete_all();
+        else if(drawP.world.main.input.key(InputManager::KEY_COPY).pressed && startingSelectionTransformCoords == CoordSpaceHelper())
+            selection_to_clipboard();
+        else if(drawP.world.main.input.key(InputManager::KEY_CUT).pressed && startingSelectionTransformCoords == CoordSpaceHelper()) {
+            selection_to_clipboard();
+            delete_all();
+        }
+        else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed) {
+            deselect_all();
+            paste_clipboard();
+        }
     }
+    else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed && !drawP.prevent_undo_or_redo())
+        paste_clipboard();
+}
+
+void DrawingProgramSelection::paste_clipboard() {
+    auto& clipboard = drawP.world.main.clipboard;
+    drawP.reset_tools();
+    drawP.controls.selectedTool = DrawingProgram::TOOL_RECTSELECT;
+    drawP.controls.previousSelected = DrawingProgram::TOOL_RECTSELECT;
+    uint64_t allPlacement = drawP.components.client_list().size();
+    std::vector<std::shared_ptr<DrawComponent>> placedComponents;
+    WorldVec mousePos = drawP.world.get_mouse_world_pos();
+    WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
+    std::unordered_map<ServerClientID, ServerClientID> resourceRemapIDs;
+    for(auto& r : clipboard.resources)
+        resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
+    for(auto& c : clipboard.components) {
+        auto& newC = placedComponents.emplace_back(c->copy());
+        newC->remap_resource_ids(resourceRemapIDs);
+        newC->coords.translate(-moveVec);
+        newC->final_update(drawP, false);
+    }
+    drawP.addToCompCacheOnInsert = false;
+    auto compListInserted = drawP.components.client_insert_ordered_vector_items(allPlacement, placedComponents);
+    drawP.addToCompCacheOnInsert = true;
+    std::unordered_set<CollabListType::ObjectInfoPtr> compSetInserted(compListInserted.begin(), compListInserted.end());
+    set_to_selection(compSetInserted);
+    drawP.add_undo_place_components(compSetInserted);
 }
 
 void DrawingProgramSelection::rebuild_cam_space() {

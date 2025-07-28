@@ -68,6 +68,8 @@ class DrawingProgram {
 
         void force_rebuild_cache();
 
+        bool addToCompCacheOnInsert = true;
+
         std::atomic<bool> addFileInNextFrame = false;
         std::pair<std::string, Vector2f> addFileInfo;
 
@@ -80,6 +82,7 @@ class DrawingProgram {
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
 
         void add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo);
+        void add_undo_place_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
         void add_undo_erase_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
 
         BrushTool brushTool;
