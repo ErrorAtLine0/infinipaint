@@ -59,10 +59,6 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
 
         std::unordered_map<std::string, std::shared_ptr<rtc::DataChannel>> channels;
 
-        struct PartialFragmentMessage {
-            std::string partialFragmentMessage;
-            uint64_t partialFragmentMessageLoc = 0;
-        };
         std::unordered_map<std::string, PartialFragmentMessage> pfm;
 
         std::unordered_map<MessageCommandType, NetClientRecvCallback> recvCallbacks;

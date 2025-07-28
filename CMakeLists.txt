@@ -134,6 +134,8 @@ if((NOT EMSCRIPTEN) AND (NOT APPLE))
     find_package(TBB REQUIRED)
 endif()
 
+find_package(zstd REQUIRED)
+
 message("Skia root: " ${SKIA_INCLUDE})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
@@ -236,7 +238,7 @@ if((NOT EMSCRIPTEN) AND (NOT APPLE))
     endif()
 endif()
 
-target_link_libraries(infinipaint SDL3::SDL3)
+target_link_libraries(infinipaint SDL3::SDL3 zstd::libzstd_static)
 
 if(EMSCRIPTEN)
     add_subdirectory(deps/datachannel-wasm EXCLUDE_FROM_ALL)

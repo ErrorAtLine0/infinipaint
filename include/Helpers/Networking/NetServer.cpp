@@ -1,10 +1,12 @@
 #include "NetServer.hpp"
+#include "Helpers/Networking/ByteStream.hpp"
 #include "NetLibrary.hpp"
 #include <chrono>
 #include <rtc/peerconnection.hpp>
 #include <Helpers/Random.hpp>
 #include <Helpers/Logger.hpp>
 #include "NetClient.hpp"
+#include "cereal/archives/portable_binary.hpp"
 
 NetServer::NetServer(const std::string& serverLocalID) {
     localID = serverLocalID;
@@ -163,28 +165,11 @@ void NetServer::ClientData::parse_received_messages(NetServer& server) {
         inArchive(commandID);
 
         if(commandID == 0) {
-            if(spfm.partialFragmentMessage.size() == 0) {
-                spfm.partialFragmentMessageLoc = 0;
-                uint64_t messageSize;
-                inArchive(messageSize);
-                spfm.partialFragmentMessage.resize(messageSize);
-                inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, NetLibrary::FRAGMENT_MESSAGE_STRIDE));
-                spfm.partialFragmentMessageLoc += NetLibrary::FRAGMENT_MESSAGE_STRIDE;
-            }
-            else if(spfm.partialFragmentMessage.size() - spfm.partialFragmentMessageLoc <= NetLibrary::FRAGMENT_MESSAGE_STRIDE) {
-                inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, spfm.partialFragmentMessage.size() - spfm.partialFragmentMessageLoc));
-                ByteMemStream completeStrm(spfm.partialFragmentMessage.data(), spfm.partialFragmentMessage.size());
-                cereal::PortableBinaryInputArchive completeArchive(completeStrm);
+            decode_fragmented_message(inArchive, spfm, NetLibrary::FRAGMENT_MESSAGE_STRIDE, [&](cereal::PortableBinaryInputArchive& completeArchive) {
                 MessageCommandType completeCommandID;
                 completeArchive(completeCommandID);
                 server.recvCallbacks[completeCommandID](shared_from_this(), completeArchive);
-                spfm.partialFragmentMessage.clear();
-                spfm.partialFragmentMessageLoc = 0;
-            }
-            else {
-                inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, NetLibrary::FRAGMENT_MESSAGE_STRIDE));
-                spfm.partialFragmentMessageLoc += NetLibrary::FRAGMENT_MESSAGE_STRIDE;
-            }
+            });
         }
         else
             server.recvCallbacks[commandID](shared_from_this(), inArchive);

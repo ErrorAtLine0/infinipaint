@@ -17,10 +17,6 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
         typedef std::function<void(std::shared_ptr<ClientData>)> NetServerDisconnectCallback;
         struct ClientData : public std::enable_shared_from_this<ClientData> {
             std::unordered_map<std::string, std::queue<std::shared_ptr<std::stringstream>>> messages;
-            struct PartialFragmentMessage {
-                std::string partialFragmentMessage;
-                uint64_t partialFragmentMessageLoc = 0;
-            };
             std::unordered_map<std::string, PartialFragmentMessage> pfm;
 
             MessageOrder nextMessageOrderToSend = 0;

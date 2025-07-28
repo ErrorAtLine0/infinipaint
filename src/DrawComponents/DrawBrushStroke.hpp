@@ -45,7 +45,7 @@ class DrawBrushStroke : public DrawComponent {
 
         sk_sp<SkVertices> vertices;
         std::array<sk_sp<SkVertices>, 3> verticesMipMap;
-        SCollision::BVHContainer<float> collisionTree;
+        SCollision::AABB<float> bounds;
 
     private:
         void add_precheck_aabb_level(size_t level, const std::vector<SCollision::BVHContainer<float>>& levelArray);

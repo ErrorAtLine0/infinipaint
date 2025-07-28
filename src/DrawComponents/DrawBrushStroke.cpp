@@ -344,15 +344,14 @@ void DrawBrushStroke::create_collider() {
         return false;
     }, points, 0);
     strokeObjects.recalculate_bounds();
-    collisionTree.clear();
+
+    SCollision::BVHContainer<float> collisionTree;
+
     collisionTree.calculate_bvh_recursive(strokeObjects);
     precheckAABBLevels.clear();
     add_precheck_aabb_level(0, collisionTree.children);
 
-    collisionTree.objects.aabb.clear();
-    collisionTree.objects.circle.clear();
-    collisionTree.objects.triangle.clear();
-    collisionTree.children.clear();
+    bounds = collisionTree.objects.bounds;
 
     calculate_world_bounds();
 }
@@ -377,7 +376,7 @@ void DrawBrushStroke::update(DrawingProgram& drawP) {
 }
 
 bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {
-    if(!SCollision::collide(checkAgainst, collisionTree.objects.bounds))
+    if(!SCollision::collide(checkAgainst, bounds))
         return false;
 
     bool deepPrecheck = false;
@@ -400,7 +399,7 @@ bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollectio
 }
 
 SCollision::AABB<float> DrawBrushStroke::get_obj_coord_bounds() const {
-    return collisionTree.objects.bounds;
+    return bounds;
 }
 
 #endif

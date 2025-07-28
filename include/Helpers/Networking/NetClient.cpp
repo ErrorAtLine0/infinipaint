@@ -80,28 +80,11 @@ void NetClient::parse_received_messages() {
         inArchive(commandID);
 
         if(commandID == 0) {
-            if(spfm.partialFragmentMessage.size() == 0) {
-                spfm.partialFragmentMessageLoc = 0;
-                uint64_t messageSize;
-                inArchive(messageSize);
-                spfm.partialFragmentMessage.resize(messageSize);
-                inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, NetLibrary::FRAGMENT_MESSAGE_STRIDE));
-                spfm.partialFragmentMessageLoc += NetLibrary::FRAGMENT_MESSAGE_STRIDE;
-            }
-            else if(spfm.partialFragmentMessage.size() - spfm.partialFragmentMessageLoc <= NetLibrary::FRAGMENT_MESSAGE_STRIDE) {
-                inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, spfm.partialFragmentMessage.size() - spfm.partialFragmentMessageLoc));
-                ByteMemStream completeStrm(spfm.partialFragmentMessage.data(), spfm.partialFragmentMessage.size());
-                cereal::PortableBinaryInputArchive completeArchive(completeStrm);
+            decode_fragmented_message(inArchive, spfm, NetLibrary::FRAGMENT_MESSAGE_STRIDE, [&](cereal::PortableBinaryInputArchive& completeArchive) {
                 MessageCommandType completeCommandID;
                 completeArchive(completeCommandID);
                 recvCallbacks[completeCommandID](completeArchive);
-                spfm.partialFragmentMessage.clear();
-                spfm.partialFragmentMessageLoc = 0;
-            }
-            else {
-                inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, NetLibrary::FRAGMENT_MESSAGE_STRIDE));
-                spfm.partialFragmentMessageLoc += NetLibrary::FRAGMENT_MESSAGE_STRIDE;
-            }
+            });
         }
         else
             recvCallbacks[commandID](inArchive);

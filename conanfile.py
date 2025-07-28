@@ -52,7 +52,9 @@ class CompressorRecipe(ConanFile):
 
         if self.settings.os != "Emscripten":
             self.requires("libdatachannel/0.23.1")
-
+            
+        self.requires("zstd/1.5.7")
+        
     def build_requirements(self):
         self.tool_requires("cmake/3.27.0")
 
