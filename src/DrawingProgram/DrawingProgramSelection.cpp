@@ -327,14 +327,16 @@ void DrawingProgramSelection::paste_clipboard() {
     std::unordered_map<ServerClientID, ServerClientID> resourceRemapIDs;
     for(auto& r : clipboard.resources)
         resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
-    for(auto& c : clipboard.components) {
-        auto& newC = placedComponents.emplace_back(c->copy());
-        newC->remap_resource_ids(resourceRemapIDs);
-        newC->coords.translate(-moveVec);
-        newC->final_update(drawP, false);
-    }
+    for(auto& c : clipboard.components)
+        placedComponents.emplace_back(c->copy());
     drawP.addToCompCacheOnInsert = false;
     auto compListInserted = drawP.components.client_insert_ordered_vector_items(allPlacement, placedComponents);
+    parallel_loop_container(compListInserted, [&](auto& c) {
+        c->obj->remap_resource_ids(resourceRemapIDs);
+        c->obj->coords.translate(-moveVec);
+        c->obj->final_update(drawP, false);
+    });
+    DrawComponent::client_send_place_many(drawP, compListInserted);
     drawP.addToCompCacheOnInsert = true;
     std::unordered_set<CollabListType::ObjectInfoPtr> compSetInserted(compListInserted.begin(), compListInserted.end());
     set_to_selection(compSetInserted);

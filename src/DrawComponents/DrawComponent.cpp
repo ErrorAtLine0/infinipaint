@@ -170,7 +170,7 @@ void DrawComponent::client_send_erase_set(DrawingProgram& drawP, const std::unor
 }
 
 void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache) {
-    if(invalidateCache)
+    if(invalidateCache && collabListInfo.lock())
         drawP.compCache.preupdate_component(collabListInfo.lock());
     create_collider(drawP.colliderAllocated);
 }

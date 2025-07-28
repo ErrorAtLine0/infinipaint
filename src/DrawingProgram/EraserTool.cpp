@@ -1,11 +1,7 @@
 #include "EraserTool.hpp"
 #include "DrawingProgram.hpp"
-#include "../Server/CommandList.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
-#include "../SharedTypes.hpp"
-#include <ranges>
-#include "../DrawCollision.hpp"
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     drawP(initDrawP)
