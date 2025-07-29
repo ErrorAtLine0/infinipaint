@@ -40,6 +40,15 @@ std::shared_ptr<DrawComponent> DrawImage::copy() const {
     return a;
 }
 
+std::shared_ptr<DrawComponent> DrawImage::deep_copy() const {
+    auto a = std::make_shared<DrawImage>();
+    a->d = d;
+    a->coords = coords;
+    a->imRect = imRect;
+    a->collisionTree = collisionTree;
+    return a;
+}
+
 void DrawImage::update_from_delayed_ptr() {
     std::shared_ptr<DrawImage> newPtr = std::static_pointer_cast<DrawImage>(delayedUpdatePtr);
     d = newPtr->d;
@@ -86,7 +95,6 @@ void DrawImage::create_collider() {
     strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
-    calculate_world_bounds();
 }
 
 SCollision::AABB<float> DrawImage::get_obj_coord_bounds() const {

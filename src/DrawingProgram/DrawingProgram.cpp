@@ -106,7 +106,7 @@ void DrawingProgram::init_client_callbacks() {
                     return;
                 comp->coords = coords;
                 objsActuallyTransformed++;
-                comp->finalize_update(*this, false);
+                comp->transform_update(*this, false);
             });
             if(objsActuallyTransformed != 0)
                 force_rebuild_cache();
@@ -120,7 +120,7 @@ void DrawingProgram::init_client_callbacks() {
                 if(comp->coords == coords)
                     return;
                 comp->coords = coords;
-                comp->finalize_update(*this); // No need to update draw data during transformation
+                comp->transform_update(*this);
             }
         }
     });

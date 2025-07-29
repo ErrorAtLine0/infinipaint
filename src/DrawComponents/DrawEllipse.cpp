@@ -26,6 +26,15 @@ std::shared_ptr<DrawComponent> DrawEllipse::copy() const {
     return a;
 }
 
+std::shared_ptr<DrawComponent> DrawEllipse::deep_copy() const {
+    auto a = std::make_shared<DrawEllipse>();
+    a->d = d;
+    a->coords = coords;
+    a->ellipsePath = ellipsePath;
+    a->collisionTree = collisionTree;
+    return a;
+}
+
 void DrawEllipse::update_from_delayed_ptr() {
     std::shared_ptr<DrawEllipse> newPtr = std::static_pointer_cast<DrawEllipse>(delayedUpdatePtr);
     d = newPtr->d;
@@ -125,7 +134,6 @@ void DrawEllipse::create_collider() {
 
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
-    calculate_world_bounds();
 }
 
 SCollision::AABB<float> DrawEllipse::get_obj_coord_bounds() const {

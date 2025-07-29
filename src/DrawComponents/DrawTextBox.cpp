@@ -33,6 +33,16 @@ std::shared_ptr<DrawComponent> DrawTextBox::copy() const {
     return a;
 }
 
+std::shared_ptr<DrawComponent> DrawTextBox::deep_copy() const {
+    auto a = std::make_shared<DrawTextBox>();
+    a->d = d;
+    a->coords = coords;
+    a->textboxUpdate = false;
+    a->collisionTree = collisionTree;
+    a->textBox = textBox;
+    return a;
+}
+
 void DrawTextBox::update_from_delayed_ptr() {
     std::shared_ptr<DrawTextBox> newPtr = std::static_pointer_cast<DrawTextBox>(delayedUpdatePtr);
     d = newPtr->d;
@@ -118,7 +128,6 @@ void DrawTextBox::create_collider() {
     strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
-    calculate_world_bounds();
 }
 
 SCollision::AABB<float> DrawTextBox::get_obj_coord_bounds() const {

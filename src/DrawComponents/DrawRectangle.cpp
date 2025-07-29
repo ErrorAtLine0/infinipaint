@@ -29,6 +29,15 @@ std::shared_ptr<DrawComponent> DrawRectangle::copy() const {
     return a;
 }
 
+std::shared_ptr<DrawComponent> DrawRectangle::deep_copy() const {
+    auto a = std::make_shared<DrawRectangle>();
+    a->d = d;
+    a->coords = coords;
+    a->rectPath = rectPath;
+    a->collisionTree = collisionTree;
+    return a;
+}
+
 void DrawRectangle::update_from_delayed_ptr() {
     std::shared_ptr<DrawRectangle> newPtr = std::static_pointer_cast<DrawRectangle>(delayedUpdatePtr);
     d = newPtr->d;
@@ -108,7 +117,6 @@ void DrawRectangle::create_collider() {
 
     collisionTree.clear();
     collisionTree.calculate_bvh_recursive(strokeObjects);
-    calculate_world_bounds();
 }
 
 SCollision::AABB<float> DrawRectangle::get_obj_coord_bounds() const {

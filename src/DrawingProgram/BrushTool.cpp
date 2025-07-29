@@ -24,7 +24,7 @@ void BrushTool::reset_tool() {
 }
 
 bool BrushTool::extensive_point_checking(const Vector2f& newPoint) {
-    auto& points = controls.intermediateItem->d.points;
+    auto& points = controls.intermediateItem->d->points;
     if(points.size() >= 1 && (newPoint - points[points.size() - 1].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
         return false;
     if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
@@ -35,7 +35,7 @@ bool BrushTool::extensive_point_checking(const Vector2f& newPoint) {
 }
 
 bool BrushTool::extensive_point_checking_back(const Vector2f& newPoint) {
-    auto& points = controls.intermediateItem->d.points;
+    auto& points = controls.intermediateItem->d->points;
     if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
         return false;
     if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
@@ -100,9 +100,9 @@ void BrushTool::tool_update() {
             p.pos = drawP.world.main.input.mouse.pos;
             p.width = drawP.controls.relativeWidth * controls.penWidth;
             controls.prevPointUnaltered = p.pos;
-            controls.intermediateItem->d.points.emplace_back(p);
-            controls.intermediateItem->d.color = drawP.controls.foregroundColor;
-            controls.intermediateItem->d.hasRoundCaps = controls.hasRoundCaps;
+            controls.intermediateItem->d->points.emplace_back(p);
+            controls.intermediateItem->d->color = drawP.controls.foregroundColor;
+            controls.intermediateItem->d->hasRoundCaps = controls.hasRoundCaps;
             controls.intermediateItem->coords = drawP.world.drawData.cam.c;
             controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
             uint64_t placement = drawP.components.client_list().size();
@@ -123,29 +123,29 @@ void BrushTool::tool_update() {
 
             if(!controls.addedTemporaryPoint) {
                 if(extensive_point_checking(p.pos)) {
-                    controls.intermediateItem->d.points.emplace_back(p);
+                    controls.intermediateItem->d->points.emplace_back(p);
                     controls.addedTemporaryPoint = true;
                 }
                 else
-                    controls.intermediateItem->d.points.back().width = std::max(controls.intermediateItem->d.points.back().width, p.width);
+                    controls.intermediateItem->d->points.back().width = std::max(controls.intermediateItem->d->points.back().width, p.width);
             }
 
             if(controls.addedTemporaryPoint) {
-                const DrawBrushStrokePoint& prevP = controls.intermediateItem->d.points[controls.intermediateItem->d.points.size() - 2];
+                const DrawBrushStrokePoint& prevP = controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2];
                 float distToPrev = (p.pos - prevP.pos).norm();
                 if(extensive_point_checking_back(p.pos)) {
-                    controls.intermediateItem->d.points.back().pos = p.pos;
-                    controls.intermediateItem->d.points.back().width = std::max(controls.intermediateItem->d.points.back().width, p.width);
-                    controls.intermediateItem->d.points[controls.intermediateItem->d.points.size() - 2].width = std::max(controls.intermediateItem->d.points[controls.intermediateItem->d.points.size() - 2].width, p.width);
+                    controls.intermediateItem->d->points.back().pos = p.pos;
+                    controls.intermediateItem->d->points.back().width = std::max(controls.intermediateItem->d->points.back().width, p.width);
+                    controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2].width = std::max(controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2].width, p.width);
                 }
                 if((!controls.drawingMinimumRelativeToSize && distToPrev >= 10.0) || (controls.drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * DRAW_MINIMUM_LIMIT)) {
-                    controls.intermediateItem->d.points.back() = p;
+                    controls.intermediateItem->d->points.back() = p;
                     controls.addedTemporaryPoint = false;
                     controls.intermediateItem->client_send_update_temp(drawP);
 
                     if(controls.midwayInterpolation) {
-                        if(controls.intermediateItem->d.points.size() != 2) // Don't interpolate the first point
-                            controls.intermediateItem->d.points[controls.intermediateItem->d.points.size() - 2].pos = (controls.prevPointUnaltered + p.pos) * 0.5;
+                        if(controls.intermediateItem->d->points.size() != 2) // Don't interpolate the first point
+                            controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2].pos = (controls.prevPointUnaltered + p.pos) * 0.5;
                         controls.prevPointUnaltered = p.pos;
                     }
                 }
@@ -174,7 +174,7 @@ bool BrushTool::prevent_undo_or_redo() {
 
 void BrushTool::commit_stroke() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
-        if(!controls.intermediateItem->d.points.empty()) {
+        if(!controls.intermediateItem->d->points.empty()) {
             controls.intermediateItem->client_send_update_final(drawP);
             controls.intermediateItem->final_update(drawP);
         }

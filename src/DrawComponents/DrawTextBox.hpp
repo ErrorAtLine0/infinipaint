@@ -29,6 +29,8 @@ class DrawTextBox : public DrawComponent {
 
 #ifndef IS_SERVER
         virtual std::shared_ptr<DrawComponent> copy() const override;
+        virtual std::shared_ptr<DrawComponent> deep_copy() const override;
+
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) override;

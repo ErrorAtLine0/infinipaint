@@ -122,19 +122,24 @@ void DrawComponent::check_timers(DrawingProgram& drawP) {
 }
 
 void DrawComponent::temp_update(DrawingProgram& drawP) {
-    drawP.compCache.preupdate_component(collabListInfo.lock());
+    if(collabListInfo.lock())
+        drawP.compCache.preupdate_component(collabListInfo.lock());
     worldAABB = std::nullopt;
     initialize_draw_data(drawP);
-}
-
-void DrawComponent::transform_temp_update(DrawingProgram& drawP) {
-    drawP.compCache.preupdate_component(collabListInfo.lock());
-    worldAABB = std::nullopt;
 }
 
 void DrawComponent::final_update(DrawingProgram& drawP, bool invalidateCache) {
+    if(invalidateCache && collabListInfo.lock())
+        drawP.compCache.preupdate_component(collabListInfo.lock());
     initialize_draw_data(drawP);
-    finalize_update(drawP, invalidateCache);
+    create_collider();
+    calculate_world_bounds();
+}
+
+void DrawComponent::transform_update(DrawingProgram& drawP, bool invalidateCache) {
+    if(invalidateCache && collabListInfo.lock())
+        drawP.compCache.preupdate_component(collabListInfo.lock());
+    calculate_world_bounds();
 }
 
 void DrawComponent::client_send_place_many(DrawingProgram& drawP, std::vector<CollabListType::ObjectInfoPtr>& comps) {
@@ -167,12 +172,6 @@ void DrawComponent::client_send_erase(DrawingProgram& drawP) {
 
 void DrawComponent::client_send_erase_set(DrawingProgram& drawP, const std::unordered_set<ServerClientID>& ids) {
     drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_ERASE_MANY_COMPONENTS, ids);
-}
-
-void DrawComponent::finalize_update(DrawingProgram& drawP, bool invalidateCache) {
-    if(invalidateCache && collabListInfo.lock())
-        drawP.compCache.preupdate_component(collabListInfo.lock());
-    create_collider();
 }
 
 bool DrawComponent::collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) {
