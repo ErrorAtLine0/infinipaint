@@ -142,13 +142,13 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             auto& obj = objOrderedVector[i];
             data.idToComponentMap.emplace(obj->id, obj->obj);
             if(obj->pos - objOrderedVector[startPoint]->pos != (i - startPoint)) {
-                uint64_t insertPosition = std::min(data.components.size(), objOrderedVector[startPoint]->pos);
+                uint64_t insertPosition = std::min<uint64_t>(data.components.size(), objOrderedVector[startPoint]->pos);
                 data.components.insert(data.components.begin() + insertPosition, objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.begin() + i);
                 startPoint = i;
             }
         }
 
-        data.components.insert(data.components.begin() + std::min(data.components.size(), objOrderedVector[startPoint]->pos), objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.end());
+        data.components.insert(data.components.begin() + std::min<uint64_t>(data.components.size(), objOrderedVector[startPoint]->pos), objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.end());
 
         startPoint = 0;
 

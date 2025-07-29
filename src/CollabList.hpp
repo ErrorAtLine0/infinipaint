@@ -181,12 +181,12 @@ template <typename T, typename IDType> class CollabList {
                 obj->obj->collabListInfo = obj;
                 idToObjectMap.emplace(obj->id, obj);
                 if(obj->pos - objOrderedVector[startPoint]->pos != (i - startPoint)) {
-                    uint64_t insertPosition = std::min(clientSideList.size(), objOrderedVector[startPoint]->pos);
+                    uint64_t insertPosition = std::min<uint64_t>(clientSideList.size(), objOrderedVector[startPoint]->pos);
                     clientSideList.insert(clientSideList.begin() + insertPosition, objOrderedVector.begin() + startPoint, objOrderedVector.begin() + i);
                     startPoint = i;
                 }
             }
-            clientSideList.insert(clientSideList.begin() + std::min(clientSideList.size(), objOrderedVector[startPoint]->pos), objOrderedVector.begin() + startPoint, objOrderedVector.end());
+            clientSideList.insert(clientSideList.begin() + std::min<uint64_t>(clientSideList.size(), objOrderedVector[startPoint]->pos), objOrderedVector.begin() + startPoint, objOrderedVector.end());
 
             complete_client_pos_refresh(false);
             if(updateCallback)
@@ -222,15 +222,15 @@ template <typename T, typename IDType> class CollabList {
                 obj->obj->collabListInfo = obj;
 
                 if(obj->pos - objOrderedVector[startPoint]->pos != (i - startPoint)) {
-                    uint64_t insertPosition = std::min(clientSideList.size(), objOrderedVector[startPoint]->pos);
+                    uint64_t insertPosition = std::min<uint64_t>(clientSideList.size(), objOrderedVector[startPoint]->pos);
                     clientSideList.insert(clientSideList.begin() + insertPosition, objOrderedVector.begin() + startPoint, objOrderedVector.begin() + i);
-                    uint64_t insertPositionServer = std::min(serverSideList.size(), objOrderedVector[startPoint]->pos);
+                    uint64_t insertPositionServer = std::min<uint64_t>(serverSideList.size(), objOrderedVector[startPoint]->pos);
                     serverSideList.insert(serverSideList.begin() + insertPositionServer, objOrderedVector.begin() + startPoint, objOrderedVector.begin() + i);
                     startPoint = i;
                 }
             }
-            clientSideList.insert(clientSideList.begin() + std::min(clientSideList.size(), objOrderedVector[startPoint]->pos), objOrderedVector.begin() + startPoint, objOrderedVector.end());
-            serverSideList.insert(serverSideList.begin() + std::min(serverSideList.size(), objOrderedVector[startPoint]->pos), objOrderedVector.begin() + startPoint, objOrderedVector.end());
+            clientSideList.insert(clientSideList.begin() + std::min<uint64_t>(clientSideList.size(), objOrderedVector[startPoint]->pos), objOrderedVector.begin() + startPoint, objOrderedVector.end());
+            serverSideList.insert(serverSideList.begin() + std::min<uint64_t>(serverSideList.size(), objOrderedVector[startPoint]->pos), objOrderedVector.begin() + startPoint, objOrderedVector.end());
 
             if(clientInsertOrderedVectorCallback)
                 clientInsertOrderedVectorCallback(objOrderedVector);

@@ -16,7 +16,7 @@ ByteMemStream::ByteMemStream(char* p, size_t l):
     rdbuf(&buffer);
 }
 
-std::vector<std::shared_ptr<std::stringstream>> fragment_message(std::string_view uncompressedView, uint64_t stride) {
+std::vector<std::shared_ptr<std::stringstream>> fragment_message(std::string_view uncompressedView, size_t stride) {
     if(uncompressedView.length() <= stride)
         return {};
 
@@ -30,7 +30,7 @@ std::vector<std::shared_ptr<std::stringstream>> fragment_message(std::string_vie
 
     toRet.emplace_back(std::make_shared<std::stringstream>());
 
-    size_t messFirstStride = std::min(stride, v.size());
+    size_t messFirstStride = std::min<size_t>(stride, v.size());
 
     {
         cereal::PortableBinaryOutputArchive m(*toRet.back());
@@ -46,7 +46,7 @@ std::vector<std::shared_ptr<std::stringstream>> fragment_message(std::string_vie
             toRet.emplace_back(std::make_shared<std::stringstream>());
             {
                 cereal::PortableBinaryOutputArchive m(*toRet.back());
-                m((MessageCommandType)0, cereal::binary_data(v.data() + nextByte, (uint64_t)(v.length() - nextByte)));
+                m((MessageCommandType)0, cereal::binary_data(v.data() + nextByte, v.length() - nextByte));
             }
             break;
         }
@@ -78,7 +78,7 @@ void decode_fragmented_message(cereal::PortableBinaryInputArchive& inArchive, Pa
         inArchive(messageSize);
         spfm.partialFragmentMessage.resize(messageSize);
 
-        size_t messStride = std::min(fragmentMessageStride, spfm.partialFragmentMessage.size());
+        size_t messStride = std::min<size_t>(fragmentMessageStride, spfm.partialFragmentMessage.size());
 
         inArchive(cereal::binary_data(spfm.partialFragmentMessage.data() + spfm.partialFragmentMessageLoc, messStride));
         spfm.partialFragmentMessageLoc += messStride;

@@ -22,5 +22,5 @@ struct PartialFragmentMessage {
     uint64_t partialFragmentMessageLoc = 0;
 };
 
-std::vector<std::shared_ptr<std::stringstream>> fragment_message(std::string_view uncompressedView, uint64_t stride);
+std::vector<std::shared_ptr<std::stringstream>> fragment_message(std::string_view uncompressedView, size_t stride);
 void decode_fragmented_message(cereal::PortableBinaryInputArchive& inArchive, PartialFragmentMessage& spfm, size_t fragmentMessageStride, std::function<void(cereal::PortableBinaryInputArchive& completeArchive)> runAfterDecoded);
