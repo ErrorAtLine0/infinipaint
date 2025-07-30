@@ -197,16 +197,20 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     });
     netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isTemp;
-        ServerClientID idToTransform;
-        message(isTemp, idToTransform);
-        auto it = data.idToComponentMap.find(idToTransform);
+        ServerClientID idToUpdate;
+        message(isTemp, idToUpdate);
+        auto it = data.idToComponentMap.find(idToUpdate);
         if(it != data.idToComponentMap.end()) {
             std::shared_ptr<DrawComponent>& comp = it->second;
             message(*comp);
-            if(isTemp)
-                comp->server_send_update_temp(*this, idToTransform);
-            else
-                comp->server_send_update_final(*this, idToTransform);
+            if(isTemp) {
+                comp->server_send_update_temp(*this, idToUpdate);
+                data.updateComponentTimers[idToUpdate] = std::chrono::steady_clock::now();
+            }
+            else {
+                comp->server_send_update_final(*this, idToUpdate);
+                data.updateComponentTimers.erase(idToUpdate);
+            }
         }
     });
     netServer->add_recv_callback(SERVER_RESOURCE_INIT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -305,8 +309,13 @@ void MainServer::ensure_display_name_unique(std::string& displayName) {
 
 void MainServer::update() {
     netServer->update();
-    for(auto& c : data.components)
-        c.second->server_update(*this, c.first);
+    std::erase_if(data.updateComponentTimers, [&](auto& c) {
+        auto& [id, timer] = c;
+        auto it = data.idToComponentMap.find(id);
+        if(it == data.idToComponentMap.end())
+            return true;
+        return it->second->server_update(*this, id, timer);
+    });
     if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
         netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_KEEP_ALIVE);
         lastKeepAliveSent = std::chrono::steady_clock::now();

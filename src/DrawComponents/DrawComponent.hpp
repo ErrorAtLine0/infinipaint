@@ -14,7 +14,7 @@
 #include <include/core/SkVertices.h>
 #endif
 
-#define CLIENT_DRAWCOMP_DELAY_TIMER_DURATION 5.0f
+#define CLIENT_DRAWCOMP_DELAY_TIMER_DURATION std::chrono::seconds(6)
 
 #define DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR 20
 #define DRAWCOMP_MIN_SHIFT_BEFORE_DISAPPEAR 11
@@ -71,18 +71,13 @@ class DrawComponent {
         void server_send_update_final(MainServer& server, ServerClientID id);
         static void server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
-        std::chrono::time_point<std::chrono::steady_clock> tempServerUpdateTimer;
-        bool serverIsTempUpdate = false;
-
         std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
         std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
 
-        void server_update(MainServer& server, ServerClientID id);
+        bool server_update(MainServer& server, ServerClientID id, const std::chrono::time_point<std::chrono::steady_clock>& tempServerUpdateTimer);
 
 #ifndef IS_SERVER
-        std::chrono::time_point<std::chrono::steady_clock> lastTransformTime;
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
-
         std::shared_ptr<DrawComponent> delayedUpdatePtr = nullptr;
 
         bool bounds_draw_check(const DrawData& drawData) const;

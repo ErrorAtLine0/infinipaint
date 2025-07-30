@@ -76,8 +76,7 @@ void DrawingProgram::init_client_callbacks() {
         if(!objPtr)
             return;
         std::shared_ptr<DrawComponent>& comp = objPtr->obj;
-        float dur = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - comp->lastUpdateTime).count();
-        if(dur > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION){
+        if((std::chrono::steady_clock::now() - comp->lastUpdateTime) > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION){
             comp->delayedUpdatePtr = nullptr;
             message(*comp);
             if(isTemp)

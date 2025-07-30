@@ -74,27 +74,22 @@ void DrawComponent::server_send_erase_set(MainServer& server, const std::unorder
 
 void DrawComponent::server_send_update_temp(MainServer& server, ServerClientID id) {
     server.netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, true, id, *this);
-    tempServerUpdateTimer = std::chrono::steady_clock::now();
-    serverIsTempUpdate = true;
 }
 
 void DrawComponent::server_send_update_final(MainServer& server, ServerClientID id) {
     server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, false, id, *this);
-    serverIsTempUpdate = false;
 }
 
 void DrawComponent::server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms) {
     server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
 }
 
-void DrawComponent::server_update(MainServer& server, ServerClientID id) {
-    if(serverIsTempUpdate) {
-        float timeSince = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - tempServerUpdateTimer).count();
-        if(timeSince >= 1.0f) {
-            server_send_update_final(server, id);
-            serverIsTempUpdate = false;
-        }
+bool DrawComponent::server_update(MainServer& server, ServerClientID id, const std::chrono::time_point<std::chrono::steady_clock>& tempServerUpdateTimer) {
+    if((std::chrono::steady_clock::now() - tempServerUpdateTimer) >= CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
+        server_send_update_final(server, id);
+        return true;
     }
+    return false;
 }
 
 void DrawComponent::get_used_resources(std::unordered_set<ServerClientID>& v) const {
@@ -112,8 +107,7 @@ bool DrawComponent::bounds_draw_check(const DrawData& drawData) const {
 
 void DrawComponent::check_timers(DrawingProgram& drawP) {
     if(delayedUpdatePtr) {
-        float updateDur = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastUpdateTime).count();
-        if(updateDur > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
+        if(std::chrono::steady_clock::now() - lastUpdateTime > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
             update_from_delayed_ptr();
             delayedUpdatePtr = nullptr;
             final_update(drawP);
