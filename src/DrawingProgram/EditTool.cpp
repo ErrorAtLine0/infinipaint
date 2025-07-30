@@ -135,7 +135,7 @@ void EditTool::tool_update() {
 
             drawP.compCache.traverse_bvh_run_function(mouseAABB, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {
                 for(auto& c : components) {
-                    if(c->pos > lastPos && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cMouseAABB)) {
+                    if(c->pos >= lastPos && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cMouseAABB)) {
                         lastSelectedObj = c;
                         lastPos = c->pos;
                     }

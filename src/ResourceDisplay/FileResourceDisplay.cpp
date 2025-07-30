@@ -44,16 +44,6 @@ void FileResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const
     canvas->scale(imRect.width() / svgDom->containerSize().width(), imRect.height() / svgDom->containerSize().height());
     svgDom->render(canvas);
     canvas->restore();
-
-    SkFont f = io->get_font(40.0f);
-    SkFontMetrics metrics;
-    f.getMetrics(&metrics);
-
-    float nextText = f.measureText(fileName.c_str(), fileName.length(), SkTextEncoding::kUTF8, nullptr);
-    Vector2f bounds{nextText, - metrics.fAscent + metrics.fDescent};
-
-    SkPaint fontPaint(drawData.main->canvasTheme.toolFrontColor);
-    canvas->drawSimpleText(fileName.c_str(), fileName.length(), SkTextEncoding::kUTF8, imRect.x() + imRect.width() * 0.5f - bounds.x() * 0.5f, imRect.y() + imRect.height() + bounds.y(), f, fontPaint);
 }
 
 Vector2f FileResourceDisplay::get_dimensions() const {
