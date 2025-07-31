@@ -25,6 +25,7 @@ class EllipseDrawTool {
         void commit();
 
         struct EllipseDrawControls {
+            DrawEllipse::Data oldData;
             Vector2f startAt;
             int fillStrokeMode = 1;
             int drawStage = 0;

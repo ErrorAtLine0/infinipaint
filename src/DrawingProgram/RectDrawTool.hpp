@@ -25,6 +25,7 @@ class RectDrawTool {
         void commit_rectangle();
 
         struct RectDrawControls {
+            DrawRectangle::Data oldData;
             Vector2f startAt;
             float relativeRadiusWidth = 10.0f;
             int fillStrokeMode = 1;

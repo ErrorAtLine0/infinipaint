@@ -26,7 +26,6 @@ void RectDrawTool::gui_toolbox() {
 }
 
 bool RectDrawTool::edit_gui(const std::shared_ptr<DrawRectangle>& a) {
-    DrawRectangle::Data oldData = a->d;
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool rectangle");
     t.gui.text_label_centered("Edit Rectangle");
@@ -54,7 +53,10 @@ bool RectDrawTool::edit_gui(const std::shared_ptr<DrawRectangle>& a) {
         });
     }
     t.gui.pop_id();
-    return a->d != oldData;
+
+    bool editHappened = a->d != controls.oldData;
+    controls.oldData = a->d;
+    return editHappened;
 }
 
 void RectDrawTool::reset_tool() {

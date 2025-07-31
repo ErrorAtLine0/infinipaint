@@ -28,7 +28,6 @@ void EllipseDrawTool::gui_toolbox() {
 }
 
 bool EllipseDrawTool::edit_gui(const std::shared_ptr<DrawEllipse>& a) {
-    DrawEllipse::Data oldData = a->d;
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool ellipse");
     t.gui.text_label_centered("Edit Ellipse");
@@ -55,7 +54,10 @@ bool EllipseDrawTool::edit_gui(const std::shared_ptr<DrawEllipse>& a) {
         });
     }
     t.gui.pop_id();
-    return a->d != oldData;
+    
+    bool editHappened = a->d != controls.oldData;
+    controls.oldData = a->d;
+    return editHappened;
 }
 
 void EllipseDrawTool::edit_start(const std::shared_ptr<DrawEllipse>& a, std::any& prevData) {
