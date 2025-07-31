@@ -62,6 +62,8 @@ class DrawingProgramCache {
         const std::chrono::steady_clock::time_point& get_last_bvh_build_time() const;
         void clear_own_cached_surfaces();
     private:
+        uint64_t draw_cache_image_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
+
         void force_rebuild_dont_include_objs(std::vector<CollabListType::ObjectInfoPtr> componentsToBuild, const std::unordered_set<CollabListType::ObjectInfoPtr>& objsToNotInclude);
         void force_rebuild(const std::vector<CollabListType::ObjectInfoPtr>& componentsToBuild);
 
