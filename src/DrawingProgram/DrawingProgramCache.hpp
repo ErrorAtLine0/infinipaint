@@ -52,7 +52,7 @@ class DrawingProgramCache {
         void traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& components)> f);
         void traverse_bvh_erase_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>& node, std::vector<CollabListType::ObjectInfoPtr>& components)> f);
         // Run before actually updating the component
-        void preupdate_component(const CollabListType::ObjectInfoPtr& c, const std::optional<SCollision::AABB<WorldScalar>>& aabb);
+        void preupdate_component(const CollabListType::ObjectInfoPtr& c);
         void invalidate_cache_before_pos(uint64_t placementToInvalidateAt);
         void invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt);
         void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);

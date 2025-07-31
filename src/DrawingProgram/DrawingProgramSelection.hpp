@@ -16,6 +16,9 @@ class DrawingProgramSelection {
         void erase_component(const CollabListType::ObjectInfoPtr& objToCheck);
         bool is_selected(const CollabListType::ObjectInfoPtr& objToCheck);
         const std::unordered_set<CollabListType::ObjectInfoPtr>& get_selected_set();
+
+        void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);
+        void preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck);
     private:
         void delete_all();
         bool mouse_collided_with_selection_aabb();

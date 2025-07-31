@@ -531,6 +531,20 @@ void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPt
     });
 }
 
+void DrawingProgram::invalidate_cache_at_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+    if(selection.is_selected(objToCheck))
+        selection.invalidate_cache_at_optional_aabb_before_pos(objToCheck->obj->worldAABB, objToCheck->pos);
+    else
+        compCache.invalidate_cache_at_optional_aabb_before_pos(objToCheck->obj->worldAABB, objToCheck->pos);
+}
+
+void DrawingProgram::preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+    if(selection.is_selected(objToCheck))
+        selection.preupdate_component(objToCheck);
+    else
+        compCache.preupdate_component(objToCheck);
+}
+
 void DrawingProgram::add_undo_place_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo) {
     world.undo.push(UndoManager::UndoRedoPair{
         [&, objSetToUndo = objSetToUndo]() {

@@ -170,6 +170,14 @@ void DrawingProgramSelection::deselect_all() {
     }
 }
 
+void DrawingProgramSelection::invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt) {
+    cache.invalidate_cache_at_optional_aabb_before_pos(aabb, placementToInvalidateAt);
+}
+
+void DrawingProgramSelection::preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+    cache.preupdate_component(objToCheck);
+}
+
 bool DrawingProgramSelection::is_selected(const CollabListType::ObjectInfoPtr& objToCheck) {
     return selectedSet.contains(objToCheck);
 }

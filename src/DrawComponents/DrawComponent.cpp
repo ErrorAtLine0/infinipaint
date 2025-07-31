@@ -108,20 +108,20 @@ bool DrawComponent::check_timers(DrawingProgram& drawP, const std::shared_ptr<Dr
 void DrawComponent::commit_update(DrawingProgram& drawP, bool invalidateCache) {
     auto lockedCollabInfo = collabListInfo.lock();
     if(invalidateCache && lockedCollabInfo && worldAABB)
-        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
+        drawP.preupdate_component(lockedCollabInfo);
     initialize_draw_data(drawP);
     calculate_world_bounds();
     if(invalidateCache && lockedCollabInfo && worldAABB)
-        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
+        drawP.preupdate_component(lockedCollabInfo);
 }
 
 void DrawComponent::commit_transform(DrawingProgram& drawP, bool invalidateCache) {
     auto lockedCollabInfo = collabListInfo.lock();
     if(invalidateCache && lockedCollabInfo && worldAABB)
-        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
+        drawP.preupdate_component(lockedCollabInfo);
     calculate_world_bounds();
     if(invalidateCache && lockedCollabInfo && worldAABB)
-        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
+        drawP.preupdate_component(lockedCollabInfo);
 }
 
 void DrawComponent::client_send_place_many(DrawingProgram& drawP, std::vector<CollabListType::ObjectInfoPtr>& comps) {

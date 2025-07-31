@@ -47,6 +47,10 @@ class DrawingProgram {
 
         void parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func);
 
+        // This function, unlike preupdate_component, does not take the object out of the BVH. Use for a draw update that doesn't change the object's bounding box
+        void invalidate_cache_at_component(const CollabListType::ObjectInfoPtr& objToCheck);
+        void preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck);
+
         DrawingProgramCache compCache;
 
         CollabListType components;

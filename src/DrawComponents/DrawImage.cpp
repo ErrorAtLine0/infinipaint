@@ -71,7 +71,7 @@ void DrawImage::update(DrawingProgram& drawP) {
     std::shared_ptr<ResourceDisplay> display = drawP.world.drawData.rMan->get_display_data(d.imageID);
     if(display) {
         if(display->update_draw() && collabListInfo.lock())
-            drawP.compCache.invalidate_cache_at_optional_aabb_before_pos(worldAABB, collabListInfo.lock()->pos);
+            drawP.invalidate_cache_at_component(collabListInfo.lock());
     }
 }
 
