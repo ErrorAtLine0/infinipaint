@@ -57,8 +57,8 @@ void TextBoxTool::commit_edit_updates(const std::shared_ptr<DrawTextBox>& a, std
             a->d = pData;
             a->set_textbox_string(pData.currentText);
             a->d.editing = false;
-            a->client_send_update_final(drawP);
-            a->final_update(drawP);
+            a->client_send_update(drawP);
+            a->commit_update(drawP);
             drawP.reset_tools();
             return true;
         },
@@ -66,8 +66,8 @@ void TextBoxTool::commit_edit_updates(const std::shared_ptr<DrawTextBox>& a, std
             a->d = cData;
             a->set_textbox_string(cData.currentText);
             a->d.editing = false;
-            a->client_send_update_final(drawP);
-            a->final_update(drawP);
+            a->client_send_update(drawP);
+            a->commit_update(drawP);
             drawP.reset_tools();
             return true;
         }
@@ -82,7 +82,7 @@ void TextBoxTool::edit_start(const std::shared_ptr<DrawTextBox>& a, std::any& pr
     cur.pos = cur.selectionBeginPos = cur.selectionEndPos = textbox.getPosition(p);
     prevData = a->d;
     a->d.editing = true;
-    a->client_send_update_temp(drawP);
+    a->client_send_update(drawP);
     drawP.editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
     drawP.editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});
 }
@@ -253,8 +253,8 @@ void TextBoxTool::tool_update() {
                 drawP.editTool.edit_start(i);
             }
             else {
-                controls.intermediateItem->client_send_update_temp(drawP);
-                controls.intermediateItem->temp_update(drawP);
+                controls.intermediateItem->client_send_update(drawP);
+                controls.intermediateItem->commit_update(drawP);
             }
             break;
         }
@@ -273,14 +273,14 @@ void TextBoxTool::edit_text(std::function<void()> toRun, const std::shared_ptr<D
 }
 
 void TextBoxTool::update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox) {
-    textBox->client_send_update_temp(drawP);
-    textBox->temp_update(drawP);
+    textBox->client_send_update(drawP);
+    textBox->commit_update(drawP);
 }
 
 void TextBoxTool::commit() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
-        controls.intermediateItem->client_send_update_final(drawP);
-        controls.intermediateItem->final_update(drawP);
+        controls.intermediateItem->client_send_update(drawP);
+        controls.intermediateItem->commit_update(drawP);
     }
     controls.intermediateItem = nullptr; 
 }

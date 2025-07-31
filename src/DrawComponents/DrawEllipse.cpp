@@ -35,7 +35,7 @@ std::shared_ptr<DrawComponent> DrawEllipse::deep_copy() const {
     return a;
 }
 
-void DrawEllipse::update_from_delayed_ptr() {
+void DrawEllipse::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawEllipse> newPtr = std::static_pointer_cast<DrawEllipse>(delayedUpdatePtr);
     d = newPtr->d;
 }
@@ -69,6 +69,7 @@ void DrawEllipse::create_draw_data() {
 
 void DrawEllipse::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
+    create_collider();
 }
 
 void DrawEllipse::update(DrawingProgram& drawP) {

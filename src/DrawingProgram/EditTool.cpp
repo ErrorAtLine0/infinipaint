@@ -49,8 +49,8 @@ void EditTool::gui_toolbox() {
             }
         }
         if(editHappened) {
-            a->temp_update(drawP);
-            a->client_send_update_temp(drawP);
+            a->commit_update(drawP);
+            a->client_send_update(drawP);
         }
     }
     else {
@@ -83,8 +83,8 @@ void EditTool::reset_tool() {
             default:
                 break;
         }
-        a->final_update(drawP);
-        a->client_send_update_final(drawP);
+        a->commit_update(drawP);
+        a->client_send_update(drawP);
     }
     controls.compToEdit.reset();
     controls.pointHandles.clear();
@@ -177,8 +177,8 @@ void EditTool::tool_update() {
                         if(controls.pointDragging->max)
                             newPos = cwise_vec_min(*controls.pointDragging->max, newPos);
                         *controls.pointDragging->p = newPos;
-                        a->temp_update(drawP);
-                        a->client_send_update_temp(drawP);
+                        a->commit_update(drawP);
+                        a->client_send_update(drawP);
                     }
                     isMovingPoint = true;
                 }

@@ -38,7 +38,7 @@ std::shared_ptr<DrawComponent> DrawRectangle::deep_copy() const {
     return a;
 }
 
-void DrawRectangle::update_from_delayed_ptr() {
+void DrawRectangle::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawRectangle> newPtr = std::static_pointer_cast<DrawRectangle>(delayedUpdatePtr);
     d = newPtr->d;
 }
@@ -71,6 +71,7 @@ void DrawRectangle::update(DrawingProgram& drawP) {
 
 void DrawRectangle::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
+    create_collider();
 }
 
 bool DrawRectangle::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {

@@ -72,24 +72,12 @@ void DrawComponent::server_send_erase_set(MainServer& server, const std::unorder
     server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_ERASE_MANY_COMPONENTS, ids);
 }
 
-void DrawComponent::server_send_update_temp(MainServer& server, ServerClientID id) {
-    server.netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, true, id, *this);
-}
-
-void DrawComponent::server_send_update_final(MainServer& server, ServerClientID id) {
-    server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, false, id, *this);
+void DrawComponent::server_send_update(MainServer& server, ServerClientID id) {
+    server.netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, id, *this);
 }
 
 void DrawComponent::server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms) {
     server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
-}
-
-bool DrawComponent::server_update(MainServer& server, ServerClientID id, const std::chrono::time_point<std::chrono::steady_clock>& tempServerUpdateTimer) {
-    if((std::chrono::steady_clock::now() - tempServerUpdateTimer) >= CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
-        server_send_update_final(server, id);
-        return true;
-    }
-    return false;
 }
 
 void DrawComponent::get_used_resources(std::unordered_set<ServerClientID>& v) const {
@@ -105,35 +93,35 @@ bool DrawComponent::bounds_draw_check(const DrawData& drawData) const {
     return a;
 }
 
-void DrawComponent::check_timers(DrawingProgram& drawP) {
+bool DrawComponent::check_timers(DrawingProgram& drawP, const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     if(delayedUpdatePtr) {
         if(std::chrono::steady_clock::now() - lastUpdateTime > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
-            update_from_delayed_ptr();
-            delayedUpdatePtr = nullptr;
-            final_update(drawP);
+            update_from_delayed_ptr(delayedUpdatePtr);
+            commit_update(drawP);
+            return true;
         }
+        return false;
     }
+    return true;
 }
 
-void DrawComponent::temp_update(DrawingProgram& drawP) {
-    if(collabListInfo.lock())
-        drawP.compCache.preupdate_component(collabListInfo.lock());
-    worldAABB = std::nullopt;
+void DrawComponent::commit_update(DrawingProgram& drawP, bool invalidateCache) {
+    auto lockedCollabInfo = collabListInfo.lock();
+    if(invalidateCache && lockedCollabInfo && worldAABB)
+        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
     initialize_draw_data(drawP);
+    calculate_world_bounds();
+    if(invalidateCache && lockedCollabInfo && worldAABB)
+        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
 }
 
-void DrawComponent::final_update(DrawingProgram& drawP, bool invalidateCache) {
-    if(invalidateCache && collabListInfo.lock())
-        drawP.compCache.preupdate_component(collabListInfo.lock());
-    initialize_draw_data(drawP);
-    create_collider();
+void DrawComponent::commit_transform(DrawingProgram& drawP, bool invalidateCache) {
+    auto lockedCollabInfo = collabListInfo.lock();
+    if(invalidateCache && lockedCollabInfo && worldAABB)
+        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
     calculate_world_bounds();
-}
-
-void DrawComponent::transform_update(DrawingProgram& drawP, bool invalidateCache) {
-    if(invalidateCache && collabListInfo.lock())
-        drawP.compCache.preupdate_component(collabListInfo.lock());
-    calculate_world_bounds();
+    if(invalidateCache && lockedCollabInfo && worldAABB)
+        drawP.compCache.preupdate_component(lockedCollabInfo, worldAABB);
 }
 
 void DrawComponent::client_send_place_many(DrawingProgram& drawP, std::vector<CollabListType::ObjectInfoPtr>& comps) {
@@ -145,14 +133,9 @@ void DrawComponent::client_send_place(DrawingProgram& drawP) {
         drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_PLACE_SINGLE_COMPONENT, collabListInfo.lock()->pos, get_type(), this->coords, *this);
 }
 
-void DrawComponent::client_send_update_temp(DrawingProgram& drawP) {
+void DrawComponent::client_send_update(DrawingProgram& drawP) {
     if(collabListInfo.lock())
-        drawP.world.con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, true, collabListInfo.lock()->id, *this);
-}
-
-void DrawComponent::client_send_update_final(DrawingProgram& drawP) {
-    if(collabListInfo.lock())
-        drawP.world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, false, collabListInfo.lock()->id, *this);
+        drawP.world.con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_UPDATE_COMPONENT, collabListInfo.lock()->id, *this);
 }
 
 void DrawComponent::client_send_transform_many(DrawingProgram& drawP, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms) {

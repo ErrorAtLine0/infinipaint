@@ -94,7 +94,7 @@ void DrawingProgramSelection::deselect_all() {
         bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
         parallel_loop_container(a, [&](auto& obj) {
             obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
-            obj->obj->transform_update(drawP, false);
+            obj->obj->commit_transform(drawP, false);
         }, isSingleThread);
         if(!isSingleThread)
             drawP.force_rebuild_cache();
@@ -128,7 +128,7 @@ void DrawingProgramSelection::deselect_all() {
                 parallel_loop_container(transformsFrom, [&](auto& p) {
                     auto& [comp, coords] = p;
                     comp->obj->coords = coords;
-                    comp->obj->transform_update(drawP, isSingleThread);
+                    comp->obj->commit_transform(drawP, isSingleThread);
                 }, isSingleThread);
 
                 DrawComponent::client_send_transform_many(drawP, transformsToSend);
@@ -154,7 +154,7 @@ void DrawingProgramSelection::deselect_all() {
                 parallel_loop_container(transformsTo, [&](auto& p) {
                     auto& [comp, coords] = p;
                     comp->obj->coords = coords;
-                    comp->obj->transform_update(drawP, isSingleThread);
+                    comp->obj->commit_transform(drawP, isSingleThread);
                 }, isSingleThread);
 
                 DrawComponent::client_send_transform_many(drawP, transformsToSend);
@@ -334,7 +334,7 @@ void DrawingProgramSelection::paste_clipboard() {
     parallel_loop_container(compListInserted, [&](auto& c) {
         c->obj->remap_resource_ids(resourceRemapIDs);
         c->obj->coords.translate(-moveVec);
-        c->obj->transform_update(drawP, false);
+        c->obj->commit_transform(drawP, false);
     });
     DrawComponent::client_send_place_many(drawP, compListInserted);
     drawP.addToCompCacheOnInsert = true;

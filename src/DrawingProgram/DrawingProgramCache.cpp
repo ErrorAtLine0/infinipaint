@@ -165,14 +165,14 @@ void DrawingProgramCache::traverse_bvh_run_function_recursive(const std::shared_
     }
 }
 
-void DrawingProgramCache::preupdate_component(const CollabListType::ObjectInfoPtr& c) {
+void DrawingProgramCache::preupdate_component(const CollabListType::ObjectInfoPtr& c, const std::optional<SCollision::AABB<WorldScalar>>& aabb) {
     auto parentBvhNode = c->obj->parentBvhNode.lock();
     if(parentBvhNode) {
         unsortedComponents.emplace_back(c);
         std::erase(parentBvhNode->components, c);
         c->obj->parentBvhNode.reset();
     }
-    invalidate_cache_before_pos(c->pos);
+    invalidate_cache_at_optional_aabb_before_pos(aabb, c->pos);
 }
 
 void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {

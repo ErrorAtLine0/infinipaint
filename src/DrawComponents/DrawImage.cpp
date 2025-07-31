@@ -49,7 +49,7 @@ std::shared_ptr<DrawComponent> DrawImage::deep_copy() const {
     return a;
 }
 
-void DrawImage::update_from_delayed_ptr() {
+void DrawImage::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawImage> newPtr = std::static_pointer_cast<DrawImage>(delayedUpdatePtr);
     d = newPtr->d;
 }
@@ -70,13 +70,14 @@ void DrawImage::draw(SkCanvas* canvas, const DrawData& drawData) {
 void DrawImage::update(DrawingProgram& drawP) {
     std::shared_ptr<ResourceDisplay> display = drawP.world.drawData.rMan->get_display_data(d.imageID);
     if(display) {
-        if(display->update_draw())// && bounds_draw_check(drawP.world.drawData, collisionTree))
-            temp_update(drawP);
+        if(display->update_draw() && collabListInfo.lock())
+            drawP.compCache.invalidate_cache_at_optional_aabb_before_pos(worldAABB, collabListInfo.lock()->pos);
     }
 }
 
 void DrawImage::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
+    create_collider();
 }
 
 bool DrawImage::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {

@@ -32,9 +32,9 @@ class DrawEllipse : public DrawComponent {
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual void update(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) override;
-        virtual void update_from_delayed_ptr() override;
+        virtual void update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) override;
         void create_draw_data();
-        virtual void create_collider() override;
+        void create_collider();
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 

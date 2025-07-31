@@ -74,15 +74,15 @@ void RectDrawTool::commit_edit_updates(const std::shared_ptr<DrawRectangle>& a, 
     drawP.world.undo.push(UndoManager::UndoRedoPair{
         [&, a, pData]() {
             a->d = pData;
-            a->client_send_update_final(drawP);
-            a->final_update(drawP);
+            a->client_send_update(drawP);
+            a->commit_update(drawP);
             drawP.reset_tools();
             return true;
         },
         [&, a, cData]() {
             a->d = cData;
-            a->client_send_update_final(drawP);
-            a->final_update(drawP);
+            a->client_send_update(drawP);
+            a->commit_update(drawP);
             drawP.reset_tools();
             return true;
         }
@@ -110,7 +110,7 @@ void RectDrawTool::tool_update() {
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
                 uint64_t placement = drawP.components.client_list().size();
                 auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
-                controls.intermediateItem->temp_update(drawP);
+                controls.intermediateItem->commit_update(drawP);
                 controls.intermediateItem->client_send_place(drawP);
                 drawP.add_undo_place_component(objAdd);
                 controls.drawStage = 1;
@@ -127,8 +127,8 @@ void RectDrawTool::tool_update() {
                 }
                 controls.intermediateItem->d.p1 = cwise_vec_min(controls.startAt, newPos);
                 controls.intermediateItem->d.p2 = cwise_vec_max(controls.startAt, newPos);
-                controls.intermediateItem->client_send_update_temp(drawP);
-                controls.intermediateItem->temp_update(drawP);
+                controls.intermediateItem->client_send_update(drawP);
+                controls.intermediateItem->commit_update(drawP);
             }
             else {
                 commit_rectangle();
@@ -145,8 +145,8 @@ bool RectDrawTool::prevent_undo_or_redo() {
 
 void RectDrawTool::commit_rectangle() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
-        controls.intermediateItem->client_send_update_final(drawP);
-        controls.intermediateItem->final_update(drawP);
+        controls.intermediateItem->client_send_update(drawP);
+        controls.intermediateItem->commit_update(drawP);
     }
     controls.intermediateItem = nullptr; 
 }

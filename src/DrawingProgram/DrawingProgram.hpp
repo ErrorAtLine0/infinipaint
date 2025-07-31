@@ -52,7 +52,7 @@ class DrawingProgram {
         CollabListType components;
 
         std::unordered_set<std::shared_ptr<DrawComponent>> updateableComponents;
-        std::unordered_set<std::shared_ptr<DrawComponent>> delayedUpdateComponents;
+        std::unordered_map<std::shared_ptr<DrawComponent>, std::shared_ptr<DrawComponent>> delayedUpdateComponents;
 
         Vector4f* get_foreground_color_ptr();
     private:

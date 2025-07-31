@@ -67,28 +67,23 @@ class DrawComponent {
         static void server_send_place_many(MainServer& server, std::vector<CollabListType::ObjectInfoPtr>& comps);
         static void server_send_erase(MainServer& server, ServerClientID id);
         static void server_send_erase_set(MainServer& server, const std::unordered_set<ServerClientID>& ids);
-        void server_send_update_temp(MainServer& server, ServerClientID id);
-        void server_send_update_final(MainServer& server, ServerClientID id);
+        void server_send_update(MainServer& server, ServerClientID id);
         static void server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
         std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
 
-        bool server_update(MainServer& server, ServerClientID id, const std::chrono::time_point<std::chrono::steady_clock>& tempServerUpdateTimer);
-
 #ifndef IS_SERVER
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;
-        std::shared_ptr<DrawComponent> delayedUpdatePtr = nullptr;
 
         bool bounds_draw_check(const DrawData& drawData) const;
 
-        void check_timers(DrawingProgram& drawP);
+        bool check_timers(DrawingProgram& drawP, const std::shared_ptr<DrawComponent>& delayedUpdatePtr);
         static void client_send_place_many(DrawingProgram& drawP, std::vector<CollabListType::ObjectInfoPtr>& comps);
         void client_send_place(DrawingProgram& drawP);
         void client_send_erase(DrawingProgram& drawP);
         static void client_send_erase_set(DrawingProgram& drawP, const std::unordered_set<ServerClientID>& ids);
-        void client_send_update_temp(DrawingProgram& drawP);
-        void client_send_update_final(DrawingProgram& drawP);
+        void client_send_update(DrawingProgram& drawP);
         static void client_send_transform_many(DrawingProgram& drawP, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
@@ -100,17 +95,15 @@ class DrawComponent {
         virtual std::shared_ptr<DrawComponent> copy() const = 0;
         virtual std::shared_ptr<DrawComponent> deep_copy() const = 0;
 
-        virtual void create_collider() = 0;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
-        void temp_update(DrawingProgram& drawP);
-        void final_update(DrawingProgram& drawP, bool invalidateCache = true); // invalidateCache = false version should be thread safe
-        void transform_update(DrawingProgram& drawP, bool invalidateCache = true);
+        void commit_update(DrawingProgram& drawP, bool invalidateCache = true); // invalidateCache = false version should be thread safe
+        void commit_transform(DrawingProgram& drawP, bool invalidateCache = true); // invalidateCache = false version should be thread safe
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
         virtual void update(DrawingProgram& drawP) = 0;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) = 0;
         bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld);
         bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam);
         bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam);
-        virtual void update_from_delayed_ptr() = 0;
+        virtual void update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) = 0;
 #endif
 };

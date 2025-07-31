@@ -69,25 +69,21 @@ DrawingProgram::DrawingProgram(World& initWorld):
 
 void DrawingProgram::init_client_callbacks() {
     world.con.client_add_recv_callback(CLIENT_UPDATE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        bool isTemp;
         ServerClientID id;
-        message(isTemp, id);
+        message(id);
         auto objPtr = components.get_item_by_id(id);
         if(!objPtr)
             return;
         std::shared_ptr<DrawComponent>& comp = objPtr->obj;
-        if((std::chrono::steady_clock::now() - comp->lastUpdateTime) > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION){
-            comp->delayedUpdatePtr = nullptr;
+        if((std::chrono::steady_clock::now() - comp->lastUpdateTime) > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
+            delayedUpdateComponents.erase(comp);
             message(*comp);
-            if(isTemp)
-                comp->temp_update(*this);
-            else
-                comp->final_update(*this);
+            comp->commit_update(*this);
         }
         else {
-            comp->delayedUpdatePtr = DrawComponent::allocate_comp_type(comp->get_type());
-            message(*comp->delayedUpdatePtr);
-            delayedUpdateComponents.emplace(comp);
+            auto delayedUpdatePtr = DrawComponent::allocate_comp_type(comp->get_type());
+            message(*delayedUpdatePtr);
+            delayedUpdateComponents[comp] = delayedUpdatePtr;
         }
     });
     world.con.client_add_recv_callback(CLIENT_TRANSFORM_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
@@ -105,7 +101,7 @@ void DrawingProgram::init_client_callbacks() {
                     return;
                 comp->coords = coords;
                 objsActuallyTransformed++;
-                comp->transform_update(*this, false);
+                comp->commit_transform(*this, false);
             });
             if(objsActuallyTransformed != 0)
                 force_rebuild_cache();
@@ -119,7 +115,7 @@ void DrawingProgram::init_client_callbacks() {
                 if(comp->coords == coords)
                     return;
                 comp->coords = coords;
-                comp->transform_update(*this);
+                comp->commit_transform(*this);
             }
         }
     });
@@ -132,7 +128,7 @@ void DrawingProgram::init_client_callbacks() {
         message(newObjectID, newObj->coords, *newObj);
         bool didntExistPreviously = components.server_insert(insertPosition, newObjectID, newObj);
         if(didntExistPreviously)
-            newObj->final_update(*this);
+            newObj->commit_update(*this);
     });
     world.con.client_add_recv_callback(CLIENT_PLACE_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
         std::vector<CollabListType::ObjectInfoPtr> sortedPlacedComponents;
@@ -143,7 +139,7 @@ void DrawingProgram::init_client_callbacks() {
         std::vector<bool> didntExistPreviously = components.server_insert_ordered_vector(sortedPlacedComponents);
         bool isSingleThread = sortedPlacedComponents.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
         parallel_loop_container(sortedPlacedComponents, [&](const auto& c){
-            c->obj->final_update(*this, isSingleThread);
+            c->obj->commit_update(*this, isSingleThread);
         }, isSingleThread);
         if(!isSingleThread)
             force_rebuild_cache();
@@ -161,9 +157,9 @@ void DrawingProgram::init_client_callbacks() {
 }
 
 void DrawingProgram::check_delayed_update_timers() {
-    std::erase_if(delayedUpdateComponents, [&](auto& comp) {
-        comp->check_timers(*this);
-        return !comp->delayedUpdatePtr;
+    std::erase_if(delayedUpdateComponents, [&](auto& p) {
+        auto& [comp, delayedUpdatePtr] = p;
+        return comp->check_timers(*this, delayedUpdatePtr);
     });
 }
 
@@ -450,7 +446,7 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& fileP
     img->d.p1 = dropPos - imDim;
     img->d.p2 = dropPos + imDim;
     img->d.imageID = imageID;
-    img->final_update(*this);
+    img->commit_update(*this);
     uint64_t placement = components.client_list().size();
     auto objAdd = components.client_insert(placement, img);
     img->client_send_place(*this);
@@ -473,7 +469,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     img->d.p1 = dropPos - imDim;
     img->d.p2 = dropPos + imDim;
     img->d.imageID = imageID;
-    img->final_update(*this);
+    img->commit_update(*this);
     uint64_t placement = components.client_list().size();
     auto objAdd = components.client_insert(placement, img);
     img->client_send_place(*this);
@@ -502,7 +498,7 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
         components.init_emplace_back(id, newComp);
     }
     parallel_loop_all_components([&](const auto& c){
-        c->obj->final_update(*this, false);
+        c->obj->commit_update(*this, false);
     });
     compCache.test_rebuild(components.client_list(), true);
 }

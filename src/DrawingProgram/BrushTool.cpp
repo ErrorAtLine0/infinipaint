@@ -107,7 +107,7 @@ void BrushTool::tool_update() {
             controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
             uint64_t placement = drawP.components.client_list().size();
             auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
-            controls.intermediateItem->temp_update(drawP);
+            controls.intermediateItem->commit_update(drawP);
             controls.intermediateItem->client_send_place(drawP);
             // NOTE: The data isnt finallized at this point, so a BVH isn't generated for an object that you undo while youre drawing (this isnt just for brush strokes)
             // The fix for now is to generate a BVH for an object when you redo it
@@ -141,7 +141,7 @@ void BrushTool::tool_update() {
                 if((!controls.drawingMinimumRelativeToSize && distToPrev >= 10.0) || (controls.drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * DRAW_MINIMUM_LIMIT)) {
                     controls.intermediateItem->d->points.back() = p;
                     controls.addedTemporaryPoint = false;
-                    controls.intermediateItem->client_send_update_temp(drawP);
+                    controls.intermediateItem->client_send_update(drawP);
 
                     if(controls.midwayInterpolation) {
                         if(controls.intermediateItem->d->points.size() != 2) // Don't interpolate the first point
@@ -149,7 +149,7 @@ void BrushTool::tool_update() {
                         controls.prevPointUnaltered = p.pos;
                     }
                 }
-                controls.intermediateItem->temp_update(drawP);
+                controls.intermediateItem->commit_update(drawP);
             }
         }
     }
@@ -175,8 +175,8 @@ bool BrushTool::prevent_undo_or_redo() {
 void BrushTool::commit_stroke() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         if(!controls.intermediateItem->d->points.empty()) {
-            controls.intermediateItem->client_send_update_final(drawP);
-            controls.intermediateItem->final_update(drawP);
+            controls.intermediateItem->client_send_update(drawP);
+            controls.intermediateItem->commit_update(drawP);
         }
     }
     controls.intermediateItem = nullptr; 

@@ -47,7 +47,7 @@ std::shared_ptr<DrawComponent> DrawBrushStroke::deep_copy() const {
     return a;
 }
 
-void DrawBrushStroke::update_from_delayed_ptr() {
+void DrawBrushStroke::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawBrushStroke> newPtr = std::static_pointer_cast<DrawBrushStroke>(delayedUpdatePtr);
     d = newPtr->d;
 }
@@ -120,6 +120,7 @@ void DrawBrushStroke::initialize_draw_data(DrawingProgram& drawP) {
         create_triangles(triangleFunc, points, 30);
         vertices_to_draw_data(verticesMipMap[1], vertexData);
     }
+    create_collider();
 }
 
 std::vector<size_t> DrawBrushStroke::get_wedge_indices(const std::vector<DrawBrushStrokePoint>& points) {
@@ -359,19 +360,19 @@ void DrawBrushStroke::create_collider() {
 
     SCollision::BVHContainer<float> collisionTree;
 
-    collisionTree.calculate_bvh_recursive(strokeObjects);
+    collisionTree.calculate_bvh_recursive(strokeObjects, AABB_PRECHECK_BVH_LEVELS + 1);
     precheckAABBLevels.clear();
-    add_precheck_aabb_level(0, collisionTree.children);
+    add_precheck_aabb_level(AABB_PRECHECK_BVH_LEVELS, collisionTree.children);
 
     bounds = collisionTree.objects.bounds;
 }
 
 void DrawBrushStroke::add_precheck_aabb_level(size_t level, const std::vector<SCollision::BVHContainer<float>>& levelArray) {
     for(const auto& a : levelArray) {
-        if(level == AABB_PRECHECK_BVH_LEVELS || a.children.empty())
+        if(level == 0 || a.children.empty())
             precheckAABBLevels.emplace_back(a.objects.bounds);
         else
-            add_precheck_aabb_level(level + 1, a.children);
+            add_precheck_aabb_level(level - 1, a.children);
     }
 }
 

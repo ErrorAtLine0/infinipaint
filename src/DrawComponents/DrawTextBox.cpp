@@ -43,7 +43,7 @@ std::shared_ptr<DrawComponent> DrawTextBox::deep_copy() const {
     return a;
 }
 
-void DrawTextBox::update_from_delayed_ptr() {
+void DrawTextBox::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawTextBox> newPtr = std::static_pointer_cast<DrawTextBox>(delayedUpdatePtr);
     d = newPtr->d;
     textboxUpdate = true;
@@ -105,7 +105,7 @@ void DrawTextBox::set_textbox_string(const std::string& str) {
 
 void DrawTextBox::update_contained_string(DrawingProgram& drawP) {
     d.currentText = textBox.get_string();
-    temp_update(drawP);
+    commit_update(drawP);
 }
 
 Vector2f DrawTextBox::get_mouse_pos(DrawingProgram& drawP) {
@@ -114,6 +114,7 @@ Vector2f DrawTextBox::get_mouse_pos(DrawingProgram& drawP) {
 
 void DrawTextBox::initialize_draw_data(DrawingProgram& drawP) {
     init_text_box(drawP);
+    create_collider();
 }
 
 bool DrawTextBox::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) {

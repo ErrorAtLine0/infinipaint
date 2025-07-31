@@ -32,8 +32,8 @@ class DrawImage : public DrawComponent {
         virtual void update(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) override;
         void create_draw_data();
-        virtual void create_collider() override;
-        virtual void update_from_delayed_ptr() override;
+        void create_collider();
+        virtual void update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) override;
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 

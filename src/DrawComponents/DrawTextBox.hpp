@@ -35,8 +35,8 @@ class DrawTextBox : public DrawComponent {
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) override;
         virtual void update(DrawingProgram& drawP) override;
-        virtual void create_collider() override;
-        virtual void update_from_delayed_ptr() override;
+        void create_collider();
+        virtual void update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) override;
         void init_text_box(DrawingProgram& drawP);
         void update_contained_string(DrawingProgram& drawP);
         void set_textbox_string(const std::string& str);

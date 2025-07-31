@@ -459,7 +459,7 @@ namespace SCollision {
                     return 3;
             }
 
-            void calculate_bvh_recursive(ColliderCollection<T>& bvhObjects) {
+            void calculate_bvh_recursive(ColliderCollection<T>& bvhObjects, int maxDepth = -1) {
                 bvhObjects.recalculate_bounds();
 
                 objects.bounds = bvhObjects.bounds;
@@ -468,7 +468,7 @@ namespace SCollision {
                     return;
                 }
 
-                if(bvhObjects.size() <= 2) {
+                if(bvhObjects.size() <= 2 || maxDepth == 0) {
                     objects = bvhObjects;
                     return;
                 }
@@ -492,7 +492,7 @@ namespace SCollision {
                     }
                     else {
                         children.emplace_back();
-                        children.back().calculate_bvh_recursive(parts[i]);
+                        children.back().calculate_bvh_recursive(parts[i], maxDepth - 1);
                     }
                 }
             }
