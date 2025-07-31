@@ -25,6 +25,7 @@ class DrawTextBox : public DrawComponent {
             CollabTextBox::Cursor cursor;
             bool editing = false;
             bool operator==(const Data& o) const = default;
+            bool operator!=(const Data& o) const = default;
         } d;
 
 #ifndef IS_SERVER

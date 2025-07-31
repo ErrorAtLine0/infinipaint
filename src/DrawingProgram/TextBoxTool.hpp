@@ -32,6 +32,7 @@ class TextBoxTool {
             Vector2f endAt;
             int drawStage = 0;
             std::shared_ptr<DrawTextBox> intermediateItem;
+            DrawTextBox::Data oldData;
         } controls;
 
         DrawingProgram& drawP;

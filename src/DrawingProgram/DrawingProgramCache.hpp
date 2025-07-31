@@ -20,7 +20,7 @@ class DrawingProgramCacheBVHNode {
         struct DrawCacheData {
             uint64_t lastDrawnComponentPlacement;
             uint64_t firstDrawnComponentPlacement;
-            sk_sp<SkSurface> surface;
+            sk_sp<SkImage> img;
             std::chrono::steady_clock::time_point lastRenderTime;
             DrawingProgramCache* attachedCache;
         };

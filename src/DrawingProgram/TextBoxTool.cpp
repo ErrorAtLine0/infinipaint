@@ -32,7 +32,6 @@ void TextBoxTool::reset_tool() {
 }
 
 bool TextBoxTool::edit_gui(const std::shared_ptr<DrawTextBox>& a) {
-    DrawTextBox::Data oldData = a->d;
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
@@ -45,7 +44,9 @@ bool TextBoxTool::edit_gui(const std::shared_ptr<DrawTextBox>& a) {
         t.gui.text_label("Text Color");
     });
     t.gui.pop_id();
-    return a->d != oldData;
+    bool editHappened = a->d != controls.oldData;
+    controls.oldData = a->d;
+    return editHappened;
 }
 
 void TextBoxTool::commit_edit_updates(const std::shared_ptr<DrawTextBox>& a, std::any& prevData) {
@@ -93,7 +94,6 @@ bool TextBoxTool::edit_update(const std::shared_ptr<DrawTextBox>& a) {
     mousePointCollection.recalculate_bounds();
 
     a->textBox.setWidth(std::abs(a->d.p2.x() - a->d.p1.x()));
-    a->create_collider();
 
     InputManager& input = drawP.world.main.input;
     auto& textbox = a->textBox;

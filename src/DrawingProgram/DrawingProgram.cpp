@@ -640,8 +640,10 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         parallel_loop_all_components([&](auto& c) {
             c->obj->calculate_draw_transform(drawData);
         });
-        for(auto& c : components.client_list())
+        for(auto& c : components.client_list()) {
             c->obj->draw(canvas, drawData);
+            c->obj->drawSetupData.shouldDraw = false;
+        }
     }
     else {
         if(world.main.drawProgCache.disableDrawCache) {

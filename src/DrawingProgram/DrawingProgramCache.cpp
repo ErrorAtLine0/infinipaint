@@ -279,8 +279,13 @@ void DrawingProgramCache::refresh_all_draw_cache(const DrawData& drawData) {
     std::deque<std::shared_ptr<DrawingProgramCacheBVHNode>> nodeFlatList; // We want to render children before parents, so that parents can make use of the cached children
     traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](std::shared_ptr<DrawingProgramCacheBVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         if(node && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
-            if(!node->drawCache)
+            if(!node->drawCache) {
                 nodeFlatList.emplace_front(node);
+                for(auto& nodeChild : node->children) {
+                    if(!nodeChild->drawCache)
+                        nodeFlatList.emplace_front(nodeChild);
+                }
+            }
             return false;
         }
         return true;
@@ -297,16 +302,17 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     DrawingProgramCacheBVHNode::DrawCacheData drawCache;
 
     SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode->resolution.x(), bvhNode->resolution.y());
+    sk_sp<SkSurface> drawCacheSurface;
     #ifdef USE_SKIA_BACKEND_GRAPHITE
-        drawCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
+        drawCacheSurface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
     #elif USE_SKIA_BACKEND_GANESH
-        drawCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
+        drawCacheSurface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
     #endif
 
-    if(!drawCache.surface)
+    if(!drawCacheSurface)
         throw std::runtime_error("[DrawingProgramCache::refresh_draw_cache] Could not make cache surface");
 
-    SkCanvas* cacheCanvas = drawCache.surface->getCanvas();
+    SkCanvas* cacheCanvas = drawCacheSurface->getCanvas();
 
     cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
 
@@ -317,6 +323,7 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     cacheDrawData.refresh_draw_optimizing_values();
 
     draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement);
+    drawCache.img = drawCacheSurface->makeImageSnapshot()->withDefaultMipmaps();
     drawCache.lastRenderTime = std::chrono::steady_clock::now();
     drawCache.attachedCache = this;
 
@@ -374,11 +381,10 @@ void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const Draw
 
             lastComponentDrawn = std::max(lastComponentDrawn, drawCache.lastDrawnComponentPlacement);
         
-            SkPaint p;
-            p.setBlendMode(SkBlendMode::kSrc);
+            SkPaint srcPaint;
+            srcPaint.setBlendMode(SkBlendMode::kSrc);
 
-            // Note, no mipmaps here. You might need to generate mipmaps in the future (withDefaultMipmaps)
-            canvas->drawImage(drawCache.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &p);
+            canvas->drawImage(drawCache.img, 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &srcPaint);
 
             canvas->restore();
             nextCacheToRender++;
@@ -396,11 +402,10 @@ void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const Draw
 
         lastComponentDrawn = std::max(lastComponentDrawn, drawCache.lastDrawnComponentPlacement);
 
-        SkPaint p;
-        p.setBlendMode(SkBlendMode::kSrc);
+        SkPaint srcPaint;
+        srcPaint.setBlendMode(SkBlendMode::kSrc);
 
-        // Note, no mipmaps here. You might need to generate mipmaps in the future (withDefaultMipmaps)
-        canvas->drawImage(drawCache.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &p);
+        canvas->drawImage(drawCache.img, 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &srcPaint);
 
         canvas->restore();
     }
