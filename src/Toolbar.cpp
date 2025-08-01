@@ -478,14 +478,14 @@ void Toolbar::top_toolbar() {
                     optionsMenuOpen = true;
                     optionsMenuType = HOST_MENU;
                 }
-                if(gui.text_button_wide("canvas specific settings", "Canvas Settings")) {
-                    optionsMenuOpen = true;
-                    optionsMenuType = CANVAS_SETTINGS_MENU;
-                }
                 if(gui.text_button_wide("start connecting", "Connect")) {
                     serverToConnectTo.clear();
                     optionsMenuOpen = true;
                     optionsMenuType = CONNECT_MENU;
+                }
+                if(gui.text_button_wide("canvas specific settings", "Canvas Settings")) {
+                    optionsMenuOpen = true;
+                    optionsMenuType = CANVAS_SETTINGS_MENU;
                 }
                 if(gui.text_button_wide("open options", "Settings")) {
                     optionsMenuOpen = true;
