@@ -147,6 +147,7 @@ class Toolbar {
             CONNECT_MENU,
             GENERAL_SETTINGS_MENU,
             LOBBY_INFO_MENU,
+            CANVAS_SETTINGS_MENU,
             SET_DOWNLOAD_NAME,
             ABOUT_MENU
         } optionsMenuType;

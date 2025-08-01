@@ -1,5 +1,6 @@
 #include "World.hpp"
 #include "DrawComponents/DrawComponent.hpp"
+#include "Helpers/HsvRgb.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/Networking/ByteStream.hpp"
 #include "Server/CommandList.hpp"
@@ -163,6 +164,19 @@ void World::redo_with_checks() {
 
 void World::unfocus_update() {
     con.update();
+}
+
+void World::set_canvas_background_color(const Vector3f& newBackColor) {
+    if(newBackColor != convert_vec3<Vector3f>(canvasTheme.backColor)) {
+        canvasTheme.backColor = SkColor4f{newBackColor.x(), newBackColor.y(), newBackColor.z(), 1.0f};
+        Vector3f newHSV = rgb_to_hsv<Vector3f>(newBackColor);
+        if(newHSV.z() >= 0.6f) {
+            canvasTheme.toolFrontColor = SkColor4f{0.0f, 0.0f, 0.0f, 1.0f};
+        }
+        else {
+            canvasTheme.toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
+        }
+    }
 }
 
 void World::send_chat_message(const std::string& message) {

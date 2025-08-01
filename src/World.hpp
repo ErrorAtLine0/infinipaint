@@ -86,6 +86,14 @@ class World {
         Vector3f userColor = {0.0f, 0.0f, 0.0f};
         std::string name;
         std::unordered_map<ServerPortionID, ClientData> clients;
+
+        void set_canvas_background_color(const Vector3f& newBackColor);
+
+        struct CanvasTheme {
+            SkColor4f backColor = {0.12f, 0.12f, 0.12f, 1.0f};
+            SkColor4f toolFrontColor = {1.0f, 1.0f, 1.0f, 1.0f};
+        } canvasTheme;
+
     private:
         void init_client_callbacks();
         void set_name(const std::string& n);

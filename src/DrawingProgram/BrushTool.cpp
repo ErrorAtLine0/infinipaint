@@ -185,7 +185,7 @@ void BrushTool::commit_stroke() {
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawData.main->toolbar.io->hoverObstructed) {
         SkPaint linePaint;
-        linePaint.setColor4f(drawP.world.main.canvasTheme.toolFrontColor);
+        linePaint.setColor4f(drawP.world.canvasTheme.toolFrontColor);
         linePaint.setStroke(true);
         linePaint.setStrokeWidth(0.0f);
         float width;

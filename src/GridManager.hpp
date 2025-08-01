@@ -24,12 +24,12 @@ class GridManager {
 
         GridType gridType = GRIDTYPE_CIRCLEDOT;
     private:
+        sk_sp<SkShader> get_shader(const sk_sp<SkRuntimeEffect>& runtimeEffect, const SkColor4f& pointColor);
         Vector2f oldWindowSize{0.0f, 0.0f};
         WorldScalar size{50000000};
         SkPath gridPath;
-        sk_sp<SkShader> circleDotShader;
-        sk_sp<SkShader> squareDotShader;
-        sk_sp<SkShader> lineShader;
+        sk_sp<SkRuntimeEffect> circleDotEffect;
+        sk_sp<SkRuntimeEffect> squareDotEffect;
         MainProgram& main;
 };
 

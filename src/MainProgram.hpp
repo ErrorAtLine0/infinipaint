@@ -92,11 +92,6 @@ class MainProgram {
         
         void early_destroy();
 
-        struct CanvasTheme {
-            SkColor4f backColor = {0.12f, 0.12f, 0.12f, 1.0f};
-            SkColor4f toolFrontColor = {1.0f, 1.0f, 1.0f, 1.0f};
-        } canvasTheme;
-
         void new_tab(const World::OpenWorldInfo& tabInfo, bool createSameThread = false);
         void set_tab_to_close(size_t tabToClose);
         bool network_being_used();

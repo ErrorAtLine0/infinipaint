@@ -476,6 +476,10 @@ void Toolbar::top_toolbar() {
                     optionsMenuOpen = true;
                     optionsMenuType = HOST_MENU;
                 }
+                if(gui.text_button_wide("canvas specific settings", "Canvas Settings")) {
+                    optionsMenuOpen = true;
+                    optionsMenuType = CANVAS_SETTINGS_MENU;
+                }
                 if(gui.text_button_wide("start connecting", "Connect")) {
                     serverToConnectTo.clear();
                     optionsMenuOpen = true;
@@ -1360,6 +1364,31 @@ void Toolbar::options_menu() {
                             optionsMenuOpen = false;
                     });
                 }
+                gui.pop_id();
+            }
+            break;
+        }
+        case CANVAS_SETTINGS_MENU: {
+            CLAY({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
+                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                    .childGap = io->theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
+                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+            }) {
+                gui.push_id("canvas settings menu");
+                gui.obstructing_window();
+                SkColor4f newColorToSet = main.world->canvasTheme.backColor;
+                gui.color_picker_button_field("canvasColor", "Canvas Color", &newColorToSet, false);
+                main.world->set_canvas_background_color(convert_vec3<Vector3f>(newColorToSet));
+                if(gui.text_button_wide("done", "Done"))
+                    optionsMenuOpen = false;
                 gui.pop_id();
             }
             break;

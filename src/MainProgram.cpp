@@ -252,7 +252,7 @@ void MainProgram::load_config() {
 }
 
 void MainProgram::draw(SkCanvas* canvas) {
-    canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : canvasTheme.backColor);
+    canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.backColor);
     grid.draw(canvas, world->drawData);
     world->draw(canvas);
     toolbar.draw(canvas);

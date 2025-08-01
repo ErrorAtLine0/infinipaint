@@ -17,7 +17,8 @@ enum ServerCommands : MessageCommandType {
     SERVER_RESOURCE_DATA,
     SERVER_CHAT_MESSAGE,
     SERVER_NEW_BOOKMARK,
-    SERVER_REMOVE_BOOKMARK
+    SERVER_REMOVE_BOOKMARK,
+    SERVER_CANVAS_COLOR
 };
 
 enum ClientCommands : MessageCommandType {
@@ -36,7 +37,8 @@ enum ClientCommands : MessageCommandType {
     CLIENT_NEW_RESOURCE,
     CLIENT_CHAT_MESSAGE,
     CLIENT_NEW_BOOKMARK,
-    CLIENT_REMOVE_BOOKMARK
+    CLIENT_REMOVE_BOOKMARK,
+    CLIENT_CANVAS_COLOR
 };
 
 // NOTE: Do not change savefile header length
