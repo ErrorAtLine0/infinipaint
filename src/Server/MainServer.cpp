@@ -255,7 +255,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     });
     netServer->add_recv_callback(SERVER_CANVAS_COLOR, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         message(data.canvasBackColor);
-        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, data.canvasBackColor);
+        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_CANVAS_COLOR, data.canvasBackColor);
     });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });
