@@ -12,6 +12,7 @@ class ServerData {
         std::unordered_map<ServerClientID, std::shared_ptr<DrawComponent>> idToComponentMap;
         std::unordered_map<ServerClientID, ResourceData> resources;
         std::unordered_map<std::string, Bookmark> bookmarks;
+        Vector3f canvasBackColor;
         void save(cereal::PortableBinaryOutputArchive& a) const;
         void write_to_file(cereal::PortableBinaryOutputArchive& a) const;
         void load(cereal::PortableBinaryInputArchive& a);

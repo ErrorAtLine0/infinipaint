@@ -26,6 +26,7 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     drawProg(*this),
     bMan(*this)
 {
+    set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
 
     netSource = worldInfo.netSource;
@@ -74,6 +75,9 @@ void World::init_client_callbacks() {
             std::string fileDisplayName;
             message(displayName, fileDisplayName, clients);
             set_name(fileDisplayName);
+            Vector3f newBackColor;
+            message(newBackColor);
+            set_canvas_background_color(newBackColor, false);
             drawProg.initialize_draw_data(message);
             message(bMan);
         }
@@ -108,6 +112,11 @@ void World::init_client_callbacks() {
         std::string chatMessage;
         message(chatMessage);
         add_chat_message(chatMessage, Toolbar::ChatMessage::COLOR_NORMAL);
+    });
+    con.client_add_recv_callback(CLIENT_CANVAS_COLOR, [&](cereal::PortableBinaryInputArchive& message) {
+        Vector3f newBackColor;
+        message(newBackColor);
+        set_canvas_background_color(newBackColor, false);
     });
     con.client_add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
@@ -166,16 +175,16 @@ void World::unfocus_update() {
     con.update();
 }
 
-void World::set_canvas_background_color(const Vector3f& newBackColor) {
+void World::set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork) {
     if(newBackColor != convert_vec3<Vector3f>(canvasTheme.backColor)) {
         canvasTheme.backColor = SkColor4f{newBackColor.x(), newBackColor.y(), newBackColor.z(), 1.0f};
         Vector3f newHSV = rgb_to_hsv<Vector3f>(newBackColor);
-        if(newHSV.z() >= 0.6f) {
+        if(newHSV.z() >= 0.6f)
             canvasTheme.toolFrontColor = SkColor4f{0.0f, 0.0f, 0.0f, 1.0f};
-        }
-        else {
+        else
             canvasTheme.toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
-        }
+        if(sendChangeOverNetwork)
+            con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_COLOR, newBackColor);
     }
 }
 
@@ -249,7 +258,7 @@ void World::save_to_file(const std::filesystem::path& fileName) {
             std::stringstream fWorldDataToCompress;
             {
                 cereal::PortableBinaryOutputArchive a(fWorldDataToCompress);
-                SaveLoadFileOp op{.world = this};
+                SaveLoadFileOp op{.world = this, .versionStr = SAVEFILE_HEADER};
                 a(op);
             }
 
@@ -313,7 +322,7 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
     ByteMemStream f((char*)uncompressedDataView.data(), uncompressedDataView.size());
 
     cereal::PortableBinaryInputArchive a(f);
-    SaveLoadFileOp op{.world = this};
+    SaveLoadFileOp op{.world = this, .versionStr = std::string(fileHeader)};
     a(op);
     nextClientID = std::max(rMan.get_max_id(ownID), drawProg.get_max_id(ownID));
 
@@ -323,6 +332,7 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
 
 void World::SaveLoadFileOp::save(cereal::PortableBinaryOutputArchive& a) const {
     a(world->drawData.cam.c, world->main.window.size.cast<float>().eval());
+    a(convert_vec3<Vector3f>(world->canvasTheme.backColor));
     world->drawProg.write_to_file(a);
     a(world->bMan);
     world->rMan.save_strip_unused_resources(a, world->drawProg.get_used_resources());
@@ -332,6 +342,13 @@ void World::SaveLoadFileOp::load(cereal::PortableBinaryInputArchive& a) {
     CoordSpaceHelper coordsToJumpTo;
     Vector2f windowSizeToJumpTo;
     a(coordsToJumpTo, windowSizeToJumpTo);
+    if(versionStr == SAVEFILE_HEADER) {
+        Vector3f canvasBackColor;
+        a(canvasBackColor);
+        world->set_canvas_background_color(canvasBackColor);
+    }
+    else
+        world->set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
     world->drawData.cam.smooth_move_to(*world, coordsToJumpTo, windowSizeToJumpTo, true);
     world->drawProg.initialize_draw_data(a);
     a(world->bMan);

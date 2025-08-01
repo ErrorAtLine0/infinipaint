@@ -12,13 +12,13 @@ namespace GUIStuff {
 template <typename T> class ColorPicker : public Element {
     public:
         void update(UpdateInputData& io, T* newData, bool newSelectAlpha, const std::function<void()>& elemUpdate) {
-            data = newData;
+            T* data = newData;
             selectAlpha = newSelectAlpha;
 
             if(!data)
                 return;
 
-            force_update_colorpicker();
+            force_update_colorpicker(data);
 
             CLAY({
                 .layout = {
@@ -44,13 +44,13 @@ template <typename T> class ColorPicker : public Element {
                     Vector2f newSv = cwise_vec_clamp<Vector2f>((io.mouse.pos - bb.min) / svSelectionAreaSize, Vector2f{0.0f, 0.0f}, Vector2f{1.0f, 1.0f});
                     savedHsv.y() = newSv.x();
                     savedHsv.z() = 1.0f - newSv.y();
-                    set_hsv(savedHsv);
+                    set_hsv(data, savedHsv);
                 }
                 if(selection.held && modifyingHue) {
                     Vector2f huePos = get_hue_bar_pos();
                     Vector2f hueDim = get_hue_bar_dim();
                     savedHsv.x() = (1.0f - std::clamp((io.mouse.pos.y() - huePos.y()) / hueDim.y(), 0.0f, 1.0f)) * 360.0f;
-                    set_hsv(savedHsv);
+                    set_hsv(data, savedHsv);
                 }
                 if(selection.held && modifyingAlpha) {
                     Vector2f alphaPos = get_alpha_bar_pos();
@@ -69,9 +69,6 @@ template <typename T> class ColorPicker : public Element {
         }
         
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
-            if(!data)
-                return;
-
             bb = get_bb(command);
         
             canvas->save();
@@ -115,20 +112,20 @@ template <typename T> class ColorPicker : public Element {
 
             SkPaint alphaBarPaint;
             if(selectAlpha)
-                alphaBarPaint.setShader(get_alpha_bar_shader({(*data)[0], (*data)[1], (*data)[2]}, alphaBarDim.x()));
+                alphaBarPaint.setShader(get_alpha_bar_shader({oldData[0], oldData[1], oldData[2]}, alphaBarDim.x()));
             else
-                alphaBarPaint.setColor4f(SkColor4f{(*data)[0], (*data)[1], (*data)[2], 1.0f});
+                alphaBarPaint.setColor4f(SkColor4f{oldData[0], oldData[1], oldData[2], 1.0f});
             canvas->drawPaint(alphaBarPaint);
 
             if(selectAlpha) {
                 canvas->scale(alphaBarDim.x(), alphaBarDim.y());
-                canvas->drawLine((*data)[3], 0.0f, (*data)[3], 1.0f, selectionLinePaint);
+                canvas->drawLine(oldData[3], 0.0f, oldData[3], 1.0f, selectionLinePaint);
             }
 
             canvas->restore();
         }
     private:
-        void force_update_colorpicker() {
+        void force_update_colorpicker(T* data) {
             if(data && (*data == oldData))
                 return;
 
@@ -160,7 +157,7 @@ template <typename T> class ColorPicker : public Element {
             return {bb.width(), BAR_WIDTH};
         }
 
-        void set_hsv(const Vector3f& hsv) {
+        void set_hsv(T* data, const Vector3f& hsv) {
             Vector3f a = hsv_to_rgb<Vector3f>(hsv);
             (*data)[0] = a.x();
             (*data)[1] = a.y();
@@ -223,7 +220,6 @@ vec4 main(vec2 fragcoord) {
 
         SCollision::AABB<float> bb;
         SelectionHelper selection;
-        T* data = nullptr;
         T oldData;
         Vector3f savedHsv; // We save the HSV so that conversion doesnt ruin the UI
         bool selectAlpha;

@@ -222,6 +222,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
     toRet["jumpTransitionEasing"] = jumpTransitionEasing;
     toRet["disableDrawCache"] = main.drawProgCache.disableDrawCache;
+    toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
 
     json tablet;
     tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
@@ -273,6 +274,7 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
     j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
     j.at("disableDrawCache").get_to(main.drawProgCache.disableDrawCache);
+    j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);
 
     j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
     j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);
@@ -1161,6 +1163,9 @@ void Toolbar::options_menu() {
                                         gui.input_text_field("display name input", "Display Name", &main.displayName);
                                         main.update_display_names();
                                         gui.text_label("Note: Changes in display name dont affect canvases that are connected online");
+                                        SkColor4f newBackColor{main.defaultCanvasBackgroundColor.x(), main.defaultCanvasBackgroundColor.y(), main.defaultCanvasBackgroundColor.z(), 1.0f};
+                                        gui.color_picker_button_field("defaultCanvasBackgroundColor", "Default canvas background color", &newBackColor, false);
+                                        main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);
                                         #ifndef __EMSCRIPTEN__
                                             gui.checkbox_field("native file pick", "Use Native File Picker", &useNativeFilePicker);
                                         #endif

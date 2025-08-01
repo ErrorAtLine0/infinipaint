@@ -108,6 +108,8 @@ class MainProgram {
         bool takingScreenshot = false;
         bool transparentBackground = false;
 
+        Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;
+
         size_t worldIndex = 0;
         std::vector<std::shared_ptr<World>> worlds;
 

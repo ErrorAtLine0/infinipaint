@@ -25,6 +25,7 @@
 WorldVec cursorPos;
 
 void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
+    a(canvasBackColor);
     a((uint64_t)components.size());
     for(uint64_t i = 0; i < components.size(); i++)
         a(components[i].second->get_type(), components[i].first, components[i].second->coords, *(components[i].second));
@@ -32,6 +33,7 @@ void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void ServerData::load(cereal::PortableBinaryInputArchive& a) {
+    a(canvasBackColor);
     uint64_t compCount;
     a(compCount);
     for(uint64_t i = 0; i < compCount; i++) {
@@ -68,6 +70,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     }
     data.bookmarks = world.bMan.bookmark_list();
     data.resources = world.rMan.resource_list();
+    data.canvasBackColor = convert_vec3<Vector3f>(world.canvasTheme.backColor);
 
     lastKeepAliveSent = std::chrono::steady_clock::now();
 
@@ -249,6 +252,10 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(name);
         data.bookmarks.erase(name);
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_REMOVE_BOOKMARK, name);
+    });
+    netServer->add_recv_callback(SERVER_CANVAS_COLOR, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        message(data.canvasBackColor);
+        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, data.canvasBackColor);
     });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });

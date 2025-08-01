@@ -10,6 +10,8 @@
 
 class MainProgram;
 
+#define DEFAULT_CANVAS_BACKGROUND_COLOR Vector3f{0.12f, 0.12f, 0.12f}
+
 class World {
     public:
         static constexpr std::string FILE_EXTENSION = "infpnt";
@@ -33,6 +35,7 @@ class World {
 
         struct SaveLoadFileOp {
             World* world;
+            std::string versionStr;
             void save(cereal::PortableBinaryOutputArchive& a) const;
             void load(cereal::PortableBinaryInputArchive& a);
         };
@@ -87,11 +90,11 @@ class World {
         std::string name;
         std::unordered_map<ServerPortionID, ClientData> clients;
 
-        void set_canvas_background_color(const Vector3f& newBackColor);
+        void set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork = true);
 
         struct CanvasTheme {
-            SkColor4f backColor = {0.12f, 0.12f, 0.12f, 1.0f};
-            SkColor4f toolFrontColor = {1.0f, 1.0f, 1.0f, 1.0f};
+            SkColor4f backColor;
+            SkColor4f toolFrontColor;
         } canvasTheme;
 
     private:

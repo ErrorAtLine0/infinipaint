@@ -42,6 +42,7 @@ void ImageResourceDisplay::update(World& w) {
 bool ImageResourceDisplay::load(const std::string& fileName, const std::string& fileData) {
     sk_sp<SkData> newData = SkData::MakeWithoutCopy(fileData.c_str(), fileData.size());
     std::unique_ptr<SkCodec> codec = SkCodec::MakeFromData(newData, decoders);
+    mustUpdateDraw = true;
     if(codec) {
         auto origin = codec->getOrigin();
         bool rotate = (origin == kLeftTop_SkEncodedOrigin || origin == kRightTop_SkEncodedOrigin || origin == kRightBottom_SkEncodedOrigin || origin == kLeftBottom_SkEncodedOrigin);
