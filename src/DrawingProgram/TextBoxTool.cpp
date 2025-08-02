@@ -8,6 +8,7 @@
 #include "../CollabTextBox/CollabTextBox.hpp"
 #include <cereal/types/vector.hpp>
 #include <memory>
+#include "EditTool.hpp"
 
 TextBoxTool::TextBoxTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -62,12 +63,10 @@ void TextBoxTool::tool_update() {
             controls.intermediateItem->d.p2 = cwise_vec_max(controls.endAt, controls.startAt);
             controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
             if(!drawP.controls.leftClickHeld) {
-                auto i = controls.intermediateItem;
-                commit();
-                // NOTE: CHANGE THIS
-                //drawP.controls.selectedTool = DrawingProgram::TOOL_EDIT;
-                //drawP.controls.previousSelected = DrawingProgram::TOOL_EDIT;
-                //drawP.editTool.edit_start(i);
+                auto editTool = std::make_unique<EditTool>(drawP);
+                editTool->edit_start(controls.intermediateItem);
+                drawP.switch_to_tool_ptr(std::move(editTool));
+                return;
             }
             else {
                 controls.intermediateItem->client_send_update(drawP);

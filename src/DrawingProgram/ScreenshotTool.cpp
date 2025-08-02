@@ -79,10 +79,11 @@ void ScreenshotTool::gui_toolbox() {
                 t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
                     auto world = w.lock();
                     // NOTE: CHANGE THIS
-                    //if(world) {
-                    //    world->drawProg.screenshotTool.controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
-                    //    world->drawProg.screenshotTool.controls.setToTakeScreenshot = true;
-                    //}
+                    if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
+                        ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
+                        screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
+                        screenshotTool->controls.setToTakeScreenshot = true;
+                    }
                 }, "screenshot", true);
             #endif
         }

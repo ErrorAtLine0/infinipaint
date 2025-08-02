@@ -52,6 +52,7 @@ class DrawingProgram {
         Vector4f* get_foreground_color_ptr();
 
         void switch_to_tool(DrawingProgramToolType newToolType);
+        void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
     private:
         void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
 

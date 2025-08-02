@@ -309,6 +309,11 @@ void DrawingProgram::update() {
         compCache.test_rebuild(components.client_list());
 }
 
+void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool) {
+    drawTool->switch_tool(newTool->get_type());
+    drawTool = std::move(newTool);
+}
+
 void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType) {
     if(newToolType != drawTool->get_type()) {
         drawTool->switch_tool(drawTool->get_type());
