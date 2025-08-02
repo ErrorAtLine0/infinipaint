@@ -44,7 +44,6 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
             a->d.editing = false;
             a->client_send_update(drawP);
             a->commit_update(drawP);
-            drawP.reset_tools();
             return true;
         },
         [&, a, cData]() {
@@ -53,7 +52,6 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
             a->d.editing = false;
             a->client_send_update(drawP);
             a->commit_update(drawP);
-            drawP.reset_tools();
             return true;
         }
     });

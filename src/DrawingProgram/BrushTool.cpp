@@ -19,9 +19,8 @@ DrawingProgramToolType BrushTool::get_type() {
     return DrawingProgramToolType::BRUSH;
 }
 
-void BrushTool::reset_tool() {
+void BrushTool::switch_tool(DrawingProgramToolType newTool) {
     commit_stroke();
-    controls.isDrawing = false;
 }
 
 bool BrushTool::extensive_point_checking(const Vector2f& newPoint) {

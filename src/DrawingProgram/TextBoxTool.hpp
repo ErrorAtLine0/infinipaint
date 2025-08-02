@@ -13,7 +13,7 @@ class TextBoxTool : public DrawingProgramToolBase {
         virtual void gui_toolbox() override;
         virtual void tool_update() override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
-        virtual void reset_tool() override;
+        virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual bool prevent_undo_or_redo() override;
     private:
         void edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox);

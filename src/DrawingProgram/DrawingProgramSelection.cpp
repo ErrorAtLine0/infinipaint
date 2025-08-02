@@ -133,8 +133,6 @@ void DrawingProgramSelection::deselect_all() {
 
                 DrawComponent::client_send_transform_many(drawP, transformsToSend);
 
-                drawP.reset_tools();
-
                 if(!isSingleThread)
                     drawP.force_rebuild_cache();
 
@@ -158,8 +156,6 @@ void DrawingProgramSelection::deselect_all() {
                 }, isSingleThread);
 
                 DrawComponent::client_send_transform_many(drawP, transformsToSend);
-
-                drawP.reset_tools();
 
                 if(!isSingleThread)
                     drawP.force_rebuild_cache();
@@ -326,7 +322,7 @@ void DrawingProgramSelection::update() {
 void DrawingProgramSelection::paste_clipboard() {
     auto& clipboard = drawP.world.main.clipboard;
 
-    drawP.controls.selectedTool = DrawingProgramToolType::RECTSELECT;
+    drawP.switch_to_tool(DrawingProgramToolType::RECTSELECT);
 
     uint64_t allPlacement = drawP.components.client_list().size();
     std::vector<std::shared_ptr<DrawComponent>> placedComponents;

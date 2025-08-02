@@ -50,6 +50,8 @@ class DrawingProgram {
         std::unordered_map<std::shared_ptr<DrawComponent>, std::shared_ptr<DrawComponent>> delayedUpdateComponents;
 
         Vector4f* get_foreground_color_ptr();
+
+        void switch_to_tool(DrawingProgramToolType newToolType);
     private:
         void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
 
@@ -64,8 +66,6 @@ class DrawingProgram {
         std::pair<std::string, Vector2f> addFileInfo;
 
         void add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos);
-
-        void reset_tools();
 
         void drag_drop_update();
 
@@ -88,8 +88,6 @@ class DrawingProgram {
 
             Vector4f foregroundColor{0.9f, 0.9f, 0.9f, 1.0f};
             Vector4f backgroundColor{0.0f, 0.0f, 0.0f, 1.0f};
-            DrawingProgramToolType selectedTool = DrawingProgramToolType::BRUSH;
-            DrawingProgramToolType previousSelected = DrawingProgramToolType::BRUSH;
             WorldVec previousMouseWorldPos = {0, 0};
             WorldVec currentMouseWorldPos = {0, 0};
             bool leftClick = false;

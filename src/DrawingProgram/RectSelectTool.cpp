@@ -20,7 +20,7 @@ void RectSelectTool::gui_toolbox() {
     drawP.world.main.toolbar.gui.text_label_centered("Rectangle Select");
 }
 
-void RectSelectTool::reset_tool() {
+void RectSelectTool::switch_tool(DrawingProgramToolType newTool) {
     drawP.selection.deselect_all();
     controls = RectSelectControls();
 }
@@ -31,10 +31,10 @@ void RectSelectTool::tool_update() {
             if(drawP.controls.leftClick) {
                 if(drawP.selection.is_something_selected()) {
                     if(!drawP.selection.mouse_collided_with_selection())
-                        reset_tool();
+                        switch_tool(get_type());
                 }
                 else {
-                    reset_tool();
+                    switch_tool(get_type());
                     controls.coords = drawP.world.drawData.cam.c;
                     controls.selectStartAt = controls.coords.get_mouse_pos(drawP.world);
                     controls.selectionMode = 1;

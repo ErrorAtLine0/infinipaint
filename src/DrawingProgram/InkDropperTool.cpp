@@ -85,5 +85,5 @@ bool InkDropperTool::prevent_undo_or_redo() {
 void InkDropperTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
-void InkDropperTool::reset_tool() {
+void InkDropperTool::switch_tool(DrawingProgramToolType newTool) {
 }

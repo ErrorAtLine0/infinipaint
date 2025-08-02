@@ -61,14 +61,12 @@ void RectDrawEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>&
             a->d = pData;
             a->client_send_update(drawP);
             a->commit_update(drawP);
-            drawP.reset_tools();
             return true;
         },
         [&, a, cData]() {
             a->d = cData;
             a->client_send_update(drawP);
             a->commit_update(drawP);
-            drawP.reset_tools();
             return true;
         }
     });

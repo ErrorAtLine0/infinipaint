@@ -26,7 +26,7 @@ void RectDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void RectDrawTool::reset_tool() {
+void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
     commit_rectangle();
     controls.drawStage = 0;
 }

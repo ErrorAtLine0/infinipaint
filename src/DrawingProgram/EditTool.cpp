@@ -45,7 +45,7 @@ void EditTool::add_point_handle(const HandleData& handle) {
     controls.pointHandles.emplace_back(handle);
 }
 
-void EditTool::reset_tool() {
+void EditTool::switch_tool(DrawingProgramToolType newTool) {
     auto a = controls.compToEdit.lock();
     if(a && a->collabListInfo.lock()) {
         controls.compEditTool->commit_edit_updates(a, controls.prevData);
@@ -157,10 +157,10 @@ void EditTool::tool_update() {
 
             bool shouldNotReset = controls.compEditTool->edit_update(a);
             if(!shouldNotReset || clickedAway)
-                reset_tool();
+                switch_tool(get_type());
         }
         else
-            reset_tool();
+            switch_tool(get_type());
     }
 }
 

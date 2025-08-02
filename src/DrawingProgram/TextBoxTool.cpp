@@ -25,7 +25,7 @@ void TextBoxTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void TextBoxTool::reset_tool() {
+void TextBoxTool::switch_tool(DrawingProgramToolType newTool) {
     commit();
     controls.drawStage = 0;
 }
@@ -64,7 +64,6 @@ void TextBoxTool::tool_update() {
             if(!drawP.controls.leftClickHeld) {
                 auto i = controls.intermediateItem;
                 commit();
-                drawP.reset_tools();
                 // NOTE: CHANGE THIS
                 //drawP.controls.selectedTool = DrawingProgram::TOOL_EDIT;
                 //drawP.controls.previousSelected = DrawingProgram::TOOL_EDIT;

@@ -210,7 +210,7 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
         throw std::runtime_error("[ScreenshotTool::take_screenshot_area_hw] Error copy pixmap");
 }
 
-void ScreenshotTool::reset_tool() {
+void ScreenshotTool::switch_tool(DrawingProgramToolType newTool) {
     controls.selectionMode = 0;
 }
 

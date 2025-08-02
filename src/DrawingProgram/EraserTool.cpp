@@ -19,7 +19,7 @@ void EraserTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void EraserTool::reset_tool() {
+void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     if(!erasedComponents.empty()) {
         DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
         drawP.client_erase_set(erasedComponents);
@@ -60,7 +60,7 @@ void EraserTool::tool_update() {
         });
     }
     else
-        reset_tool();
+        switch_tool(get_type());
 }
 
 bool EraserTool::prevent_undo_or_redo() {

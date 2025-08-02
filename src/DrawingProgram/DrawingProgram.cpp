@@ -34,7 +34,7 @@ DrawingProgram::DrawingProgram(World& initWorld):
     components([&](){ return world.get_new_id(); }),
     selection(*this)
 {
-    drawTool = DrawingProgramToolBase::allocate_tool_type(*this, controls.selectedTool);
+    drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
 
     components.updateCallback = [&]() {
         if(&world == world.main.world.get())
@@ -189,16 +189,16 @@ void DrawingProgram::toolbar_gui() {
         .border = {.color = convert_vec4<Clay_Color>(t.io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(t.io->theme->windowBorders1)}
     }) {
         t.gui.obstructing_window();
-        if(t.gui.svg_icon_button("Brush Toolbar Button", "data/icons/brush.svg", controls.selectedTool == DrawingProgramToolType::BRUSH)) { controls.selectedTool = DrawingProgramToolType::BRUSH; }
-        if(t.gui.svg_icon_button("Eraser Toolbar Button", "data/icons/eraser.svg", controls.selectedTool == DrawingProgramToolType::ERASER)) { controls.selectedTool = DrawingProgramToolType::ERASER; }
-        if(t.gui.svg_icon_button("Text Toolbar Button", "data/icons/text.svg", controls.selectedTool == DrawingProgramToolType::TEXTBOX)) { controls.selectedTool = DrawingProgramToolType::TEXTBOX; }
-        if(t.gui.svg_icon_button("Ellipse Toolbar Button", "data/icons/circle.svg", controls.selectedTool == DrawingProgramToolType::ELLIPSE)) { controls.selectedTool = DrawingProgramToolType::ELLIPSE; }
-        if(t.gui.svg_icon_button("Rect Toolbar Button", "data/icons/rectangle.svg", controls.selectedTool == DrawingProgramToolType::RECTANGLE)) { controls.selectedTool = DrawingProgramToolType::RECTANGLE; }
-        if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", controls.selectedTool == DrawingProgramToolType::RECTSELECT)) { controls.selectedTool = DrawingProgramToolType::RECTSELECT; }
-        if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/close.svg", controls.selectedTool == DrawingProgramToolType::LASSOSELECT)) { controls.selectedTool = DrawingProgramToolType::LASSOSELECT; }
-        if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", controls.selectedTool == DrawingProgramToolType::EDIT)) { controls.selectedTool = DrawingProgramToolType::EDIT; }
-        if(t.gui.svg_icon_button("Inkdropper Toolbar Button", "data/icons/eyedropper.svg", controls.selectedTool == DrawingProgramToolType::INKDROPPER)) { controls.selectedTool = DrawingProgramToolType::INKDROPPER; }
-        if(t.gui.svg_icon_button("Screenshot Toolbar Button", "data/icons/camera.svg", controls.selectedTool == DrawingProgramToolType::SCREENSHOT)) { controls.selectedTool = DrawingProgramToolType::SCREENSHOT; }
+        if(t.gui.svg_icon_button("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
+        if(t.gui.svg_icon_button("Eraser Toolbar Button", "data/icons/eraser.svg", drawTool->get_type() == DrawingProgramToolType::ERASER)) { switch_to_tool(DrawingProgramToolType::ERASER); }
+        if(t.gui.svg_icon_button("Text Toolbar Button", "data/icons/text.svg", drawTool->get_type() == DrawingProgramToolType::TEXTBOX)) { switch_to_tool(DrawingProgramToolType::TEXTBOX); }
+        if(t.gui.svg_icon_button("Ellipse Toolbar Button", "data/icons/circle.svg", drawTool->get_type() == DrawingProgramToolType::ELLIPSE)) { switch_to_tool(DrawingProgramToolType::ELLIPSE); }
+        if(t.gui.svg_icon_button("Rect Toolbar Button", "data/icons/rectangle.svg", drawTool->get_type() == DrawingProgramToolType::RECTANGLE)) { switch_to_tool(DrawingProgramToolType::RECTANGLE); }
+        if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", drawTool->get_type() == DrawingProgramToolType::RECTSELECT)) { switch_to_tool(DrawingProgramToolType::RECTSELECT); }
+        if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/close.svg", drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)) { switch_to_tool(DrawingProgramToolType::LASSOSELECT); }
+        if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", drawTool->get_type() == DrawingProgramToolType::EDIT)) { switch_to_tool(DrawingProgramToolType::EDIT); }
+        if(t.gui.svg_icon_button("Inkdropper Toolbar Button", "data/icons/eyedropper.svg", drawTool->get_type() == DrawingProgramToolType::INKDROPPER)) { switch_to_tool(DrawingProgramToolType::INKDROPPER); }
+        if(t.gui.svg_icon_button("Screenshot Toolbar Button", "data/icons/camera.svg", drawTool->get_type() == DrawingProgramToolType::SCREENSHOT)) { switch_to_tool(DrawingProgramToolType::SCREENSHOT); }
         CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
             if(t.gui.color_button("Foreground Color", &controls.foregroundColor, &controls.foregroundColor == t.colorLeft)) {
                 t.color_selector_left(&controls.foregroundColor == t.colorLeft ? nullptr : &controls.foregroundColor);
@@ -213,7 +213,7 @@ void DrawingProgram::toolbar_gui() {
 
 void DrawingProgram::tool_options_gui() {
     Toolbar& t = world.main.toolbar;
-    float minGUIWidth = controls.selectedTool == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
+    float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
@@ -232,19 +232,13 @@ void DrawingProgram::tool_options_gui() {
 }
 
 void DrawingProgram::update() {
-    if(controls.selectedTool == DrawingProgramToolType::BRUSH && world.main.input.pen.isEraser && !temporaryEraser) {
-        controls.selectedTool = DrawingProgramToolType::ERASER;
+    if(drawTool->get_type() == DrawingProgramToolType::BRUSH && world.main.input.pen.isEraser && !temporaryEraser) {
+        switch_to_tool(DrawingProgramToolType::ERASER);
         temporaryEraser = true;
     }
-    else if(controls.selectedTool == DrawingProgramToolType::ERASER && !world.main.input.pen.isEraser && temporaryEraser) {
-        controls.selectedTool = DrawingProgramToolType::BRUSH;
+    else if(drawTool->get_type() == DrawingProgramToolType::ERASER && !world.main.input.pen.isEraser && temporaryEraser) {
+        switch_to_tool(DrawingProgramToolType::BRUSH);
         temporaryEraser = false;
-    }
-
-    if(controls.selectedTool != controls.previousSelected) {
-        reset_tools();
-        drawTool = DrawingProgramToolBase::allocate_tool_type(*this, controls.selectedTool);
-        controls.previousSelected = controls.selectedTool;
     }
 
     controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;
@@ -277,23 +271,23 @@ void DrawingProgram::update() {
     drag_drop_update();
 
     if(world.main.input.key(InputManager::KEY_DRAW_TOOL_BRUSH).pressed)
-        controls.selectedTool = DrawingProgramToolType::BRUSH;
+        switch_to_tool(DrawingProgramToolType::BRUSH);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ERASER).pressed)
-        controls.selectedTool = DrawingProgramToolType::ERASER;
+        switch_to_tool(DrawingProgramToolType::ERASER);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_RECTSELECT).pressed)
-        controls.selectedTool = DrawingProgramToolType::RECTSELECT;
+        switch_to_tool(DrawingProgramToolType::RECTSELECT);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_RECTANGLE).pressed)
-        controls.selectedTool = DrawingProgramToolType::RECTANGLE;
+        switch_to_tool(DrawingProgramToolType::RECTANGLE);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ELLIPSE).pressed)
-        controls.selectedTool = DrawingProgramToolType::ELLIPSE;
+        switch_to_tool(DrawingProgramToolType::ELLIPSE);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_TEXTBOX).pressed)
-        controls.selectedTool = DrawingProgramToolType::TEXTBOX;
+        switch_to_tool(DrawingProgramToolType::TEXTBOX);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_INKDROPPER).pressed)
-        controls.selectedTool = DrawingProgramToolType::INKDROPPER;
+        switch_to_tool(DrawingProgramToolType::INKDROPPER);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_SCREENSHOT).pressed)
-        controls.selectedTool = DrawingProgramToolType::SCREENSHOT;
+        switch_to_tool(DrawingProgramToolType::SCREENSHOT);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EDIT).pressed)
-        controls.selectedTool = DrawingProgramToolType::EDIT;
+        switch_to_tool(DrawingProgramToolType::EDIT);
 
     drawTool->tool_update();
 
@@ -305,14 +299,21 @@ void DrawingProgram::update() {
 
     selection.update();
 
-    if(controls.selectedTool == DrawingProgramToolType::ERASER) {
+    if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
     }
-    else if(controls.selectedTool == DrawingProgramToolType::RECTSELECT)
+    else if(drawTool->get_type() == DrawingProgramToolType::RECTSELECT)
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set());
     else
         compCache.test_rebuild(components.client_list());
+}
+
+void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType) {
+    if(newToolType != drawTool->get_type()) {
+        drawTool->switch_tool(drawTool->get_type());
+        drawTool = DrawingProgramToolBase::allocate_tool_type(*this, newToolType);
+    }
 }
 
 bool DrawingProgram::prevent_undo_or_redo() {
@@ -334,11 +335,11 @@ SkPaint DrawingProgram::select_tool_line_paint() {
 }
 
 void DrawingProgram::force_rebuild_cache() {
-    if(controls.selectedTool == DrawingProgramToolType::ERASER) {
+    if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
     }
-    else if(controls.selectedTool == DrawingProgramToolType::RECTSELECT)
+    else if(drawTool->get_type() == DrawingProgramToolType::RECTSELECT)
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
     else
         compCache.test_rebuild(components.client_list(), true);
@@ -409,10 +410,6 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     add_undo_place_component(objAdd);
 }
 
-void DrawingProgram::reset_tools() {
-    drawTool->reset_tool();
-}
-
 void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a) {
     uint64_t compCount;
     a(compCount);
@@ -444,7 +441,6 @@ void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPt
         [&, objToUndo]() {
             objToUndo->obj->client_send_erase(*this);
             components.client_erase(objToUndo);
-            reset_tools();
             return true;
         },
         [&, objToUndo]() {
@@ -452,7 +448,6 @@ void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPt
                 return false;
             components.client_insert(objToUndo);
             objToUndo->obj->client_send_place(*this);
-            reset_tools();
             return true;
         }
     });
@@ -486,8 +481,6 @@ void DrawingProgram::add_undo_place_components(const std::unordered_set<CollabLi
             DrawComponent::client_send_erase_set(*this, idsToErase);
             components.client_erase_set(objSetToUndo);
 
-            reset_tools();
-
             return true;
         },
         [&, objSetToUndo = objSetToUndo]() {
@@ -502,8 +495,6 @@ void DrawingProgram::add_undo_place_components(const std::unordered_set<CollabLi
 
             components.client_insert_ordered_vector(sortedObjects);
             DrawComponent::client_send_place_many(*this, sortedObjects);
-
-            reset_tools();
 
             return true;
         }
@@ -525,8 +516,6 @@ void DrawingProgram::add_undo_erase_components(const std::unordered_set<CollabLi
             components.client_insert_ordered_vector(sortedObjects);
             DrawComponent::client_send_place_many(*this, sortedObjects);
 
-            reset_tools();
-
             return true;
         },
         [&, objSetToUndo = objSetToUndo]() {
@@ -540,8 +529,6 @@ void DrawingProgram::add_undo_erase_components(const std::unordered_set<CollabLi
 
             DrawComponent::client_send_erase_set(*this, idsToErase);
             components.client_erase_set(objSetToUndo);
-
-            reset_tools();
 
             return true;
         }

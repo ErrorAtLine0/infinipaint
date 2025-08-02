@@ -64,14 +64,12 @@ void EllipseDrawEditTool::commit_edit_updates(const std::shared_ptr<DrawComponen
             a->d = pData;
             a->client_send_update(drawP);
             a->commit_update(drawP);
-            drawP.reset_tools();
             return true;
         },
         [&, a, cData]() {
             a->d = cData;
             a->client_send_update(drawP);
             a->commit_update(drawP);
-            drawP.reset_tools();
             return true;
         }
     });

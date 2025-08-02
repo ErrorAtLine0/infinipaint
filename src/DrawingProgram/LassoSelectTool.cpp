@@ -41,7 +41,7 @@ void LassoSelectTool::gui_toolbox() {
     drawP.world.main.toolbar.gui.text_label_centered("Lasso Select");
 }
 
-void LassoSelectTool::reset_tool() {
+void LassoSelectTool::switch_tool(DrawingProgramToolType newTool) {
     drawP.selection.deselect_all();
     controls.lassoPoints.clear();
     controls = LassoSelectControls();
@@ -53,10 +53,10 @@ void LassoSelectTool::tool_update() {
             if(drawP.controls.leftClick) {
                 if(drawP.selection.is_something_selected()) {
                     if(!drawP.selection.mouse_collided_with_selection())
-                        reset_tool();
+                        switch_tool(get_type());
                 }
                 else {
-                    reset_tool();
+                    switch_tool(get_type());
                     controls.coords = drawP.world.drawData.cam.c;
                     controls.lassoPoints.emplace_back(controls.coords.get_mouse_pos(drawP.world));
                     controls.selectionMode = 1;
@@ -96,7 +96,7 @@ void LassoSelectTool::tool_update() {
                     controls.selectionMode = 0;
                 }
                 else
-                    reset_tool();
+                    switch_tool(get_type());
             }
             break;
         }

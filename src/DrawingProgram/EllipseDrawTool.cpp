@@ -31,9 +31,8 @@ void EllipseDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void EllipseDrawTool::reset_tool() {
+void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
     commit();
-    controls.drawStage = 0;
 }
 
 void EllipseDrawTool::tool_update() {
