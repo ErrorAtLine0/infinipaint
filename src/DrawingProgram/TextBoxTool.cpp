@@ -90,6 +90,4 @@ void TextBoxTool::commit() {
 }
 
 void TextBoxTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(controls.intermediateItem)
-        controls.intermediateItem->draw(canvas, drawData);
 }
