@@ -47,6 +47,7 @@ void RectSelectTool::tool_update() {
                 ColliderCollection<float> cC;
                 cC.triangle.emplace_back(controls.newT[0], controls.newT[1], controls.newT[2]);
                 cC.triangle.emplace_back(controls.newT[2], controls.newT[3], controls.newT[0]);
+                cC.recalculate_bounds();
 
                 drawP.selection.add_from_cam_coord_collider_to_selection(cC);
 
