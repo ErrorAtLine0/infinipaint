@@ -4,8 +4,11 @@
 #include "../DrawData.hpp"
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
-{
+    DrawingProgramToolBase(initDrawP)
+{}
+
+DrawingProgramToolType EraserTool::get_type() {
+    return DrawingProgramToolType::ERASER;
 }
 
 void EraserTool::gui_toolbox() {

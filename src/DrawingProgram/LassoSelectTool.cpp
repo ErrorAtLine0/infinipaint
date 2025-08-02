@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
 #include "../CoordSpaceHelper.hpp"
@@ -29,8 +30,11 @@ struct nth<1, Vector2f> {
 } // namespace mapbox
 
 LassoSelectTool::LassoSelectTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
-{
+    DrawingProgramToolBase(initDrawP)
+{}
+
+DrawingProgramToolType LassoSelectTool::get_type() {
+    return DrawingProgramToolType::LASSOSELECT;
 }
 
 void LassoSelectTool::gui_toolbox() {

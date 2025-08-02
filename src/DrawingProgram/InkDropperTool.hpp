@@ -1,18 +1,15 @@
 #pragma once
-#include <include/core/SkCanvas.h>
-#include "../DrawData.hpp"
-#include <Helpers/SCollision.hpp>
+#include "DrawingProgramToolBase.hpp"
 
 class DrawingProgram;
 
-class InkDropperTool {
+class InkDropperTool : public DrawingProgramToolBase {
     public:
         InkDropperTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-        bool prevent_undo_or_redo();
-    private:
-
-        DrawingProgram& drawP;
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual bool prevent_undo_or_redo() override;
+        virtual void reset_tool() override;
 };

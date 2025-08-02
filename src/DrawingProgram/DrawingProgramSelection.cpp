@@ -325,9 +325,9 @@ void DrawingProgramSelection::update() {
 
 void DrawingProgramSelection::paste_clipboard() {
     auto& clipboard = drawP.world.main.clipboard;
-    drawP.reset_tools();
-    drawP.controls.selectedTool = DrawingProgram::TOOL_RECTSELECT;
-    drawP.controls.previousSelected = DrawingProgram::TOOL_RECTSELECT;
+
+    drawP.controls.selectedTool = DrawingProgramToolType::RECTSELECT;
+
     uint64_t allPlacement = drawP.components.client_list().size();
     std::vector<std::shared_ptr<DrawComponent>> placedComponents;
     WorldVec mousePos = drawP.world.get_mouse_world_pos();

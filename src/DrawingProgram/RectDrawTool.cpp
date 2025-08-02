@@ -1,16 +1,17 @@
 #include "RectDrawTool.hpp"
 #include "DrawingProgram.hpp"
-#include "../Server/CommandList.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
-#include "Helpers/SCollision.hpp"
-#include "Helpers/Serializers.hpp"
-#include "../SharedTypes.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <cereal/types/vector.hpp>
 
 RectDrawTool::RectDrawTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
+    DrawingProgramToolBase(initDrawP)
 {}
+
+DrawingProgramToolType RectDrawTool::get_type() {
+    return DrawingProgramToolType::RECTANGLE;
+}
 
 void RectDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
@@ -25,74 +26,9 @@ void RectDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-bool RectDrawTool::edit_gui(const std::shared_ptr<DrawRectangle>& a) {
-    Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("edit tool rectangle");
-    t.gui.text_label_centered("Edit Rectangle");
-    t.gui.slider_scalar_field("relradiuswidth", "Corner Radius", &a->d.cornerRadius, 0.0f, 40.0f);
-    if(t.gui.radio_button_field("fillonly", "Fill only", a->d.fillStrokeMode == 0)) a->d.fillStrokeMode = 0;
-    if(t.gui.radio_button_field("outlineonly", "Outline only", a->d.fillStrokeMode == 1)) a->d.fillStrokeMode = 1;
-    if(t.gui.radio_button_field("filloutline", "Fill and Outline", a->d.fillStrokeMode == 2)) a->d.fillStrokeMode = 2;
-    if(a->d.fillStrokeMode == 0 || a->d.fillStrokeMode == 2) {
-        t.gui.left_to_right_line_layout([&]() {
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-                if(t.gui.color_button("Fill Color", &a->d.fillColor, &a->d.fillColor == t.colorRight))
-                    t.color_selector_right(&a->d.fillColor == t.colorRight ? nullptr : &a->d.fillColor);
-            }
-            t.gui.text_label("Fill Color");
-        });
-    }
-    if(a->d.fillStrokeMode == 1 || a->d.fillStrokeMode == 2) {
-        t.gui.slider_scalar_field("relstrokewidth", "Outline Size", &a->d.strokeWidth, 3.0f, 40.0f);
-        t.gui.left_to_right_line_layout([&]() {
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-                if(t.gui.color_button("Outline Color", &a->d.strokeColor, &a->d.strokeColor == t.colorRight))
-                    t.color_selector_right(&a->d.strokeColor == t.colorRight ? nullptr : &a->d.strokeColor);
-            }
-            t.gui.text_label("Outline Color");
-        });
-    }
-    t.gui.pop_id();
-
-    bool editHappened = a->d != controls.oldData;
-    controls.oldData = a->d;
-    return editHappened;
-}
-
 void RectDrawTool::reset_tool() {
     commit_rectangle();
     controls.drawStage = 0;
-}
-
-void RectDrawTool::edit_start(const std::shared_ptr<DrawRectangle>& a, std::any& prevData) {
-    prevData = a->d;
-    drawP.editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
-    drawP.editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});
-}
-
-void RectDrawTool::commit_edit_updates(const std::shared_ptr<DrawRectangle>& a, std::any& prevData) {
-    DrawRectangle::Data pData = std::any_cast<DrawRectangle::Data>(prevData);
-    DrawRectangle::Data cData = a->d;
-    drawP.world.undo.push(UndoManager::UndoRedoPair{
-        [&, a, pData]() {
-            a->d = pData;
-            a->client_send_update(drawP);
-            a->commit_update(drawP);
-            drawP.reset_tools();
-            return true;
-        },
-        [&, a, cData]() {
-            a->d = cData;
-            a->client_send_update(drawP);
-            a->commit_update(drawP);
-            drawP.reset_tools();
-            return true;
-        }
-    });
-}
-
-bool RectDrawTool::edit_update(const std::shared_ptr<DrawRectangle>& a) {
-    return true;
 }
 
 void RectDrawTool::tool_update() {

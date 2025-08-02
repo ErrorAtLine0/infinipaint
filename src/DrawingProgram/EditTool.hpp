@@ -1,13 +1,13 @@
 #pragma once
-#include <include/core/SkCanvas.h>
-#include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include "../DrawComponents/DrawEllipse.hpp"
 #include <Helpers/SCollision.hpp>
 #include <any>
+#include "DrawingProgramEditToolBase.hpp"
 
 class DrawingProgram;
 
-class EditTool {
+class EditTool : public DrawingProgramToolBase {
     public:
         struct HandleData {
             Vector2f* p;
@@ -16,22 +16,22 @@ class EditTool {
         };
 
         EditTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void reset_tool();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void reset_tool() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual bool prevent_undo_or_redo() override;
+
         void add_point_handle(const HandleData& handle);
         void edit_start(const std::shared_ptr<DrawComponent>& comp);
-        bool prevent_undo_or_redo();
 
         struct EditControls {
+            std::unique_ptr<DrawingProgramEditToolBase> compEditTool;
             std::vector<HandleData> pointHandles;
             std::weak_ptr<DrawComponent> compToEdit;
             bool isEditing = false;
             HandleData* pointDragging = nullptr;
             std::any prevData;
         } controls;
-    private:
-
-        DrawingProgram& drawP;
 };

@@ -1,6 +1,5 @@
 #pragma once
-#include <include/core/SkCanvas.h>
-#include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <Helpers/SCollision.hpp>
 #include <filesystem>
 #include "../InputManager.hpp"
@@ -8,14 +7,15 @@
 
 class DrawingProgram;
 
-class ScreenshotTool {
+class ScreenshotTool : public DrawingProgramToolBase {
     public:
         ScreenshotTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-        void reset_tool();
-        bool prevent_undo_or_redo();
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual void reset_tool() override;
+        virtual bool prevent_undo_or_redo() override;
     private:
         void commit_rect();
         void take_screenshot(const std::filesystem::path& filePath);
@@ -52,6 +52,4 @@ class ScreenshotTool {
             std::atomic<bool> setToTakeScreenshot = false;
             std::filesystem::path screenshotSavePath;
         } controls;
-
-        DrawingProgram& drawP;
 };

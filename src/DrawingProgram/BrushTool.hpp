@@ -1,5 +1,6 @@
 #pragma once
 #include "../SharedTypes.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <Helpers/Hashes.hpp>
 #include <include/core/SkPath.h>
 #include <include/core/SkVertices.h>
@@ -12,14 +13,15 @@ class DrawingProgram;
 class DrawBrushStroke;
 struct DrawData;
 
-class BrushTool {
+class BrushTool : public DrawingProgramToolBase {
     public:
         BrushTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void reset_tool();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-        bool prevent_undo_or_redo();
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void reset_tool() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual bool prevent_undo_or_redo() override;
     private:
         void commit_stroke();
         bool extensive_point_checking_back(const Vector2f& newPoint);
@@ -42,6 +44,4 @@ class BrushTool {
             bool midwayInterpolation = true;
             Vector2f prevPointUnaltered = {0, 0};
         } controls;
-
-        DrawingProgram& drawP;
 };

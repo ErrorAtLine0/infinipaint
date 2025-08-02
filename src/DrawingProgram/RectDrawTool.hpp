@@ -1,37 +1,28 @@
 #pragma once
-#include <include/core/SkCanvas.h>
-#include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include "../DrawComponents/DrawRectangle.hpp"
 #include <Helpers/SCollision.hpp>
 #include <any>
 
 class DrawingProgram;
 
-class RectDrawTool {
+class RectDrawTool : public DrawingProgramToolBase {
     public:
         RectDrawTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void reset_tool();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-
-        void edit_start(const std::shared_ptr<DrawRectangle>& a, std::any& prevData);
-        void commit_edit_updates(const std::shared_ptr<DrawRectangle>& a, std::any& prevData);
-        bool edit_update(const std::shared_ptr<DrawRectangle>& a);
-        bool edit_gui(const std::shared_ptr<DrawRectangle>& a);
-
-        bool prevent_undo_or_redo();
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void reset_tool() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual bool prevent_undo_or_redo() override;
     private:
         void commit_rectangle();
 
         struct RectDrawControls {
-            DrawRectangle::Data oldData;
             Vector2f startAt;
             float relativeRadiusWidth = 10.0f;
             int fillStrokeMode = 1;
             int drawStage = 0;
             std::shared_ptr<DrawRectangle> intermediateItem;
         } controls;
-
-        DrawingProgram& drawP;
 };

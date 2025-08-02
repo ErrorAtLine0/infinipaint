@@ -1,56 +1,37 @@
 #include "EditTool.hpp"
 #include <chrono>
 #include "DrawingProgram.hpp"
-#include "../Server/CommandList.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
-#include "Helpers/Serializers.hpp"
-#include "../DrawComponents/DrawRectangle.hpp"
-#include "../DrawComponents/DrawTextBox.hpp"
-#include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
 #include <cereal/types/vector.hpp>
 #include <memory>
-#include <ranges>
+
+#include "TextBoxEditTool.hpp"
+#include "RectDrawEditTool.hpp"
+#include "ImageEditTool.hpp"
+#include "EllipseDrawEditTool.hpp"
 
 EditTool::EditTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
-{
+    DrawingProgramToolBase(initDrawP)
+{}
+
+DrawingProgramToolType EditTool::get_type() {
+    return DrawingProgramToolType::EDIT;
 }
 
 void EditTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     if(controls.isEditing) {
         std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();
-        bool editHappened = false;
         if(a) {
-            switch(a->get_type()) {
-                case DRAWCOMPONENT_TEXTBOX: {
-                    editHappened = drawP.textBoxTool.edit_gui(std::static_pointer_cast<DrawTextBox>(a));
-                    break;
-                }
-                case DRAWCOMPONENT_ELLIPSE: {
-                    editHappened = drawP.ellipseDrawTool.edit_gui(std::static_pointer_cast<DrawEllipse>(a));
-                    break;
-                }
-                case DRAWCOMPONENT_RECTANGLE: {
-                    editHappened = drawP.rectDrawTool.edit_gui(std::static_pointer_cast<DrawRectangle>(a));
-                    break;
-                }
-                case DRAWCOMPONENT_IMAGE: {
-                    editHappened = drawP.imageTool.edit_gui(std::static_pointer_cast<DrawImage>(a));
-                    break;
-                }
-                default: {
-                    break;
-                }
+            bool editHappened = controls.compEditTool->edit_gui(a);
+            if(editHappened) {
+                a->commit_update(drawP);
+                a->client_send_update(drawP);
             }
-        }
-        if(editHappened) {
-            a->commit_update(drawP);
-            a->client_send_update(drawP);
         }
     }
     else {
@@ -67,22 +48,7 @@ void EditTool::add_point_handle(const HandleData& handle) {
 void EditTool::reset_tool() {
     auto a = controls.compToEdit.lock();
     if(a && a->collabListInfo.lock()) {
-        switch(a->get_type()) {
-            case DRAWCOMPONENT_TEXTBOX:
-                drawP.textBoxTool.commit_edit_updates(std::static_pointer_cast<DrawTextBox>(a), controls.prevData);
-                break;
-            case DRAWCOMPONENT_ELLIPSE:
-                drawP.ellipseDrawTool.commit_edit_updates(std::static_pointer_cast<DrawEllipse>(a), controls.prevData);
-                break;
-            case DRAWCOMPONENT_RECTANGLE:
-                drawP.rectDrawTool.commit_edit_updates(std::static_pointer_cast<DrawRectangle>(a), controls.prevData);
-                break;
-            case DRAWCOMPONENT_IMAGE:
-                drawP.imageTool.commit_edit_updates(std::static_pointer_cast<DrawImage>(a), controls.prevData);
-                break;
-            default:
-                break;
-        }
+        controls.compEditTool->commit_edit_updates(a, controls.prevData);
         a->commit_update(drawP);
         a->client_send_update(drawP);
     }
@@ -96,19 +62,19 @@ void EditTool::edit_start(const std::shared_ptr<DrawComponent>& comp) {
     controls.isEditing = true;
     switch(comp->get_type()) {
         case DRAWCOMPONENT_TEXTBOX: {
-            drawP.textBoxTool.edit_start(std::static_pointer_cast<DrawTextBox>(comp), controls.prevData);
+            controls.compEditTool = std::make_unique<TextBoxEditTool>(drawP);
             break;
         }
         case DRAWCOMPONENT_ELLIPSE: {
-            drawP.ellipseDrawTool.edit_start(std::static_pointer_cast<DrawEllipse>(comp), controls.prevData);
+            controls.compEditTool = std::make_unique<EllipseDrawEditTool>(drawP);
             break;
         }
         case DRAWCOMPONENT_RECTANGLE: {
-            drawP.rectDrawTool.edit_start(std::static_pointer_cast<DrawRectangle>(comp), controls.prevData);
+            controls.compEditTool = std::make_unique<RectDrawEditTool>(drawP);
             break;
         }
         case DRAWCOMPONENT_IMAGE: {
-            drawP.imageTool.edit_start(std::static_pointer_cast<DrawImage>(comp), controls.prevData);
+            controls.compEditTool = std::make_unique<ImageEditTool>(drawP);
             break;
         }
         default: {
@@ -118,6 +84,7 @@ void EditTool::edit_start(const std::shared_ptr<DrawComponent>& comp) {
     }
     if(controls.isEditing) {
         controls.compToEdit = comp;
+        controls.compEditTool->edit_start(*this, comp, controls.prevData);
         comp->lastUpdateTime = std::chrono::steady_clock::now();
     }
 }
@@ -188,29 +155,7 @@ void EditTool::tool_update() {
 
             a->lastUpdateTime = std::chrono::steady_clock::now();
 
-            bool shouldNotReset;
-            switch(a->get_type()) {
-                case DRAWCOMPONENT_TEXTBOX: {
-                    shouldNotReset = drawP.textBoxTool.edit_update(std::static_pointer_cast<DrawTextBox>(a));
-                    break;
-                }
-                case DRAWCOMPONENT_ELLIPSE: {
-                    shouldNotReset = drawP.ellipseDrawTool.edit_update(std::static_pointer_cast<DrawEllipse>(a));
-                    break;
-                }
-                case DRAWCOMPONENT_RECTANGLE: {
-                    shouldNotReset = drawP.rectDrawTool.edit_update(std::static_pointer_cast<DrawRectangle>(a));
-                    break;
-                }
-                case DRAWCOMPONENT_IMAGE: {
-                    shouldNotReset = drawP.imageTool.edit_update(std::static_pointer_cast<DrawImage>(a));
-                    break;
-                }
-                default: {
-                    shouldNotReset = false;
-                    break;
-                }
-            }
+            bool shouldNotReset = controls.compEditTool->edit_update(a);
             if(!shouldNotReset || clickedAway)
                 reset_tool();
         }

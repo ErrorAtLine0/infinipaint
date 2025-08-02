@@ -3,6 +3,7 @@
 #include "../Server/CommandList.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <include/core/SkAlphaType.h>
 #include <include/core/SkCanvas.h>
 #include <include/core/SkColor.h>
@@ -21,8 +22,12 @@
 #include <Helpers/Logger.hpp>
 
 InkDropperTool::InkDropperTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
+    DrawingProgramToolBase(initDrawP)
 {
+}
+
+DrawingProgramToolType InkDropperTool::get_type() {
+    return DrawingProgramToolType::INKDROPPER;
 }
 
 void InkDropperTool::gui_toolbox() {
@@ -78,4 +83,7 @@ bool InkDropperTool::prevent_undo_or_redo() {
 }
 
 void InkDropperTool::draw(SkCanvas* canvas, const DrawData& drawData) {
+}
+
+void InkDropperTool::reset_tool() {
 }

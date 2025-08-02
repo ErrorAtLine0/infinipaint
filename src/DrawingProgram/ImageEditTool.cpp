@@ -1,29 +1,32 @@
-#include "ImageTool.hpp"
+#include "ImageEditTool.hpp"
 #include "DrawingProgram.hpp"
+#include "../DrawComponents/DrawImage.hpp"
 #include "../World.hpp"
 #include "../Toolbar.hpp"
 #include "../MainProgram.hpp"
 #include "../ResourceManager.hpp"
+#include "DrawingProgramEditToolBase.hpp"
 #include <fstream>
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
-ImageTool::ImageTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
+ImageEditTool::ImageEditTool(DrawingProgram& initDrawP):
+    DrawingProgramEditToolBase(initDrawP)
 {}
 
-void ImageTool::edit_start(const std::shared_ptr<DrawImage>& a, std::any& prevData) {
+void ImageEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
 }
 
-void ImageTool::commit_edit_updates(const std::shared_ptr<DrawImage>& a, std::any& prevData) {
+void ImageEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
 }
 
-bool ImageTool::edit_update(const std::shared_ptr<DrawImage>& a) {
+bool ImageEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
     return true;
 }
 
-bool ImageTool::edit_gui(const std::shared_ptr<DrawImage>& a) {
+bool ImageEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
+    std::shared_ptr<DrawImage> a = std::static_pointer_cast<DrawImage>(comp);
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool image");
     t.gui.text_label_centered("File Properties");

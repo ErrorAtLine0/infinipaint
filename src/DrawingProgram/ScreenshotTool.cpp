@@ -3,6 +3,7 @@
 #include "../Server/CommandList.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkAlphaType.h>
 #include <include/core/SkColorType.h>
@@ -37,8 +38,11 @@
 #define AA_LEVEL 4
 
 ScreenshotTool::ScreenshotTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
-{
+    DrawingProgramToolBase(initDrawP)
+{}
+
+DrawingProgramToolType ScreenshotTool::get_type() {
+    return DrawingProgramToolType::SCREENSHOT;
 }
 
 void ScreenshotTool::gui_toolbox() {
@@ -74,10 +78,11 @@ void ScreenshotTool::gui_toolbox() {
                     setExtensionFilter = {"WebP", "webp"};
                 t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
                     auto world = w.lock();
-                    if(world) {
-                        world->drawProg.screenshotTool.controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
-                        world->drawProg.screenshotTool.controls.setToTakeScreenshot = true;
-                    }
+                    // NOTE: CHANGE THIS
+                    //if(world) {
+                    //    world->drawProg.screenshotTool.controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
+                    //    world->drawProg.screenshotTool.controls.setToTakeScreenshot = true;
+                    //}
                 }, "screenshot", true);
             #endif
         }

@@ -9,19 +9,9 @@
 #include <Helpers/Hashes.hpp>
 #include <list>
 #include <Helpers/Random.hpp>
-#include "BrushTool.hpp"
-#include "EraserTool.hpp"
-#include "RectSelectTool.hpp"
-#include "LassoSelectTool.hpp"
-#include "RectDrawTool.hpp"
-#include "EllipseDrawTool.hpp"
-#include "TextBoxTool.hpp"
-#include "InkDropperTool.hpp"
-#include "ScreenshotTool.hpp"
-#include "EditTool.hpp"
-#include "ImageTool.hpp"
 #include "DrawingProgramSelection.hpp"
 #include "../CollabList.hpp"
+#include "DrawingProgramToolBase.hpp"
 
 class World;
 
@@ -87,45 +77,21 @@ class DrawingProgram {
 
         SkPaint select_tool_line_paint();
 
-
-        BrushTool brushTool;
-        EraserTool eraserTool;
-        RectSelectTool rectSelectTool;
-        LassoSelectTool lassoSelectTool;
-        RectDrawTool rectDrawTool;
-        EllipseDrawTool ellipseDrawTool;
-        TextBoxTool textBoxTool;
-        InkDropperTool inkDropperTool;
-        ScreenshotTool screenshotTool;
-        EditTool editTool;
-        ImageTool imageTool;
+        std::unique_ptr<DrawingProgramToolBase> drawTool;
 
         DrawingProgramSelection selection;
 
         bool temporaryEraser = false;
-
-        enum Tool : int {
-            TOOL_BRUSH = 0,
-            TOOL_ERASER,
-            TOOL_LASSOSELECT,
-            TOOL_RECTSELECT,
-            TOOL_RECTANGLE,
-            TOOL_ELLIPSE,
-            TOOL_TEXTBOX,
-            TOOL_INKDROPPER,
-            TOOL_SCREENSHOT,
-            TOOL_EDIT
-        };
 
         struct GlobalControls {
             float relativeWidth = 15.0f;
 
             Vector4f foregroundColor{0.9f, 0.9f, 0.9f, 1.0f};
             Vector4f backgroundColor{0.0f, 0.0f, 0.0f, 1.0f};
-            int previousSelected = 0;
+            DrawingProgramToolType selectedTool = DrawingProgramToolType::BRUSH;
+            DrawingProgramToolType previousSelected = DrawingProgramToolType::BRUSH;
             WorldVec previousMouseWorldPos = {0, 0};
             WorldVec currentMouseWorldPos = {0, 0};
-            int selectedTool = 0;
             bool leftClick = false;
             bool leftClickHeld = false;
             bool leftClickReleased = false;
@@ -145,7 +111,10 @@ class DrawingProgram {
         friend class TextBoxTool;
         friend class ScreenshotTool;
         friend class EditTool;
-        friend class ImageTool;
+        friend class ImageEditTool;
+        friend class RectDrawEditTool;
+        friend class EllipseDrawEditTool;
+        friend class TextBoxEditTool;
         friend class DrawingProgramCache;
         friend class DrawingProgramSelection;
         friend class LassoSelectTool;

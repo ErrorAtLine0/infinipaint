@@ -1,12 +1,10 @@
 #include "BrushTool.hpp"
 #include <Helpers/ConvertVec.hpp>
-#include "../TimePoint.hpp"
 #include "../DrawComponents/DrawBrushStroke.hpp"
 #include "../GUIStuff/GUIManager.hpp"
-#include "../SharedTypes.hpp"
-#include "../Server/CommandList.hpp"
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <chrono>
 
 #define VEL_SMOOTH_MIN 0.6
@@ -14,8 +12,11 @@
 #define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
 
 BrushTool::BrushTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
-{
+    DrawingProgramToolBase(initDrawP)
+{}
+
+DrawingProgramToolType BrushTool::get_type() {
+    return DrawingProgramToolType::BRUSH;
 }
 
 void BrushTool::reset_tool() {

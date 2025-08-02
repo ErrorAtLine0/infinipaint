@@ -1,26 +1,20 @@
 #pragma once
-#include <include/core/SkCanvas.h>
-#include "../DrawData.hpp"
 #include "../DrawComponents/DrawTextBox.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <Helpers/SCollision.hpp>
 #include <any>
 
 class DrawingProgram;
 
-class TextBoxTool {
+class TextBoxTool : public DrawingProgramToolBase {
     public:
         TextBoxTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-        void reset_tool();
-
-        void edit_start(const std::shared_ptr<DrawTextBox>& a, std::any& prevData);
-        void commit_edit_updates(const std::shared_ptr<DrawTextBox>& a, std::any& prevData);
-        bool edit_update(const std::shared_ptr<DrawTextBox>& a);
-        bool edit_gui(const std::shared_ptr<DrawTextBox>& a);
-
-        bool prevent_undo_or_redo();
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual void reset_tool() override;
+        virtual bool prevent_undo_or_redo() override;
     private:
         void edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox);
         void update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox);
@@ -32,8 +26,5 @@ class TextBoxTool {
             Vector2f endAt;
             int drawStage = 0;
             std::shared_ptr<DrawTextBox> intermediateItem;
-            DrawTextBox::Data oldData;
         } controls;
-
-        DrawingProgram& drawP;
 };

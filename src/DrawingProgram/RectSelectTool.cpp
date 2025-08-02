@@ -2,13 +2,18 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
 #include "../CoordSpaceHelper.hpp"
 
 RectSelectTool::RectSelectTool(DrawingProgram& initDrawP):
-    drawP(initDrawP)
+    DrawingProgramToolBase(initDrawP)
 {
+}
+
+DrawingProgramToolType RectSelectTool::get_type() {
+    return DrawingProgramToolType::RECTSELECT;
 }
 
 void RectSelectTool::gui_toolbox() {

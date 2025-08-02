@@ -1,31 +1,26 @@
 #pragma once
-#include <include/core/SkCanvas.h>
-#include "../DrawData.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <Helpers/SCollision.hpp>
 #include "../CoordSpaceHelper.hpp"
 #include "../DrawComponents/DrawComponent.hpp"
 
 class DrawingProgram;
 
-class RectSelectTool {
+class RectSelectTool : public DrawingProgramToolBase {
     public:
         RectSelectTool(DrawingProgram& initDrawP);
-        void gui_toolbox();
-        void tool_update();
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-        void reset_tool();
+        virtual DrawingProgramToolType get_type() override;
+        virtual void gui_toolbox() override;
+        virtual void tool_update() override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
+        virtual void reset_tool() override;
+        virtual bool prevent_undo_or_redo() override;
 
-        bool prevent_undo_or_redo();
     private:
         struct RectSelectControls {
             int selectionMode = 0;
-
             CoordSpaceHelper coords;
-
             Vector2f selectStartAt;
-
             std::array<Vector2f, 4> newT;
         } controls;
-
-        DrawingProgram& drawP;
 };

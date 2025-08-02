@@ -1,7 +1,5 @@
 #include "DrawingProgram.hpp"
-#include "Helpers/Hashes.hpp"
-#include "Helpers/MathExtras.hpp"
-#include "Helpers/SCollision.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include <include/core/SkPaint.h>
 #include <include/core/SkVertices.h>
 #include "../DrawCamera.hpp"
@@ -11,11 +9,10 @@
 #include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
 #include "../Server/CommandList.hpp"
+#include <memory>
 #include <optional>
-#include <ranges>
 #include <Helpers/ConvertVec.hpp>
 #include <cereal/types/vector.hpp>
-#include <iostream>
 #include "../DrawComponents/DrawImage.hpp"
 #include <include/core/SkImage.h>
 #include <include/core/SkSurface.h>
@@ -29,23 +26,16 @@
 #include <include/effects/SkDashPathEffect.h>
 #include <chrono>
 
+#include "EraserTool.hpp"
+
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     compCache(*this),
     components([&](){ return world.get_new_id(); }),
-    brushTool(*this),
-    eraserTool(*this),
-    rectSelectTool(*this),
-    lassoSelectTool(*this),
-    rectDrawTool(*this),
-    ellipseDrawTool(*this),
-    textBoxTool(*this),
-    inkDropperTool(*this),
-    screenshotTool(*this),
-    editTool(*this),
-    imageTool(*this),
     selection(*this)
 {
+    drawTool = DrawingProgramToolBase::allocate_tool_type(*this, controls.selectedTool);
+
     components.updateCallback = [&]() {
         if(&world == world.main.world.get())
             world.main.drawProgCache.refresh = true;
@@ -199,16 +189,16 @@ void DrawingProgram::toolbar_gui() {
         .border = {.color = convert_vec4<Clay_Color>(t.io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(t.io->theme->windowBorders1)}
     }) {
         t.gui.obstructing_window();
-        if(t.gui.svg_icon_button("Brush Toolbar Button", "data/icons/brush.svg", controls.selectedTool == TOOL_BRUSH)) { controls.selectedTool = TOOL_BRUSH; }
-        if(t.gui.svg_icon_button("Eraser Toolbar Button", "data/icons/eraser.svg", controls.selectedTool == TOOL_ERASER)) { controls.selectedTool = TOOL_ERASER; }
-        if(t.gui.svg_icon_button("Text Toolbar Button", "data/icons/text.svg", controls.selectedTool == TOOL_TEXTBOX)) { controls.selectedTool = TOOL_TEXTBOX; }
-        if(t.gui.svg_icon_button("Ellipse Toolbar Button", "data/icons/circle.svg", controls.selectedTool == TOOL_ELLIPSE)) { controls.selectedTool = TOOL_ELLIPSE; }
-        if(t.gui.svg_icon_button("Rect Toolbar Button", "data/icons/rectangle.svg", controls.selectedTool == TOOL_RECTANGLE)) { controls.selectedTool = TOOL_RECTANGLE; }
-        if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", controls.selectedTool == TOOL_RECTSELECT)) { controls.selectedTool = TOOL_RECTSELECT; }
-        if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/close.svg", controls.selectedTool == TOOL_LASSOSELECT)) { controls.selectedTool = TOOL_LASSOSELECT; }
-        if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", controls.selectedTool == TOOL_EDIT)) { controls.selectedTool = TOOL_EDIT; }
-        if(t.gui.svg_icon_button("Inkdropper Toolbar Button", "data/icons/eyedropper.svg", controls.selectedTool == TOOL_INKDROPPER)) { controls.selectedTool = TOOL_INKDROPPER; }
-        if(t.gui.svg_icon_button("Screenshot Toolbar Button", "data/icons/camera.svg", controls.selectedTool == TOOL_SCREENSHOT)) { controls.selectedTool = TOOL_SCREENSHOT; }
+        if(t.gui.svg_icon_button("Brush Toolbar Button", "data/icons/brush.svg", controls.selectedTool == DrawingProgramToolType::BRUSH)) { controls.selectedTool = DrawingProgramToolType::BRUSH; }
+        if(t.gui.svg_icon_button("Eraser Toolbar Button", "data/icons/eraser.svg", controls.selectedTool == DrawingProgramToolType::ERASER)) { controls.selectedTool = DrawingProgramToolType::ERASER; }
+        if(t.gui.svg_icon_button("Text Toolbar Button", "data/icons/text.svg", controls.selectedTool == DrawingProgramToolType::TEXTBOX)) { controls.selectedTool = DrawingProgramToolType::TEXTBOX; }
+        if(t.gui.svg_icon_button("Ellipse Toolbar Button", "data/icons/circle.svg", controls.selectedTool == DrawingProgramToolType::ELLIPSE)) { controls.selectedTool = DrawingProgramToolType::ELLIPSE; }
+        if(t.gui.svg_icon_button("Rect Toolbar Button", "data/icons/rectangle.svg", controls.selectedTool == DrawingProgramToolType::RECTANGLE)) { controls.selectedTool = DrawingProgramToolType::RECTANGLE; }
+        if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", controls.selectedTool == DrawingProgramToolType::RECTSELECT)) { controls.selectedTool = DrawingProgramToolType::RECTSELECT; }
+        if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/close.svg", controls.selectedTool == DrawingProgramToolType::LASSOSELECT)) { controls.selectedTool = DrawingProgramToolType::LASSOSELECT; }
+        if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", controls.selectedTool == DrawingProgramToolType::EDIT)) { controls.selectedTool = DrawingProgramToolType::EDIT; }
+        if(t.gui.svg_icon_button("Inkdropper Toolbar Button", "data/icons/eyedropper.svg", controls.selectedTool == DrawingProgramToolType::INKDROPPER)) { controls.selectedTool = DrawingProgramToolType::INKDROPPER; }
+        if(t.gui.svg_icon_button("Screenshot Toolbar Button", "data/icons/camera.svg", controls.selectedTool == DrawingProgramToolType::SCREENSHOT)) { controls.selectedTool = DrawingProgramToolType::SCREENSHOT; }
         CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
             if(t.gui.color_button("Foreground Color", &controls.foregroundColor, &controls.foregroundColor == t.colorLeft)) {
                 t.color_selector_left(&controls.foregroundColor == t.colorLeft ? nullptr : &controls.foregroundColor);
@@ -223,7 +213,7 @@ void DrawingProgram::toolbar_gui() {
 
 void DrawingProgram::tool_options_gui() {
     Toolbar& t = world.main.toolbar;
-    float minGUIWidth = controls.selectedTool == TOOL_SCREENSHOT ? 300 : 200;
+    float minGUIWidth = controls.selectedTool == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
@@ -237,54 +227,24 @@ void DrawingProgram::tool_options_gui() {
         .border = {.color = convert_vec4<Clay_Color>(t.io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(t.io->theme->windowBorders1)}
     }) {
         t.gui.obstructing_window();
-        switch(controls.selectedTool) {
-            case TOOL_BRUSH:
-                brushTool.gui_toolbox();
-                break;
-            case TOOL_ERASER:
-                eraserTool.gui_toolbox();
-                break;
-            case TOOL_LASSOSELECT:
-                lassoSelectTool.gui_toolbox();
-                break;
-            case TOOL_RECTSELECT:
-                rectSelectTool.gui_toolbox();
-                break;
-            case TOOL_RECTANGLE:
-                rectDrawTool.gui_toolbox();
-                break;
-            case TOOL_ELLIPSE:
-                ellipseDrawTool.gui_toolbox();
-                break;
-            case TOOL_TEXTBOX:
-                textBoxTool.gui_toolbox();
-                break;
-            case TOOL_INKDROPPER:
-                inkDropperTool.gui_toolbox();
-                break;
-            case TOOL_SCREENSHOT:
-                screenshotTool.gui_toolbox();
-                break;
-            case TOOL_EDIT:
-                editTool.gui_toolbox();
-                break;
-        }
+        drawTool->gui_toolbox();
     }
 }
 
 void DrawingProgram::update() {
-    if(controls.selectedTool == TOOL_BRUSH && world.main.input.pen.isEraser && !temporaryEraser) {
-        controls.selectedTool = TOOL_ERASER;
+    if(controls.selectedTool == DrawingProgramToolType::BRUSH && world.main.input.pen.isEraser && !temporaryEraser) {
+        controls.selectedTool = DrawingProgramToolType::ERASER;
         temporaryEraser = true;
     }
-    else if(controls.selectedTool == TOOL_ERASER && !world.main.input.pen.isEraser && temporaryEraser) {
-        controls.selectedTool = TOOL_BRUSH;
+    else if(controls.selectedTool == DrawingProgramToolType::ERASER && !world.main.input.pen.isEraser && temporaryEraser) {
+        controls.selectedTool = DrawingProgramToolType::BRUSH;
         temporaryEraser = false;
     }
 
     if(controls.selectedTool != controls.previousSelected) {
-        controls.previousSelected = controls.selectedTool;
         reset_tools();
+        drawTool = DrawingProgramToolBase::allocate_tool_type(*this, controls.selectedTool);
+        controls.previousSelected = controls.selectedTool;
     }
 
     controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;
@@ -317,56 +277,25 @@ void DrawingProgram::update() {
     drag_drop_update();
 
     if(world.main.input.key(InputManager::KEY_DRAW_TOOL_BRUSH).pressed)
-        controls.selectedTool = TOOL_BRUSH;
+        controls.selectedTool = DrawingProgramToolType::BRUSH;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ERASER).pressed)
-        controls.selectedTool = TOOL_ERASER;
+        controls.selectedTool = DrawingProgramToolType::ERASER;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_RECTSELECT).pressed)
-        controls.selectedTool = TOOL_RECTSELECT;
+        controls.selectedTool = DrawingProgramToolType::RECTSELECT;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_RECTANGLE).pressed)
-        controls.selectedTool = TOOL_RECTANGLE;
+        controls.selectedTool = DrawingProgramToolType::RECTANGLE;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ELLIPSE).pressed)
-        controls.selectedTool = TOOL_ELLIPSE;
+        controls.selectedTool = DrawingProgramToolType::ELLIPSE;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_TEXTBOX).pressed)
-        controls.selectedTool = TOOL_TEXTBOX;
+        controls.selectedTool = DrawingProgramToolType::TEXTBOX;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_INKDROPPER).pressed)
-        controls.selectedTool = TOOL_INKDROPPER;
+        controls.selectedTool = DrawingProgramToolType::INKDROPPER;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_SCREENSHOT).pressed)
-        controls.selectedTool = TOOL_SCREENSHOT;
+        controls.selectedTool = DrawingProgramToolType::SCREENSHOT;
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EDIT).pressed)
-        controls.selectedTool = TOOL_EDIT;
+        controls.selectedTool = DrawingProgramToolType::EDIT;
 
-    switch(controls.selectedTool) {
-        case TOOL_BRUSH:
-            brushTool.tool_update();
-            break;
-        case TOOL_ERASER:
-            eraserTool.tool_update();
-            break;
-        case TOOL_LASSOSELECT:
-            lassoSelectTool.tool_update();
-            break;
-        case TOOL_RECTSELECT:
-            rectSelectTool.tool_update();
-            break;
-        case TOOL_RECTANGLE:
-            rectDrawTool.tool_update();
-            break;
-        case TOOL_ELLIPSE:
-            ellipseDrawTool.tool_update();
-            break;
-        case TOOL_TEXTBOX:
-            textBoxTool.tool_update();
-            break;
-        case TOOL_INKDROPPER:
-            inkDropperTool.tool_update();
-            break;
-        case TOOL_SCREENSHOT:
-            screenshotTool.tool_update();
-            break;
-        case TOOL_EDIT:
-            editTool.tool_update();
-            break;
-    };
+    drawTool->tool_update();
 
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;
@@ -376,38 +305,18 @@ void DrawingProgram::update() {
 
     selection.update();
 
-    if(controls.selectedTool == TOOL_ERASER)
-        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool.erasedComponents, eraserTool.erasedBVHNodes);
-    else if(controls.selectedTool == TOOL_RECTSELECT)
+    if(controls.selectedTool == DrawingProgramToolType::ERASER) {
+        EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
+        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
+    }
+    else if(controls.selectedTool == DrawingProgramToolType::RECTSELECT)
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set());
     else
         compCache.test_rebuild(components.client_list());
 }
 
 bool DrawingProgram::prevent_undo_or_redo() {
-    switch(controls.selectedTool) {
-        case TOOL_BRUSH:
-            return brushTool.prevent_undo_or_redo();
-        case TOOL_ERASER:
-            return eraserTool.prevent_undo_or_redo();
-        case TOOL_LASSOSELECT:
-            return lassoSelectTool.prevent_undo_or_redo();
-        case TOOL_RECTSELECT:
-            return rectSelectTool.prevent_undo_or_redo();
-        case TOOL_RECTANGLE:
-            return rectDrawTool.prevent_undo_or_redo();
-        case TOOL_ELLIPSE:
-            return ellipseDrawTool.prevent_undo_or_redo();
-        case TOOL_TEXTBOX:
-            return textBoxTool.prevent_undo_or_redo();
-        case TOOL_INKDROPPER:
-            return inkDropperTool.prevent_undo_or_redo();
-        case TOOL_SCREENSHOT:
-            return screenshotTool.prevent_undo_or_redo();
-        case TOOL_EDIT:
-            return editTool.prevent_undo_or_redo();
-    };
-    return false;
+    return drawTool->prevent_undo_or_redo();
 }
 
 SkPaint DrawingProgram::select_tool_line_paint() {
@@ -425,9 +334,11 @@ SkPaint DrawingProgram::select_tool_line_paint() {
 }
 
 void DrawingProgram::force_rebuild_cache() {
-    if(controls.selectedTool == TOOL_ERASER)
-        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool.erasedComponents, eraserTool.erasedBVHNodes, true);
-    else if(controls.selectedTool == TOOL_RECTSELECT)
+    if(controls.selectedTool == DrawingProgramToolType::ERASER) {
+        EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
+        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
+    }
+    else if(controls.selectedTool == DrawingProgramToolType::RECTSELECT)
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
     else
         compCache.test_rebuild(components.client_list(), true);
@@ -499,14 +410,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
 }
 
 void DrawingProgram::reset_tools() {
-    lassoSelectTool.reset_tool();
-    rectSelectTool.reset_tool();
-    textBoxTool.reset_tool();
-    brushTool.reset_tool();
-    rectDrawTool.reset_tool();
-    ellipseDrawTool.reset_tool();
-    editTool.reset_tool();
-    eraserTool.reset_tool();
+    drawTool->reset_tool();
 }
 
 void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a) {
@@ -705,38 +609,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         }
     }
 
-    switch(controls.selectedTool) {
-        case TOOL_BRUSH:
-            brushTool.draw(canvas, drawData);
-            break;
-        case TOOL_ERASER:
-            eraserTool.draw(canvas, drawData);
-            break;
-        case TOOL_LASSOSELECT:
-            lassoSelectTool.draw(canvas, drawData);
-            break;
-        case TOOL_RECTSELECT:
-            rectSelectTool.draw(canvas, drawData);
-            break;
-        case TOOL_RECTANGLE:
-            rectDrawTool.draw(canvas, drawData);
-            break;
-        case TOOL_ELLIPSE:
-            ellipseDrawTool.draw(canvas, drawData);
-            break;
-        case TOOL_TEXTBOX:
-            textBoxTool.draw(canvas, drawData);
-            break;
-        case TOOL_INKDROPPER:
-            inkDropperTool.draw(canvas, drawData);
-            break;
-        case TOOL_SCREENSHOT:
-            screenshotTool.draw(canvas, drawData);
-            break;
-        case TOOL_EDIT:
-            editTool.draw(canvas, drawData);
-            break;
-    }
+    drawTool->draw(canvas, drawData);
 }
 
 Vector4f* DrawingProgram::get_foreground_color_ptr() {
