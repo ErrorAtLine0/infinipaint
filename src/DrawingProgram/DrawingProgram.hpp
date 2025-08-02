@@ -12,6 +12,7 @@
 #include "BrushTool.hpp"
 #include "EraserTool.hpp"
 #include "RectSelectTool.hpp"
+#include "LassoSelectTool.hpp"
 #include "RectDrawTool.hpp"
 #include "EllipseDrawTool.hpp"
 #include "TextBoxTool.hpp"
@@ -84,9 +85,13 @@ class DrawingProgram {
         void add_undo_place_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
         void add_undo_erase_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
 
+        SkPaint select_tool_line_paint();
+
+
         BrushTool brushTool;
         EraserTool eraserTool;
         RectSelectTool rectSelectTool;
+        LassoSelectTool lassoSelectTool;
         RectDrawTool rectDrawTool;
         EllipseDrawTool ellipseDrawTool;
         TextBoxTool textBoxTool;
@@ -102,6 +107,7 @@ class DrawingProgram {
         enum Tool : int {
             TOOL_BRUSH = 0,
             TOOL_ERASER,
+            TOOL_LASSOSELECT,
             TOOL_RECTSELECT,
             TOOL_RECTANGLE,
             TOOL_ELLIPSE,
@@ -142,4 +148,5 @@ class DrawingProgram {
         friend class ImageTool;
         friend class DrawingProgramCache;
         friend class DrawingProgramSelection;
+        friend class LassoSelectTool;
 };

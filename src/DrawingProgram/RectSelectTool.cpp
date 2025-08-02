@@ -1,27 +1,10 @@
 #include "RectSelectTool.hpp"
-#include <chrono>
 #include "DrawingProgram.hpp"
-#include "../Server/CommandList.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
-#include "Helpers/FixedPoint.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
-#include "Helpers/Serializers.hpp"
 #include "../CoordSpaceHelper.hpp"
-#include <cereal/types/vector.hpp>
-#include <algorithm>
-#include <ranges>
-
-#ifdef USE_SKIA_BACKEND_GRAPHITE
-    #include <include/gpu/graphite/Surface.h>
-#elif USE_SKIA_BACKEND_GANESH
-    #include <include/gpu/ganesh/GrDirectContext.h>
-    #include <include/gpu/ganesh/SkSurfaceGanesh.h>
-#endif
-
-#define ROTATION_POINT_RADIUS_MULTIPLIER 0.7
-#define ROTATION_POINTS_DISTANCE 20.0
 
 RectSelectTool::RectSelectTool(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -83,11 +66,8 @@ void RectSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->save();
         controls.coords.transform_sk_canvas(canvas, drawData);
 
-        SkPaint selectionPaint;
-        selectionPaint.setColor4f({0.3f, 0.6f, 0.9f, 0.4f});
-
         SkRect r = SkRect::MakeLTRB(controls.newT[0].x(), controls.newT[0].y(), controls.newT[2].x(), controls.newT[2].y());
-        canvas->drawRect(r, selectionPaint);
+        canvas->drawRect(r, drawP.select_tool_line_paint());
         canvas->restore();
 
         canvas->restore();

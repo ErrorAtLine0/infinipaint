@@ -21,9 +21,13 @@
 #include <include/core/SkSurface.h>
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "LassoSelectTool.hpp"
 #include <Helpers/Logger.hpp>
 #include <Helpers/Parallel.hpp>
 #include <cereal/types/unordered_set.hpp>
+#include <include/core/SkPathEffect.h>
+#include <include/effects/SkDashPathEffect.h>
+#include <chrono>
 
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
@@ -32,6 +36,7 @@ DrawingProgram::DrawingProgram(World& initWorld):
     brushTool(*this),
     eraserTool(*this),
     rectSelectTool(*this),
+    lassoSelectTool(*this),
     rectDrawTool(*this),
     ellipseDrawTool(*this),
     textBoxTool(*this),
@@ -200,6 +205,7 @@ void DrawingProgram::toolbar_gui() {
         if(t.gui.svg_icon_button("Ellipse Toolbar Button", "data/icons/circle.svg", controls.selectedTool == TOOL_ELLIPSE)) { controls.selectedTool = TOOL_ELLIPSE; }
         if(t.gui.svg_icon_button("Rect Toolbar Button", "data/icons/rectangle.svg", controls.selectedTool == TOOL_RECTANGLE)) { controls.selectedTool = TOOL_RECTANGLE; }
         if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", controls.selectedTool == TOOL_RECTSELECT)) { controls.selectedTool = TOOL_RECTSELECT; }
+        if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/close.svg", controls.selectedTool == TOOL_LASSOSELECT)) { controls.selectedTool = TOOL_LASSOSELECT; }
         if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", controls.selectedTool == TOOL_EDIT)) { controls.selectedTool = TOOL_EDIT; }
         if(t.gui.svg_icon_button("Inkdropper Toolbar Button", "data/icons/eyedropper.svg", controls.selectedTool == TOOL_INKDROPPER)) { controls.selectedTool = TOOL_INKDROPPER; }
         if(t.gui.svg_icon_button("Screenshot Toolbar Button", "data/icons/camera.svg", controls.selectedTool == TOOL_SCREENSHOT)) { controls.selectedTool = TOOL_SCREENSHOT; }
@@ -238,6 +244,9 @@ void DrawingProgram::tool_options_gui() {
             case TOOL_ERASER:
                 eraserTool.gui_toolbox();
                 break;
+            case TOOL_LASSOSELECT:
+                lassoSelectTool.gui_toolbox();
+                break;
             case TOOL_RECTSELECT:
                 rectSelectTool.gui_toolbox();
                 break;
@@ -258,8 +267,6 @@ void DrawingProgram::tool_options_gui() {
                 break;
             case TOOL_EDIT:
                 editTool.gui_toolbox();
-                break;
-            default:
                 break;
         }
     }
@@ -335,6 +342,9 @@ void DrawingProgram::update() {
         case TOOL_ERASER:
             eraserTool.tool_update();
             break;
+        case TOOL_LASSOSELECT:
+            lassoSelectTool.tool_update();
+            break;
         case TOOL_RECTSELECT:
             rectSelectTool.tool_update();
             break;
@@ -355,8 +365,6 @@ void DrawingProgram::update() {
             break;
         case TOOL_EDIT:
             editTool.tool_update();
-            break;
-        default:
             break;
     };
 
@@ -382,6 +390,8 @@ bool DrawingProgram::prevent_undo_or_redo() {
             return brushTool.prevent_undo_or_redo();
         case TOOL_ERASER:
             return eraserTool.prevent_undo_or_redo();
+        case TOOL_LASSOSELECT:
+            return lassoSelectTool.prevent_undo_or_redo();
         case TOOL_RECTSELECT:
             return rectSelectTool.prevent_undo_or_redo();
         case TOOL_RECTANGLE:
@@ -396,10 +406,22 @@ bool DrawingProgram::prevent_undo_or_redo() {
             return screenshotTool.prevent_undo_or_redo();
         case TOOL_EDIT:
             return editTool.prevent_undo_or_redo();
-        default:
-            break;
     };
     return false;
+}
+
+SkPaint DrawingProgram::select_tool_line_paint() {
+    SkScalar intervals[] = {10, 5};
+    float timeSinceEpoch = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    sk_sp<SkPathEffect> lassoLineDashEffect = SkDashPathEffect::Make(intervals, 2, -std::fmod(timeSinceEpoch * 50, 15));
+
+    SkPaint selectLinePaint;
+    selectLinePaint.setStyle(SkPaint::kStroke_Style);
+    selectLinePaint.setStrokeWidth(3);
+    selectLinePaint.setColor4f(world.canvasTheme.toolFrontColor);
+    selectLinePaint.setPathEffect(lassoLineDashEffect);
+
+    return selectLinePaint;
 }
 
 void DrawingProgram::force_rebuild_cache() {
@@ -477,6 +499,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
 }
 
 void DrawingProgram::reset_tools() {
+    lassoSelectTool.reset_tool();
     rectSelectTool.reset_tool();
     textBoxTool.reset_tool();
     brushTool.reset_tool();
@@ -689,6 +712,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         case TOOL_ERASER:
             eraserTool.draw(canvas, drawData);
             break;
+        case TOOL_LASSOSELECT:
+            lassoSelectTool.draw(canvas, drawData);
+            break;
         case TOOL_RECTSELECT:
             rectSelectTool.draw(canvas, drawData);
             break;
@@ -709,8 +735,6 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             break;
         case TOOL_EDIT:
             editTool.draw(canvas, drawData);
-            break;
-        default:
             break;
     }
 }
