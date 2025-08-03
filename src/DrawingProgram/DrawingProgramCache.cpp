@@ -335,16 +335,28 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
         auto& iBounds = drawCache.invalidBounds.value();
         WorldVec bDim = bvhNode->bounds.dim();
         //std::cout << "\niMin: " << iBounds.min.x() << " " << iBounds.min.y() << "\niMax: " << iBounds.max.x() << " " << iBounds.max.y() << "\nbMin: " << bvhNode->bounds.min.x() << " " << bvhNode->bounds.min.y() << "\nbMax: " << bvhNode->bounds.max.x() << " " << bvhNode->bounds.max.y() << "\nbDim: " << bDim.x() << " " << bDim.y();
+
         Vector2f clipBoundMin{static_cast<float>((iBounds.min.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
                               static_cast<float>((iBounds.min.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
         Vector2f clipBoundMax{static_cast<float>((iBounds.max.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
                               static_cast<float>((iBounds.max.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
-        SkRect clipRect = SkRect::MakeLTRB(clipBoundMin.x(), clipBoundMin.y(), clipBoundMax.x(), clipBoundMax.y());
+
+        SkIRect clipRect = SkIRect::MakeLTRB(std::max<int>(clipBoundMin.x() - 2, 0),
+                                             std::max<int>(clipBoundMin.y() - 2, 0),
+                                             std::min<int>(clipBoundMax.x() + 2, bvhNode->resolution.x() - 1),
+                                             std::min<int>(clipBoundMax.y() + 2, bvhNode->resolution.y() - 1));
+
+        SCollision::AABB<float> clipRectBoundAABB{clipBoundMin - Vector2f{4, 4}, clipBoundMax + Vector2f{4, 4}};
+        SCollision::AABB<WorldScalar> clipRectBoundAABBWorld{
+            bvhNode->coords.from_space(clipRectBoundAABB.min),
+            bvhNode->coords.from_space(clipRectBoundAABB.max)
+        };
+
         //std::cout << "\ncMin: " << clipBoundMin.x() << " " << clipBoundMin.y() << "\ncMax: " << clipBoundMax.x() << " " << clipBoundMax.y() << std::endl;
         cacheCanvas->save();
-        cacheCanvas->clipRect(clipRect);
+        cacheCanvas->clipIRect(clipRect);
         cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-        draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement, drawCache.invalidBounds);
+        draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement, clipRectBoundAABBWorld);
         cacheCanvas->restore();
         drawCache.invalidBounds = std::nullopt;
     }

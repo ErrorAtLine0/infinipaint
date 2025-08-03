@@ -13,6 +13,7 @@ class EditTool : public DrawingProgramToolBase {
             Vector2f* p;
             Vector2f* min;
             Vector2f* max;
+            float minimumDistanceBetweenBoundsAndPoint = 1.0f;
         };
 
         EditTool(DrawingProgram& initDrawP);

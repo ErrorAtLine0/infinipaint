@@ -140,9 +140,9 @@ void EditTool::tool_update() {
                     Vector2f newPos = a->coords.get_mouse_pos(drawP.world);
                     if(newPos != *controls.pointDragging->p) {
                         if(controls.pointDragging->min)
-                            newPos = cwise_vec_max(*controls.pointDragging->min, newPos);
+                            newPos = cwise_vec_max((*controls.pointDragging->min + Vector2f{controls.pointDragging->minimumDistanceBetweenBoundsAndPoint, controls.pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
                         if(controls.pointDragging->max)
-                            newPos = cwise_vec_min(*controls.pointDragging->max, newPos);
+                            newPos = cwise_vec_min((*controls.pointDragging->max - Vector2f{controls.pointDragging->minimumDistanceBetweenBoundsAndPoint, controls.pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
                         *controls.pointDragging->p = newPos;
                         a->commit_update(drawP);
                         a->client_send_update(drawP);
