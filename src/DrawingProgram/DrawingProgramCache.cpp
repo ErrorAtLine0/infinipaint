@@ -4,6 +4,7 @@
 #include "../MainProgram.hpp"
 #include "Helpers/Parallel.hpp"
 #include <chrono>
+#include <optional>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include <include/gpu/graphite/Surface.h>
@@ -268,8 +269,20 @@ void DrawingProgramCache::invalidate_cache_at_optional_aabb_before_pos(const std
 void DrawingProgramCache::invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt) {
     std::erase_if(nodesWithCachedSurfaces, [&](auto& n) {
         if(placementToInvalidateAt <= n->drawCache.value().lastDrawnComponentPlacement && SCollision::collide(aabb, n->bounds)) {
-            n->drawCache = std::nullopt;
-            return true;
+            if(aabb.fully_contains_aabb(n->bounds)) {
+                n->drawCache = std::nullopt;
+                return true;
+            }
+            else {
+                auto& dCache = n->drawCache.value();
+                if(dCache.invalidBounds.has_value()) {
+                    auto& iBounds = dCache.invalidBounds.value();
+                    iBounds.include_aabb_in_bounds(aabb);
+                    iBounds = n->bounds.get_intersection_between_aabbs(iBounds);
+                }
+                else
+                    dCache.invalidBounds = n->bounds.get_intersection_between_aabbs(aabb);
+            }
         }
         return false;
     });
@@ -279,13 +292,8 @@ void DrawingProgramCache::refresh_all_draw_cache(const DrawData& drawData) {
     std::deque<std::shared_ptr<DrawingProgramCacheBVHNode>> nodeFlatList; // We want to render children before parents, so that parents can make use of the cached children
     traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](std::shared_ptr<DrawingProgramCacheBVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         if(node && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
-            if(!node->drawCache) {
+            if(!node->drawCache || node->drawCache.value().invalidBounds)
                 nodeFlatList.emplace_front(node);
-                for(auto& nodeChild : node->children) {
-                    if(!nodeChild->drawCache)
-                        nodeFlatList.emplace_front(nodeChild);
-                }
-            }
             return false;
         }
         return true;
@@ -298,23 +306,24 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     if(bvhNode->children.empty() && bvhNode->components.empty())
         return;
 
-    bvhNode->drawCache = std::nullopt;
     DrawingProgramCacheBVHNode::DrawCacheData drawCache;
+    if(bvhNode->drawCache) {
+        drawCache = bvhNode->drawCache.value();
+        bvhNode->drawCache = std::nullopt; // Ensure drawCache is nullopt, so that the draw_components_to_canvas function doesnt use it while drawing
+    }
+    else {
+        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode->resolution.x(), bvhNode->resolution.y());
+        #ifdef USE_SKIA_BACKEND_GRAPHITE
+            drawCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
+        #elif USE_SKIA_BACKEND_GANESH
+            drawCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
+        #endif
 
-    SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode->resolution.x(), bvhNode->resolution.y());
-    sk_sp<SkSurface> drawCacheSurface;
-    #ifdef USE_SKIA_BACKEND_GRAPHITE
-        drawCacheSurface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
-    #elif USE_SKIA_BACKEND_GANESH
-        drawCacheSurface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
-    #endif
+        if(!drawCache.surface)
+            throw std::runtime_error("[DrawingProgramCache::refresh_draw_cache] Could not make cache surface");
+    }
 
-    if(!drawCacheSurface)
-        throw std::runtime_error("[DrawingProgramCache::refresh_draw_cache] Could not make cache surface");
-
-    SkCanvas* cacheCanvas = drawCacheSurface->getCanvas();
-
-    cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+    SkCanvas* cacheCanvas = drawCache.surface->getCanvas();
 
     DrawData cacheDrawData = drawData;
     cacheDrawData.cam.c = bvhNode->coords;
@@ -322,8 +331,28 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     cacheDrawData.cam.set_viewing_area(bvhNode->resolution.cast<float>());
     cacheDrawData.refresh_draw_optimizing_values();
 
-    draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement);
-    drawCache.img = drawCacheSurface->makeImageSnapshot()->withDefaultMipmaps();
+    if(drawCache.invalidBounds) {
+        auto& iBounds = drawCache.invalidBounds.value();
+        WorldVec bDim = bvhNode->bounds.dim();
+        //std::cout << "\niMin: " << iBounds.min.x() << " " << iBounds.min.y() << "\niMax: " << iBounds.max.x() << " " << iBounds.max.y() << "\nbMin: " << bvhNode->bounds.min.x() << " " << bvhNode->bounds.min.y() << "\nbMax: " << bvhNode->bounds.max.x() << " " << bvhNode->bounds.max.y() << "\nbDim: " << bDim.x() << " " << bDim.y();
+        Vector2f clipBoundMin{static_cast<float>((iBounds.min.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
+                              static_cast<float>((iBounds.min.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
+        Vector2f clipBoundMax{static_cast<float>((iBounds.max.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
+                              static_cast<float>((iBounds.max.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
+        SkRect clipRect = SkRect::MakeLTRB(clipBoundMin.x(), clipBoundMin.y(), clipBoundMax.x(), clipBoundMax.y());
+        //std::cout << "\ncMin: " << clipBoundMin.x() << " " << clipBoundMin.y() << "\ncMax: " << clipBoundMax.x() << " " << clipBoundMax.y() << std::endl;
+        cacheCanvas->save();
+        cacheCanvas->clipRect(clipRect);
+        cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+        draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement, drawCache.invalidBounds);
+        cacheCanvas->restore();
+        drawCache.invalidBounds = std::nullopt;
+    }
+    else {
+        cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+        draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement, drawCache.invalidBounds);
+    }
+
     drawCache.lastRenderTime = std::chrono::steady_clock::now();
     drawCache.attachedCache = this;
 
@@ -342,14 +371,14 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     nodesWithCachedSurfaces.emplace(bvhNode);
 }
 
-void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, uint64_t* lastDrawnComponentPlacement) {
+void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, uint64_t* lastDrawnComponentPlacement, std::optional<SCollision::AABB<WorldScalar>> drawBounds) {
     uint64_t lastComponentDrawn = 0;
 
     std::vector<std::shared_ptr<DrawingProgramCacheBVHNode>> cachedNodesToDraw;
     std::vector<CollabListType::ObjectInfoPtr> uncachedCompsToDraw;
 
-    traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
-        if(node && node->drawCache && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
+    traverse_bvh_run_function(drawBounds.has_value() ? drawBounds.value() : drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+        if(node && node->drawCache && !node->drawCache.value().invalidBounds && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
             cachedNodesToDraw.emplace_back(node);
             return false;
         }
@@ -396,7 +425,7 @@ uint64_t DrawingProgramCache::draw_cache_image_to_canvas(SkCanvas* canvas, const
     SkPaint srcPaint;
     srcPaint.setBlendMode(SkBlendMode::kSrc);
 
-    canvas->drawImage(drawCache.img, 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &srcPaint);
+    canvas->drawImage(drawCache.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &srcPaint);
 
     canvas->restore();
 
