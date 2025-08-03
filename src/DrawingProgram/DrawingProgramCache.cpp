@@ -341,10 +341,10 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
         Vector2f clipBoundMax{static_cast<float>((iBounds.max.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
                               static_cast<float>((iBounds.max.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
 
-        SkIRect clipRect = SkIRect::MakeLTRB(std::max<int>(clipBoundMin.x() - 2, 0),
-                                             std::max<int>(clipBoundMin.y() - 2, 0),
-                                             std::min<int>(clipBoundMax.x() + 2, bvhNode->resolution.x() - 1),
-                                             std::min<int>(clipBoundMax.y() + 2, bvhNode->resolution.y() - 1));
+        SkIRect clipRect = SkIRect::MakeLTRB(clipBoundMin.x() - 2,
+                                             clipBoundMin.y() - 2,
+                                             clipBoundMax.x() + 2,
+                                             clipBoundMax.y() + 2);
 
         SCollision::AABB<float> clipRectBoundAABB{clipBoundMin - Vector2f{4, 4}, clipBoundMax + Vector2f{4, 4}};
         SCollision::AABB<WorldScalar> clipRectBoundAABBWorld{
