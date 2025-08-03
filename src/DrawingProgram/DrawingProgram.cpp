@@ -36,10 +36,6 @@ DrawingProgram::DrawingProgram(World& initWorld):
 {
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
 
-    components.updateCallback = [&]() {
-        if(&world == world.main.world.get())
-            world.main.drawProgCache.refresh = true;
-    };
     components.clientInsertCallback = [&](const CollabListType::ObjectInfoPtr& c) {
         if(addToCompCacheOnInsert)
             compCache.add_component(c);
@@ -579,26 +575,15 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         }
     }
     else {
-        if(world.main.drawProgCache.disableDrawCache) {
-            parallel_loop_all_components([&](auto& c) {
-                c->obj->calculate_draw_transform(drawData);
-            });
-            for(auto& c : components.client_list()) {
-                c->obj->draw(canvas, drawData);
-                c->obj->drawSetupData.shouldDraw = false;
-            }
-        }
-        else {
-            SkCanvas* drawProgCacheCanvas = world.main.drawProgCache.surface->getCanvas();
-            drawProgCacheCanvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
+        canvas->saveLayer(nullptr, nullptr);
+            canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             compCache.refresh_all_draw_cache(drawData);
-            compCache.draw_components_to_canvas(drawProgCacheCanvas, drawData);
-            drawProgCacheCanvas->saveLayerAlphaf(nullptr, 1.0f);
-            selection.draw_components(drawProgCacheCanvas, drawData);
-            drawProgCacheCanvas->restore();
-            canvas->drawImage(world.main.drawProgCache.surface->makeTemporaryImage(), 0, 0);
-            selection.draw_gui(canvas, drawData);
-        }
+            compCache.draw_components_to_canvas(canvas, drawData);
+            canvas->saveLayer(nullptr, nullptr);
+                selection.draw_components(canvas, drawData);
+            canvas->restore();
+        canvas->restore();
+        selection.draw_gui(canvas, drawData);
     }
 
     drawTool->draw(canvas, drawData);

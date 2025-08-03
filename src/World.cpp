@@ -31,10 +31,6 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
 
     netSource = worldInfo.netSource;
 
-    drawData.cam.changed = [&]() {
-        main.drawProgCache.refresh = true;
-    };
-
     if(worldInfo.conType == CONNECTIONTYPE_CLIENT || worldInfo.conType == CONNECTIONTYPE_SERVER)
         NetLibrary::init();
 

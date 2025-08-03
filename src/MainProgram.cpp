@@ -63,28 +63,6 @@ MainProgram::MainProgram():
     });
 }
 
-void MainProgram::init_draw_program_cache() {
-    if(window.size.x() < 0 || window.size.y() < 0)
-        return;
-    SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(window.size.x(), window.size.y());
-    #ifdef USE_SKIA_BACKEND_GRAPHITE
-        drawProgCache.surface = SkSurfaces::RenderTarget(window.recorder(), imgInfo, skgpu::Mipmapped::kNo, window.defaultMSAASurfaceProps);
-    #elif USE_SKIA_BACKEND_GANESH
-        drawProgCache.surface = SkSurfaces::RenderTarget(window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, window.defaultMSAASampleCount, &window.defaultMSAASurfaceProps);
-    #endif
-    if(!drawProgCache.surface)
-        throw std::runtime_error("[MainProgram::init_draw_program_cache] Could not make surface");
-    drawProgCache.canvas = drawProgCache.surface->getCanvas();
-
-    if(!drawProgCache.canvas)
-        throw std::runtime_error("[MainProgram::init_draw_program_cache] Could not create canvas");
-
-    drawProgCache.canvas->clear(SkColor4f{0, 0, 0, 0});
-
-    drawProgCache.refresh = true;
-}
-
-
 void MainProgram::update() {
     while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
     lastFrameTime = std::chrono::steady_clock::now();
@@ -117,8 +95,6 @@ void MainProgram::update() {
 
     std::shared_ptr<World> oldWorld = world;
     world = worlds[worldIndex];
-    if(oldWorld != world)
-        drawProgCache.refresh = true;
 
     deltaTime.update_time_since();
     deltaTime.update_time_point();

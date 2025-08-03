@@ -286,8 +286,6 @@ void resize_window(MainStruct& mS) {
         throw std::runtime_error("[resize_window] No canvas made");
 
 #endif
-
-    mS.m->init_draw_program_cache();
 }
 
 #ifdef __EMSCRIPTEN__

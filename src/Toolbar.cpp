@@ -221,7 +221,6 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
     toRet["jumpTransitionEasing"] = jumpTransitionEasing;
-    toRet["disableDrawCache"] = main.drawProgCache.disableDrawCache;
     toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
 
     json tablet;
@@ -273,7 +272,6 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
     j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
-    j.at("disableDrawCache").get_to(main.drawProgCache.disableDrawCache);
     j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);
 
     j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
@@ -1321,7 +1319,6 @@ void Toolbar::options_menu() {
                                             gui.text_label("Note: Requires restart to take effect. May cause bugs on Intel Graphics");
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
-                                        gui.checkbox_field("Disable Draw Cache", "Disable BVH Draw Cache", &main.drawProgCache.disableDrawCache);
                                         gui.pop_id();
                                         break;
                                     }

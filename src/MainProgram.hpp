@@ -30,14 +30,6 @@ class MainProgram {
 
         Vector3f userColor;
 
-        struct DrawingProgramImageCache {
-            bool refresh = true;
-            sk_sp<SkSurface> surface;
-            std::shared_ptr<DrawComponent> firstCompUpdate = nullptr;
-            SkCanvas* canvas;
-            bool disableDrawCache = false;
-        } drawProgCache;
-
         struct Window {
             Vector2i size = {-1, -1};
             Vector2i pos = {-1, -1};
@@ -85,8 +77,6 @@ class MainProgram {
         MainProgram();
         void update();
         void draw(SkCanvas* canvas);
-
-        void init_draw_program_cache();
 
         bool setToQuit = false;
         

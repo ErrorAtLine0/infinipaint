@@ -334,7 +334,6 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     if(drawCache.invalidBounds) {
         auto& iBounds = drawCache.invalidBounds.value();
         WorldVec bDim = bvhNode->bounds.dim();
-        //std::cout << "\niMin: " << iBounds.min.x() << " " << iBounds.min.y() << "\niMax: " << iBounds.max.x() << " " << iBounds.max.y() << "\nbMin: " << bvhNode->bounds.min.x() << " " << bvhNode->bounds.min.y() << "\nbMax: " << bvhNode->bounds.max.x() << " " << bvhNode->bounds.max.y() << "\nbDim: " << bDim.x() << " " << bDim.y();
 
         Vector2f clipBoundMin{static_cast<float>((iBounds.min.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
                               static_cast<float>((iBounds.min.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
@@ -352,7 +351,6 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
             bvhNode->coords.from_space(clipRectBoundAABB.max)
         };
 
-        //std::cout << "\ncMin: " << clipBoundMin.x() << " " << clipBoundMin.y() << "\ncMax: " << clipBoundMax.x() << " " << clipBoundMax.y() << std::endl;
         cacheCanvas->save();
         cacheCanvas->clipIRect(clipRect);
         cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
