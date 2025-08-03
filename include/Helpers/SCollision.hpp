@@ -174,6 +174,11 @@ namespace SCollision {
         }
     };
 
+    template <typename T> std::ostream& operator<<(std::ostream& os, const AABB<T>& a) {
+        return os << "min: [" << a.min.x() << " " << a.min.y() << "]\n"
+                  << "max: [" << a.max.x() << " " << a.max.y() << "]\n";
+    }
+
     template <typename T> const AABB<T>& get_bounds(const Circle<T>& c) { return c.bounds; }
     template <typename T> const AABB<T>& get_bounds(const Triangle<T>& c) { return c.bounds; }
     template <typename T> const AABB<T>& get_bounds(const AABB<T>& a) { return a; }

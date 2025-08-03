@@ -356,7 +356,9 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
         cacheCanvas->save();
         cacheCanvas->clipIRect(clipRect);
         cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-        draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement, clipRectBoundAABBWorld);
+        uint64_t lastDrawnComponentPlacementNew = 0;
+        draw_components_to_canvas(cacheCanvas, cacheDrawData, &lastDrawnComponentPlacementNew, clipRectBoundAABBWorld);
+        drawCache.lastDrawnComponentPlacement = std::max(lastDrawnComponentPlacementNew, drawCache.lastDrawnComponentPlacement);
         cacheCanvas->restore();
         drawCache.invalidBounds = std::nullopt;
     }
