@@ -6,6 +6,15 @@
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Parallel.hpp>
 
+#ifdef USE_SKIA_BACKEND_GRAPHITE
+    #include <include/gpu/graphite/Surface.h>
+#elif USE_SKIA_BACKEND_GANESH
+    #include <include/gpu/ganesh/GrDirectContext.h>
+    #include <include/gpu/ganesh/SkSurfaceGanesh.h>
+#endif
+
+#include <include/effects/SkImageFilters.h>
+
 #define ROTATION_POINT_RADIUS_MULTIPLIER 0.7f
 #define ROTATION_POINTS_DISTANCE 20.0f
 
@@ -392,7 +401,24 @@ void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& 
         selectionDrawData.refresh_draw_optimizing_values();
 
         cache.refresh_all_draw_cache(selectionDrawData);
-        cache.draw_components_to_canvas(canvas, selectionDrawData);
+
+        SkImageInfo imgInfo = canvas->imageInfo();
+        sk_sp<SkSurface> surface;
+        #ifdef USE_SKIA_BACKEND_GRAPHITE
+            surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
+        #elif USE_SKIA_BACKEND_GANESH
+            surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
+        #endif
+        if(!surface)
+            throw std::runtime_error("[DrawingProgramSelection::draw_components] Could not make temporary surface");
+
+        cache.draw_components_to_canvas(surface->getCanvas(), selectionDrawData);
+
+        SkPaint glowBlurP;
+        glowBlurP.setImageFilter(SkImageFilters::Blur(5, 5, nullptr));
+
+        canvas->drawImage(surface->makeTemporaryImage(), 0, 0, SkSamplingOptions{SkFilterMode::kLinear}, &glowBlurP);
+        canvas->drawImage(surface->makeTemporaryImage(), 0, 0, SkSamplingOptions{SkFilterMode::kLinear}, nullptr);
     }
 }
 
