@@ -399,14 +399,14 @@ namespace FixedPoint {
             }
     
             explicit operator float() const {
-                if(isReciprocal)
+                if(isReciprocal && val != UnderlyingNumber(0))
                     return 1.0f / static_cast<float>(val);
                 else
                     return static_cast<float>(val);
             }
     
             explicit operator double() const {
-                if(isReciprocal)
+                if(isReciprocal && val != UnderlyingNumber(0))
                     return 1.0 / static_cast<double>(val);
                 else
                     return static_cast<double>(val);
@@ -427,7 +427,7 @@ namespace FixedPoint {
             }
 
             explicit operator UnderlyingNumber() const {
-                if(isReciprocal)
+                if(isReciprocal && val != UnderlyingNumber(0))
                     return UnderlyingNumber(1) / val;
                 else
                     return val;
