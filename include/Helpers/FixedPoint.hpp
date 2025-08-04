@@ -459,10 +459,7 @@ namespace FixedPoint {
                     return Multiplier(val * a.val, false);
                 }
                 else if(isReciprocal && !a.isReciprocal) {
-                    if(abs(val) < abs(a.val))
-                        return Multiplier(a.val / val, false);
-                    else
-                        return Multiplier(val / a.val, true);
+                    return Multiplier(val * a.val, true);
                 }
                 else {
                     if(abs(val) < abs(a.val))

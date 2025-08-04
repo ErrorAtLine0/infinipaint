@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "Helpers/FixedPoint.hpp"
 #include <Helpers/MathExtras.hpp>
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Parallel.hpp>
@@ -275,15 +276,10 @@ void DrawingProgramSelection::update() {
                     WorldScalar centerToScaleCurrentNorm = centerToScaleCurrent.norm();
                     bool isAnyNumberZero = centerToScaleCurrentNorm == WorldScalar(0) || centerToScaleStartNorm == WorldScalar(0);
                     if(!isAnyNumberZero) {
-                        bool flipScale = centerToScaleStartNorm < centerToScaleCurrentNorm;
-                        WorldScalar scaleAmount;
-                        if(flipScale)
-                            scaleAmount = centerToScaleCurrentNorm / centerToScaleStartNorm;
-                        else
-                            scaleAmount = centerToScaleStartNorm / centerToScaleCurrentNorm;
+                        WorldMultiplier scaleAmount = WorldMultiplier(centerToScaleStartNorm) / WorldMultiplier(centerToScaleCurrentNorm);
 
                         selectionTransformCoords = startingSelectionTransformCoords;
-                        selectionTransformCoords.scale_about(scaleData.centerPos, WorldMultiplier(scaleAmount, flipScale));
+                        selectionTransformCoords.scale_about(scaleData.centerPos, scaleAmount);
                     }
                 }
                 else {
