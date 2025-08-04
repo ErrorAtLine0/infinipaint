@@ -318,9 +318,191 @@ namespace FixedPoint {
         private:
             T val;
     };
+
+    template <typename T, int bitFractionCount> class Multiplier {
+        public:
+            typedef Number<T, bitFractionCount> UnderlyingNumber;
+
+            Multiplier():
+                val(1),
+                isReciprocal(false)
+            {}
+
+            Multiplier(const UnderlyingNumber& initVal):
+                val(initVal),
+                isReciprocal(false)
+            {
+                if(val != UnderlyingNumber(0) && abs(val) < UnderlyingNumber(1)) {
+                    val = UnderlyingNumber(1) / val;
+                    isReciprocal = true;
+                }
+            }
+
+            Multiplier(const UnderlyingNumber& initVal, bool isReciprocal):
+                val(initVal),
+                isReciprocal(isReciprocal)
+            {
+                if(abs(val) == UnderlyingNumber(1))
+                    isReciprocal = false;
+            }
+    
+            explicit Multiplier(double initVal) {
+                if(std::abs(initVal) < 1.0) {
+                    val = UnderlyingNumber(1.0 / initVal);
+                    isReciprocal = true;
+                }
+                else {
+                    val = UnderlyingNumber(initVal);
+                    isReciprocal = false;
+                }
+            }
+    
+            explicit Multiplier(float initVal) {
+                if(std::abs(initVal) < 1.0) {
+                    val = UnderlyingNumber(1.0 / initVal);
+                    isReciprocal = true;
+                }
+                else {
+                    val = UnderlyingNumber(initVal);
+                    isReciprocal = false;
+                }
+            }
+    
+            explicit Multiplier(int64_t initVal) {
+                val = UnderlyingNumber(initVal);
+                isReciprocal = false;
+            }
+    
+            explicit Multiplier(int32_t initVal) {
+                val = UnderlyingNumber(initVal);
+                isReciprocal = false;
+            }
+    
+            explicit Multiplier(int16_t initVal) {
+                val = UnderlyingNumber(initVal);
+                isReciprocal = false;
+            }
+    
+            explicit Multiplier(uint64_t initVal) {
+                val = UnderlyingNumber(initVal);
+                isReciprocal = false;
+            }
+    
+            explicit Multiplier(uint32_t initVal) {
+                val = UnderlyingNumber(initVal);
+                isReciprocal = false;
+            }
+    
+            explicit Multiplier(uint16_t initVal) {
+                val = UnderlyingNumber(initVal);
+                isReciprocal = false;
+            }
+    
+            explicit operator float() const {
+                if(isReciprocal)
+                    return 1.0f / static_cast<float>(val);
+                else
+                    return static_cast<float>(val);
+            }
+    
+            explicit operator double() const {
+                if(isReciprocal)
+                    return 1.0 / static_cast<double>(val);
+                else
+                    return static_cast<double>(val);
+            }
+    
+            explicit operator int64_t() const {
+                if(isReciprocal)
+                    return 0;
+                else
+                    return static_cast<int64_t>(val);
+            }
+    
+            explicit operator uint64_t() const {
+                if(isReciprocal)
+                    return 0;
+                else
+                    return static_cast<uint64_t>(val);
+            }
+
+            explicit operator UnderlyingNumber() const {
+                if(isReciprocal)
+                    return UnderlyingNumber(1) / val;
+                else
+                    return val;
+            }
+
+            Multiplier multiply_double(double a) const {
+                return (*this) * Multiplier(a);
+            }
+
+            Multiplier divide_double(double a) const {
+                return (*this) / Multiplier(a);
+            }
+
+            Multiplier operator*(const Multiplier& a) const {
+                return (*this) / Multiplier(a.val, !a.isReciprocal);
+            }
+
+            Multiplier operator/(const Multiplier& a) const {
+                if(val == UnderlyingNumber(0))
+                    return Multiplier(0);
+
+                if(!isReciprocal && !a.isReciprocal) {
+                    if(abs(val) < abs(a.val))
+                        return Multiplier(a.val / val, true);
+                    else
+                        return Multiplier(val / a.val, false);
+                }
+                else if(!isReciprocal && a.isReciprocal) {
+                    return Multiplier(val * a.val, false);
+                }
+                else if(isReciprocal && !a.isReciprocal) {
+                    if(abs(val) < abs(a.val))
+                        return Multiplier(a.val / val, false);
+                    else
+                        return Multiplier(val / a.val, true);
+                }
+                else {
+                    if(abs(val) < abs(a.val))
+                        return Multiplier(a.val / val, false);
+                    else
+                        return Multiplier(val / a.val, true);
+                }
+            }
+
+            bool operator==(const Multiplier& other) const {
+                return (val == other.val) && (isReciprocal == other.isReciprocal || val == UnderlyingNumber(1));
+            }
+
+            bool operator!=(const Multiplier& other) const {
+                return !((*this) == other);
+            }
+        private:
+            Number<T, bitFractionCount> val;
+            bool isReciprocal;
+    };
+
+    template <typename Mult> Mult::UnderlyingNumber operator*(const Mult& a, const typename Mult::UnderlyingNumber& b) {
+        return static_cast<Mult::UnderlyingNumber>(a * Multiplier(b));
+    }
+
+    template <typename Mult> Mult::UnderlyingNumber operator*(const typename Mult::UnderlyingNumber& b, const Mult& a) {
+        return static_cast<Mult::UnderlyingNumber>(a * Multiplier(b));
+    }
+
+    template <typename Mult> Mult::UnderlyingNumber operator/(const Mult& a, const typename Mult::UnderlyingNumber& b) {
+        return static_cast<Mult::UnderlyingNumber>(a / Multiplier(b));
+    }
+
+    template <typename Mult> Mult::UnderlyingNumber operator/(const typename Mult::UnderlyingNumber& a, const Mult& b) {
+        return static_cast<Mult::UnderlyingNumber>(Multiplier(a) / b);
+    }
 }
 
 typedef FixedPoint::Number<boost::multiprecision::cpp_int, 32> WorldScalar;
+typedef FixedPoint::Multiplier<boost::multiprecision::cpp_int, 32> WorldMultiplier;
 
 namespace Eigen {
   template<> struct NumTraits<WorldScalar> : GenericNumTraits<WorldScalar>
@@ -343,4 +525,20 @@ namespace Eigen {
       MulCost = 100
     };
   };
+}
+
+namespace FixedPoint {
+    template <typename Mult> Eigen::Vector<typename Mult::UnderlyingNumber, 2> multiplier_vec_mult(const Eigen::Vector<typename Mult::UnderlyingNumber, 2>& a, const Mult& m) {
+        auto toRet = a;
+        toRet.x() = toRet.x() * m;
+        toRet.y() = toRet.y() * m;
+        return toRet;
+    }
+    
+    template <typename Mult> Eigen::Vector<typename Mult::UnderlyingNumber, 2> multiplier_vec_div(const Eigen::Vector<typename Mult::UnderlyingNumber, 2>& a, const Mult& m) {
+        auto toRet = a;
+        toRet.x() = toRet.x() / m;
+        toRet.y() = toRet.y() / m;
+        return toRet;
+    }
 }

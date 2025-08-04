@@ -283,7 +283,7 @@ void DrawingProgramSelection::update() {
                             scaleAmount = centerToScaleStartNorm / centerToScaleCurrentNorm;
 
                         selectionTransformCoords = startingSelectionTransformCoords;
-                        selectionTransformCoords.scale_about(scaleData.centerPos, scaleAmount, flipScale);
+                        selectionTransformCoords.scale_about(scaleData.centerPos, WorldMultiplier(scaleAmount, flipScale));
                     }
                 }
                 else {
@@ -313,9 +313,9 @@ void DrawingProgramSelection::update() {
             deselect_all();
         else if(drawP.world.main.input.key(InputManager::KEY_DRAW_DELETE).pressed)
             delete_all();
-        else if(drawP.world.main.input.key(InputManager::KEY_COPY).pressed && startingSelectionTransformCoords == CoordSpaceHelper())
+        else if(drawP.world.main.input.key(InputManager::KEY_COPY).pressed && startingSelectionTransformCoords == CoordSpaceHelperTransform())
             selection_to_clipboard();
-        else if(drawP.world.main.input.key(InputManager::KEY_CUT).pressed && startingSelectionTransformCoords == CoordSpaceHelper()) {
+        else if(drawP.world.main.input.key(InputManager::KEY_CUT).pressed && startingSelectionTransformCoords == CoordSpaceHelperTransform()) {
             selection_to_clipboard();
             delete_all();
         }
@@ -448,7 +448,7 @@ void DrawingProgramSelection::reset_selection_data() {
 }
 
 void DrawingProgramSelection::reset_transform_data() {
-    selectionTransformCoords = CoordSpaceHelper();
+    selectionTransformCoords = CoordSpaceHelperTransform();
     transformOpHappening = TransformOperation::NONE;
     translateData = TranslationData();
     scaleData = ScaleData();

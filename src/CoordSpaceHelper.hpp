@@ -12,6 +12,8 @@
 class World;
 struct DrawData;
 
+WorldVec rotate_world_coord(const WorldVec& a, double rotationAngle);
+
 class CoordSpaceHelper {
     public:
         template <typename Archive> void save(Archive& a) const {
@@ -82,8 +84,8 @@ class CoordSpaceHelper {
         void translate(const WorldVec& translation);
         void scale(const WorldScalar& scaleAmount);
         void rotate_about(const WorldVec& rotatePos, double angle);
-        void scale_about_double(const WorldVec& scalePos, double scaleAmount);
         void scale_about(const WorldVec& scalePos, const WorldScalar& scaleAmount, bool flipScale);
+        void scale_about_double(const WorldVec& scalePos, double scaleAmount);
         void set_rotation(double newRotation);
 
         template <size_t S> std::array<Vector2f, S> to_space(const std::array<WorldVec, S>& coord) const {

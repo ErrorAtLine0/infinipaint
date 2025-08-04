@@ -1,5 +1,6 @@
 #pragma once
 #include "DrawingProgramCache.hpp"
+#include "../CoordSpaceHelperTransform.hpp"
 
 class DrawingProgram;
 
@@ -40,7 +41,7 @@ class DrawingProgramSelection {
 
         std::array<WorldVec, 4> selectionRectPoints;
 
-        CoordSpaceHelper selectionTransformCoords;
+        CoordSpaceHelperTransform selectionTransformCoords;
         std::unordered_set<CollabListType::ObjectInfoPtr> selectedSet;
         DrawingProgramCache cache;
         DrawingProgram& drawP;
@@ -53,7 +54,7 @@ class DrawingProgramSelection {
             ROTATE
         } transformOpHappening = TransformOperation::NONE;
 
-        CoordSpaceHelper startingSelectionTransformCoords;
+        CoordSpaceHelperTransform startingSelectionTransformCoords;
 
         struct TranslationData {
             WorldVec startPos;
