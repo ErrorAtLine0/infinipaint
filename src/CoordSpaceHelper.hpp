@@ -85,6 +85,7 @@ class CoordSpaceHelper {
         void scale(const WorldScalar& scaleAmount);
         void rotate_about(const WorldVec& rotatePos, double angle);
         void scale_about(const WorldVec& scalePos, const WorldScalar& scaleAmount, bool flipScale);
+        void scale_about(const WorldVec& scalePos, const WorldMultiplier& scaleAmount);
         void scale_about_double(const WorldVec& scalePos, double scaleAmount);
         void set_rotation(double newRotation);
 

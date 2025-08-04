@@ -44,6 +44,7 @@ class DrawingProgramSelection {
         std::array<WorldVec, 4> selectionRectPoints;
 
         CoordSpaceHelperTransform selectionTransformCoords;
+
         std::unordered_set<CollabListType::ObjectInfoPtr> selectedSet;
         DrawingProgramCache cache;
         DrawingProgram& drawP;
@@ -55,8 +56,6 @@ class DrawingProgramSelection {
             ROTATE_RELOCATE_CENTER,
             ROTATE
         } transformOpHappening = TransformOperation::NONE;
-
-        CoordSpaceHelperTransform startingSelectionTransformCoords;
 
         struct TranslationData {
             WorldVec startPos;

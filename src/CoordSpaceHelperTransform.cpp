@@ -1,35 +1,106 @@
 #include "CoordSpaceHelperTransform.hpp"
+#include "CoordSpaceHelper.hpp"
+#include "nlohmann/json.hpp"
+
+CoordSpaceHelperTransform::CoordSpaceHelperTransform() {}
+
+CoordSpaceHelperTransform::CoordSpaceHelperTransform(const WorldVec& translationPos):
+    transformType(TransformType::TRANSLATE),
+    pos(translationPos)
+{}
+
+CoordSpaceHelperTransform::CoordSpaceHelperTransform(const WorldVec& rotatePos, double angle):
+    transformType(TransformType::ROTATE),
+    pos(rotatePos),
+    rotation(angle)
+{}
+
+CoordSpaceHelperTransform::CoordSpaceHelperTransform(const WorldVec& scalePos, const WorldMultiplier& inverseScaleAmount):
+    transformType(TransformType::SCALE),
+    pos(scalePos),
+    inverseScale(inverseScaleAmount)
+{}
 
 bool CoordSpaceHelperTransform::operator==(const CoordSpaceHelperTransform& otherCoords) const {
-    return rotation == otherCoords.rotation && pos == otherCoords.pos && inverseScale == otherCoords.inverseScale;
+    return otherCoords.transformType == transformType && rotation == otherCoords.rotation && pos == otherCoords.pos && inverseScale == otherCoords.inverseScale;
 }
 
 bool CoordSpaceHelperTransform::operator!=(const CoordSpaceHelperTransform& otherCoords) const {
     return rotation != otherCoords.rotation || pos != otherCoords.pos || inverseScale != otherCoords.inverseScale;
 }
 
-WorldVec CoordSpaceHelperTransform::to_space_world(const WorldVec& coord) const {
-    return rotate_world_coord(FixedPoint::multiplier_vec_div((coord - pos), inverseScale), -rotation);
-}
+//WorldVec CoordSpaceHelperTransform::to_space_world(const WorldVec& coord) const {
+//    switch(transformType) {
+//        case TransformType::NONE:
+//            return coord;
+//        case TransformType::TRANSLATE:
+//            return (coord - pos);
+//        case TransformType::SCALE:
+//            return pos + FixedPoint::multiplier_vec_div(coord - pos, inverseScale);
+//        case TransformType::ROTATE:
+//            return rotate_world_coord(coord + pos, -rotation) - pos;
+//    }
+//    return coord;
+//}
 
 WorldVec CoordSpaceHelperTransform::from_space_world(const WorldVec& coord) const {
-    return FixedPoint::multiplier_vec_mult(rotate_world_coord(coord, rotation), inverseScale) + pos;
+    switch(transformType) {
+        case TransformType::NONE:
+            return coord;
+        case TransformType::TRANSLATE:
+            return (coord + pos);
+        case TransformType::SCALE:
+            return FixedPoint::multiplier_vec_div(coord - pos, inverseScale) + pos;
+        case TransformType::ROTATE:
+            return pos + rotate_world_coord(coord - pos, rotation);
+    }
+    return coord;
 }
 
 CoordSpaceHelper CoordSpaceHelperTransform::other_coord_space_to_this_space(const CoordSpaceHelper& other) const {
-    CoordSpaceHelper toRet;
-    toRet.pos = to_space_world(other.pos);
-    toRet.rotation = other.rotation - rotation;
-    toRet.inverseScale = other.inverseScale / inverseScale;
-    return toRet;
+    switch(transformType) {
+        case TransformType::NONE:
+            return other;
+        case TransformType::TRANSLATE: {
+            auto toRet = other;
+            toRet.translate(-pos);
+            return toRet;
+        }
+        case TransformType::SCALE: {
+            auto toRet = other;
+            toRet.scale_about(pos, WorldMultiplier(1) / inverseScale);
+            return toRet;
+        }
+        case TransformType::ROTATE: {
+            auto toRet = other;
+            toRet.rotate_about(pos, -rotation);
+            return toRet;
+        }
+    }
+    return other;
 }
 
 CoordSpaceHelper CoordSpaceHelperTransform::other_coord_space_from_this_space(const CoordSpaceHelper& other) const {
-    CoordSpaceHelper toRet;
-    toRet.pos = from_space_world(other.pos);
-    toRet.rotation = other.rotation + rotation;
-    toRet.inverseScale = other.inverseScale * inverseScale;
-    return toRet;
+    switch(transformType) {
+        case TransformType::NONE:
+            return other;
+        case TransformType::TRANSLATE: {
+            auto toRet = other;
+            toRet.translate(pos);
+            return toRet;
+        }
+        case TransformType::SCALE: {
+            auto toRet = other;
+            toRet.scale_about(pos, inverseScale);
+            return toRet;
+        }
+        case TransformType::ROTATE: {
+            auto toRet = other;
+            toRet.rotate_about(pos, rotation);
+            return toRet;
+        }
+    }
+    return other;
 }
 
 void CoordSpaceHelperTransform::translate(const WorldVec& translation) {
@@ -54,16 +125,4 @@ void CoordSpaceHelperTransform::set_rotation(double newRotation) {
         rotation -= 2.0 * std::numbers::pi;
     while (rotation < 0.0)
         rotation += 2.0 * std::numbers::pi;
-}
-
-void CoordSpaceHelperTransform::scale_about(const WorldVec& scalePos, const WorldMultiplier& scaleAmount) {
-    inverseScale = inverseScale / scaleAmount;
-    WorldVec mVec = pos - scalePos;
-    pos = scalePos + FixedPoint::multiplier_vec_div(mVec, scaleAmount);
-}
-
-std::ostream& operator<<(std::ostream& os, const CoordSpaceHelperTransform& a) {
-    return os << "pos: [" << a.pos.x() << " " << a.pos.y() << "]\n"
-              << "inverseScale: " << static_cast<WorldScalar>(a.inverseScale) << "\n"
-              << "rotation: " << a.rotation << "\n";
 }

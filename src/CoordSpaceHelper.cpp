@@ -72,6 +72,12 @@ void CoordSpaceHelper::scale_about_double(const WorldVec& scalePos, double scale
     }
 }
 
+void CoordSpaceHelper::scale_about(const WorldVec& scalePos, const WorldMultiplier& scaleAmount) {
+    inverseScale = inverseScale / scaleAmount;
+    WorldVec mVec = pos - scalePos;
+    pos = scalePos + FixedPoint::multiplier_vec_div(mVec, scaleAmount);
+}
+
 void CoordSpaceHelper::scale_about(const WorldVec& scalePos, const WorldScalar& scaleAmount, bool flipScale) {
     if(!flipScale) {
         inverseScale /= scaleAmount;

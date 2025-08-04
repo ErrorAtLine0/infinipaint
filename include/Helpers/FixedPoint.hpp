@@ -442,6 +442,8 @@ namespace FixedPoint {
             }
 
             Multiplier operator*(const Multiplier& a) const {
+                if(a.val == UnderlyingNumber(0))
+                    return Multiplier(0);
                 return (*this) / Multiplier(a.val, !a.isReciprocal);
             }
 

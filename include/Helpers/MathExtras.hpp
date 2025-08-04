@@ -269,3 +269,9 @@ template <typename T, int S> T transform_scalar(const Transform<T, 2, S>& transf
 template <typename T> std::array<Vector<T, 2>, 4> triangle_from_rect_points(const Vector<T, 2>& min, const Vector<T, 2>& max) {
     return {min, {min.x(), max.y()}, max, {max.x(), min.y()}};
 }
+
+template <typename T> std::string vec_pretty(const Vector<T, 2>& a) {
+    std::stringstream ss;
+    ss << "[" << a.x() << ", " << a.y() << "]";
+    return ss.str();
+}
