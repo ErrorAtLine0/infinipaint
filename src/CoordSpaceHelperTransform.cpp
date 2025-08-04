@@ -61,3 +61,9 @@ void CoordSpaceHelperTransform::scale_about(const WorldVec& scalePos, const Worl
     WorldVec mVec = pos - scalePos;
     pos = scalePos + FixedPoint::multiplier_vec_div(mVec, scaleAmount);
 }
+
+std::ostream& operator<<(std::ostream& os, const CoordSpaceHelperTransform& a) {
+    return os << "pos: [" << a.pos.x() << " " << a.pos.y() << "]\n"
+              << "inverseScale: " << static_cast<WorldScalar>(a.inverseScale) << "\n"
+              << "rotation: " << a.rotation << "\n";
+}

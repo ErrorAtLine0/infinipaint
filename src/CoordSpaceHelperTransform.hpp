@@ -33,3 +33,6 @@ class CoordSpaceHelperTransform {
         WorldMultiplier inverseScale{1};
         double rotation = 0.0;
 };
+
+std::ostream& operator<<(std::ostream& os, const CoordSpaceHelperTransform& a);
+

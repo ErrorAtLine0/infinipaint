@@ -92,7 +92,7 @@ void DrawingProgramSelection::calculate_aabb() {
     }
 }
 
-void DrawingProgramSelection::deselect_all() {
+void DrawingProgramSelection::deselect_all(bool readdObjectsToCache) {
     if(is_something_selected()) {
         std::vector<CollabListType::ObjectInfoPtr> a(selectedSet.begin(), selectedSet.end());
         std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsFrom;
@@ -106,11 +106,14 @@ void DrawingProgramSelection::deselect_all() {
             obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
             obj->obj->commit_transform(drawP, false);
         }, isSingleThread);
-        if(!isSingleThread)
-            drawP.force_rebuild_cache();
-        else {
-            for(auto& obj : a)
-                drawP.compCache.add_component(obj);
+
+        if(readdObjectsToCache) {
+            if(!isSingleThread)
+                drawP.force_rebuild_cache();
+            else {
+                for(auto& obj : a)
+                    drawP.compCache.add_component(obj);
+            }
         }
 
         reset_transform_data();
@@ -174,6 +177,12 @@ void DrawingProgramSelection::deselect_all() {
             }
         });
     }
+}
+
+void DrawingProgramSelection::commit_transform_selection() {
+    auto selectedSetTemp = selectedSet;
+    deselect_all(false);
+    set_to_selection(selectedSetTemp);
 }
 
 void DrawingProgramSelection::invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt) {
@@ -259,8 +268,8 @@ void DrawingProgramSelection::update() {
                     selectionTransformCoords.translate(drawP.world.get_mouse_world_pos() - translateData.startPos);
                 }
                 else {
-                    transformOpHappening = TransformOperation::NONE;
-                    calculate_initial_rotate_center_location();
+                    commit_transform_selection();
+                    return;
                 }
                 break;
             case TransformOperation::SCALE:
@@ -275,6 +284,7 @@ void DrawingProgramSelection::update() {
                     WorldScalar centerToScaleStartNorm = centerToScaleStart.norm();
                     WorldScalar centerToScaleCurrentNorm = centerToScaleCurrent.norm();
                     bool isAnyNumberZero = centerToScaleCurrentNorm == WorldScalar(0) || centerToScaleStartNorm == WorldScalar(0);
+
                     if(!isAnyNumberZero) {
                         WorldMultiplier scaleAmount = WorldMultiplier(centerToScaleStartNorm) / WorldMultiplier(centerToScaleCurrentNorm);
 
@@ -283,8 +293,8 @@ void DrawingProgramSelection::update() {
                     }
                 }
                 else {
-                    transformOpHappening = TransformOperation::NONE;
-                    calculate_initial_rotate_center_location();
+                    commit_transform_selection();
+                    return;
                 }
                 break;
             case TransformOperation::ROTATE_RELOCATE_CENTER:
@@ -300,8 +310,10 @@ void DrawingProgramSelection::update() {
                     selectionTransformCoords = startingSelectionTransformCoords;
                     selectionTransformCoords.rotate_about(selectionTransformCoords.from_space_world(rotateData.centerPos), rotateData.rotationAngle);
                 }
-                else
-                    transformOpHappening = TransformOperation::NONE;
+                else {
+                    commit_transform_selection();
+                    return;
+                }
                 break;
         }
 
@@ -391,6 +403,17 @@ Vector2f DrawingProgramSelection::get_rotation_point_pos_from_angle(double angle
 
 void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {
     if(is_something_selected()) {
+        selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
+        selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
+        selectionRectPoints[2] = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
+        selectionRectPoints[3] = selectionTransformCoords.from_space_world(initialSelectionAABB.top_right());
+
+        scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(initialSelectionAABB.max));
+        rotateData.centerHandlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(rotateData.centerPos));
+        rotateData.handlePoint = get_rotation_point_pos_from_angle(rotateData.rotationAngle);
+
+        rebuild_cam_space();
+
         DrawData selectionDrawData = drawData;
         selectionDrawData.cam.c = selectionTransformCoords.other_coord_space_to_this_space(selectionDrawData.cam.c);
         selectionDrawData.cam.set_viewing_area(drawP.world.main.window.size.cast<float>());

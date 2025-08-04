@@ -8,7 +8,7 @@ class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC);
-        void deselect_all();
+        void deselect_all(bool readdObjectsToCache = true);
         void update();
         void draw_components(SkCanvas* canvas, const DrawData& drawData);
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
@@ -29,6 +29,8 @@ class DrawingProgramSelection {
         void selection_to_clipboard();
         void paste_clipboard();
         void set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection);
+
+        void commit_transform_selection();
 
         void calculate_aabb();
         void calculate_initial_rotate_center_location();
