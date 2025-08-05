@@ -35,23 +35,23 @@ void DrawingProgramSelection::erase_component(const CollabListType::ObjectInfoPt
     }
 }
 
-std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld) {
-    std::function<void(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> fullyCollidedFunc = [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
-        if(bvhNode) {
-            for(auto& c : bvhNode->components)
-                selectedComponents.emplace(c);
-            for(auto& p : bvhNode->children)
-                fullyCollidedFunc(p);
-        }
-    };
+void DrawingProgramSelection::fully_collided_erase_select_objects_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
+    if(bvhNode) {
+        for(auto& c : bvhNode->components)
+            selectedComponents.emplace(c);
+        for(auto& p : bvhNode->children)
+            fully_collided_erase_select_objects_func(selectedComponents, p);
+    }
+}
 
+std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld) {
     auto toRet = [&](const auto& bvhNode, auto& comps) {
         if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max)) &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right())) &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left()))) {
-            fullyCollidedFunc(bvhNode);
+            fully_collided_erase_select_objects_func(selectedComponents, bvhNode);
             drawP.compCache.invalidate_cache_at_aabb_before_pos(bvhNode->bounds, 0);
             return true;
         }
