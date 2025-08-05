@@ -114,7 +114,7 @@ void DrawCamera::update_main(World& w) {
     }
     else {
         bool middleClickDown = w.main.input.mouse.middleDown || w.main.input.pen.buttons[w.main.toolbar.tabletOptions.middleClickButton].held;
-        bool newIsMiddleClickZooming = middleClickDown && w.main.input.key(InputManager::KEY_ZOOM_CTRL).held;
+        bool newIsMiddleClickZooming = middleClickDown && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held;
         if(newIsMiddleClickZooming && !isMiddleClickZooming) {
             startZoomMousePos = w.get_mouse_world_pos();
             startZoomVal = c.inverseScale;

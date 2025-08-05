@@ -15,7 +15,6 @@ class RectSelectTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual bool prevent_undo_or_redo() override;
-
     private:
         struct RectSelectControls {
             int selectionMode = 0;

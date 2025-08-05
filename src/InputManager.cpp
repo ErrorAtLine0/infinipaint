@@ -227,13 +227,15 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             set_key_down(e, KEY_TEXT_HOME);
             break;
         case SDLK_LSHIFT:
-            set_key_down(e, KEY_ZOOM_SHIFT);
             set_key_down(e, KEY_TEXT_SHIFT);
-            set_key_down(e, KEY_EQUAL_DIMENSIONS);
+            set_key_down(e, KEY_GENERIC_LSHIFT);
+            break;
+        case SDLK_LALT:
+            set_key_down(e, KEY_GENERIC_LALT);
             break;
         case SDLK_LCTRL:
             set_key_down(e, KEY_TEXT_CTRL);
-            set_key_down(e, KEY_ZOOM_CTRL);
+            set_key_down(e, KEY_GENERIC_LCTRL);
             break;
         case SDLK_C:
             // Use either Ctrl or Meta (command for Mac) keys. We do either instead of checking, since checking can get complicated on Emscripten
@@ -297,13 +299,15 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
             set_key_up(e, KEY_TEXT_HOME);
             break;
         case SDLK_LSHIFT:
-            set_key_up(e, KEY_ZOOM_SHIFT);
             set_key_up(e, KEY_TEXT_SHIFT);
-            set_key_up(e, KEY_EQUAL_DIMENSIONS);
+            set_key_up(e, KEY_GENERIC_LSHIFT);
+            break;
+        case SDLK_LALT:
+            set_key_up(e, KEY_GENERIC_LALT);
             break;
         case SDLK_LCTRL:
             set_key_up(e, KEY_TEXT_CTRL);
-            set_key_up(e, KEY_ZOOM_CTRL);
+            set_key_up(e, KEY_GENERIC_LCTRL);
             break;
         case SDLK_C:
             set_key_up(e, KEY_TEXT_COPY);

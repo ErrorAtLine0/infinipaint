@@ -42,25 +42,18 @@ void LassoSelectTool::gui_toolbox() {
 }
 
 void LassoSelectTool::switch_tool(DrawingProgramToolType newTool) {
-    drawP.selection.deselect_all();
-    controls.lassoPoints.clear();
-    controls = LassoSelectControls();
+    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT)
+        drawP.selection.deselect_all();
 }
 
 void LassoSelectTool::tool_update() {
     switch(controls.selectionMode) {
         case 0: {
-            if(drawP.controls.leftClick) {
-                if(drawP.selection.is_something_selected()) {
-                    if(!drawP.selection.mouse_collided_with_selection())
-                        switch_tool(get_type());
-                }
-                else {
-                    switch_tool(get_type());
-                    controls.coords = drawP.world.drawData.cam.c;
-                    controls.lassoPoints.emplace_back(controls.coords.get_mouse_pos(drawP.world));
-                    controls.selectionMode = 1;
-                }
+            if(drawP.controls.leftClick && !drawP.selection.is_being_transformed()) {
+                controls = LassoSelectControls();
+                controls.coords = drawP.world.drawData.cam.c;
+                controls.lassoPoints.emplace_back(controls.coords.get_mouse_pos(drawP.world));
+                controls.selectionMode = 1;
             }
             break;
         }
@@ -91,12 +84,16 @@ void LassoSelectTool::tool_update() {
 
                     cC.recalculate_bounds();
 
-                    drawP.selection.add_from_cam_coord_collider_to_selection(cC);
-
-                    controls.selectionMode = 0;
+                    if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+                        drawP.selection.add_from_cam_coord_collider_to_selection(cC);
+                    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                        drawP.selection.remove_from_cam_coord_collider_to_selection(cC);
+                    else {
+                        drawP.selection.deselect_all();
+                        drawP.selection.add_from_cam_coord_collider_to_selection(cC);
+                    }
                 }
-                else
-                    switch_tool(get_type());
+                controls.selectionMode = 0;
             }
             break;
         }

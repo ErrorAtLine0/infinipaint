@@ -285,6 +285,7 @@ void DrawingProgram::update() {
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EDIT).pressed)
         switch_to_tool(DrawingProgramToolType::EDIT);
 
+    selection.update();
     drawTool->tool_update();
 
     if(controls.leftClickReleased)
@@ -292,8 +293,6 @@ void DrawingProgram::update() {
 
     check_delayed_update_timers();
     check_updateable_components();
-
-    selection.update();
 
     if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
@@ -312,7 +311,7 @@ void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> 
 
 void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType) {
     if(newToolType != drawTool->get_type()) {
-        drawTool->switch_tool(drawTool->get_type());
+        drawTool->switch_tool(newToolType);
         drawTool = DrawingProgramToolBase::allocate_tool_type(*this, newToolType);
     }
 }

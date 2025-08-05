@@ -35,11 +35,7 @@ void DrawingProgramSelection::erase_component(const CollabListType::ObjectInfoPt
     }
 }
 
-void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC) {
-    auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
-
-    std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
-
+std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld) {
     std::function<void(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> fullyCollidedFunc = [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
         if(bvhNode) {
             for(auto& c : bvhNode->components)
@@ -48,7 +44,8 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
                 fullyCollidedFunc(p);
         }
     };
-    drawP.compCache.traverse_bvh_erase_function(cCWorld.bounds, [&](const auto& bvhNode, auto& comps) {
+
+    auto toRet = [&](const auto& bvhNode, auto& comps) {
         if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max)) &&
@@ -67,9 +64,43 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
             return false;
         });
         return false;
-    });
+    };
 
-    set_to_selection(selectedComponents);
+    return toRet;
+}
+
+void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC) {
+    auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
+    std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
+    drawP.compCache.traverse_bvh_erase_function(cCWorld.bounds, erase_select_objects_in_bvh_func(selectedComponents, cC, cCWorld));
+    add_to_selection(selectedComponents);
+}
+
+void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC) {
+    auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
+    std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
+    cache.traverse_bvh_erase_function(cCWorld.bounds, erase_select_objects_in_bvh_func(selectedComponents, cC, cCWorld));
+    std::erase_if(selectedSet, [&](auto& c) {
+        return selectedComponents.contains(c);
+    });
+    for(auto& obj : selectedComponents)
+        drawP.compCache.add_component(obj);
+    if(!is_something_selected()) {
+        reset_selection_data();
+        reset_transform_data();
+    }
+    else {
+        calculate_aabb();
+        calculate_initial_rotate_center_location();
+    }
+}
+
+void DrawingProgramSelection::add_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection) {
+    selectedSet.insert(newSelection.begin(), newSelection.end());
+    for(auto& obj : newSelection)
+        cache.add_component(obj);
+    calculate_aabb();
+    calculate_initial_rotate_center_location();
 }
 
 void DrawingProgramSelection::set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection) {
@@ -235,7 +266,7 @@ void DrawingProgramSelection::update() {
 
         switch(transformOpHappening) {
             case TransformOperation::NONE:
-                if(drawP.controls.leftClick) {
+                if(drawP.controls.leftClick && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
                     if(mouse_collided_with_scale_point()) {
                         scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
                         scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
@@ -251,8 +282,6 @@ void DrawingProgramSelection::update() {
                         translateData.startPos = drawP.world.get_mouse_world_pos();
                         transformOpHappening = TransformOperation::TRANSLATE;
                     }
-                    else
-                        deselect_all();
                 }
                 break;
             case TransformOperation::TRANSLATE:
@@ -323,6 +352,10 @@ void DrawingProgramSelection::update() {
     }
     else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed && !drawP.prevent_undo_or_redo())
         paste_clipboard();
+}
+
+bool DrawingProgramSelection::is_being_transformed() {
+    return transformOpHappening != TransformOperation::NONE;
 }
 
 void DrawingProgramSelection::paste_clipboard() {

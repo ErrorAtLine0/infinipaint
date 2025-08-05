@@ -62,7 +62,7 @@ void EllipseDrawTool::tool_update() {
             if(drawP.controls.leftClickHeld) {
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
                 Vector2f newPos = controls.intermediateItem->coords.get_mouse_pos(drawP.world);
-                if(drawP.world.main.input.key(InputManager::KEY_EQUAL_DIMENSIONS).held) {
+                if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
                     float height = std::fabs(controls.startAt.y() - newPos.y());
                     newPos.x() = controls.startAt.x() + (((newPos.x() - controls.startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
                 }

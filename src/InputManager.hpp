@@ -154,9 +154,9 @@ struct InputManager {
         KEY_TEXT_CTRL,
         KEY_TEXT_SELECTALL,
         KEY_TEXT_ESCAPE,
-        KEY_ZOOM_SHIFT,
-        KEY_ZOOM_CTRL,
-        KEY_EQUAL_DIMENSIONS,
+        KEY_GENERIC_LSHIFT,
+        KEY_GENERIC_LALT,
+        KEY_GENERIC_LCTRL,
         KEY_COUNT
     };
 
