@@ -92,96 +92,92 @@ void DrawingProgramSelection::calculate_aabb() {
     }
 }
 
-void DrawingProgramSelection::deselect_all(bool readdObjectsToCache) {
+void DrawingProgramSelection::deselect_all() {
     if(is_something_selected()) {
-        std::vector<CollabListType::ObjectInfoPtr> a(selectedSet.begin(), selectedSet.end());
-        std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsFrom;
-        for(auto& transformedObj : a)
-            transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
-
+        bool cacheWillRebuildAnyway = selectedSet.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
+        if(cacheWillRebuildAnyway)
+            drawP.force_rebuild_cache();
+        else {
+            for(auto& obj : selectedSet)
+                drawP.compCache.add_component(obj);
+        }
         reset_selection_data();
-
-        bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
-        parallel_loop_container(a, [&](auto& obj) {
-            obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
-            obj->obj->commit_transform(drawP, false);
-        }, isSingleThread);
-
-        if(readdObjectsToCache) {
-            if(!isSingleThread)
-                drawP.force_rebuild_cache();
-            else {
-                for(auto& obj : a)
-                    drawP.compCache.add_component(obj);
-            }
-        }
-
         reset_transform_data();
-
-        std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
-        std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
-        for(auto& transformedObj : a) {
-            transformsToSend.emplace_back(transformedObj->id, transformedObj->obj->coords);
-            transformsTo.emplace_back(transformedObj, transformedObj->obj->coords);
-        }
-        DrawComponent::client_send_transform_many(drawP, transformsToSend);
-
-        drawP.world.undo.push(UndoManager::UndoRedoPair{
-            [&, transformsFrom = transformsFrom]() {
-                std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
-                for(auto& [comp, coords] : transformsFrom) {
-                    auto lockObjInfo = comp->obj->collabListInfo.lock();
-                    if(lockObjInfo)
-                        transformsToSend.emplace_back(lockObjInfo->id, coords);
-                    else
-                        return false;
-                }
-
-                bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
-                parallel_loop_container(transformsFrom, [&](auto& p) {
-                    auto& [comp, coords] = p;
-                    comp->obj->coords = coords;
-                    comp->obj->commit_transform(drawP, isSingleThread);
-                }, isSingleThread);
-
-                DrawComponent::client_send_transform_many(drawP, transformsToSend);
-
-                if(!isSingleThread)
-                    drawP.force_rebuild_cache();
-
-                return true;
-            },
-            [&, transformsTo = transformsTo]() {
-                std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
-                for(auto& [comp, coords] : transformsTo) {
-                    auto lockObjInfo = comp->obj->collabListInfo.lock();
-                    if(lockObjInfo)
-                        transformsToSend.emplace_back(lockObjInfo->id, coords);
-                    else
-                        return false;
-                }
-
-                bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
-                parallel_loop_container(transformsTo, [&](auto& p) {
-                    auto& [comp, coords] = p;
-                    comp->obj->coords = coords;
-                    comp->obj->commit_transform(drawP, isSingleThread);
-                }, isSingleThread);
-
-                DrawComponent::client_send_transform_many(drawP, transformsToSend);
-
-                if(!isSingleThread)
-                    drawP.force_rebuild_cache();
-
-                return true;
-            }
-        });
     }
 }
 
 void DrawingProgramSelection::commit_transform_selection() {
     auto selectedSetTemp = selectedSet;
-    deselect_all(false);
+
+    std::vector<CollabListType::ObjectInfoPtr> a(selectedSet.begin(), selectedSet.end());
+    std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsFrom;
+    for(auto& transformedObj : a)
+        transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
+    bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
+    parallel_loop_container(a, [&](auto& obj) {
+        obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
+        obj->obj->commit_transform(drawP, false);
+    }, isSingleThread);
+    std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
+    std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+    for(auto& transformedObj : a) {
+        transformsToSend.emplace_back(transformedObj->id, transformedObj->obj->coords);
+        transformsTo.emplace_back(transformedObj, transformedObj->obj->coords);
+    }
+    DrawComponent::client_send_transform_many(drawP, transformsToSend);
+    drawP.world.undo.push(UndoManager::UndoRedoPair{
+        [&, transformsFrom = transformsFrom]() {
+            std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+            for(auto& [comp, coords] : transformsFrom) {
+                auto lockObjInfo = comp->obj->collabListInfo.lock();
+                if(lockObjInfo)
+                    transformsToSend.emplace_back(lockObjInfo->id, coords);
+                else
+                    return false;
+            }
+
+            bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
+            parallel_loop_container(transformsFrom, [&](auto& p) {
+                auto& [comp, coords] = p;
+                comp->obj->coords = coords;
+                comp->obj->commit_transform(drawP, isSingleThread);
+            }, isSingleThread);
+
+            DrawComponent::client_send_transform_many(drawP, transformsToSend);
+
+            if(!isSingleThread)
+                drawP.force_rebuild_cache();
+
+            return true;
+        },
+        [&, transformsTo = transformsTo]() {
+            std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+            for(auto& [comp, coords] : transformsTo) {
+                auto lockObjInfo = comp->obj->collabListInfo.lock();
+                if(lockObjInfo)
+                    transformsToSend.emplace_back(lockObjInfo->id, coords);
+                else
+                    return false;
+            }
+
+            bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
+            parallel_loop_container(transformsTo, [&](auto& p) {
+                auto& [comp, coords] = p;
+                comp->obj->coords = coords;
+                comp->obj->commit_transform(drawP, isSingleThread);
+            }, isSingleThread);
+
+            DrawComponent::client_send_transform_many(drawP, transformsToSend);
+
+            if(!isSingleThread)
+                drawP.force_rebuild_cache();
+
+            return true;
+        }
+    });
+
+    reset_selection_data();
+    reset_transform_data();
     set_to_selection(selectedSetTemp);
 }
 

@@ -8,7 +8,7 @@ class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC);
-        void deselect_all(bool readdObjectsToCache = true);
+        void deselect_all();
         void update();
         void draw_components(SkCanvas* canvas, const DrawData& drawData);
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
