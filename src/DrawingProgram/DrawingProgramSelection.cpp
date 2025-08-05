@@ -127,7 +127,7 @@ void DrawingProgramSelection::deselect_all() {
     if(is_something_selected()) {
         bool cacheWillRebuildAnyway = selectedSet.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
         if(cacheWillRebuildAnyway)
-            drawP.force_rebuild_cache();
+            drawP.compCache.test_rebuild(drawP.components.client_list(), true);
         else {
             for(auto& obj : selectedSet)
                 drawP.compCache.add_component(obj);

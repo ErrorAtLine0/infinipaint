@@ -339,7 +339,7 @@ void DrawingProgram::force_rebuild_cache() {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
     }
-    else if(drawTool->get_type() == DrawingProgramToolType::RECTSELECT)
+    else if(drawTool->get_type() == DrawingProgramToolType::RECTSELECT || drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
     else
         compCache.test_rebuild(components.client_list(), true);
