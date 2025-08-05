@@ -7,7 +7,7 @@
 #include "RectDrawTool.hpp"
 #include "EllipseDrawTool.hpp"
 #include "TextBoxTool.hpp"
-#include "InkDropperTool.hpp"
+#include "EyeDropperTool.hpp"
 #include "ScreenshotTool.hpp"
 #include "EditTool.hpp"
 
@@ -33,8 +33,8 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
             return std::make_unique<EllipseDrawTool>(drawP);
         case DrawingProgramToolType::TEXTBOX:
             return std::make_unique<TextBoxTool>(drawP);
-        case DrawingProgramToolType::INKDROPPER:
-            return std::make_unique<InkDropperTool>(drawP);
+        case DrawingProgramToolType::EYEDROPPER:
+            return std::make_unique<EyeDropperTool>(drawP);
         case DrawingProgramToolType::SCREENSHOT:
             return std::make_unique<ScreenshotTool>(drawP);
         case DrawingProgramToolType::EDIT:

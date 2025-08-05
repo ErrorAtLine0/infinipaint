@@ -3,9 +3,9 @@
 
 class DrawingProgram;
 
-class InkDropperTool : public DrawingProgramToolBase {
+class EyeDropperTool : public DrawingProgramToolBase {
     public:
-        InkDropperTool(DrawingProgram& initDrawP);
+        EyeDropperTool(DrawingProgram& initDrawP);
         virtual DrawingProgramToolType get_type() override;
         virtual void gui_toolbox() override;
         virtual void tool_update() override;

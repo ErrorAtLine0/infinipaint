@@ -39,7 +39,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_R}] = KEY_DRAW_TOOL_RECTANGLE;
     defaultKeyAssignments[{0, SDLK_C}] = KEY_DRAW_TOOL_ELLIPSE;
     defaultKeyAssignments[{0, SDLK_X}] = KEY_DRAW_TOOL_RECTSELECT;
-    defaultKeyAssignments[{0, SDLK_I}] = KEY_DRAW_TOOL_INKDROPPER;
+    defaultKeyAssignments[{0, SDLK_I}] = KEY_DRAW_TOOL_EYEDROPPER;
     defaultKeyAssignments[{0, SDLK_S}] = KEY_DRAW_TOOL_EDIT;
     defaultKeyAssignments[{0, SDLK_P}] = KEY_DRAW_TOOL_SCREENSHOT;
     defaultKeyAssignments[{0, SDLK_F1}] = KEY_OPEN_CHAT;

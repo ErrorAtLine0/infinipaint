@@ -5,7 +5,7 @@
 #include "../DrawCamera.hpp"
 #include "../DrawComponents/DrawComponent.hpp"
 #include "EllipseDrawTool.hpp"
-#include "InkDropperTool.hpp"
+#include "EyeDropperTool.hpp"
 #include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
 #include "../Server/CommandList.hpp"
@@ -193,7 +193,7 @@ void DrawingProgram::toolbar_gui() {
         if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", drawTool->get_type() == DrawingProgramToolType::RECTSELECT)) { switch_to_tool(DrawingProgramToolType::RECTSELECT); }
         if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)) { switch_to_tool(DrawingProgramToolType::LASSOSELECT); }
         if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", drawTool->get_type() == DrawingProgramToolType::EDIT)) { switch_to_tool(DrawingProgramToolType::EDIT); }
-        if(t.gui.svg_icon_button("Inkdropper Toolbar Button", "data/icons/eyedropper.svg", drawTool->get_type() == DrawingProgramToolType::INKDROPPER)) { switch_to_tool(DrawingProgramToolType::INKDROPPER); }
+        if(t.gui.svg_icon_button("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", drawTool->get_type() == DrawingProgramToolType::EYEDROPPER)) { switch_to_tool(DrawingProgramToolType::EYEDROPPER); }
         if(t.gui.svg_icon_button("Screenshot Toolbar Button", "data/icons/camera.svg", drawTool->get_type() == DrawingProgramToolType::SCREENSHOT)) { switch_to_tool(DrawingProgramToolType::SCREENSHOT); }
         CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
             if(t.gui.color_button("Foreground Color", &controls.foregroundColor, &controls.foregroundColor == t.colorLeft)) {
@@ -278,8 +278,8 @@ void DrawingProgram::update() {
         switch_to_tool(DrawingProgramToolType::ELLIPSE);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_TEXTBOX).pressed)
         switch_to_tool(DrawingProgramToolType::TEXTBOX);
-    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_INKDROPPER).pressed)
-        switch_to_tool(DrawingProgramToolType::INKDROPPER);
+    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EYEDROPPER).pressed)
+        switch_to_tool(DrawingProgramToolType::EYEDROPPER);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_SCREENSHOT).pressed)
         switch_to_tool(DrawingProgramToolType::SCREENSHOT);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EDIT).pressed)

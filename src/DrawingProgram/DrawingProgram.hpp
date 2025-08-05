@@ -101,7 +101,7 @@ class DrawingProgram {
 
         uint32_t nextID = 0;
         
-        friend class InkDropperTool;
+        friend class EyeDropperTool;
         friend class RectDrawTool;
         friend class EllipseDrawTool;
         friend class BrushTool;

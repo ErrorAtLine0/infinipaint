@@ -12,7 +12,7 @@ enum class DrawingProgramToolType : int {
     RECTANGLE,
     ELLIPSE,
     TEXTBOX,
-    INKDROPPER,
+    EYEDROPPER,
     SCREENSHOT,
     EDIT
 };
