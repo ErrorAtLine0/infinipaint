@@ -275,3 +275,12 @@ template <typename T> std::string vec_pretty(const Vector<T, 2>& a) {
     ss << "[" << a.x() << ", " << a.y() << "]";
     return ss.str();
 }
+
+template <typename T> Vector<T, 2> ensure_points_have_distance(const Vector<T, 2>& a, const Vector<T, 2>& b, T d) {
+    Vector<T, 2> toRet = b;
+    if(std::abs(a.x() - b.x()) < d)
+        toRet.x() = a.x() + d;
+    if(std::abs(a.y() - b.y()) < d)
+        toRet.y() = a.y() + d;
+    return toRet;
+}

@@ -43,6 +43,7 @@ void RectDrawTool::tool_update() {
                 controls.intermediateItem->d.strokeWidth = drawP.controls.relativeWidth;
                 controls.intermediateItem->d.p1 = controls.startAt;
                 controls.intermediateItem->d.p2 = controls.startAt;
+                controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
                 controls.intermediateItem->d.fillStrokeMode = static_cast<uint8_t>(controls.fillStrokeMode);
                 controls.intermediateItem->coords = drawP.world.drawData.cam.c;
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
@@ -65,6 +66,7 @@ void RectDrawTool::tool_update() {
                 }
                 controls.intermediateItem->d.p1 = cwise_vec_min(controls.startAt, newPos);
                 controls.intermediateItem->d.p2 = cwise_vec_max(controls.startAt, newPos);
+                controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
                 controls.intermediateItem->client_send_update(drawP);
                 controls.intermediateItem->commit_update(drawP);
             }

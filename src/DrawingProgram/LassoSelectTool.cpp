@@ -93,6 +93,8 @@ void LassoSelectTool::tool_update() {
                         drawP.selection.add_from_cam_coord_collider_to_selection(cC);
                     }
                 }
+                else if(!drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                    drawP.selection.deselect_all();
                 controls.selectionMode = 0;
             }
             break;

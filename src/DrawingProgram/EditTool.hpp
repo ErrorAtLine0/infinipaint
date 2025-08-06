@@ -7,13 +7,14 @@
 
 class DrawingProgram;
 
+
 class EditTool : public DrawingProgramToolBase {
     public:
         struct HandleData {
             Vector2f* p;
             Vector2f* min;
             Vector2f* max;
-            float minimumDistanceBetweenBoundsAndPoint = 10.0f;
+            float minimumDistanceBetweenBoundsAndPoint = MINIMUM_DISTANCE_BETWEEN_BOUNDS;
         };
 
         EditTool(DrawingProgram& initDrawP);

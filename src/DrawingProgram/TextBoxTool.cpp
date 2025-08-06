@@ -39,6 +39,7 @@ void TextBoxTool::tool_update() {
                 controls.startAt = drawP.world.main.input.mouse.pos;
                 controls.endAt = controls.startAt;
                 controls.intermediateItem->d.p1 = controls.intermediateItem->d.p2 = controls.startAt;
+                controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
                 controls.intermediateItem->d.textColor = drawP.controls.foregroundColor;
                 controls.intermediateItem->d.textSize = controls.textRelativeSize;
                 controls.intermediateItem->d.editing = true;
@@ -61,6 +62,7 @@ void TextBoxTool::tool_update() {
             controls.endAt = newPos;
             controls.intermediateItem->d.p1 = cwise_vec_min(controls.endAt, controls.startAt);
             controls.intermediateItem->d.p2 = cwise_vec_max(controls.endAt, controls.startAt);
+            controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
             controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
             if(!drawP.controls.leftClickHeld) {
                 auto editTool = std::make_unique<EditTool>(drawP);

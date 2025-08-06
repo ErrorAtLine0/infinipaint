@@ -4,6 +4,8 @@
 
 class DrawingProgram;
 
+#define MINIMUM_DISTANCE_BETWEEN_BOUNDS 10.0f
+
 enum class DrawingProgramToolType : int {
     BRUSH = 0,
     ERASER,
