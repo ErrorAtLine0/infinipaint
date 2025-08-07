@@ -382,6 +382,7 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& fileP
     img->d.imageID = imageID;
     img->commit_update(*this);
     uint64_t placement = components.client_list().size();
+    std::cout << "tiger place: " << placement << std::endl;
     auto objAdd = components.client_insert(placement, img);
     img->client_send_place(*this);
     add_undo_place_component(objAdd);

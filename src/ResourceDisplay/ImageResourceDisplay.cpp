@@ -20,10 +20,10 @@ bool ImageResourceDisplay::update_draw() const {
 }
 
 void ImageResourceDisplay::update(World& w) {
+    mustUpdateDraw = false;
     if(frames.size() <= 1)
         return;
     currentTime += w.main.deltaTime * 1000.0;
-    mustUpdateDraw = false;
     for(;;) {
         if(currentTime >= frames[frameIndex].duration) {
             currentTime -= frames[frameIndex].duration;

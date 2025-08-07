@@ -269,20 +269,23 @@ void DrawingProgramCache::invalidate_cache_at_optional_aabb_before_pos(const std
 void DrawingProgramCache::invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt) {
     std::erase_if(nodesWithCachedSurfaces, [&](auto& n) {
         if(placementToInvalidateAt <= n->drawCache.value().lastDrawnComponentPlacement && SCollision::collide(aabb, n->bounds)) {
-            if(aabb.fully_contains_aabb(n->bounds)) {
+            //if(aabb.fully_contains_aabb(n->bounds)) {
+            // NOTE: For now, we will invalidate the entire cache when something needs updating
+            // Invalidating parts of the cache can lead to massive speed ups with eraser and GIFs, but it currently has accuracy issues
+            // related to determining what's been drawn last
                 n->drawCache = std::nullopt;
                 return true;
-            }
-            else {
-                auto& dCache = n->drawCache.value();
-                if(dCache.invalidBounds.has_value()) {
-                    auto& iBounds = dCache.invalidBounds.value();
-                    iBounds.include_aabb_in_bounds(aabb);
-                    iBounds = n->bounds.get_intersection_between_aabbs(iBounds);
-                }
-                else
-                    dCache.invalidBounds = n->bounds.get_intersection_between_aabbs(aabb);
-            }
+            //}
+            //else {
+            //    auto& dCache = n->drawCache.value();
+            //    if(dCache.invalidBounds.has_value()) {
+            //        auto& iBounds = dCache.invalidBounds.value();
+            //        iBounds.include_aabb_in_bounds(aabb);
+            //        iBounds = n->bounds.get_intersection_between_aabbs(iBounds);
+            //    }
+            //    else
+            //        dCache.invalidBounds = n->bounds.get_intersection_between_aabbs(aabb);
+            //}
         }
         return false;
     });
@@ -292,7 +295,7 @@ void DrawingProgramCache::refresh_all_draw_cache(const DrawData& drawData) {
     std::deque<std::shared_ptr<DrawingProgramCacheBVHNode>> nodeFlatList; // We want to render children before parents, so that parents can make use of the cached children
     traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](std::shared_ptr<DrawingProgramCacheBVHNode> node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         if(node && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
-            if(!node->drawCache || node->drawCache.value().invalidBounds)
+            if(!node->drawCache /*|| node->drawCache.value().invalidBounds*/)
                 nodeFlatList.emplace_front(node);
             return false;
         }
@@ -330,45 +333,48 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     cacheDrawData.cam.set_viewing_area(bvhNode->resolution.cast<float>());
     cacheDrawData.refresh_draw_optimizing_values();
 
-    if(drawCache.invalidBounds) {
-        auto& iBounds = drawCache.invalidBounds.value();
-        WorldVec bDim = bvhNode->bounds.dim();
+    //if(drawCache.invalidBounds) {
+    //    auto& iBounds = drawCache.invalidBounds.value();
+    //    WorldVec bDim = bvhNode->bounds.dim();
 
-        Vector2f clipBoundMin{static_cast<float>((iBounds.min.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
-                              static_cast<float>((iBounds.min.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
-        Vector2f clipBoundMax{static_cast<float>((iBounds.max.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
-                              static_cast<float>((iBounds.max.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
+    //    Vector2f clipBoundMin{static_cast<float>((iBounds.min.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
+    //                          static_cast<float>((iBounds.min.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
+    //    Vector2f clipBoundMax{static_cast<float>((iBounds.max.x() - bvhNode->bounds.min.x()) / bDim.x()) * bvhNode->resolution.x(),
+    //                          static_cast<float>((iBounds.max.y() - bvhNode->bounds.min.y()) / bDim.y()) * bvhNode->resolution.y()};
 
-        SkIRect clipRect = SkIRect::MakeLTRB(clipBoundMin.x() - 2,
-                                             clipBoundMin.y() - 2,
-                                             clipBoundMax.x() + 2,
-                                             clipBoundMax.y() + 2);
+    //    SkIRect clipRect = SkIRect::MakeLTRB(clipBoundMin.x() - 2,
+    //                                         clipBoundMin.y() - 2,
+    //                                         clipBoundMax.x() + 2,
+    //                                         clipBoundMax.y() + 2);
 
-        SCollision::AABB<float> clipRectBoundAABB{clipBoundMin - Vector2f{4, 4}, clipBoundMax + Vector2f{4, 4}};
-        SCollision::AABB<WorldScalar> clipRectBoundAABBWorld{
-            bvhNode->coords.from_space(clipRectBoundAABB.min),
-            bvhNode->coords.from_space(clipRectBoundAABB.max)
-        };
+    //    SCollision::AABB<float> clipRectBoundAABB{clipBoundMin - Vector2f{4, 4}, clipBoundMax + Vector2f{4, 4}};
+    //    SCollision::AABB<WorldScalar> clipRectBoundAABBWorld{
+    //        bvhNode->coords.from_space(clipRectBoundAABB.min),
+    //        bvhNode->coords.from_space(clipRectBoundAABB.max)
+    //    };
 
-        cacheCanvas->save();
-        cacheCanvas->clipIRect(clipRect);
-        cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-        uint64_t lastDrawnComponentPlacementNew = 0;
-        draw_components_to_canvas(cacheCanvas, cacheDrawData, {
-            .lastDrawnComponentPlacement = &lastDrawnComponentPlacementNew,
-            .drawBounds = clipRectBoundAABBWorld
-        });
-        drawCache.lastDrawnComponentPlacement = std::max(lastDrawnComponentPlacementNew, drawCache.lastDrawnComponentPlacement);
-        cacheCanvas->restore();
-        drawCache.invalidBounds = std::nullopt;
-    }
-    else {
+    //    cacheCanvas->save();
+    //    cacheCanvas->clipIRect(clipRect);
+    //    cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+    //    uint64_t lastDrawnComponentPlacementNew = 0;
+    //    draw_components_to_canvas(cacheCanvas, cacheDrawData, {
+    //        .lastDrawnComponentPlacement = &lastDrawnComponentPlacementNew,
+    //        .drawBounds = clipRectBoundAABBWorld,
+    //        .lastObjectPositionToDraw = drawCache.lastDrawnComponentPlacement
+    //    });
+    //    // NOTE: We make sure that the last object position drawn remains the same, so we dont have to set it to a different value after we're done here
+    //    // drawCache.lastDrawnComponentPlacement = std::max(lastDrawnComponentPlacementNew, drawCache.lastDrawnComponentPlacement);
+    //    std::cout << drawCache.lastDrawnComponentPlacement << std::endl;
+    //    cacheCanvas->restore();
+    //    drawCache.invalidBounds = std::nullopt;
+    //}
+    //else {
         cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
         draw_components_to_canvas(cacheCanvas, cacheDrawData, {
             .lastDrawnComponentPlacement = &drawCache.lastDrawnComponentPlacement,
-            .drawBounds = drawCache.invalidBounds
+            //.drawBounds = drawCache.invalidBounds
         });
-    }
+    //}
 
     drawCache.lastRenderTime = std::chrono::steady_clock::now();
     drawCache.attachedCache = this;
@@ -399,7 +405,7 @@ void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const Draw
     std::vector<UncachedObjectToDraw> uncachedCompsToDraw;
 
     traverse_bvh_run_function(optData.drawBounds.has_value() ? optData.drawBounds.value() : drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
-        if(node && node->drawCache && !node->drawCache.value().invalidBounds && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
+        if(node && node->drawCache /*&& !node->drawCache.value().invalidBounds*/ && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
             cachedNodesToDraw.emplace_back(node);
             return false;
         }

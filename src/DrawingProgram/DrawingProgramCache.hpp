@@ -22,7 +22,7 @@ class DrawingProgramCacheBVHNode {
             sk_sp<SkSurface> surface;
             std::chrono::steady_clock::time_point lastRenderTime;
             DrawingProgramCache* attachedCache;
-            std::optional<SCollision::AABB<WorldScalar>> invalidBounds;
+            //std::optional<SCollision::AABB<WorldScalar>> invalidBounds;
         };
 
         std::optional<DrawCacheData> drawCache;
