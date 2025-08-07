@@ -12,7 +12,7 @@ void SvgResourceDisplay::update(World& w) {
     mustUpdateDraw = false;
 }
 
-bool SvgResourceDisplay::load(const std::string& fileName, const std::string& fileData) {
+bool SvgResourceDisplay::load(ResourceManager& rMan, const std::string& fileName, const std::string& fileData) {
     SkMemoryStream strm(fileData.c_str(), fileData.size());
     svgDom = SkSVGDOM::Builder().make(strm);
 
@@ -23,11 +23,20 @@ bool SvgResourceDisplay::load(const std::string& fileName, const std::string& fi
 
     svgRootSize = svgDom->containerSize();
 
+    if(svgRootSize.width() == 0 || svgRootSize.height() == 0) {
+        svgDom->setContainerSize({1000, 1000});
+        svgRootSize = svgDom->containerSize();
+    }
+
+    if(svgRootSize.width() == 0 || svgRootSize.height() == 0)
+        return false;
+
     return true;
 }
 
 void SvgResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) {
     canvas->save();
+    canvas->clipRect(imRect);
     canvas->translate(imRect.x(), imRect.y());
     canvas->scale(imRect.width() / svgRootSize.width(), imRect.height() / svgRootSize.height());
     svgDom->render(canvas);

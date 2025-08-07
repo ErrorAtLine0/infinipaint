@@ -39,7 +39,7 @@ void ImageResourceDisplay::update(World& w) {
     }
 }
 
-bool ImageResourceDisplay::load(const std::string& fileName, const std::string& fileData) {
+bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileName, const std::string& fileData) {
     sk_sp<SkData> newData = SkData::MakeWithoutCopy(fileData.c_str(), fileData.size());
     std::unique_ptr<SkCodec> codec = SkCodec::MakeFromData(newData, decoders);
     mustUpdateDraw = true;

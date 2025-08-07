@@ -44,11 +44,12 @@ class ResourceManager {
         std::optional<ResourceData> get_resource(const ServerClientID& id) const;
         ClientPortionID get_max_id(ServerPortionID serverID) const;
         const std::unordered_map<ServerClientID, ResourceData>& resource_list();
+
+        World& world;
     private:
         std::unordered_map<ServerClientID, ResourceData> resources;
         std::unordered_map<ServerClientID, std::shared_ptr<ResourceDisplay>> displays;
 
         static std::array<const SkCodecs::Decoder, 5> decoders;
-        World& world;
 };
 

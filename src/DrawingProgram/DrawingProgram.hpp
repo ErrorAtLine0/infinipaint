@@ -87,7 +87,7 @@ class DrawingProgram {
         struct GlobalControls {
             float relativeWidth = 15.0f;
 
-            Vector4f foregroundColor{0.9f, 0.9f, 0.9f, 1.0f};
+            Vector4f foregroundColor{1.0f, 1.0f, 1.0f, 1.0f};
             Vector4f backgroundColor{0.0f, 0.0f, 0.0f, 1.0f};
             WorldVec previousMouseWorldPos = {0, 0};
             WorldVec currentMouseWorldPos = {0, 0};

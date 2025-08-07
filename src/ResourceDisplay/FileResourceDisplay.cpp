@@ -17,7 +17,7 @@ bool FileResourceDisplay::update_draw() const {
 void FileResourceDisplay::update(World& w) {
 }
 
-bool FileResourceDisplay::load(const std::string& fileName, const std::string& fileData) {
+bool FileResourceDisplay::load(ResourceManager& rMan, const std::string& fileName, const std::string& fileData) {
     this->fileName = fileName;
     return true;
 }

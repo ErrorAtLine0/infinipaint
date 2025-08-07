@@ -117,19 +117,19 @@ std::shared_ptr<ResourceDisplay> ResourceManager::get_display_data(const ServerC
         return nullptr;
 
     auto imgResource(std::make_shared<ImageResourceDisplay>());
-    if(imgResource->load(resourceIt->second.name, *resourceIt->second.data)) {
+    if(imgResource->load(*this, resourceIt->second.name, *resourceIt->second.data)) {
         displays[fileID] = imgResource;
         return imgResource;
     }
 
     auto svgResource(std::make_shared<SvgResourceDisplay>());
-    if(svgResource->load(resourceIt->second.name, *resourceIt->second.data)) {
+    if(svgResource->load(*this, resourceIt->second.name, *resourceIt->second.data)) {
         displays[fileID] = svgResource;
         return svgResource;
     }
 
     auto fileResource(std::make_shared<FileResourceDisplay>());
-    fileResource->load(resourceIt->second.name, *resourceIt->second.data);
+    fileResource->load(*this, resourceIt->second.name, *resourceIt->second.data);
     displays[fileID] = fileResource;
     return fileResource;
 }
