@@ -57,7 +57,14 @@ class DrawingProgramCache {
         void invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt);
         void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);
         void clear();
-        void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, uint64_t* lastDrawnComponentPlacement = nullptr, std::optional<SCollision::AABB<WorldScalar>> drawBounds = std::nullopt);
+
+        struct DrawComponentsToCanvasOptionalData {
+            uint64_t* lastDrawnComponentPlacement = nullptr;
+            std::optional<SCollision::AABB<WorldScalar>> drawBounds;
+            std::chrono::microseconds* timeToDrawUnsortedComponents = nullptr;
+        };
+
+        void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, DrawComponentsToCanvasOptionalData optData);
         const std::vector<CollabListType::ObjectInfoPtr>& get_unsorted_component_list() const;
         const std::chrono::steady_clock::time_point& get_last_bvh_build_time() const;
         void clear_own_cached_surfaces();

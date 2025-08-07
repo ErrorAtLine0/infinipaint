@@ -564,6 +564,8 @@ void DrawingProgram::write_to_file(cereal::PortableBinaryOutputArchive& a) {
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
+    std::chrono::microseconds timeToDrawUnsortedComponents(0);
+
     if(drawData.dontUseDrawProgCache) {
         parallel_loop_all_components([&](auto& c) {
             c->obj->calculate_draw_transform(drawData);
@@ -577,7 +579,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->saveLayer(nullptr, nullptr);
             canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             compCache.refresh_all_draw_cache(drawData);
-            compCache.draw_components_to_canvas(canvas, drawData);
+            compCache.draw_components_to_canvas(canvas, drawData, {
+                .timeToDrawUnsortedComponents = &timeToDrawUnsortedComponents
+            });
             canvas->saveLayer(nullptr, nullptr);
                 selection.draw_components(canvas, drawData);
             canvas->restore();
@@ -586,6 +590,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     }
 
     drawTool->draw(canvas, drawData);
+
+    if(timeToDrawUnsortedComponents >= std::chrono::microseconds(16000))
+        force_rebuild_cache();
 }
 
 Vector4f* DrawingProgram::get_foreground_color_ptr() {

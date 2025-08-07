@@ -354,14 +354,20 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
         cacheCanvas->clipIRect(clipRect);
         cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
         uint64_t lastDrawnComponentPlacementNew = 0;
-        draw_components_to_canvas(cacheCanvas, cacheDrawData, &lastDrawnComponentPlacementNew, clipRectBoundAABBWorld);
+        draw_components_to_canvas(cacheCanvas, cacheDrawData, {
+            .lastDrawnComponentPlacement = &lastDrawnComponentPlacementNew,
+            .drawBounds = clipRectBoundAABBWorld
+        });
         drawCache.lastDrawnComponentPlacement = std::max(lastDrawnComponentPlacementNew, drawCache.lastDrawnComponentPlacement);
         cacheCanvas->restore();
         drawCache.invalidBounds = std::nullopt;
     }
     else {
         cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-        draw_components_to_canvas(cacheCanvas, cacheDrawData, &drawCache.lastDrawnComponentPlacement, drawCache.invalidBounds);
+        draw_components_to_canvas(cacheCanvas, cacheDrawData, {
+            .lastDrawnComponentPlacement = &drawCache.lastDrawnComponentPlacement,
+            .drawBounds = drawCache.invalidBounds
+        });
     }
 
     drawCache.lastRenderTime = std::chrono::steady_clock::now();
@@ -382,49 +388,64 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     nodesWithCachedSurfaces.emplace(bvhNode);
 }
 
-void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, uint64_t* lastDrawnComponentPlacement, std::optional<SCollision::AABB<WorldScalar>> drawBounds) {
+void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, DrawComponentsToCanvasOptionalData optData) {
     uint64_t lastComponentDrawn = 0;
 
     std::vector<std::shared_ptr<DrawingProgramCacheBVHNode>> cachedNodesToDraw;
-    std::vector<CollabListType::ObjectInfoPtr> uncachedCompsToDraw;
+    struct UncachedObjectToDraw {
+        CollabListType::ObjectInfoPtr comp;
+        bool isAnUnsortedObject;
+    };
+    std::vector<UncachedObjectToDraw> uncachedCompsToDraw;
 
-    traverse_bvh_run_function(drawBounds.has_value() ? drawBounds.value() : drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
+    traverse_bvh_run_function(optData.drawBounds.has_value() ? optData.drawBounds.value() : drawData.cam.viewingAreaGenerousCollider, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& node, const std::vector<CollabListType::ObjectInfoPtr>& comps) {
         if(node && node->drawCache && !node->drawCache.value().invalidBounds && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
             cachedNodesToDraw.emplace_back(node);
             return false;
         }
 
-        for(auto& c : comps)
+        for(auto& c : comps) {
             c->obj->calculate_draw_transform(drawData);
-        
-        uncachedCompsToDraw.insert(uncachedCompsToDraw.end(), comps.begin(), comps.end());
+            if(c->obj->drawSetupData.shouldDraw)
+                uncachedCompsToDraw.emplace_back(c, !node);
+        }
 
         return true;
     });
 
     std::sort(uncachedCompsToDraw.begin(), uncachedCompsToDraw.end(), [](auto& a, auto& b) {
-        return a->pos < b->pos;
+        return a.comp->pos < b.comp->pos;
     });
     std::sort(cachedNodesToDraw.begin(), cachedNodesToDraw.end(), [](auto& a, auto& b) {
         return a->drawCache.value().lastDrawnComponentPlacement < b->drawCache.value().lastDrawnComponentPlacement;
     });
     size_t nextCacheToRender = 0;
-    for(auto& c : uncachedCompsToDraw) {
+
+    std::chrono::microseconds unsortedCompDrawTime(0);
+
+    for(auto& uncachedComp : uncachedCompsToDraw) {
         for(;;) {
-            if(nextCacheToRender >= cachedNodesToDraw.size() || c->pos <= cachedNodesToDraw[nextCacheToRender]->drawCache.value().lastDrawnComponentPlacement)
+            if(nextCacheToRender >= cachedNodesToDraw.size() || uncachedComp.comp->pos <= cachedNodesToDraw[nextCacheToRender]->drawCache.value().lastDrawnComponentPlacement)
                 break;
             lastComponentDrawn = std::max(lastComponentDrawn, draw_cache_image_to_canvas(canvas, drawData, cachedNodesToDraw[nextCacheToRender]));
             nextCacheToRender++;
         }
-        c->obj->draw(canvas, drawData);
-        c->obj->drawSetupData.shouldDraw = false;
-        lastComponentDrawn = std::max(lastComponentDrawn, c->pos);
+        std::chrono::time_point drawStartTime = std::chrono::steady_clock::now();
+        uncachedComp.comp->obj->draw(canvas, drawData);
+        if(uncachedComp.isAnUnsortedObject)
+            unsortedCompDrawTime += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - drawStartTime);
+
+        uncachedComp.comp->obj->drawSetupData.shouldDraw = false;
+        lastComponentDrawn = std::max(lastComponentDrawn, uncachedComp.comp->pos);
     }
     for(;nextCacheToRender < cachedNodesToDraw.size(); nextCacheToRender++)
         lastComponentDrawn = std::max(lastComponentDrawn, draw_cache_image_to_canvas(canvas, drawData, cachedNodesToDraw[nextCacheToRender]));
 
-    if(lastDrawnComponentPlacement)
-        *lastDrawnComponentPlacement = lastComponentDrawn;
+    if(optData.lastDrawnComponentPlacement)
+        *optData.lastDrawnComponentPlacement = lastComponentDrawn;
+
+    if(optData.timeToDrawUnsortedComponents)
+        *optData.timeToDrawUnsortedComponents = unsortedCompDrawTime;
 }
 
 uint64_t DrawingProgramCache::draw_cache_image_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {

@@ -453,7 +453,7 @@ void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& 
         if(!surface)
             throw std::runtime_error("[DrawingProgramSelection::draw_components] Could not make temporary surface");
 
-        cache.draw_components_to_canvas(surface->getCanvas(), selectionDrawData);
+        cache.draw_components_to_canvas(surface->getCanvas(), selectionDrawData, {});
 
         SkPaint glowBlurP;
         glowBlurP.setImageFilter(SkImageFilters::Blur(5, 5, nullptr));
