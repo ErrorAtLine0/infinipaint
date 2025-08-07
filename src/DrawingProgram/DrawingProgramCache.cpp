@@ -362,9 +362,7 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     //        .drawBounds = clipRectBoundAABBWorld,
     //        .lastObjectPositionToDraw = drawCache.lastDrawnComponentPlacement
     //    });
-    //    // NOTE: We make sure that the last object position drawn remains the same, so we dont have to set it to a different value after we're done here
     //    // drawCache.lastDrawnComponentPlacement = std::max(lastDrawnComponentPlacementNew, drawCache.lastDrawnComponentPlacement);
-    //    std::cout << drawCache.lastDrawnComponentPlacement << std::endl;
     //    cacheCanvas->restore();
     //    drawCache.invalidBounds = std::nullopt;
     //}
