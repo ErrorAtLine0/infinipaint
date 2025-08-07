@@ -78,7 +78,6 @@ void ScreenshotTool::gui_toolbox() {
                     setExtensionFilter = {"WebP", "webp"};
                 t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
                     auto world = w.lock();
-                    // NOTE: CHANGE THIS
                     if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
                         ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
                         screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
@@ -202,7 +201,6 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
     drawP.world.main.transparentBackground = false;
     drawP.world.main.grid.gridType = oldGridType;
     drawP.world.drawData = d;
-    drawP.world.drawData.cam.changed();
 
     SkImageInfo aaImgInfo = SkImageInfo::Make(sectionImageSize.x(), sectionImageSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     void* fullImgRawDataStartPt = (uint8_t*)fullImgRawData + 4 * (size_t)sectionImagePos.x() + 4 * (size_t)fullImageSize.x() * (size_t)sectionImagePos.y();

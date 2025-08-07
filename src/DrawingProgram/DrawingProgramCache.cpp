@@ -327,7 +327,6 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
 
     DrawData cacheDrawData = drawData;
     cacheDrawData.cam.c = bvhNode->coords;
-    cacheDrawData.cam.changed = nullptr;
     cacheDrawData.cam.set_viewing_area(bvhNode->resolution.cast<float>());
     cacheDrawData.refresh_draw_optimizing_values();
 

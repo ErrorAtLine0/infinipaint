@@ -370,7 +370,6 @@ void Toolbar::paint_popup() {
         });
         if(newRotationAngle != main.world->drawData.cam.c.rotation) {
             main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), newRotationAngle - main.world->drawData.cam.c.rotation);
-            main.world->drawData.cam.changed();
         }
     }
 }

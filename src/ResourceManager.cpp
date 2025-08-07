@@ -1,6 +1,7 @@
 #include "ResourceManager.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include <include/core/SkImage.h>
+#include "ResourceDisplay/SvgResourceDisplay.hpp"
 #include "Server/CommandList.hpp"
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "ResourceDisplay/FileResourceDisplay.hpp"
@@ -119,6 +120,12 @@ std::shared_ptr<ResourceDisplay> ResourceManager::get_display_data(const ServerC
     if(imgResource->load(resourceIt->second.name, *resourceIt->second.data)) {
         displays[fileID] = imgResource;
         return imgResource;
+    }
+
+    auto svgResource(std::make_shared<SvgResourceDisplay>());
+    if(svgResource->load(resourceIt->second.name, *resourceIt->second.data)) {
+        displays[fileID] = svgResource;
+        return svgResource;
     }
 
     auto fileResource(std::make_shared<FileResourceDisplay>());

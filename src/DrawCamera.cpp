@@ -15,9 +15,6 @@ void DrawCamera::set_based_on_properties(World& w, const WorldVec& newPos, const
     c.pos = newPos;
     c.set_rotation(newRotate);
 
-    if(changed)
-        changed();
-
     set_viewing_area(w.main.window.size.cast<float>());
 }
 
@@ -26,17 +23,12 @@ void DrawCamera::set_based_on_center(World& w, const WorldVec& newPos, const Wor
     c.set_rotation(newRotate);
     c.pos = newPos - c.dir_from_space(w.main.window.size.cast<float>() * 0.5f);
 
-    if(changed)
-        changed();
-
     set_viewing_area(w.main.window.size.cast<float>());
 }
 
 void DrawCamera::set_viewing_area(Vector2f viewingAreaNew) {
     if(viewingArea != viewingAreaNew) {
         viewingArea = viewingAreaNew;
-        if(changed)
-            changed();
     }
     float maxDim = std::max(viewingAreaNew.x(), viewingAreaNew.y());
     WorldScalar a = WorldScalar(maxDim * 0.708f) * c.inverseScale;
@@ -109,8 +101,6 @@ void DrawCamera::update_main(World& w) {
             smoothMove.occurring = false;
         }
 
-        if(changed)
-            changed();
     }
     else {
         bool middleClickDown = w.main.input.mouse.middleDown || w.main.input.pen.buttons[w.main.toolbar.tabletOptions.middleClickButton].held;
@@ -119,8 +109,6 @@ void DrawCamera::update_main(World& w) {
             startZoomMousePos = w.get_mouse_world_pos();
             startZoomVal = c.inverseScale;
             startZoomCameraPos = c.pos;
-            if(changed)
-                changed();
         }
         isMiddleClickZooming = newIsMiddleClickZooming;
         if(isMiddleClickZooming) {
@@ -133,13 +121,9 @@ void DrawCamera::update_main(World& w) {
                 WorldScalar mX = c.inverseScale / startZoomVal;
                 c.pos = startZoomMousePos + mVec * mX;
             }
-            if(changed)
-                changed();
         }
         else if(middleClickDown) {
             c.pos -= c.dir_from_space(w.main.input.mouse.move);
-            if(changed)
-                changed();
         }
         if(w.main.input.mouse.scrollAmount.y() && !w.main.toolbar.io->hoverObstructed) {
             // Ignore the value of scrollAmount, since that leads to problems on macOS
@@ -155,18 +139,12 @@ void DrawCamera::update_main(World& w) {
                 WorldVec mVec = c.pos - w.get_mouse_world_pos();
                 c.pos = w.get_mouse_world_pos() + mVec / zoomFactor;
             }
-            if(changed)
-                changed();
         }
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.get_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
-            if(changed)
-                changed();
         }
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.get_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
-            if(changed)
-                changed();
         }
     }
 
