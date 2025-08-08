@@ -591,7 +591,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
 
     drawTool->draw(canvas, drawData);
 
-    if(timeToDrawUnsortedComponents >= std::chrono::microseconds(16000))
+    // 10ms is an arbitrary value. If drawing only the unsorted components takes more than that amount of time,
+    // they're definitely causing lag and must be sorted so that they can be cached
+    if(timeToDrawUnsortedComponents >= std::chrono::microseconds(10000))
         force_rebuild_cache();
 }
 
