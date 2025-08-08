@@ -162,8 +162,8 @@ elseif(APPLE)
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER com.erroratline0.infinipaint
         MACOSX_BUNDLE_BUNDLE_NAME infinipaint
-        MACOSX_BUNDLE_BUNDLE_VERSION "0.0.3"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.0.3"
+        MACOSX_BUNDLE_BUNDLE_VERSION "0.1.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/macosinstall/Info.plist
     )
     add_custom_command(TARGET infinipaint POST_BUILD
@@ -279,12 +279,17 @@ if(USE_VULKAN)
     target_compile_definitions(infinipaint PRIVATE USE_BACKEND_VULKAN SK_VULKAN)
     if(USE_GRAPHITE)
         target_compile_definitions(infinipaint PRIVATE SK_GRAPHITE USE_SKIA_BACKEND_GRAPHITE)
+        message("Using Vulkan Graphite Backend")
     else()
         target_compile_definitions(infinipaint PRIVATE USE_SKIA_BACKEND_GANESH)
+        message("Using Vulkan Ganesh Backend")
     endif()
 else()
     if(USE_OPENGLES)
         target_compile_definitions(infinipaint PRIVATE USING_OPENGLES)
+        message("Using OpenGL ES")
+    else()
+        message("Using OpenGL")
     endif()
     target_compile_definitions(infinipaint PRIVATE USE_BACKEND_OPENGL USE_SKIA_BACKEND_GANESH)
 endif()
@@ -296,8 +301,8 @@ if(APPLE OR WIN32)
 
     set(CPACK_PACKAGE_NAME "infinipaint")
     set(CPACK_PACKAGE_VERSION_MAJOR "0")
-    set(CPACK_PACKAGE_VERSION_MINOR "0")
-    set(CPACK_PACKAGE_VERSION_PATCH "3")
+    set(CPACK_PACKAGE_VERSION_MINOR "1")
+    set(CPACK_PACKAGE_VERSION_PATCH "0")
     set(CPACK_PACKAGE_VENDOR "ErrorAtLine0")
     set(CPACK_PACKAGE_CONTACT "erroratline0@gmail.com")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")

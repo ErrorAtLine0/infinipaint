@@ -182,7 +182,7 @@ void Toolbar::load_licenses() {
     });
     ownLicenseText = 
 R"(
-InfiniPaint v0.0.3
+InfiniPaint v0.1.0
 
 Copyright © 2025 Yousef Khadadeh
 

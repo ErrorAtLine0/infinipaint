@@ -14,6 +14,7 @@
     
     <url type="homepage">https://infinipaint.com</url>
     <url type="vcs-browser">https://github.com/ErrorAtLine0/infinipaint</url>
+    <url type="bugtracker">https://github.com/ErrorAtLine0/infinipaint/issues</url>
     
     <developer id="com.erroratline0">
         <name>ErrorAtLine0</name>
@@ -56,6 +57,29 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.1.0" date="2025-08-08">
+            <description>
+                <ul>
+                    <li>New cache system that leads to major performance improvements for canvases with many objects</li>
+                    <li>Lasso select tool added</li>
+                    <li>Savefiles are compressed, leading to smaller files</li>
+                    <li>Large network messages are compressed, leading to better online performance</li>
+                    <li>Can now embed and display SVG files on the canvas</li>
+                    <li>Selection can be modified:
+                        <ul>
+                            <li>Hold left shift to add to selection</li>
+                            <li>Hold left alt to remove from selection</li>
+                        </ul>
+                    </li>
+                    <li>Small visual changes</li>
+                </ul>
+            </description>
+        </release>
+        <release version="0.0.4" date="2025-07-11">
+            <description>
+                <p>Added flatpak metainfo. Release is equivalent to previous version.</p>
+            </description>
+        </release>
         <release version="0.0.3" date="2025-07-11">
             <description>
                 <p>Added a button to upload an image/file to the canvas, as an alternative to drag drop.</p>

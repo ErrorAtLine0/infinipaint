@@ -7,8 +7,15 @@ build-options:
   build-args:
     - --share=network
 modules:
+  - name: zstd
+    buildsystem: cmake-ninja
+    subdir: build/cmake
+    sources:
+      - type: git
+        tag: v1.5.7
+        url: https://github.com/facebook/zstd.git
   - name: libdatachannel
-    buildsystem: cmake
+    buildsystem: cmake-ninja
     config-opts:
       - -DNO_MEDIA=ON
       - -DCMAKE_BUILD_TYPE=Release
@@ -17,7 +24,7 @@ modules:
         tag: v0.23.1
         url: https://github.com/paullouisageneau/libdatachannel.git
   - name: oneTBB
-    buildsystem: cmake
+    buildsystem: cmake-ninja
     config-opts:
       - -DTBB_TEST=OFF
     sources:
@@ -25,7 +32,7 @@ modules:
         tag: v2022.0.0
         url: https://github.com/uxlfoundation/oneTBB.git
   - name: SDL3
-    buildsystem: cmake
+    buildsystem: cmake-ninja
     config-opts:
         - -DCMAKE_BUILD_TYPE=Release
         - -DSDL_SHARED=ON
@@ -58,7 +65,7 @@ modules:
         url: https://github.com/google/skia/archive/aefbd9403c1b3032ad4cd0281ef312ed262c7125.zip
         sha256: e10c67a96828b9f36364e2459cdee3e3b381a3875ff78db2b30e7b6fe69509bb
   - name: infinipaint
-    buildsystem: cmake
+    buildsystem: cmake-ninja
     builddir: true
     config-opts:
         - -DLINK_SKIA_MANUALLY=ON
