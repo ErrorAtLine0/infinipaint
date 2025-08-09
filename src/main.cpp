@@ -7,10 +7,15 @@
 #include <filesystem>
 #ifdef USE_BACKEND_OPENGL 
 #ifndef __EMSCRIPTEN__
-    #ifdef USING_OPENGLES
-        #include <glad/gles2.h>
+    #ifdef USE_BACKEND_OPENGLES_3_0
+        #define GLAD_GLES2_IMPLEMENTATION
+        #include <glad/gles3_0.h>
+    #elif USE_BACKEND_OPENGL_2_1
+        #define GLAD_GL_IMPLEMENTATION
+        #include <glad/gl2_1.h>
     #else
-        #include <glad/gl.h>
+        #define GLAD_GL_IMPLEMENTATION
+        #include <glad/gl3_3.h>
     #endif
 #endif
 #endif
@@ -170,13 +175,13 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     window_flags |= SDL_WINDOW_OPENGL;
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
 
-    #ifdef __EMSCRIPTEN__ 
+    #if defined(__EMSCRIPTEN__) || defined(USE_BACKEND_OPENGLES_3_0)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    #elif USING_OPENGLES
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    #elif defined(USE_BACKEND_OPENGL_2_1)
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     #else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -216,14 +221,22 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     SDL_GL_MakeCurrent(mS.window, mS.gl_context);
 
     #ifndef __EMSCRIPTEN__
-        #ifdef USING_OPENGLES
+
+        #ifdef USE_BACKEND_OPENGLES_3_0
             if(!gladLoadGLES2(SDL_GL_GetProcAddress))
-                throw std::runtime_error("[gladLoadGLES2] Failed to load GLAD OpenGLES 3.1 Loader");
+                throw std::runtime_error("[gladLoadGLES2] Failed to load GLAD OpenGLES 3.0 Loader");
+        #elif defined(USE_BACKEND_OPENGL_2_1)
+            if(!gladLoadGL(SDL_GL_GetProcAddress))
+                throw std::runtime_error("[gladLoadGL] Failed to load GLAD OpenGL 2.1 Loader");
         #else
             if(!gladLoadGL(SDL_GL_GetProcAddress))
                 throw std::runtime_error("[gladLoadGL] Failed to load GLAD OpenGL 3.3 Loader");
         #endif
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mS.defaultFBO);
+
+        #ifndef USE_BACKEND_OPENGL_2_1
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mS.defaultFBO);
+        #endif
+
         Logger::get().log("INFO", "GL Version: " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))));
     #endif
 
