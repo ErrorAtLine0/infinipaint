@@ -3,7 +3,7 @@
 <component type="desktop-application">
     <id>com.infinipaint.infinipaint</id>
     <name>Infinipaint</name>
-    <summary>Infinite canvas program</summary>
+    <summary>Draw on a big canvas</summary>
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>MIT</project_license>
 

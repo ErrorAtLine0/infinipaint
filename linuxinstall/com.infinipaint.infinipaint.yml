@@ -64,9 +64,11 @@ modules:
       - type: archive
         url: https://github.com/google/skia/archive/aefbd9403c1b3032ad4cd0281ef312ed262c7125.zip
         sha256: e10c67a96828b9f36364e2459cdee3e3b381a3875ff78db2b30e7b6fe69509bb
-  - name: infinipaint
+  - name: infinipaint-x86_64
     buildsystem: cmake-ninja
     builddir: true
+    only-arches:
+        - x86_64
     config-opts:
         - -DLINK_SKIA_MANUALLY=ON
         - -DSKIA_INCLUDE=/app/Skia
@@ -79,6 +81,29 @@ modules:
         - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
         - -DCMAKE_BUILD_TYPE=Release
         - -DTBB_NOT_ONETBB=ON
+        - -DGRAPHICS_BACKEND=OpenGL3.3
+    sources:
+      - type: dir
+        # branch: master
+        path: ..
+  - name: infinipaint-aarch64
+    buildsystem: cmake-ninja
+    builddir: true
+    only-arches:
+        - aarch64
+    config-opts:
+        - -DLINK_SKIA_MANUALLY=ON
+        - -DSKIA_INCLUDE=/app/Skia
+        - -DSKIA_LIB=/app/Skia/out/Static/libskia.a
+        - -DSKIA_SVG_LIB=/app/Skia/out/Static/libsvg.a
+        - -DSKIA_RESOURCES_LIB=/app/Skia/out/Static/libskresources.a
+        - -DSKIA_SHAPER_LIB=/app/Skia/out/Static/libskshaper.a
+        - -DSKIA_UNICODE_ICU_LIB=/app/Skia/out/Static/libskunicode_core.a
+        - -DSKIA_UNICODE_CORE_LIB=/app/Skia/out/Static/libskunicode_icu.a
+        - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
+        - -DCMAKE_BUILD_TYPE=Release
+        - -DTBB_NOT_ONETBB=ON
+        - -DGRAPHICS_BACKEND=OpenGL2.1
     sources:
       - type: dir
         # branch: master

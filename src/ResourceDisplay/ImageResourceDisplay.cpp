@@ -4,15 +4,21 @@
 #include <include/codec/SkBmpDecoder.h>
 #include <include/codec/SkIcoDecoder.h>
 #include <include/codec/SkGifDecoder.h>
+#include <include/codec/SkRawDecoder.h>
+#include <include/codec/SkWbmpDecoder.h>
+#include <include/codec/SkWebpDecoder.h>
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
 
-std::array<const SkCodecs::Decoder, 5> decoders = {
-    SkPngDecoder::Decoder(),
-    SkJpegDecoder::Decoder(),
+std::array<const SkCodecs::Decoder, 8> decoders = {
     SkBmpDecoder::Decoder(),
+    SkGifDecoder::Decoder(),
     SkIcoDecoder::Decoder(),
-    SkGifDecoder::Decoder()
+    SkJpegDecoder::Decoder(),
+    SkPngDecoder::Decoder(),
+    SkRawDecoder::Decoder(),
+    SkWbmpDecoder::Decoder(),
+    SkWebpDecoder::Decoder()
 };
 
 bool ImageResourceDisplay::update_draw() const {
