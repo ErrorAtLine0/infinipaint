@@ -26,7 +26,7 @@ void EraserTool::switch_tool(DrawingProgramToolType newTool) {
         // NOTE: Ideally, you would just recalculate the lastDrawnPos of every cache instead of invalidating and redrawing the caches
         // However, the eraser might have other visual glitches during drawing that i am unaware of, so for now, just refresh the
         // cache after a draw
-        drawP.compCache.invalidate_cache_before_pos(0);
+        drawP.compCache.clear_own_cached_surfaces();
     }
     erasedComponents.clear();
     erasedBVHNodes.clear();

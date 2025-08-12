@@ -46,8 +46,12 @@ void DrawingProgramCache::clear() {
 }
 
 void DrawingProgramCache::clear_own_cached_surfaces() {
-    std::erase_if(nodesWithCachedSurfaces, [&](auto& s) {
-        return s->drawCache.value().attachedCache == this;
+    std::erase_if(nodesWithCachedSurfaces, [&](auto& n) {
+        if(n->drawCache.value().attachedCache == this) {
+            n->drawCache = std::nullopt;
+            return true;
+        }
+        return false;
     });
 }
 
@@ -251,7 +255,7 @@ void DrawingProgramCache::invalidate_cache_before_pos(uint64_t placementToInvali
     // For now, we will ignore worldAABB and just clear cache by placement in list
 
     std::erase_if(nodesWithCachedSurfaces, [&](auto& n) {
-        if(placementToInvalidateAt <= n->drawCache.value().lastDrawnComponentPlacement) {
+        if(n->drawCache.value().attachedCache == this && placementToInvalidateAt <= n->drawCache.value().lastDrawnComponentPlacement) {
             n->drawCache = std::nullopt;
             return true;
         }
@@ -268,7 +272,7 @@ void DrawingProgramCache::invalidate_cache_at_optional_aabb_before_pos(const std
 
 void DrawingProgramCache::invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt) {
     std::for_each(nodesWithCachedSurfaces.begin(), nodesWithCachedSurfaces.end(), [&](auto& n) {
-        if(SCollision::collide(aabb, n->bounds)) {
+        if(n->drawCache.value().attachedCache == this && SCollision::collide(aabb, n->bounds)) {
             auto& dCache = n->drawCache.value();
             if(dCache.invalidBounds.has_value()) {
                 auto& iBounds = dCache.invalidBounds.value();
