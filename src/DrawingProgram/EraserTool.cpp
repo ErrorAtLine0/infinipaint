@@ -23,6 +23,10 @@ void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     if(!erasedComponents.empty()) {
         DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
         drawP.client_erase_set(erasedComponents);
+        // NOTE: Ideally, you would just recalculate the lastDrawnPos of every cache instead of invalidating and redrawing the caches
+        // However, the eraser might have other visual glitches during drawing that i am unaware of, so for now, just refresh the
+        // cache after a draw
+        drawP.compCache.invalidate_cache_before_pos(0);
     }
     erasedComponents.clear();
     erasedBVHNodes.clear();
