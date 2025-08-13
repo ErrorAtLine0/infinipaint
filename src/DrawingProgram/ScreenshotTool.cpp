@@ -50,8 +50,9 @@ void ScreenshotTool::gui_toolbox() {
     t.gui.push_id("screenshot tool");
     t.gui.text_label_centered("Screenshot");
     auto oldImgSize = controls.imageSize;
-    if(controls.selectionMode == 2) {
+    if(controls.selectionMode != 0)
         t.gui.input_scalar_fields("Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
+    if(controls.selectionMode == 2) {
         t.gui.left_to_right_line_layout([&]() {
             t.gui.text_label("Image Type");
             t.gui.dropdown_select("image type select", &controls.selectedType, controls.typeSelections);
@@ -59,10 +60,16 @@ void ScreenshotTool::gui_toolbox() {
         t.gui.checkbox_field("Display Grid", "Display Grid", &controls.displayGrid);
         if(controls.selectedType != 0)
             t.gui.checkbox_field("Transparent Background", "Transparent Background", &controls.transparentBackground);
-        if(controls.imageSize.x() != oldImgSize.x())
-            controls.imageSize.y() = ((double)controls.imageSize.x() / oldImgSize.x()) * controls.imageSize.y();
-        else if(controls.imageSize.y() != oldImgSize.y())
-            controls.imageSize.x() = ((double)controls.imageSize.y() / oldImgSize.y()) * controls.imageSize.x();
+        if(controls.imageSize.x() != oldImgSize.x()) {
+            controls.setDimensionSize = controls.imageSize.x();
+            controls.setDimensionIsX = true;
+            controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
+        }
+        else if(controls.imageSize.y() != oldImgSize.y()) {
+            controls.setDimensionSize = controls.imageSize.y();
+            controls.setDimensionIsX = false;
+            controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
+        }
         if(t.gui.text_button_wide("Take Screenshot", "Take Screenshot")) {
             controls.selectionMode = 0;
             #ifdef __EMSCRIPTEN__
@@ -275,11 +282,23 @@ void ScreenshotTool::tool_update() {
                 controls.selectionMode = 0;
                 break;
             }
+
+            float tempX1 = std::min(controls.rectX1, controls.rectX2);
+            float tempX2 = std::max(controls.rectX1, controls.rectX2);
+            float tempY1 = std::min(controls.rectY1, controls.rectY2);
+            float tempY2 = std::max(controls.rectY1, controls.rectY2);
+            if(controls.setDimensionIsX) {
+                controls.imageSize.x() = controls.setDimensionSize;
+                controls.imageSize.y() = controls.imageSize.x() * (tempY2 - tempY1) / (tempX2 - tempX1);
+            }
+            else {
+                controls.imageSize.y() = controls.setDimensionSize;
+                controls.imageSize.x() = controls.imageSize.y() * (tempX2 - tempX1) / (tempY2 - tempY1);
+            }
+
             if(!drawP.controls.leftClickHeld) {
                 controls.selectionMode = 2;
                 commit_rect();
-                controls.imageSize.x() = 1000.0;
-                controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
             }
             break;
         }

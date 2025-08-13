@@ -41,6 +41,8 @@ class ScreenshotTool : public DrawingProgramToolBase {
             int selectionMode = 0;
             int dragType = 0;
             Vector2i imageSize = {0, 0};
+            int setDimensionSize = 1000;
+            bool setDimensionIsX = true;
             std::array<SCollision::Circle<float>, 8> circles;
 
             bool displayGrid = true;

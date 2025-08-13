@@ -37,8 +37,6 @@ class DrawingProgramCache {
         static constexpr size_t MINIMUM_COMPONENTS_TO_START_REBUILD = 1000;
         static constexpr size_t MAXIMUM_COMPONENTS_IN_SINGLE_NODE = 100;
 
-        static std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>> nodesWithCachedSurfaces;
-
         bool check_if_rebuild_should_occur();
         void test_rebuild(const std::vector<CollabListType::ObjectInfoPtr>& comps, bool force = false);
         void test_rebuild_dont_include_set(const std::vector<CollabListType::ObjectInfoPtr>& comps, const std::unordered_set<CollabListType::ObjectInfoPtr>& objsToNotInclude, bool force = false);
@@ -70,6 +68,9 @@ class DrawingProgramCache {
         const std::chrono::steady_clock::time_point& get_last_bvh_build_time() const;
         void clear_own_cached_surfaces();
     private:
+
+        static std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>> nodesWithCachedSurfaces;
+
         void draw_cache_image_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
 
         void force_rebuild_dont_include_objs(std::vector<CollabListType::ObjectInfoPtr> componentsToBuild, const std::unordered_set<CollabListType::ObjectInfoPtr>& objsToNotInclude);
