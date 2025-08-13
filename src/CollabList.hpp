@@ -1,5 +1,6 @@
 #pragma once
 #include "SharedTypes.hpp"
+#include <limits>
 
 template <typename T, typename IDType> class CollabList {
     public:
@@ -24,7 +25,7 @@ template <typename T, typename IDType> class CollabList {
         std::function<void(const ObjectInfoPtr& c)> clientInsertCallback;
         std::function<void(const ObjectInfoPtr& c)> clientEraseCallback;
         std::function<void(const std::vector<ObjectInfoPtr>& c)> clientInsertOrderedVectorCallback;
-        std::function<void(uint64_t oldPos)> clientServerLastPosShiftCallback;
+        std::function<void(uint64_t oldPos)> clientServerFirstPosShiftCallback;
 
         void set_server_from_client_list() {
             serverSideList = clientSideList;
@@ -144,11 +145,11 @@ template <typename T, typename IDType> class CollabList {
             bool erasedSomething = false;
             std::erase_if(clientSideList, [&](const auto& obj) {
                 if(objSet.contains(obj)) {
-                    obj->syncIgnore = true;
-                    obj->obj->collabListInfo.reset();
-                    idToObjectMap.erase(obj->id);
                     if(clientEraseCallback)
                         clientEraseCallback(obj);
+                    idToObjectMap.erase(obj->id);
+                    obj->syncIgnore = true;
+                    obj->obj->collabListInfo.reset();
                     erasedSomething = true;
                     return true;
                 }
@@ -333,19 +334,19 @@ template <typename T, typename IDType> class CollabList {
         }
     private:
         void complete_client_pos_refresh(bool syncFromServer) {
-            uint64_t lastShiftPos = 0;
+            uint64_t firstShiftPos = std::numeric_limits<uint64_t>::max();
             bool shiftHappened = false;
             for(uint64_t i = 0; i < clientSideList.size(); i++) {
                 auto& c = clientSideList[i];
                 if(c->pos != i) {
-                    lastShiftPos = std::max(lastShiftPos, c->pos);
-                    lastShiftPos = std::max(lastShiftPos, i);
+                    firstShiftPos = std::min(firstShiftPos, c->pos);
+                    firstShiftPos = std::min(firstShiftPos, i);
                     shiftHappened = true;
                     c->pos = i;
                 }
             }
-            if(syncFromServer && shiftHappened && clientServerLastPosShiftCallback)
-                clientServerLastPosShiftCallback(lastShiftPos);
+            if(syncFromServer && shiftHappened && clientServerFirstPosShiftCallback)
+                clientServerFirstPosShiftCallback(firstShiftPos);
         }
 
         void client_pos_refresh_after_insert(uint64_t posToRefreshAfter) {

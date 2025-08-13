@@ -23,6 +23,7 @@ class DrawingProgramSelection {
         bool is_being_transformed();
 
         void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);
+        void clear_own_cached_surfaces();
         void preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck);
     private:
         std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld);

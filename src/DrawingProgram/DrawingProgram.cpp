@@ -53,8 +53,9 @@ DrawingProgram::DrawingProgram(World& initWorld):
         for(auto& c : comps)
             components.clientInsertCallback(c);
     };
-    components.clientServerLastPosShiftCallback = [&](uint64_t lastShiftPos) {
-        compCache.invalidate_cache_before_pos(lastShiftPos);
+    components.clientServerFirstPosShiftCallback = [&](uint64_t firstShiftPos) {
+        compCache.clear_own_cached_surfaces();
+        selection.clear_own_cached_surfaces();
     };
 }
 

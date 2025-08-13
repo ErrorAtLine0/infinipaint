@@ -4,19 +4,19 @@
 #include <include/codec/SkBmpDecoder.h>
 #include <include/codec/SkIcoDecoder.h>
 #include <include/codec/SkGifDecoder.h>
-#include <include/codec/SkRawDecoder.h>
+//#include <include/codec/SkRawDecoder.h>
 #include <include/codec/SkWbmpDecoder.h>
 #include <include/codec/SkWebpDecoder.h>
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
 
-std::array<const SkCodecs::Decoder, 8> decoders = {
+std::array<const SkCodecs::Decoder, 7> decoders = {
     SkBmpDecoder::Decoder(),
     SkGifDecoder::Decoder(),
     SkIcoDecoder::Decoder(),
     SkJpegDecoder::Decoder(),
     SkPngDecoder::Decoder(),
-    SkRawDecoder::Decoder(),
+//    SkRawDecoder::Decoder(),
     SkWbmpDecoder::Decoder(),
     SkWebpDecoder::Decoder()
 };

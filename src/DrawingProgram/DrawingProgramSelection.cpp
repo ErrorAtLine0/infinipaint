@@ -216,6 +216,10 @@ void DrawingProgramSelection::invalidate_cache_at_optional_aabb_before_pos(const
     cache.invalidate_cache_at_optional_aabb_before_pos(aabb, placementToInvalidateAt);
 }
 
+void DrawingProgramSelection::clear_own_cached_surfaces() {
+    cache.clear_own_cached_surfaces();
+}
+
 void DrawingProgramSelection::preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck) {
     cache.preupdate_component(objToCheck);
 }
