@@ -159,11 +159,6 @@ class Toolbar {
             GSETTINGS_KEYBINDS,
             GSETTINGS_DEBUG
         } generalSettingsOptions = GSETTINGS_GENERAL;
-        
-        enum AboutMenuOptions {
-            ABOUTOPTIONS_INFINIPAINT,
-            ABOUTOPTIONS_THIRDPARTY
-        } aboutMenuOptions = ABOUTOPTIONS_INFINIPAINT;
 
         struct BookmarkMenu {
             bool popupOpen = false;

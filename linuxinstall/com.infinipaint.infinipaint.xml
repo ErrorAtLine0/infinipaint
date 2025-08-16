@@ -3,5 +3,6 @@
     <mime-type type="application/x-com.infinipaint.infinipaint.infpnt">
         <comment>InfiniPaint Canvas</comment>
         <glob pattern="*.infpnt"/>
+        <icon name="com.infinipaint.infinipaint-application-infpnt"/>
     </mime-type>
 </mime-info>

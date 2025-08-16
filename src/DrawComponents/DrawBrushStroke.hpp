@@ -8,7 +8,7 @@
 #include <include/core/SkPath.h>
 #endif
 
-#define DRAW_MINIMUM_LIMIT 0.75
+#define DRAW_MINIMUM_LIMIT 0.3
 
 
 struct DrawBrushStrokePoint {
