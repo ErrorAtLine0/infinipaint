@@ -77,6 +77,8 @@ class Toolbar {
         Vector4f* colorLeft = nullptr;
         Vector4f* colorRight = nullptr;
         std::optional<Vector2f> paintPopupLocation;
+
+        float final_gui_scale();
     private:
         static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
 
@@ -128,13 +130,13 @@ class Toolbar {
         bool justAssignedColorLeft = false;
         bool justAssignedColorRight = false;
 
-        float guiScale = 1.0f;
-
         bool showPerformance = false;
 
         bool menuPopUpOpen = false;
         bool optionsMenuOpen = false;
         bool playerMenuOpen = false;
+
+        float guiScale = 1.0f;
 
         enum {
             CHATBOXSTATE_OPEN,

@@ -254,7 +254,7 @@ void DrawingProgram::update() {
         if(world.main.toolbar.paintPopupLocation)
             world.main.toolbar.paintPopupLocation = std::nullopt;
         else
-            world.main.toolbar.paintPopupLocation = world.main.input.mouse.pos / world.main.window.scale;
+            world.main.toolbar.paintPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
     }
 
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;

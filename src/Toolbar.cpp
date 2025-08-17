@@ -1673,7 +1673,7 @@ void Toolbar::start_gui() {
     io->mouse.rightClick = main.input.mouse.rightClicks;
     io->mouse.leftHeld = main.input.mouse.leftDown;
     io->mouse.rightHeld = main.input.mouse.rightDown;
-    io->mouse.globalPos = main.input.mouse.pos / (guiScale * main.window.scale);
+    io->mouse.globalPos = main.input.mouse.pos / final_gui_scale();
     io->mouse.scroll = main.input.mouse.scrollAmount;
     io->deltaTime = main.deltaTime;
 
@@ -1707,6 +1707,10 @@ void Toolbar::start_gui() {
     gui.begin();
 }
 
+float Toolbar::final_gui_scale() {
+    return guiScale * main.window.scale;
+}
+
 void Toolbar::end_gui() {
     gui.end();
     if(io->acceptingTextInput)
@@ -1718,7 +1722,7 @@ void Toolbar::end_gui() {
 void Toolbar::draw(SkCanvas* canvas) {
     if(!main.takingScreenshot) {
         canvas->save();
-        canvas->scale(guiScale * main.window.scale, guiScale * main.window.scale);
+        canvas->scale(final_gui_scale(), final_gui_scale());
         gui.draw(canvas);
         canvas->restore();
     }
