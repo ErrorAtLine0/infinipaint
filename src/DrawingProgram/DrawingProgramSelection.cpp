@@ -250,6 +250,7 @@ void DrawingProgramSelection::selection_to_clipboard() {
     for(auto& c : compVecSort)
         clipboard.components.emplace_back(c->obj);
     clipboard.pos = initialSelectionAABB.center();
+    drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
 }
 
 void DrawingProgramSelection::update() {
