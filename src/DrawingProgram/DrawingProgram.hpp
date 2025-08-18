@@ -53,6 +53,8 @@ class DrawingProgram {
 
         void switch_to_tool(DrawingProgramToolType newToolType);
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
+
+        void clear_draw_cache();
     private:
         void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
 

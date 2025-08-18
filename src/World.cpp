@@ -175,10 +175,13 @@ void World::set_canvas_background_color(const Vector3f& newBackColor, bool sendC
     if(newBackColor != convert_vec3<Vector3f>(canvasTheme.backColor)) {
         canvasTheme.backColor = SkColor4f{newBackColor.x(), newBackColor.y(), newBackColor.z(), 1.0f};
         Vector3f newHSV = rgb_to_hsv<Vector3f>(newBackColor);
+        SkColor4f oldToolFrontColor = canvasTheme.toolFrontColor;
         if(newHSV.z() >= 0.6f)
             canvasTheme.toolFrontColor = SkColor4f{0.0f, 0.0f, 0.0f, 1.0f};
         else
             canvasTheme.toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
+        if(oldToolFrontColor != canvasTheme.toolFrontColor)
+            drawProg.clear_draw_cache();
         if(sendChangeOverNetwork)
             con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_COLOR, newBackColor);
     }

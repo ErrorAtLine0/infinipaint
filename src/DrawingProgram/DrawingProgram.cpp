@@ -54,8 +54,7 @@ DrawingProgram::DrawingProgram(World& initWorld):
             components.clientInsertCallback(c);
     };
     components.clientServerFirstPosShiftCallback = [&](uint64_t firstShiftPos) {
-        compCache.clear_own_cached_surfaces();
-        selection.clear_own_cached_surfaces();
+        clear_draw_cache();
     };
 }
 
@@ -169,6 +168,11 @@ std::unordered_set<ServerClientID> DrawingProgram::get_used_resources() {
     for(auto& c : components.client_list())
         c->obj->get_used_resources(toRet);
     return toRet;
+}
+
+void DrawingProgram::clear_draw_cache() {
+    compCache.clear_own_cached_surfaces();
+    selection.clear_own_cached_surfaces();
 }
 
 void DrawingProgram::toolbar_gui() {
