@@ -349,6 +349,8 @@ elseif(WIN32)
 	     DeleteRegKey HKCR '.infpnt'
          DeleteRegKey HKCR 'InfiniPaintCanvas'
      ")
+
+     set(CPACK_PACKAGE_INSTALL_DIRECTORY "infinipaint")
 else()
     install(DIRECTORY data DESTINATION bin)
     install(TARGETS infinipaint DESTINATION bin)
