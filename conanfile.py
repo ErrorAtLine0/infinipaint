@@ -36,7 +36,7 @@ class CompressorRecipe(ConanFile):
 
         
         if self.settings.os == "Linux":
-            self.requires("sdl/3.2.14", options = {
+            self.requires("sdl/3.2.20", options = {
                 "wayland": False,
                 "pulseaudio": False,
                 "alsa": False,
@@ -45,7 +45,7 @@ class CompressorRecipe(ConanFile):
                 "opengles": False
             })
         else:
-            self.requires("sdl/3.2.14")
+            self.requires("sdl/3.2.20")
 
         if self.settings.os != "Emscripten" and self.settings.os != "Macos":
             self.requires("onetbb/2022.0.0")
