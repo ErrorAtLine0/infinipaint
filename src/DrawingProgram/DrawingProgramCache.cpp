@@ -314,7 +314,7 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
         #ifdef USE_BACKEND_OPENGLES_3_0
             SkImageInfo imgInfo = SkImageInfo::Make(bvhNode->resolution.x(), bvhNode->resolution.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
         #else
-            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(mS.m->window.size.x(), mS.m->window.size.y());
+            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode->resolution.x(), bvhNode->resolution.y());
         #endif
         #ifdef USE_SKIA_BACKEND_GRAPHITE
             drawCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);

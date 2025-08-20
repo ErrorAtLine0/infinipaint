@@ -122,7 +122,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
     #ifdef USE_BACKEND_OPENGLES_3_0
         SkImageInfo imgInfo = SkImageInfo::Make(drawP.world.main.window.size.x(), drawP.world.main.window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     #else
-        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(mS.m->window.size.x(), mS.m->window.size.y());
+        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(drawP.world.main.window.size.x(), drawP.world.main.window.size.y());
     #endif
     #ifdef USE_SKIA_BACKEND_GRAPHITE
         sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, &drawP.world.main.window.defaultMSAASurfaceProps);
