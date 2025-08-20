@@ -228,7 +228,13 @@ void DrawingProgramCache::build_bvh_node_coords_and_resolution(DrawingProgramCac
     //  - We dont have to recalculate it every time we refresh the cache
     //  - Some of the data here is needed to determine whether to generate the cache in the first place
 
-    const int MAX_DIMENSION_RESOLUTION = 2000;
+    // NOTE: We're assuming that devices using OpenGLES are mobile devices have less VRAM, so we decrease the size of the draw cache
+    // This isn't necessarily true, but it can improve performance on those devices without adding more settings
+    #ifdef USE_BACKEND_OPENGLES_3_0
+        const int MAX_DIMENSION_RESOLUTION = 1024;
+    #else
+        const int MAX_DIMENSION_RESOLUTION = 2048;
+    #endif
 
     WorldVec cacheBoundDim = node.bounds.dim();
     if(cacheBoundDim.x() > cacheBoundDim.y()) {
