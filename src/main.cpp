@@ -5,6 +5,8 @@
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_oldnames.h>
 #include <filesystem>
+#include <include/core/SkAlphaType.h>
+#include <include/core/SkColorType.h>
 #ifdef USE_BACKEND_OPENGL 
 #ifndef __EMSCRIPTEN__
     #ifdef USE_BACKEND_OPENGLES_3_0
@@ -265,7 +267,11 @@ void sdl_terminate(MainStruct& mS) {
 
 void resize_window(MainStruct& mS) {
     // Having intermediate surface allows for changing options more easily
-    SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(mS.m->window.size.x(), mS.m->window.size.y());
+    #ifdef USE_BACKEND_OPENGLES_3_0
+        SkImageInfo imgInfo = SkImageInfo::Make(mS.m->window.size.x(), mS.m->window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    #else
+        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(mS.m->window.size.x(), mS.m->window.size.y());
+    #endif
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     mS.intermediateSurface = SkSurfaces::RenderTarget(mS.vulkanWindowContext->graphiteRecorder(), imgInfo, skgpu::Mipmapped::kNo, &mS.m->window.defaultMSAASurfaceProps);
 #elif USE_SKIA_BACKEND_GANESH

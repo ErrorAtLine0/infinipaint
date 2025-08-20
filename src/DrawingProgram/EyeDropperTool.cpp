@@ -40,7 +40,11 @@ void EyeDropperTool::gui_toolbox() {
 void EyeDropperTool::tool_update() {
     if(drawP.controls.leftClick) {
         SkSurfaceProps props;
-        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(drawP.world.main.window.size.x(), drawP.world.main.window.size.y());
+        #ifdef USE_BACKEND_OPENGLES_3_0
+            SkImageInfo imgInfo = SkImageInfo::Make(drawP.world.main.window.size.x(), drawP.world.main.window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+        #else
+            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(mS.m->window.size.x(), mS.m->window.size.y());
+        #endif
         #ifdef USE_SKIA_BACKEND_GRAPHITE
             sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, &props);
         #elif USE_SKIA_BACKEND_GANESH

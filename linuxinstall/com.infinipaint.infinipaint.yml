@@ -103,7 +103,7 @@ modules:
         - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
         - -DCMAKE_BUILD_TYPE=Release
         - -DTBB_NOT_ONETBB=ON
-        - -DGRAPHICS_BACKEND=OpenGL2.1
+        - -DGRAPHICS_BACKEND=OpenGLES3.0
     sources:
       - type: dir
         # branch: master
