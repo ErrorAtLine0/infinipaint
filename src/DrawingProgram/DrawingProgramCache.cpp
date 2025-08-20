@@ -230,7 +230,8 @@ void DrawingProgramCache::build_bvh_node_coords_and_resolution(DrawingProgramCac
 
     // NOTE: We're assuming that devices using OpenGLES are mobile devices have less VRAM, so we decrease the size of the draw cache
     // This isn't necessarily true, but it can improve performance on those devices without adding more settings
-    #ifdef USE_BACKEND_OPENGLES_3_0
+    // Emscripten has less RAM to work with, so this is a good assumption to make
+    #if defined(__EMSCRIPTEN__) || defined(USE_BACKEND_OPENGLES_3_0)
         const int MAX_DIMENSION_RESOLUTION = 1024;
     #else
         const int MAX_DIMENSION_RESOLUTION = 2048;
