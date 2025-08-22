@@ -48,7 +48,7 @@
             <li>Place bookmarks on the canvas to jump to later</li>
             <li>Undo/Redo</li>
             <li>Screenshot tool to export parts of the canvas to a picture</li>
-            <li>Other tools such as: Textbox tool, Transform tool, Color picker tool, Square and Ellipse tools</li>
+            <li>Other tools such as: Textbox tool, Rectangle select tool, Lasso select tool, Color picker tool, Square and Ellipse tools</li>
             <li>Copy and paste objects on the canvas, and between different canvases</li>
             <li>Insert images and files on the canvas</li>
         </ul>
@@ -59,6 +59,7 @@
     <releases>
         <release version="0.1.0" date="2025-08-08">
             <description>
+                <p>Major update:</p>
                 <ul>
                     <li>New cache system that leads to major performance improvements for canvases with many objects</li>
                     <li>Lasso select tool added</li>
@@ -66,14 +67,8 @@
                     <li>Large network messages are compressed, leading to better online performance</li>
                     <li>Can embed and display SVG files on the canvas</li>
                     <li>Can display more raster image types: webp, wbmp</li>
-                    <li>Selection can be modified:
-                        <ul>
-                            <li>Hold left shift to add to selection</li>
-                            <li>Hold left alt to remove from selection</li>
-                        </ul>
-                    </li>
+                    <li>Selection can be modified by holding left shift to add to selection, or holding left alt to remove from selection</li>
                     <li>Can change canvas background color</li>
-                    <li>Small visual changes</li>
                 </ul>
             </description>
         </release>
@@ -101,16 +96,24 @@
 
     <screenshots>
         <screenshot type="default">
-            <image>https://infinipaint.com/downloads/flathubscreenshots/title.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots2/sketches.png</image>
             <caption>Welcome to InfiniPaint!</caption>
         </screenshot>
         <screenshot>
-            <image>https://infinipaint.com/downloads/flathubscreenshots/onlinecollab.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots2/tablets.png</image>
+            <caption>Drawing tablet support</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://infinipaint.com/downloads/flathubscreenshots2/online.png</image>
             <caption>Host online lobbies</caption>
         </screenshot>
         <screenshot>
-            <image>https://infinipaint.com/downloads/flathubscreenshots/rightclickmenu.png</image>
-            <caption>Right click Quick Menu</caption>
+            <image>https://infinipaint.com/downloads/flathubscreenshots2/bookmarks.png</image>
+            <caption>Create bookmarks</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://infinipaint.com/downloads/flathubscreenshots2/rightclick.png</image>
+            <caption>Right click quick menu</caption>
         </screenshot>
     </screenshots>
 

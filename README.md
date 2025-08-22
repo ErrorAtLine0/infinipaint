@@ -1,14 +1,35 @@
-# ![InfiniPaint Logo](logo.svg) InfiniPaint
+<div align="center">
+	<img alt="InfiniPaint Logo" src="https://raw.githubusercontent.com/ErrorAtLine0/infinipaint/refs/heads/main/logo.svg" width=150/>
+	<h3>Infinite Space, Infinite Zoom, Collaborative Drawing</h3>
+	<p>
+		<a href="https://infinipaint.com">🔗 Website</a> -
+		<a href="https://infinipaint.com/try.html">🌐 Try in Browser</a> -
+		<a href="https://github.com/ErrorAtLine0/infinipaint/releases/latest">⬇️ Download</a> -
+		<a href="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/MANUAL.md">📕 Usage Manual</a> -
+		<a href="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/BUILDING.md">⚒️ Build Manual</a>
+	</p>
+	<p>
+		<a href="https://opensource.org/license/mit"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"/></a>
+		<a href="https://github.com/ErrorAtLine0/infinipaint/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/erroratline0/infinipaint.svg"/></a>
+		<img alt="Github Stars" src="https://img.shields.io/github/stars/erroratline0/infinipaint"/>
+	</p>
+</div>
+
+## InfiniPaint
 
 InfiniPaint is a **collaborative, infinite** canvas note-taking/drawing app. Unlike many other infinite canvas apps, although there is a specific zoom-in level limit, there is **no zoom-out limit** (at least up until the point your computer runs out of memory). This means that this app is very good at things such as drawing sketches of the solar system to scale, or just drawing any massive objects with tiny details. Of course, even though this is a feature, this app is also perfectly well suited for use as a normal canvas.
 
 You can try the web version of this app at [infinipaint.com](https://infinipaint.com) (requires a WebGL2 capable browser). The web version was compiled from C++ to Javascript using Emscripten, and may contain some bugs, so if possible, please consider downloading the native version for a better experience.
 
-This program is a work in progress, so I cannot guarantee that files created in this version will open in future versions.
-
 This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another great infinite canvas program.
 
-https://github.com/user-attachments/assets/7f6617c7-a9a4-4e02-97d9-519579340826
+## Screenshots/GIFs
+
+<img alt="Sketches Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/sketches.png?raw=true" width="100%"/>
+<img alt="Online Collaboration Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/tictactoe.png?raw=true" width="100%"/>
+<img alt="Right Click Menu Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/rotate.png?raw=true" width="100%"/>
+<img alt="Zoom Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/zoom.gif?raw=true" width="100%"/>
+<img alt="Bookmark Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/bookmarkslideshow.gif?raw=true" width="100%"/>
 
 ## Features
 
@@ -26,7 +47,7 @@ https://github.com/user-attachments/assets/7f6617c7-a9a4-4e02-97d9-519579340826
 - Place bookmarks on the canvas to jump to later
 - Undo/Redo
 - PNG, JPG, WEBP export of specific parts of the canvas at any resolution (Screenshot Tool)
-- Transform (Move, Scale, Rotate) any object on the canvas (Rectangle Select Tool)
+- Transform (Move, Scale, Rotate) any object on the canvas (Rectangle Select Tool/Lasso Select Tool)
 - Display Images and animated GIFs on the canvas
 	- Note: May take a lot of memory to store and display images compared to other objects, especially GIFs
 - Hide (or unhide) the UI by pressing Tab
@@ -34,9 +55,5 @@ https://github.com/user-attachments/assets/7f6617c7-a9a4-4e02-97d9-519579340826
 - Create custom UI themes
 - Static square grid at initial zoom level
 - Other tools: Textbox, Rectangle, Circle, Eye dropper/color picker, Edit/cursor
-- Can copy/paste objects selected with the Rectangle Select tool (Ctrl-C Ctrl-V). This can also be done between different files, as long as they're open in different tabs in the same window.
+- Can copy/paste selected objects (Ctrl-C Ctrl-V). This can also be done between different files, as long as they're open in different tabs in the same window.
 - Any file can be placed on the canvas, and using the edit tool, you can download any file/image on the canvas to your computer. This can be used as a sort of file sharing mechanism in a collaborative canvas (should probably only use this for small files...)
-
-## More Info
-- [Usage Manual](docs/MANUAL.md)
-- [Building from Source](docs/BUILDING.md)

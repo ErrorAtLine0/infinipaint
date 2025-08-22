@@ -46,6 +46,12 @@
 	- To change the center of rotation, drag the larger of the two orange circles at the center of the rectangle to the new center of rotation
 	- You can copy (<kbd>Ctrl</kbd> + <kbd>C</kbd>), cut (<kbd>Ctrl</kbd> + <kbd>X</kbd>), and paste (<kbd>Ctrl</kbd> + <kbd>V</kbd>) objects that are selected with this tool. The paste will not change the objects' size, but it will move the objects to the position of the cursor when you paste
 	- Press <kbd>Esc</kbd> or click anywhere out of the selection to unselect the objects
+	- While selecting objects, hold <kbd>Alt</kbd> to unselect objects in the current selection
+	- While selecting objects, hold <kbd>Shift</kbd> to add more objects to the current selection
+- Lasso Select Tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to select objects within an area
+	- Once <kbd>LMB</kbd> is released, the objects will be selected
+	- The tool is otherwise identical to the Rectangle Select Tool
 - Edit/Cursor Tool
 	- You can click on any object except a brush stroke to edit it when this tool is selected. Any relevant properties to the object will pop up on the right when you select it
 	- If an image/file on the canvas is clicked with this tool, you can download the file to your computer
