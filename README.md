@@ -11,7 +11,7 @@
 	<p>
 		<a href="https://opensource.org/license/mit"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"/></a>
 		<a href="https://github.com/ErrorAtLine0/infinipaint/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/erroratline0/infinipaint.svg"/></a>
-		<img alt="Github Stars" src="https://img.shields.io/github/stars/erroratline0/infinipaint"/>
+		<a href="https://github.com/ErrorAtLine0/infinipaint"><img alt="Github Stars" src="https://img.shields.io/github/stars/erroratline0/infinipaint"/></a>
 	</p>
 </div>
 
