@@ -40,8 +40,7 @@ std::shared_ptr<DrawComponent> DrawBrushStroke::deep_copy() const {
     a->d = d;
     a->coords = coords;
     // Just copy pointers over, brush strokes cant be edited so they can share the same memory
-    a->vertices = vertices;
-    a->verticesMipMap = verticesMipMap;
+    a->brushPath = brushPath;
     a->bounds = bounds;
 
     return a;
@@ -63,7 +62,7 @@ Vector2f two_dim_vec_slerp(const Vector2f& v1, const Vector2f& v2) {
 }
 
 void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(drawSetupData.shouldDraw && vertices) {
+    if(drawSetupData.shouldDraw && brushPath) {
         //bool deepPrecheck = false;
         //for(auto& aabb : precheckAABBLevels) {
         //    if(SCollision::collide(drawData.cam.viewingAreaGenerousCollider, aabb)) {
@@ -75,16 +74,12 @@ void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
         //    return;
 
         SkPaint paint;
-        if(d->color.w() == 1.0) // Fully opaque, dont bother with blending
-            canvas->save();
-        else
-            canvas->saveLayerAlphaf(nullptr, d->color.w());
-        paint.setColor4f(SkColor4f{d->color.x(), d->color.y(), d->color.z(), 1.0f});
+        //paint.setStroke(true);
+        //paint.setStrokeWidth(0.0f);
+        canvas->save();
+        paint.setColor4f(SkColor4f{d->color.x(), d->color.y(), d->color.z(), d->color.w()});
         canvas_do_calculated_transform(canvas);
-        if(drawSetupData.mipmapLevel == 0)
-            canvas->drawVertices(vertices, SkBlendMode::kClear, paint);
-        else
-            canvas->drawVertices(verticesMipMap[drawSetupData.mipmapLevel - 1], SkBlendMode::kClear, paint);
+        canvas->drawPath(*brushPath, paint);
         //SkPaint p2(SkColor4f{1, 0, 0, 1});
         //p2.setStroke(true);
         //SkPaint p3(SkColor4f{0, 1, 0, 1});
@@ -100,25 +95,14 @@ void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
 
 void DrawBrushStroke::initialize_draw_data(DrawingProgram& drawP) {
     if(!d->points.empty()) {
-        std::vector<SkPoint> vertexData;
         std::vector<DrawBrushStrokePoint> points = smooth_points(0, d->points.size() - 1, DEFAULT_SMOOTHNESS);
         auto triangleFunc = [&](Vector2f a, Vector2f b, Vector2f c) {
-            vertexData.emplace_back(a.x(), a.y());
-            vertexData.emplace_back(b.x(), b.y());
-            vertexData.emplace_back(c.x(), c.y());
             return false;
         };
 
-        create_triangles(triangleFunc, points, 0);
-        vertices_to_draw_data(vertices, vertexData);
-        vertexData.clear();
+        brushPath = std::make_shared<SkPath>();
 
-        create_triangles(triangleFunc, points, 4);
-        vertices_to_draw_data(verticesMipMap[0], vertexData);
-        vertexData.clear();
-
-        create_triangles(triangleFunc, points, 30);
-        vertices_to_draw_data(verticesMipMap[1], vertexData);
+        create_triangles(triangleFunc, points, 0, brushPath);
     }
     create_collider();
 }
@@ -211,19 +195,26 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points_avg(size_t begi
     return toRet;
 }
 
-void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& points, unsigned skipVertexCount) {
+void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& points, unsigned skipVertexCount, std::shared_ptr<SkPath> bPath) {
     const int ARC_SMOOTHNESS = 10;
     const int CIRCLE_SMOOTHNESS = 20;
     std::vector<DrawBrushStrokePoint>& pointsN = d->points;
+    std::vector<SkPoint> topPoints;
+    std::vector<SkPoint> bottomPoints;
 
     if(pointsN.size() == 1 && d->hasRoundCaps) {
         std::vector<Vector2f> circlePoints = gen_circle_points(pointsN.front().pos, pointsN.front().width / 2.0f, CIRCLE_SMOOTHNESS);
-        for(size_t i = 0; i < circlePoints.size(); i++)
+        for(size_t i = 0; i < circlePoints.size(); i++) {
             if(passTriangleFunc(pointsN.front().pos, circlePoints[i], circlePoints[(i + 1) % circlePoints.size()])) return;
+            topPoints.emplace_back(convert_vec2<SkPoint>(circlePoints[i]));
+        }
     }
 
-    if(pointsN.size() < 2)
+    if(pointsN.size() < 2) {
+        if(bPath && !topPoints.empty())
+            bPath->addPoly(topPoints.data(), topPoints.size(), false);
         return;
+    }
 
     std::vector<size_t> wedgeIndices = get_wedge_indices(points);
     for(size_t i = 0; i < wedgeIndices.size() - 1; i++) {
@@ -238,7 +229,9 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
         perpPrev.normalize();
 
         vertArray[0] = points[pointsBegin].pos + perpPrev * points[pointsBegin].width * 0.5f;
+        topPoints.emplace_back(convert_vec2<SkPoint>(vertArray[0]));
         vertArray[1] = points[pointsBegin].pos - perpPrev * points[pointsBegin].width * 0.5f;
+        bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[1]));
         newIndex = 2;
 
         if(d->hasRoundCaps && pointsBegin == 0) {
@@ -248,8 +241,11 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
             std::vector<Vector2f> arcPoints = arc_vec<float>(points[0].pos, arcDirStart, arcDirEnd, arcDirCenter, points[0].width * 0.5f, ARC_SMOOTHNESS);
             arcPoints.emplace(arcPoints.begin(), convert_vec2<Vector2f>(vertArray[0]));
             arcPoints.emplace_back(convert_vec2<Vector2f>(vertArray[1]));
-            for(size_t i = 0; i < arcPoints.size() - 1; i++)
+            for(size_t i = 0; i < arcPoints.size() - 1; i++) {
                 if(passTriangleFunc(points[0].pos, arcPoints[i], arcPoints[i + 1])) return;
+                bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+            }
+            bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
         }
 
         for(size_t j = pointsBegin + 1; j < pointsEnd; j++) {
@@ -272,10 +268,12 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
                 perp = -perp;
 
             vertArray[newIndex] = points[j].pos + perp * 0.5f * points[j].width;
+            topPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
             newIndex = (newIndex + 1) % 3;
             if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
             
             vertArray[newIndex] = points[j].pos - perp * 0.5f * points[j].width;
+            bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
             newIndex = (newIndex + 1) % 3;
             if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
 
@@ -288,10 +286,12 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
         if(perp.dot(perpPrev) < 0.0)
             perp = -perp;
         vertArray[newIndex] = points[pointsEnd].pos + perp * points[pointsEnd].width * 0.5;
+        topPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
         newIndex = (newIndex + 1) % 3;
         if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
 
         vertArray[newIndex] = points[pointsEnd].pos - perp * points[pointsEnd].width * 0.5;
+        bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
         newIndex = (newIndex + 1) % 3;
         if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
 
@@ -311,6 +311,7 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
 
             Vector2f wedgeP1 = ((currentP1 - currentP2).dot(nextRectDir)) <= 0.0 ? currentP1 : currentP2;
             Vector2f wedgeP2 = ((nextP1 - nextP2).dot(rectDir)) <= 0.0 ? nextP1 : nextP2;
+            bool isTopWedge = wedgeP1 == convert_vec2<Vector2f>(topPoints.back());
 
             float arcRadius;
 
@@ -330,8 +331,17 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
 
             arcPoints.emplace(arcPoints.begin(), wedgeP1);
             arcPoints.emplace_back(wedgeP2);
-            for(size_t i = 0; i < arcPoints.size() - 1; i++)
+            for(size_t i = 0; i < arcPoints.size() - 1; i++) {
                 if(passTriangleFunc(wedgeCenter, arcPoints[i], arcPoints[i + 1])) return;
+                if(isTopWedge)
+                    topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+                else
+                    bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+            }
+            if(isTopWedge)
+                topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
+            else
+                bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
         }
         else if(d->hasRoundCaps) { // It's the last point, cap it off
             Vector2f arcDirStart = (convert_vec2<Vector2f>(vertArray[(newIndex + 1) % 3]) - points.back().pos).normalized();
@@ -340,9 +350,17 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
             std::vector<Vector2f> arcPoints = arc_vec<float>(points.back().pos, arcDirStart, arcDirEnd, arcDirCenter, points.back().width * 0.5f, ARC_SMOOTHNESS);
             arcPoints.emplace(arcPoints.begin(), convert_vec2<Vector2f>(vertArray[(newIndex + 1) % 3]));
             arcPoints.emplace_back(convert_vec2<Vector2f>(vertArray[(newIndex + 2) % 3]));
-            for(size_t i = 0; i < arcPoints.size() - 1; i++)
+            for(size_t i = 0; i < arcPoints.size() - 1; i++) {
                 if(passTriangleFunc(points.back().pos, arcPoints[i], arcPoints[i + 1])) return;
+                topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+            }
+            topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
         }
+    }
+
+    if(bPath && !topPoints.empty()) {
+        topPoints.insert(topPoints.begin(), bottomPoints.rbegin(), bottomPoints.rend());
+        bPath->addPoly(topPoints.data(), topPoints.size(), true);
     }
 }
 
@@ -355,7 +373,7 @@ void DrawBrushStroke::create_collider() {
     create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
         strokeObjects.triangle.emplace_back(a, b, c);
         return false;
-    }, points, 0);
+    }, points, 0, nullptr);
     strokeObjects.recalculate_bounds();
 
     SCollision::BVHContainer<float> collisionTree;
@@ -374,13 +392,6 @@ void DrawBrushStroke::add_precheck_aabb_level(size_t level, const std::vector<SC
         else
             add_precheck_aabb_level(level - 1, a.children);
     }
-}
-
-void DrawBrushStroke::vertices_to_draw_data(sk_sp<SkVertices>& vertexDataPtr, const std::vector<SkPoint>& vertexData) {
-    if((d->points.size() == 1 && d->hasRoundCaps) || d->points.size() >= 2)
-        vertexDataPtr = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, vertexData.size(), vertexData.data(), nullptr, nullptr);
-    else
-        vertexDataPtr = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, 0, nullptr, nullptr, nullptr);
 }
 
 void DrawBrushStroke::update(DrawingProgram& drawP) {
@@ -405,7 +416,7 @@ bool DrawBrushStroke::collides_within_coords(const SCollision::ColliderCollectio
     create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
         toRet = SCollision::collide(checkAgainst, SCollision::Triangle<float>{a, b, c});
         return toRet;
-    }, points, 0);
+    }, points, 0, nullptr);
     return toRet;
 }
 

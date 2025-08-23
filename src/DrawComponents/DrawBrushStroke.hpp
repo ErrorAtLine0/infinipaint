@@ -46,15 +46,13 @@ class DrawBrushStroke : public DrawComponent {
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 
-        sk_sp<SkVertices> vertices;
-        std::array<sk_sp<SkVertices>, 3> verticesMipMap;
+        std::shared_ptr<SkPath> brushPath;
         SCollision::AABB<float> bounds;
 
     private:
         void add_precheck_aabb_level(size_t level, const std::vector<SCollision::BVHContainer<float>>& levelArray);
         std::vector<SCollision::AABB<float>> precheckAABBLevels;
-        void create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& points, unsigned skipVertexCount);
-        void vertices_to_draw_data(sk_sp<SkVertices>& vertexDataPtr, const std::vector<SkPoint>& vertexData);
+        void create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& points, unsigned skipVertexCount, std::shared_ptr<SkPath> bPath);
         std::vector<size_t> get_wedge_indices(const std::vector<DrawBrushStrokePoint>& points);
         std::vector<DrawBrushStrokePoint> smooth_points(size_t beginIndex, size_t endIndex, unsigned numOfDivisions);
         std::vector<DrawBrushStrokePoint> smooth_points_avg(size_t beginIndex, size_t endIndex, unsigned numOfDivisions);
