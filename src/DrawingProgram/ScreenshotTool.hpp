@@ -20,6 +20,7 @@ class ScreenshotTool : public DrawingProgramToolBase {
         void commit_rect();
         void take_screenshot(const std::filesystem::path& filePath);
         void take_screenshot_area_hw(const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground);
+        void take_screenshot_svg(SkCanvas* canvas, bool transparentBackground);
 
         //static constexpr std::array<InputManager::SystemCursorType, 8> cursors{
         //    InputManager::SystemCursorType::SE_RESIZE,
@@ -31,6 +32,13 @@ class ScreenshotTool : public DrawingProgramToolBase {
         //    InputManager::SystemCursorType::NE_RESIZE,
         //    InputManager::SystemCursorType::E_RESIZE
         //};
+
+        enum ScreenshotType : size_t {
+            SCREENSHOT_JPG,
+            SCREENSHOT_PNG,
+            SCREENSHOT_WEBP,
+            SCREENSHOT_SVG
+        };
 
         struct ScreenshotControls {
             CoordSpaceHelper coords;
@@ -48,8 +56,8 @@ class ScreenshotTool : public DrawingProgramToolBase {
             bool displayGrid = true;
             bool transparentBackground = false;
 
-            size_t selectedType = 0;
-            std::vector<std::string> typeSelections = {".jpg", ".png", ".webp"};
+            size_t selectedType = SCREENSHOT_JPG;
+            std::vector<std::string> typeSelections = {".jpg", ".png", ".webp", ".svg"};
 
             std::atomic<bool> setToTakeScreenshot = false;
             std::filesystem::path screenshotSavePath;

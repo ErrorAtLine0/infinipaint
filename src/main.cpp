@@ -404,12 +404,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.hiddenCursor = SDL_CreateCursor((Uint8 *)cursorData, (Uint8 *)cursorData, 8, 8, 4, 4);
 
         mS.m = std::make_unique<MainProgram>();
-#ifdef __EMSCRIPTEN__
-        mS.m->window.defaultMSAASampleCount = 4;
-#else
         mS.m->window.defaultMSAASampleCount = 0;
         mS.m->window.defaultMSAASurfaceProps = SkSurfaceProps(SkSurfaceProps::kDynamicMSAA_Flag, kUnknown_SkPixelGeometry);
-#endif
         mS.m->logFile = &mS.logFile;
         mS.m->configPath = mS.configPath;
         mS.m->homePath = mS.homePath;

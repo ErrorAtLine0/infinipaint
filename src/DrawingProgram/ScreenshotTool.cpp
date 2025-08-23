@@ -13,6 +13,7 @@
 #include <include/core/SkSurface.h>
 #include <include/core/SkImage.h>
 #include <include/core/SkData.h>
+#include <include/svg/SkSVGCanvas.h>
 #include <include/encode/SkPngEncoder.h>
 #include <include/encode/SkWebpEncoder.h>
 #include <include/encode/SkJpegEncoder.h>
@@ -50,14 +51,15 @@ void ScreenshotTool::gui_toolbox() {
     t.gui.push_id("screenshot tool");
     t.gui.text_label_centered("Screenshot");
     auto oldImgSize = controls.imageSize;
-    if(controls.selectionMode != 0)
+    if(controls.selectionMode != 0 && controls.selectedType != SCREENSHOT_SVG)
         t.gui.input_scalar_fields("Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
     if(controls.selectionMode == 2) {
         t.gui.left_to_right_line_layout([&]() {
             t.gui.text_label("Image Type");
             t.gui.dropdown_select("image type select", &controls.selectedType, controls.typeSelections);
         });
-        t.gui.checkbox_field("Display Grid", "Display Grid", &controls.displayGrid);
+        if(controls.selectedType != SCREENSHOT_SVG)
+            t.gui.checkbox_field("Display Grid", "Display Grid", &controls.displayGrid);
         if(controls.selectedType != 0)
             t.gui.checkbox_field("Transparent Background", "Transparent Background", &controls.transparentBackground);
         if(controls.imageSize.x() != oldImgSize.x()) {
@@ -77,12 +79,20 @@ void ScreenshotTool::gui_toolbox() {
             #else
                 // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
                 Toolbar::ExtensionFilter setExtensionFilter;
-                if(controls.selectedType == 0)
-                    setExtensionFilter = {"JPEG", "jpg;jpeg"};
-                else if(controls.selectedType == 1)
-                    setExtensionFilter = {"PNG", "png"};
-                else if(controls.selectedType == 2)
-                    setExtensionFilter = {"WebP", "webp"};
+                switch(controls.selectedType) {
+                    case SCREENSHOT_JPG:
+                        setExtensionFilter = {"JPEG", "jpg;jpeg"};
+                        break;
+                    case SCREENSHOT_PNG:
+                        setExtensionFilter = {"PNG", "png"};
+                        break;
+                    case SCREENSHOT_WEBP:
+                        setExtensionFilter = {"WEBP", "webp"};
+                        break;
+                    case SCREENSHOT_SVG:
+                        setExtensionFilter = {"SVG", "svg"};
+                        break;
+                }
                 t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
                     auto world = w.lock();
                     if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
@@ -104,74 +114,135 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
     }
 
     std::string ext = filePath.extension().string();
-    unsigned extType = 0;
+    size_t extType = SCREENSHOT_JPG;
     if(ext == ".jpg" || ext == ".jpeg")
-        extType = 0;
+        extType = SCREENSHOT_JPG;
     else if(ext == ".png")
-        extType = 1;
+        extType = SCREENSHOT_PNG;
     else if(ext == ".webp")
-        extType = 2;
+        extType = SCREENSHOT_WEBP;
+    else if(ext == ".svg")
+        extType = SCREENSHOT_SVG;
 
-    size_t imageByteSize = (size_t)controls.imageSize.x() * (size_t)controls.imageSize.y() * 4;
-    size_t imageRowSize = 4 * controls.imageSize.x();
-
-    SkImageInfo finalImgInfo = SkImageInfo::Make(controls.imageSize.x(), controls.imageSize.y(), kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
-    std::vector<uint8_t> finalImgRawData(imageByteSize);
-    SkPixmap finalImgData(finalImgInfo, finalImgRawData.data(), imageRowSize);
+    if(extType != SCREENSHOT_SVG) {
+        size_t imageByteSize = (size_t)controls.imageSize.x() * (size_t)controls.imageSize.y() * 4;
+        size_t imageRowSize = 4 * controls.imageSize.x();
     
-    #ifdef USE_BACKEND_OPENGLES_3_0
-        SkImageInfo imgInfo = SkImageInfo::Make(drawP.world.main.window.size.x(), drawP.world.main.window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+        SkImageInfo finalImgInfo = SkImageInfo::Make(controls.imageSize.x(), controls.imageSize.y(), kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
+        std::vector<uint8_t> finalImgRawData(imageByteSize);
+        SkPixmap finalImgData(finalImgInfo, finalImgRawData.data(), imageRowSize);
+        
+        #ifdef USE_BACKEND_OPENGLES_3_0
+            SkImageInfo imgInfo = SkImageInfo::Make(drawP.world.main.window.size.x(), drawP.world.main.window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+        #else
+            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(drawP.world.main.window.size.x(), drawP.world.main.window.size.y());
+        #endif
+        #ifdef USE_SKIA_BACKEND_GRAPHITE
+            sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, &drawP.world.main.window.defaultMSAASurfaceProps);
+        #elif USE_SKIA_BACKEND_GANESH
+            sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
+        #endif
+        if(!surface) {
+            Logger::get().log("INFO", "[SkSurfaces::WrapBackendRenderTarget] Screenshot Tool could not make surface");
+            return;
+        }
+        SkCanvas* screenshotCanvas = surface->getCanvas();
+        if(!screenshotCanvas) {
+            Logger::get().log("INFO", "Screenshot Tool could not make canvas");
+            return;
+        }
+    
+        for(int i = 0; i < controls.imageSize.x(); i += drawP.world.main.window.size.x())
+            for(int j = 0; j < controls.imageSize.y(); j += drawP.world.main.window.size.y())
+                take_screenshot_area_hw(surface, screenshotCanvas, finalImgRawData.data(), controls.imageSize, Vector2i{i, j}, Vector2i{std::min(drawP.world.main.window.size.x(), controls.imageSize.x() - i), std::min(drawP.world.main.window.size.y(), controls.imageSize.y() - j)}, drawP.world.main.window.size, extType != 0 && controls.transparentBackground);
+    
+        bool success = false;
+    #ifdef __EMSCRIPTEN__
+        SkDynamicMemoryWStream out;
     #else
-        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(drawP.world.main.window.size.x(), drawP.world.main.window.size.y());
+        SkFILEWStream out((const char*)filePath.c_str());
     #endif
-    #ifdef USE_SKIA_BACKEND_GRAPHITE
-        sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, &drawP.world.main.window.defaultMSAASurfaceProps);
-    #elif USE_SKIA_BACKEND_GANESH
-        sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
+    
+        switch(extType) {
+            case SCREENSHOT_JPG:
+                success = SkJpegEncoder::Encode(&out, finalImgData, {});
+                break;
+            case SCREENSHOT_PNG:
+                success = SkPngEncoder::Encode(&out, finalImgData, {});
+                break;
+            case SCREENSHOT_WEBP:
+                success = SkWebpEncoder::Encode(&out, finalImgData, {});
+                break;
+            default:
+                break;
+        }
+        if(!success) {
+            Logger::get().log("INFO", "[ScreenshotTool::take_screenshot] Could not encode and write screenshot");
+            return;
+        }
+
+    #ifdef __EMSCRIPTEN__
+        if(success) {
+            std::string mimeTypeArray[] = {"image/jpeg", "image/png", "image/webp"};
+            auto skData = out.detachAsData();
+            emscripten_browser_file::download(
+                "screenshot" + controls.typeSelections[extType],
+                mimeTypeArray[extType],
+                std::string_view((const char*)skData->bytes(), skData->size())
+            );
+        }
     #endif
-    if(!surface) {
-        Logger::get().log("INFO", "[SkSurfaces::WrapBackendRenderTarget] Screenshot Tool could not make surface");
-        return;
     }
-    SkCanvas* screenshotCanvas = surface->getCanvas();
-    if(!screenshotCanvas) {
-        Logger::get().log("INFO", "Screenshot Tool could not make canvas");
-        return;
+    else {
+    #ifdef __EMSCRIPTEN__
+        SkDynamicMemoryWStream out;
+    #else
+        SkFILEWStream out((const char*)filePath.c_str());
+    #endif
+        Vector2f canvasSize{controls.rectX2 - controls.rectX1, controls.rectY2 - controls.rectY1};
+        SkRect canvasBounds = SkRect::MakeLTRB(0.0f, 0.0f, canvasSize.x(), canvasSize.y());
+        std::unique_ptr<SkCanvas> canvas = SkSVGCanvas::Make(canvasBounds, &out);
+        take_screenshot_svg(canvas.get(), controls.transparentBackground);
     }
+}
 
-    for(int i = 0; i < controls.imageSize.x(); i += drawP.world.main.window.size.x())
-        for(int j = 0; j < controls.imageSize.y(); j += drawP.world.main.window.size.y())
-            take_screenshot_area_hw(surface, screenshotCanvas, finalImgRawData.data(), controls.imageSize, Vector2i{i, j}, Vector2i{std::min(drawP.world.main.window.size.x(), controls.imageSize.x() - i), std::min(drawP.world.main.window.size.y(), controls.imageSize.y() - j)}, drawP.world.main.window.size, extType != 0 && controls.transparentBackground);
+void ScreenshotTool::take_screenshot_svg(SkCanvas* canvas, bool transparentBackground) {
+    float secRectX1 = controls.rectX1;
+    float secRectX2 = controls.rectX2;
+    float secRectY1 = controls.rectY1;
+    float secRectY2 = controls.rectY2;
 
-    bool success = false;
-#ifdef __EMSCRIPTEN__
-    SkDynamicMemoryWStream out;
-#else
-    SkFILEWStream out((const char*)filePath.c_str());
-#endif
+    Vector2f canvasSize{controls.rectX2 - controls.rectX1, controls.rectY2 - controls.rectY1};
 
-    if(extType == 0)
-        success = SkJpegEncoder::Encode(&out, finalImgData, {});
-    else if(extType == 1)
-        success = SkPngEncoder::Encode(&out, finalImgData, {});
-    else if(extType == 2)
-        success = SkWebpEncoder::Encode(&out, finalImgData, {});
-    if(!success) {
-        Logger::get().log("INFO", "[ScreenshotTool::take_screenshot] Could not encode and write screenshot");
-        return;
-    }
+    DrawData d = drawP.world.drawData;
+    WorldVec topLeft = controls.coords.from_space({secRectX1, secRectY1});
+    WorldVec topRight = controls.coords.from_space({secRectX2, secRectY1});
+    WorldVec bottomLeft = controls.coords.from_space({secRectX1, secRectY2});
+    WorldVec bottomRight = controls.coords.from_space({secRectX2, secRectY2});
+    WorldVec camCenter = (topLeft + bottomRight) / WorldScalar(2);
 
-#ifdef __EMSCRIPTEN__
-    if(success) {
-        std::string mimeTypeArray[] = {"image/jpeg", "image/png", "image/webp"};
-        auto skData = out.detachAsData();
-        emscripten_browser_file::download(
-            "screenshot" + controls.typeSelections[extType],
-            mimeTypeArray[extType],
-            std::string_view((const char*)skData->bytes(), skData->size())
-        );
-    }
-#endif
+    WorldVec vectorZoom;
+    WorldScalar distX = (camCenter - (topLeft + bottomLeft) * WorldScalar(0.5)).norm();
+    WorldScalar distY = (camCenter - (topLeft + topRight) * WorldScalar(0.5)).norm();
+    vectorZoom.x() = distX / WorldScalar(canvasSize.x() * 0.5);
+    vectorZoom.y() = distY / WorldScalar(canvasSize.y() * 0.5);
+    WorldScalar newInverseScale = (vectorZoom.x() + vectorZoom.y()) * WorldScalar(0.5);
+
+    drawP.world.drawData.cam.set_based_on_properties(drawP.world, topLeft, newInverseScale, controls.coords.rotation);
+    drawP.world.drawData.cam.set_viewing_area(canvasSize);
+    drawP.world.drawData.refresh_draw_optimizing_values();
+
+    GridManager::GridType oldGridType = drawP.world.main.grid.gridType;
+    drawP.world.main.takingScreenshot = true;
+    drawP.world.main.transparentBackground = transparentBackground;
+    drawP.world.main.grid.gridType = GridManager::GRIDTYPE_NONE;
+    drawP.world.drawData.dontUseDrawProgCache = true;
+
+    drawP.world.main.draw(canvas);
+    drawP.world.main.takingScreenshot = false;
+    drawP.world.main.transparentBackground = false;
+    drawP.world.main.grid.gridType = oldGridType;
+    drawP.world.drawData = d;
 }
 
 void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground) {
