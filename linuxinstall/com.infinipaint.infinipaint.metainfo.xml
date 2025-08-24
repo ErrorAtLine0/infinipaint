@@ -8,8 +8,8 @@
     <project_license>MIT</project_license>
 
     <branding>
-        <color type="primary" scheme_preference="light">#b6dbff</color>
-        <color type="primary" scheme_preference="dark">#002c58</color>
+        <color type="primary" scheme_preference="light">#d7f7f3</color>
+        <color type="primary" scheme_preference="dark">#325652</color>
     </branding>
     
     <url type="homepage">https://infinipaint.com</url>
