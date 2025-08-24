@@ -1312,7 +1312,6 @@ void Toolbar::options_menu() {
                                         gui.checkbox_field("show performance metrics", "Show Metrics", &showPerformance);
                                         gui.input_scalar_fields("jump transition easing", "Jump Easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, 2);
                                         #ifndef __EMSCRIPTEN__
-                                            gui.text_label("Note: Requires restart to take effect. May cause bugs on Intel Graphics");
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
                                         gui.pop_id();
