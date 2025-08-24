@@ -416,12 +416,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #else
         mS.m->load_config();
 #endif
-
-
-
-        if(mS.m->disableIntelWorkaround)
-            opts.fAllowMSAAOnNewIntel = true;
-
         #ifdef USE_BACKEND_VULKAN
             #ifdef USE_SKIA_BACKEND_GRAPHITE
                 std::unique_ptr<const skwindow::DisplayParams> displayParams = skwindow::DisplayParamsBuilder().build();
@@ -531,10 +525,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 #ifdef NDEBUG
     try {
 #endif
-        #ifdef USE_SKIA_BACKEND_GANESH
-            mS.m->window.ctx->resetContext();
-        #endif
-
         mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
 
 #ifdef __EMSCRIPTEN__

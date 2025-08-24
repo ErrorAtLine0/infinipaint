@@ -70,8 +70,6 @@ class MainProgram {
         std::ofstream* logFile;
         std::deque<Toolbar::LogMessage> logMessages;
 
-        bool disableIntelWorkaround = false;
-
         std::string newAddr;
         
         MainProgram();

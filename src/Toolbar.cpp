@@ -215,7 +215,6 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["gridType"] = main.grid.gridType;
     toRet["guiFontSize"] = io->fontSize;
     toRet["showPerformance"] = showPerformance;
-    toRet["disableIntelWorkaround"] = main.disableIntelWorkaround;
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
@@ -266,7 +265,6 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("guiScale").get_to(guiScale);
     j.at("gridType").get_to(main.grid.gridType);
     j.at("guiFontSize").get_to(io->fontSize);
-    j.at("disableIntelWorkaround").get_to(main.disableIntelWorkaround);
     j.at("showPerformance").get_to(showPerformance);
     j.at("useNativeFilePicker").get_to(useNativeFilePicker);
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
@@ -1314,7 +1312,6 @@ void Toolbar::options_menu() {
                                         gui.checkbox_field("show performance metrics", "Show Metrics", &showPerformance);
                                         gui.input_scalar_fields("jump transition easing", "Jump Easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, 2);
                                         #ifndef __EMSCRIPTEN__
-                                            gui.checkbox_field("intel workaround", "Force enable MSAA on Intel", &main.disableIntelWorkaround);
                                             gui.text_label("Note: Requires restart to take effect. May cause bugs on Intel Graphics");
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif

@@ -201,7 +201,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
     #endif
         Vector2f canvasSize{controls.rectX2 - controls.rectX1, controls.rectY2 - controls.rectY1};
         SkRect canvasBounds = SkRect::MakeLTRB(0.0f, 0.0f, canvasSize.x(), canvasSize.y());
-        std::unique_ptr<SkCanvas> canvas = SkSVGCanvas::Make(canvasBounds, &out);
+        std::unique_ptr<SkCanvas> canvas = SkSVGCanvas::Make(canvasBounds, &out, SkSVGCanvas::kConvertTextToPaths_Flag | SkSVGCanvas::kNoPrettyXML_Flag);
         take_screenshot_svg(canvas.get(), controls.transparentBackground);
     }
 }
