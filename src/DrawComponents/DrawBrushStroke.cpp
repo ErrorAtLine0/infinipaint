@@ -8,6 +8,7 @@
 #include "Helpers/MathExtras.hpp"
 #include "../TimePoint.hpp"
 #include <include/core/SkVertices.h>
+#include <include/pathops/SkPathOps.h>
 #include "../DrawCollision.hpp"
 #endif
 
@@ -211,8 +212,12 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
     }
 
     if(pointsN.size() < 2) {
-        if(bPath && !topPoints.empty())
-            bPath->addPoly(topPoints.data(), topPoints.size(), false);
+        if(bPath && !topPoints.empty()) {
+            SkPath newPath;
+            newPath.addPoly(topPoints.data(), topPoints.size(), false);
+            if(!Simplify(newPath, bPath.get()))
+                *bPath = newPath;
+        }
         return;
     }
 
@@ -360,7 +365,10 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
 
     if(bPath && !topPoints.empty()) {
         topPoints.insert(topPoints.begin(), bottomPoints.rbegin(), bottomPoints.rend());
-        bPath->addPoly(topPoints.data(), topPoints.size(), true);
+        SkPath newPath;
+        newPath.addPoly(topPoints.data(), topPoints.size(), true);
+        if(!Simplify(newPath, bPath.get()))
+            *bPath = newPath;
     }
 }
 
