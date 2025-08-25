@@ -212,12 +212,8 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
     }
 
     if(pointsN.size() < 2) {
-        if(bPath && !topPoints.empty()) {
-            SkPath newPath;
-            newPath.addPoly(topPoints.data(), topPoints.size(), false);
-            if(!Simplify(newPath, bPath.get()))
-                *bPath = newPath;
-        }
+        if(bPath && !topPoints.empty())
+            bPath->addPoly(topPoints.data(), topPoints.size(), false);
         return;
     }
 
@@ -365,10 +361,7 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
 
     if(bPath && !topPoints.empty()) {
         topPoints.insert(topPoints.begin(), bottomPoints.rbegin(), bottomPoints.rend());
-        SkPath newPath;
-        newPath.addPoly(topPoints.data(), topPoints.size(), true);
-        if(!Simplify(newPath, bPath.get()))
-            *bPath = newPath;
+        bPath->addPoly(topPoints.data(), topPoints.size(), false);
     }
 }
 
