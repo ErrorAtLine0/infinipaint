@@ -35,7 +35,7 @@ class DrawingProgramCache {
         ~DrawingProgramCache();
 
         static constexpr size_t MINIMUM_COMPONENTS_TO_START_REBUILD = 1000;
-        static constexpr size_t MAXIMUM_COMPONENTS_IN_SINGLE_NODE = 100;
+        static constexpr size_t MAXIMUM_COMPONENTS_IN_SINGLE_NODE = 50;
 
         bool check_if_rebuild_should_occur();
         void test_rebuild(const std::vector<CollabListType::ObjectInfoPtr>& comps, bool force = false);
@@ -60,7 +60,6 @@ class DrawingProgramCache {
         struct DrawComponentsToCanvasOptionalData {
             uint64_t* lastDrawnComponentPlacement = nullptr;
             std::optional<SCollision::AABB<WorldScalar>> drawBounds;
-            std::chrono::microseconds* timeToDrawUnsortedComponents = nullptr;
         };
 
         void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, DrawComponentsToCanvasOptionalData optData);

@@ -454,9 +454,6 @@ void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const Draw
 
     if(optData.lastDrawnComponentPlacement)
         *optData.lastDrawnComponentPlacement = lastComponentDrawn;
-
-    if(optData.timeToDrawUnsortedComponents)
-        *optData.timeToDrawUnsortedComponents = unsortedCompDrawTime;
 }
 
 void DrawingProgramCache::draw_cache_image_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {

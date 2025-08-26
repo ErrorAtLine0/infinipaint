@@ -56,6 +56,9 @@ class DrawingProgram {
 
         void clear_draw_cache();
     private:
+        std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
+        std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
+
         void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
 
         void check_delayed_update_timers();

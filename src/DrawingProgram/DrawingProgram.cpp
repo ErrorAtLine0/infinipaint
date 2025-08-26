@@ -233,6 +233,25 @@ void DrawingProgram::tool_options_gui() {
 }
 
 void DrawingProgram::update() {
+    if(world.main.window.lastFrameTime > std::chrono::milliseconds(33)) { // Around 30FPS
+        if(!badFrametimeTimePoint)
+            badFrametimeTimePoint = std::chrono::steady_clock::now();
+        else if(unorderedObjectsExistTimePoint && std::chrono::steady_clock::now() - badFrametimeTimePoint.value() >= std::chrono::seconds(5) && std::chrono::steady_clock::now() - unorderedObjectsExistTimePoint.value() >= std::chrono::seconds(5)) {
+            force_rebuild_cache();
+            unorderedObjectsExistTimePoint = std::nullopt;
+            badFrametimeTimePoint = std::nullopt;
+        }
+    }
+    else
+        badFrametimeTimePoint = std::nullopt;
+
+    if(compCache.get_unsorted_component_list().empty()) {
+        unorderedObjectsExistTimePoint = std::nullopt;
+    }
+    else if(!unorderedObjectsExistTimePoint) {
+        unorderedObjectsExistTimePoint = std::chrono::steady_clock::now();
+    }
+
     if(drawTool->get_type() == DrawingProgramToolType::BRUSH && world.main.input.pen.isEraser && !temporaryEraser) {
         switch_to_tool(DrawingProgramToolType::ERASER);
         temporaryEraser = true;
@@ -569,8 +588,6 @@ void DrawingProgram::write_to_file(cereal::PortableBinaryOutputArchive& a) {
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
-    std::chrono::microseconds timeToDrawUnsortedComponents(0);
-
     if(drawData.dontUseDrawProgCache) {
         parallel_loop_all_components([&](auto& c) {
             c->obj->calculate_draw_transform(drawData);
@@ -584,9 +601,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->saveLayer(nullptr, nullptr);
             canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             compCache.refresh_all_draw_cache(drawData);
-            compCache.draw_components_to_canvas(canvas, drawData, {
-                .timeToDrawUnsortedComponents = &timeToDrawUnsortedComponents
-            });
+            compCache.draw_components_to_canvas(canvas, drawData, {});
             canvas->saveLayer(nullptr, nullptr);
                 selection.draw_components(canvas, drawData);
             canvas->restore();
@@ -595,11 +610,6 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     }
 
     drawTool->draw(canvas, drawData);
-
-    // 10ms is an arbitrary value. If drawing only the unsorted components takes more than that amount of time,
-    // they're definitely causing lag and must be sorted so that they can be cached
-    if(timeToDrawUnsortedComponents >= std::chrono::microseconds(10000))
-        force_rebuild_cache();
 }
 
 Vector4f* DrawingProgram::get_foreground_color_ptr() {

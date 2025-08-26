@@ -1,6 +1,7 @@
 #pragma once
 #include "DrawData.hpp"
 #include "GridManager.hpp"
+#include <chrono>
 #include <include/core/SkCanvas.h>
 #include "InputManager.hpp"
 #include "FontData.hpp"
@@ -31,6 +32,7 @@ class MainProgram {
         Vector3f userColor;
 
         struct Window {
+            std::chrono::steady_clock::duration lastFrameTime = std::chrono::milliseconds(16);
             Vector2i size = {-1, -1};
             Vector2i pos = {-1, -1};
             Vector2i writtenSize = {-1, -1};

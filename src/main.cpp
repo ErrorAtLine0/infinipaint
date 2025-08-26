@@ -520,6 +520,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
+    std::chrono::steady_clock::time_point frameTimeStart = std::chrono::steady_clock::now();
 
     MainStruct& mS = *((MainStruct*)appstate);
 #ifdef NDEBUG
@@ -583,6 +584,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         return SDL_APP_FAILURE;
     }
 #endif
+
+    mS.m->window.lastFrameTime = std::chrono::steady_clock::now() - frameTimeStart;
 
     return SDL_APP_CONTINUE;
 }
