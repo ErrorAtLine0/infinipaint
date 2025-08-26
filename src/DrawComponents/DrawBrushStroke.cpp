@@ -42,6 +42,7 @@ std::shared_ptr<DrawComponent> DrawBrushStroke::deep_copy() const {
     a->coords = coords;
     // Just copy pointers over, brush strokes cant be edited so they can share the same memory
     a->brushPath = brushPath;
+    a->brushPathLOD = brushPathLOD;
     a->bounds = bounds;
 
     return a;
@@ -80,7 +81,10 @@ void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->save();
         paint.setColor4f(SkColor4f{d->color.x(), d->color.y(), d->color.z(), d->color.w()});
         canvas_do_calculated_transform(canvas);
-        canvas->drawPath(*brushPath, paint);
+        if(drawSetupData.mipmapLevel == 0)
+            canvas->drawPath(*brushPath, paint);
+        else
+            canvas->drawPath(*brushPathLOD[drawSetupData.mipmapLevel - 1], paint);
         //SkPaint p2(SkColor4f{1, 0, 0, 1});
         //p2.setStroke(true);
         //SkPaint p3(SkColor4f{0, 1, 0, 1});
@@ -102,8 +106,12 @@ void DrawBrushStroke::initialize_draw_data(DrawingProgram& drawP) {
         };
 
         brushPath = std::make_shared<SkPath>();
+        brushPathLOD[0] = std::make_shared<SkPath>();
+        brushPathLOD[1] = std::make_shared<SkPath>();
 
         create_triangles(triangleFunc, points, 0, brushPath);
+        create_triangles(triangleFunc, points, 4, brushPathLOD[0]);
+        create_triangles(triangleFunc, points, 30, brushPathLOD[1]);
     }
     create_collider();
 }
@@ -196,10 +204,21 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::smooth_points_avg(size_t begi
     return toRet;
 }
 
-void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& points, unsigned skipVertexCount, std::shared_ptr<SkPath> bPath) {
+std::vector<DrawBrushStrokePoint> DrawBrushStroke::every_nth_point_include_front_and_back(const std::vector<DrawBrushStrokePoint>& pts, size_t n) {
+    if(pts.size() <= 3 || n == 0)
+        return pts;
+    std::vector<DrawBrushStrokePoint> toRet;
+    toRet.emplace_back(pts.front());
+    for(size_t i = n; i < pts.size() - 1; i += n)
+        toRet.emplace_back(pts[i]);
+    toRet.emplace_back(pts.back());
+    return toRet;
+}
+
+void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& smoothedPoints, size_t skipVertexCount, std::shared_ptr<SkPath> bPath) {
     const int ARC_SMOOTHNESS = 10;
     const int CIRCLE_SMOOTHNESS = 20;
-    std::vector<DrawBrushStrokePoint>& pointsN = d->points;
+    const std::vector<DrawBrushStrokePoint>& pointsN = d->points;
     std::vector<SkPoint> topPoints;
     std::vector<SkPoint> bottomPoints;
 
@@ -216,6 +235,8 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
             bPath->addPoly(topPoints.data(), topPoints.size(), false);
         return;
     }
+
+    auto points = every_nth_point_include_front_and_back(smoothedPoints, skipVertexCount);
 
     std::vector<size_t> wedgeIndices = get_wedge_indices(points);
     for(size_t i = 0; i < wedgeIndices.size() - 1; i++) {
@@ -250,7 +271,6 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
         }
 
         for(size_t j = pointsBegin + 1; j < pointsEnd; j++) {
-            j += skipVertexCount;
             if(j >= pointsEnd)
                 j = pointsEnd - 1;
 
