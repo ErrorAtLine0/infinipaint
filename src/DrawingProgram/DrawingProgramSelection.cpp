@@ -152,7 +152,7 @@ void DrawingProgramSelection::commit_transform_selection() {
     std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
     std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
     for(auto& transformedObj : a) {
-        transformsToSend.emplace_back(transformedObj->id, transformedObj->obj->coords);
+        transformsToSend.emplace_back(transformedObj->obj->id, transformedObj->obj->coords);
         transformsTo.emplace_back(transformedObj, transformedObj->obj->coords);
     }
     DrawComponent::client_send_transform_many(drawP, transformsToSend);
@@ -162,7 +162,7 @@ void DrawingProgramSelection::commit_transform_selection() {
             for(auto& [comp, coords] : transformsFrom) {
                 auto lockObjInfo = comp->obj->collabListInfo.lock();
                 if(lockObjInfo)
-                    transformsToSend.emplace_back(lockObjInfo->id, coords);
+                    transformsToSend.emplace_back(lockObjInfo->obj->id, coords);
                 else
                     return false;
             }
@@ -186,7 +186,7 @@ void DrawingProgramSelection::commit_transform_selection() {
             for(auto& [comp, coords] : transformsTo) {
                 auto lockObjInfo = comp->obj->collabListInfo.lock();
                 if(lockObjInfo)
-                    transformsToSend.emplace_back(lockObjInfo->id, coords);
+                    transformsToSend.emplace_back(lockObjInfo->obj->id, coords);
                 else
                     return false;
             }

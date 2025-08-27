@@ -114,10 +114,9 @@ void DrawingProgram::init_client_callbacks() {
         uint64_t insertPosition;
         DrawComponentType type;
         message(insertPosition, type);
-        ServerClientID newObjectID;
         auto newObj = DrawComponent::allocate_comp_type(type);
-        message(newObjectID, newObj->coords, *newObj);
-        bool didntExistPreviously = components.server_insert(insertPosition, newObjectID, newObj);
+        message(newObj->id, newObj->coords, *newObj);
+        bool didntExistPreviously = components.server_insert(insertPosition, newObj);
         if(didntExistPreviously)
             newObj->commit_update(*this);
     });
@@ -439,11 +438,10 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
     a(compCount);
     for(uint64_t i = 0; i < compCount; i++) {
         DrawComponentType t;
-        ServerClientID id;
-        a(t, id);
+        a(t);
         auto newComp = DrawComponent::allocate_comp_type(t);
-        a(newComp->coords, *newComp);
-        components.init_emplace_back(id, newComp);
+        a(newComp->id, newComp->coords, *newComp);
+        components.init_emplace_back(newComp);
     }
     parallel_loop_all_components([&](const auto& c){
         c->obj->commit_update(*this, false);
@@ -454,7 +452,7 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
 void DrawingProgram::client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents) {
     std::unordered_set<ServerClientID> idsToErase;
     for(auto& c : erasedComponents)
-        idsToErase.emplace(c->id);
+        idsToErase.emplace(c->obj->id);
     DrawComponent::client_send_erase_set(*this, idsToErase);
     components.client_erase_set(erasedComponents);
     add_undo_erase_components(erasedComponents);
@@ -470,7 +468,7 @@ void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPt
         [&, objToUndo]() {
             if(objToUndo->obj->collabListInfo.lock())
                 return false;
-            components.client_insert(objToUndo);
+            components.client_insert(objToUndo, false);
             objToUndo->obj->client_send_place(*this);
             return true;
         }
@@ -500,7 +498,7 @@ void DrawingProgram::add_undo_place_components(const std::unordered_set<CollabLi
 
             std::unordered_set<ServerClientID> idsToErase;
             for(auto& c : objSetToUndo)
-                idsToErase.emplace(c->id);
+                idsToErase.emplace(c->obj->id);
 
             DrawComponent::client_send_erase_set(*this, idsToErase);
             components.client_erase_set(objSetToUndo);
@@ -517,7 +515,7 @@ void DrawingProgram::add_undo_place_components(const std::unordered_set<CollabLi
                 if(comp->obj->collabListInfo.lock())
                     return false;
 
-            components.client_insert_ordered_vector(sortedObjects);
+            components.client_insert_ordered_vector(sortedObjects, false);
             DrawComponent::client_send_place_many(*this, sortedObjects);
 
             return true;
@@ -537,7 +535,7 @@ void DrawingProgram::add_undo_erase_components(const std::unordered_set<CollabLi
                 if(comp->obj->collabListInfo.lock())
                     return false;
 
-            components.client_insert_ordered_vector(sortedObjects);
+            components.client_insert_ordered_vector(sortedObjects, false);
             DrawComponent::client_send_place_many(*this, sortedObjects);
 
             return true;
@@ -549,7 +547,7 @@ void DrawingProgram::add_undo_erase_components(const std::unordered_set<CollabLi
 
             std::unordered_set<ServerClientID> idsToErase;
             for(auto& c : objSetToUndo)
-                idsToErase.emplace(c->id);
+                idsToErase.emplace(c->obj->id);
 
             DrawComponent::client_send_erase_set(*this, idsToErase);
             components.client_erase_set(objSetToUndo);
@@ -563,8 +561,8 @@ ClientPortionID DrawingProgram::get_max_id(ServerPortionID serverID) {
     ClientPortionID maxClientID = 0;
     auto& cList = components.client_list();
     for(auto& comp : cList) {
-        if(comp->id.first == serverID)
-            maxClientID = std::max(maxClientID, comp->id.second);
+        if(comp->obj->id.first == serverID)
+            maxClientID = std::max(maxClientID, comp->obj->id.second);
     }
     return maxClientID;
 }
@@ -583,7 +581,7 @@ void DrawingProgram::write_to_file(cereal::PortableBinaryOutputArchive& a) {
     auto& cList = components.client_list();
     a((uint64_t)cList.size());
     for(size_t i = 0; i < cList.size(); i++) {
-        a(cList[i]->obj->get_type(), cList[i]->id, cList[i]->obj->coords, *cList[i]->obj);
+        a(cList[i]->obj->get_type(), cList[i]->obj->id, cList[i]->obj->coords, *cList[i]->obj);
     }
 }
 

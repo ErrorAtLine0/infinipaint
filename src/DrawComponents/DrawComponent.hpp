@@ -63,15 +63,16 @@ class DrawComponent {
         void canvas_do_calculated_transform(SkCanvas* canvas);
         void calculate_draw_transform(const DrawData& drawData);
 
-        void server_send_place(MainServer& server, ServerClientID id, uint64_t placement);
+        void server_send_place(MainServer& server, uint64_t placement);
         static void server_send_place_many(MainServer& server, std::vector<CollabListType::ObjectInfoPtr>& comps);
         static void server_send_erase(MainServer& server, ServerClientID id);
         static void server_send_erase_set(MainServer& server, const std::unordered_set<ServerClientID>& ids);
-        void server_send_update(MainServer& server, ServerClientID id);
+        void server_send_update(MainServer& server);
         static void server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
         std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
+        ServerClientID id;
 
 #ifndef IS_SERVER
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;

@@ -81,7 +81,7 @@ void DrawBrushStroke::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->save();
         paint.setColor4f(SkColor4f{d->color.x(), d->color.y(), d->color.z(), d->color.w()});
         canvas_do_calculated_transform(canvas);
-        if(drawSetupData.mipmapLevel == 0)
+        if(drawSetupData.mipmapLevel == 0 || drawData.dontUseDrawProgCache) // check dontUseDrawProgCache, to make sure that SVG screenshots dont use LOD
             canvas->drawPath(*brushPath, paint);
         else
             canvas->drawPath(*brushPathLOD[drawSetupData.mipmapLevel - 1], paint);

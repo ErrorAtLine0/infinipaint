@@ -24,7 +24,5 @@ class ClientData {
         template <typename Archive> void serialize(Archive& a) {
             a(camCoords, windowSize, cursorPos, cursorColor, displayName);
         }
-
-        ServerClientID get_next_id();
 };
 

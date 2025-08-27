@@ -78,7 +78,7 @@ ServerClientID ResourceManager::add_resource(const ResourceData& resource) {
     }
     ServerClientID newID = world.get_new_id();
     resources[newID] = resource;
-    world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_RESOURCE_INIT);
+    world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_RESOURCE_INIT, newID);
     world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_RESOURCE_DATA, resource);
     return newID;
 }

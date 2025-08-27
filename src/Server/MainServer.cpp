@@ -28,7 +28,7 @@ void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
     a(canvasBackColor);
     a((uint64_t)components.size());
     for(uint64_t i = 0; i < components.size(); i++)
-        a(components[i].second->get_type(), components[i].first, components[i].second->coords, *(components[i].second));
+        a(components[i]->get_type(), components[i]->id, components[i]->coords, *components[i]);
     a(bookmarks);
 }
 
@@ -38,12 +38,11 @@ void ServerData::load(cereal::PortableBinaryInputArchive& a) {
     a(compCount);
     for(uint64_t i = 0; i < compCount; i++) {
         DrawComponentType t;
-        ServerClientID id;
-        a(t, id);
+        a(t);
         auto newComp = DrawComponent::allocate_comp_type(t);
-        a(newComp->coords, *newComp);
-        components.emplace_back(id, newComp);
-        idToComponentMap.emplace(id, newComp);
+        a(newComp->id, newComp->coords, *newComp);
+        components.emplace_back(newComp);
+        idToComponentMap.emplace(newComp->id, newComp);
     }
     a(bookmarks);
 }
@@ -55,8 +54,8 @@ ClientPortionID ServerData::get_max_id(ServerPortionID serverID) const {
             maxClientID = std::max(maxClientID, p.first.second);
     }
     for(auto& p : components) {
-        if(p.first.first == serverID)
-            maxClientID = std::max(maxClientID, p.first.second);
+        if(p->id.first == serverID)
+            maxClientID = std::max(maxClientID, p->id.second);
     }
     return maxClientID;
 }
@@ -65,8 +64,9 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     world(initWorld)
 {
     for(auto& c : world.drawProg.components.client_list()) {
-        data.components.emplace_back(c->id, c->obj->copy());
-        data.idToComponentMap.emplace(data.components.back().first, data.components.back().second);
+        data.components.emplace_back(c->obj->copy());
+        data.components.back()->id = c->obj->id;
+        data.idToComponentMap.emplace(data.components.back()->id, data.components.back());
     }
     data.bookmarks = world.bMan.bookmark_list();
     data.resources = world.rMan.resource_list();
@@ -114,36 +114,31 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         DrawComponentType type;
         message(placement, type);
         auto newComp = DrawComponent::allocate_comp_type(type);
-        message(newComp->coords, *newComp);
-        ServerClientID id = clients[client->customID].get_next_id();
+        message(newComp->id, newComp->coords, *newComp);
         placement = std::min<uint64_t>(placement, data.components.size());
-        data.components.insert(data.components.begin() + placement, {id, newComp});
-        data.idToComponentMap.emplace(id, newComp);
-        newComp->server_send_place(*this, id, placement);
+        data.components.insert(data.components.begin() + placement, newComp);
+        data.idToComponentMap.emplace(newComp->id, newComp);
+        newComp->server_send_place(*this, placement);
     });
     netServer->add_recv_callback(SERVER_PLACE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        auto& cli = clients[client->customID];
-
         std::vector<CollabListType::ObjectInfoPtr> objOrderedVector;
         SendOrderedComponentVectorOp a{&objOrderedVector};
         message(a);
 
-        std::vector<std::pair<ServerClientID, std::shared_ptr<DrawComponent>>> objOrderedComponentPairs;
-        for(auto& o : objOrderedVector) {
-            o->id = cli.get_next_id();
-            objOrderedComponentPairs.emplace_back(o->id, o->obj);
-        }
+        std::vector<std::shared_ptr<DrawComponent>> objOrderedComponentPairs;
+        for(auto& o : objOrderedVector)
+            objOrderedComponentPairs.emplace_back(o->obj);
 
         uint64_t startPoint = 0;
 
         if(objOrderedVector.empty())
             return;
 
-        data.idToComponentMap.emplace(objOrderedVector.front()->id, objOrderedVector.front()->obj);
+        data.idToComponentMap.emplace(objOrderedVector.front()->obj->id, objOrderedVector.front()->obj);
 
         for(uint64_t i = 1; i < static_cast<uint64_t>(objOrderedVector.size()); i++) {
             auto& obj = objOrderedVector[i];
-            data.idToComponentMap.emplace(obj->id, obj->obj);
+            data.idToComponentMap.emplace(obj->obj->id, obj->obj);
             if(obj->pos - objOrderedVector[startPoint]->pos != (i - startPoint)) {
                 uint64_t insertPosition = std::min<uint64_t>(data.components.size(), objOrderedVector[startPoint]->pos);
                 data.components.insert(data.components.begin() + insertPosition, objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.begin() + i);
@@ -158,10 +153,9 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         for(uint64_t i = 0; i < data.components.size(); i++) {
             if(startPoint >= objOrderedVector.size())
                 break;
-            auto& [id, c] = data.components[i];
+            auto& c = data.components[i];
             auto& o = objOrderedVector[startPoint];
             if(c == o->obj) {
-                o->id = id;
                 o->pos = i;
                 startPoint++;
             }
@@ -175,7 +169,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         DrawComponent::server_send_erase(*this, compToRemove);
         data.idToComponentMap.erase(compToRemove);
         std::erase_if(data.components, [&](auto& p) {
-            return p.first == compToRemove;
+            return p->id == compToRemove;
         });
     });
     netServer->add_recv_callback(SERVER_ERASE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -185,7 +179,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         for(auto& id : idsToRemove)
             data.idToComponentMap.erase(id);
         std::erase_if(data.components, [&](auto& p) {
-            return idsToRemove.contains(p.first);
+            return idsToRemove.contains(p->id);
         });
     });
     netServer->add_recv_callback(SERVER_TRANSFORM_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -205,12 +199,13 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         if(it != data.idToComponentMap.end()) {
             std::shared_ptr<DrawComponent>& comp = it->second;
             message(*comp);
-            comp->server_send_update(*this, idToUpdate);
+            comp->server_send_update(*this);
         }
     });
     netServer->add_recv_callback(SERVER_RESOURCE_INIT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         auto& c = clients[client->customID];
-        ServerClientID newID = c.get_next_id();
+        ServerClientID newID;
+        message(newID);
         if(c.pendingResourceData.empty())
             c.pendingResourceID.emplace(newID);
         else {
