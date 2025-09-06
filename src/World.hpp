@@ -6,6 +6,7 @@
 #include "DrawingProgram/DrawingProgram.hpp"
 #include "Toolbar.hpp"
 #include "SharedTypes.hpp"
+#include "GridManager.hpp"
 #include <filesystem>
 
 class MainProgram;
@@ -47,6 +48,7 @@ class World {
         DrawingProgram drawProg;
         BookmarkManager bMan;
         ConnectionManager con;
+        GridManager gridMan;
 
         std::deque<Toolbar::ChatMessage> chatMessages;
 
@@ -100,6 +102,8 @@ class World {
     private:
         void init_client_callbacks();
         void set_name(const std::string& n);
+
+        void draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData);
 
         ClientPortionID nextClientID = 0;
         WorldVec mousePreviousWorldVec = {0, 0};

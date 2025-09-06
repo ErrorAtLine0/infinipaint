@@ -6,7 +6,7 @@ namespace GUIStuff {
 
 template <typename T> class TextBox : public Element {
     public:
-        void update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, const std::function<void()>& elemUpdate) {
+        void update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void()>& elemUpdate) {
             data = newData;
             fromStr = newFromStr;
             toStr = newToStr;
@@ -18,7 +18,7 @@ template <typename T> class TextBox : public Element {
 
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_GROW(0)}
+                    .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_GROW(static_cast<float>(io.fontSize))}
                 },
                 .custom = { .customData = this }
             }) {
@@ -59,12 +59,14 @@ template <typename T> class TextBox : public Element {
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
                         else
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.pos, textbox.move(CollabTextBox::Movement::kLeft, cur.pos));
+                        update_on_edit(updateEveryEdit);
                     }
                     if(io.key.del) {
                         if(cur.selectionBeginPos != cur.selectionEndPos)
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
                         else
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.pos, textbox.move(CollabTextBox::Movement::kRight, cur.pos));
+                        update_on_edit(updateEveryEdit);
                     }
                     if(io.key.paste) {
                         if(cur.selectionBeginPos != cur.selectionEndPos)
@@ -76,6 +78,7 @@ template <typename T> class TextBox : public Element {
                         }
                         else
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, io.clipboard.textInFunc());
+                        update_on_edit(updateEveryEdit);
                     }
                     if(io.key.enter) {
                         if(singleLine) {
@@ -91,6 +94,7 @@ template <typename T> class TextBox : public Element {
                             cur.pos.fParagraphIndex++;
                             cur.pos.fTextByteIndex = 0;
                             cur.selectionBeginPos = cur.selectionEndPos = cur.pos;
+                            update_on_edit(updateEveryEdit);
                         }
                     }
                     if(io.key.copy) {
@@ -100,6 +104,7 @@ template <typename T> class TextBox : public Element {
                         io.clipboard.textOut = textbox.copy(cur.selectionBeginPos, cur.selectionEndPos);
                         if(cur.selectionBeginPos != cur.selectionEndPos)
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
+                        update_on_edit(updateEveryEdit);
                     }
                     if(io.key.selectAll) {
                         cur.selectionEndPos.fParagraphIndex = textbox.lineCount() == 0 ? 0 : textbox.lineCount() - 1;
@@ -112,6 +117,7 @@ template <typename T> class TextBox : public Element {
                         if(cur.selectionBeginPos != cur.selectionEndPos)
                             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
                         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, io.textInput);
+                        update_on_edit(updateEveryEdit);
                     }
 
                     io.acceptingTextInput = true;
@@ -176,6 +182,16 @@ template <typename T> class TextBox : public Element {
             }
             else {}
                 //oldData = T();
+        }
+
+        void update_on_edit(bool updateEveryEdit) {
+            if(updateEveryEdit) {
+                std::optional<T> dataToAssign = fromStr(textbox.get_string());
+                if(dataToAssign) {
+                    *data = dataToAssign.value();
+                    oldData = *data;
+                }
+            }
         }
 
         T* data = nullptr;

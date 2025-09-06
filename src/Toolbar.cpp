@@ -4,7 +4,6 @@
 #include "MainProgram.hpp"
 #include "GUIStuff/Elements/Element.hpp"
 #include "GUIStuff/GUIManager.hpp"
-#include "GridManager.hpp"
 #include "InputManager.hpp"
 #include "World.hpp"
 #include <SDL3/SDL_dialog.h>
@@ -212,7 +211,6 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["jumpTransitionTime"] = jumpTransitionTime;
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
-    toRet["gridType"] = main.grid.gridType;
     toRet["guiFontSize"] = io->fontSize;
     toRet["showPerformance"] = showPerformance;
     toRet["displayName"] = main.displayName;
@@ -263,7 +261,6 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("dragZoomSpeed").get_to(dragZoomSpeed);
     j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);
     j.at("guiScale").get_to(guiScale);
-    j.at("gridType").get_to(main.grid.gridType);
     j.at("guiFontSize").get_to(io->fontSize);
     j.at("showPerformance").get_to(showPerformance);
     j.at("useNativeFilePicker").get_to(useNativeFilePicker);
@@ -390,6 +387,7 @@ void Toolbar::top_toolbar() {
         global_log();
         bool menuPopUpJustOpen = false;
         bool bookmarkMenuPopUpJustOpen = false;
+        bool gridMenuPopUpJustOpen = false;
         if(gui.svg_icon_button("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen)) {
             menuPopUpOpen = true;
             menuPopUpJustOpen = true;
@@ -401,6 +399,14 @@ void Toolbar::top_toolbar() {
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
         if(main.world->network_being_used() && gui.svg_icon_button("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
             playerMenuOpen = !playerMenuOpen;
+        if(gui.svg_icon_button("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
+            if(gridMenu.popupOpen)
+                gridMenu.popupOpen = false;
+            else {
+                gridMenu.popupOpen = true;
+                gridMenuPopUpJustOpen = true;
+            }
+        }
         if(gui.svg_icon_button("Menu Undo Button", "data/icons/undo.svg"))
             main.world->undo_with_checks();
         if(gui.svg_icon_button("Menu Redo Button", "data/icons/redo.svg"))
@@ -417,6 +423,8 @@ void Toolbar::top_toolbar() {
 
         if(closedTab)
             main.set_tab_to_close(closedTab.value());
+        if(gridMenu.popupOpen)
+            grid_menu(gridMenuPopUpJustOpen);
         if(bookMenu.popupOpen)
             bookmark_menu(bookmarkMenuPopUpJustOpen);
         if(menuPopUpOpen) {
@@ -532,6 +540,87 @@ If you like this app, consider downloading the native version for your system)")
     }
 }
 
+void Toolbar::grid_menu(bool justOpened) {
+    gui.push_id("grid menu");
+    CLAY({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = io->theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT},
+        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+    }) {
+        gui.obstructing_window();
+        gui.text_label_centered("Grids");
+        float entryHeight = 25.0f;
+        if(main.world->gridMan.sorted_names().empty())
+            gui.text_label_centered("No grids yet...");
+        gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.sorted_names().size(), [&](size_t i, bool isListHovered) {
+            const std::string& gridName = main.world->gridMan.sorted_names()[i];
+            bool selectedEntry = gridName == gridMenu.currentSelectedGrid;
+            CLAY({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
+                    .childGap = 2,
+                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                },
+                .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
+            }) {
+                gui.text_label(gridName);
+                if(Clay_Hovered() && io->mouse.leftClick && isListHovered) {
+                    gridMenu.currentSelectedGrid = gridName;
+                    gridMenu.newName = gridName;
+                }
+            }
+        });
+        bool gridExists = std::find(main.world->gridMan.sorted_names().begin(), main.world->gridMan.sorted_names().end(), gridMenu.newName) != main.world->gridMan.sorted_names().end();
+        gui.left_to_right_line_layout([&]() {
+            gui.input_text("grid text input", &gridMenu.newName);
+            if(gridExists) {
+                if(gui.svg_icon_button("grid remove button", "data/icons/trash.svg", false, 25.0f)) {
+                    main.world->gridMan.remove_grid(gridMenu.newName);
+                    gridMenu.newName.clear();
+                    gridExists = false;
+                }
+            }
+            else {
+                if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, 25.0f) && !gridMenu.newName.empty())
+                    main.world->gridMan.add_grid(gridMenu.newName);
+            }
+        });
+        bool dropdownHover = false;
+        if(gridExists) {
+            auto gridFoundIt = main.world->gridMan.grids.find(gridMenu.newName);
+            if(gridFoundIt != main.world->gridMan.grids.end()) {
+                WorldGrid& g = gridFoundIt->second;
+                size_t typeSelected = static_cast<size_t>(g.gridType);
+                std::vector<std::string> listOfGridTypes = {
+                    "Circle Points",
+                    "Square Points",
+                    "Square Lines",
+                    "Ruled"
+                };
+                gui.left_to_right_line_layout([&]() {
+                    gui.text_label("Type");
+                    gui.dropdown_select("filepicker select type", &typeSelected, listOfGridTypes, 200.0f, [&]() {
+                        dropdownHover = Clay_Hovered();
+                    });
+                });
+                g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
+            }
+        }
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
+            gridMenu.popupOpen = false;
+    }
+    gui.pop_id();
+}
+
 void Toolbar::bookmark_menu(bool justOpened) {
     gui.push_id("bookmark menu");
     CLAY({
@@ -575,18 +664,20 @@ void Toolbar::bookmark_menu(bool justOpened) {
                 }
             }
         });
-        bool serverExists = std::find(main.world->bMan.sorted_names().begin(), main.world->bMan.sorted_names().end(), bookMenu.newName) != main.world->bMan.sorted_names().end();
+        bool bookmarkExists = std::find(main.world->bMan.sorted_names().begin(), main.world->bMan.sorted_names().end(), bookMenu.newName) != main.world->bMan.sorted_names().end();
         gui.left_to_right_line_layout([&]() {
             gui.input_text("bookmark text input", &bookMenu.newName);
-            if(gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, 25.0f) && !bookMenu.newName.empty())
-                main.world->bMan.add_bookmark(bookMenu.newName);
-            if(serverExists) {
+            if(bookmarkExists) {
                 if(gui.svg_icon_button("bookmark jump button", "data/icons/jump.svg", false, 25.0f))
                     main.world->bMan.jump_to_bookmark(bookMenu.newName);
-                if(gui.svg_icon_button("bookmark remove button", "data/icons/close.svg", false, 25.0f)) {
+                if(gui.svg_icon_button("bookmark remove button", "data/icons/trash.svg", false, 25.0f)) {
                     main.world->bMan.remove_bookmark(bookMenu.newName);
                     bookMenu.newName.clear();
                 }
+            }
+            else {
+                if(gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, 25.0f) && !bookMenu.newName.empty())
+                    main.world->bMan.add_bookmark(bookMenu.newName);
             }
         });
         if(io->mouse.leftClick && !Clay_Hovered() && !justOpened)
@@ -1173,10 +1264,6 @@ void Toolbar::options_menu() {
                                     }
                                     case GSETTINGS_APPEARANCE: {
                                         gui.push_id("appearance settings");
-                                        if(gui.radio_button_field("grid type no grid", "No Grid", (main.grid.gridType == GridManager::GRIDTYPE_NONE))) main.grid.gridType = GridManager::GRIDTYPE_NONE;
-                                        if(gui.radio_button_field("grid type circle grid", "Circle Dot Grid", (main.grid.gridType == GridManager::GRIDTYPE_CIRCLEDOT))) main.grid.gridType = GridManager::GRIDTYPE_CIRCLEDOT;
-                                        if(gui.radio_button_field("grid type square grid", "Square Dot Grid", (main.grid.gridType == GridManager::GRIDTYPE_SQUAREDOT))) main.grid.gridType = GridManager::GRIDTYPE_SQUAREDOT;
-                                        if(gui.radio_button_field("grid type line grid", "Line Grid", (main.grid.gridType == GridManager::GRIDTYPE_LINE))) main.grid.gridType = GridManager::GRIDTYPE_LINE;
                                         gui.input_scalar_field("GUI Scale", "GUI Scale", &guiScale, 0.5f, 3.0f, 1);
                                         gui.input_scalar_field<uint16_t>("GUI Font Size", "GUI Font Size", &io->fontSize, 10, 30);
                                         gui.text_label("Note: Changing font size may break UI in some cases.");

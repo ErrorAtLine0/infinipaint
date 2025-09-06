@@ -24,7 +24,8 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     main(initMain),
     rMan(*this),
     drawProg(*this),
-    bMan(*this)
+    bMan(*this),
+    gridMan(*this)
 {
     set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
@@ -360,11 +361,7 @@ WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, Wor
     return uniformZoom * ((a1 < a2) ? a1 : a2);
 }
 
-void World::draw(SkCanvas* canvas) {
-    drawData.refresh_draw_optimizing_values();
-
-    drawProg.draw(canvas, drawData);
-
+void World::draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData) {
     for(auto& [id, data] : clients) {
         if(drawData.clampDrawMaximum > data.camCoords.inverseScale && drawData.clampDrawMinimum < data.camCoords.inverseScale) {
             canvas->save();
@@ -395,4 +392,12 @@ void World::draw(SkCanvas* canvas) {
             canvas->restore();
         }
     }
+}
+
+void World::draw(SkCanvas* canvas) {
+    drawData.refresh_draw_optimizing_values();
+    if(drawData.drawGrids)
+        gridMan.draw(canvas, drawData);
+    drawProg.draw(canvas, drawData);
+    draw_other_player_cursors(canvas, drawData);
 }

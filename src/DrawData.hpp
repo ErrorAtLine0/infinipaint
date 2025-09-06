@@ -14,6 +14,7 @@ struct DrawData {
     MainProgram* main;
     bool dontUseDrawProgCache = false;
     bool clampDrawBetween = true;
+    bool drawGrids = true;
     WorldScalar clampDrawMinimum;
     WorldScalar clampDrawMaximum;
     WorldScalar mipMapLevelOne;

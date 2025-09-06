@@ -107,9 +107,9 @@ class GUIManager {
             return toRet;
         }
         
-        template <typename T> void input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> void input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void()>& elemUpdate = nullptr) {
             push_id(id);
-            insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, elemUpdate);
+            insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
             pop_id();
         }
 
@@ -135,7 +135,7 @@ class GUIManager {
                     else
                         ss << *val;
                     return ss.str();
-                }, true, elemUpdate);
+                }, true, false, elemUpdate);
         }
 
         void input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void()>& elemUpdate);
@@ -184,7 +184,7 @@ class GUIManager {
                     }
                     return ss.str();
                 },
-                true, elemUpdate);
+                true, false, elemUpdate);
         }
 
         template <typename T> void color_picker(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {

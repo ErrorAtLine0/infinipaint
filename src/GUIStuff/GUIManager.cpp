@@ -317,7 +317,7 @@ void GUIManager::input_color_component_255(const std::string& id, float* val, co
             std::stringstream ss;
             ss << convertTo255;
             return ss.str();
-        }, true, elemUpdate);
+        }, true, false, elemUpdate);
     pop_id();
 }
 
@@ -329,7 +329,7 @@ void GUIManager::input_text(const std::string& id, std::string* val, const std::
         },
         [&](const std::string& str) {
             return str;
-        }, true, elemUpdate);
+        }, true, true, elemUpdate);
     pop_id();
 }
 
@@ -414,7 +414,7 @@ void GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, 
         },
         [&](const uint8_t& a) {
             return std::to_string(static_cast<uint32_t>(a));
-        }, true, elemUpdate);
+        }, true, false, elemUpdate);
     pop_id();
 }
 
@@ -429,7 +429,7 @@ void GUIManager::input_path(const std::string& id, std::filesystem::path* val, s
         },
         [&](const std::filesystem::path& a) {
             return a.string();
-        }, true, elemUpdate);
+        }, true, false, elemUpdate);
     pop_id();
 }
 

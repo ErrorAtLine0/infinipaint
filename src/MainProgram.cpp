@@ -36,8 +36,7 @@
 #include <Helpers/Networking/NetLibrary.hpp>
 
 MainProgram::MainProgram():
-    toolbar(*this),
-    grid(*this)
+    toolbar(*this)
 {
     displayName = Random::get().alphanumeric_str(10);
 
@@ -229,7 +228,6 @@ void MainProgram::load_config() {
 
 void MainProgram::draw(SkCanvas* canvas) {
     canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.backColor);
-    grid.draw(canvas, world->drawData);
     world->draw(canvas);
     toolbar.draw(canvas);
 }

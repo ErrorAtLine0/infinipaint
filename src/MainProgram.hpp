@@ -1,6 +1,5 @@
 #pragma once
 #include "DrawData.hpp"
-#include "GridManager.hpp"
 #include <chrono>
 #include <include/core/SkCanvas.h>
 #include "InputManager.hpp"
@@ -66,7 +65,6 @@ class MainProgram {
         FontData fonts;
         TimePoint deltaTime;
         Toolbar toolbar;
-        GridManager grid;
         std::shared_ptr<World> world;
 
         std::ofstream* logFile;

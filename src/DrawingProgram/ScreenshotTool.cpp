@@ -203,6 +203,15 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
         SkRect canvasBounds = SkRect::MakeLTRB(0.0f, 0.0f, canvasSize.x(), canvasSize.y());
         std::unique_ptr<SkCanvas> canvas = SkSVGCanvas::Make(canvasBounds, &out, SkSVGCanvas::kConvertTextToPaths_Flag | SkSVGCanvas::kNoPrettyXML_Flag);
         take_screenshot_svg(canvas.get(), controls.transparentBackground);
+        canvas = nullptr; // Ensure that SVG is completely written into the stream
+    #ifdef __EMSCRIPTEN__
+        auto skData = out.detachAsData();
+        emscripten_browser_file::download(
+            "screenshot.svg",
+            "image/svg+xml",
+            std::string_view((const char*)skData->bytes(), skData->size())
+        );
+    #endif
     }
 }
 
@@ -232,16 +241,16 @@ void ScreenshotTool::take_screenshot_svg(SkCanvas* canvas, bool transparentBackg
     drawP.world.drawData.cam.set_viewing_area(canvasSize);
     drawP.world.drawData.refresh_draw_optimizing_values();
 
-    GridManager::GridType oldGridType = drawP.world.main.grid.gridType;
+    bool oldDrawGrids = drawP.world.drawData.drawGrids;
     drawP.world.main.takingScreenshot = true;
     drawP.world.main.transparentBackground = transparentBackground;
-    drawP.world.main.grid.gridType = GridManager::GRIDTYPE_NONE;
+    drawP.world.drawData.drawGrids = false;
     drawP.world.drawData.dontUseDrawProgCache = true;
 
     drawP.world.main.draw(canvas);
     drawP.world.main.takingScreenshot = false;
     drawP.world.main.transparentBackground = false;
-    drawP.world.main.grid.gridType = oldGridType;
+    drawP.world.drawData.drawGrids = oldDrawGrids;
     drawP.world.drawData = d;
 }
 
@@ -271,17 +280,16 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
     drawP.world.drawData.cam.set_viewing_area(sectionImageSize.cast<float>());
     drawP.world.drawData.refresh_draw_optimizing_values();
 
-    GridManager::GridType oldGridType = drawP.world.main.grid.gridType;
+    bool oldDrawGrids = drawP.world.drawData.drawGrids;
     drawP.world.main.takingScreenshot = true;
     drawP.world.main.transparentBackground = transparentBackground;
-    if(!controls.displayGrid)
-        drawP.world.main.grid.gridType = GridManager::GRIDTYPE_NONE;
+    drawP.world.drawData.drawGrids = controls.displayGrid;
     drawP.world.drawData.dontUseDrawProgCache = true;
 
     drawP.world.main.draw(canvas);
     drawP.world.main.takingScreenshot = false;
     drawP.world.main.transparentBackground = false;
-    drawP.world.main.grid.gridType = oldGridType;
+    drawP.world.drawData.drawGrids = oldDrawGrids;
     drawP.world.drawData = d;
 
     SkImageInfo aaImgInfo = SkImageInfo::Make(sectionImageSize.x(), sectionImageSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);

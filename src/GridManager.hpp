@@ -1,41 +1,20 @@
 #pragma once
-#include <Eigen/Dense>
-#include <include/core/SkCanvas.h>
-#include "DrawData.hpp"
-#include <include/core/SkPath.h>
-#include <include/effects/SkRuntimeEffect.h>
-#include <nlohmann/json.hpp>
+#include "WorldGrid.hpp"
 
-using namespace Eigen;
-
-class MainProgram;
+class World;
 
 class GridManager {
     public:
-        GridManager(MainProgram& initMain);
+        GridManager(World& w);
+        void init_client_callbacks();
+        void add_grid(const std::string& name);
+        void remove_grid(const std::string& name);
         void draw(SkCanvas* canvas, const DrawData& drawData);
+        const std::vector<std::string>& sorted_names();
 
-        enum GridType : unsigned {
-            GRIDTYPE_NONE = 0,
-            GRIDTYPE_CIRCLEDOT,
-            GRIDTYPE_SQUAREDOT,
-            GRIDTYPE_LINE
-        };
-
-        GridType gridType = GRIDTYPE_CIRCLEDOT;
+        std::unordered_map<std::string, WorldGrid> grids;
+        World& world;
     private:
-        sk_sp<SkShader> get_shader(const sk_sp<SkRuntimeEffect>& runtimeEffect, const SkColor4f& pointColor);
-        Vector2f oldWindowSize{0.0f, 0.0f};
-        WorldScalar size{50000000};
-        SkPath gridPath;
-        sk_sp<SkRuntimeEffect> circleDotEffect;
-        sk_sp<SkRuntimeEffect> squareDotEffect;
-        MainProgram& main;
+        bool changed = true; 
+        std::vector<std::string> sortedNames;
 };
-
-NLOHMANN_JSON_SERIALIZE_ENUM(GridManager::GridType, {
-    {GridManager::GRIDTYPE_NONE, "None"},
-    {GridManager::GRIDTYPE_CIRCLEDOT, "Circle Dot"},
-    {GridManager::GRIDTYPE_SQUAREDOT, "Square Dot"},
-    {GridManager::GRIDTYPE_LINE, "Line"}
-})

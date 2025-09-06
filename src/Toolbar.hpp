@@ -87,6 +87,7 @@ class Toolbar {
         void chat_box();
         void global_log();
         void top_toolbar();
+        void grid_menu(bool justOpened);
         void bookmark_menu(bool justOpened);
         void drawing_program_gui();
         void options_menu();
@@ -167,6 +168,12 @@ class Toolbar {
             std::string currentSelectedBookmark;
             std::string newName;
         } bookMenu;
+
+        struct GridMenu {
+            bool popupOpen = false;
+            std::string currentSelectedGrid;
+            std::string newName;
+        } gridMenu;
 
         bool useNativeFilePicker = true;
         struct FilePicker {
