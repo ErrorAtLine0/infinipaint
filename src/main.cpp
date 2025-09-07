@@ -90,6 +90,15 @@
 #include <Helpers/Logger.hpp>
 #include "SwitchCWD.hpp"
 
+// Use dedicated graphics card on Windows
+#ifdef _WIN32
+extern "C" 
+{
+	__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 struct MainStruct {
     #ifdef USE_BACKEND_VULKAN
         #ifdef USE_SKIA_BACKEND_GANESH
