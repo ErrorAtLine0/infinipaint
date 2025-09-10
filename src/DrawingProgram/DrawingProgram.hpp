@@ -55,6 +55,8 @@ class DrawingProgram {
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
 
         void clear_draw_cache();
+
+        void modify_grid(const std::string& gridToModifyName);
     private:
         std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
@@ -122,4 +124,5 @@ class DrawingProgram {
         friend class DrawingProgramCache;
         friend class DrawingProgramSelection;
         friend class LassoSelectTool;
+        friend class GridEditTool;
 };

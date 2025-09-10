@@ -51,7 +51,7 @@ class GUIManager {
         bool text_button_sized(const std::string& id, const std::string& text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
 
         void svg_icon(const std::string& id, const std::string& svgPath, bool isHighlighted = false, const std::function<void()>& elemUpdate = nullptr);
-        bool svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = 40.0f, const std::function<void()>& elemUpdate = nullptr);
+        bool svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = 40.0f, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
 
         void top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);

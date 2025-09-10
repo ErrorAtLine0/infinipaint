@@ -348,7 +348,7 @@ void GUIManager::svg_icon(const std::string& id, const std::string& svgPath, boo
     pop_id();
 }
 
-bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected, float size, const std::function<void()>& elemUpdate) {
+bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
     CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
@@ -356,7 +356,7 @@ bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPa
             svg_icon("1", svgPath, is || s.held || s.hovered);
             if(elemUpdate)
                 elemUpdate();
-        }, true, true, isSelected);
+        }, hasBorder, true, isSelected);
     }
     pop_id();
     return toRet;

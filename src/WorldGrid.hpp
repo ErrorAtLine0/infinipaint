@@ -15,6 +15,7 @@ class WorldGrid {
             RULED
         } gridType = GridType::CIRCLE_POINTS;
         WorldScalar size{50000000};
+        bool visible = true;
     private:
         static sk_sp<SkShader> get_shader(GridType gType, const SkColor4f& gridColor, float gridScale);
         static sk_sp<SkRuntimeEffect> compile_effect_shader_init(const char* shaderName, const char* shaderCode);

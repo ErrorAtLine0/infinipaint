@@ -562,7 +562,8 @@ void Toolbar::grid_menu(bool justOpened) {
             gui.text_label_centered("No grids yet...");
         gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.sorted_names().size(), [&](size_t i, bool isListHovered) {
             const std::string& gridName = main.world->gridMan.sorted_names()[i];
-            bool selectedEntry = gridName == gridMenu.currentSelectedGrid;
+            WorldGrid& grid = main.world->gridMan.grids[gridName];
+            bool selectedEntry = gridName == gridMenu.newName;
             CLAY({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
@@ -573,10 +574,21 @@ void Toolbar::grid_menu(bool justOpened) {
                 .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
             }) {
                 gui.text_label(gridName);
-                if(Clay_Hovered() && io->mouse.leftClick && isListHovered) {
-                    gridMenu.currentSelectedGrid = gridName;
-                    gridMenu.newName = gridName;
+                bool changeHappened = false;
+                CLAY({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                        .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT
+                    }
+                }) {
+                    if(gui.svg_icon_button("visibility eye", grid.visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight - 2.0f, false)) {
+                        changeHappened = true;
+                        grid.visible = !grid.visible;
+                    }
                 }
+                if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !changeHappened)
+                    gridMenu.newName = gridName;
             }
         });
         bool gridExists = std::find(main.world->gridMan.sorted_names().begin(), main.world->gridMan.sorted_names().end(), gridMenu.newName) != main.world->gridMan.sorted_names().end();
@@ -615,8 +627,12 @@ void Toolbar::grid_menu(bool justOpened) {
                 g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
             }
         }
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
+        main.world->drawProg.modify_grid(gridMenu.newName);
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover) {
+            main.world->drawProg.modify_grid("");
+            gridMenu.newName.clear();
             gridMenu.popupOpen = false;
+        }
     }
     gui.pop_id();
 }
@@ -643,7 +659,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
             gui.text_label_centered("No bookmarks yet...");
         gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.sorted_names().size(), [&](size_t i, bool isListHovered) {
             const std::string& bookmark = main.world->bMan.sorted_names()[i];
-            bool selectedEntry = bookmark == bookMenu.currentSelectedBookmark;
+            bool selectedEntry = bookmark == bookMenu.newName;
             CLAY({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
@@ -657,10 +673,8 @@ void Toolbar::bookmark_menu(bool justOpened) {
                 if(Clay_Hovered() && io->mouse.leftClick && isListHovered) {
                     if(selectedEntry && io->mouse.leftClick >= 2)
                         main.world->bMan.jump_to_bookmark(bookmark);
-                    else {
-                        bookMenu.currentSelectedBookmark = bookmark;
+                    else
                         bookMenu.newName = bookmark;
-                    }
                 }
             }
         });
@@ -680,8 +694,10 @@ void Toolbar::bookmark_menu(bool justOpened) {
                     main.world->bMan.add_bookmark(bookMenu.newName);
             }
         });
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened)
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
+            bookMenu.newName.clear();
             bookMenu.popupOpen = false;
+        }
     }
     gui.pop_id();
 }

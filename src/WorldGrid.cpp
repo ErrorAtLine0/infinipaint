@@ -105,6 +105,9 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const SkColor4f& gridColor
 }
 
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {
+    if(!visible)
+        return;
+
     if(!circlePointEffect) {
         circlePointEffect = compile_effect_shader_init("Circle Point", circlePointShaderCode);
         squarePointEffect = compile_effect_shader_init("Square Point", squarePointShaderCode);
@@ -113,7 +116,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     }
 
     float alteredZoom = static_cast<float>(((size / WorldScalar(GRID_CACHE_SIZE_INT)) / drawData.cam.c.inverseScale));
-    if(alteredZoom > 0.5f) {
+    if(alteredZoom > 0.4f) {
         Vector2f fracCamPos;
 
         fracCamPos.x() = static_cast<float>((drawData.cam.c.pos.x() % size) / drawData.cam.c.inverseScale);

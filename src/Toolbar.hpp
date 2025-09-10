@@ -165,13 +165,11 @@ class Toolbar {
 
         struct BookmarkMenu {
             bool popupOpen = false;
-            std::string currentSelectedBookmark;
             std::string newName;
         } bookMenu;
 
         struct GridMenu {
             bool popupOpen = false;
-            std::string currentSelectedGrid;
             std::string newName;
         } gridMenu;
 

@@ -6,6 +6,7 @@
 #include "../DrawComponents/DrawComponent.hpp"
 #include "EllipseDrawTool.hpp"
 #include "EyeDropperTool.hpp"
+#include "GridModifyTool.hpp"
 #include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
 #include "../Server/CommandList.hpp"
@@ -229,6 +230,17 @@ void DrawingProgram::tool_options_gui() {
         t.gui.obstructing_window();
         drawTool->gui_toolbox();
     }
+}
+
+void DrawingProgram::modify_grid(const std::string& gridToModifyName) {
+    if(world.gridMan.grids.contains(gridToModifyName)) {
+        if(drawTool->get_type() != DrawingProgramToolType::GRIDMODIFY)
+            switch_to_tool(DrawingProgramToolType::GRIDMODIFY);
+        GridModifyTool* gridModToolPtr = static_cast<GridModifyTool*>(drawTool.get());
+        gridModToolPtr->set_grid_name(gridToModifyName);
+    }
+    else if(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY)
+        switch_to_tool(DrawingProgramToolType::EDIT);
 }
 
 void DrawingProgram::update() {

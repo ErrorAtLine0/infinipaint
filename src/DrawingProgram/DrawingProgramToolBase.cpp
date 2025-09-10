@@ -10,6 +10,7 @@
 #include "EyeDropperTool.hpp"
 #include "ScreenshotTool.hpp"
 #include "EditTool.hpp"
+#include "GridModifyTool.hpp"
 
 DrawingProgramToolBase::DrawingProgramToolBase(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -37,6 +38,8 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
             return std::make_unique<EyeDropperTool>(drawP);
         case DrawingProgramToolType::SCREENSHOT:
             return std::make_unique<ScreenshotTool>(drawP);
+        case DrawingProgramToolType::GRIDMODIFY:
+            return std::make_unique<GridModifyTool>(drawP);
         case DrawingProgramToolType::EDIT:
             return std::make_unique<EditTool>(drawP);
     }
