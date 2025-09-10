@@ -80,6 +80,7 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
     std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
     cache.traverse_bvh_erase_function(cCWorld.bounds, erase_select_objects_in_bvh_func(selectedComponents, cC, cCWorld));
+    cache.clear_own_cached_surfaces();
     std::erase_if(selectedSet, [&](auto& c) {
         return selectedComponents.contains(c);
     });
