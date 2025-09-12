@@ -20,7 +20,6 @@ void GridModifyTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Grid modify tool");
     t.gui.text_label_centered("Edit Grid");
-    t.gui.text_label_centered(gridName);
     t.gui.pop_id();
 }
 

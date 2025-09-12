@@ -5,6 +5,7 @@
 #include "Helpers/Networking/ByteStream.hpp"
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
+#include "WorldGrid.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <fstream>
 #include "FileHelpers.hpp"
@@ -62,6 +63,15 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     bMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
+
+    //gridMan.add_grid("a");
+    //gridMan.grids["a"].offset.x() += WorldScalar(20000000);
+    //gridMan.grids["a"].offset.y() += WorldScalar(40000000);
+    //gridMan.grids["a"].size = WorldScalar(100000000);
+    //gridMan.grids["a"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
+    gridMan.add_grid("b");
+    gridMan.grids["b"].size = WorldScalar(500000000);
+    gridMan.grids["b"].gridType = WorldGrid::GridType::SQUARE_LINES;
 }
 
 void World::init_client_callbacks() {

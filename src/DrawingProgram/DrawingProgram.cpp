@@ -243,6 +243,10 @@ void DrawingProgram::modify_grid(const std::string& gridToModifyName) {
         switch_to_tool(DrawingProgramToolType::EDIT);
 }
 
+bool DrawingProgram::is_modifying_grid() {
+    return drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY;
+}
+
 void DrawingProgram::update() {
     if(world.main.window.lastFrameTime > std::chrono::milliseconds(33)) { // Around 30FPS
         if(!badFrametimeTimePoint)

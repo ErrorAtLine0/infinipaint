@@ -401,7 +401,7 @@ void Toolbar::top_toolbar() {
             playerMenuOpen = !playerMenuOpen;
         if(gui.svg_icon_button("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
             if(gridMenu.popupOpen)
-                gridMenu.popupOpen = false;
+                stop_displaying_grid_menu();
             else {
                 gridMenu.popupOpen = true;
                 gridMenuPopUpJustOpen = true;
@@ -628,13 +628,15 @@ void Toolbar::grid_menu(bool justOpened) {
             }
         }
         main.world->drawProg.modify_grid(gridMenu.newName);
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover) {
-            main.world->drawProg.modify_grid("");
-            gridMenu.newName.clear();
-            gridMenu.popupOpen = false;
-        }
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
+            stop_displaying_grid_menu();
     }
     gui.pop_id();
+}
+
+void Toolbar::stop_displaying_grid_menu() {
+    gridMenu.newName.clear();
+    gridMenu.popupOpen = false;
 }
 
 void Toolbar::bookmark_menu(bool justOpened) {

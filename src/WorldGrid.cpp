@@ -99,7 +99,7 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const SkColor4f& gridColor
     }
     SkRuntimeShaderBuilder builder(runtimeEffect);
     builder.uniform("gridColor") = gridColor;
-    builder.uniform("gridScale") = gridScale;
+    builder.uniform("gridScale") = 1.0f;
     sk_sp<SkShader> s = builder.makeShader();
     return s;
 }
@@ -117,10 +117,12 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
 
     float alteredZoom = static_cast<float>(((size / WorldScalar(GRID_CACHE_SIZE_INT)) / drawData.cam.c.inverseScale));
     if(alteredZoom > 0.4f) {
-        Vector2f fracCamPos;
+        WorldVec fracCamPosWorld;
 
-        fracCamPos.x() = static_cast<float>((drawData.cam.c.pos.x() % size) / drawData.cam.c.inverseScale);
-        fracCamPos.y() = static_cast<float>((drawData.cam.c.pos.y() % size) / drawData.cam.c.inverseScale);
+        fracCamPosWorld.x() = ((drawData.cam.c.pos.x() + offset.x()) % size) / drawData.cam.c.inverseScale;
+        fracCamPosWorld.y() = ((drawData.cam.c.pos.y() + offset.y()) % size) / drawData.cam.c.inverseScale;
+
+        Vector2f fracCamPos = fracCamPosWorld.cast<float>();
 
         SkPaint linePaint;
         SkColor4f pointColor = gMan.world.canvasTheme.toolFrontColor;
@@ -128,13 +130,8 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         linePaint.setShader(get_shader(gridType, pointColor, alteredZoom));
 
         canvas->save();
-
-        canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
         canvas->translate(-fracCamPos.x(), -fracCamPos.y());
-        canvas->scale(alteredZoom, alteredZoom);
-
         canvas->drawPaint(linePaint);
-
         canvas->restore();
     }
 }
