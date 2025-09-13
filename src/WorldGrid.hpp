@@ -18,7 +18,7 @@ class WorldGrid {
         bool visible = true;
         WorldVec offset{0, 0};
     private:
-        static sk_sp<SkShader> get_shader(GridType gType, const SkColor4f& gridColor, float gridScale);
+        static sk_sp<SkShader> get_shader(GridType gType, const SkColor4f& gridColor, float gridScale, const Vector2f& gridClosestPoint, float gridPointSize);
         static sk_sp<SkRuntimeEffect> compile_effect_shader_init(const char* shaderName, const char* shaderCode);
         static Vector2f oldWindowSize;
         static sk_sp<SkRuntimeEffect> circlePointEffect;

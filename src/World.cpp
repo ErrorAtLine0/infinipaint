@@ -70,8 +70,8 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     //gridMan.grids["a"].size = WorldScalar(100000000);
     //gridMan.grids["a"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
     gridMan.add_grid("b");
-    gridMan.grids["b"].size = WorldScalar(500000000);
-    gridMan.grids["b"].gridType = WorldGrid::GridType::SQUARE_LINES;
+    gridMan.grids["b"].size = WorldScalar(1000000000000);
+    gridMan.grids["b"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
 }
 
 void World::init_client_callbacks() {
