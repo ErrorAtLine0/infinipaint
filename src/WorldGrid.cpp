@@ -1,5 +1,6 @@
 #include "WorldGrid.hpp"
 #include "GridManager.hpp"
+#include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
 
 sk_sp<SkRuntimeEffect> WorldGrid::circlePointEffect;
@@ -12,13 +13,24 @@ Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
 
 const char* circlePointShaderCode = R"V(
 uniform vec4 gridColor;
-uniform float gridScale;
-uniform vec2 gridClosestPoint;
-uniform float gridPointSize;
+uniform float mainGridScale;
+uniform vec2 mainGridClosestPoint;
+uniform float mainGridPointSize;
+
+uniform float divGridAlphaFrac;
+uniform float divGridScale;
+uniform vec2 divGridClosestPoint;
+uniform float divGridPointSize;
+
+float get_color_val_circle_point(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
+    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    return step(distance(modCoord, float2(0.5 * gScale)), gPointSize);
+}
 
 vec4 main(float2 fragCoord) {
-    float2 modCoord = mod(fragCoord - gridClosestPoint + float2(0.5 * gridScale), float2(gridScale));
-    float fin = step(distance(modCoord, float2(0.5 * gridScale)), gridPointSize);
+    float mainGridColor = get_color_val_circle_point(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
+    float divGridColor = get_color_val_circle_point(fragCoord, divGridScale, divGridPointSize, divGridClosestPoint) * divGridAlphaFrac;
+    float fin = max(mainGridColor, divGridColor);
 
     vec4 pointColorUnmultiplied = vec4(gridColor.rgb, 1.0);
 
@@ -27,16 +39,27 @@ vec4 main(float2 fragCoord) {
 
 const char* squarePointShaderCode = R"V(
 uniform vec4 gridColor;
-uniform float gridScale;
-uniform vec2 gridClosestPoint;
-uniform float gridPointSize;
+uniform float mainGridScale;
+uniform vec2 mainGridClosestPoint;
+uniform float mainGridPointSize;
+
+uniform float divGridAlphaFrac;
+uniform float divGridScale;
+uniform vec2 divGridClosestPoint;
+uniform float divGridPointSize;
+
+float get_color_val_square_point(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
+    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
+    float m1 = step(difToPointCenter.x, gPointSize);
+    float m2 = step(difToPointCenter.y, gPointSize);
+    return m1 * m2;
+}
 
 vec4 main(float2 fragCoord) {
-    float2 modCoord = mod(fragCoord - gridClosestPoint + float2(0.5 * gridScale), float2(gridScale));
-    float2 difToPointCenter = abs(modCoord - float2(0.5 * gridScale));
-    float m1 = step(difToPointCenter.x, gridPointSize);
-    float m2 = step(difToPointCenter.y, gridPointSize);
-    float fin = m1 * m2;
+    float mainGridColor = get_color_val_square_point(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
+    float divGridColor = get_color_val_square_point(fragCoord, divGridScale, divGridPointSize, divGridClosestPoint) * divGridAlphaFrac;
+    float fin = max(mainGridColor, divGridColor);
 
     vec4 pointColorUnmultiplied = vec4(gridColor.rgb, 1.0);
 
@@ -45,16 +68,27 @@ vec4 main(float2 fragCoord) {
 
 const char* squareLinesShaderCode = R"V(
 uniform vec4 gridColor;
-uniform float gridScale;
-uniform vec2 gridClosestPoint;
-uniform float gridPointSize;
+uniform float mainGridScale;
+uniform vec2 mainGridClosestPoint;
+uniform float mainGridPointSize;
+
+uniform float divGridAlphaFrac;
+uniform float divGridScale;
+uniform vec2 divGridClosestPoint;
+uniform float divGridPointSize;
+
+float get_color_val_square_lines(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
+    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
+    float m1 = step(difToPointCenter.x, gPointSize);
+    float m2 = step(difToPointCenter.y, gPointSize);
+    return max(m1, m2);
+}
 
 vec4 main(float2 fragCoord) {
-    float2 modCoord = mod(fragCoord - gridClosestPoint + float2(0.5 * gridScale), float2(gridScale));
-    float2 difToPointCenter = abs(modCoord - float2(0.5 * gridScale));
-    float m1 = step(difToPointCenter.x, gridPointSize);
-    float m2 = step(difToPointCenter.y, gridPointSize);
-    float fin = max(m1, m2);
+    float mainGridColor = get_color_val_square_lines(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
+    float divGridColor = get_color_val_square_lines(fragCoord, divGridScale, divGridPointSize, divGridClosestPoint) * divGridAlphaFrac;
+    float fin = max(mainGridColor, divGridColor);
 
     vec4 pointColorUnmultiplied = vec4(gridColor.rgb, 1.0);
 
@@ -63,14 +97,24 @@ vec4 main(float2 fragCoord) {
 
 const char* ruledShaderCode = R"V(
 uniform vec4 gridColor;
-uniform float gridScale;
-uniform vec2 gridClosestPoint;
-uniform float gridPointSize;
+uniform float mainGridScale;
+uniform vec2 mainGridClosestPoint;
+uniform float mainGridPointSize;
 
+uniform float divGridAlphaFrac;
+uniform float divGridScale;
+uniform vec2 divGridClosestPoint;
+uniform float divGridPointSize;
+
+float get_color_val_ruled(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
+    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
+    return step(difToPointCenter.y, gPointSize);
+}
 vec4 main(float2 fragCoord) {
-    float2 modCoord = mod(fragCoord - gridClosestPoint + float2(0.5 * gridScale), float2(gridScale));
-    float2 difToPointCenter = abs(modCoord - float2(0.5 * gridScale));
-    float fin = step(difToPointCenter.y, gridPointSize);
+    float mainGridColor = get_color_val_ruled(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
+    float divGridColor = get_color_val_ruled(fragCoord, divGridScale, divGridPointSize, divGridClosestPoint) * divGridAlphaFrac;
+    float fin = max(mainGridColor, divGridColor);
 
     vec4 pointColorUnmultiplied = vec4(gridColor.rgb, 1.0);
 
@@ -87,7 +131,7 @@ sk_sp<SkRuntimeEffect> WorldGrid::compile_effect_shader_init(const char* shaderN
     return effect;
 }
 
-sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const SkColor4f& gridColor, float gridScale, const Vector2f& gridClosestPoint, float gridPointSize) {
+sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const ShaderData& shaderData) {
     sk_sp<SkRuntimeEffect> runtimeEffect;
     switch(gType) {
         case GridType::CIRCLE_POINTS:
@@ -104,25 +148,43 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const SkColor4f& gridColor
             break;
     }
     SkRuntimeShaderBuilder builder(runtimeEffect);
-    builder.uniform("gridColor") = gridColor;
-    builder.uniform("gridScale") = std::min(gridScale, 100000.0f); // Limit placed so that having a massive floating point value doesnt tank precision in the shader
-    builder.uniform("gridClosestPoint").set(gridClosestPoint.data(), 2);
+    builder.uniform("gridColor") = shaderData.gridColor;
+    builder.uniform("mainGridScale") = std::min(shaderData.mainGridScale, 100000.0f); // Limit placed so that having a massive floating point value doesnt tank precision in the shader
+    builder.uniform("mainGridClosestPoint").set(shaderData.mainGridClosestPoint.data(), 2);
+
+    builder.uniform("divGridAlphaFrac") = shaderData.divGridAlphaFrac;
+    builder.uniform("divGridScale") = std::min(shaderData.divGridScale, 100000.0f);
+    builder.uniform("divGridClosestPoint").set(shaderData.divGridClosestPoint.data(), 2);
     switch(gType) {
         case GridType::CIRCLE_POINTS:
-            builder.uniform("gridPointSize") = gridPointSize;
-            break;
         case GridType::SQUARE_POINTS:
-            builder.uniform("gridPointSize") = gridPointSize;
+            builder.uniform("mainGridPointSize") = shaderData.mainGridPointSize;
+            builder.uniform("divGridPointSize") = shaderData.divGridPointSize;
             break;
         case GridType::SQUARE_LINES:
-            builder.uniform("gridPointSize") = 0.5f;
-            break;
         case GridType::RULED:
-            builder.uniform("gridPointSize") = 0.5f;
+            builder.uniform("mainGridPointSize") = 0.5f;
+            builder.uniform("divGridPointSize") = 0.5f;
             break;
     }
     sk_sp<SkShader> s = builder.makeShader();
     return s;
+}
+
+Vector2f WorldGrid::get_closest_grid_point(const WorldVec& gridOffset, const WorldScalar& gridSize, const DrawData& drawData) {
+    WorldVec fracCamPosOnGrid;
+    fracCamPosOnGrid.x() = (drawData.cam.c.pos.x() + gridOffset.x()) % gridSize;
+    fracCamPosOnGrid.y() = (drawData.cam.c.pos.y() + gridOffset.y()) % gridSize;
+
+    WorldVec closestGridPoint;
+    closestGridPoint.x() = (fracCamPosOnGrid.x() < gridSize / WorldScalar(2)) ? WorldScalar(0) : gridSize;
+    closestGridPoint.y() = (fracCamPosOnGrid.y() < gridSize / WorldScalar(2)) ? WorldScalar(0) : gridSize;
+
+    Vector2f closestGridPointScreenPos;
+    closestGridPointScreenPos.x() = static_cast<float>((closestGridPoint.x() - fracCamPosOnGrid.x()) / drawData.cam.c.inverseScale);
+    closestGridPointScreenPos.y() = static_cast<float>((closestGridPoint.y() - fracCamPosOnGrid.y()) / drawData.cam.c.inverseScale);
+
+    return closestGridPointScreenPos;
 }
 
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {
@@ -136,34 +198,88 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         ruledEffect = compile_effect_shader_init("Ruled", ruledShaderCode);
     }
 
-    WorldScalar worldSize = size / drawData.cam.c.inverseScale;
-    float floatWorldSize = static_cast<float>(worldSize);
-    if(worldSize > WorldScalar(7)) {
-        WorldVec fracCamPosOnGrid;
-        fracCamPosOnGrid.x() = (drawData.cam.c.pos.x() + offset.x()) % size;
-        fracCamPosOnGrid.y() = (drawData.cam.c.pos.y() + offset.y()) % size;
+    unsigned subdivisionsTrue = subdivisions + 1;
+    if(removeDivisionsOutwards && subdivisionsTrue < 2)
+        subdivisionsTrue = 2;
 
-        WorldVec closestGridPoint;
-        closestGridPoint.x() = (fracCamPosOnGrid.x() < size / WorldScalar(2)) ? WorldScalar(0) : size;
-        closestGridPoint.y() = (fracCamPosOnGrid.y() < size / WorldScalar(2)) ? WorldScalar(0) : size;
+    // Make sure the initial size is divisible by the subdivision count, so that it remains accurate across the entire infinite grid
+    WorldScalar truncatedSize = FixedPoint::trunc(size / WorldScalar(subdivisionsTrue)) * WorldScalar(subdivisionsTrue);
+    if(truncatedSize == WorldScalar(0))
+        truncatedSize = WorldScalar(subdivisionsTrue);
 
-        Vector2f closestGridPointScreenPos;
-        closestGridPointScreenPos.x() = static_cast<float>((closestGridPoint.x() - fracCamPosOnGrid.x()) / drawData.cam.c.inverseScale);
-        closestGridPointScreenPos.y() = static_cast<float>((closestGridPoint.y() - fracCamPosOnGrid.y()) / drawData.cam.c.inverseScale);
+    WorldScalar sizeDetermineSubdivisionsToRemove = (drawData.cam.c.inverseScale / truncatedSize) * WorldScalar(subdivisionsTrue * 125);
 
-        std::cout << "frac cam point: " << vec_pretty(fracCamPosOnGrid) << std::endl;
-        std::cout << "closest grid point: " << vec_pretty(closestGridPoint) << std::endl;
-        std::cout << "closest grid point screen: " << vec_pretty(closestGridPointScreenPos) << std::endl;
-        std::cout << "worldSize: " << floatWorldSize << std::endl;
+    SkPaint linePaint;
 
-        SkPaint linePaint;
+    if(removeDivisionsOutwards && sizeDetermineSubdivisionsToRemove > WorldScalar(1)) {
+        double divLogDouble, divLogFraction;
+        divLogFraction = std::modf(static_cast<double>(FixedPoint::log(sizeDetermineSubdivisionsToRemove, WorldScalar(subdivisionsTrue))), &divLogDouble);
+        uint64_t divLog = divLogDouble;
+        WorldScalar logMultiplier = FixedPoint::exp_int_accurate<WorldScalar>(divLog, subdivisionsTrue);
+
+        WorldScalar sizeToUse = truncatedSize * logMultiplier;
+        WorldScalar divSize = sizeToUse / WorldScalar(subdivisionsTrue);
+        WorldScalar worldSize = sizeToUse / drawData.cam.c.inverseScale;
+        WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
+
+        float floatWorldSize = static_cast<float>(worldSize);
+        float floatDivWorldSize = static_cast<float>(divWorldSize);
+
+        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, sizeToUse, drawData);
+        Vector2f divClosestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+
         SkColor4f pointColor = gMan.world.canvasTheme.toolFrontColor;
-        pointColor.fA = std::clamp(floatWorldSize / 50.0f, 0.0f, 0.4f);
-        float gridPointSize = std::clamp(floatWorldSize / 10.0f, 0.0f, 5.0f);
-        linePaint.setShader(get_shader(gridType, pointColor, static_cast<float>(worldSize), closestGridPointScreenPos, gridPointSize));
-        canvas->save();
-        canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
-        canvas->drawPaint(linePaint);
-        canvas->restore();
+        pointColor.fA = std::clamp(floatWorldSize / 100.0f, 0.0f, 0.6f);
+        float gridPointSize = 5.0f;
+
+        float finalDivMultiplier = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
+
+        linePaint.setShader(get_shader(gridType, {
+            .gridColor = pointColor,
+            .mainGridScale = floatWorldSize,
+            .mainGridClosestPoint = closestGridPointScreenPos, 
+            .mainGridPointSize = gridPointSize,
+
+            .divGridAlphaFrac = finalDivMultiplier,
+            .divGridScale = floatDivWorldSize,
+            .divGridClosestPoint = divClosestGridPointScreenPos,
+            .divGridPointSize = gridPointSize * finalDivMultiplier
+        }));
     }
+    else {
+        WorldScalar sizeToUse = truncatedSize;
+        WorldScalar divSize = sizeToUse / WorldScalar(subdivisionsTrue);
+        WorldScalar worldSize = sizeToUse / drawData.cam.c.inverseScale;
+        WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
+
+        if(worldSize < WorldScalar(7))
+            return;
+
+        float floatWorldSize = static_cast<float>(worldSize);
+        float floatDivWorldSize = static_cast<float>(divWorldSize);
+
+        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, sizeToUse, drawData);
+        Vector2f divClosestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+
+        SkColor4f pointColor = gMan.world.canvasTheme.toolFrontColor;
+        pointColor.fA = std::clamp(floatWorldSize / 100.0f, 0.0f, 0.6f);
+        float gridPointSize = std::clamp(floatWorldSize / 10.0f, 0.0f, 5.0f);
+
+        linePaint.setShader(get_shader(gridType, {
+            .gridColor = pointColor,
+            .mainGridScale = floatWorldSize,
+            .mainGridClosestPoint = closestGridPointScreenPos, 
+            .mainGridPointSize = gridPointSize,
+
+            .divGridAlphaFrac = 0.5f,
+            .divGridScale = floatDivWorldSize,
+            .divGridClosestPoint = divClosestGridPointScreenPos,
+            .divGridPointSize = gridPointSize * 0.5f
+        }));
+    }
+
+    canvas->save();
+    canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
+    canvas->drawPaint(linePaint);
+    canvas->restore();
 }

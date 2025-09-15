@@ -29,6 +29,10 @@ namespace FixedPoint {
             return a + (b - a) / T(1.0 / t);
     }
 
+    template <typename T> T trunc(const T& a) {
+        return (a >> a.bit_fraction_count()) << a.bit_fraction_count();
+    }
+
     // Gets highest bit in UNDERLYING VALUE, not the integer portion of the number
     template <typename T> int to_highest_bit(const T& a) {
         typename T::UnderlyingType underNum = a.get_underlying_val();
@@ -40,6 +44,58 @@ namespace FixedPoint {
             b++;
 
         return b;
+    }
+
+    template <typename T> T log2_int(const T& a) {
+        typename T::UnderlyingType b(typename T::UnderlyingType(1u) << (a.bit_fraction_count() - 1));
+        typename T::UnderlyingType y(0);
+        typename T::UnderlyingType x = a.get_underlying_val();
+
+        if(a < T(0))
+            throw std::runtime_error("[FixedPoint::log2] Number outside domain");
+
+        while(x < (typename T::UnderlyingType(1u) << a.bit_fraction_count()))
+        {
+            x <<= 1;
+            y -= (typename T::UnderlyingType(1u)) << a.bit_fraction_count();
+        }
+
+        while(x >= (typename T::UnderlyingType(2u) << a.bit_fraction_count()))
+        {
+            x >>= 1;
+            y += (typename T::UnderlyingType(1u)) << a.bit_fraction_count();
+        }
+
+        return T(y, true);
+    }
+
+    template <typename T> T exp2_int(T x) {
+        if(x < T(0))
+            return T(1);
+
+        typename T::UnderlyingType x_int = x.get_underlying_val() >> x.bit_fraction_count();
+        x -= T(x_int, false);
+        assert(x >= T(0) && x < T(1));
+    
+        return T(typename T::UnderlyingType(1) << static_cast<int>(x_int), false);
+    }
+
+    // Base should be a power of 2 to be accurate
+    template <typename T> T log_int(const T& a, const T& base) {
+        return log2_int(a) / log2_int(base);
+    }
+
+    // Base should be a power of 2 to be accurate
+    template <typename T> T exp_int(const T& x, const T& base) {
+        return exp2(x * log2(base));
+    }
+
+    template <typename T> T exp_int_accurate(uint64_t x, uint64_t base) {
+        T toRet(1);
+        T tBase(base);
+        for(uint64_t i = 0; i < x; i++)
+            toRet *= tBase;
+        return toRet;
     }
 
     // https://github.com/Koishi-Satori/EirinFixed/blob/main/include/eirin/math.hpp
@@ -94,6 +150,14 @@ namespace FixedPoint {
         T fE(6.9315475247516736e-1);
         T fF(9.9999989311082668e-1);
         return T(typename T::UnderlyingType(1) << static_cast<int>(x_int), false) * (((((fA * x + fB) * x + fC) * x + fD) * x + fE) * x + fF);
+    }
+
+    template <typename T> T log(const T& a, const T& base) {
+        return log2(a) / log2(base);
+    }
+
+    template <typename T> T exp(const T& x, const T& base) {
+        return exp2(x * log2(base));
     }
 
     template <typename T, int bitFractionCount> class Number {

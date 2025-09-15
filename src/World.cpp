@@ -64,13 +64,9 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
 
-    //gridMan.add_grid("a");
-    //gridMan.grids["a"].offset.x() += WorldScalar(20000000);
-    //gridMan.grids["a"].offset.y() += WorldScalar(40000000);
-    //gridMan.grids["a"].size = WorldScalar(100000000);
-    //gridMan.grids["a"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
     gridMan.add_grid("b");
-    gridMan.grids["b"].size = WorldScalar(1000000000000);
+    gridMan.grids["b"].size = WorldScalar(1000);
+    gridMan.grids["b"].removeDivisionsOutwards = true;
     gridMan.grids["b"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
 }
 
