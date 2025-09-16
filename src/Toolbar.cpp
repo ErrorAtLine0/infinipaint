@@ -625,6 +625,12 @@ void Toolbar::grid_menu(bool justOpened) {
                     });
                 });
                 g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
+                uint32_t sDiv = g.get_subdivisions();
+                gui.input_scalar_field<uint32_t>("Subdivisions", "Subdivisions", &sDiv, 0, 10);
+                g.set_subdivisions(sDiv);
+                bool divOut = g.get_remove_divisions_outwards();
+                gui.checkbox_field("Subdivide outwards", "Subdivide outwards", &divOut);
+                g.set_remove_divisions_outwards(divOut);
             }
         }
         main.world->drawProg.modify_grid(gridMenu.newName);

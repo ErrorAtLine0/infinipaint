@@ -87,7 +87,7 @@ namespace FixedPoint {
 
     // Base should be a power of 2 to be accurate
     template <typename T> T exp_int(const T& x, const T& base) {
-        return exp2(x * log2(base));
+        return exp2_int(x * log2_int(base));
     }
 
     template <typename T> T exp_int_accurate(uint64_t x, uint64_t base) {

@@ -17,9 +17,17 @@ class WorldGrid {
         WorldScalar size{50000000};
         bool visible = true;
         WorldVec offset{0, 0};
-        unsigned subdivisions = 0;
-        bool removeDivisionsOutwards = false;
+
+        void set_remove_divisions_outwards(bool v);
+        bool get_remove_divisions_outwards();
+
+        void set_subdivisions(uint32_t v);
+        uint32_t get_subdivisions();
+
     private:
+        bool removeDivisionsOutwards = false;
+        uint32_t subdivisions = 1;
+
         struct ShaderData {
             SkColor4f gridColor;
             float mainGridScale;

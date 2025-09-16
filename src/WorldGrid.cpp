@@ -187,6 +187,26 @@ Vector2f WorldGrid::get_closest_grid_point(const WorldVec& gridOffset, const Wor
     return closestGridPointScreenPos;
 }
 
+void WorldGrid::set_remove_divisions_outwards(bool v) {
+    removeDivisionsOutwards = v;
+    if(removeDivisionsOutwards)
+        subdivisions = std::max<uint32_t>(subdivisions, 1);
+}
+
+bool WorldGrid::get_remove_divisions_outwards() {
+    return removeDivisionsOutwards;
+}
+
+void WorldGrid::set_subdivisions(uint32_t v) {
+    subdivisions = v;
+    if(removeDivisionsOutwards)
+        subdivisions = std::max<uint32_t>(subdivisions, 1);
+}
+
+uint32_t WorldGrid::get_subdivisions() {
+    return subdivisions;
+}
+
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {
     if(!visible)
         return;
@@ -198,16 +218,9 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         ruledEffect = compile_effect_shader_init("Ruled", ruledShaderCode);
     }
 
-    unsigned subdivisionsTrue = subdivisions + 1;
-    if(removeDivisionsOutwards && subdivisionsTrue < 2)
-        subdivisionsTrue = 2;
+    unsigned subdivisionsTrue = get_subdivisions() + 1;
 
-    // Make sure the initial size is divisible by the subdivision count, so that it remains accurate across the entire infinite grid
-    WorldScalar truncatedSize = FixedPoint::trunc(size / WorldScalar(subdivisionsTrue)) * WorldScalar(subdivisionsTrue);
-    if(truncatedSize == WorldScalar(0))
-        truncatedSize = WorldScalar(subdivisionsTrue);
-
-    WorldScalar sizeDetermineSubdivisionsToRemove = (drawData.cam.c.inverseScale / truncatedSize) * WorldScalar(subdivisionsTrue * 125);
+    WorldScalar sizeDetermineSubdivisionsToRemove = (drawData.cam.c.inverseScale / size) * WorldScalar(125);
 
     SkPaint linePaint;
 
@@ -217,63 +230,63 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         uint64_t divLog = divLogDouble;
         WorldScalar logMultiplier = FixedPoint::exp_int_accurate<WorldScalar>(divLog, subdivisionsTrue);
 
-        WorldScalar sizeToUse = truncatedSize * logMultiplier;
-        WorldScalar divSize = sizeToUse / WorldScalar(subdivisionsTrue);
-        WorldScalar worldSize = sizeToUse / drawData.cam.c.inverseScale;
+        WorldScalar subDivSize = size * logMultiplier;
+        WorldScalar divSize = subDivSize * WorldScalar(subdivisionsTrue);
+        WorldScalar subDivWorldSize = subDivSize / drawData.cam.c.inverseScale;
         WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
 
-        float floatWorldSize = static_cast<float>(worldSize);
         float floatDivWorldSize = static_cast<float>(divWorldSize);
+        float floatSubDivWorldSize = static_cast<float>(subDivWorldSize);
 
-        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, sizeToUse, drawData);
-        Vector2f divClosestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+        Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
         SkColor4f pointColor = gMan.world.canvasTheme.toolFrontColor;
-        pointColor.fA = std::clamp(floatWorldSize / 100.0f, 0.0f, 0.6f);
+        pointColor.fA = std::clamp(floatDivWorldSize / 100.0f, 0.0f, 0.6f);
         float gridPointSize = 5.0f;
 
         float finalDivMultiplier = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
 
         linePaint.setShader(get_shader(gridType, {
             .gridColor = pointColor,
-            .mainGridScale = floatWorldSize,
+            .mainGridScale = floatDivWorldSize,
             .mainGridClosestPoint = closestGridPointScreenPos, 
             .mainGridPointSize = gridPointSize,
 
             .divGridAlphaFrac = finalDivMultiplier,
-            .divGridScale = floatDivWorldSize,
-            .divGridClosestPoint = divClosestGridPointScreenPos,
+            .divGridScale = floatSubDivWorldSize,
+            .divGridClosestPoint = subClosestGridPointScreenPos,
             .divGridPointSize = gridPointSize * finalDivMultiplier
         }));
     }
     else {
-        WorldScalar sizeToUse = truncatedSize;
-        WorldScalar divSize = sizeToUse / WorldScalar(subdivisionsTrue);
-        WorldScalar worldSize = sizeToUse / drawData.cam.c.inverseScale;
+        WorldScalar subDivSize = size;
+        WorldScalar divSize = subDivSize * WorldScalar(subdivisionsTrue);
+        WorldScalar subDivWorldSize = subDivSize / drawData.cam.c.inverseScale;
         WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
 
-        if(worldSize < WorldScalar(7))
+        if(divWorldSize < WorldScalar(7))
             return;
 
-        float floatWorldSize = static_cast<float>(worldSize);
         float floatDivWorldSize = static_cast<float>(divWorldSize);
+        float floatSubDivWorldSize = static_cast<float>(subDivWorldSize);
 
-        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, sizeToUse, drawData);
-        Vector2f divClosestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+        Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
         SkColor4f pointColor = gMan.world.canvasTheme.toolFrontColor;
-        pointColor.fA = std::clamp(floatWorldSize / 100.0f, 0.0f, 0.6f);
-        float gridPointSize = std::clamp(floatWorldSize / 10.0f, 0.0f, 5.0f);
+        pointColor.fA = std::clamp(floatDivWorldSize / 100.0f, 0.0f, 0.6f);
+        float gridPointSize = std::clamp(floatDivWorldSize / 10.0f, 0.0f, 5.0f);
 
         linePaint.setShader(get_shader(gridType, {
             .gridColor = pointColor,
-            .mainGridScale = floatWorldSize,
+            .mainGridScale = floatDivWorldSize,
             .mainGridClosestPoint = closestGridPointScreenPos, 
             .mainGridPointSize = gridPointSize,
 
             .divGridAlphaFrac = 0.5f,
-            .divGridScale = floatDivWorldSize,
-            .divGridClosestPoint = divClosestGridPointScreenPos,
+            .divGridScale = floatSubDivWorldSize,
+            .divGridClosestPoint = subClosestGridPointScreenPos,
             .divGridPointSize = gridPointSize * 0.5f
         }));
     }
