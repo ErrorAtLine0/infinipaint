@@ -41,6 +41,9 @@ class ScreenshotTool : public DrawingProgramToolBase {
         };
 
         struct ScreenshotControls {
+            CoordSpaceHelper translateBeginCoords;
+            WorldVec translateBeginPos;
+
             CoordSpaceHelper coords;
             float rectX1;
             float rectX2;

@@ -394,16 +394,39 @@ void ScreenshotTool::tool_update() {
                 break;
             }
 
-            if(drawP.controls.cursorHoveringOverCanvas)
+            if(drawP.controls.cursorHoveringOverCanvas && drawP.controls.leftClick) {
                 for(int i = 0; i < 8; i++)
                     if(SCollision::collide(controls.circles[i], drawP.world.main.input.mouse.pos))
                         controls.dragType = i;
 
-            if(drawP.controls.leftClick) {
+                if(controls.dragType == -1) {
+                    Vector2f mousePosScreenshotCoords = controls.coords.get_mouse_pos(drawP.world);
+                    if(SCollision::collide(mousePosScreenshotCoords, SCollision::AABB<float>({controls.rectX1, controls.rectY1}, {controls.rectX2, controls.rectY2})))
+                        controls.dragType = -2;
+                }
+
                 if(controls.dragType == -1)
                     controls.selectionMode = 0;
+                else if(controls.dragType == -2) {
+                    controls.translateBeginPos = drawP.world.get_mouse_world_pos();
+                    controls.translateBeginCoords = controls.coords;
+                    controls.selectionMode = 3;
+                }
                 else
                     controls.selectionMode = 1;
+            }
+            break;
+        }
+        case 3: {
+            controls.coords = controls.translateBeginCoords;
+            controls.coords.translate(drawP.world.get_mouse_world_pos() - controls.translateBeginPos);
+            if((drawP.world.drawData.cam.c.inverseScale << 8) < controls.coords.inverseScale || (drawP.world.drawData.cam.c.inverseScale >> 15) > controls.coords.inverseScale) {
+                controls.selectionMode = 0;
+                break;
+            }
+            if(!drawP.controls.leftClickHeld) {
+                controls.selectionMode = 2;
+                commit_rect();
             }
             break;
         }
@@ -435,7 +458,7 @@ bool ScreenshotTool::prevent_undo_or_redo() {
 }
 
 void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(controls.selectionMode == 1 || controls.selectionMode == 2) {
+    if(controls.selectionMode >= 1) {
         canvas->save();
         controls.coords.transform_sk_canvas(canvas, drawData);
         float x1 = std::min(controls.rectX1, controls.rectX2);
