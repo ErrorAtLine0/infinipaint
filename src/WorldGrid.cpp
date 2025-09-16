@@ -224,10 +224,13 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
 
     SkPaint linePaint;
 
-    if(removeDivisionsOutwards && sizeDetermineSubdivisionsToRemove > WorldScalar(1)) {
+    if(sizeDetermineSubdivisionsToRemove > WorldScalar(1)) {
         double divLogDouble, divLogFraction;
-        divLogFraction = std::modf(static_cast<double>(FixedPoint::log(sizeDetermineSubdivisionsToRemove, WorldScalar(subdivisionsTrue))), &divLogDouble);
+        divLogFraction = std::modf(static_cast<double>(FixedPoint::log(sizeDetermineSubdivisionsToRemove, WorldScalar(subdivisionsTrue == 1 ? 2 : subdivisionsTrue))), &divLogDouble);
         uint64_t divLog = divLogDouble;
+        if(divLog >= 2 && !removeDivisionsOutwards)
+            return;
+
         WorldScalar logMultiplier = FixedPoint::exp_int_accurate<WorldScalar>(divLog, subdivisionsTrue);
 
         WorldScalar subDivSize = size * logMultiplier;
@@ -247,26 +250,39 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
 
         float finalDivMultiplier = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
 
-        linePaint.setShader(get_shader(gridType, {
-            .gridColor = pointColor,
-            .mainGridScale = floatDivWorldSize,
-            .mainGridClosestPoint = closestGridPointScreenPos, 
-            .mainGridPointSize = gridPointSize,
+        if(removeDivisionsOutwards || divLog == 0) {
+            linePaint.setShader(get_shader(gridType, {
+                .gridColor = pointColor,
+                .mainGridScale = floatDivWorldSize,
+                .mainGridClosestPoint = closestGridPointScreenPos, 
+                .mainGridPointSize = gridPointSize,
 
-            .divGridAlphaFrac = finalDivMultiplier,
-            .divGridScale = floatSubDivWorldSize,
-            .divGridClosestPoint = subClosestGridPointScreenPos,
-            .divGridPointSize = gridPointSize * finalDivMultiplier
-        }));
+                .divGridAlphaFrac = finalDivMultiplier,
+                .divGridScale = floatSubDivWorldSize,
+                .divGridClosestPoint = subClosestGridPointScreenPos,
+                .divGridPointSize = gridPointSize * finalDivMultiplier
+            }));
+        }
+        else {
+            pointColor.fA *= finalDivMultiplier;
+            linePaint.setShader(get_shader(gridType, {
+                .gridColor = pointColor,
+                .mainGridScale = floatSubDivWorldSize,
+                .mainGridClosestPoint = subClosestGridPointScreenPos, 
+                .mainGridPointSize = gridPointSize * finalDivMultiplier,
+
+                .divGridAlphaFrac = 0.0f,
+                .divGridScale = floatSubDivWorldSize,
+                .divGridClosestPoint = subClosestGridPointScreenPos,
+                .divGridPointSize = gridPointSize * finalDivMultiplier
+            }));
+        }
     }
     else {
         WorldScalar subDivSize = size;
         WorldScalar divSize = subDivSize * WorldScalar(subdivisionsTrue);
         WorldScalar subDivWorldSize = subDivSize / drawData.cam.c.inverseScale;
         WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
-
-        if(divWorldSize < WorldScalar(7))
-            return;
 
         float floatDivWorldSize = static_cast<float>(divWorldSize);
         float floatSubDivWorldSize = static_cast<float>(subDivWorldSize);
