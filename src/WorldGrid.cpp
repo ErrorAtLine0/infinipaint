@@ -24,7 +24,7 @@ uniform float divGridPointSize;
 
 float get_color_val_circle_point(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
     float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
-    return step(distance(modCoord, float2(0.5 * gScale)), gPointSize);
+    return 1.0 - smoothstep(gPointSize, gPointSize + 1.0, distance(modCoord, float2(0.5 * gScale)));
 }
 
 vec4 main(float2 fragCoord) {
@@ -51,8 +51,8 @@ uniform float divGridPointSize;
 float get_color_val_square_point(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
     float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
-    float m1 = step(difToPointCenter.x, gPointSize);
-    float m2 = step(difToPointCenter.y, gPointSize);
+    float m1 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.x);
+    float m2 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
     return m1 * m2;
 }
 
@@ -80,8 +80,8 @@ uniform float divGridPointSize;
 float get_color_val_square_lines(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
     float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
-    float m1 = step(difToPointCenter.x, gPointSize);
-    float m2 = step(difToPointCenter.y, gPointSize);
+    float m1 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.x);
+    float m2 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
     return max(m1, m2);
 }
 
@@ -109,7 +109,7 @@ uniform float divGridPointSize;
 float get_color_val_ruled(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
     float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
-    return step(difToPointCenter.y, gPointSize);
+    return 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
 }
 vec4 main(float2 fragCoord) {
     float mainGridColor = get_color_val_ruled(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
