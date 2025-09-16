@@ -233,18 +233,9 @@ void DrawingProgram::tool_options_gui() {
 }
 
 void DrawingProgram::modify_grid(const std::string& gridToModifyName) {
-    if(world.gridMan.grids.contains(gridToModifyName)) {
-        if(drawTool->get_type() != DrawingProgramToolType::GRIDMODIFY)
-            switch_to_tool(DrawingProgramToolType::GRIDMODIFY);
-        GridModifyTool* gridModToolPtr = static_cast<GridModifyTool*>(drawTool.get());
-        gridModToolPtr->set_grid_name(gridToModifyName);
-    }
-    else if(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY)
-        switch_to_tool(DrawingProgramToolType::EDIT);
-}
-
-bool DrawingProgram::is_modifying_grid() {
-    return drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY;
+    switch_to_tool(DrawingProgramToolType::GRIDMODIFY);
+    GridModifyTool* gridModToolPtr = static_cast<GridModifyTool*>(drawTool.get());
+    gridModToolPtr->set_grid_name(gridToModifyName);
 }
 
 void DrawingProgram::update() {

@@ -1,4 +1,5 @@
 #include "GridManager.hpp"
+#include "World.hpp"
 
 GridManager::GridManager(World& w):
     world(w) {}
@@ -8,6 +9,7 @@ void GridManager::init_client_callbacks() {
 
 void GridManager::add_grid(const std::string& name) {
     WorldGrid g;
+    g.color = color_mul_alpha(convert_vec4<Vector4f>(world.canvasTheme.toolFrontColor), 0.6f);
     grids[name] = g;
     changed = true;
 }

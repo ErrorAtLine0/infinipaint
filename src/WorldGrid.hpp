@@ -24,6 +24,7 @@ class WorldGrid {
         void set_subdivisions(uint32_t v);
         uint32_t get_subdivisions();
 
+        Vector4f color{1.0f, 1.0f, 1.0f, 1.0f};
     private:
         bool removeDivisionsOutwards = false;
         uint32_t subdivisions = 1;
