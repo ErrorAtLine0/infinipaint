@@ -10,6 +10,15 @@ GridModifyTool::GridModifyTool(DrawingProgram& initDrawP):
 
 void GridModifyTool::set_grid_name(const std::string& gridToModifyName) {
     gridName = gridToModifyName;
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
+        WorldGrid& g = gridFoundIt->second;
+        CoordSpaceHelper newCam;
+        newCam.inverseScale = g.size / WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
+        newCam.pos = g.offset - drawP.world.main.window.size.cast<WorldScalar>() * newCam.inverseScale * WorldScalar(0.5);
+        newCam.rotation = 0.0;
+        drawP.world.drawData.cam.smooth_move_to(drawP.world, newCam, drawP.world.main.window.size.cast<float>());
+    }
 }
 
 DrawingProgramToolType GridModifyTool::get_type() {
@@ -24,6 +33,7 @@ void GridModifyTool::gui_toolbox() {
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
         t.gui.text_label("Name: " + gridName);
+        t.gui.checkbox_field("Visible", "Visible", &g.visible);
         size_t typeSelected = static_cast<size_t>(g.gridType);
         std::vector<std::string> listOfGridTypes = {
             "Circle Points",
@@ -61,6 +71,12 @@ bool GridModifyTool::prevent_undo_or_redo() {
 }
 
 void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
+        WorldGrid& g = gridFoundIt->second;
+        Vector2f gOffset = drawData.cam.c.to_space(g.offset);
+        canvas->drawCircle(gOffset.x(), gOffset.y(), 5.0f, SkPaint{SkColor4f{1.0f, 0.0f, 0.0f, 1.0f}});
+    }
 }
 
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {

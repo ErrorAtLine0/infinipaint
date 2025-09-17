@@ -25,6 +25,8 @@ class WorldGrid {
         uint32_t get_subdivisions();
 
         Vector4f color{1.0f, 1.0f, 1.0f, 1.0f};
+
+        static unsigned GRID_UNIT_PIXEL_SIZE;
     private:
         bool removeDivisionsOutwards = false;
         uint32_t subdivisions = 1;

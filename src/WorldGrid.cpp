@@ -8,6 +8,7 @@ sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::ruledEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
+unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 125;
 
 // NOTE: Skia shaders return premultiplied alpha colors
 
@@ -173,8 +174,8 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const ShaderData& shaderDa
 
 Vector2f WorldGrid::get_closest_grid_point(const WorldVec& gridOffset, const WorldScalar& gridSize, const DrawData& drawData) {
     WorldVec fracCamPosOnGrid;
-    fracCamPosOnGrid.x() = (drawData.cam.c.pos.x() + gridOffset.x()) % gridSize;
-    fracCamPosOnGrid.y() = (drawData.cam.c.pos.y() + gridOffset.y()) % gridSize;
+    fracCamPosOnGrid.x() = (drawData.cam.c.pos.x() - gridOffset.x()) % gridSize;
+    fracCamPosOnGrid.y() = (drawData.cam.c.pos.y() - gridOffset.y()) % gridSize;
 
     WorldVec closestGridPoint;
     closestGridPoint.x() = (fracCamPosOnGrid.x() < gridSize / WorldScalar(2)) ? WorldScalar(0) : gridSize;
@@ -220,7 +221,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
 
     unsigned subdivisionsTrue = get_subdivisions() + 1;
 
-    WorldScalar sizeDetermineSubdivisionsToRemove = (drawData.cam.c.inverseScale / size) * WorldScalar(125);
+    WorldScalar sizeDetermineSubdivisionsToRemove = (drawData.cam.c.inverseScale / size) * WorldScalar(GRID_UNIT_PIXEL_SIZE);
 
     SkPaint linePaint;
 
