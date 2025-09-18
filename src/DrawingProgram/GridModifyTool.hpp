@@ -15,4 +15,5 @@ class GridModifyTool : public DrawingProgramToolBase {
         virtual void switch_tool(DrawingProgramToolType newTool) override;
     private:
         std::string gridName;
+        unsigned selectionMode = 0;
 };

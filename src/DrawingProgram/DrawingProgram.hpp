@@ -1,6 +1,7 @@
 #pragma once
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
+#include "GridModifyTool.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <include/core/SkCanvas.h>
 #include <include/core/SkPath.h>
@@ -125,4 +126,5 @@ class DrawingProgram {
         friend class DrawingProgramSelection;
         friend class LassoSelectTool;
         friend class GridEditTool;
+        friend class GridModifyTool;
 };

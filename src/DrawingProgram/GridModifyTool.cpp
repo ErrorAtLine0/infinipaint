@@ -64,6 +64,37 @@ void GridModifyTool::gui_toolbox() {
 }
 
 void GridModifyTool::tool_update() {
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
+        WorldGrid& g = gridFoundIt->second;
+        switch(selectionMode) {
+            case 0: {
+                if(drawP.controls.leftClick) {
+                    Vector2f gOffsetScreenPos = drawP.world.drawData.cam.c.to_space(g.offset);
+                    Vector2f gSizeScreenPos = drawP.world.drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
+                    if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                        selectionMode = 1;
+                    else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                        selectionMode = 2;
+                }
+                break;
+            }
+            case 1: {
+                g.offset = drawP.world.get_mouse_world_pos();
+                if(!drawP.controls.leftClickHeld)
+                    selectionMode = 0;
+                break;
+            }
+            case 2: {
+                g.size = std::max(FixedPoint::abs(drawP.world.get_mouse_world_pos().x() - g.offset.x()), WorldScalar(1));
+                if(!drawP.controls.leftClickHeld)
+                    selectionMode = 0;
+                break;
+            }
+        }
+    }
+    else
+        selectionMode = 0;
 }
 
 bool GridModifyTool::prevent_undo_or_redo() {
@@ -74,8 +105,14 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
-        Vector2f gOffset = drawData.cam.c.to_space(g.offset);
-        canvas->drawCircle(gOffset.x(), gOffset.y(), 5.0f, SkPaint{SkColor4f{1.0f, 0.0f, 0.0f, 1.0f}});
+        if(selectionMode == 0 || selectionMode == 2) {
+            Vector2f gSizeScreenPos = drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
+            drawP.draw_drag_circle(canvas, gSizeScreenPos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
+        }
+        if(selectionMode == 0 || selectionMode == 1) {
+            Vector2f gOffset = drawData.cam.c.to_space(g.offset);
+            drawP.draw_drag_circle(canvas, gOffset, {1.0f, 0.27f, 0.27f, 1.0f}, drawData);
+        }
     }
 }
 
