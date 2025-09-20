@@ -33,6 +33,13 @@ namespace FixedPoint {
         return (a >> a.bit_fraction_count()) << a.bit_fraction_count();
     }
 
+    template <typename T> T negative_round(const T& a) {
+        T truncatedVal = FixedPoint::trunc(a);
+        if(truncatedVal != a && a < T(0))
+            return truncatedVal + T(1);
+        return truncatedVal;
+    }
+
     // Gets highest bit in UNDERLYING VALUE, not the integer portion of the number
     template <typename T> int to_highest_bit(const T& a) {
         typename T::UnderlyingType underNum = a.get_underlying_val();

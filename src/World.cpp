@@ -64,10 +64,10 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
 
-    //gridMan.add_grid("b");
-    //gridMan.grids["b"].size = WorldScalar(1000);
-    //gridMan.grids["b"].set_remove_divisions_outwards(false);
-    //gridMan.grids["b"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
+    gridMan.add_grid("b");
+    gridMan.grids["b"].size = WorldScalar(100000);
+    gridMan.grids["b"].set_remove_divisions_outwards(false);
+    gridMan.grids["b"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
 }
 
 void World::init_client_callbacks() {

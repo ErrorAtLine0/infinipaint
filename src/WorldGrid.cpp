@@ -2,6 +2,7 @@
 #include "GridManager.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
+#include <include/core/SkFontMetrics.h>
 
 sk_sp<SkRuntimeEffect> WorldGrid::circlePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
@@ -188,6 +189,23 @@ Vector2f WorldGrid::get_closest_grid_point(const WorldVec& gridOffset, const Wor
     return closestGridPointScreenPos;
 }
 
+WorldVec WorldGrid::get_closest_grid_point_coordinate(const WorldVec& gridOffset, const WorldScalar& gridSize, const WorldScalar& gridSizeUnit, const DrawData& drawData) {
+    WorldVec toRet;
+    toRet.x() = FixedPoint::negative_round((drawData.cam.c.pos.x() - gridOffset.x()) / gridSize) * gridSizeUnit;
+    toRet.y() = FixedPoint::negative_round((gridOffset.y() - drawData.cam.c.pos.y()) / gridSize) * gridSizeUnit;
+
+    WorldVec fracCamPosOnGrid;
+    fracCamPosOnGrid.x() = (drawData.cam.c.pos.x() - gridOffset.x()) % gridSize;
+    fracCamPosOnGrid.y() = (drawData.cam.c.pos.y() - gridOffset.y()) % gridSize;
+
+    if(fracCamPosOnGrid.x() > gridSize / WorldScalar(2))
+        toRet.x() += gridSizeUnit;
+    if(fracCamPosOnGrid.y() > gridSize / WorldScalar(2))
+        toRet.y() -= gridSizeUnit;
+
+    return toRet;
+}
+
 void WorldGrid::set_remove_divisions_outwards(bool v) {
     removeDivisionsOutwards = v;
     if(removeDivisionsOutwards)
@@ -225,6 +243,11 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
 
     SkPaint linePaint;
 
+    float floatDivWorldSize;
+    Vector2f closestGridPointScreenPos;
+    WorldVec closestGridPointCoord;
+    WorldScalar gridCoordDivSize;
+
     if(sizeDetermineSubdivisionsToRemove > WorldScalar(1)) {
         double divLogDouble, divLogFraction;
         divLogFraction = std::modf(static_cast<double>(FixedPoint::log(sizeDetermineSubdivisionsToRemove, WorldScalar(subdivisionsTrue == 1 ? 2 : subdivisionsTrue))), &divLogDouble);
@@ -239,10 +262,10 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         WorldScalar subDivWorldSize = subDivSize / drawData.cam.c.inverseScale;
         WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
 
-        float floatDivWorldSize = static_cast<float>(divWorldSize);
+        floatDivWorldSize = static_cast<float>(divWorldSize);
         float floatSubDivWorldSize = static_cast<float>(subDivWorldSize);
 
-        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+        closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
         Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
         SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
@@ -277,6 +300,9 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
                 .divGridPointSize = gridPointSize * finalDivMultiplier
             }));
         }
+
+        gridCoordDivSize = logMultiplier * WorldScalar(subdivisionsTrue);
+        closestGridPointCoord = get_closest_grid_point_coordinate(offset, divSize, gridCoordDivSize, drawData);
     }
     else {
         WorldScalar subDivSize = size;
@@ -284,10 +310,10 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         WorldScalar subDivWorldSize = subDivSize / drawData.cam.c.inverseScale;
         WorldScalar divWorldSize = divSize / drawData.cam.c.inverseScale;
 
-        float floatDivWorldSize = static_cast<float>(divWorldSize);
+        floatDivWorldSize = static_cast<float>(divWorldSize);
         float floatSubDivWorldSize = static_cast<float>(subDivWorldSize);
 
-        Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
+        closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
         Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
         SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
@@ -304,6 +330,9 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
             .divGridClosestPoint = subClosestGridPointScreenPos,
             .divGridPointSize = gridPointSize * 0.5f
         }));
+
+        gridCoordDivSize = WorldScalar(subdivisionsTrue);
+        closestGridPointCoord = get_closest_grid_point_coordinate(offset, divSize, gridCoordDivSize, drawData);
     }
 
     canvas->save();
@@ -315,5 +344,32 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     }
     canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
     canvas->drawPaint(linePaint);
+    draw_coordinates(canvas, drawData, closestGridPointScreenPos, floatDivWorldSize, closestGridPointCoord, gridCoordDivSize);
     canvas->restore();
+}
+
+void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, const Vector2f& closestGridPointScreenPos, float floatDivWorldSize, const WorldVec& closestGridPointCoord, const WorldScalar& gridCoordDivSize) {
+    SkFont f = drawData.main->toolbar.io->get_font(18.0f);
+    SkFontMetrics metrics;
+    f.getMetrics(&metrics);
+
+    float toolbarXLength = drawData.main->toolbar.final_gui_scale() * 80.0f;
+
+    WorldScalar xGridCoord = closestGridPointCoord.x();
+    for(float x = closestGridPointScreenPos.x(); x < drawData.main->window.size.x(); x += floatDivWorldSize) {
+        std::string xGridCoordStr = xGridCoord.display_int_str(4);
+        float textXLength = f.measureText(xGridCoordStr.c_str(), xGridCoordStr.length(), SkTextEncoding::kUTF8, nullptr);
+        SkPaint p2(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
+        canvas->drawSimpleText(xGridCoordStr.c_str(), xGridCoordStr.length(), SkTextEncoding::kUTF8, x - textXLength * 0.5f, drawData.main->window.size.y() - metrics.fDescent, f, p2);
+
+        xGridCoord += gridCoordDivSize;
+    }
+    WorldScalar yGridCoord = closestGridPointCoord.y();
+    for(float y = closestGridPointScreenPos.y(); y < drawData.main->window.size.y(); y += floatDivWorldSize) {
+        std::string yGridCoordStr = yGridCoord.display_int_str(5);
+        SkPaint p2(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
+        canvas->drawSimpleText(yGridCoordStr.c_str(), yGridCoordStr.length(), SkTextEncoding::kUTF8, toolbarXLength, y + metrics.fDescent, f, p2);
+
+        yGridCoord -= gridCoordDivSize; // Subtract instead of add due to flipped y axis
+    }
 }
