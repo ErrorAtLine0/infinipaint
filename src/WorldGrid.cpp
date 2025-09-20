@@ -8,7 +8,7 @@ sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::ruledEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
-unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 125;
+unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 100;
 
 // NOTE: Skia shaders return premultiplied alpha colors
 
@@ -307,6 +307,12 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     }
 
     canvas->save();
+    if(bounds.has_value()) {
+        const auto& b = bounds.value();
+        Vector2f bMin = drawData.cam.c.to_space(b.min);
+        Vector2f bMax = drawData.cam.c.to_space(b.max);
+        canvas->clipRect(SkRect::MakeLTRB(bMin.x(), bMin.y(), bMax.x(), bMax.y()));
+    }
     canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
     canvas->drawPaint(linePaint);
     canvas->restore();

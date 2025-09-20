@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include <cstddef>
 
 GridModifyTool::GridModifyTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -59,6 +60,17 @@ void GridModifyTool::gui_toolbox() {
             }
             t.gui.text_label("Grid Color");
         });
+        bool bounded = g.bounds.has_value();
+        bool prevBoundedValue = bounded;
+        t.gui.checkbox_field("Bounded", "Bounded", &bounded);
+        if(bounded && !prevBoundedValue) {
+            SCollision::AABB<WorldScalar> newBounds;
+            newBounds.min = g.offset - drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
+            newBounds.max = g.offset + drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
+            g.bounds = newBounds;
+        }
+        else if(!bounded && prevBoundedValue)
+            g.bounds = std::nullopt;
     }
     t.gui.pop_id();
 }
@@ -68,7 +80,7 @@ void GridModifyTool::tool_update() {
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
         switch(selectionMode) {
-            case 0: {
+            case 0:
                 if(drawP.controls.leftClick) {
                     Vector2f gOffsetScreenPos = drawP.world.drawData.cam.c.to_space(g.offset);
                     Vector2f gSizeScreenPos = drawP.world.drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
@@ -76,21 +88,45 @@ void GridModifyTool::tool_update() {
                         selectionMode = 1;
                     else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
                         selectionMode = 2;
+                    else if(g.bounds.has_value()) {
+                        const auto& b = g.bounds.value();
+                        Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
+                        Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
+                        if(SCollision::collide(SCollision::Circle(bMin, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                            selectionMode = 3;
+                        else if(SCollision::collide(SCollision::Circle(bMax, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                            selectionMode = 4;
+                    }
                 }
                 break;
-            }
-            case 1: {
-                g.offset = drawP.world.get_mouse_world_pos();
-                if(!drawP.controls.leftClickHeld)
+            case 1:
+                if(drawP.controls.leftClickHeld)
+                    g.offset = drawP.world.get_mouse_world_pos();
+                else
                     selectionMode = 0;
                 break;
-            }
-            case 2: {
-                g.size = std::max(FixedPoint::abs(drawP.world.get_mouse_world_pos().x() - g.offset.x()), WorldScalar(1));
-                if(!drawP.controls.leftClickHeld)
+            case 2:
+                if(drawP.controls.leftClickHeld)
+                    g.size = std::max(FixedPoint::abs(drawP.world.get_mouse_world_pos().x() - g.offset.x()), WorldScalar(1));
+                else
                     selectionMode = 0;
                 break;
-            }
+            case 3:
+                if(drawP.controls.leftClickHeld && g.bounds.has_value()) {
+                    auto& b = g.bounds.value();
+                    b.min = cwise_vec_min(drawP.world.get_mouse_world_pos(), b.max);
+                }
+                else
+                    selectionMode = 0;
+                break;
+            case 4:
+                if(drawP.controls.leftClickHeld && g.bounds.has_value()) {
+                    auto& b = g.bounds.value();
+                    b.max = cwise_vec_max(drawP.world.get_mouse_world_pos(), b.min);
+                }
+                else
+                    selectionMode = 0;
+                break;
         }
     }
     else
@@ -105,11 +141,29 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
+        if(g.bounds.has_value()) {
+            const auto& b = g.bounds.value();
+            Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
+            Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
+            SkPaint rectBoundsPaint;
+            rectBoundsPaint.setColor4f(drawP.world.canvasTheme.toolFrontColor);
+            rectBoundsPaint.setStroke(true);
+            rectBoundsPaint.setStrokeWidth(0.0f);
+            canvas->drawRect(SkRect::MakeLTRB(bMin.x(), bMin.y(), bMax.x(), bMax.y()), rectBoundsPaint);
+            if(selectionMode == 0 || selectionMode == 4)
+                drawP.draw_drag_circle(canvas, bMax, {0.9f, 0.5f, 0.1f, 1.0f}, drawData);
+            if(selectionMode == 0 || selectionMode == 3)
+                drawP.draw_drag_circle(canvas, bMin, {0.9f, 0.5f, 0.1f, 1.0f}, drawData);
+        }
         if(selectionMode == 0 || selectionMode == 2) {
-            Vector2f gSizeScreenPos = drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
+            Vector2f gSizeScreenPos;
+            if(drawP.world.get_mouse_world_pos().x() < g.offset.x() && selectionMode == 2)
+                gSizeScreenPos = drawData.cam.c.to_space(g.offset - WorldVec{g.size, 0});
+            else
+                gSizeScreenPos = drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
             drawP.draw_drag_circle(canvas, gSizeScreenPos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
         }
-        if(selectionMode == 0 || selectionMode == 1) {
+        if(selectionMode == 0 || selectionMode == 1 || selectionMode == 3 || selectionMode == 4) {
             Vector2f gOffset = drawData.cam.c.to_space(g.offset);
             drawP.draw_drag_circle(canvas, gOffset, {1.0f, 0.27f, 0.27f, 1.0f}, drawData);
         }

@@ -17,14 +17,14 @@ class WorldGrid {
         WorldScalar size{50000000};
         bool visible = true;
         WorldVec offset{0, 0};
+        std::optional<SCollision::AABB<WorldScalar>> bounds;
+        Vector4f color{1.0f, 1.0f, 1.0f, 1.0f};
 
         void set_remove_divisions_outwards(bool v);
         bool get_remove_divisions_outwards();
 
         void set_subdivisions(uint32_t v);
         uint32_t get_subdivisions();
-
-        Vector4f color{1.0f, 1.0f, 1.0f, 1.0f};
 
         static unsigned GRID_UNIT_PIXEL_SIZE;
     private:
