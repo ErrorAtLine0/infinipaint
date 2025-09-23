@@ -9,7 +9,7 @@ sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::ruledEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
-unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 100;
+unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 75;
 
 // NOTE: Skia shaders return premultiplied alpha colors
 
@@ -259,7 +259,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
                 .mainGridClosestPoint = closestGridPointScreenPos, 
                 .mainGridPointSize = gridPointSize,
 
-                .divGridAlphaFrac = finalDivMultiplier,
+                .divGridAlphaFrac = 0.3f,
                 .divGridScale = floatSubDivWorldSize,
                 .divGridClosestPoint = subClosestGridPointScreenPos,
                 .divGridPointSize = gridPointSize * finalDivMultiplier
@@ -303,7 +303,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
             .mainGridClosestPoint = closestGridPointScreenPos, 
             .mainGridPointSize = gridPointSize,
 
-            .divGridAlphaFrac = 0.5f,
+            .divGridAlphaFrac = 0.3f,
             .divGridScale = floatSubDivWorldSize,
             .divGridClosestPoint = subClosestGridPointScreenPos,
             .divGridPointSize = gridPointSize * 0.5f
