@@ -409,16 +409,20 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
     SkPaint labelColor(SkColor4f{color.x(), color.y(), color.z(), 1.0f});
 
-    float xAxisYPos = drawData.cam.viewingArea.y() - metrics.fDescent;
+    float xAxisYPosLabels = drawData.cam.viewingArea.y() - metrics.fDescent;
+    float fontHeight = (-metrics.fAscent + metrics.fDescent);
+    float xAxisYPosRect = drawData.cam.viewingArea.y() - fontHeight;
 
     canvas->drawRect(SkRect::MakeXYWH(toolbarXLength, 0.0f, yAxisMaxXLength, drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
-    canvas->drawRect(SkRect::MakeLTRB(toolbarXLength + yAxisMaxXLength, drawData.cam.viewingArea.y() - (-metrics.fAscent + metrics.fDescent), drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
+    canvas->drawRect(SkRect::MakeLTRB(toolbarXLength + yAxisMaxXLength, xAxisYPosRect, drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
 
     for(auto& l : xAxisLabels) {
         if(l.pos > toolbarXLength + yAxisMaxXLength)
-            canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, l.pos, xAxisYPos, f, labelColor);
+            canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, l.pos, xAxisYPosLabels, f, labelColor);
     }
 
-    for(auto& l : yAxisLabels)
-        canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, toolbarXLength + yAxisMaxXLength * 0.5f - l.length * 0.5f, l.pos, f, labelColor);
+    for(auto& l : yAxisLabels) {
+        if(l.pos < xAxisYPosRect)
+            canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, toolbarXLength + yAxisMaxXLength * 0.5f - l.length * 0.5f, l.pos, f, labelColor);
+    }
 }
