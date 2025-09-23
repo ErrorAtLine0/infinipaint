@@ -328,46 +328,97 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         draw_coordinates(canvas, drawData, divSize, gridCoordDivSize);
 }
 
-void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, const WorldScalar& divWorldSize, const WorldScalar& gridCoordDivSize) {
-    SkFont f = drawData.main->toolbar.io->get_font(18.0f);
+void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, WorldScalar divWorldSize, WorldScalar gridCoordDivSize) {
+    SkFont f = drawData.main->toolbar.io->get_font(drawData.main->toolbar.final_gui_scale() * drawData.main->toolbar.io->fontSize);
     SkFontMetrics metrics;
     f.getMetrics(&metrics);
 
     float toolbarXLength = drawData.main->toolbar.final_gui_scale() * 80.0f;
     const WorldVec& worldWindowEndPos = drawData.cam.c.pos + drawData.cam.c.dir_from_space(drawData.cam.viewingArea);
     WorldVec worldWindowBeginPos;
-    WorldScalar xCoordMultiplier = FixedPoint::trunc((drawData.cam.c.pos.x() - offset.x()) / divWorldSize);
-    worldWindowBeginPos.x() = xCoordMultiplier * divWorldSize + offset.x();
-    WorldScalar yCoordMultiplier = FixedPoint::trunc((drawData.cam.c.pos.y() - offset.y()) / divWorldSize);
-    worldWindowBeginPos.y() = yCoordMultiplier * divWorldSize + offset.y();
+    WorldVec coordMultiplier;
+    auto calculateCoordMultipliers = [&]() {
+        coordMultiplier.x() = FixedPoint::trunc((drawData.cam.c.pos.x() - offset.x()) / divWorldSize);
+        worldWindowBeginPos.x() = coordMultiplier.x() * divWorldSize + offset.x();
+        coordMultiplier.y() = FixedPoint::trunc((drawData.cam.c.pos.y() - offset.y()) / divWorldSize);
+        worldWindowBeginPos.y() = coordMultiplier.y() * divWorldSize + offset.y();
+    };
+    calculateCoordMultipliers();
 
-    {
-        WorldScalar xGridCoord = xCoordMultiplier * gridCoordDivSize;
+    struct NumberTextData {
+        std::string text;
+        float pos; // X or Y pos depending on axis
+        float length; // X length
+    };
+
+    std::vector<NumberTextData> xAxisLabels, yAxisLabels;
+
+    for(int maxRepeats = 0; maxRepeats < 3; maxRepeats++) {
+        xAxisLabels.clear();
+
+        WorldScalar xGridCoord = coordMultiplier.x() * gridCoordDivSize;
 
         for(WorldScalar xWorldCoord = worldWindowBeginPos.x(); xWorldCoord < worldWindowEndPos.x(); xWorldCoord += divWorldSize) {
+            NumberTextData label;
+
             Vector2f gridPointScreenPos = drawData.cam.c.to_space(WorldVec{xWorldCoord, worldWindowBeginPos.y()});
 
-            std::string xGridCoordStr = xGridCoord.display_int_str(4);
-            float textXLength = f.measureText(xGridCoordStr.c_str(), xGridCoordStr.length(), SkTextEncoding::kUTF8, nullptr);
-            SkPaint p2(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
-            canvas->drawSimpleText(xGridCoordStr.c_str(), xGridCoordStr.length(), SkTextEncoding::kUTF8, gridPointScreenPos.x() - textXLength * 0.5f, drawData.cam.viewingArea.y() - metrics.fDescent, f, p2);
+            label.text = xGridCoord.display_int_str(4, true);
+            label.length = f.measureText(label.text.c_str(), label.text.length(), SkTextEncoding::kUTF8, nullptr);
+            label.pos = gridPointScreenPos.x() - label.length * 0.5f;
 
             xGridCoord += gridCoordDivSize;
+
+            xAxisLabels.emplace_back(label);
         }
+
+        bool labelsTooClose = false;
+        for(size_t i = 1; i < xAxisLabels.size(); i++) {
+            if(xAxisLabels[i - 1].pos + xAxisLabels[i - 1].length >= xAxisLabels[i].pos - 10.0f * drawData.main->toolbar.final_gui_scale()) {
+                divWorldSize *= WorldScalar(2);
+                gridCoordDivSize *= WorldScalar(2);
+                calculateCoordMultipliers();
+                labelsTooClose = true;
+                break;
+            }
+        }
+        if(!labelsTooClose)
+            break;
     }
 
+    float yAxisMaxXLength = 0.0f;
     {
         WorldScalar yGridCoord = FixedPoint::trunc((offset.y() - drawData.cam.c.pos.y()) / divWorldSize) * gridCoordDivSize + gridCoordDivSize;
 
         for(WorldScalar yWorldCoord = worldWindowBeginPos.y(); yWorldCoord < worldWindowEndPos.y(); yWorldCoord += divWorldSize) {
+            NumberTextData label;
+
             Vector2f gridPointScreenPos = drawData.cam.c.to_space(WorldVec{worldWindowBeginPos.x(), yWorldCoord});
 
-            std::string yGridCoordStr = yGridCoord.display_int_str(4);
-
-            SkPaint p2(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
-            canvas->drawSimpleText(yGridCoordStr.c_str(), yGridCoordStr.length(), SkTextEncoding::kUTF8, toolbarXLength, gridPointScreenPos.y() + metrics.fDescent, f, p2);
+            label.text = yGridCoord.display_int_str(4, true);
+            label.pos = gridPointScreenPos.y() + metrics.fDescent;
+            label.length = f.measureText(label.text.c_str(), label.text.length(), SkTextEncoding::kUTF8, nullptr);
 
             yGridCoord -= gridCoordDivSize;
+
+            yAxisMaxXLength = std::max(yAxisMaxXLength, label.length);
+
+            yAxisLabels.emplace_back(label);
         }
     }
+
+    SkPaint labelColor(SkColor4f{color.x(), color.y(), color.z(), 1.0f});
+
+    float xAxisYPos = drawData.cam.viewingArea.y() - metrics.fDescent;
+
+    canvas->drawRect(SkRect::MakeXYWH(toolbarXLength, 0.0f, yAxisMaxXLength, drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
+    canvas->drawRect(SkRect::MakeLTRB(toolbarXLength + yAxisMaxXLength, drawData.cam.viewingArea.y() - (-metrics.fAscent + metrics.fDescent), drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
+
+    for(auto& l : xAxisLabels) {
+        if(l.pos > toolbarXLength + yAxisMaxXLength)
+            canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, l.pos, xAxisYPos, f, labelColor);
+    }
+
+    for(auto& l : yAxisLabels)
+        canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, toolbarXLength + yAxisMaxXLength * 0.5f - l.length * 0.5f, l.pos, f, labelColor);
 }

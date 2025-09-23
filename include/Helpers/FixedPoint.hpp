@@ -326,7 +326,7 @@ namespace FixedPoint {
                 val = T(str);
             }
     
-            std::string display_int_str(size_t scientificNotationDigits) const {
+            std::string display_int_str(size_t scientificNotationDigits, bool fancy = false) const {
                 if(scientificNotationDigits <= 0) {
                     T shiftedVal = val >> bitFractionCount;
                     return shiftedVal.str();
@@ -339,7 +339,58 @@ namespace FixedPoint {
                         size_t exponent = a.size() - (isNegative ? 2 : 1);
                         a = a.substr(0, scientificNotationDigits + (isNegative ? 2 : 1));
                         a.insert(a.begin() + (isNegative ? 2 : 1), '.');
-                        a += "e" + std::to_string(exponent);
+                        if(fancy) {
+                            for(;;) {
+                                if(a.back() == '0') {
+                                    a.pop_back();
+                                    continue;
+                                }
+                                else if(a.back() == '.')
+                                    a.pop_back();
+                                break;
+                            }
+                            a += "×10";
+                            std::string expStr = std::to_string(exponent);
+                            for(char eChar : expStr) {
+                                switch(eChar) {
+                                    case '0':
+                                        a += "⁰";
+                                        break;
+                                    case '1':
+                                        a += "¹";
+                                        break;
+                                    case '2':
+                                        a += "²";
+                                        break;
+                                    case '3':
+                                        a += "³";
+                                        break;
+                                    case '4':
+                                        a += "⁴";
+                                        break;
+                                    case '5':
+                                        a += "⁵";
+                                        break;
+                                    case '6':
+                                        a += "⁶";
+                                        break;
+                                    case '7':
+                                        a += "⁷";
+                                        break;
+                                    case '8':
+                                        a += "⁸";
+                                        break;
+                                    case '9':
+                                        a += "⁹";
+                                        break;
+                                    default:
+                                        a.push_back(eChar);
+                                        break;
+                                }
+                            }
+                        }
+                        else
+                            a += "e" + std::to_string(exponent);
                     }
                     return a;
                 }
