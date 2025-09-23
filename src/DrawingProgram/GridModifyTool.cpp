@@ -48,7 +48,7 @@ void GridModifyTool::gui_toolbox() {
         });
         g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
         uint32_t sDiv = g.get_subdivisions();
-        t.gui.input_scalar_field<uint32_t>("Subdivisions", "Subdivisions", &sDiv, 0, 10);
+        t.gui.input_scalar_field<uint32_t>("Subdivisions", "Subdivisions", &sDiv, 1, 10);
         g.set_subdivisions(sDiv);
         bool divOut = g.get_remove_divisions_outwards();
         t.gui.checkbox_field("Subdivide outwards", "Subdivide outwards", &divOut);

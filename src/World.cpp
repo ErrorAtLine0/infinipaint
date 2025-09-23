@@ -68,7 +68,7 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     gridMan.grids["b"].size = WorldScalar(100000);
     gridMan.grids["b"].set_remove_divisions_outwards(true);
     gridMan.grids["b"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
-    gridMan.grids["b"].set_subdivisions(9);
+    gridMan.grids["b"].set_subdivisions(10);
 }
 
 void World::init_client_callbacks() {
