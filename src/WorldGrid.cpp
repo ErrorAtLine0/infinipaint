@@ -341,7 +341,7 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
     auto calculateCoordMultipliers = [&]() {
         coordMultiplier.x() = FixedPoint::trunc((drawData.cam.c.pos.x() - offset.x()) / divWorldSize);
         worldWindowBeginPos.x() = coordMultiplier.x() * divWorldSize + offset.x();
-        coordMultiplier.y() = FixedPoint::trunc((drawData.cam.c.pos.y() - offset.y()) / divWorldSize);
+        coordMultiplier.y() = -FixedPoint::trunc((offset.y() - drawData.cam.c.pos.y() + divWorldSize) / divWorldSize);
         worldWindowBeginPos.y() = coordMultiplier.y() * divWorldSize + offset.y();
     };
     calculateCoordMultipliers();
