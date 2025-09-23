@@ -334,18 +334,21 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
     bool axisOnBounds = bounds.has_value() && !bounds.value().fully_contains_aabb(SCollision::AABB<WorldScalar>(drawData.cam.c.pos, worldWindowEndPos));
 
-    const WorldVec& worldWindowTopLeftPos = drawData.cam.c.pos;
-
-    std::optional<SCollision::AABB<float>> boundsCamSpaceOpt;
-
+    const WorldVec& worldWindowTopLeftClipPos = axisOnBounds ? bounds.value().min : drawData.cam.c.pos;
+    SCollision::AABB<float> boundsCamSpace;
     float coordFontSize = drawData.main->toolbar.final_gui_scale() * drawData.main->toolbar.io->fontSize;
 
+    if(axisOnBounds)
+        boundsCamSpace = SCollision::AABB<float>(drawData.cam.c.to_space(bounds.value().min), drawData.cam.c.to_space(bounds.value().max));
+    else {
+        float toolbarXLength = drawData.main->toolbar.final_gui_scale() * 80.0f;
+        boundsCamSpace = SCollision::AABB<float>({toolbarXLength, 0.0f}, drawData.cam.viewingArea);
+    }
+
     if(axisOnBounds) {
-        boundsCamSpaceOpt = SCollision::AABB<float>(drawData.cam.c.to_space(bounds.value().min), drawData.cam.c.to_space(bounds.value().max));
-        auto& boundsCamSpace = boundsCamSpaceOpt.value();
         float fontSizeBoundsMultiplier = std::min(std::min(boundsCamSpace.width() / drawData.cam.viewingArea.x(), boundsCamSpace.height() / drawData.cam.viewingArea.y()) * 4.0f, 1.0f);
         coordFontSize *= fontSizeBoundsMultiplier;
-        if(coordFontSize <= 1.0f)
+        if(coordFontSize <= 3.0f)
             return;
     }
 
@@ -354,15 +357,13 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
     f.getMetrics(&metrics);
     float fontHeight = (-metrics.fAscent + metrics.fDescent);
 
-    float toolbarXLength = drawData.main->toolbar.final_gui_scale() * 80.0f;
     WorldVec worldWindowBeginPos;
     WorldVec coordMultiplier;
 
-
     auto calculateCoordMultipliers = [&]() {
-        coordMultiplier.x() = FixedPoint::trunc((worldWindowTopLeftPos.x() - offset.x()) / divWorldSize);
+        coordMultiplier.x() = FixedPoint::trunc((drawData.cam.c.pos.x() - offset.x()) / divWorldSize);
         worldWindowBeginPos.x() = coordMultiplier.x() * divWorldSize + offset.x();
-        coordMultiplier.y() = -FixedPoint::trunc((offset.y() - worldWindowTopLeftPos.y() + divWorldSize) / divWorldSize);
+        coordMultiplier.y() = -FixedPoint::trunc((offset.y() - drawData.cam.c.pos.y() + divWorldSize) / divWorldSize);
         worldWindowBeginPos.y() = coordMultiplier.y() * divWorldSize + offset.y();
     };
     calculateCoordMultipliers();
@@ -381,6 +382,8 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
     std::vector<NumberTextData> xAxisLabels, yAxisLabels;
     bool exponentExistsInXAxis;
+
+    float yAxisMaxXLength = 0.0f;
 
     for(int maxRepeats = 0; maxRepeats < 3; maxRepeats++) {
         xAxisLabels.clear();
@@ -406,7 +409,8 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
             xGridCoord += gridCoordDivSize;
 
-            xAxisLabels.emplace_back(label);
+            if(xWorldCoord > worldWindowTopLeftClipPos.x())
+                xAxisLabels.emplace_back(label);
         }
 
         bool labelsTooClose = false;
@@ -423,7 +427,8 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
             break;
     }
 
-    float yAxisMaxXLength = 0.0f;
+    float xAxisYPosRect = boundsCamSpace.max.y() - (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
+
     {
         WorldScalar yGridCoord = FixedPoint::trunc((offset.y() - drawData.cam.c.pos.y()) / divWorldSize) * gridCoordDivSize + gridCoordDivSize;
 
@@ -443,63 +448,39 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
             yGridCoord -= gridCoordDivSize;
 
-            yAxisMaxXLength = std::max(yAxisMaxXLength, label.totalLength);
-
-            yAxisLabels.emplace_back(label);
+            if(yWorldCoord > worldWindowTopLeftClipPos.y() && label.mainPos < xAxisYPosRect && label.mainPos - fontHeight * 1.25f > boundsCamSpace.min.y()) {
+                yAxisMaxXLength = std::max(yAxisMaxXLength, label.totalLength);
+                yAxisLabels.emplace_back(label);
+            }
         }
     }
 
     SkPaint labelColor(SkColor4f{color.x(), color.y(), color.z(), 1.0f});
 
-    if(axisOnBounds) {
-        auto& boundsCamSpace = boundsCamSpaceOpt.value();
+    float xAxisYPosLabels = boundsCamSpace.max.y() - metrics.fDescent;
 
+    if(axisOnBounds) {
         canvas->save();
         canvas->clipRect(SkRect::MakeLTRB(boundsCamSpace.min.x(), boundsCamSpace.min.y(), boundsCamSpace.max.x(), boundsCamSpace.max.y()));
+    }
 
-        float xAxisYPosLabels = boundsCamSpace.max.y() - metrics.fDescent;
-        float xAxisYPosRect = boundsCamSpace.max.y() - (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
+    canvas->drawRect(SkRect::MakeXYWH(boundsCamSpace.min.x(), boundsCamSpace.min.y(), yAxisMaxXLength, boundsCamSpace.max.y() - boundsCamSpace.min.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
+    canvas->drawRect(SkRect::MakeLTRB(boundsCamSpace.min.x() + yAxisMaxXLength, xAxisYPosRect, boundsCamSpace.max.x(), boundsCamSpace.max.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
 
-        canvas->drawRect(SkRect::MakeXYWH(boundsCamSpace.min.x(), boundsCamSpace.min.y(), yAxisMaxXLength, boundsCamSpace.max.y() - boundsCamSpace.min.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
-        canvas->drawRect(SkRect::MakeLTRB(boundsCamSpace.min.x() + yAxisMaxXLength, xAxisYPosRect, boundsCamSpace.max.x(), boundsCamSpace.max.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
 
-        for(auto& l : xAxisLabels) {
-            if(l.mainPos > boundsCamSpace.min.x() + yAxisMaxXLength) {
-                canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, l.mainPos, xAxisYPosLabels, f, labelColor);
-                canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, l.exponentPos, xAxisYPosLabels - fontHeight * 0.25f, f, labelColor);
-            }
+    for(auto& l : xAxisLabels) {
+        if(l.mainPos > boundsCamSpace.min.x() + yAxisMaxXLength && l.mainPos + l.totalLength < boundsCamSpace.max.x()) {
+            canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, l.mainPos, xAxisYPosLabels, f, labelColor);
+            canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, l.exponentPos, xAxisYPosLabels - fontHeight * 0.25f, f, labelColor);
         }
+    }
 
-        for(auto& l : yAxisLabels) {
-            if(l.mainPos < xAxisYPosRect) {
-                float mainTextXPos = boundsCamSpace.min.x() + yAxisMaxXLength * 0.5f - l.totalLength * 0.5f;
-                canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, mainTextXPos, l.mainPos, f, labelColor);
-                canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, mainTextXPos + l.mainLength, l.exponentPos, f, labelColor);
-            }
-        }
+    for(auto& l : yAxisLabels) {
+        float mainTextXPos = boundsCamSpace.min.x() + yAxisMaxXLength * 0.5f - l.totalLength * 0.5f;
+        canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, mainTextXPos, l.mainPos, f, labelColor);
+        canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, mainTextXPos + l.mainLength, l.exponentPos, f, labelColor);
+    }
 
+    if(axisOnBounds)
         canvas->restore();
-    }
-    else {
-        float xAxisYPosLabels = drawData.cam.viewingArea.y() - metrics.fDescent;
-        float xAxisYPosRect = drawData.cam.viewingArea.y() - (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
-
-        canvas->drawRect(SkRect::MakeXYWH(toolbarXLength, 0.0f, yAxisMaxXLength, drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
-        canvas->drawRect(SkRect::MakeLTRB(toolbarXLength + yAxisMaxXLength, xAxisYPosRect, drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
-
-        for(auto& l : xAxisLabels) {
-            if(l.mainPos > toolbarXLength + yAxisMaxXLength) {
-                canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, l.mainPos, xAxisYPosLabels, f, labelColor);
-                canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, l.exponentPos, xAxisYPosLabels - fontHeight * 0.25f, f, labelColor);
-            }
-        }
-
-        for(auto& l : yAxisLabels) {
-            if(l.mainPos < xAxisYPosRect) {
-                float mainTextXPos = toolbarXLength + yAxisMaxXLength * 0.5f - l.totalLength * 0.5f;
-                canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, mainTextXPos, l.mainPos, f, labelColor);
-                canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, mainTextXPos + l.mainLength, l.exponentPos, f, labelColor);
-            }
-        }
-    }
 }
