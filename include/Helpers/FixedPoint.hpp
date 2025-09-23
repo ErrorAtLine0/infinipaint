@@ -326,7 +326,7 @@ namespace FixedPoint {
                 val = T(str);
             }
     
-            std::string display_int_str(size_t scientificNotationDigits, bool fancy = false) const {
+            std::string display_int_str(size_t scientificNotationDigits, bool fancy = false, std::string* exponentStr = nullptr) const {
                 if(scientificNotationDigits <= 0) {
                     T shiftedVal = val >> bitFractionCount;
                     return shiftedVal.str();
@@ -339,16 +339,18 @@ namespace FixedPoint {
                         size_t exponent = a.size() - (isNegative ? 2 : 1);
                         a = a.substr(0, scientificNotationDigits + (isNegative ? 2 : 1));
                         a.insert(a.begin() + (isNegative ? 2 : 1), '.');
-                        if(fancy) {
-                            for(;;) {
-                                if(a.back() == '0') {
-                                    a.pop_back();
-                                    continue;
-                                }
-                                else if(a.back() == '.')
-                                    a.pop_back();
-                                break;
+                        for(;;) {
+                            if(a.back() == '0') {
+                                a.pop_back();
+                                continue;
                             }
+                            else if(a.back() == '.')
+                                a.pop_back();
+                            break;
+                        }
+                        if(exponentStr)
+                            *exponentStr = std::to_string(exponent);
+                        else if(fancy) {
                             a += "×10";
                             std::string expStr = std::to_string(exponent);
                             for(char eChar : expStr) {

@@ -332,6 +332,7 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
     SkFont f = drawData.main->toolbar.io->get_font(drawData.main->toolbar.final_gui_scale() * drawData.main->toolbar.io->fontSize);
     SkFontMetrics metrics;
     f.getMetrics(&metrics);
+    float fontHeight = (-metrics.fAscent + metrics.fDescent);
 
     float toolbarXLength = drawData.main->toolbar.final_gui_scale() * 80.0f;
     const WorldVec& worldWindowEndPos = drawData.cam.c.pos + drawData.cam.c.dir_from_space(drawData.cam.viewingArea);
@@ -346,15 +347,23 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
     calculateCoordMultipliers();
 
     struct NumberTextData {
-        std::string text;
-        float pos; // X or Y pos depending on axis
-        float length; // X length
+        std::string mainText;
+        float mainPos; // X or Y pos depending on axis
+        float mainLength; // X length
+
+        std::string exponentText;
+        float exponentPos;
+        float exponentLength;
+
+        float totalLength;
     };
 
     std::vector<NumberTextData> xAxisLabels, yAxisLabels;
+    bool exponentExistsInXAxis;
 
     for(int maxRepeats = 0; maxRepeats < 3; maxRepeats++) {
         xAxisLabels.clear();
+        exponentExistsInXAxis = false;
 
         WorldScalar xGridCoord = coordMultiplier.x() * gridCoordDivSize;
 
@@ -363,9 +372,16 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
             Vector2f gridPointScreenPos = drawData.cam.c.to_space(WorldVec{xWorldCoord, worldWindowBeginPos.y()});
 
-            label.text = xGridCoord.display_int_str(4, true);
-            label.length = f.measureText(label.text.c_str(), label.text.length(), SkTextEncoding::kUTF8, nullptr);
-            label.pos = gridPointScreenPos.x() - label.length * 0.5f;
+            label.mainText = xGridCoord.display_int_str(4, false, &label.exponentText);
+            if(!label.exponentText.empty()) {
+                label.mainText += "×10";
+                exponentExistsInXAxis = true;
+            }
+            label.mainLength = f.measureText(label.mainText.c_str(), label.mainText.length(), SkTextEncoding::kUTF8, nullptr);
+            label.exponentLength = f.measureText(label.exponentText.c_str(), label.exponentText.length(), SkTextEncoding::kUTF8, nullptr);
+            label.totalLength = label.mainLength + label.exponentLength;
+            label.mainPos = gridPointScreenPos.x() - (label.mainLength * 0.5f + label.exponentLength * 0.5f);
+            label.exponentPos = label.mainPos + label.mainLength;
 
             xGridCoord += gridCoordDivSize;
 
@@ -374,7 +390,7 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
         bool labelsTooClose = false;
         for(size_t i = 1; i < xAxisLabels.size(); i++) {
-            if(xAxisLabels[i - 1].pos + xAxisLabels[i - 1].length >= xAxisLabels[i].pos - 10.0f * drawData.main->toolbar.final_gui_scale()) {
+            if(xAxisLabels[i - 1].mainPos + xAxisLabels[i - 1].totalLength >= xAxisLabels[i].mainPos - 10.0f * drawData.main->toolbar.final_gui_scale()) {
                 divWorldSize *= WorldScalar(2);
                 gridCoordDivSize *= WorldScalar(2);
                 calculateCoordMultipliers();
@@ -395,13 +411,18 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
 
             Vector2f gridPointScreenPos = drawData.cam.c.to_space(WorldVec{worldWindowBeginPos.x(), yWorldCoord});
 
-            label.text = yGridCoord.display_int_str(4, true);
-            label.pos = gridPointScreenPos.y() + metrics.fDescent;
-            label.length = f.measureText(label.text.c_str(), label.text.length(), SkTextEncoding::kUTF8, nullptr);
+            label.mainText = yGridCoord.display_int_str(4, false, &label.exponentText);
+            if(!label.exponentText.empty())
+                label.mainText += "×10";
+            label.mainLength = f.measureText(label.mainText.c_str(), label.mainText.length(), SkTextEncoding::kUTF8, nullptr);
+            label.exponentLength = f.measureText(label.exponentText.c_str(), label.exponentText.length(), SkTextEncoding::kUTF8, nullptr);
+            label.totalLength = label.mainLength + label.exponentLength;
+            label.mainPos = gridPointScreenPos.y() + metrics.fDescent;
+            label.exponentPos = label.mainPos - fontHeight * 0.25f;
 
             yGridCoord -= gridCoordDivSize;
 
-            yAxisMaxXLength = std::max(yAxisMaxXLength, label.length);
+            yAxisMaxXLength = std::max(yAxisMaxXLength, label.totalLength);
 
             yAxisLabels.emplace_back(label);
         }
@@ -410,19 +431,23 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
     SkPaint labelColor(SkColor4f{color.x(), color.y(), color.z(), 1.0f});
 
     float xAxisYPosLabels = drawData.cam.viewingArea.y() - metrics.fDescent;
-    float fontHeight = (-metrics.fAscent + metrics.fDescent);
-    float xAxisYPosRect = drawData.cam.viewingArea.y() - fontHeight;
+    float xAxisYPosRect = drawData.cam.viewingArea.y() - (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
 
-    canvas->drawRect(SkRect::MakeXYWH(toolbarXLength, 0.0f, yAxisMaxXLength, drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
-    canvas->drawRect(SkRect::MakeLTRB(toolbarXLength + yAxisMaxXLength, xAxisYPosRect, drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f)});
+    canvas->drawRect(SkRect::MakeXYWH(toolbarXLength, 0.0f, yAxisMaxXLength, drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
+    canvas->drawRect(SkRect::MakeLTRB(toolbarXLength + yAxisMaxXLength, xAxisYPosRect, drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
 
     for(auto& l : xAxisLabels) {
-        if(l.pos > toolbarXLength + yAxisMaxXLength)
-            canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, l.pos, xAxisYPosLabels, f, labelColor);
+        if(l.mainPos > toolbarXLength + yAxisMaxXLength) {
+            canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, l.mainPos, xAxisYPosLabels, f, labelColor);
+            canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, l.exponentPos, xAxisYPosLabels - fontHeight * 0.25f, f, labelColor);
+        }
     }
 
     for(auto& l : yAxisLabels) {
-        if(l.pos < xAxisYPosRect)
-            canvas->drawSimpleText(l.text.c_str(), l.text.length(), SkTextEncoding::kUTF8, toolbarXLength + yAxisMaxXLength * 0.5f - l.length * 0.5f, l.pos, f, labelColor);
+        if(l.mainPos < xAxisYPosRect) {
+            float mainTextXPos = toolbarXLength + yAxisMaxXLength * 0.5f - l.totalLength * 0.5f;
+            canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, mainTextXPos, l.mainPos, f, labelColor);
+            canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, mainTextXPos + l.mainLength, l.exponentPos, f, labelColor);
+        }
     }
 }
