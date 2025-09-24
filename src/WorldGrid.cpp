@@ -247,7 +247,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
         Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
-        SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
+        SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, removeDivisionsOutwards ? 1.0f : std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
         float gridPointSize = 5.0f;
 
         float finalDivMultiplier = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
