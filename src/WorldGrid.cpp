@@ -311,9 +311,17 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     canvas->save();
     if(bounds.has_value()) {
         const auto& b = bounds.value();
-        Vector2f bMin = drawData.cam.c.to_space(b.min);
-        Vector2f bMax = drawData.cam.c.to_space(b.max);
-        canvas->clipRect(SkRect::MakeLTRB(bMin.x(), bMin.y(), bMax.x(), bMax.y()));
+        Vector2f b1 = drawData.cam.c.to_space(b.min);
+        Vector2f b2 = drawData.cam.c.to_space(b.top_right());
+        Vector2f b3 = drawData.cam.c.to_space(b.max);
+        Vector2f b4 = drawData.cam.c.to_space(b.bottom_left());
+        SkPath clipPath;
+        clipPath.moveTo(b1.x(), b1.y());
+        clipPath.lineTo(b2.x(), b2.y());
+        clipPath.lineTo(b3.x(), b3.y());
+        clipPath.lineTo(b4.x(), b4.y());
+        clipPath.close();
+        canvas->clipPath(clipPath);
     }
     canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
     canvas->drawPaint(linePaint);
