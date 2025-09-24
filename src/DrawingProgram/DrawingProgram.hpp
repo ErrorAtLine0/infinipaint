@@ -57,7 +57,7 @@ class DrawingProgram {
 
         void clear_draw_cache();
 
-        void modify_grid(const std::string& gridToModifyName);
+        void modify_grid(ServerClientID gridToModifyID);
     private:
         std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;

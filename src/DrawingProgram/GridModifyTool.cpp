@@ -9,9 +9,9 @@ GridModifyTool::GridModifyTool(DrawingProgram& initDrawP):
 {
 }
 
-void GridModifyTool::set_grid_name(const std::string& gridToModifyName) {
-    gridName = gridToModifyName;
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+void GridModifyTool::set_grid_id(ServerClientID newGridID) {
+    gridID = newGridID;
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
         CoordSpaceHelper newCam;
@@ -30,10 +30,10 @@ void GridModifyTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Grid modify tool");
     t.gui.text_label_centered("Edit Grid");
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
-        t.gui.text_label("Name: " + gridName);
+        t.gui.input_text_field("grid name", "Name", &g.name);
         t.gui.checkbox_field("Visible", "Visible", &g.visible);
         size_t typeSelected = static_cast<size_t>(g.gridType);
         std::vector<std::string> listOfGridTypes = {
@@ -47,10 +47,10 @@ void GridModifyTool::gui_toolbox() {
             t.gui.dropdown_select("filepicker select type", &typeSelected, listOfGridTypes, 200.0f);
         });
         g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
-        uint32_t sDiv = g.get_subdivisions();
+        uint32_t sDiv = g.subdivisions;
         t.gui.input_scalar_field<uint32_t>("Subdivisions", "Subdivisions", &sDiv, 1, 10);
         g.set_subdivisions(sDiv);
-        bool divOut = g.get_remove_divisions_outwards();
+        bool divOut = g.removeDivisionsOutwards;
         t.gui.checkbox_field("Subdivide outwards", "Subdivide outwards", &divOut);
         g.set_remove_divisions_outwards(divOut);
         t.gui.left_to_right_line_layout([&]() {
@@ -76,7 +76,7 @@ void GridModifyTool::gui_toolbox() {
 }
 
 void GridModifyTool::tool_update() {
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
         switch(selectionMode) {
@@ -138,7 +138,7 @@ bool GridModifyTool::prevent_undo_or_redo() {
 }
 
 void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridName);
+    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
         if(g.bounds.has_value()) {

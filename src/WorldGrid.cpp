@@ -195,18 +195,14 @@ void WorldGrid::set_remove_divisions_outwards(bool v) {
         subdivisions = std::max<uint32_t>(subdivisions, 2);
 }
 
-bool WorldGrid::get_remove_divisions_outwards() {
-    return removeDivisionsOutwards;
-}
-
 void WorldGrid::set_subdivisions(uint32_t v) {
     subdivisions = v;
     if(removeDivisionsOutwards)
         subdivisions = std::max<uint32_t>(subdivisions, 2);
 }
 
-uint32_t WorldGrid::get_subdivisions() {
-    return subdivisions;
+std::string WorldGrid::get_display_name() {
+    return name.empty() ? "New Grid" : name;
 }
 
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {

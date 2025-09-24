@@ -558,13 +558,13 @@ void Toolbar::grid_menu(bool justOpened) {
         gui.obstructing_window();
         gui.text_label_centered("Grids");
         float entryHeight = 25.0f;
-        if(main.world->gridMan.sorted_names().empty())
+        if(main.world->gridMan.sorted_grid_ids().empty())
             gui.text_label_centered("No grids yet...");
-        std::string toDelete;
-        gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.sorted_names().size(), [&](size_t i, bool isListHovered) {
-            const std::string& gridName = main.world->gridMan.sorted_names()[i];
-            WorldGrid& grid = main.world->gridMan.grids[gridName];
-            bool selectedEntry = gridName == gridMenu.newName;
+        ServerClientID toDelete{0, 0};
+        gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.sorted_grid_ids().size(), [&](size_t i, bool isListHovered) {
+            ServerClientID gridID = main.world->gridMan.sorted_grid_ids()[i];
+            WorldGrid& grid = main.world->gridMan.grids[gridID];
+            bool selectedEntry = gridID == gridMenu.gridSelected;
             CLAY({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
@@ -574,7 +574,7 @@ void Toolbar::grid_menu(bool justOpened) {
                 },
                 .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
             }) {
-                gui.text_label(gridName);
+                gui.text_label(grid.get_display_name());
                 bool miniButtonClicked = false;
                 CLAY({
                     .layout = {
@@ -590,34 +590,30 @@ void Toolbar::grid_menu(bool justOpened) {
                     }
                     if(gui.svg_icon_button("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
-                        main.world->drawProg.modify_grid(gridName);
+                        main.world->drawProg.modify_grid(gridID);
                         stop_displaying_grid_menu();
                     }
                     if(gui.svg_icon_button("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
-                        toDelete = gridName;
+                        toDelete = gridID;
                     }
                 }
                 if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
-                    gridMenu.newName = gridName;
+                    gridMenu.gridSelected = gridID;
                     if(io->mouse.leftClick >= 2) {
-                        main.world->drawProg.modify_grid(gridName);
+                        main.world->drawProg.modify_grid(gridID);
                         stop_displaying_grid_menu();
                     }
                 }
             }
         });
-        if(!toDelete.empty())
+        if(toDelete != ServerClientID{0, 0})
             main.world->gridMan.remove_grid(toDelete);
-        bool gridExists = std::find(main.world->gridMan.sorted_names().begin(), main.world->gridMan.sorted_names().end(), gridMenu.newName) != main.world->gridMan.sorted_names().end();
         gui.left_to_right_line_layout([&]() {
             gui.input_text("grid text input", &gridMenu.newName);
-            if(!gridExists) {
-                if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, 25.0f) && !gridMenu.newName.empty()) {
-                    main.world->gridMan.add_grid(gridMenu.newName);
-                    main.world->drawProg.modify_grid(gridMenu.newName);
-                    stop_displaying_grid_menu();
-                }
+            if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, 25.0f)) {
+                main.world->drawProg.modify_grid(main.world->gridMan.add_default_grid(gridMenu.newName));
+                stop_displaying_grid_menu();
             }
         });
 

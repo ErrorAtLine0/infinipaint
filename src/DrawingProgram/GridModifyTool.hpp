@@ -6,7 +6,7 @@ class DrawingProgram;
 class GridModifyTool : public DrawingProgramToolBase {
     public:
         GridModifyTool(DrawingProgram& initDrawP);
-        void set_grid_name(const std::string& gridToModifyName);
+        void set_grid_id(ServerClientID newGridID);
         virtual DrawingProgramToolType get_type() override;
         virtual void gui_toolbox() override;
         virtual void tool_update() override;
@@ -14,6 +14,6 @@ class GridModifyTool : public DrawingProgramToolBase {
         virtual bool prevent_undo_or_redo() override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
     private:
-        std::string gridName;
+        ServerClientID gridID;
         unsigned selectionMode = 0;
 };

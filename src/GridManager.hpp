@@ -7,14 +7,18 @@ class GridManager {
     public:
         GridManager(World& w);
         void init_client_callbacks();
-        void add_grid(const std::string& name);
-        void remove_grid(const std::string& name);
-        void draw(SkCanvas* canvas, const DrawData& drawData);
-        const std::vector<std::string>& sorted_names();
 
-        std::unordered_map<std::string, WorldGrid> grids;
+        ServerClientID add_default_grid(const std::string& newName);
+
+        void remove_grid(ServerClientID idToRemove);
+        void draw(SkCanvas* canvas, const DrawData& drawData);
+        ClientPortionID get_max_id(ServerPortionID serverID) const;
+
+        const std::vector<ServerClientID>& sorted_grid_ids();
+
+        std::unordered_map<ServerClientID, WorldGrid> grids;
         World& world;
     private:
         bool changed = true; 
-        std::vector<std::string> sortedNames;
+        std::vector<ServerClientID> sortedGridIDs;
 };

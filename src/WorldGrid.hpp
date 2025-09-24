@@ -8,28 +8,29 @@ class GridManager;
 class WorldGrid {
     public:
         void draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData);
+
         enum class GridType : unsigned {
             CIRCLE_POINTS = 0,
             SQUARE_POINTS,
             SQUARE_LINES,
             RULED
         } gridType = GridType::CIRCLE_POINTS;
+        std::string name;
         WorldScalar size{50000000};
         bool visible = true;
         WorldVec offset{0, 0};
         std::optional<SCollision::AABB<WorldScalar>> bounds;
         Vector4f color{1.0f, 1.0f, 1.0f, 1.0f};
+        bool removeDivisionsOutwards = false;
+        uint32_t subdivisions = 1;
+
+        std::string get_display_name();
 
         void set_remove_divisions_outwards(bool v);
-        bool get_remove_divisions_outwards();
-
         void set_subdivisions(uint32_t v);
-        uint32_t get_subdivisions();
 
         static unsigned GRID_UNIT_PIXEL_SIZE;
     private:
-        bool removeDivisionsOutwards = false;
-        uint32_t subdivisions = 1;
 
         struct ShaderData {
             SkColor4f gridColor;

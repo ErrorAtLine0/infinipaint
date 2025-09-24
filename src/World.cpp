@@ -63,12 +63,6 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     bMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
-
-    gridMan.add_grid("b");
-    gridMan.grids["b"].size = WorldScalar(100000);
-    gridMan.grids["b"].set_remove_divisions_outwards(true);
-    gridMan.grids["b"].gridType = WorldGrid::GridType::CIRCLE_POINTS;
-    gridMan.grids["b"].set_subdivisions(10);
 }
 
 void World::init_client_callbacks() {

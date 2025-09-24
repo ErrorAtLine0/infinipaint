@@ -1,6 +1,8 @@
 #include "GridManager.hpp"
+#include "SharedTypes.hpp"
 #include "World.hpp"
 #include "MainProgram.hpp"
+#include <algorithm>
 
 GridManager::GridManager(World& w):
     world(w) {}
@@ -8,30 +10,37 @@ GridManager::GridManager(World& w):
 void GridManager::init_client_callbacks() {
 }
 
-void GridManager::add_grid(const std::string& name) {
+ServerClientID GridManager::add_default_grid(const std::string& newName) {
+    ServerClientID newID = world.get_new_id();
     WorldGrid g;
+    g.name = newName;
     g.color = color_mul_alpha(convert_vec4<Vector4f>(world.canvasTheme.toolFrontColor), 0.6f);
-    g.set_subdivisions(7);
     g.size = world.drawData.cam.c.inverseScale * WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
     g.offset = world.drawData.cam.c.pos + world.drawData.cam.c.dir_from_space(world.main.window.size.cast<float>() * 0.5f);
-    grids[name] = g;
+    grids[newID] = g;
+    changed = true;
+    return newID;
+}
+
+void GridManager::remove_grid(ServerClientID idToRemove) {
+    grids.erase(idToRemove);
     changed = true;
 }
 
-void GridManager::remove_grid(const std::string& name) {
-    grids.erase(name);
-    changed = true;
-}
-
-const std::vector<std::string>& GridManager::sorted_names() {
+const std::vector<ServerClientID>& GridManager::sorted_grid_ids() {
     if(changed) {
-        sortedNames.clear();
+        sortedGridIDs.clear();
         for(auto& [k, v] : grids)
-            sortedNames.emplace_back(k);
-        std::sort(sortedNames.begin(), sortedNames.end());
+            sortedGridIDs.emplace_back(k);
+        std::sort(sortedGridIDs.begin(), sortedGridIDs.end(), [&](ServerClientID a, ServerClientID b) {
+            std::string nameA = grids[a].get_display_name();
+            std::string nameB = grids[b].get_display_name();
+            bool namesEqual = nameA == nameB;
+            return (!namesEqual && std::lexicographical_compare(nameA.begin(), nameA.end(), nameB.begin(), nameB.end())) || (namesEqual && a < b);
+        });
         changed = false;
     }
-    return sortedNames;
+    return sortedGridIDs;
 }
 
 void GridManager::draw(SkCanvas* canvas, const DrawData& drawData) {
