@@ -22,9 +22,16 @@ class BookmarkManager {
         void remove_bookmark(const std::string& name);
         void jump_to_bookmark(const std::string& name);
         const std::unordered_map<std::string, Bookmark>& bookmark_list();
-        template <typename Archive> void serialize(Archive& a) {
+
+        template <typename Archive> void save(Archive& a) const {
             a(bookmarks);
         }
+
+        template <typename Archive> void load(Archive& a) {
+            a(bookmarks);
+            changed = true;
+        }
+
         const std::vector<std::string>& sorted_names();
     private:
         bool changed = true; 

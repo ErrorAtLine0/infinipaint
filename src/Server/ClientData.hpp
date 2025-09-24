@@ -16,7 +16,7 @@ class ClientData {
 
         Vector3f cursorColor;
         std::string displayName;
-        ServerClientID id = {0, 0};
+        ServerPortionID serverID = 0;
 
         std::queue<ResourceData> pendingResourceData;
         std::queue<ServerClientID> pendingResourceID;

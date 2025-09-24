@@ -587,6 +587,7 @@ void Toolbar::grid_menu(bool justOpened) {
                     if(gui.svg_icon_button("visibility eye", grid.visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
                         grid.visible = !grid.visible;
+                        main.world->gridMan.send_grid_info(gridID);
                     }
                     if(gui.svg_icon_button("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;

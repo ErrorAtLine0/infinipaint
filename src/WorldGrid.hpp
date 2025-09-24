@@ -2,20 +2,25 @@
 #include <include/core/SkCanvas.h>
 #include "DrawData.hpp"
 #include <include/effects/SkRuntimeEffect.h>
+#include <cereal/types/optional.hpp>
 
 class GridManager;
 
 class WorldGrid {
     public:
+        template <class Archive> void serialize(Archive& a) {
+            a(name, gridType, size, visible, offset, bounds, color, removeDivisionsOutwards, subdivisions);
+        }
+
         void draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData);
 
+        std::string name;
         enum class GridType : unsigned {
             CIRCLE_POINTS = 0,
             SQUARE_POINTS,
             SQUARE_LINES,
             RULED
         } gridType = GridType::CIRCLE_POINTS;
-        std::string name;
         WorldScalar size{50000000};
         bool visible = true;
         WorldVec offset{0, 0};

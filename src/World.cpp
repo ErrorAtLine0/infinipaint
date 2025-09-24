@@ -5,6 +5,7 @@
 #include "Helpers/Networking/ByteStream.hpp"
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
+#include "SharedTypes.hpp"
 #include "WorldGrid.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <fstream>
@@ -61,6 +62,7 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
     bMan.init_client_callbacks();
+    gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
 }
@@ -77,9 +79,9 @@ void World::init_client_callbacks() {
             message(newBackColor);
             set_canvas_background_color(newBackColor, false);
             drawProg.initialize_draw_data(message);
-            message(bMan);
+            message(bMan, gridMan);
         }
-        nextClientID = std::max(rMan.get_max_id(ownID), drawProg.get_max_id(ownID));
+        nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
     });
     con.client_add_recv_callback(CLIENT_USER_CONNECT, [&](cereal::PortableBinaryInputArchive& message) {
@@ -240,6 +242,7 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
     bMan.init_client_callbacks();
+    gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true);
     conType = CONNECTIONTYPE_SERVER;
@@ -302,13 +305,13 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
     }
 
     if(buffer.size() < SAVEFILE_HEADER_LEN)
-        throw std::runtime_error("[World::load_from_file] File too small");
+        throw std::runtime_error("[World::load_from_file] File is not an InfiniPaint canvas (File too small)");
 
     std::string_view fileHeader = buffer.substr(0, SAVEFILE_HEADER_LEN);
     std::string_view uncompressedDataView;
     std::vector<char> uncompressedDataVector;
 
-    if(fileHeader == SAVEFILE_HEADER) {
+    if(fileHeader == SAVEFILE_HEADER || fileHeader == SAVEFILE_HEADER_V2) {
         uncompressedDataVector.resize(ZSTD_getFrameContentSize(buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN));
         size_t trueUncompressedSize = ZSTD_decompress(uncompressedDataVector.data(), uncompressedDataVector.size(), buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN);
         uncompressedDataView = std::string_view(uncompressedDataVector.data(), trueUncompressedSize);
@@ -316,7 +319,7 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
     else if(fileHeader == SAVEFILE_HEADER_V1)
         uncompressedDataView = std::string_view(buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN);
     else
-        throw std::runtime_error("[World::load_from_file] File does not have correct header");
+        throw std::runtime_error("[World::load_from_file] File is not an InfiniPaint canvas (Wrong header)");
 
 
 
@@ -325,10 +328,14 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
     cereal::PortableBinaryInputArchive a(f);
     SaveLoadFileOp op{.world = this, .versionStr = std::string(fileHeader)};
     a(op);
-    nextClientID = std::max(rMan.get_max_id(ownID), drawProg.get_max_id(ownID));
+    nextClientID = get_max_id(ownID);
 
     Logger::get().log("USERINFO", "File loaded");
     set_name(filePath.stem().string());
+}
+
+ClientPortionID World::get_max_id(ServerPortionID serverID) {
+    return std::max(std::max(rMan.get_max_id(serverID), drawProg.get_max_id(serverID)), gridMan.get_max_id(serverID));
 }
 
 void World::SaveLoadFileOp::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -336,6 +343,7 @@ void World::SaveLoadFileOp::save(cereal::PortableBinaryOutputArchive& a) const {
     a(convert_vec3<Vector3f>(world->canvasTheme.backColor));
     world->drawProg.write_to_file(a);
     a(world->bMan);
+    a(world->gridMan);
     world->rMan.save_strip_unused_resources(a, world->drawProg.get_used_resources());
 }
 
@@ -343,16 +351,20 @@ void World::SaveLoadFileOp::load(cereal::PortableBinaryInputArchive& a) {
     CoordSpaceHelper coordsToJumpTo;
     Vector2f windowSizeToJumpTo;
     a(coordsToJumpTo, windowSizeToJumpTo);
-    if(versionStr == SAVEFILE_HEADER) {
+
+    if(versionStr == SAVEFILE_HEADER_V1)
+        world->set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+    else {
         Vector3f canvasBackColor;
         a(canvasBackColor);
         world->set_canvas_background_color(canvasBackColor);
     }
-    else
-        world->set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+
     world->drawData.cam.smooth_move_to(*world, coordsToJumpTo, windowSizeToJumpTo, true);
     world->drawProg.initialize_draw_data(a);
     a(world->bMan);
+    if(versionStr == SAVEFILE_HEADER)
+        a(world->gridMan);
     a(world->rMan);
 }
 

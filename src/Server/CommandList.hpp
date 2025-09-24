@@ -18,7 +18,9 @@ enum ServerCommands : MessageCommandType {
     SERVER_CHAT_MESSAGE,
     SERVER_NEW_BOOKMARK,
     SERVER_REMOVE_BOOKMARK,
-    SERVER_CANVAS_COLOR
+    SERVER_CANVAS_COLOR,
+    SERVER_SET_GRID,
+    SERVER_REMOVE_GRID
 };
 
 enum ClientCommands : MessageCommandType {
@@ -38,11 +40,14 @@ enum ClientCommands : MessageCommandType {
     CLIENT_CHAT_MESSAGE,
     CLIENT_NEW_BOOKMARK,
     CLIENT_REMOVE_BOOKMARK,
-    CLIENT_CANVAS_COLOR
+    CLIENT_CANVAS_COLOR,
+    CLIENT_SET_GRID,
+    CLIENT_REMOVE_GRID
 };
 
 // NOTE: Do not change savefile header length
 #define SAVEFILE_HEADER_LEN 12
 // NOTE: Change these values whenever savefile is incompatible with previous version
-#define SAVEFILE_HEADER    "INFPNT000002"
+#define SAVEFILE_HEADER    "INFPNT000003"
+#define SAVEFILE_HEADER_V2 "INFPNT000002"
 #define SAVEFILE_HEADER_V1 "INFPNT000001"

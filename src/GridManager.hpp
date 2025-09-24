@@ -10,6 +10,16 @@ class GridManager {
 
         ServerClientID add_default_grid(const std::string& newName);
 
+        template <typename Archive> void save(Archive& a) const {
+            a(grids);
+        }
+
+        template <typename Archive> void load(Archive& a) {
+            a(grids);
+            changed = true;
+        }
+
+        void send_grid_info(ServerClientID gridID);
         void remove_grid(ServerClientID idToRemove);
         void draw(SkCanvas* canvas, const DrawData& drawData);
         ClientPortionID get_max_id(ServerPortionID serverID) const;

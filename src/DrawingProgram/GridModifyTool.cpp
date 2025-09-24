@@ -171,4 +171,5 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {
+    drawP.world.gridMan.send_grid_info(gridID);
 }

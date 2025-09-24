@@ -233,9 +233,9 @@ void DrawingProgram::tool_options_gui() {
 }
 
 void DrawingProgram::modify_grid(ServerClientID gridToModifyID) {
-    switch_to_tool(DrawingProgramToolType::GRIDMODIFY);
-    GridModifyTool* gridModToolPtr = static_cast<GridModifyTool*>(drawTool.get());
-    gridModToolPtr->set_grid_id(gridToModifyID);
+    std::unique_ptr<GridModifyTool> newTool(std::make_unique<GridModifyTool>(*this));
+    newTool->set_grid_id(gridToModifyID);
+    switch_to_tool_ptr(std::move(newTool));
 }
 
 void DrawingProgram::update() {

@@ -67,6 +67,9 @@ namespace SCollision {
                 AABB<S> toRet{min.template cast<S>(), max.template cast<S>()};
                 return toRet;
             }
+            template <class Archive> void serialize(Archive& a) {
+                a(min, max);
+            }
     };
     template <typename T> class Circle {
         public:

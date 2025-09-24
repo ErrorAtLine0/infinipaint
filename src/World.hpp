@@ -100,6 +100,8 @@ class World {
         } canvasTheme;
 
     private:
+        ClientPortionID get_max_id(ServerPortionID serverID);
+
         void init_client_callbacks();
         void set_name(const std::string& n);
 

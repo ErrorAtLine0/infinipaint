@@ -29,7 +29,7 @@ void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
     a((uint64_t)components.size());
     for(uint64_t i = 0; i < components.size(); i++)
         a(components[i]->get_type(), components[i]->id, components[i]->coords, *components[i]);
-    a(bookmarks);
+    a(bookmarks, grids);
 }
 
 void ServerData::load(cereal::PortableBinaryInputArchive& a) {
@@ -44,20 +44,7 @@ void ServerData::load(cereal::PortableBinaryInputArchive& a) {
         components.emplace_back(newComp);
         idToComponentMap.emplace(newComp->id, newComp);
     }
-    a(bookmarks);
-}
-
-ClientPortionID ServerData::get_max_id(ServerPortionID serverID) const {
-    ClientPortionID maxClientID = 0;
-    for(auto& p : resources) {
-        if(p.first.first == serverID)
-            maxClientID = std::max(maxClientID, p.first.second);
-    }
-    for(auto& p : components) {
-        if(p->id.first == serverID)
-            maxClientID = std::max(maxClientID, p->id.second);
-    }
-    return maxClientID;
+    a(bookmarks, grids);
 }
 
 MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
@@ -69,6 +56,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         data.idToComponentMap.emplace(data.components.back()->id, data.components.back());
     }
     data.bookmarks = world.bMan.bookmark_list();
+    data.grids = world.gridMan.grids;
     data.resources = world.rMan.resource_list();
     data.canvasBackColor = convert_vec3<Vector3f>(world.canvasTheme.backColor);
 
@@ -91,23 +79,22 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         if(isDirectConnect)
             fileDisplayName = newClient.displayName;
 
-        newClient.id.first = Random::get().int_range<ServerPortionID>(1, std::numeric_limits<ServerPortionID>::max());
-        client->customID = newClient.id.first;
-        newClient.id.second = data.get_max_id(newClient.id.first);
-        netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_USER_CONNECT, newClient.id.first, newClient.displayName, newClient.cursorColor);
+        newClient.serverID = Random::get().int_range<ServerPortionID>(1, std::numeric_limits<ServerPortionID>::max());
+        client->customID = newClient.serverID;
+        netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_USER_CONNECT, newClient.serverID, newClient.displayName, newClient.cursorColor);
         if(isDirectConnect)
-            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.id.first, newClient.cursorColor);
+            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor);
         else {
-            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.id.first, newClient.cursorColor, newClient.displayName, fileDisplayName, clients, data);
+            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, fileDisplayName, clients, data);
             for(auto& [id, rData] : data.resources)
                 netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE, id, rData);
         }
-        clients.emplace(newClient.id.first, newClient);
+        clients.emplace(newClient.serverID, newClient);
     });
     netServer->add_recv_callback(SERVER_MOVE_MOUSE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         auto& c = clients[client->customID];
         message(c.camCoords, c.windowSize, c.cursorPos);
-        netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_MOUSE, c.id.first, c.camCoords, c.windowSize, c.cursorPos);
+        netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_MOUSE, c.serverID, c.camCoords, c.windowSize, c.cursorPos);
     });
     netServer->add_recv_callback(SERVER_PLACE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         uint64_t placement;
@@ -246,6 +233,19 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(name);
         data.bookmarks.erase(name);
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_REMOVE_BOOKMARK, name);
+    });
+    netServer->add_recv_callback(SERVER_SET_GRID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        ServerClientID gID;
+        message(gID);
+        WorldGrid& g = data.grids[gID];
+        message(g);
+        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_SET_GRID, gID, g);
+    });
+    netServer->add_recv_callback(SERVER_REMOVE_GRID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        ServerClientID gID;
+        message(gID);
+        data.grids.erase(gID);
+        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_REMOVE_GRID, gID);
     });
     netServer->add_recv_callback(SERVER_CANVAS_COLOR, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         message(data.canvasBackColor);
