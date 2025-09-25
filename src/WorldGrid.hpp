@@ -9,7 +9,7 @@ class GridManager;
 class WorldGrid {
     public:
         template <class Archive> void serialize(Archive& a) {
-            a(name, gridType, size, visible, offset, bounds, color, removeDivisionsOutwards, subdivisions);
+            a(name, gridType, size, visible, offset, bounds, color, removeDivisionsOutwards, subdivisions, showCoordinates);
         }
 
         void draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData);
@@ -29,6 +29,7 @@ class WorldGrid {
         Vector4f color{1.0f, 1.0f, 1.0f, 1.0f};
         bool removeDivisionsOutwards = false;
         uint32_t subdivisions = 1;
+        bool showCoordinates = false;
 
         std::string get_display_name();
 

@@ -319,7 +319,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
     canvas->drawPaint(linePaint);
     canvas->restore();
-    if(drawData.cam.c.rotation == 0.0 && !drawData.main->takingScreenshot) {
+    if(showCoordinates && drawData.cam.c.rotation == 0.0 && !drawData.main->takingScreenshot) {
         coordinatesWillBeDrawn = true;
         WorldVec worldWindowEndPos = drawData.cam.c.pos + drawData.cam.c.dir_from_space(drawData.cam.viewingArea);
         coordinatesAxisOnBounds = bounds.has_value() && !bounds.value().fully_contains_aabb(SCollision::AABB<WorldScalar>(drawData.cam.c.pos, worldWindowEndPos));
@@ -387,7 +387,7 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vec
 
     float yAxisMaxXLength = 0.0f;
 
-    for(int maxRepeats = 0; maxRepeats < 3; maxRepeats++) {
+    for(int maxRepeats = 0; maxRepeats < 10; maxRepeats++) {
         xAxisLabels.clear();
         exponentExistsInXAxis = false;
 

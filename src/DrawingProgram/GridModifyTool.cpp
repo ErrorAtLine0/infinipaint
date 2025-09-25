@@ -51,7 +51,7 @@ void GridModifyTool::gui_toolbox() {
         t.gui.input_scalar_field<uint32_t>("Subdivisions", "Subdivisions", &sDiv, 1, 10);
         g.set_subdivisions(sDiv);
         bool divOut = g.removeDivisionsOutwards;
-        t.gui.checkbox_field("Subdivide outwards", "Subdivide outwards", &divOut);
+        t.gui.checkbox_field("Subdivide outwards", "Subdivide when zooming out", &divOut);
         g.set_remove_divisions_outwards(divOut);
         t.gui.left_to_right_line_layout([&]() {
             CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
@@ -71,6 +71,7 @@ void GridModifyTool::gui_toolbox() {
         }
         else if(!bounded && prevBoundedValue)
             g.bounds = std::nullopt;
+        t.gui.checkbox_field("Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
     }
     t.gui.pop_id();
 }
