@@ -25,7 +25,7 @@ uniform vec2 divGridClosestPoint;
 uniform float divGridPointSize;
 
 float get_color_val_circle_point(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
-    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 modCoord = gScale > 100000.0 ? fCoord - gClosestPoint + float2(0.5 * gScale) : mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     return 1.0 - smoothstep(gPointSize, gPointSize + 1.0, distance(modCoord, float2(0.5 * gScale)));
 }
 
@@ -51,7 +51,8 @@ uniform vec2 divGridClosestPoint;
 uniform float divGridPointSize;
 
 float get_color_val_square_point(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
-    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 modCoord = gScale > 100000.0 ? (fCoord - gClosestPoint + float2(0.5 * gScale)) : mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
     float m1 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.x);
     float m2 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
@@ -80,7 +81,7 @@ uniform vec2 divGridClosestPoint;
 uniform float divGridPointSize;
 
 float get_color_val_square_lines(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
-    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 modCoord = gScale > 100000.0 ? (fCoord - gClosestPoint + float2(0.5 * gScale)) : mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
     float m1 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.x);
     float m2 = 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
@@ -109,7 +110,7 @@ uniform vec2 divGridClosestPoint;
 uniform float divGridPointSize;
 
 float get_color_val_ruled(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
-    float2 modCoord = mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
+    float2 modCoord = gScale > 100000.0 ? (fCoord - gClosestPoint + float2(0.5 * gScale)) : mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
     return 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
 }
@@ -151,11 +152,11 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const ShaderData& shaderDa
     }
     SkRuntimeShaderBuilder builder(runtimeEffect);
     builder.uniform("gridColor") = shaderData.gridColor;
-    builder.uniform("mainGridScale") = std::min(shaderData.mainGridScale, 100000.0f); // Limit placed so that having a massive floating point value doesnt tank precision in the shader
+    builder.uniform("mainGridScale") = std::min(shaderData.mainGridScale, 1000000.0f); // Limit placed so that we dont have infinity in the shader
     builder.uniform("mainGridClosestPoint").set(shaderData.mainGridClosestPoint.data(), 2);
 
     builder.uniform("divGridAlphaFrac") = shaderData.divGridAlphaFrac;
-    builder.uniform("divGridScale") = std::min(shaderData.divGridScale, 100000.0f);
+    builder.uniform("divGridScale") = std::min(shaderData.divGridScale, 1000000.0f);
     builder.uniform("divGridClosestPoint").set(shaderData.divGridClosestPoint.data(), 2);
     switch(gType) {
         case GridType::CIRCLE_POINTS:
