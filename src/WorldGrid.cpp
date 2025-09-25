@@ -9,7 +9,7 @@ sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::ruledEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
-unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 50;
+unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 25;
 
 // NOTE: Skia shaders return premultiplied alpha colors
 
@@ -226,11 +226,13 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     WorldScalar divSize;
     WorldScalar gridCoordDivSize;
 
+    float gridPointSizeDefault = 4.0f;
+
     if(sizeDetermineSubdivisionsToRemove > WorldScalar(1)) {
         double divLogDouble, divLogFraction;
         divLogFraction = std::modf(static_cast<double>(FixedPoint::log(sizeDetermineSubdivisionsToRemove, WorldScalar(subdivisions == 1 ? 2 : subdivisions))), &divLogDouble);
         uint64_t divLog = divLogDouble;
-        if(divLog >= 2 && !removeDivisionsOutwards)
+        if(divLog >= 1 && !removeDivisionsOutwards)
             return;
 
         WorldScalar logMultiplier = FixedPoint::exp_int_accurate<WorldScalar>(divLog, subdivisions);
@@ -246,40 +248,25 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
         Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
-        SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, removeDivisionsOutwards ? 1.0f : std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
-        float gridPointSize = 5.0f;
+        SkColor4f pointColor = convert_vec4<SkColor4f>(color);
 
-        float finalDivMultiplierValue = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
+        float finalDivMultiplierValue = 1.0 - divLogFraction;
         float finalDivMultiplierSqrt = std::sqrt(finalDivMultiplierValue);
         float finalDivMultiplierSqrd = std::pow(finalDivMultiplierValue, 2);
 
-        if(removeDivisionsOutwards || divLog == 0) {
-            linePaint.setShader(get_shader(gridType, {
-                .gridColor = pointColor,
-                .mainGridScale = floatDivWorldSize,
-                .mainGridClosestPoint = closestGridPointScreenPos, 
-                .mainGridPointSize = gridPointSize,
-
-                .divGridAlphaFrac = 0.3f,
-                .divGridScale = floatSubDivWorldSize,
-                .divGridClosestPoint = subClosestGridPointScreenPos,
-                .divGridPointSize = gridPointSize * finalDivMultiplierSqrd
-            }));
-        }
-        else {
+        if(!removeDivisionsOutwards)
             pointColor.fA *= finalDivMultiplierSqrt;
-            linePaint.setShader(get_shader(gridType, {
-                .gridColor = pointColor,
-                .mainGridScale = floatSubDivWorldSize,
-                .mainGridClosestPoint = subClosestGridPointScreenPos, 
-                .mainGridPointSize = gridPointSize * finalDivMultiplierSqrt,
+        linePaint.setShader(get_shader(gridType, {
+            .gridColor = pointColor,
+            .mainGridScale = floatDivWorldSize,
+            .mainGridClosestPoint = closestGridPointScreenPos, 
+            .mainGridPointSize = gridPointSizeDefault * finalDivMultiplierSqrt,
 
-                .divGridAlphaFrac = 0.0f,
-                .divGridScale = floatSubDivWorldSize,
-                .divGridClosestPoint = subClosestGridPointScreenPos,
-                .divGridPointSize = gridPointSize * finalDivMultiplierSqrd
-            }));
-        }
+            .divGridAlphaFrac = 0.3f,
+            .divGridScale = floatSubDivWorldSize,
+            .divGridClosestPoint = subClosestGridPointScreenPos,
+            .divGridPointSize = gridPointSizeDefault * finalDivMultiplierSqrd
+        }));
 
         gridCoordDivSize = logMultiplier * WorldScalar(subdivisions);
     }
@@ -295,19 +282,19 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         Vector2f closestGridPointScreenPos = get_closest_grid_point(offset, divSize, drawData);
         Vector2f subClosestGridPointScreenPos = get_closest_grid_point(offset, subDivSize, drawData);
 
-        SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
+        SkColor4f pointColor = convert_vec4<SkColor4f>(color);
         float gridPointSize = std::clamp(floatDivWorldSize / 10.0f, 0.0f, 5.0f);
 
         linePaint.setShader(get_shader(gridType, {
             .gridColor = pointColor,
             .mainGridScale = floatDivWorldSize,
             .mainGridClosestPoint = closestGridPointScreenPos, 
-            .mainGridPointSize = gridPointSize,
+            .mainGridPointSize = gridPointSizeDefault,
 
             .divGridAlphaFrac = 0.3f,
             .divGridScale = floatSubDivWorldSize,
             .divGridClosestPoint = subClosestGridPointScreenPos,
-            .divGridPointSize = gridPointSize * 0.25f
+            .divGridPointSize = gridPointSize
         }));
 
         gridCoordDivSize = WorldScalar(subdivisions);
