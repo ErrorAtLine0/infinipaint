@@ -76,6 +76,25 @@ ClientPortionID GridManager::get_max_id(ServerPortionID serverID) const {
 }
 
 void GridManager::draw(SkCanvas* canvas, const DrawData& drawData) {
-    for(auto& [str, g] : grids)
-        g.draw(*this, canvas, drawData);
+    auto& sortedGridIDS = sorted_grid_ids();
+    for(ServerClientID id : sortedGridIDS)
+        grids[id].draw(*this, canvas, drawData);
+}
+
+void GridManager::draw_coordinates(SkCanvas* canvas, const DrawData& drawData) {
+    auto& sortedGridIDS = sorted_grid_ids();
+    Vector2f axisOffset{0.0f, 0.0f};
+    for(ServerClientID id : sortedGridIDS) {
+        auto& g = grids[id];
+        if(g.coordinatesWillBeDrawn && g.coordinatesAxisOnBounds) {
+            grids[id].draw_coordinates(canvas, drawData, axisOffset);
+            g.coordinatesWillBeDrawn = false;
+        }
+    }
+    for(ServerClientID id : sortedGridIDS) {
+        auto& g = grids[id];
+        if(g.coordinatesWillBeDrawn && !g.coordinatesAxisOnBounds)
+            grids[id].draw_coordinates(canvas, drawData, axisOffset);
+        g.coordinatesWillBeDrawn = false;
+    }
 }

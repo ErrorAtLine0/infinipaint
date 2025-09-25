@@ -9,7 +9,7 @@ sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::ruledEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
-unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 75;
+unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 50;
 
 // NOTE: Skia shaders return premultiplied alpha colors
 
@@ -206,6 +206,9 @@ std::string WorldGrid::get_display_name() {
 }
 
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {
+    coordinatesAxisOnBounds = false;
+    coordinatesWillBeDrawn = false;
+
     if(!visible || (bounds.has_value() && !SCollision::collide(drawData.cam.viewingAreaGenerousCollider, bounds.value())))
         return;
 
@@ -246,7 +249,9 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         SkColor4f pointColor = convert_vec4<SkColor4f>(color_mul_alpha(color, removeDivisionsOutwards ? 1.0f : std::clamp(floatDivWorldSize / 100.0f, 0.0f, 1.0f)));
         float gridPointSize = 5.0f;
 
-        float finalDivMultiplier = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
+        float finalDivMultiplierValue = (1.0 - divLogFraction) * ((divLog == 0) ? 0.5 : 1.0);
+        float finalDivMultiplierSqrt = std::sqrt(finalDivMultiplierValue);
+        float finalDivMultiplierSqrd = std::pow(finalDivMultiplierValue, 2);
 
         if(removeDivisionsOutwards || divLog == 0) {
             linePaint.setShader(get_shader(gridType, {
@@ -258,21 +263,21 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
                 .divGridAlphaFrac = 0.3f,
                 .divGridScale = floatSubDivWorldSize,
                 .divGridClosestPoint = subClosestGridPointScreenPos,
-                .divGridPointSize = gridPointSize * finalDivMultiplier
+                .divGridPointSize = gridPointSize * finalDivMultiplierSqrd
             }));
         }
         else {
-            pointColor.fA *= finalDivMultiplier;
+            pointColor.fA *= finalDivMultiplierSqrt;
             linePaint.setShader(get_shader(gridType, {
                 .gridColor = pointColor,
                 .mainGridScale = floatSubDivWorldSize,
                 .mainGridClosestPoint = subClosestGridPointScreenPos, 
-                .mainGridPointSize = gridPointSize * finalDivMultiplier,
+                .mainGridPointSize = gridPointSize * finalDivMultiplierSqrt,
 
                 .divGridAlphaFrac = 0.0f,
                 .divGridScale = floatSubDivWorldSize,
                 .divGridClosestPoint = subClosestGridPointScreenPos,
-                .divGridPointSize = gridPointSize * finalDivMultiplier
+                .divGridPointSize = gridPointSize * finalDivMultiplierSqrd
             }));
         }
 
@@ -302,7 +307,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
             .divGridAlphaFrac = 0.3f,
             .divGridScale = floatSubDivWorldSize,
             .divGridClosestPoint = subClosestGridPointScreenPos,
-            .divGridPointSize = gridPointSize * 0.5f
+            .divGridPointSize = gridPointSize * 0.25f
         }));
 
         gridCoordDivSize = WorldScalar(subdivisions);
@@ -326,30 +331,35 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
     canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
     canvas->drawPaint(linePaint);
     canvas->restore();
-    if(drawData.cam.c.rotation == 0.0 && !drawData.main->takingScreenshot)
-        draw_coordinates(canvas, drawData, divSize, gridCoordDivSize);
+    if(drawData.cam.c.rotation == 0.0 && !drawData.main->takingScreenshot) {
+        coordinatesWillBeDrawn = true;
+        WorldVec worldWindowEndPos = drawData.cam.c.pos + drawData.cam.c.dir_from_space(drawData.cam.viewingArea);
+        coordinatesAxisOnBounds = bounds.has_value() && !bounds.value().fully_contains_aabb(SCollision::AABB<WorldScalar>(drawData.cam.c.pos, worldWindowEndPos));
+        coordinatesDivWorldSize = divSize;
+        coordinatesGridCoordDivSize = gridCoordDivSize;
+    }
 }
 
-void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, WorldScalar divWorldSize, WorldScalar gridCoordDivSize) {
-    if(bounds.has_value() && !SCollision::collide(drawData.cam.viewingAreaGenerousCollider, bounds.value()))
-        return;
+void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vector2f& axisOffset) {
+    auto& divWorldSize = coordinatesDivWorldSize;
+    auto& gridCoordDivSize = coordinatesGridCoordDivSize;
 
     WorldVec worldWindowEndPos = drawData.cam.c.pos + drawData.cam.c.dir_from_space(drawData.cam.viewingArea);
 
-    bool axisOnBounds = bounds.has_value() && !bounds.value().fully_contains_aabb(SCollision::AABB<WorldScalar>(drawData.cam.c.pos, worldWindowEndPos));
-
-    const WorldVec& worldWindowTopLeftClipPos = axisOnBounds ? bounds.value().min : drawData.cam.c.pos;
+    const WorldVec& worldWindowTopLeftClipPos = coordinatesAxisOnBounds ? bounds.value().min : drawData.cam.c.pos;
     SCollision::AABB<float> boundsCamSpace;
     float coordFontSize = drawData.main->toolbar.final_gui_scale() * drawData.main->toolbar.io->fontSize;
 
-    if(axisOnBounds)
+    if(coordinatesAxisOnBounds)
         boundsCamSpace = SCollision::AABB<float>(drawData.cam.c.to_space(bounds.value().min), drawData.cam.c.to_space(bounds.value().max));
     else {
         float toolbarXLength = drawData.main->toolbar.final_gui_scale() * 80.0f;
-        boundsCamSpace = SCollision::AABB<float>({toolbarXLength, 0.0f}, drawData.cam.viewingArea);
+        boundsCamSpace = SCollision::AABB<float>({toolbarXLength + axisOffset.x(), 0.0f}, {drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y() - axisOffset.y()});
+        if(boundsCamSpace.width() < 100.0f || boundsCamSpace.height() < 100.0f)
+            return;
     }
 
-    if(axisOnBounds) {
+    if(coordinatesAxisOnBounds) {
         float fontSizeBoundsMultiplier = std::min(std::min(boundsCamSpace.width() / drawData.cam.viewingArea.x(), boundsCamSpace.height() / drawData.cam.viewingArea.y()) * 4.0f, 1.0f);
         coordFontSize *= fontSizeBoundsMultiplier;
         if(coordFontSize <= 3.0f)
@@ -431,6 +441,9 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
             break;
     }
 
+    if(!coordinatesAxisOnBounds)
+        axisOffset.y() += (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
+
     float xAxisYPosRect = boundsCamSpace.max.y() - (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
 
     {
@@ -459,18 +472,20 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
         }
     }
 
+    if(!coordinatesAxisOnBounds)
+        axisOffset.x() += yAxisMaxXLength;
+
     SkPaint labelColor(SkColor4f{color.x(), color.y(), color.z(), 1.0f});
 
     float xAxisYPosLabels = boundsCamSpace.max.y() - metrics.fDescent;
 
-    if(axisOnBounds) {
+    if(coordinatesAxisOnBounds) {
         canvas->save();
         canvas->clipRect(SkRect::MakeLTRB(boundsCamSpace.min.x(), boundsCamSpace.min.y(), boundsCamSpace.max.x(), boundsCamSpace.max.y()));
     }
 
     canvas->drawRect(SkRect::MakeXYWH(boundsCamSpace.min.x(), boundsCamSpace.min.y(), yAxisMaxXLength, boundsCamSpace.max.y() - boundsCamSpace.min.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
     canvas->drawRect(SkRect::MakeLTRB(boundsCamSpace.min.x() + yAxisMaxXLength, xAxisYPosRect, boundsCamSpace.max.x(), boundsCamSpace.max.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
-
 
     for(auto& l : xAxisLabels) {
         if(l.mainPos > boundsCamSpace.min.x() + yAxisMaxXLength && l.mainPos + l.totalLength < boundsCamSpace.max.x()) {
@@ -485,6 +500,6 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Wor
         canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, mainTextXPos + l.mainLength, l.exponentPos, f, labelColor);
     }
 
-    if(axisOnBounds)
+    if(coordinatesAxisOnBounds)
         canvas->restore();
 }

@@ -13,6 +13,7 @@ class WorldGrid {
         }
 
         void draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData);
+        void draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vector2f& axisOffset);
 
         std::string name;
         enum class GridType : unsigned {
@@ -35,6 +36,11 @@ class WorldGrid {
         void set_subdivisions(uint32_t v);
 
         static unsigned GRID_UNIT_PIXEL_SIZE;
+
+        WorldScalar coordinatesDivWorldSize;
+        WorldScalar coordinatesGridCoordDivSize;
+        bool coordinatesWillBeDrawn = false;
+        bool coordinatesAxisOnBounds = false;
     private:
 
         struct ShaderData {
@@ -49,7 +55,7 @@ class WorldGrid {
             float divGridPointSize;
         };
 
-        void draw_coordinates(SkCanvas* canvas, const DrawData& drawData, WorldScalar divWorldSize, WorldScalar gridCoordDivSize);
+        void draw_coordinates(SkCanvas* canvas, const DrawData& drawData, WorldScalar divWorldSize, WorldScalar gridCoordDivSize, Vector2f offsetOtherCoordinates);
         static Vector2f get_closest_grid_point(const WorldVec& gridOffset, const WorldScalar& gridSize, const DrawData& drawData);
         static sk_sp<SkShader> get_shader(GridType gType, const ShaderData& shaderData);
         static sk_sp<SkRuntimeEffect> compile_effect_shader_init(const char* shaderName, const char* shaderCode);

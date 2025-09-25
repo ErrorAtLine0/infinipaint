@@ -412,5 +412,7 @@ void World::draw(SkCanvas* canvas) {
     if(drawData.drawGrids)
         gridMan.draw(canvas, drawData);
     drawProg.draw(canvas, drawData);
+    if(drawData.drawGrids)
+        gridMan.draw_coordinates(canvas, drawData);
     draw_other_player_cursors(canvas, drawData);
 }

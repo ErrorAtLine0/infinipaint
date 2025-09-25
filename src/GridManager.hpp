@@ -22,6 +22,7 @@ class GridManager {
         void send_grid_info(ServerClientID gridID);
         void remove_grid(ServerClientID idToRemove);
         void draw(SkCanvas* canvas, const DrawData& drawData);
+        void draw_coordinates(SkCanvas* canvas, const DrawData& drawData);
         ClientPortionID get_max_id(ServerPortionID serverID) const;
 
         const std::vector<ServerClientID>& sorted_grid_ids();
