@@ -34,6 +34,8 @@ void EyeDropperTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Color select tool");
     t.gui.text_label_centered("Color Select");
+    if(t.gui.radio_button_field("Stroke Color", "Stroke Color", selectingStrokeColor)) selectingStrokeColor = true;
+    if(t.gui.radio_button_field("Fill Color", "Fill Color", !selectingStrokeColor)) selectingStrokeColor = false;
     t.gui.pop_id();
 }
 
@@ -78,7 +80,10 @@ void EyeDropperTool::tool_update() {
             surface->makeImageSnapshot()->readPixels(drawP.world.main.window.ctx.get(), readDataInfo, (void*)readData.data(), 4, xPos, yPos);
         #endif
 
-        drawP.controls.foregroundColor = readData.cast<float>() / 255.0f;
+        if(selectingStrokeColor)
+            drawP.controls.foregroundColor = readData.cast<float>() / 255.0f;
+        else
+            drawP.controls.backgroundColor = readData.cast<float>() / 255.0f;
     }
 }
 
