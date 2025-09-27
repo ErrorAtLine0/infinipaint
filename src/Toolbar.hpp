@@ -80,6 +80,9 @@ class Toolbar {
 
         float final_gui_scale();
     private:
+        void calculate_final_gui_scale();
+        float final_gui_scale_not_fit();
+
         static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
 
         void reload_theme_list();
@@ -139,6 +142,7 @@ class Toolbar {
         bool playerMenuOpen = false;
 
         float guiScale = 1.0f;
+        float finalCalculatedGuiScale = 1.0f;
 
         enum {
             CHATBOXSTATE_OPEN,

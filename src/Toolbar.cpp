@@ -1,4 +1,6 @@
 #include "Toolbar.hpp"
+#include "DrawingProgram/DrawingProgramToolBase.hpp"
+#include "DrawingProgram/ScreenshotTool.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "MainProgram.hpp"
@@ -295,7 +297,7 @@ void Toolbar::update() {
     if(main.drawGui) {
         CLAY({
             .layout = {
-                .sizing = {.width = CLAY_SIZING_FIXED(gui.windowSize.x()), .height = CLAY_SIZING_FIXED(gui.windowSize.y())},
+                .sizing = {.width = CLAY_SIZING_FIT(gui.windowSize.x()), .height = CLAY_SIZING_FIT(gui.windowSize.y())},
                 .padding = CLAY_PADDING_ALL(io->theme->padding1),
                 .childGap = io->theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -327,11 +329,14 @@ void Toolbar::update() {
         paintPopupLocation = std::nullopt;
 
     end_gui();
+
     justAssignedColorLeft = false;
     justAssignedColorRight = false;
 
     if(!optionsMenuOpen || generalSettingsOptions != GSETTINGS_KEYBINDS)
         keybindWaiting = std::nullopt;
+
+    calculate_final_gui_scale();
 }
 
 void Toolbar::save_func() {
@@ -453,6 +458,8 @@ void Toolbar::top_toolbar() {
                     save_as_func();
                 if(gui.text_button_wide("open file", "Open"))
                     open_world_file(World::CONNECTIONTYPE_LOCAL, "", "");
+                if(gui.text_button_wide("screenshot", "Take Screenshot"))
+                    main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
                 if(gui.text_button_wide("add image or file to canvas", "Add Image/File to Canvas")) {
                     #ifdef __EMSCRIPTEN__
                         emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
@@ -1285,7 +1292,7 @@ void Toolbar::options_menu() {
                                     }
                                     case GSETTINGS_APPEARANCE: {
                                         gui.push_id("appearance settings");
-                                        gui.input_scalar_field("GUI Scale", "GUI Scale", &guiScale, 0.5f, 3.0f, 1);
+                                        gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 3.0f, 1);
                                         gui.input_scalar_field<uint16_t>("GUI Font Size", "GUI Font Size", &io->fontSize, 10, 30);
                                         gui.text_label("Note: Changing font size may break UI in some cases.");
                                         gui.pop_id();
@@ -1803,7 +1810,7 @@ void Toolbar::start_gui() {
     io->clipboard.textOut = std::nullopt;
 
     gui.windowPos = Vector2f{0.0f, 0.0f};
-    gui.windowSize = main.window.size.cast<float>() / (guiScale * main.window.scale);
+    gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
     io->hoverObstructed = false;
     io->acceptingTextInput = false;
     gui.io = io;
@@ -1812,6 +1819,16 @@ void Toolbar::start_gui() {
 }
 
 float Toolbar::final_gui_scale() {
+    return finalCalculatedGuiScale;
+}
+
+void Toolbar::calculate_final_gui_scale() {
+    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{800.0f, 800.0f};
+    Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
+    finalCalculatedGuiScale = final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
+}
+
+float Toolbar::final_gui_scale_not_fit() {
     return guiScale * main.window.scale;
 }
 
