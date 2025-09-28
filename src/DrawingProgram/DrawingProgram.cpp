@@ -300,11 +300,12 @@ void DrawingProgram::update() {
     }
 
     controls.middleClick = controls.cursorHoveringOverCanvas && (world.main.input.mouse.middleClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].pressed);
+    bool middleHeld = world.main.input.mouse.middleDown || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].held;
     if(controls.middleClick) {
         controls.middleClickHeld = true;
         world.main.toolbar.paintPopupLocation = std::nullopt;
     }
-    if(controls.middleClickHeld && !world.main.input.mouse.middleDown) {
+    if(controls.middleClickHeld && !middleHeld) {
         controls.middleClick = false;
         controls.middleClickHeld = false;
         controls.middleClickReleased = true;
