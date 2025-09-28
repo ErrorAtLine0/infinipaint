@@ -6,6 +6,7 @@
 #include <include/core/SkPath.h>
 #include "Elements/SVGIcon.hpp"
 #include "Elements/SelectableButton.hpp"
+#include "Elements/RotateWheel.hpp"
 #include "Elements/MovableTabList.hpp"
 #include "Elements/Element.hpp"
 #include <Helpers/ConvertVec.hpp>
@@ -658,6 +659,18 @@ void GUIManager::scroll_bar_many_entries_area(const std::string& uniqueId, float
         }
     });
     pop_id();
+}
+
+bool GUIManager::rotate_wheel(const std::string& id, double* angle, float size, const std::function<void()>& elemUpdate) {
+    bool toRet = false;
+    push_id(id);
+    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
+        RotateWheel* e = insert_element<RotateWheel>();
+        e->update(*io, angle, elemUpdate);
+        toRet = e->selection.clicked;
+    }
+    pop_id();
+    return toRet;
 }
 
 void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate) {
