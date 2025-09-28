@@ -110,11 +110,10 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
         movedHeld = true;
     }
 
-
     if(input.key(InputManager::KEY_TEXT_LEFT).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kLeft, cur.selectionBeginPos);
+        cur.pos = cur.selectionBeginPos = textbox.move(input.key(InputManager::KEY_TEXT_CTRL).held ? CollabTextBox::Movement::kWordLeft : CollabTextBox::Movement::kLeft, cur.selectionBeginPos);
     if(input.key(InputManager::KEY_TEXT_RIGHT).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kRight, cur.selectionBeginPos);
+        cur.pos = cur.selectionBeginPos = textbox.move(input.key(InputManager::KEY_TEXT_CTRL).held ? CollabTextBox::Movement::kWordRight : CollabTextBox::Movement::kRight, cur.selectionBeginPos);
     if(input.key(InputManager::KEY_TEXT_UP).repeat)
         cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kUp, cur.selectionBeginPos);
     if(input.key(InputManager::KEY_TEXT_DOWN).repeat)
