@@ -45,6 +45,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_F1}] = KEY_OPEN_CHAT;
     defaultKeyAssignments[{0, SDLK_F3}] = KEY_SHOW_METRICS;
     defaultKeyAssignments[{0, SDLK_F2}] = KEY_SHOW_PLAYER_LIST;
+    defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
 
 #ifdef __EMSCRIPTEN__
     // Without this, SDL eats the CTRL-V event that initiates the paste event

@@ -92,6 +92,8 @@ class DrawingProgram {
         DrawingProgramSelection selection;
 
         bool temporaryEraser = false;
+        bool temporaryPan = false;
+        DrawingProgramToolType toolTypeAfterTempPan;
 
         struct GlobalControls {
             float relativeWidth = 15.0f;

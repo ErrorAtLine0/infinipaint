@@ -1823,7 +1823,7 @@ float Toolbar::final_gui_scale() {
 }
 
 void Toolbar::calculate_final_gui_scale() {
-    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{800.0f, 800.0f};
+    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{800.0f, 880.0f};
     Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
     finalCalculatedGuiScale = final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
 }

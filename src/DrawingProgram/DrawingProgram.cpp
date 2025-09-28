@@ -265,13 +265,26 @@ void DrawingProgram::update() {
         unorderedObjectsExistTimePoint = std::chrono::steady_clock::now();
     }
 
-    if(drawTool->get_type() == DrawingProgramToolType::BRUSH && world.main.input.pen.isEraser && !temporaryEraser) {
-        switch_to_tool(DrawingProgramToolType::ERASER);
+    if(world.main.input.pen.isEraser && !temporaryEraser) {
+        if(drawTool->get_type() == DrawingProgramToolType::BRUSH)
+            switch_to_tool(DrawingProgramToolType::ERASER);
         temporaryEraser = true;
     }
-    else if(drawTool->get_type() == DrawingProgramToolType::ERASER && !world.main.input.pen.isEraser && temporaryEraser) {
-        switch_to_tool(DrawingProgramToolType::BRUSH);
+    else if(!world.main.input.pen.isEraser && temporaryEraser) {
+        if(drawTool->get_type() == DrawingProgramToolType::ERASER)
+            switch_to_tool(DrawingProgramToolType::BRUSH);
         temporaryEraser = false;
+    }
+
+    if(world.main.input.key(InputManager::KEY_HOLD_TO_PAN).held && !temporaryPan) {
+        toolTypeAfterTempPan = drawTool->get_type();
+        switch_to_tool(DrawingProgramToolType::PAN);
+        temporaryPan = true;
+    }
+
+    if(!world.main.input.key(InputManager::KEY_HOLD_TO_PAN).held && temporaryPan) {
+        switch_to_tool(toolTypeAfterTempPan);
+        temporaryPan = false;
     }
 
     controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;

@@ -135,6 +135,7 @@ struct InputManager {
         KEY_SHOW_METRICS,
         KEY_OPEN_CHAT,
         KEY_SHOW_PLAYER_LIST,
+        KEY_HOLD_TO_PAN,
 
         KEY_ASSIGNABLE_COUNT, // Not a real key
 
@@ -216,5 +217,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(InputManager::KeyCodeEnum, {
     {InputManager::KEY_DRAW_TOOL_SCREENSHOT, "Screenshot Tool"},
     {InputManager::KEY_SHOW_METRICS, "Show Metrics"},
     {InputManager::KEY_OPEN_CHAT, "Open Chat"},
-    {InputManager::KEY_SHOW_PLAYER_LIST, "Show Player List"}
+    {InputManager::KEY_SHOW_PLAYER_LIST, "Show Player List"},
+    {InputManager::KEY_HOLD_TO_PAN, "Hold to Pan"}
 })
