@@ -39,5 +39,6 @@ class DrawCamera {
         WorldScalar startZoomVal;
         WorldVec startZoomMousePos;
         WorldVec startZoomCameraPos;
-        bool isMiddleClickZooming = false;
+
+        bool isAccurateZooming = false;
 };

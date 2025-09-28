@@ -1,4 +1,5 @@
 #include "DrawCamera.hpp"
+#include "DrawingProgram/DrawingProgramToolBase.hpp"
 #include "Helpers/FixedPoint.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
@@ -106,15 +107,15 @@ void DrawCamera::update_main(World& w) {
 
     }
     else {
-        bool middleClickDown = w.main.input.mouse.middleDown || w.main.input.pen.buttons[w.main.toolbar.tabletOptions.middleClickButton].held;
-        bool newIsMiddleClickZooming = middleClickDown && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held;
-        if(newIsMiddleClickZooming && !isMiddleClickZooming) {
+        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM);
+
+        if(newIsAccurateZooming && !isAccurateZooming) {
             startZoomMousePos = w.get_mouse_world_pos();
             startZoomVal = c.inverseScale;
             startZoomCameraPos = c.pos;
         }
-        isMiddleClickZooming = newIsMiddleClickZooming;
-        if(isMiddleClickZooming) {
+        isAccurateZooming = newIsAccurateZooming;
+        if(isAccurateZooming) {
             WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.input.mouse.move.y()));
             c.scale(zoomFactor);
             if(c.inverseScale < WorldScalar(1))
@@ -125,9 +126,8 @@ void DrawCamera::update_main(World& w) {
                 c.pos = startZoomMousePos + mVec * mX;
             }
         }
-        else if(middleClickDown) {
+        else if(w.drawProg.controls.middleClickHeld)
             c.pos -= c.dir_from_space(w.main.input.mouse.move);
-        }
         if(w.main.input.mouse.scrollAmount.y() && !w.main.toolbar.io->hoverObstructed) {
             // Ignore the value of scrollAmount, since that leads to problems on macOS
 

@@ -11,6 +11,7 @@
 #include "ScreenshotTool.hpp"
 #include "EditTool.hpp"
 #include "GridModifyTool.hpp"
+#include "ZoomCanvasTool.hpp"
 
 DrawingProgramToolBase::DrawingProgramToolBase(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -42,6 +43,8 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
             return std::make_unique<GridModifyTool>(drawP);
         case DrawingProgramToolType::EDIT:
             return std::make_unique<EditTool>(drawP);
+        case DrawingProgramToolType::ZOOM:
+            return std::make_unique<ZoomCanvasTool>(drawP);
     }
     return nullptr;
 }

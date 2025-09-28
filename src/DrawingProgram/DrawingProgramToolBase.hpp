@@ -17,7 +17,8 @@ enum class DrawingProgramToolType : int {
     EYEDROPPER,
     SCREENSHOT,
     GRIDMODIFY,
-    EDIT
+    EDIT,
+    ZOOM
 };
 
 class DrawingProgramToolBase {

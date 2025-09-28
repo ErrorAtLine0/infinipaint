@@ -2,6 +2,7 @@
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
 #include "GridModifyTool.hpp"
+#include "ZoomCanvasTool.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <include/core/SkCanvas.h>
 #include <include/core/SkPath.h>
@@ -58,6 +59,7 @@ class DrawingProgram {
         void clear_draw_cache();
 
         void modify_grid(ServerClientID gridToModifyID);
+
     private:
         std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
@@ -86,8 +88,6 @@ class DrawingProgram {
 
         SkPaint select_tool_line_paint();
 
-        std::unique_ptr<DrawingProgramToolBase> drawTool;
-
         DrawingProgramSelection selection;
 
         bool temporaryEraser = false;
@@ -102,10 +102,15 @@ class DrawingProgram {
             bool leftClick = false;
             bool leftClickHeld = false;
             bool leftClickReleased = false;
+            bool middleClick = false;
+            bool middleClickHeld = false;
+            bool middleClickReleased = false;
             bool cursorHoveringOverCanvas = false;
 
             int colorEditing = 0;
         } controls;
+
+        std::unique_ptr<DrawingProgramToolBase> drawTool;
 
         uint32_t nextID = 0;
         
@@ -127,4 +132,6 @@ class DrawingProgram {
         friend class LassoSelectTool;
         friend class GridEditTool;
         friend class GridModifyTool;
+        friend class ZoomCanvasTool;
+        friend class DrawCamera;
 };
