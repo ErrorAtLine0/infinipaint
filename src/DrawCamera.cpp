@@ -126,7 +126,7 @@ void DrawCamera::update_main(World& w) {
                 c.pos = startZoomMousePos + mVec * mX;
             }
         }
-        else if(w.drawProg.controls.middleClickHeld)
+        else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN))
             c.pos -= c.dir_from_space(w.main.input.mouse.move);
         if(w.main.input.mouse.scrollAmount.y() && !w.main.toolbar.io->hoverObstructed) {
             // Ignore the value of scrollAmount, since that leads to problems on macOS

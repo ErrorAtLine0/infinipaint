@@ -2,6 +2,7 @@
 
 #include "BrushTool.hpp"
 #include "EraserTool.hpp"
+#include "PanCanvasTool.hpp"
 #include "RectSelectTool.hpp"
 #include "LassoSelectTool.hpp"
 #include "RectDrawTool.hpp"
@@ -45,6 +46,8 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
             return std::make_unique<EditTool>(drawP);
         case DrawingProgramToolType::ZOOM:
             return std::make_unique<ZoomCanvasTool>(drawP);
+        case DrawingProgramToolType::PAN:
+            return std::make_unique<PanCanvasTool>(drawP);
     }
     return nullptr;
 }

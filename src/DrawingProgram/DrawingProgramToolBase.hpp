@@ -18,7 +18,8 @@ enum class DrawingProgramToolType : int {
     SCREENSHOT,
     GRIDMODIFY,
     EDIT,
-    ZOOM
+    ZOOM,
+    PAN
 };
 
 class DrawingProgramToolBase {

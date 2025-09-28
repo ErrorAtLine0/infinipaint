@@ -2,6 +2,7 @@
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
 #include "GridModifyTool.hpp"
+#include "PanCanvasTool.hpp"
 #include "ZoomCanvasTool.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <include/core/SkCanvas.h>
@@ -133,5 +134,6 @@ class DrawingProgram {
         friend class GridEditTool;
         friend class GridModifyTool;
         friend class ZoomCanvasTool;
+        friend class PanCanvasTool;
         friend class DrawCamera;
 };
