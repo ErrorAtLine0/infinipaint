@@ -409,10 +409,19 @@ TextPosition Editor::move(Movement move, TextPosition pos) const {
             break;
         case Movement::kWordLeft:
             {
+                for(;;) {
+                    TextPosition prevCharPos = this->move(Movement::kLeft, pos);
+                    if(prevCharPos != TextPosition{0, 0} && std::isspace(fLines[prevCharPos.fParagraphIndex].fText[prevCharPos.fTextByteIndex]))
+                        pos = prevCharPos;
+                    else
+                        break;
+                }
+
                 if (pos.fTextByteIndex == 0) {
                     pos = this->move(Movement::kLeft, pos);
                     break;
                 }
+
                 const std::vector<bool>& words = fLines[pos.fParagraphIndex].fWordBoundaries;
                 assert(words.size() == fLines[pos.fParagraphIndex].fText.size());
                 do {
@@ -432,6 +441,14 @@ TextPosition Editor::move(Movement move, TextPosition pos) const {
                 do {
                     ++pos.fTextByteIndex;
                 } while (pos.fTextByteIndex < text.size() && !words[pos.fTextByteIndex]);
+
+                for(;;) {
+                    const std::string& text = fLines[pos.fParagraphIndex].fText;
+                    if(pos.fTextByteIndex != text.size() && std::isspace(text[pos.fTextByteIndex]))
+                        pos = this->move(Movement::kRight, pos);
+                    else
+                        break;
+                }
             }
             break;
 
