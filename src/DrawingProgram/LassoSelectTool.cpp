@@ -42,7 +42,7 @@ void LassoSelectTool::gui_toolbox() {
 }
 
 void LassoSelectTool::switch_tool(DrawingProgramToolType newTool) {
-    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT)
+    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT && newTool != DrawingProgramToolType::EDIT)
         drawP.selection.deselect_all();
 }
 

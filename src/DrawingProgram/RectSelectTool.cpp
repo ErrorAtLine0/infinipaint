@@ -21,7 +21,7 @@ void RectSelectTool::gui_toolbox() {
 }
 
 void RectSelectTool::switch_tool(DrawingProgramToolType newTool) {
-    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT)
+    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT && newTool != DrawingProgramToolType::EDIT)
         drawP.selection.deselect_all();
 }
 

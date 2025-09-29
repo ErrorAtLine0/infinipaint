@@ -7,8 +7,9 @@ class DrawingProgram;
 class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
-        void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC);
-        void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC);
+        void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, bool onlyFrontObject = false);
+        void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, bool onlyFrontObject = false);
+        CollabListType::ObjectInfoPtr get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC);
         
         void deselect_all();
         void update();

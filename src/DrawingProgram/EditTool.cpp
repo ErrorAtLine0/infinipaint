@@ -56,6 +56,9 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
     controls.pointHandles.clear();
     controls.pointDragging = nullptr;
     controls.isEditing = false;
+
+    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT && newTool != DrawingProgramToolType::EDIT)
+        drawP.selection.deselect_all();
 }
 
 void EditTool::edit_start(const std::shared_ptr<DrawComponent>& comp) {
@@ -96,22 +99,40 @@ void EditTool::tool_update() {
         cMouseAABB.aabb.emplace_back(mouseAABB);
         cMouseAABB.recalculate_bounds();
 
-        if(drawP.controls.leftClick) {
-            CollabListType::ObjectInfoPtr lastSelectedObj;
-            uint64_t lastPos = 0;
+        SCollision::AABB<float> camMouseAABB{drawP.world.main.input.mouse.pos - Vector2f{0.5f, 0.5f}, drawP.world.main.input.mouse.pos + Vector2f{0.5f, 0.5f}};
+        SCollision::ColliderCollection<float> camCMouseAABB;
+        camCMouseAABB.aabb.emplace_back(camMouseAABB);
+        camCMouseAABB.recalculate_bounds();
 
-            drawP.compCache.traverse_bvh_run_function(mouseAABB, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {
-                for(auto& c : components) {
-                    if(c->pos >= lastPos && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cMouseAABB)) {
-                        lastSelectedObj = c;
-                        lastPos = c->pos;
+        if(drawP.controls.leftClick) {
+            if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
+                CollabListType::ObjectInfoPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with(camCMouseAABB);
+
+                if(selectedObjectToEdit) {
+                    drawP.selection.deselect_all();
+                    edit_start(selectedObjectToEdit->obj);
+                }
+                else {
+                    if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+                    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                        drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+                    else {
+                        drawP.selection.deselect_all();
+                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
                     }
                 }
-                return true;
-            });
-
-            if(lastSelectedObj)
-                edit_start(lastSelectedObj->obj);
+            }
+            else if(!drawP.selection.is_being_transformed()) {
+                if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+                    drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+                else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                    drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+                else {
+                    drawP.selection.deselect_all();
+                    drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+                }
+            }
         }
     }
     else {
