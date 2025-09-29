@@ -159,7 +159,7 @@ template <typename T> class TextBox : public Element {
             CollabTextBox::Editor::PaintOpts paintOpts;
             paintOpts.fForegroundColor = io.theme->frontColor1;
             paintOpts.fBackgroundColor = {0.0f, 0.0f, 0.0f, 0.0f};
-            paintOpts.cursorColor = io.theme->fillColor1;
+            paintOpts.cursorColor = io.theme->fillColor5;
             paintOpts.showCursor = selection.selected;
             paintOpts.cursor = cur;
 

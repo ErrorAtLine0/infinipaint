@@ -82,7 +82,7 @@ void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
         CollabTextBox::Editor::PaintOpts paintOpts;
         paintOpts.fForegroundColor = convert_vec4<SkColor4f>(d.textColor);
         paintOpts.fBackgroundColor = {0.0f, 0.0f, 0.0f, 0.0f};
-        paintOpts.cursorColor = {0.6f, 0.6f, 1.0f, 1.0f};
+        paintOpts.cursorColor = {0.7f, 0.7f, 1.0f, 1.0f};
         paintOpts.showCursor = d.editing;
         paintOpts.cursor = d.cursor;
 

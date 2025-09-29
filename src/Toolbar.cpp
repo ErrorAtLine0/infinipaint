@@ -1366,6 +1366,7 @@ void Toolbar::options_menu() {
                                         gui.color_picker_button_field("fillColor2", "Fill Color 2", &io->theme->fillColor2, true);
                                         gui.color_picker_button_field("fillColor3", "Fill Color 3", &io->theme->fillColor3, true);
                                         gui.color_picker_button_field("fillColor4", "Fill Color 4", &io->theme->fillColor4, true);
+                                        gui.color_picker_button_field("fillColor5", "Fill Color 5", &io->theme->fillColor5, true);
                                         gui.color_picker_button_field("backColor1", "Back Color 1", &io->theme->backColor1, true);
                                         gui.color_picker_button_field("backColor2", "Back Color 2", &io->theme->backColor2, true);
                                         gui.color_picker_button_field("backColor3", "Back Color 3", &io->theme->backColor3, true);

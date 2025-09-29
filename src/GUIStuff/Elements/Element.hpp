@@ -50,6 +50,7 @@ struct Theme {
     SkColor4f fillColor2 = {0.4f, 0.5f, 0.9f, 1.0f};
     SkColor4f fillColor3 = {1.0f, 0.0f, 0.0f, 1.0f};
     SkColor4f fillColor4 = {1.0f, 1.0f, 0.0f, 1.0f};
+    SkColor4f fillColor5 = {0.7f, 0.7f, 1.0f, 1.0f};
     SkColor4f backColor1 = {1.0f, 1.0f, 1.0f, 0.9f};
     SkColor4f backColor2 = {0.95f, 0.95f, 0.95f, 1.0f};
     SkColor4f backColor3 = {0.9f, 0.9f, 0.9f, 1.0f};
@@ -62,7 +63,7 @@ struct Theme {
     float windowCorners1 = 10;
     uint16_t windowBorders1 = 2;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Theme, fillColor1, fillColor2, fillColor3, fillColor4, backColor1, backColor2, backColor3, frontColor1, frontColor2, hoverExpandTime, childGap1, padding1, windowCorners1, windowBorders1)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Theme, fillColor1, fillColor2, fillColor3, fillColor4, fillColor5, backColor1, backColor2, backColor3, frontColor1, frontColor2, hoverExpandTime, childGap1, padding1, windowCorners1, windowBorders1)
 };
 
 std::shared_ptr<Theme> get_default_dark_mode();
