@@ -74,6 +74,8 @@ struct InputManager {
         bool isDown = false;
         bool isEraser = false;
         float pressure = 0.0f;
+        int leftClicksSaved = 0;
+        std::chrono::steady_clock::time_point lastPenLeftClickTime;
         std::array<KeyData, 256> buttons;
     } pen;
 

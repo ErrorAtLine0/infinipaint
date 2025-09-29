@@ -4,6 +4,7 @@
 #include "sago/platform_folders.h"
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_oldnames.h>
+#include <chrono>
 #include <filesystem>
 #include <include/core/SkAlphaType.h>
 #include <include/core/SkColorType.h>
@@ -709,7 +710,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDL_EVENT_PEN_DOWN: {
                 mS.m->input.pen.isDown = true;
                 mS.m->input.mouse.leftDown = true;
-                mS.m->input.mouse.leftClicks = 1;
+                if((std::chrono::steady_clock::now() - mS.m->input.pen.lastPenLeftClickTime) > std::chrono::milliseconds(300))
+                    mS.m->input.pen.leftClicksSaved = 0;
+                mS.m->input.pen.leftClicksSaved++;
+                mS.m->input.mouse.leftClicks = mS.m->input.pen.leftClicksSaved;
+                mS.m->input.pen.lastPenLeftClickTime = std::chrono::steady_clock::now();
                 mS.m->input.pen.isEraser = event->ptouch.eraser;
                 //mS.m->input.mouse.set_pos({event->ptouch.x, event->ptouch.y});
                 break;
