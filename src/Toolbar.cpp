@@ -784,7 +784,7 @@ void Toolbar::chat_box() {
                 t.selection.selected = true;
                 chatBoxState = CHATBOXSTATE_OPEN;
             }
-            if(main.input.key(InputManager::KEY_TEXT_ESCAPE).pressed)
+            if(main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
                 t.selection.selected = false;
             if(main.input.key(InputManager::KEY_TEXT_ENTER).pressed) {
                 main.world->send_chat_message(chatMessageInput);

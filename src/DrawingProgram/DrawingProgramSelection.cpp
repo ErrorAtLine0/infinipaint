@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "DrawingProgramToolBase.hpp"
 #include "Helpers/FixedPoint.hpp"
 #include <Helpers/MathExtras.hpp>
 #include <Helpers/SCollision.hpp>
@@ -368,13 +369,13 @@ void DrawingProgramSelection::update() {
                 break;
         }
 
-        if(drawP.world.main.input.key(InputManager::KEY_DRAW_UNSELECT).pressed)
+        if(drawP.world.main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
             deselect_all();
         else if(drawP.world.main.input.key(InputManager::KEY_DRAW_DELETE).pressed)
             delete_all();
-        else if(drawP.world.main.input.key(InputManager::KEY_COPY).pressed && selectionTransformCoords == CoordSpaceHelperTransform())
+        else if(drawP.world.main.input.key(InputManager::KEY_COPY).pressed && !is_being_transformed())
             selection_to_clipboard();
-        else if(drawP.world.main.input.key(InputManager::KEY_CUT).pressed && selectionTransformCoords == CoordSpaceHelperTransform()) {
+        else if(drawP.world.main.input.key(InputManager::KEY_CUT).pressed && !is_being_transformed()) {
             selection_to_clipboard();
             delete_all();
         }
@@ -385,6 +386,8 @@ void DrawingProgramSelection::update() {
     }
     else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed && !drawP.prevent_undo_or_redo())
         paste_clipboard();
+    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
+        drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
 }
 
 bool DrawingProgramSelection::is_being_transformed() {

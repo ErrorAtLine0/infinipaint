@@ -57,7 +57,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
     controls.pointDragging = nullptr;
     controls.isEditing = false;
 
-    if(newTool != DrawingProgramToolType::RECTSELECT && newTool != DrawingProgramToolType::LASSOSELECT && newTool != DrawingProgramToolType::EDIT)
+    if(!drawP.is_selection_tool(newTool))
         drawP.selection.deselect_all();
 }
 

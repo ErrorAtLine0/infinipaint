@@ -54,7 +54,7 @@ class DrawingProgram {
 
         Vector4f* get_foreground_color_ptr();
 
-        void switch_to_tool(DrawingProgramToolType newToolType);
+        void switch_to_tool(DrawingProgramToolType newToolType, bool force = false);
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
 
         void clear_draw_cache();
@@ -94,6 +94,8 @@ class DrawingProgram {
         bool temporaryEraser = false;
         bool temporaryPan = false;
         DrawingProgramToolType toolTypeAfterTempPan;
+
+        bool is_selection_tool(DrawingProgramToolType typeToCheck);
 
         struct GlobalControls {
             float relativeWidth = 15.0f;

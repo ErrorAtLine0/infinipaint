@@ -344,8 +344,6 @@ void DrawingProgram::update() {
         switch_to_tool(DrawingProgramToolType::EYEDROPPER);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_SCREENSHOT).pressed)
         switch_to_tool(DrawingProgramToolType::SCREENSHOT);
-    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_EDIT).pressed)
-        switch_to_tool(DrawingProgramToolType::EDIT);
 
     selection.update();
     drawTool->tool_update();
@@ -366,13 +364,17 @@ void DrawingProgram::update() {
         compCache.test_rebuild(components.client_list());
 }
 
+bool DrawingProgram::is_selection_tool(DrawingProgramToolType typeToCheck) {
+    return typeToCheck == DrawingProgramToolType::RECTSELECT || typeToCheck == DrawingProgramToolType::LASSOSELECT || typeToCheck == DrawingProgramToolType::EDIT;
+}
+
 void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool) {
     drawTool->switch_tool(newTool->get_type());
     drawTool = std::move(newTool);
 }
 
-void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType) {
-    if(newToolType != drawTool->get_type()) {
+void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool force) {
+    if(newToolType != drawTool->get_type() || force) {
         drawTool->switch_tool(newToolType);
         drawTool = DrawingProgramToolBase::allocate_tool_type(*this, newToolType);
     }

@@ -23,7 +23,6 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_W}] = KEY_CAMERA_ROTATE_COUNTERCLOCKWISE;
     defaultKeyAssignments[{0, SDLK_Q}] = KEY_CAMERA_ROTATE_CLOCKWISE;
     defaultKeyAssignments[{0, SDLK_DELETE}] = KEY_DRAW_DELETE;
-    defaultKeyAssignments[{0, SDLK_ESCAPE}] = KEY_DRAW_UNSELECT;
     defaultKeyAssignments[{CTRL_MOD, SDLK_Z}] = KEY_UNDO;
     defaultKeyAssignments[{CTRL_MOD, SDLK_R}] = KEY_REDO;
     defaultKeyAssignments[{0, SDLK_TAB}] = KEY_NOGUI;
@@ -40,7 +39,6 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_C}] = KEY_DRAW_TOOL_ELLIPSE;
     defaultKeyAssignments[{0, SDLK_X}] = KEY_DRAW_TOOL_RECTSELECT;
     defaultKeyAssignments[{0, SDLK_I}] = KEY_DRAW_TOOL_EYEDROPPER;
-    defaultKeyAssignments[{0, SDLK_S}] = KEY_DRAW_TOOL_EDIT;
     defaultKeyAssignments[{0, SDLK_P}] = KEY_DRAW_TOOL_SCREENSHOT;
     defaultKeyAssignments[{0, SDLK_F1}] = KEY_OPEN_CHAT;
     defaultKeyAssignments[{0, SDLK_F3}] = KEY_SHOW_METRICS;
@@ -259,7 +257,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             set_key_down(e, KEY_TEXT_ENTER);
             break;
         case SDLK_ESCAPE:
-            set_key_down(e, KEY_TEXT_ESCAPE);
+            set_key_down(e, KEY_GENERIC_ESCAPE);
             break;
         default:
             break;
@@ -326,7 +324,7 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
             set_key_up(e, KEY_TEXT_ENTER);
             break;
         case SDLK_ESCAPE:
-            set_key_up(e, KEY_TEXT_ESCAPE);
+            set_key_up(e, KEY_GENERIC_ESCAPE);
             break;
         default:
             break;
