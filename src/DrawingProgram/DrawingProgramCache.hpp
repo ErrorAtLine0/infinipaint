@@ -66,8 +66,10 @@ class DrawingProgramCache {
         const std::vector<CollabListType::ObjectInfoPtr>& get_unsorted_component_list() const;
         const std::chrono::steady_clock::time_point& get_last_bvh_build_time() const;
         void clear_own_cached_surfaces();
-    private:
 
+        CollabListType::ObjectInfoPtr get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC);
+
+    private:
         static std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>> nodesWithCachedSurfaces;
 
         void draw_cache_image_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);

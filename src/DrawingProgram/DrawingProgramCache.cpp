@@ -170,6 +170,19 @@ void DrawingProgramCache::traverse_bvh_run_function_recursive(const std::shared_
     }
 }
 
+CollabListType::ObjectInfoPtr DrawingProgramCache::get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC) {
+    auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
+    CollabListType::ObjectInfoPtr p;
+    traverse_bvh_run_function(cCWorld.bounds, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CollabListType::ObjectInfoPtr>& components) {
+        for(auto& c : components) {
+            if((!p || c->pos >= p->pos) && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cCWorld))
+                p = c;
+        }
+        return true;
+    });
+    return p;
+}
+
 void DrawingProgramCache::preupdate_component(const CollabListType::ObjectInfoPtr& c) {
     auto parentBvhNode = c->obj->parentBvhNode.lock();
     if(parentBvhNode) {
