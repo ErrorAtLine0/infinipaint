@@ -51,3 +51,5 @@ enum ClientCommands : MessageCommandType {
 #define SAVEFILE_HEADER    "INFPNT000003"
 #define SAVEFILE_HEADER_V2 "INFPNT000002"
 #define SAVEFILE_HEADER_V1 "INFPNT000001"
+// Version header
+#define VERSION_STRING "0.2.0"
