@@ -92,6 +92,10 @@ void EditTool::edit_start(const std::shared_ptr<DrawComponent>& comp) {
     }
 }
 
+bool EditTool::is_editable(const std::shared_ptr<DrawComponent>& comp) {
+    return comp->get_type() != DRAWCOMPONENT_BRUSHSTROKE;
+}
+
 void EditTool::tool_update() {
     if(!controls.isEditing) {
         SCollision::AABB<WorldScalar> mouseAABB{drawP.world.get_mouse_world_pos() - WorldVec{0.5f, 0.5f}, drawP.world.get_mouse_world_pos() + WorldVec{0.5f, 0.5f}};
@@ -105,25 +109,17 @@ void EditTool::tool_update() {
         camCMouseAABB.recalculate_bounds();
 
         if(drawP.controls.leftClick) {
+            bool modifySelection = !drawP.selection.is_being_transformed();
             if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
                 CollabListType::ObjectInfoPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with(camCMouseAABB);
 
-                if(selectedObjectToEdit) {
+                if(selectedObjectToEdit && is_editable(selectedObjectToEdit->obj)) {
                     drawP.selection.deselect_all();
                     edit_start(selectedObjectToEdit->obj);
-                }
-                else {
-                    if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
-                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
-                    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                        drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, true);
-                    else {
-                        drawP.selection.deselect_all();
-                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
-                    }
+                    modifySelection = false;
                 }
             }
-            else if(!drawP.selection.is_being_transformed()) {
+            if(modifySelection) {
                 if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
                     drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
                 else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)

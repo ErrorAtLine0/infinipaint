@@ -27,6 +27,7 @@ class EditTool : public DrawingProgramToolBase {
 
         void add_point_handle(const HandleData& handle);
         void edit_start(const std::shared_ptr<DrawComponent>& comp);
+        bool is_editable(const std::shared_ptr<DrawComponent>& comp);
 
         struct EditControls {
             std::unique_ptr<DrawingProgramEditToolBase> compEditTool;
