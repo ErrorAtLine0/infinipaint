@@ -100,6 +100,9 @@ class World {
         } canvasTheme;
 
         void scale_up(const WorldScalar& scaleUpAmount);
+        void scale_up_step();
+
+        uint64_t canvasScale = 0;
     private:
 
         ClientPortionID get_max_id(ServerPortionID serverID);

@@ -78,6 +78,7 @@ void World::init_client_callbacks() {
             Vector3f newBackColor;
             message(newBackColor);
             set_canvas_background_color(newBackColor, false);
+            message(canvasScale);
             drawProg.initialize_draw_data(message);
             message(bMan, gridMan);
         }
@@ -117,6 +118,13 @@ void World::init_client_callbacks() {
         Vector3f newBackColor;
         message(newBackColor);
         set_canvas_background_color(newBackColor, false);
+    });
+    con.client_add_recv_callback(CLIENT_CANVAS_SCALE, [&](cereal::PortableBinaryInputArchive& message) {
+        uint64_t newCanvasScale;
+        message(newCanvasScale);
+        con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, newCanvasScale);
+        scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, newCanvasScale - canvasScale));
+        canvasScale = newCanvasScale;
     });
     con.client_add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
@@ -407,13 +415,23 @@ void World::draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData
     }
 }
 
+void World::scale_up_step() {
+    canvasScale++;
+    con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, canvasScale);
+    scale_up(WorldScalar(CANVAS_SCALE_UP_STEP));
+}
+
 void World::scale_up(const WorldScalar& scaleUpAmount) {
     Logger::get().log("USERINFO", "Canvas scaled up");
-    drawProg.scale_up(scaleUpAmount);
     bMan.scale_up(scaleUpAmount);
     gridMan.scale_up(scaleUpAmount);
     drawData.cam.scale_up(*this, scaleUpAmount);
-    undo.clear();
+    // drawProg will be sending info on committed objects/modified grids. These objects will be scaled up already.
+    // This means that the scale up message must be send BEFORE the World::scale_up function is called on our end
+    // if this client is the one responsible for the scale up
+    drawProg.scale_up(scaleUpAmount);
+
+    undo.clear(); // Do last to make sure that any undo generated while scaling up is removed, as it contains outdated scale info
 }
 
 void World::draw(SkCanvas* canvas) {

@@ -22,31 +22,6 @@
 #include "../DrawComponents/DrawComponent.hpp"
 #include "../World.hpp"
 
-WorldVec cursorPos;
-
-void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(canvasBackColor);
-    a((uint64_t)components.size());
-    for(uint64_t i = 0; i < components.size(); i++)
-        a(components[i]->get_type(), components[i]->id, components[i]->coords, *components[i]);
-    a(bookmarks, grids);
-}
-
-void ServerData::load(cereal::PortableBinaryInputArchive& a) {
-    a(canvasBackColor);
-    uint64_t compCount;
-    a(compCount);
-    for(uint64_t i = 0; i < compCount; i++) {
-        DrawComponentType t;
-        a(t);
-        auto newComp = DrawComponent::allocate_comp_type(t);
-        a(newComp->id, newComp->coords, *newComp);
-        components.emplace_back(newComp);
-        idToComponentMap.emplace(newComp->id, newComp);
-    }
-    a(bookmarks, grids);
-}
-
 MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     world(initWorld)
 {
@@ -55,6 +30,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         data.components.back()->id = c->obj->id;
         data.idToComponentMap.emplace(data.components.back()->id, data.components.back());
     }
+    data.canvasScale = world.canvasScale;
     data.bookmarks = world.bMan.bookmark_list();
     data.grids = world.gridMan.grids;
     data.resources = world.rMan.resource_list();
@@ -105,6 +81,11 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         placement = std::min<uint64_t>(placement, data.components.size());
         data.components.insert(data.components.begin() + placement, newComp);
         data.idToComponentMap.emplace(newComp->id, newComp);
+
+        auto& c = clients[client->customID];
+        if(c.canvasScale < data.canvasScale)
+            newComp->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+
         newComp->server_send_place(*this, placement);
     });
     netServer->add_recv_callback(SERVER_PLACE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -148,6 +129,12 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             }
         }
 
+        auto& c = clients[client->customID];
+        if(c.canvasScale < data.canvasScale) {
+            for(auto& o : objOrderedVector)
+                o->obj->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+        }
+
         DrawComponent::server_send_place_many(*this, objOrderedVector);
     });
     netServer->add_recv_callback(SERVER_ERASE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -176,6 +163,11 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             auto it = data.idToComponentMap.find(t.first);
             if(it != data.idToComponentMap.end())
                 it->second->coords = t.second;
+        }
+        auto& c = clients[client->customID];
+        if(c.canvasScale < data.canvasScale) {
+            for(auto& [id, coord] : transformsToSend)
+                coord.scale_about(WorldVec{0, 0}, FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale), true);
         }
         DrawComponent::server_send_transform_many(*this, transformsToSend);
     });
@@ -226,6 +218,11 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(name);
         Bookmark& b = data.bookmarks[name];
         message(b);
+
+        auto& c = clients[client->customID];
+        if(c.canvasScale < data.canvasScale)
+            b.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_NEW_BOOKMARK, name, b);
     });
     netServer->add_recv_callback(SERVER_REMOVE_BOOKMARK, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -239,6 +236,11 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(gID);
         WorldGrid& g = data.grids[gID];
         message(g);
+
+        auto& c = clients[client->customID];
+        if(c.canvasScale < data.canvasScale)
+            g.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_SET_GRID, gID, g);
     });
     netServer->add_recv_callback(SERVER_REMOVE_GRID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
@@ -250,6 +252,15 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     netServer->add_recv_callback(SERVER_CANVAS_COLOR, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         message(data.canvasBackColor);
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_CANVAS_COLOR, data.canvasBackColor);
+    });
+    netServer->add_recv_callback(SERVER_CANVAS_SCALE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        auto& c = clients[client->customID];
+        message(c.canvasScale);
+        if(c.canvasScale > data.canvasScale) {
+            data.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+            data.canvasScale = c.canvasScale;
+            netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_CANVAS_SCALE, data.canvasScale);
+        }
     });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });

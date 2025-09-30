@@ -5,6 +5,10 @@
 #include "MainProgram.hpp"
 #include <algorithm>
 
+void Bookmark::scale_up(const WorldScalar& scaleUpAmount) {
+    coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+}
+
 BookmarkManager::BookmarkManager(World& w):
     world(w)
 {}
@@ -63,5 +67,5 @@ const std::unordered_map<std::string, Bookmark>& BookmarkManager::bookmark_list(
 
 void BookmarkManager::scale_up(const WorldScalar& scaleUpAmount) {
     for(auto& [n, b] : bookmarks)
-        b.coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+        b.scale_up(scaleUpAmount);
 }

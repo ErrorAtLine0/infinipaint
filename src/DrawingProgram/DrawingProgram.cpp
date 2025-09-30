@@ -152,6 +152,7 @@ void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
         c->obj->scale_up(scaleUpAmount);
     selection.deselect_all();
     force_rebuild_cache();
+    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
 }
 
 void DrawingProgram::check_delayed_update_timers() {

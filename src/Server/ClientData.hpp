@@ -18,6 +18,8 @@ class ClientData {
         std::string displayName;
         ServerPortionID serverID = 0;
 
+        uint64_t canvasScale = 0;
+
         std::queue<ResourceData> pendingResourceData;
         std::queue<ServerClientID> pendingResourceID;
 

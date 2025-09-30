@@ -105,6 +105,15 @@ namespace FixedPoint {
         return toRet;
     }
 
+    template <typename T> T pow_int(const T& x, uint64_t exp) {
+        if(exp == 0)
+            return T(1);
+        T toRet = x;
+        for(uint64_t i = 1; i < exp; i++)
+            toRet *= toRet;
+        return toRet;
+    }
+
     // https://github.com/Koishi-Satori/EirinFixed/blob/main/include/eirin/math.hpp
     template <typename T> T log2(const T& a) {
         typename T::UnderlyingType b(typename T::UnderlyingType(1u) << (a.bit_fraction_count() - 1));

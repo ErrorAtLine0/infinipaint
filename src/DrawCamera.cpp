@@ -3,6 +3,7 @@
 #include "Helpers/FixedPoint.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
+#include "Server/CommandList.hpp"
 #include "World.hpp"
 #include "InputManager.hpp"
 #include <iostream>
@@ -154,8 +155,6 @@ void DrawCamera::update_main(World& w) {
 
     set_viewing_area(w.main.window.size.cast<float>());
 
-    if(c.inverseScale < WorldScalar(1)) {
-        std::cout << "yes!" << std::endl;
-        w.scale_up(WorldScalar(1000000));
-    }
+    if(c.inverseScale < WorldScalar(1))
+        w.scale_up_step();
 }

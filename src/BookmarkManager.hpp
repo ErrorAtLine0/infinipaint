@@ -10,6 +10,7 @@ struct Bookmark {
     template <class Archive> void serialize(Archive& a) {
         a(coords, windowSize);
     }
+    void scale_up(const WorldScalar& scaleUpAmount);
 };
 
 class World;

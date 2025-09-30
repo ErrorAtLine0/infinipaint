@@ -20,7 +20,8 @@ enum ServerCommands : MessageCommandType {
     SERVER_REMOVE_BOOKMARK,
     SERVER_CANVAS_COLOR,
     SERVER_SET_GRID,
-    SERVER_REMOVE_GRID
+    SERVER_REMOVE_GRID,
+    SERVER_CANVAS_SCALE
 };
 
 enum ClientCommands : MessageCommandType {
@@ -42,7 +43,8 @@ enum ClientCommands : MessageCommandType {
     CLIENT_REMOVE_BOOKMARK,
     CLIENT_CANVAS_COLOR,
     CLIENT_SET_GRID,
-    CLIENT_REMOVE_GRID
+    CLIENT_REMOVE_GRID,
+    CLIENT_CANVAS_SCALE
 };
 
 // NOTE: Do not change savefile header length
@@ -53,3 +55,6 @@ enum ClientCommands : MessageCommandType {
 #define SAVEFILE_HEADER_V1 "INFPNT000001"
 // Version header
 #define VERSION_STRING "0.2.0"
+
+// Arbitrary value. Higher scale up values lead to less scale up events (which can cause stuttering), but leads to larger numbers overall, which can cause a tiny bit of lag and increased memory usage
+#define CANVAS_SCALE_UP_STEP WorldScalar("100000000000000000000000000000000000000000000000000")
