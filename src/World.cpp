@@ -122,9 +122,11 @@ void World::init_client_callbacks() {
     con.client_add_recv_callback(CLIENT_CANVAS_SCALE, [&](cereal::PortableBinaryInputArchive& message) {
         uint64_t newCanvasScale;
         message(newCanvasScale);
-        con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, newCanvasScale);
-        scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, newCanvasScale - canvasScale));
-        canvasScale = newCanvasScale;
+        if(newCanvasScale > canvasScale) {
+            con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, newCanvasScale);
+            scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, newCanvasScale - canvasScale));
+            canvasScale = newCanvasScale;
+        }
     });
     con.client_add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
