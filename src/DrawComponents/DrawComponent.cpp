@@ -187,7 +187,7 @@ void DrawComponent::canvas_do_calculated_transform(SkCanvas* canvas) {
 }
 
 void DrawComponent::calculate_draw_transform(const DrawData& drawData) {
-    drawSetupData.shouldDraw = !drawData.clampDrawBetween || ((drawData.clampDrawMaximum >= coords.inverseScale) && (drawData.clampDrawMinimum < coords.inverseScale));
+    drawSetupData.shouldDraw = !drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale);
     if(drawSetupData.shouldDraw) {
         drawSetupData.shouldDraw = !worldAABB || SCollision::collide(*worldAABB, drawData.cam.viewingAreaGenerousCollider);
         if(drawSetupData.shouldDraw) {
@@ -199,7 +199,7 @@ void DrawComponent::calculate_draw_transform(const DrawData& drawData) {
                 drawSetupData.mipmapLevel = 0;
             drawSetupData.transformData.translation = -coords.to_space(drawData.cam.c.pos);
             drawSetupData.transformData.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
-            drawSetupData.transformData.scale = static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale);
+            drawSetupData.transformData.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), static_cast<float>(1 << DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR));
         }
     }
 }
