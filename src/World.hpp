@@ -99,7 +99,9 @@ class World {
             SkColor4f toolFrontColor;
         } canvasTheme;
 
+        void scale_up(const WorldScalar& scaleUpAmount);
     private:
+
         ClientPortionID get_max_id(ServerPortionID serverID);
 
         void init_client_callbacks();

@@ -376,7 +376,7 @@ WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, Wor
 
 void World::draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData) {
     for(auto& [id, data] : clients) {
-        if(drawData.clampDrawMaximum > data.camCoords.inverseScale && drawData.clampDrawMinimum < data.camCoords.inverseScale) {
+        if((drawData.cam.c.inverseScale << 10) > data.camCoords.inverseScale && drawData.clampDrawMinimum < data.camCoords.inverseScale) {
             canvas->save();
             data.camCoords.transform_sk_canvas(canvas, drawData);
 
@@ -405,6 +405,15 @@ void World::draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData
             canvas->restore();
         }
     }
+}
+
+void World::scale_up(const WorldScalar& scaleUpAmount) {
+    Logger::get().log("USERINFO", "Canvas scaled up");
+    drawProg.scale_up(scaleUpAmount);
+    bMan.scale_up(scaleUpAmount);
+    gridMan.scale_up(scaleUpAmount);
+    drawData.cam.scale_up(*this, scaleUpAmount);
+    undo.clear();
 }
 
 void World::draw(SkCanvas* canvas) {

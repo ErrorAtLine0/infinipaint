@@ -35,6 +35,7 @@ class WorldGrid {
 
         void set_remove_divisions_outwards(bool v);
         void set_subdivisions(uint32_t v);
+        void scale_up(const WorldScalar& scaleUpAmount);
 
         static unsigned GRID_UNIT_PIXEL_SIZE;
 

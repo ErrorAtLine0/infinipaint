@@ -89,7 +89,7 @@ void DrawComponent::remap_resource_ids(std::unordered_map<ServerClientID, Server
 #ifndef IS_SERVER
 
 bool DrawComponent::bounds_draw_check(const DrawData& drawData) const {
-    bool a = !drawData.clampDrawBetween || ((drawData.clampDrawMaximum >= coords.inverseScale) && (drawData.clampDrawMinimum < coords.inverseScale));
+    bool a = !drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale);
     return a;
 }
 
@@ -122,6 +122,11 @@ void DrawComponent::commit_transform(DrawingProgram& drawP, bool invalidateCache
     calculate_world_bounds();
     if(invalidateCache && lockedCollabInfo && worldAABB)
         drawP.preupdate_component(lockedCollabInfo);
+}
+
+void DrawComponent::scale_up(const WorldScalar& scaleUpAmount) {
+    coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+    calculate_world_bounds();
 }
 
 void DrawComponent::client_send_place_many(DrawingProgram& drawP, std::vector<CollabListType::ObjectInfoPtr>& comps) {
@@ -161,7 +166,7 @@ bool DrawComponent::collides_with_cam_coords(const CoordSpaceHelper& camCoords, 
 
 // We could just send one of the checkAgainst colliders, since they represent the same thing, but sending both saves on redundant transformations, since we can save both of the versions on the executor side
 bool DrawComponent::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) {
-    if((camCoords.inverseScale << DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR) < coords.inverseScale) // Object is too large, just dismiss the collision
+    if((camCoords.inverseScale << DRAWCOMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
         return false;
     else if((camCoords.inverseScale >> DRAWCOMP_COLLIDE_MIN_SHIFT_TINY) >= coords.inverseScale) {
         if(!worldAABB)
@@ -199,7 +204,7 @@ void DrawComponent::calculate_draw_transform(const DrawData& drawData) {
                 drawSetupData.mipmapLevel = 0;
             drawSetupData.transformData.translation = -coords.to_space(drawData.cam.c.pos);
             drawSetupData.transformData.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
-            drawSetupData.transformData.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), static_cast<float>(1 << DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR));
+            drawSetupData.transformData.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), static_cast<float>(1 << DRAWCOMP_MAX_SHIFT_BEFORE_STOP_SCALING));
         }
     }
 }

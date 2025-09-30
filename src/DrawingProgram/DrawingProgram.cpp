@@ -147,6 +147,13 @@ void DrawingProgram::init_client_callbacks() {
     });
 }
 
+void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
+    for(auto& c : components.client_list())
+        c->obj->scale_up(scaleUpAmount);
+    selection.deselect_all();
+    force_rebuild_cache();
+}
+
 void DrawingProgram::check_delayed_update_timers() {
     std::erase_if(delayedUpdateComponents, [&](auto& p) {
         auto& [comp, delayedUpdatePtr] = p;
@@ -358,7 +365,7 @@ void DrawingProgram::update() {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
     }
-    else if(drawTool->get_type() == DrawingProgramToolType::RECTSELECT)
+    else if(is_selection_tool(drawTool->get_type()))
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set());
     else
         compCache.test_rebuild(components.client_list());
@@ -403,7 +410,7 @@ void DrawingProgram::force_rebuild_cache() {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
     }
-    else if(drawTool->get_type() == DrawingProgramToolType::RECTSELECT || drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)
+    else if(is_selection_tool(drawTool->get_type()))
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
     else
         compCache.test_rebuild(components.client_list(), true);

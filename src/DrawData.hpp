@@ -16,7 +16,6 @@ struct DrawData {
     bool clampDrawBetween = true;
     bool drawGrids = true;
     WorldScalar clampDrawMinimum;
-    WorldScalar clampDrawMaximum;
     WorldScalar mipMapLevelOne;
     WorldScalar mipMapLevelTwo;
     void refresh_draw_optimizing_values();

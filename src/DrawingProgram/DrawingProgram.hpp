@@ -27,6 +27,7 @@ class DrawingProgram {
         void toolbar_gui();
         void tool_options_gui();
         void update();
+        void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
         void initialize_draw_data(cereal::PortableBinaryInputArchive& a);
         std::unordered_set<ServerClientID> get_used_resources();

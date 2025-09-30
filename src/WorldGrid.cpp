@@ -206,6 +206,11 @@ std::string WorldGrid::get_display_name() {
     return name.empty() ? "New Grid" : name;
 }
 
+void WorldGrid::scale_up(const WorldScalar& scaleUpAmount) {
+    size *= scaleUpAmount;
+    offset *= scaleUpAmount;
+}
+
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {
     coordinatesAxisOnBounds = false;
     coordinatesWillBeDrawn = false;

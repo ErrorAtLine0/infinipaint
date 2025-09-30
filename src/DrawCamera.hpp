@@ -24,6 +24,8 @@ class DrawCamera {
         void set_based_on_properties(World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate);
         void set_based_on_center(World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate);
         void update_main(World& main);
+
+        void scale_up(World& w, const WorldScalar& scaleUpAmount);
     private:
         struct SmoothMove {
             CoordSpaceHelper start;

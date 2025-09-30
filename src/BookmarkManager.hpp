@@ -21,6 +21,8 @@ class BookmarkManager {
         void add_bookmark(const std::string& name);
         void remove_bookmark(const std::string& name);
         void jump_to_bookmark(const std::string& name);
+        void scale_up(const WorldScalar& scaleUpAmount);
+
         const std::unordered_map<std::string, Bookmark>& bookmark_list();
 
         template <typename Archive> void save(Archive& a) const {

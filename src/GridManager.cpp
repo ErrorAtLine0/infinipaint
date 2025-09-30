@@ -98,3 +98,9 @@ void GridManager::draw_coordinates(SkCanvas* canvas, const DrawData& drawData) {
         g.coordinatesWillBeDrawn = false;
     }
 }
+
+void GridManager::scale_up(const WorldScalar& scaleUpAmount) {
+    for(auto& [id, g] : grids) {
+        g.scale_up(scaleUpAmount);
+    }
+}

@@ -16,7 +16,8 @@
 
 #define CLIENT_DRAWCOMP_DELAY_TIMER_DURATION std::chrono::seconds(6)
 
-#define DRAWCOMP_MAX_SHIFT_BEFORE_DISAPPEAR 18
+#define DRAWCOMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS 14
+#define DRAWCOMP_MAX_SHIFT_BEFORE_STOP_SCALING 18
 #define DRAWCOMP_MIN_SHIFT_BEFORE_DISAPPEAR 11
 #define DRAWCOMP_COLLIDE_MIN_SHIFT_TINY 9
 #define DRAWCOMP_MIPMAP_LEVEL_ONE 2
@@ -64,6 +65,9 @@ class DrawComponent {
         void calculate_draw_transform(const DrawData& drawData);
 
         void server_send_place(MainServer& server, uint64_t placement);
+
+        void scale_up(const WorldScalar& scaleUpAmount);
+
         static void server_send_place_many(MainServer& server, std::vector<CollabListType::ObjectInfoPtr>& comps);
         static void server_send_erase(MainServer& server, ServerClientID id);
         static void server_send_erase_set(MainServer& server, const std::unordered_set<ServerClientID>& ids);

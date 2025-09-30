@@ -60,3 +60,8 @@ const std::vector<std::string>& BookmarkManager::sorted_names() {
 const std::unordered_map<std::string, Bookmark>& BookmarkManager::bookmark_list() {
     return bookmarks;
 }
+
+void BookmarkManager::scale_up(const WorldScalar& scaleUpAmount) {
+    for(auto& [n, b] : bookmarks)
+        b.coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+}
