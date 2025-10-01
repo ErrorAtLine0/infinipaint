@@ -104,6 +104,7 @@ set(sources "src/main.cpp"
             "include/Helpers/Logger.cpp"
             "include/Helpers/StringHelpers.cpp"
             "include/Helpers/Serializers.cpp"
+            "include/Helpers/FileDownloader.cpp"
         )
 
 if((NOT EMSCRIPTEN) AND (GRAPHICS_BACKEND STREQUAL "Vulkan"))
@@ -144,6 +145,7 @@ endif()
 if(NOT EMSCRIPTEN)
     find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
     find_package(LibDataChannel REQUIRED)
+    find_package(CURL REQUIRED)
 else()
     find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-static)
 endif()
@@ -266,7 +268,7 @@ if(EMSCRIPTEN)
     add_subdirectory(deps/datachannel-wasm EXCLUDE_FROM_ALL)
     target_link_libraries(infinipaint datachannel-wasm)
 else()
-    target_link_libraries(infinipaint LibDataChannel::LibDataChannel)
+    target_link_libraries(infinipaint LibDataChannel::LibDataChannel CURL::libcurl)
 endif()
 
 if(LINK_SKIA_MANUALLY)

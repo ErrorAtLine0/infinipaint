@@ -1,5 +1,6 @@
 #include "Helpers/SCollision.hpp"
 #include "Helpers/StringHelpers.hpp"
+#include "Helpers/FileDownloader.hpp"
 #include "include/gpu/GpuTypes.h"
 #include "sago/platform_folders.h"
 #include <SDL3/SDL_hints.h>
@@ -387,6 +388,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
     init_logs(mS);
 
+#ifndef __EMSCRIPTEN__
+    FileDownloader::init();
+#endif
+
 #ifdef NDEBUG
     try {
 #endif
@@ -769,6 +774,10 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     }
 
     delete (&mS);
+
+#ifndef __EMSCRIPTEN__
+    FileDownloader::cleanup();
+#endif
 
     SDL_Quit();
 }
