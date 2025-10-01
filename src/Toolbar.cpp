@@ -569,40 +569,44 @@ If you like this app, consider downloading the native version for your system)")
 #ifndef __EMSCRIPTEN__
 void Toolbar::update_notification_check() {
     if(!updateCheckerData.updateCheckDone) {
-        if(updateCheckerData.checkForUpdates && !updateCheckerData.versionFile)
-            updateCheckerData.versionFile = FileDownloader::download_data_from_url(UPDATE_NOTIFICATION_URL);
-        else if(updateCheckerData.versionFile) {
-            switch(updateCheckerData.versionFile->status) {
-                case FileDownloader::DownloadData::Status::IN_PROGRESS:
-                    break;
-                case FileDownloader::DownloadData::Status::SUCCESS: {
-                    updateCheckerData.updateCheckDone = true;
-                    std::optional<VersionNumber> newVersion = version_str_to_version_numbers(updateCheckerData.versionFile->str);
-                    std::optional<VersionNumber> currentVersion = version_str_to_version_numbers(VERSION_STRING);
-                    if(newVersion.has_value() && currentVersion.has_value()) {
-                        VersionNumber& newV = newVersion.value();
-                        VersionNumber& currentV = currentVersion.value();
-                        updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
-                        Logger::get().log("INFO", "Latest online version is v" + updateCheckerData.newVersionStr);
-                        if(newV > currentV)
-                            updateCheckerData.showGui = true;
-                        else if(newV == currentV)
-                            Logger::get().log("INFO", "Current version is up to date");
+        if(updateCheckerData.checkForUpdates) {
+            if(!updateCheckerData.versionFile)
+                updateCheckerData.versionFile = FileDownloader::download_data_from_url(UPDATE_NOTIFICATION_URL);
+            else {
+                switch(updateCheckerData.versionFile->status) {
+                    case FileDownloader::DownloadData::Status::IN_PROGRESS:
+                        break;
+                    case FileDownloader::DownloadData::Status::SUCCESS: {
+                        updateCheckerData.updateCheckDone = true;
+                        std::optional<VersionNumber> newVersion = version_str_to_version_numbers(updateCheckerData.versionFile->str);
+                        std::optional<VersionNumber> currentVersion = version_str_to_version_numbers(VERSION_STRING);
+                        if(newVersion.has_value() && currentVersion.has_value()) {
+                            VersionNumber& newV = newVersion.value();
+                            VersionNumber& currentV = currentVersion.value();
+                            updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
+                            Logger::get().log("INFO", "Latest online version is v" + updateCheckerData.newVersionStr);
+                            if(newV > currentV)
+                                updateCheckerData.showGui = true;
+                            else if(newV == currentV)
+                                Logger::get().log("INFO", "Current version is up to date");
+                            else
+                                Logger::get().log("INFO", "Local version has larger version number than the latest online one");
+                        }
                         else
-                            Logger::get().log("INFO", "Local version has larger version number than the latest online one");
+                            Logger::get().log("INFO", "Update notification file couldn't be converted to version numbers");
+                        updateCheckerData.versionFile = nullptr;
+                        break;
                     }
-                    else
-                        Logger::get().log("INFO", "Update notification file couldn't be converted to version numbers");
-                    updateCheckerData.versionFile = nullptr;
-                    break;
+                    case FileDownloader::DownloadData::Status::FAILURE:
+                        Logger::get().log("INFO", "Failed to check for updates");
+                        updateCheckerData.updateCheckDone = true;
+                        updateCheckerData.versionFile = nullptr;
+                        break;
                 }
-                case FileDownloader::DownloadData::Status::FAILURE:
-                    Logger::get().log("INFO", "Failed to check for updates");
-                    updateCheckerData.updateCheckDone = true;
-                    updateCheckerData.versionFile = nullptr;
-                    break;
             }
         }
+        else
+            updateCheckerData.updateCheckDone = true;
     }
 }
 
@@ -1373,7 +1377,7 @@ void Toolbar::options_menu() {
                                         main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);
                                         #ifndef __EMSCRIPTEN__
                                             gui.checkbox_field("native file pick", "Use Native File Picker", &useNativeFilePicker);
-                                            gui.checkbox_field("update notifications enable", "Check For Updates", &updateCheckerData.checkForUpdates);
+                                            gui.checkbox_field("update notifications enable", "Check For Updates on Startup", &updateCheckerData.checkForUpdates);
                                         #endif
                                         gui.slider_scalar_field("drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, 3);
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
