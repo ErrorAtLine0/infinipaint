@@ -75,10 +75,20 @@ ClientPortionID GridManager::get_max_id(ServerPortionID serverID) const {
     return maxClientID;
 }
 
-void GridManager::draw(SkCanvas* canvas, const DrawData& drawData) {
+void GridManager::draw_back(SkCanvas* canvas, const DrawData& drawData) {
     auto& sortedGridIDS = sorted_grid_ids();
-    for(ServerClientID id : sortedGridIDS)
-        grids[id].draw(*this, canvas, drawData);
+    for(ServerClientID id : sortedGridIDS) {
+        if(!grids[id].displayInFront)
+            grids[id].draw(*this, canvas, drawData);
+    }
+}
+
+void GridManager::draw_front(SkCanvas* canvas, const DrawData& drawData) {
+    auto& sortedGridIDS = sorted_grid_ids();
+    for(ServerClientID id : sortedGridIDS) {
+        if(grids[id].displayInFront)
+            grids[id].draw(*this, canvas, drawData);
+    }
 }
 
 void GridManager::draw_coordinates(SkCanvas* canvas, const DrawData& drawData) {

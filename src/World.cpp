@@ -439,9 +439,11 @@ void World::scale_up(const WorldScalar& scaleUpAmount) {
 void World::draw(SkCanvas* canvas) {
     drawData.refresh_draw_optimizing_values();
     if(drawData.drawGrids)
-        gridMan.draw(canvas, drawData);
+        gridMan.draw_back(canvas, drawData);
     drawProg.draw(canvas, drawData);
-    if(drawData.drawGrids)
+    if(drawData.drawGrids) {
+        gridMan.draw_front(canvas, drawData);
         gridMan.draw_coordinates(canvas, drawData);
+    }
     draw_other_player_cursors(canvas, drawData);
 }

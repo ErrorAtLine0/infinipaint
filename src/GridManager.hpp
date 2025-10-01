@@ -21,7 +21,8 @@ class GridManager {
 
         void send_grid_info(ServerClientID gridID);
         void remove_grid(ServerClientID idToRemove);
-        void draw(SkCanvas* canvas, const DrawData& drawData);
+        void draw_back(SkCanvas* canvas, const DrawData& drawData);
+        void draw_front(SkCanvas* canvas, const DrawData& drawData);
         void draw_coordinates(SkCanvas* canvas, const DrawData& drawData);
         void scale_up(const WorldScalar& scaleUpAmount);
 

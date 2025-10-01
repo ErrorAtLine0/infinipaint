@@ -35,6 +35,7 @@ void GridModifyTool::gui_toolbox() {
         WorldGrid& g = gridFoundIt->second;
         t.gui.input_text_field("grid name", "Name", &g.name);
         t.gui.checkbox_field("Visible", "Visible", &g.visible);
+        t.gui.checkbox_field("Display in Front", "Display in front of canvas", &g.displayInFront);
         size_t typeSelected = static_cast<size_t>(g.gridType);
         std::vector<std::string> listOfGridTypes = {
             "Circle Points",

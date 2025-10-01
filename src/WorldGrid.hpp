@@ -9,7 +9,7 @@ class GridManager;
 class WorldGrid {
     public:
         template <class Archive> void serialize(Archive& a) {
-            a(name, gridType, size, visible, offset, bounds, color, removeDivisionsOutwards, subdivisions, showCoordinates);
+            a(name, gridType, size, visible, offset, bounds, color, removeDivisionsOutwards, subdivisions, showCoordinates, displayInFront);
         }
 
         void draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData);
@@ -43,6 +43,7 @@ class WorldGrid {
         WorldScalar coordinatesGridCoordDivSize;
         bool coordinatesWillBeDrawn = false;
         bool coordinatesAxisOnBounds = false;
+        bool displayInFront = false;
     private:
 
         struct ShaderData {
