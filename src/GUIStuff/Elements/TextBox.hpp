@@ -150,7 +150,12 @@ template <typename T> class TextBox : public Element {
 
             canvas->clipRect(SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height()));
 
-            canvas->translate(bb.min.x(), bb.min.y());
+            if(singleLine && selection.selected) {
+                SkRect cursorRect = textbox.getLocation(cur.pos);
+                canvas->translate(bb.min.x() - std::max(cursorRect.fRight - bb.width(), 0.0f), bb.min.y());
+            }
+            else
+                canvas->translate(bb.min.x(), bb.min.y());
 
             textbox.setFont(SkFont(io.textTypeface, io.fontSize));
             textbox.setFontMgr(io.textFontMgr);
