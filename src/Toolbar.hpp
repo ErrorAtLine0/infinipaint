@@ -1,6 +1,7 @@
 #pragma once
 #include "GUIStuff/GUIManager.hpp"
 #include "DrawData.hpp"
+#include "Helpers/FileDownloader.hpp"
 #include "Server/CommandList.hpp"
 #include <filesystem>
 #include <nlohmann/json.hpp>
@@ -104,6 +105,18 @@ class Toolbar {
         void paint_popup();
         void about_menu_gui();
         void web_version_welcome();
+
+        #ifndef __EMSCRIPTEN__
+        void update_notification_gui();
+        void update_notification_check();
+        struct UpdateCheckerData {
+            bool checkForUpdates = true;
+            bool showGui = false;
+            bool updateCheckDone = false;
+            std::string newVersionStr;
+            std::shared_ptr<FileDownloader::DownloadData> versionFile;
+        } updateCheckerData;
+        #endif
 
         std::string ownLicenseText;
         std::vector<std::pair<std::string, std::string>> thirdPartyLicenses;

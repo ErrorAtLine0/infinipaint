@@ -1,5 +1,6 @@
 #include "StringHelpers.hpp"
 #include <fstream>
+#include <algorithm>
 
 std::vector<std::string> split_string_by_token(std::string str, std::string token) {
     // slightly modified from: https://stackoverflow.com/a/46943631

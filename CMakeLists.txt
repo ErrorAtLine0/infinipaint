@@ -105,6 +105,7 @@ set(sources "src/main.cpp"
             "include/Helpers/StringHelpers.cpp"
             "include/Helpers/Serializers.cpp"
             "include/Helpers/FileDownloader.cpp"
+            "include/Helpers/VersionNumber.cpp"
         )
 
 if((NOT EMSCRIPTEN) AND (GRAPHICS_BACKEND STREQUAL "Vulkan"))

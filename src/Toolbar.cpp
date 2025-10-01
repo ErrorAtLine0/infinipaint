@@ -2,6 +2,7 @@
 #include "DrawingProgram/DrawingProgramToolBase.hpp"
 #include "DrawingProgram/ScreenshotTool.hpp"
 #include "Helpers/ConvertVec.hpp"
+#include "Helpers/FileDownloader.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "MainProgram.hpp"
 #include "GUIStuff/Elements/Element.hpp"
@@ -15,6 +16,10 @@
 #include <Helpers/Logger.hpp>
 #include <fstream>
 #include <Helpers/StringHelpers.hpp>
+#include <Helpers/VersionNumber.hpp>
+
+#define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
+#define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
 
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
@@ -221,6 +226,9 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
     toRet["jumpTransitionEasing"] = jumpTransitionEasing;
     toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
+#ifndef __EMSCRIPTEN__
+    toRet["checkForUpdates"] = updateCheckerData.checkForUpdates;
+#endif
 
     json tablet;
     tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
@@ -270,6 +278,9 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
     j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
     j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);
+#ifndef __EMSCRIPTEN__
+    j.at("checkForUpdates").get_to(updateCheckerData.checkForUpdates);
+#endif
 
     j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
     j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);
@@ -281,6 +292,10 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
 }
 
 void Toolbar::update() {
+#ifndef __EMSCRIPTEN__
+    update_notification_check();
+#endif
+
     if(main.input.key(InputManager::KEY_SAVE).pressed && !optionsMenuOpen && !filePicker.isOpen)
         save_func();
     if(main.input.key(InputManager::KEY_SAVE_AS).pressed && !optionsMenuOpen && !filePicker.isOpen)
@@ -308,6 +323,10 @@ void Toolbar::update() {
             drawing_program_gui();
             if(viewWebVersionWelcome)
                 web_version_welcome();
+#ifndef __EMSCRIPTEN__
+            else if(updateCheckerData.showGui)
+                update_notification_gui();
+#endif
             else if(filePicker.isOpen)
                 file_picker_gui();
             else if(optionsMenuOpen)
@@ -532,7 +551,7 @@ void Toolbar::web_version_welcome() {
         .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
     }) {
         gui.obstructing_window();
-        gui.push_id("connect menu");
+        gui.push_id("web version welcome gui");
         gui.text_label_centered("Welcome to the web version of InfiniPaint!");
         gui.text_label(
 R"(This version contains more known issues than the native version of the app. This includes:
@@ -546,6 +565,78 @@ If you like this app, consider downloading the native version for your system)")
         gui.pop_id();
     }
 }
+
+#ifndef __EMSCRIPTEN__
+void Toolbar::update_notification_check() {
+    if(!updateCheckerData.updateCheckDone) {
+        if(updateCheckerData.checkForUpdates && !updateCheckerData.versionFile)
+            updateCheckerData.versionFile = FileDownloader::download_data_from_url(UPDATE_NOTIFICATION_URL);
+        else if(updateCheckerData.versionFile) {
+            switch(updateCheckerData.versionFile->status) {
+                case FileDownloader::DownloadData::Status::IN_PROGRESS:
+                    break;
+                case FileDownloader::DownloadData::Status::SUCCESS: {
+                    updateCheckerData.updateCheckDone = true;
+                    std::optional<VersionNumber> newVersion = version_str_to_version_numbers(updateCheckerData.versionFile->str);
+                    std::optional<VersionNumber> currentVersion = version_str_to_version_numbers(VERSION_STRING);
+                    if(newVersion.has_value() && currentVersion.has_value()) {
+                        VersionNumber& newV = newVersion.value();
+                        VersionNumber& currentV = currentVersion.value();
+                        updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
+                        Logger::get().log("INFO", "Latest online version is v" + updateCheckerData.newVersionStr);
+                        if(newV > currentV)
+                            updateCheckerData.showGui = true;
+                        else if(newV == currentV)
+                            Logger::get().log("INFO", "Current version is up to date");
+                        else
+                            Logger::get().log("INFO", "Local version has larger version number than the latest online one");
+                    }
+                    else
+                        Logger::get().log("INFO", "Update notification file couldn't be converted to version numbers");
+                    updateCheckerData.versionFile = nullptr;
+                    break;
+                }
+                case FileDownloader::DownloadData::Status::FAILURE:
+                    Logger::get().log("INFO", "Failed to check for updates");
+                    updateCheckerData.updateCheckDone = true;
+                    updateCheckerData.versionFile = nullptr;
+                    break;
+            }
+        }
+    }
+}
+
+void Toolbar::update_notification_gui() {
+    CLAY({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = io->theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
+        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+    }) {
+        gui.obstructing_window();
+        gui.push_id("update notification gui");
+        gui.text_label_centered("Update v" + updateCheckerData.newVersionStr + " available!");
+        if(gui.text_button_wide("download", "Open download page in web browser")) {
+            SDL_OpenURL(UPDATE_DOWNLOAD_URL);
+            updateCheckerData.showGui = false;
+        }
+        if(gui.text_button_wide("ignore forever", "Ignore and don't notify again (can be changed in settings)")) {
+            updateCheckerData.checkForUpdates = false;
+            updateCheckerData.showGui = false;
+        }
+        if(gui.text_button_wide("ignore for now", "Ignore for now"))
+           updateCheckerData.showGui = false;
+        gui.pop_id();
+    }
+}
+#endif
 
 void Toolbar::grid_menu(bool justOpened) {
     gui.push_id("grid menu");
@@ -1282,6 +1373,7 @@ void Toolbar::options_menu() {
                                         main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);
                                         #ifndef __EMSCRIPTEN__
                                             gui.checkbox_field("native file pick", "Use Native File Picker", &useNativeFilePicker);
+                                            gui.checkbox_field("update notifications enable", "Check For Updates", &updateCheckerData.checkForUpdates);
                                         #endif
                                         gui.slider_scalar_field("drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, 3);
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
