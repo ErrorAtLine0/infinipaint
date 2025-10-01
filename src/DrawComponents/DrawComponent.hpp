@@ -71,7 +71,7 @@ class DrawComponent {
         static void server_send_place_many(MainServer& server, std::vector<CollabListType::ObjectInfoPtr>& comps);
         static void server_send_erase(MainServer& server, ServerClientID id);
         static void server_send_erase_set(MainServer& server, const std::unordered_set<ServerClientID>& ids);
-        void server_send_update(MainServer& server);
+        void server_send_update(MainServer& server, bool final);
         static void server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
@@ -88,7 +88,7 @@ class DrawComponent {
         void client_send_place(DrawingProgram& drawP);
         void client_send_erase(DrawingProgram& drawP);
         static void client_send_erase_set(DrawingProgram& drawP, const std::unordered_set<ServerClientID>& ids);
-        void client_send_update(DrawingProgram& drawP);
+        void client_send_update(DrawingProgram& drawP, bool final);
         static void client_send_transform_many(DrawingProgram& drawP, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms);
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;

@@ -71,7 +71,7 @@ void TextBoxTool::tool_update() {
                 return;
             }
             else {
-                controls.intermediateItem->client_send_update(drawP);
+                controls.intermediateItem->client_send_update(drawP, false);
                 controls.intermediateItem->commit_update(drawP);
             }
             break;
@@ -85,7 +85,7 @@ bool TextBoxTool::prevent_undo_or_redo() {
 
 void TextBoxTool::commit() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
-        controls.intermediateItem->client_send_update(drawP);
+        controls.intermediateItem->client_send_update(drawP, true);
         controls.intermediateItem->commit_update(drawP);
     }
     controls.intermediateItem = nullptr; 

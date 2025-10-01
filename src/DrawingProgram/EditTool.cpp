@@ -30,7 +30,7 @@ void EditTool::gui_toolbox() {
             bool editHappened = controls.compEditTool->edit_gui(a);
             if(editHappened) {
                 a->commit_update(drawP);
-                a->client_send_update(drawP);
+                a->client_send_update(drawP, true);
             }
         }
     }
@@ -50,7 +50,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
     if(a && a->collabListInfo.lock()) {
         controls.compEditTool->commit_edit_updates(a, controls.prevData);
         a->commit_update(drawP);
-        a->client_send_update(drawP);
+        a->client_send_update(drawP, true);
     }
     controls.compToEdit.reset();
     controls.pointHandles.clear();
@@ -162,7 +162,7 @@ void EditTool::tool_update() {
                             newPos = cwise_vec_min((*controls.pointDragging->max - Vector2f{controls.pointDragging->minimumDistanceBetweenBoundsAndPoint, controls.pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
                         *controls.pointDragging->p = newPos;
                         a->commit_update(drawP);
-                        a->client_send_update(drawP);
+                        a->client_send_update(drawP, false);
                     }
                     isMovingPoint = true;
                 }

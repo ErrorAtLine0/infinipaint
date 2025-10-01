@@ -141,7 +141,7 @@ void BrushTool::tool_update() {
                 if((!controls.drawingMinimumRelativeToSize && distToPrev >= 10.0) || (controls.drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * DRAW_MINIMUM_LIMIT)) {
                     controls.intermediateItem->d->points.back() = p;
                     controls.addedTemporaryPoint = false;
-                    controls.intermediateItem->client_send_update(drawP);
+                    controls.intermediateItem->client_send_update(drawP, false);
 
                     if(controls.midwayInterpolation) {
                         if(controls.intermediateItem->d->points.size() != 2) // Don't interpolate the first point
@@ -175,7 +175,7 @@ bool BrushTool::prevent_undo_or_redo() {
 void BrushTool::commit_stroke() {
     if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
         if(!controls.intermediateItem->d->points.empty()) {
-            controls.intermediateItem->client_send_update(drawP);
+            controls.intermediateItem->client_send_update(drawP, true);
             controls.intermediateItem->commit_update(drawP);
         }
     }

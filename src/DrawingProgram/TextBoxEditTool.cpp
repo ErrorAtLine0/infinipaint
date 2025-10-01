@@ -42,7 +42,7 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
             a->d = pData;
             a->set_textbox_string(pData.currentText);
             a->d.editing = false;
-            a->client_send_update(drawP);
+            a->client_send_update(drawP, true);
             a->commit_update(drawP);
             return true;
         },
@@ -50,7 +50,7 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
             a->d = cData;
             a->set_textbox_string(cData.currentText);
             a->d.editing = false;
-            a->client_send_update(drawP);
+            a->client_send_update(drawP, true);
             a->commit_update(drawP);
             return true;
         }
@@ -66,7 +66,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     cur.pos = cur.selectionBeginPos = cur.selectionEndPos = textbox.getPosition(p);
     prevData = a->d;
     a->d.editing = true;
-    a->client_send_update(drawP);
+    a->client_send_update(drawP, false);
     editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
     editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});
 }
@@ -202,6 +202,6 @@ void TextBoxEditTool::edit_text(std::function<void()> toRun, const std::shared_p
 }
 
 void TextBoxEditTool::update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox) {
-    textBox->client_send_update(drawP);
+    textBox->client_send_update(drawP, false);
     textBox->commit_update(drawP);
 }

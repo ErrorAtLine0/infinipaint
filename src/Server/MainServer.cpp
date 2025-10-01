@@ -172,13 +172,14 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         DrawComponent::server_send_transform_many(*this, transformsToSend);
     });
     netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        bool isFinalUpdate;
         ServerClientID idToUpdate;
-        message(idToUpdate);
+        message(isFinalUpdate, idToUpdate);
         auto it = data.idToComponentMap.find(idToUpdate);
         if(it != data.idToComponentMap.end()) {
             std::shared_ptr<DrawComponent>& comp = it->second;
             message(*comp);
-            comp->server_send_update(*this);
+            comp->server_send_update(*this, isFinalUpdate);
         }
     });
     netServer->add_recv_callback(SERVER_RESOURCE_INIT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
