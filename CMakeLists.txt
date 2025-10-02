@@ -24,6 +24,7 @@ option(USE_MEMORYSAN "Enable Memory Sanitizer" OFF)
 option(LINK_SKIA_MANUALLY "Link skia not as a package, but as separate libraries for non-Conan builds" OFF)
 option(EMSCRIPTEN_SINGLE_HTML_FILE "Building with emscripten generates a single HTML file" OFF)
 option(TBB_NOT_ONETBB "Use TBB::tbb package and not onetbb::onetbb package from conan" OFF)
+option(CONFIG_NEXT_TO_EXECUTABLE "Place configuration folder next to executable (portable executable)" OFF)
 
 # Setting sources
 set(sources "src/main.cpp"
@@ -248,6 +249,10 @@ target_include_directories(infinipaint PRIVATE "include")
 target_compile_definitions(infinipaint PRIVATE IS_CLIENT)
 if(WIN32)
     target_compile_definitions(infinipaint PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+endif()
+
+if(CONFIG_NEXT_TO_EXECUTABLE)
+    target_compile_definitions(infinipaint PRIVATE CONFIG_NEXT_TO_EXECUTABLE)
 endif()
 
 if(NOT EMSCRIPTEN AND ((GRAPHICS_BACKEND STREQUAL "OpenGL3.3") OR (GRAPHICS_BACKEND STREQUAL "OpenGLES3.0") OR (GRAPHICS_BACKEND STREQUAL "OpenGL2.1")))

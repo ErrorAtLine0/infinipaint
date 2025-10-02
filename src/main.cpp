@@ -333,8 +333,6 @@ const char* emscripten_before_unload(int eventType, const void *reserved, void *
 #endif
 
 void init_logs(MainStruct& mS) {
-    std::string CONFIG_FOLDER_NAME = "infinipaint";
-
     mS.homePath = std::filesystem::current_path();
 #ifdef __EMSCRIPTEN__
     EM_ASM(
@@ -352,7 +350,12 @@ void init_logs(MainStruct& mS) {
     );
     mS.homePath = std::filesystem::path("/");
     mS.configPath = std::filesystem::path("/infinipaint");
+#elif CONFIG_NEXT_TO_EXECUTABLE
+    std::string CONFIG_FOLDER_NAME = "config";
+    std::filesystem::create_directory(CONFIG_FOLDER_NAME);
+    mS.configPath = mS.homePath / CONFIG_FOLDER_NAME;
 #else
+    std::string CONFIG_FOLDER_NAME = "infinipaint";
     std::filesystem::path configHome(sago::getConfigHome());
     std::filesystem::create_directory(configHome);
     mS.configPath = configHome / CONFIG_FOLDER_NAME;
