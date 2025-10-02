@@ -81,6 +81,10 @@ void World::init_client_callbacks() {
             message(canvasScale);
             drawProg.initialize_draw_data(message);
             message(bMan, gridMan);
+            if(!clients.empty()) {
+                auto& [randomClientServerID, randomClient] = *clients.begin();
+                drawData.cam.smooth_move_to(*main.world, randomClient.camCoords, randomClient.windowSize, true);
+            }
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;

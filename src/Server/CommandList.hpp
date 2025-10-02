@@ -57,4 +57,4 @@ enum ClientCommands : MessageCommandType {
 #define VERSION_STRING "0.2.0"
 
 // Arbitrary value. Higher scale up values lead to less scale up events (which can cause stuttering), but leads to larger numbers overall, which can cause a tiny bit of lag and increased memory usage
-#define CANVAS_SCALE_UP_STEP WorldScalar("2")
+#define CANVAS_SCALE_UP_STEP WorldScalar("100000000000000000000000000000000000000000000000000")

@@ -84,7 +84,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
 
         auto& c = clients[client->customID];
         if(c.canvasScale < data.canvasScale)
-            newComp->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+            newComp->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
 
         newComp->server_send_place(*this, placement);
     });
@@ -132,7 +132,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         auto& c = clients[client->customID];
         if(c.canvasScale < data.canvasScale) {
             for(auto& o : objOrderedVector)
-                o->obj->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+                o->obj->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
         }
 
         DrawComponent::server_send_place_many(*this, objOrderedVector);
@@ -167,7 +167,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         auto& c = clients[client->customID];
         if(c.canvasScale < data.canvasScale) {
             for(auto& [id, coord] : transformsToSend)
-                coord.scale_about(WorldVec{0, 0}, FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale), true);
+                coord.scale_about(WorldVec{0, 0}, FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale), true);
         }
         DrawComponent::server_send_transform_many(*this, transformsToSend);
     });
@@ -222,7 +222,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
 
         auto& c = clients[client->customID];
         if(c.canvasScale < data.canvasScale)
-            b.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+            b.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
 
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_NEW_BOOKMARK, name, b);
     });
@@ -240,7 +240,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
 
         auto& c = clients[client->customID];
         if(c.canvasScale < data.canvasScale)
-            g.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
+            g.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
 
         netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_SET_GRID, gID, g);
     });
