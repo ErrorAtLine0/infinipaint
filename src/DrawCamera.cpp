@@ -123,7 +123,7 @@ void DrawCamera::update_main(World& w) {
         }
         isAccurateZooming = newIsAccurateZooming;
         if(isAccurateZooming) {
-            WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.input.mouse.move.y()));
+            WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, -w.main.input.mouse.move.y()));
             c.scale(zoomFactor);
             WorldVec mVec = startZoomCameraPos - startZoomMousePos;
             WorldScalar mX = c.inverseScale / startZoomVal;
