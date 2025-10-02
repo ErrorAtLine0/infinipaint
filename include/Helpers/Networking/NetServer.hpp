@@ -31,7 +31,11 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             };
             std::queue<ReceivedMessage> receivedMessages;
 
-            std::unordered_map<std::string, std::queue<std::shared_ptr<std::stringstream>>> messageQueues;
+            struct OutgoingMessage {
+                MessageOrder order;
+                std::shared_ptr<std::stringstream> ss;
+            };
+            std::unordered_map<std::string, std::queue<OutgoingMessage>> messageQueues;
 
             uint64_t customID;
 
@@ -62,10 +66,10 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
             auto& messageQueue = client->messageQueues[channel];
             if(fragmentedMessage.empty())
-                messageQueue.emplace(ss);
+                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
             else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
                 for(auto& ss2 : fragmentedMessage)
-                    messageQueue.emplace(ss2);
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
             }
         }
         template <typename... Args> void send_items_to_all_clients(const std::string& channel, Args&&... items) {
@@ -91,10 +95,10 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
                 if(client && clientChecker(client)) {
                     auto& messageQueue = client->messageQueues[channel];
                     if(fragmentedMessage.empty())
-                        messageQueue.emplace(ss);
+                        messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
                     else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
                         for(auto& ss2 : fragmentedMessage)
-                            messageQueue.emplace(ss2);
+                            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
                     }
                 }
             }

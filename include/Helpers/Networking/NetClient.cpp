@@ -61,7 +61,7 @@ void NetClient::parse_received_messages() {
         lastMessageTime = std::chrono::steady_clock::now();
 
         size_t messageOrderDisplacement = 0;
-        if(receivedMessage.channel == UNRELIABLE_COMMAND_CHANNEL || receivedMessage.channel == RELIABLE_COMMAND_CHANNEL) {
+        if(NetLibrary::is_ordered_channel(receivedMessage.channel)) {
             MessageOrder messageOrder = NetLibrary::get_message_order(receivedMessage.data);
             if(nextMessageOrderToExpect > messageOrder && receivedMessage.channel == UNRELIABLE_COMMAND_CHANNEL) {
                 receiveQueue->messages.pop();
@@ -95,16 +95,16 @@ void NetClient::parse_received_messages() {
 
 void NetClient::send_queued_messages() {
     for(auto& [channelName, messageQueue] : messageQueues) {
-        bool addMessageOrder = channelName == UNRELIABLE_COMMAND_CHANNEL || channelName == RELIABLE_COMMAND_CHANNEL;
+        bool addMessageOrder = NetLibrary::is_ordered_channel(channelName);
         if(directConnectServer) {
             auto& c = directConnectServer->directConnectClientData;
             std::scoped_lock rMessLock(c->receivedMessagesMutex);
             while(!messageQueue.empty()) {
                 std::string toInsert;
                 if(addMessageOrder)
-                    toInsert = NetLibrary::attach_message_order_and_update(nextMessageOrderToSend, messageQueue.front()->str());
+                    toInsert = NetLibrary::attach_message_order(messageQueue.front().order, messageQueue.front().ss->str());
                 else
-                    toInsert = messageQueue.front()->str();
+                    toInsert = messageQueue.front().ss->str();
                 rtc::binary b((std::byte*)toInsert.c_str(), (std::byte*)(toInsert.c_str() + toInsert.length()));
                 c->receivedMessages.emplace(channelName, b);
                 messageQueue.pop();
@@ -120,14 +120,14 @@ void NetClient::send_queued_messages() {
                                 break;
                         #endif
                         if(addMessageOrder)
-                            send_str_as_bytes(channel, NetLibrary::attach_message_order_and_update(nextMessageOrderToSend, messageQueue.front()->str()));
+                            send_str_as_bytes(channel, NetLibrary::attach_message_order(messageQueue.front().order, messageQueue.front().ss->str()));
                         else
-                            send_str_as_bytes(channel, messageQueue.front()->str());
+                            send_str_as_bytes(channel, messageQueue.front().ss->str());
                         messageQueue.pop();
                     }
                     #ifdef __EMSCRIPTEN__
                         if(channel->bufferedAmount() >= NetLibrary::MAX_BUFFERED_DATA_PER_CHANNEL && channelName == UNRELIABLE_COMMAND_CHANNEL)
-                            messageQueue = std::queue<std::shared_ptr<std::stringstream>>();
+                            messageQueue = std::queue<OutgoingMessage>();
                     #endif
                 }
             }

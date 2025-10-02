@@ -74,9 +74,9 @@ void DrawComponent::server_send_erase_set(MainServer& server, const std::unorder
 
 void DrawComponent::server_send_update(MainServer& server, bool final) {
     if(final)
-        server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, id, *this);
+        server.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, final, id, *this);
     else
-        server.netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, id, *this);
+        server.netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_UPDATE_COMPONENT, final, id, *this);
 }
 
 void DrawComponent::server_send_transform_many(MainServer& server, const std::vector<std::pair<ServerClientID, CoordSpaceHelper>>& transforms) {

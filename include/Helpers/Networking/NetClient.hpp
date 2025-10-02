@@ -28,10 +28,10 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
             std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
             auto& messageQueue = messageQueues[channel];
             if(fragmentedMessage.empty())
-                messageQueue.emplace(ss);
+                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
             else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
                 for(auto& ss2 : fragmentedMessage)
-                    messageQueue.emplace(ss2);
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss2);
             }
         }
         void update();
@@ -45,7 +45,11 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
         void send_queued_messages();
         void send_str_as_bytes(std::shared_ptr<rtc::DataChannel> channel, const std::string& str);
 
-        std::unordered_map<std::string, std::queue<std::shared_ptr<std::stringstream>>> messageQueues;
+        struct OutgoingMessage {
+            MessageOrder order;
+            std::shared_ptr<std::stringstream> ss;
+        };
+        std::unordered_map<std::string, std::queue<OutgoingMessage>> messageQueues;
 
         struct ReceiveQueue {
             std::mutex mut;

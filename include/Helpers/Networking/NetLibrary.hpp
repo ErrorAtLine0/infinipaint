@@ -33,15 +33,18 @@ class NetLibrary {
         static constexpr size_t GLOBALID_LEN = 20;
     private:
         static constexpr size_t FRAGMENT_MESSAGE_STRIDE = 4096;
-        static constexpr size_t MAX_BUFFERED_DATA_PER_CHANNEL = 65500;
+        static constexpr size_t MAX_BUFFERED_DATA_PER_CHANNEL = 64000;
         static constexpr std::chrono::seconds TIMEOUT_DURATION = std::chrono::seconds(30);
+
+        static bool is_ordered_channel(std::string_view channelName);
+        static MessageOrder calc_order_for_queued_message(std::string_view channelName, MessageOrder& mOrder);
 
         static void finish_client_registration(std::shared_ptr<NetClient> client);
 
         static void assign_client_connection_to_server(const std::string& serverLocalID, const std::string& clientLocalID, std::shared_ptr<rtc::PeerConnection> connection);
         static void channel_created_in_client(std::shared_ptr<rtc::DataChannel> channel);
 
-        static std::string attach_message_order_and_update(MessageOrder& order, const std::string& message);
+        static std::string attach_message_order(MessageOrder order, const std::string& message);
         static MessageOrder get_message_order(rtc::binary& message);
 
         struct PeerData {

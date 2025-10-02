@@ -341,13 +341,20 @@ void NetLibrary::channel_created_in_client(std::shared_ptr<rtc::DataChannel> cha
     }
 }
 
-std::string NetLibrary::attach_message_order_and_update(MessageOrder& order, const std::string& message) {
+bool NetLibrary::is_ordered_channel(std::string_view channelName) {
+    return channelName == RELIABLE_COMMAND_CHANNEL || channelName == UNRELIABLE_COMMAND_CHANNEL;
+}
+
+MessageOrder NetLibrary::calc_order_for_queued_message(std::string_view channelName, MessageOrder& mOrder) {
+    return is_ordered_channel(channelName) ? mOrder++ : 0;
+}
+
+std::string NetLibrary::attach_message_order(MessageOrder order, const std::string& message) {
     union {
         MessageOrder o;
         char b[sizeof(MessageOrder)];
     } u;
     u.o = (std::endian::native == std::endian::little) ? std::byteswap(order) : order;
-    order++;
     return std::string(u.b, sizeof(MessageOrder)) + message;
 }
 

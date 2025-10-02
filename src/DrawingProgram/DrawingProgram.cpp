@@ -62,7 +62,8 @@ DrawingProgram::DrawingProgram(World& initWorld):
 void DrawingProgram::init_client_callbacks() {
     world.con.client_add_recv_callback(CLIENT_UPDATE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
         ServerClientID id;
-        message(id);
+        bool isFinal; // Not actually used, but sent for debugging purposes
+        message(isFinal, id);
         auto objPtr = components.get_item_by_id(id);
         if(!objPtr)
             return;
