@@ -253,6 +253,9 @@ endif()
 
 if(CONFIG_NEXT_TO_EXECUTABLE)
     target_compile_definitions(infinipaint PRIVATE CONFIG_NEXT_TO_EXECUTABLE)
+    message("Place config next to executable")
+else()
+    message("Place config in global config folder")
 endif()
 
 if(NOT EMSCRIPTEN AND ((GRAPHICS_BACKEND STREQUAL "OpenGL3.3") OR (GRAPHICS_BACKEND STREQUAL "OpenGLES3.0") OR (GRAPHICS_BACKEND STREQUAL "OpenGL2.1")))
