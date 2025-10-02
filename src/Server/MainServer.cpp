@@ -49,6 +49,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         hsv[1] = Random::get().real_range(0.3f, 0.7f);
         hsv[2] = 1.0;
         newClient.cursorColor = hsv_to_rgb<Vector3f>(hsv);
+        newClient.canvasScale = data.canvasScale;
         message(newClient.displayName, isDirectConnect);
         ensure_display_name_unique(newClient.displayName);
 
