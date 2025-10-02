@@ -187,12 +187,16 @@ elseif(APPLE)
 endif()
 
 if(EMSCRIPTEN)
-    # Debug
-    #target_compile_options(infinipaint PRIVATE -Wall -fdiagnostics-color -sUSE_SDL=0)
-    #target_link_options(infinipaint PRIVATE --emrun -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 --embed-file data -sSINGLE_FILE -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] --shell-file emscripteninstall/debugshell.html -sASSERTIONS -sMAXIMUM_MEMORY=4GB -sNO_DISABLE_EXCEPTION_CATCHING)
-    # Release
-    target_compile_options(infinipaint PRIVATE -Wall -fdiagnostics-color -sUSE_SDL=0 -O3 -include functional)
-    target_link_options(infinipaint PRIVATE --emrun -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 --embed-file data -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -O3 -sSINGLE_FILE -lidbfs.js)
+    if(CMAKE_BUILD_TYPE STREQUAL Debug)
+        target_compile_options(infinipaint PRIVATE -g3)
+        target_link_options(infinipaint PRIVATE -g3)
+    else()
+        target_compile_options(infinipaint PRIVATE -O3)
+        target_link_options(infinipaint PRIVATE -O3)
+    endif()
+
+    target_compile_options(infinipaint PRIVATE -Wall -fdiagnostics-color -sUSE_SDL=0 -include functional -fexceptions)
+    target_link_options(infinipaint PRIVATE --emrun -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 --embed-file data -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -fexceptions)
     if(EMSCRIPTEN_SINGLE_HTML_FILE)
         target_link_options(infinipaint PRIVATE --shell-file emscripteninstall/singlefilereleaseshell.html)
         set(CMAKE_EXECUTABLE_SUFFIX ".html")
