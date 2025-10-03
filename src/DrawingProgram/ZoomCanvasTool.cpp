@@ -32,4 +32,6 @@ void ZoomCanvasTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void ZoomCanvasTool::switch_tool(DrawingProgramToolType newTool) {
+    if(!drawP.is_selection_allowing_tool(newTool))
+        drawP.selection.deselect_all();
 }

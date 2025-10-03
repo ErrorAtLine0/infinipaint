@@ -367,14 +367,18 @@ void DrawingProgram::update() {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
     }
-    else if(is_selection_tool(drawTool->get_type()))
+    else if(is_selection_allowing_tool(drawTool->get_type()))
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set());
     else
         compCache.test_rebuild(components.client_list());
 }
 
-bool DrawingProgram::is_selection_tool(DrawingProgramToolType typeToCheck) {
+bool DrawingProgram::is_actual_selection_tool(DrawingProgramToolType typeToCheck) {
     return typeToCheck == DrawingProgramToolType::RECTSELECT || typeToCheck == DrawingProgramToolType::LASSOSELECT || typeToCheck == DrawingProgramToolType::EDIT;
+}
+
+bool DrawingProgram::is_selection_allowing_tool(DrawingProgramToolType typeToCheck) {
+    return is_actual_selection_tool(typeToCheck) || typeToCheck == DrawingProgramToolType::PAN || typeToCheck == DrawingProgramToolType::ZOOM;
 }
 
 void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool) {
@@ -412,7 +416,7 @@ void DrawingProgram::force_rebuild_cache() {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
     }
-    else if(is_selection_tool(drawTool->get_type()))
+    else if(is_selection_allowing_tool(drawTool->get_type()))
         compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
     else
         compCache.test_rebuild(components.client_list(), true);

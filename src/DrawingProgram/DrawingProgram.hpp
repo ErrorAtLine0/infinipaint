@@ -96,7 +96,8 @@ class DrawingProgram {
         bool temporaryPan = false;
         DrawingProgramToolType toolTypeAfterTempPan;
 
-        bool is_selection_tool(DrawingProgramToolType typeToCheck);
+        bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
+        bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
 
         struct GlobalControls {
             float relativeWidth = 15.0f;
