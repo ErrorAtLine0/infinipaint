@@ -482,7 +482,10 @@ void Editor::paint(SkCanvas* c, PaintOpts options) {
         {
             assert(pos.fParagraphIndex < fLines.size());
             const TextParagraph& l = fLines[pos.fParagraphIndex];
-            c->drawRect(offset(l.fCursorPos[pos.fTextByteIndex], l.fOrigin), selection);
+            SkRect selectionRect = offset(l.fCursorPos[pos.fTextByteIndex], l.fOrigin);
+            if(pos.fParagraphIndex < fLines.size() - 1)
+                selectionRect.fBottom = fLines[pos.fParagraphIndex + 1].fOrigin.y();
+            c->drawRect(selectionRect, selection);
         }
 
         if(fLines.size() > 0)
