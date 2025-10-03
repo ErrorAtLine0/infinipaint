@@ -226,6 +226,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
     toRet["jumpTransitionEasing"] = jumpTransitionEasing;
     toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
+    toRet["flipZoomToolDirection"] = flipZoomToolDirection;
 #ifndef __EMSCRIPTEN__
     toRet["checkForUpdates"] = updateCheckerData.checkForUpdates;
 #endif
@@ -278,6 +279,7 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
     j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
     j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);
+    j.at("flipZoomToolDirection").get_to(flipZoomToolDirection);
 #ifndef __EMSCRIPTEN__
     j.at("checkForUpdates").get_to(updateCheckerData.checkForUpdates);
 #endif
@@ -1381,6 +1383,7 @@ void Toolbar::options_menu() {
                                         #endif
                                         gui.slider_scalar_field("drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, 3);
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
+                                        gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.checkbox_field("changebrushwidthwithspeed", "Change brush size with mouse speed", &velocityAffectsBrushWidth);
                                         gui.pop_id();

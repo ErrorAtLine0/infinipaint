@@ -79,6 +79,8 @@ class Toolbar {
         Vector4f* colorRight = nullptr;
         std::optional<Vector2f> paintPopupLocation;
 
+        bool flipZoomToolDirection = false;
+
         float final_gui_scale();
     private:
         void calculate_final_gui_scale();
