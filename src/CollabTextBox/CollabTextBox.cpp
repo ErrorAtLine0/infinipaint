@@ -411,7 +411,7 @@ TextPosition Editor::move(Movement move, TextPosition pos) const {
             {
                 for(;;) {
                     TextPosition prevCharPos = this->move(Movement::kLeft, pos);
-                    if(prevCharPos != TextPosition{0, 0} && std::isspace(fLines[prevCharPos.fParagraphIndex].fText[prevCharPos.fTextByteIndex]))
+                    if(prevCharPos != TextPosition{0, 0} && prevCharPos.fTextByteIndex != fLines[prevCharPos.fParagraphIndex].fText.size() && std::isspace(fLines[prevCharPos.fParagraphIndex].fText[prevCharPos.fTextByteIndex]))
                         pos = prevCharPos;
                     else
                         break;
@@ -422,25 +422,34 @@ TextPosition Editor::move(Movement move, TextPosition pos) const {
                     break;
                 }
 
-                const std::vector<bool>& words = fLines[pos.fParagraphIndex].fWordBoundaries;
-                assert(words.size() == fLines[pos.fParagraphIndex].fText.size());
-                do {
-                    --pos.fTextByteIndex;
-                } while (pos.fTextByteIndex > 0 && !words[pos.fTextByteIndex]);
+                for(;;) {
+                    TextPosition prevCharPos = this->move(Movement::kLeft, pos);
+                    const std::string& text = fLines[prevCharPos.fParagraphIndex].fText;
+                    if(prevCharPos == TextPosition{0, 0}) {
+                        pos = prevCharPos;
+                        break;
+                    }
+                    else if(prevCharPos.fTextByteIndex != text.size() && !std::isspace(text[prevCharPos.fTextByteIndex]))
+                        pos = prevCharPos;
+                    else
+                        break;
+                }
             }
             break;
         case Movement::kWordRight:
             {
                 const std::string& text = fLines[pos.fParagraphIndex].fText;
-                if (pos.fTextByteIndex == text.size()) {
+                if(pos.fTextByteIndex == text.size())
                     pos = this->move(Movement::kRight, pos);
-                    break;
+                else {
+                    for(;;) {
+                        const std::string& text = fLines[pos.fParagraphIndex].fText;
+                        if(pos.fTextByteIndex != text.size() && !std::isspace(text[pos.fTextByteIndex]))
+                            pos = this->move(Movement::kRight, pos);
+                        else
+                            break;
+                    }
                 }
-                const std::vector<bool>& words = fLines[pos.fParagraphIndex].fWordBoundaries;
-                assert(words.size() == text.size());
-                do {
-                    ++pos.fTextByteIndex;
-                } while (pos.fTextByteIndex < text.size() && !words[pos.fTextByteIndex]);
 
                 for(;;) {
                     const std::string& text = fLines[pos.fParagraphIndex].fText;
