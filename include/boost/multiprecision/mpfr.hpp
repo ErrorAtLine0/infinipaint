@@ -2967,6 +2967,8 @@ inline boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<D
    boost::multiprecision::detail::scoped_default_precision<boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<Digits10, AllocateType>, ExpressionTemplates> > precision_guard(arg);
 
    boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<Digits10, AllocateType>, ExpressionTemplates> result;
+   if (arg < -1)
+      return policies::raise_domain_error("log1p<%1%>(%1%)", "Argument was %1% but must be greater than -1", arg, pol);
    mpfr_log1p(result.backend().data(), arg.backend().data(), GMP_RNDN);
    if (mpfr_inf_p(result.backend().data()))
       return (arg == -1 ? -1 : 1) * policies::raise_overflow_error<boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<Digits10, AllocateType>, ExpressionTemplates> >("log1p<%1%>(%1%)", nullptr, pol);

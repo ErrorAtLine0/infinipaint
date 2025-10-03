@@ -320,6 +320,13 @@ endif()
 
 target_compile_definitions(infinipaint PRIVATE BOOST_MP_STANDALONE EIGEN_MPL2_ONLY)
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-Wdeprecated-declarations HAS_DEPRECATED_DECLARATIONS)
+
+if(HAS_DEPRECATED_DECLARATIONS)
+    target_compile_options(infinipaint PRIVATE -Wno-deprecated-declarations)
+endif()
+
 if(APPLE OR WIN32)
     install(TARGETS infinipaint DESTINATION .)
 

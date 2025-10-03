@@ -262,7 +262,7 @@ struct float128_backend
          int                       v_max = v;
          std::unique_ptr<char[]>   buf2;
          buf2.reset(new char[v + 3]);
-         v = quadmath_snprintf(&buf2[0], v_max + 3, format.c_str(), digits, m_value);
+         v = quadmath_snprintf(&buf2[0], static_cast<std::size_t>(v_max + 3), format.c_str(), digits, m_value);
          if (v >= v_max + 3)
          {
             BOOST_MP_THROW_EXCEPTION(std::runtime_error("Formatting of float128_type failed."));
