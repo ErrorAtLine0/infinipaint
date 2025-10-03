@@ -434,9 +434,6 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vec
             break;
     }
 
-    if(!coordinatesAxisOnBounds)
-        axisOffset.y() += (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
-
     float xAxisYPosRect = boundsCamSpace.max.y() - (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
 
     {
@@ -465,8 +462,15 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vec
         }
     }
 
-    if(!coordinatesAxisOnBounds)
+    std::erase_if(xAxisLabels, [&](auto& l) {
+        return !(l.mainPos > boundsCamSpace.min.x() + yAxisMaxXLength && l.mainPos + l.totalLength < boundsCamSpace.max.x());
+    });
+
+    if(!coordinatesAxisOnBounds) {
         axisOffset.x() += yAxisMaxXLength;
+        if(!xAxisLabels.empty())
+            axisOffset.y() += (exponentExistsInXAxis ? fontHeight * 1.25f : fontHeight);
+    }
 
     SkPaint labelColor(SkColor4f{color.x(), color.y(), color.z(), 1.0f});
 
@@ -478,13 +482,12 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vec
     }
 
     canvas->drawRect(SkRect::MakeXYWH(boundsCamSpace.min.x(), boundsCamSpace.min.y(), yAxisMaxXLength, boundsCamSpace.max.y() - boundsCamSpace.min.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
-    canvas->drawRect(SkRect::MakeLTRB(boundsCamSpace.min.x() + yAxisMaxXLength, xAxisYPosRect, boundsCamSpace.max.x(), boundsCamSpace.max.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
+    if(!xAxisLabels.empty())
+        canvas->drawRect(SkRect::MakeLTRB(boundsCamSpace.min.x() + yAxisMaxXLength, xAxisYPosRect, boundsCamSpace.max.x(), boundsCamSpace.max.y()), SkPaint{color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.9f)});
 
     for(auto& l : xAxisLabels) {
-        if(l.mainPos > boundsCamSpace.min.x() + yAxisMaxXLength && l.mainPos + l.totalLength < boundsCamSpace.max.x()) {
-            canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, l.mainPos, xAxisYPosLabels, f, labelColor);
-            canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, l.exponentPos, xAxisYPosLabels - fontHeight * 0.25f, f, labelColor);
-        }
+        canvas->drawSimpleText(l.mainText.c_str(), l.mainText.length(), SkTextEncoding::kUTF8, l.mainPos, xAxisYPosLabels, f, labelColor);
+        canvas->drawSimpleText(l.exponentText.c_str(), l.exponentText.length(), SkTextEncoding::kUTF8, l.exponentPos, xAxisYPosLabels - fontHeight * 0.25f, f, labelColor);
     }
 
     for(auto& l : yAxisLabels) {
