@@ -139,15 +139,17 @@ void DrawCamera::update_main(World& w) {
             // Ignore the value of scrollAmount, since that leads to problems on macOS
 
             WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
-            if(w.main.input.mouse.scrollAmount.y() < 0.0)
-                zoomFactor = WorldScalar(1) / zoomFactor;
+            if(zoomFactor != WorldScalar(0)) {
+                if(w.main.input.mouse.scrollAmount.y() < 0.0)
+                    zoomFactor = WorldScalar(1) / zoomFactor;
 
-            c.scale(zoomFactor);
-            if(c.inverseScale < WorldScalar(0.0001))
-                c.inverseScale = WorldScalar(0.0001);
-            else {
-                WorldVec mVec = c.pos - w.get_mouse_world_pos();
-                c.pos = w.get_mouse_world_pos() + mVec / zoomFactor;
+                c.scale(zoomFactor);
+                if(c.inverseScale < WorldScalar(0.0001))
+                    c.inverseScale = WorldScalar(0.0001);
+                else {
+                    WorldVec mVec = c.pos - w.get_mouse_world_pos();
+                    c.pos = w.get_mouse_world_pos() + mVec / zoomFactor;
+                }
             }
         }
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.get_accepting_input()) {
