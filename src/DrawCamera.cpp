@@ -125,9 +125,13 @@ void DrawCamera::update_main(World& w) {
         if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
             WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? w.main.input.mouse.move.y() : -w.main.input.mouse.move.y()));
             c.scale(zoomFactor);
-            WorldVec mVec = startZoomCameraPos - startZoomMousePos;
-            WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
-            c.pos = startZoomMousePos + mVec * mX;
+            if(c.inverseScale < WorldScalar(0.0001))
+                c.inverseScale = WorldScalar(0.0001);
+            else {
+                WorldVec mVec = startZoomCameraPos - startZoomMousePos;
+                WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
+                c.pos = startZoomMousePos + mVec * mX;
+            }
         }
         else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN))
             c.pos -= c.dir_from_space(w.main.input.mouse.move);
@@ -139,8 +143,12 @@ void DrawCamera::update_main(World& w) {
                 zoomFactor = WorldScalar(1) / zoomFactor;
 
             c.scale(zoomFactor);
-            WorldVec mVec = c.pos - w.get_mouse_world_pos();
-            c.pos = w.get_mouse_world_pos() + mVec / zoomFactor;
+            if(c.inverseScale < WorldScalar(0.0001))
+                c.inverseScale = WorldScalar(0.0001);
+            else {
+                WorldVec mVec = c.pos - w.get_mouse_world_pos();
+                c.pos = w.get_mouse_world_pos() + mVec / zoomFactor;
+            }
         }
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.get_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
