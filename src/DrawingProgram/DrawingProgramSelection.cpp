@@ -407,8 +407,9 @@ void DrawingProgramSelection::paste_clipboard() {
     WorldVec mousePos = drawP.world.get_mouse_world_pos();
     WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
     WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
+    WorldScalar scaleLimit(0.001);
     for(auto& c : drawP.world.main.clipboard.components) {
-        if((c->coords.inverseScale / scaleMultiplier) < WorldScalar(0.001)) {
+        if((c->coords.inverseScale / scaleMultiplier) < scaleLimit) {
             Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
             return;
         }
