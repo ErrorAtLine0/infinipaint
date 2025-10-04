@@ -201,6 +201,9 @@ void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCac
     for(auto& c : components)
         bvhNode->bounds.include_aabb_in_bounds(c->obj->worldAABB.value());
 
+    //std::cout << "component count: " << components.size() << std::endl;
+    //std::cout << "bvhNode->bounds " << vec_pretty(bvhNode->bounds.min) << " " << vec_pretty(bvhNode->bounds.max) << std::endl;
+
     build_bvh_node_coords_and_resolution(*bvhNode);
 
     if(components.size() < MAXIMUM_COMPONENTS_IN_SINGLE_NODE) {
@@ -250,6 +253,7 @@ void DrawingProgramCache::build_bvh_node_coords_and_resolution(DrawingProgramCac
     #endif
 
     WorldVec cacheBoundDim = node.bounds.dim();
+    //std::cout << "cache bound: " << vec_pretty(cacheBoundDim) << std::endl;
     if(cacheBoundDim.x() > cacheBoundDim.y()) {
         node.resolution.x() = MAX_DIMENSION_RESOLUTION;
         node.resolution.y() = MAX_DIMENSION_RESOLUTION * static_cast<double>(cacheBoundDim.y() / cacheBoundDim.x());

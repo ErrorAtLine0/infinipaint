@@ -122,11 +122,11 @@ void DrawCamera::update_main(World& w) {
             startZoomCameraPos = c.pos;
         }
         isAccurateZooming = newIsAccurateZooming;
-        if(isAccurateZooming) {
+        if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
             WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? w.main.input.mouse.move.y() : -w.main.input.mouse.move.y()));
             c.scale(zoomFactor);
             WorldVec mVec = startZoomCameraPos - startZoomMousePos;
-            WorldScalar mX = c.inverseScale / startZoomVal;
+            WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
             c.pos = startZoomMousePos + mVec * mX;
         }
         else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN))

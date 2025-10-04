@@ -60,6 +60,7 @@ class MainProgram {
             std::vector<std::shared_ptr<DrawComponent>> components;
             std::unordered_map<ServerClientID, ResourceData> resources;
             WorldVec pos;
+            WorldScalar inverseScale;
         } clipboard;
 
         FontData fonts;

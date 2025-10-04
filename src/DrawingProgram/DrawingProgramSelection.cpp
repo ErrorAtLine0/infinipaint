@@ -6,6 +6,7 @@
 #include "Helpers/FixedPoint.hpp"
 #include <Helpers/MathExtras.hpp>
 #include <Helpers/SCollision.hpp>
+#include <Helpers/Logger.hpp>
 #include <Helpers/Parallel.hpp>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
@@ -274,6 +275,7 @@ void DrawingProgramSelection::selection_to_clipboard() {
     for(auto& c : compVecSort)
         clipboard.components.emplace_back(c->obj);
     clipboard.pos = initialSelectionAABB.center();
+    clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
     drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
 }
 
@@ -404,6 +406,14 @@ void DrawingProgramSelection::paste_clipboard() {
     std::vector<std::shared_ptr<DrawComponent>> placedComponents;
     WorldVec mousePos = drawP.world.get_mouse_world_pos();
     WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
+    WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
+    for(auto& c : drawP.world.main.clipboard.components) {
+        if((c->coords.inverseScale / scaleMultiplier) < WorldScalar(0.001)) {
+            Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
+            return;
+        }
+    }
+
     std::unordered_map<ServerClientID, ServerClientID> resourceRemapIDs;
     for(auto& r : clipboard.resources)
         resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
@@ -414,6 +424,10 @@ void DrawingProgramSelection::paste_clipboard() {
     parallel_loop_container(compListInserted, [&](auto& c) {
         c->obj->remap_resource_ids(resourceRemapIDs);
         c->obj->coords.translate(-moveVec);
+        c->obj->coords.scale_about(mousePos, scaleMultiplier);
+        //std::cout << c->obj->coords.inverseScale << std::endl;
+        //if(c->obj->coords.inverseScale == WorldScalar(0))
+        //    throw std::runtime_error("DONE");
         c->obj->commit_transform(drawP, false);
     });
     DrawComponent::client_send_place_many(drawP, compListInserted);
