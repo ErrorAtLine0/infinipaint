@@ -794,7 +794,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
             }
         });
         if(!toDelete.empty())
-            main.world->bMan.remove_bookmark(bookMenu.newName);
+            main.world->bMan.remove_bookmark(toDelete);
         bool bookmarkExists = std::find(main.world->bMan.sorted_names().begin(), main.world->bMan.sorted_names().end(), bookMenu.newName) != main.world->bMan.sorted_names().end();
         gui.left_to_right_line_layout([&]() {
             gui.input_text("bookmark text input", &bookMenu.newName);
