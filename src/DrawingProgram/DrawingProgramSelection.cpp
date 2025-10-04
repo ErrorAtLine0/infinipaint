@@ -273,7 +273,7 @@ void DrawingProgramSelection::selection_to_clipboard() {
     });
     clipboard.components.clear();
     for(auto& c : compVecSort)
-        clipboard.components.emplace_back(c->obj);
+        clipboard.components.emplace_back(c->obj->deep_copy());
     clipboard.pos = initialSelectionAABB.center();
     clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
     drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
