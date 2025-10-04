@@ -41,7 +41,7 @@ void GridModifyTool::gui_toolbox() {
             "Circle Points",
             "Square Points",
             "Square Lines",
-            "Ruled"
+            "Horizontal Lines"
         };
         t.gui.left_to_right_line_layout([&]() {
             t.gui.text_label("Type");

@@ -7,7 +7,7 @@
 sk_sp<SkRuntimeEffect> WorldGrid::circlePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
-sk_sp<SkRuntimeEffect> WorldGrid::ruledEffect;
+sk_sp<SkRuntimeEffect> WorldGrid::horizontalLinesEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
 unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 25;
 
@@ -98,7 +98,7 @@ vec4 main(float2 fragCoord) {
   	return pointColorUnmultiplied * gridColor.a * fin;
 })V";
 
-const char* ruledShaderCode = R"V(
+const char* horizontalLinesShaderCode = R"V(
 uniform vec4 gridColor;
 uniform float mainGridScale;
 uniform vec2 mainGridClosestPoint;
@@ -109,14 +109,14 @@ uniform float divGridScale;
 uniform vec2 divGridClosestPoint;
 uniform float divGridPointSize;
 
-float get_color_val_ruled(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
+float get_color_val_horizontal_lines(float2 fCoord, float gScale, float gPointSize, float2 gClosestPoint) {
     float2 modCoord = gScale > 100000.0 ? (fCoord - gClosestPoint + float2(0.5 * gScale)) : mod(fCoord - gClosestPoint + float2(0.5 * gScale), float2(gScale));
     float2 difToPointCenter = abs(modCoord - float2(0.5 * gScale));
     return 1.0 - smoothstep(gPointSize, gPointSize + 1.0, difToPointCenter.y);
 }
 vec4 main(float2 fragCoord) {
-    float mainGridColor = get_color_val_ruled(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
-    float divGridColor = get_color_val_ruled(fragCoord, divGridScale, divGridPointSize, divGridClosestPoint) * divGridAlphaFrac;
+    float mainGridColor = get_color_val_horizontal_lines(fragCoord, mainGridScale, mainGridPointSize, mainGridClosestPoint);
+    float divGridColor = get_color_val_horizontal_lines(fragCoord, divGridScale, divGridPointSize, divGridClosestPoint) * divGridAlphaFrac;
     float fin = max(mainGridColor, divGridColor);
 
     vec4 pointColorUnmultiplied = vec4(gridColor.rgb, 1.0);
@@ -146,8 +146,8 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const ShaderData& shaderDa
         case GridType::SQUARE_LINES:
             runtimeEffect = squareLinesEffect;
             break;
-        case GridType::RULED:
-            runtimeEffect = ruledEffect;
+        case GridType::HORIZONTAL_LINES:
+            runtimeEffect = horizontalLinesEffect;
             break;
     }
     SkRuntimeShaderBuilder builder(runtimeEffect);
@@ -165,7 +165,7 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const ShaderData& shaderDa
             builder.uniform("divGridPointSize") = shaderData.divGridPointSize;
             break;
         case GridType::SQUARE_LINES:
-        case GridType::RULED:
+        case GridType::HORIZONTAL_LINES:
             builder.uniform("mainGridPointSize") = 0.5f;
             builder.uniform("divGridPointSize") = 0.5f;
             break;
@@ -222,7 +222,7 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         circlePointEffect = compile_effect_shader_init("Circle Point", circlePointShaderCode);
         squarePointEffect = compile_effect_shader_init("Square Point", squarePointShaderCode);
         squareLinesEffect = compile_effect_shader_init("Square Lines", squareLinesShaderCode);
-        ruledEffect = compile_effect_shader_init("Ruled", ruledShaderCode);
+        horizontalLinesEffect = compile_effect_shader_init("Horizontal Lines", horizontalLinesShaderCode);
     }
 
     WorldScalar sizeDetermineSubdivisionsToRemove = (drawData.cam.c.inverseScale / size) * WorldScalar(GRID_UNIT_PIXEL_SIZE);

@@ -20,7 +20,7 @@ class WorldGrid {
             CIRCLE_POINTS = 0,
             SQUARE_POINTS,
             SQUARE_LINES,
-            RULED
+            HORIZONTAL_LINES
         } gridType = GridType::CIRCLE_POINTS;
         WorldScalar size{50000000};
         bool visible = true;
@@ -66,5 +66,5 @@ class WorldGrid {
         static sk_sp<SkRuntimeEffect> circlePointEffect;
         static sk_sp<SkRuntimeEffect> squarePointEffect;
         static sk_sp<SkRuntimeEffect> squareLinesEffect;
-        static sk_sp<SkRuntimeEffect> ruledEffect;
+        static sk_sp<SkRuntimeEffect> horizontalLinesEffect;
 };
