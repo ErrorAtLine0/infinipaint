@@ -40,7 +40,7 @@ class GUIManager {
         Vector2f screen_pos_to_window_pos(const Vector2f& screenPos);
         Vector2f get_mouse_pos();
 
-        void input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void()>& elemUpdate = nullptr);
+        void input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         void text_label_color(const std::string& val, const SkColor4f& color);
         void text_label_size(const std::string& val, float modifier);
@@ -68,8 +68,8 @@ class GUIManager {
         void scroll_bar_area(const std::string& uniqueId, const std::function<void(float scrollContentHeight, float containerHeight, float scrollAmount)>& elemUpdate);
         void scroll_bar_many_entries_area(const std::string& uniqueId, float entryHeight, size_t entryCount, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float scrollAmount)>& elemUpdate = nullptr);
 
-        void input_color_component_255(const std::string& id, float* val, const std::function<void()>& elemUpdate = nullptr);
-        void input_text(const std::string& id, std::string* val, const std::function<void()>& elemUpdate = nullptr);
+        void input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        void input_text(const std::string& id, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         bool radio_button(const std::string& id, bool val, const std::function<void()>& elemUpdate = nullptr);
         bool radio_button_field(const std::string& id, const std::string& name, bool val, const std::function<void()>& elemUpdate = nullptr);
@@ -79,8 +79,8 @@ class GUIManager {
 
         void tab_list(const std::string& id, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate = nullptr);
 
-        void input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void()>& elemUpdate = nullptr);
-        void input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void()>& elemUpdate = nullptr);
+        void input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        void input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
 
@@ -109,13 +109,13 @@ class GUIManager {
             return toRet;
         }
         
-        template <typename T> void input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> void input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             push_id(id);
             insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
             pop_id();
         }
 
-        template <typename T> void input_scalar(const std::string& id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> void input_scalar(const std::string& id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             input_generic<T>(id, val, 
                 [&](const std::string& a) {
                     if(a.empty())
@@ -140,9 +140,9 @@ class GUIManager {
                 }, true, false, elemUpdate);
         }
 
-        void input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void()>& elemUpdate);
+        void input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
 
-        template <typename TContainer, typename T> void input_scalar_fields(const std::string& id, const std::string& name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename TContainer, typename T> void input_scalar_fields(const std::string& id, const std::string& name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             push_id(id);
             left_to_right_line_layout([&]() {
                 text_label(name);
@@ -152,7 +152,7 @@ class GUIManager {
             pop_id();
         }
 
-        template <typename T> void input_color_hex(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> void input_color_hex(const std::string& id, T* val, bool selectAlpha, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             input_generic<T>(id, val, 
                 [&](const std::string& str) {
                     T def = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -201,7 +201,7 @@ class GUIManager {
             pop_id();
         }
 
-        template <typename T> void input_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> void input_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             left_to_right_line_layout([&]() {
                 text_label(name);
                 input_scalar(id, val, min, max, decimalPrecision, elemUpdate);
@@ -212,7 +212,7 @@ class GUIManager {
             push_id(id);
             left_to_right_line_layout([&]() {
                 text_label(name);
-                input_scalar("0", val, min, max, decimalPrecision, elemUpdate);
+                input_scalar("0", val, min, max, decimalPrecision, nullptr);
             });
             slider_scalar("1", val, min, max, elemUpdate);
             pop_id();

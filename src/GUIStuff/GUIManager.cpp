@@ -273,14 +273,14 @@ void GUIManager::checkbox(const std::string& id, bool* val, const std::function<
     pop_id();
 }
 
-void GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void()>& elemUpdate) {
+void GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
     left_to_right_line_layout([&]() {
         text_label(name);
         input_text(id, val, elemUpdate);
     });
 }
 
-void GUIManager::input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void()>& elemUpdate) {
+void GUIManager::input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
     left_to_right_line_layout([&]() {
         text_label(name);
         input_path(id, val, fileTypeRestriction, elemUpdate);
@@ -303,7 +303,7 @@ bool GUIManager::radio_button_field(const std::string& id, const std::string& na
     return toRet;
 }
 
-void GUIManager::input_color_component_255(const std::string& id, float* val, const std::function<void()>& elemUpdate) {
+void GUIManager::input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<float>>()->update(*io, val,
         [&](const std::string& str) {
@@ -322,7 +322,7 @@ void GUIManager::input_color_component_255(const std::string& id, float* val, co
     pop_id();
 }
 
-void GUIManager::input_text(const std::string& id, std::string* val, const std::function<void()>& elemUpdate) {
+void GUIManager::input_text(const std::string& id, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<std::string>>()->update(*io, val,
         [&](const std::string& str) {
@@ -399,7 +399,7 @@ bool GUIManager::text_button_wide(const std::string& id, const std::string& text
     return toRet;
 }
 
-void GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void()>& elemUpdate) {
+void GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<uint8_t>>()->update(*io, val, 
         [&](const std::string& a) {
@@ -419,7 +419,7 @@ void GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, 
     pop_id();
 }
 
-void GUIManager::input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void()>& elemUpdate) {
+void GUIManager::input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<std::filesystem::path>>()->update(*io, val, 
         [&](const std::string& a) {

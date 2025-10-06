@@ -6,7 +6,7 @@ namespace GUIStuff {
 
 template <typename T> class TextBox : public Element {
     public:
-        void update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void()>& elemUpdate) {
+        void update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
             data = newData;
             fromStr = newFromStr;
             toStr = newToStr;
@@ -129,7 +129,7 @@ template <typename T> class TextBox : public Element {
                     force_update_textbox(true);
                 }
                 if(elemUpdate)
-                    elemUpdate();
+                    elemUpdate(selection);
             }
         }
 

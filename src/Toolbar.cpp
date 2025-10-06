@@ -715,8 +715,11 @@ void Toolbar::grid_menu(bool justOpened) {
         if(toDelete != ServerClientID{0, 0})
             main.world->gridMan.remove_grid(toDelete);
         gui.left_to_right_line_layout([&]() {
-            gui.input_text("grid text input", &gridMenu.newName);
-            if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, 25.0f)) {
+            bool addByEnter = false;
+            gui.input_text("grid text input", &gridMenu.newName, [&](GUIStuff::SelectionHelper& s) {
+                addByEnter = s.selected && io->key.enter;
+            });
+            if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, 25.0f) || (addByEnter && !gridMenu.newName.empty())) {
                 main.world->drawProg.modify_grid(main.world->gridMan.add_default_grid(gridMenu.newName));
                 stop_displaying_grid_menu();
             }
@@ -797,9 +800,12 @@ void Toolbar::bookmark_menu(bool justOpened) {
             main.world->bMan.remove_bookmark(toDelete);
         bool bookmarkExists = std::find(main.world->bMan.sorted_names().begin(), main.world->bMan.sorted_names().end(), bookMenu.newName) != main.world->bMan.sorted_names().end();
         gui.left_to_right_line_layout([&]() {
-            gui.input_text("bookmark text input", &bookMenu.newName);
+            bool addByEnter = false;
+            gui.input_text("bookmark text input", &bookMenu.newName, [&](GUIStuff::SelectionHelper& s) {
+                addByEnter = s.selected && io->key.enter;
+            });
             if(!bookmarkExists) {
-                if(gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, 25.0f) && !bookMenu.newName.empty())
+                if((gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, 25.0f) || addByEnter) && !bookMenu.newName.empty())
                     main.world->bMan.add_bookmark(bookMenu.newName);
             }
         });
