@@ -735,6 +735,7 @@ void Toolbar::grid_menu(bool justOpened) {
 void Toolbar::stop_displaying_grid_menu() {
     gridMenu.newName.clear();
     gridMenu.popupOpen = false;
+    gridMenu.gridSelected = ServerClientID{0, 0};
 }
 
 void Toolbar::bookmark_menu(bool justOpened) {
