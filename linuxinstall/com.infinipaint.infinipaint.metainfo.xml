@@ -113,23 +113,27 @@
 
     <screenshots>
         <screenshot type="default">
-            <image>https://infinipaint.com/downloads/flathubscreenshots2/sketches.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots/zoom.png</image>
             <caption>Welcome to InfiniPaint!</caption>
         </screenshot>
         <screenshot>
-            <image>https://infinipaint.com/downloads/flathubscreenshots2/tablets.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots/tablets.png</image>
             <caption>Drawing tablet support</caption>
         </screenshot>
         <screenshot>
-            <image>https://infinipaint.com/downloads/flathubscreenshots2/online.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots/online.png</image>
             <caption>Host online lobbies</caption>
         </screenshot>
         <screenshot>
-            <image>https://infinipaint.com/downloads/flathubscreenshots2/bookmarks.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots/images.png</image>
+            <caption>Place images</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://infinipaint.com/downloads/flathubscreenshots/bookmarks.png</image>
             <caption>Create bookmarks</caption>
         </screenshot>
         <screenshot>
-            <image>https://infinipaint.com/downloads/flathubscreenshots2/rightclick.png</image>
+            <image>https://infinipaint.com/downloads/flathubscreenshots/rightclick.png</image>
             <caption>Right click quick menu</caption>
         </screenshot>
     </screenshots>
