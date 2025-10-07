@@ -17,6 +17,7 @@
 #include <include/encode/SkPngEncoder.h>
 #include <include/encode/SkWebpEncoder.h>
 #include <include/encode/SkJpegEncoder.h>
+#include <fstream>
 #include <include/gpu/GpuTypes.h>
 #include "../FileHelpers.hpp"
 #include <filesystem>
@@ -157,11 +158,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
                 take_screenshot_area_hw(surface, screenshotCanvas, finalImgRawData.data(), controls.imageSize, Vector2i{i, j}, Vector2i{std::min(drawP.world.main.window.size.x(), controls.imageSize.x() - i), std::min(drawP.world.main.window.size.y(), controls.imageSize.y() - j)}, drawP.world.main.window.size, extType != 0 && controls.transparentBackground);
     
         bool success = false;
-    #ifdef __EMSCRIPTEN__
         SkDynamicMemoryWStream out;
-    #else
-        SkFILEWStream out((const char*)filePath.c_str());
-    #endif
     
         switch(extType) {
             case SCREENSHOT_JPG:
@@ -177,11 +174,22 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
                 break;
         }
         if(!success) {
-            Logger::get().log("INFO", "[ScreenshotTool::take_screenshot] Could not encode and write screenshot");
+            Logger::get().log("WORLDFATAL", "[ScreenshotTool::take_screenshot] Could not encode and write screenshot");
             return;
         }
+        out.flush();
 
-    #ifdef __EMSCRIPTEN__
+    #ifndef __EMSCRIPTEN__
+        try {
+            std::ofstream fi(filePath, std::ios::out | std::ios::binary);
+            auto skData = out.detachAsData();
+            fi.write((const char*)skData->bytes(), skData->size());
+            fi.close();
+        }
+        catch(const std::exception& e) {
+            Logger::get().log("WORLDFATAL", std::string("[ScreenshotTool::take_screenshot] Save screenshot error: ") + e.what());
+        }
+    #else
         if(success) {
             std::string mimeTypeArray[] = {"image/jpeg", "image/png", "image/webp"};
             auto skData = out.detachAsData();
@@ -194,17 +202,25 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
     #endif
     }
     else {
-    #ifdef __EMSCRIPTEN__
         SkDynamicMemoryWStream out;
-    #else
-        SkFILEWStream out((const char*)filePath.c_str());
-    #endif
         Vector2f canvasSize{controls.rectX2 - controls.rectX1, controls.rectY2 - controls.rectY1};
         SkRect canvasBounds = SkRect::MakeLTRB(0.0f, 0.0f, canvasSize.x(), canvasSize.y());
         std::unique_ptr<SkCanvas> canvas = SkSVGCanvas::Make(canvasBounds, &out, SkSVGCanvas::kConvertTextToPaths_Flag | SkSVGCanvas::kNoPrettyXML_Flag);
         take_screenshot_svg(canvas.get(), controls.transparentBackground);
         canvas = nullptr; // Ensure that SVG is completely written into the stream
-    #ifdef __EMSCRIPTEN__
+        out.flush();
+
+    #ifndef __EMSCRIPTEN__
+        try {
+            std::ofstream fi(filePath, std::ios::out | std::ios::binary);
+            auto skData = out.detachAsData();
+            fi.write((const char*)skData->bytes(), skData->size());
+            fi.close();
+        }
+        catch(const std::exception& e) {
+            Logger::get().log("WORLDFATAL", std::string("[ScreenshotTool::take_screenshot] Save screenshot error: ") + e.what());
+        }
+    #else
         auto skData = out.detachAsData();
         emscripten_browser_file::download(
             "screenshot.svg",
