@@ -21,7 +21,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: git
-        tag: v0.23.2
+        tag: v0.23.1
         url: https://github.com/paullouisageneau/libdatachannel.git
   - name: oneTBB
     buildsystem: cmake-ninja
