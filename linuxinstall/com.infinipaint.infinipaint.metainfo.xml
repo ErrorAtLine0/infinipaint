@@ -15,6 +15,7 @@
     <url type="homepage">https://infinipaint.com</url>
     <url type="vcs-browser">https://github.com/ErrorAtLine0/infinipaint</url>
     <url type="bugtracker">https://github.com/ErrorAtLine0/infinipaint/issues</url>
+    <url type="donation">https://infinipaint.com/donate.html</url>
     
     <developer id="com.erroratline0">
         <name>ErrorAtLine0</name>
@@ -36,7 +37,7 @@
     
     <description>
         <p>
-            InfiniPaint is a collaborative, infinite space, infinite zoom, canvas note-taking/drawing app. Unlike many other infinite canvas apps, although there is a specific zoom-in level limit, there is no zoom-out limit. This means that this app is very good at things such as drawing sketches of the solar system to scale, or just drawing any massive objects with tiny details. Of course, this app is also perfectly well suited for use as a normal canvas.
+            InfiniPaint is a collaborative, infinite space, infinite zoom, canvas note-taking/drawing app. Unlike many other infinite canvas apps, there is no zoom in or zoom out limit. This means that this app is very good at things such as drawing sketches of the solar system to scale, or just drawing any massive objects with tiny details. Of course, this app is also perfectly well suited for use as a normal canvas.
         </p>
         <p>Features:</p>
         <ul>
@@ -47,8 +48,8 @@
             <li>Right click to open a quick menu</li>
             <li>Place bookmarks on the canvas to jump to later</li>
             <li>Undo/Redo</li>
-            <li>Screenshot tool to export parts of the canvas to a picture</li>
-            <li>Other tools such as: Textbox tool, Rectangle select tool, Lasso select tool, Color picker tool, Square and Ellipse tools</li>
+            <li>Screenshot to export parts of the canvas to a picture (can export to raster formats or SVG)</li>
+            <li>Other tools such as: Textbox tool, Rectangle select tool, Lasso select tool, Color picker tool, Grid tool, Square and Ellipse tools</li>
             <li>Copy and paste objects on the canvas, and between different canvases</li>
             <li>Insert images and files on the canvas</li>
         </ul>
@@ -57,6 +58,22 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.2.0" date="2025-10-07">
+            <description>
+                <p>Major update:</p>
+                <ul>
+                    <li>Can now infinitely zoom into the canvas</li>
+                    <li>Added a grid tool</li>
+                    <li>SVG screenshots can be taken</li>
+                    <li>Added a pan tool, zoom tool, and rotate wheel to the toolbar</li>
+                    <li>Edit tool can now be used to select single objects</li>
+                    <li>Rearranged parts of the UI</li>
+                    <li>Improved performance when drawing brushstrokes with transparency</li>
+                    <li>Network related bugfixes</li>
+                    <li>Clipboard related bugfixes</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.1.0" date="2025-08-08">
             <description>
                 <p>Major update:</p>
