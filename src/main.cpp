@@ -711,6 +711,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_PEN_MOTION: {
+                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 				mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.scale, event->pmotion.y * mS.m->window.scale});
                 break;
