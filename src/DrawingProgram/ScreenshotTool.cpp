@@ -52,6 +52,8 @@ void ScreenshotTool::gui_toolbox() {
     t.gui.push_id("screenshot tool");
     t.gui.text_label_centered("Screenshot");
     auto oldImgSize = controls.imageSize;
+    if(controls.selectionMode == 0)
+        t.gui.text_label("Select an area from the canvas...");
     if(controls.selectionMode != 0 && controls.selectedType != SCREENSHOT_SVG)
         t.gui.input_scalar_fields("Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
     if(controls.selectionMode == 2) {
@@ -474,7 +476,12 @@ bool ScreenshotTool::prevent_undo_or_redo() {
 }
 
 void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(controls.selectionMode >= 1) {
+    if(controls.selectionMode == 0) {
+        SkPaint paint1;
+        paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
+        canvas->drawPaint(paint1);
+    }
+    else {
         canvas->save();
         controls.coords.transform_sk_canvas(canvas, drawData);
         float x1 = std::min(controls.rectX1, controls.rectX2);
