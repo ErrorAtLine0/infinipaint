@@ -53,7 +53,7 @@ void ScreenshotTool::gui_toolbox() {
     t.gui.text_label_centered("Screenshot");
     auto oldImgSize = controls.imageSize;
     if(controls.selectionMode == 0)
-        t.gui.text_label("Select an area from the canvas...");
+        t.gui.text_label("Select an area on the canvas...");
     if(controls.selectionMode != 0 && controls.selectedType != SCREENSHOT_SVG)
         t.gui.input_scalar_fields("Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
     if(controls.selectionMode == 2) {
