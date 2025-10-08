@@ -17,7 +17,7 @@
 
 ## InfiniPaint
 
-InfiniPaint is a **collaborative, infinite** canvas note-taking/drawing app. Unlike many other infinite canvas apps, although there is a specific zoom-in level limit, there is **no zoom-out limit** (at least up until the point your computer runs out of memory). This means that this app is very good at things such as drawing sketches of the solar system to scale, or just drawing any massive objects with tiny details. Of course, even though this is a feature, this app is also perfectly well suited for use as a normal canvas.
+InfiniPaint is a **collaborative, infinite** canvas note-taking/drawing app. Unlike many other infinite canvas apps, **there is no zoom-in or zoom-out limit** (at least up until the point your computer runs out of memory). This means that this app is very good at things such as drawing sketches of the solar system to scale, or just drawing any massive objects with tiny details. Of course, even though this is a feature, this app is also perfectly well suited for use as a normal canvas.
 
 You can try the web version of this app at [infinipaint.com](https://infinipaint.com) (requires a WebGL2 capable browser). The web version was compiled from C++ to Javascript using Emscripten, and may contain some bugs, so if possible, please consider downloading the native version for a better experience.
 
@@ -25,8 +25,10 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 
 ## Screenshots/GIFs
 
+<img alt="Zoom Forever Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/zoomforever.png?raw=true" width="100%"/>
 <img alt="Sketches Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/sketches.png?raw=true" width="100%"/>
 <img alt="Online Collaboration Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/tictactoe.png?raw=true" width="100%"/>
+<img alt="Images Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/images.png?raw=true" width="100%"/>
 <img alt="Right Click Menu Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/rotate.png?raw=true" width="100%"/>
 <img alt="Zoom Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/zoom.gif?raw=true" width="100%"/>
 <img alt="Bookmark Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/bookmarkslideshow.gif?raw=true" width="100%"/>
@@ -46,14 +48,16 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 	- Rotate the canvas
 - Place bookmarks on the canvas to jump to later
 - Undo/Redo
-- PNG, JPG, WEBP export of specific parts of the canvas at any resolution (Screenshot Tool)
+- PNG, JPG, WEBP export of specific parts of the canvas at any resolution (Screenshot)
+- SVG export of specific parts of the canvas (Screenshot)
 - Transform (Move, Scale, Rotate) any object on the canvas (Rectangle Select Tool/Lasso Select Tool)
 - Display Images and animated GIFs on the canvas
 	- Note: May take a lot of memory to store and display images compared to other objects, especially GIFs
 - Hide (or unhide) the UI by pressing Tab
 - Remappable keybinds
 - Create custom UI themes
-- Static square grid at initial zoom level
+- Place infinite square grids on the canvas as guides for drawing
+    - Grids come with various properties, including changing color, and displaying coordinate axes.
 - Other tools: Textbox, Rectangle, Circle, Eye dropper/color picker, Edit/cursor
 - Can copy/paste selected objects (Ctrl-C Ctrl-V). This can also be done between different files, as long as they're open in different tabs in the same window.
-- Any file can be placed on the canvas, and using the edit tool, you can download any file/image on the canvas to your computer. This can be used as a sort of file sharing mechanism in a collaborative canvas (should probably only use this for small files...)
+- Any file can be placed on the canvas. Using the edit tool, you can download any file/image on the canvas to your computer. This can be used as a sort of file sharing mechanism in a collaborative canvas (should probably only use this for small files...)

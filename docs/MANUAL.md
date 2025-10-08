@@ -53,16 +53,20 @@
 	- Once <kbd>LMB</kbd> is released, the objects will be selected
 	- The tool is otherwise identical to the Rectangle Select Tool
 - Edit/Cursor Tool
-	- You can click on any object except a brush stroke to edit it when this tool is selected. Any relevant properties to the object will pop up on the right when you select it
+	- You can click on any object except a brush stroke to select it when this tool is selected
+    - Double click on any object to start editing it. The object's relavant properties will be displayed on the right
 	- If an image/file on the canvas is clicked with this tool, you can download the file to your computer
 - Color Select Tool (Eyedropper)
 	- Click anywhere on the canvas with this tool to copy the color of the cursor's position
-- Screenshot Tool
-	- Hold <kbd>LMB</kbd> and drag the mouse to select an area to take a screenshot of
-	- You can modify the screenshot area after placing it by dragging the cyan circles on the boundaries of the rectangle
-	- Click anywhere outside of the circles to cancel the screenshot
-	- You can change the dimensions of the screenshot, the file format of the screenshot, and later take the screenshot with the menu on the right. The dimensions can be anything, as long as they fit the aspect ratio of the screenshot area (the program will do this automatically), and as long as they aren't bigger than what the file format or your computer's memory allows
-	- Note: Even though creating extremely large images is possible with this tool, I cannot guarantee that the program you use to display the image later won't crash if the image is too large!
+    - You can choose to select either the stroke color, or fill color
+## Screenshots
+- Start taking a screenshot by going to Menu->Take Screenshot
+- Hold <kbd>LMB</kbd> and drag the mouse to select an area to take a screenshot of
+- You can modify the screenshot area after placing it by dragging the cyan circles on the boundaries of the rectangle
+- Click anywhere outside of the circles to cancel the screenshot
+- You can change the dimensions of the screenshot, the file format of the screenshot, and later take the screenshot with the menu on the right. The dimensions can be anything, as long as they fit the aspect ratio of the screenshot area (the program will do this automatically), and as long as they aren't bigger than what the file format or your computer's memory allows
+- You can export to SVG, JPG, PNG, or WEBP. In the case of SVG, grids can't be displayed, and resolution can't be changed.
+- Note: Even though creating extremely large images is possible with this tool, I cannot guarantee that the program you use to display the image later won't crash if the image is too large!
 ## Bookmarks
 - You can open the bookmark window by clicking the bookmark icon on the very top right of the screen
 - Move your camera to the place you want to bookmark, give the bookmark a name in the given textbox, and press the + button next to the textbox
