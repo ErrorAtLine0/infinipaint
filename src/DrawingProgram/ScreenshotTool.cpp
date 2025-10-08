@@ -476,39 +476,41 @@ bool ScreenshotTool::prevent_undo_or_redo() {
 }
 
 void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(controls.selectionMode == 0) {
-        SkPaint paint1;
-        paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
-        canvas->drawPaint(paint1);
-    }
-    else {
-        canvas->save();
-        controls.coords.transform_sk_canvas(canvas, drawData);
-        float x1 = std::min(controls.rectX1, controls.rectX2);
-        float x2 = std::max(controls.rectX1, controls.rectX2);
-        float y1 = std::min(controls.rectY1, controls.rectY2);
-        float y2 = std::max(controls.rectY1, controls.rectY2);
-        SkPoint p1{x1, y1};
-        SkPoint p2{x2, y2};
-        SkPath path1;
-        path1.addRect(p1.x(), p1.y(), p2.x(), p2.y());
-        path1.setFillType(SkPathFillType::kInverseWinding);
-        SkPaint paint1;
-        paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
-        canvas->drawPath(path1, paint1);
+    if(!drawData.main->takingScreenshot) {
+        if(controls.selectionMode == 0) {
+            SkPaint paint1;
+            paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
+            canvas->drawPaint(paint1);
+        }
+        else {
+            canvas->save();
+            controls.coords.transform_sk_canvas(canvas, drawData);
+            float x1 = std::min(controls.rectX1, controls.rectX2);
+            float x2 = std::max(controls.rectX1, controls.rectX2);
+            float y1 = std::min(controls.rectY1, controls.rectY2);
+            float y2 = std::max(controls.rectY1, controls.rectY2);
+            SkPoint p1{x1, y1};
+            SkPoint p2{x2, y2};
+            SkPath path1;
+            path1.addRect(p1.x(), p1.y(), p2.x(), p2.y());
+            path1.setFillType(SkPathFillType::kInverseWinding);
+            SkPaint paint1;
+            paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
+            canvas->drawPath(path1, paint1);
 
-        path1.setFillType(SkPathFillType::kWinding);
-        SkPaint paint2;
-        paint2.setColor4f({0.0f, 0.0f, 0.0f, 0.9f});
-        paint2.setStyle(SkPaint::kStroke_Style);
-        canvas->drawPath(path1, paint2);
+            path1.setFillType(SkPathFillType::kWinding);
+            SkPaint paint2;
+            paint2.setColor4f({0.0f, 0.0f, 0.0f, 0.9f});
+            paint2.setStyle(SkPaint::kStroke_Style);
+            canvas->drawPath(path1, paint2);
 
-        canvas->restore();
+            canvas->restore();
 
-        if(controls.selectionMode == 2) {
-            paint2.setStyle(SkPaint::kFill_Style);
-            for(auto& circ : controls.circles)
-                drawP.draw_drag_circle(canvas, circ.pos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData, 1.0f);
+            if(controls.selectionMode == 2) {
+                paint2.setStyle(SkPaint::kFill_Style);
+                for(auto& circ : controls.circles)
+                    drawP.draw_drag_circle(canvas, circ.pos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData, 1.0f);
+            }
         }
     }
 }
