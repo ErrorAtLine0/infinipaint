@@ -15,6 +15,7 @@
 #include "DrawingProgramSelection.hpp"
 #include "../CollabList.hpp"
 #include "DrawingProgramToolBase.hpp"
+#include <Helpers/FileDownloader.hpp>
 
 class World;
 
@@ -120,6 +121,15 @@ class DrawingProgram {
         std::unique_ptr<DrawingProgramToolBase> drawTool;
 
         uint32_t nextID = 0;
+
+        struct DroppedDownloadingFile {
+            CollabListType::ObjectInfoPtr comp;
+            Vector2f windowSizeWhenDropped;
+            std::shared_ptr<FileDownloader::DownloadData> downData;
+        };
+        std::vector<DroppedDownloadingFile> droppedDownloadingFiles;
+
+        void update_downloading_dropped_files();
         
         friend class EyeDropperTool;
         friend class RectDrawTool;

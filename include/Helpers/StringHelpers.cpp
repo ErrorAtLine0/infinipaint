@@ -1,6 +1,7 @@
 #include "StringHelpers.hpp"
 #include <fstream>
 #include <algorithm>
+#include <regex>
 
 std::vector<std::string> split_string_by_token(std::string str, std::string token) {
     // slightly modified from: https://stackoverflow.com/a/46943631
@@ -65,4 +66,14 @@ std::string read_file_to_string(const std::filesystem::path& filePath) {
     file.close();
 
     return toRet;
+}
+
+bool is_valid_http_url(const std::string& str) {
+    if(str.empty())
+        return false;
+
+    // Regex to check valid URL (from https://stackoverflow.com/a/3809435)
+    std::regex pattern(R"rawstr(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))rawstr");
+
+    return std::regex_match(str, pattern);
 }

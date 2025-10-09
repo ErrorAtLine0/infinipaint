@@ -19,6 +19,8 @@
 #include <include/core/SkSurface.h>
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "Helpers/FileDownloader.hpp"
+#include "Helpers/StringHelpers.hpp"
 #include "LassoSelectTool.hpp"
 #include <Helpers/Logger.hpp>
 #include <Helpers/Parallel.hpp>
@@ -362,6 +364,7 @@ void DrawingProgram::update() {
 
     check_delayed_update_timers();
     check_updateable_components();
+    update_downloading_dropped_files();
 
     if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
@@ -432,8 +435,57 @@ void DrawingProgram::drag_drop_update() {
                 add_file_to_canvas_by_path(droppedItem.droppedData, droppedItem.pos, true);
 #endif
             }
+            else if(!droppedItem.isFile && is_valid_http_url(droppedItem.droppedData)) {
+                auto img(std::make_shared<DrawImage>());
+                img->coords = world.drawData.cam.c;
+                img->commit_update(*this);
+                uint64_t placement = components.client_list().size();
+                auto objAdd = components.client_insert(placement, img);
+                img->client_send_place(*this);
+                add_undo_place_component(objAdd);
+                droppedDownloadingFiles.emplace_back(objAdd, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.droppedData));
+                Vector2f imDim = Vector2f{100.0f, 100.0f};
+                img->d.p1 = droppedItem.pos - imDim;
+                img->d.p2 = droppedItem.pos + imDim;
+                img->d.imageID = {0, 0};
+            }
         }
     }
+}
+
+void DrawingProgram::update_downloading_dropped_files() {
+    std::erase_if(droppedDownloadingFiles, [&](auto& downFile) {
+        switch(downFile.downData->status) {
+            case FileDownloader::DownloadData::Status::SUCCESS: {
+                std::shared_ptr<DrawImage> img = std::static_pointer_cast<DrawImage>(downFile.comp->obj);
+                Vector2f dropPos = (img->d.p1 + img->d.p2) * 0.5f;
+
+                ResourceData newResource;
+                newResource.data = std::make_shared<std::string>(downFile.downData->str);
+                newResource.name = "downloaded file";
+                ServerClientID imageID = world.rMan.add_resource(newResource);
+
+                std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
+                Vector2f imTrueDim = display->get_dimensions();
+
+                float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+                float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+                Vector2f imDim = Vector2f{downFile.windowSizeWhenDropped.x() * imWidth, downFile.windowSizeWhenDropped.x() * imHeight} * display->get_dimension_scale();
+                img->d.p1 = dropPos - imDim;
+                img->d.p2 = dropPos + imDim;
+                img->d.imageID = imageID;
+                img->commit_update(*this);
+                img->client_send_update(*this, true);
+                return true;
+            }
+            case FileDownloader::DownloadData::Status::FAILURE:
+                client_erase_set({downFile.comp});
+                return true;
+            case FileDownloader::DownloadData::Status::IN_PROGRESS:
+                return false;
+        }
+        return false;
+    });
 }
 
 void DrawingProgram::add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread) {

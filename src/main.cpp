@@ -695,7 +695,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             case SDL_EVENT_DROP_TEXT:
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    true,
+                    false,
                     Vector2f{event->drop.x, event->drop.y},
                     event->drop.data
                 });
