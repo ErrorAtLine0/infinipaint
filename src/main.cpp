@@ -687,16 +687,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.text.newInput = event->text.text;
                 break;
             case SDL_EVENT_DROP_FILE:
+                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
                     true,
-                    Vector2f{event->drop.x, event->drop.y},
+                    Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
                     event->drop.data
                 });
                 break;
             case SDL_EVENT_DROP_TEXT:
+                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
                     false,
-                    Vector2f{event->drop.x, event->drop.y},
+                    Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
                     event->drop.data
                 });
                 break;

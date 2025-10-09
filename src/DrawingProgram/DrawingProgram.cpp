@@ -462,23 +462,28 @@ void DrawingProgram::update_downloading_dropped_files() {
 
                 ResourceData newResource;
                 newResource.data = std::make_shared<std::string>(downFile.downData->str);
-                newResource.name = "downloaded file";
                 ServerClientID imageID = world.rMan.add_resource(newResource);
-
                 std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
-                Vector2f imTrueDim = display->get_dimensions();
+                if(display->get_type() == ResourceDisplay::Type::FILE) {
+                    Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
+                    client_erase_set({downFile.comp});
+                }
+                else {
+                    Vector2f imTrueDim = display->get_dimensions();
 
-                float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-                float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-                Vector2f imDim = Vector2f{downFile.windowSizeWhenDropped.x() * imWidth, downFile.windowSizeWhenDropped.x() * imHeight} * display->get_dimension_scale();
-                img->d.p1 = dropPos - imDim;
-                img->d.p2 = dropPos + imDim;
-                img->d.imageID = imageID;
-                img->commit_update(*this);
-                img->client_send_update(*this, true);
+                    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+                    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+                    Vector2f imDim = Vector2f{downFile.windowSizeWhenDropped.x() * imWidth, downFile.windowSizeWhenDropped.x() * imHeight} * display->get_dimension_scale();
+                    img->d.p1 = dropPos - imDim;
+                    img->d.p2 = dropPos + imDim;
+                    img->d.imageID = imageID;
+                    img->commit_update(*this);
+                    img->client_send_update(*this, true);
+                }
                 return true;
             }
             case FileDownloader::DownloadData::Status::FAILURE:
+                Logger::get().log("WORLDFATAL", "Failed to download data from URL");
                 client_erase_set({downFile.comp});
                 return true;
             case FileDownloader::DownloadData::Status::IN_PROGRESS:

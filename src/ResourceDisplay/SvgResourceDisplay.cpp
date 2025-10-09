@@ -50,3 +50,7 @@ Vector2f SvgResourceDisplay::get_dimensions() const {
 float SvgResourceDisplay::get_dimension_scale() const {
     return 0.3f;
 }
+
+ResourceDisplay::Type SvgResourceDisplay::get_type() const {
+    return ResourceDisplay::Type::SVG;
+}

@@ -87,3 +87,7 @@ Vector2f ImageResourceDisplay::get_dimensions() const {
 float ImageResourceDisplay::get_dimension_scale() const {
     return 0.3f;
 }
+
+ResourceDisplay::Type ImageResourceDisplay::get_type() const {
+    return ResourceDisplay::Type::IMAGE;
+}

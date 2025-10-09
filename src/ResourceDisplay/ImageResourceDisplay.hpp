@@ -11,6 +11,7 @@ class ImageResourceDisplay : public ResourceDisplay {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) override;
         virtual Vector2f get_dimensions() const override;
         virtual float get_dimension_scale() const override;
+        virtual Type get_type() const override;
     private:
         struct FrameData {
             sk_sp<SkImage> data;

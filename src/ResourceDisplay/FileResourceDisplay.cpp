@@ -53,3 +53,7 @@ Vector2f FileResourceDisplay::get_dimensions() const {
 float FileResourceDisplay::get_dimension_scale() const {
     return 0.1f;
 }
+
+ResourceDisplay::Type FileResourceDisplay::get_type() const {
+    return ResourceDisplay::Type::FILE;
+}

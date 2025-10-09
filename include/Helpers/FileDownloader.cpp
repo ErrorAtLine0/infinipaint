@@ -26,6 +26,8 @@ std::shared_ptr<FileDownloader::DownloadData> FileDownloader::download_data_from
     h.eHandle = curl_easy_init();
     curl_easy_setopt(h.eHandle, CURLOPT_URL, url.data());
     curl_easy_setopt(h.eHandle, CURLOPT_NOSIGNAL, 1);
+    curl_easy_setopt(h.eHandle, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_ALL);
+    curl_easy_setopt(h.eHandle, CURLOPT_USERAGENT, "InfiniPaint/1.0");
     disable_ssl_verification(h.eHandle);
     save_to_string(h.eHandle, &h.data->str);
 
