@@ -5,6 +5,8 @@
 #include "../SharedTypes.hpp"
 #include "../World.hpp"
 
+#include "../MainProgram.hpp"
+
 #ifndef IS_SERVER
 #include <include/core/SkSamplingOptions.h>
 #include "../DrawCollision.hpp"
@@ -52,6 +54,23 @@ std::shared_ptr<DrawComponent> DrawImage::deep_copy() const {
 void DrawImage::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawImage> newPtr = std::static_pointer_cast<DrawImage>(delayedUpdatePtr);
     d = newPtr->d;
+}
+
+void DrawImage::draw_download_progress_bar(SkCanvas* canvas, const DrawData& drawData, float progress) {
+    if(progress == 0.0f)
+        return;
+    canvas->save();
+    canvas_do_calculated_transform(canvas);
+    SkPaint p;
+    p.setStroke(true);
+    p.setStrokeWidth(10.0f);
+    p.setStrokeCap(SkPaint::kRound_Cap);
+    p.setColor4f(drawData.main->toolbar.io->theme->fillColor5);
+    Vector2f center = (d.p1 + d.p2) * 0.5f;
+
+    const float DOWNLOAD_ARC_RADIUS = 50.0f;
+    canvas->drawArc(SkRect::MakeLTRB(center.x() - DOWNLOAD_ARC_RADIUS, center.y() - DOWNLOAD_ARC_RADIUS, center.x() + DOWNLOAD_ARC_RADIUS, center.y() + DOWNLOAD_ARC_RADIUS), 0.0f, progress * 360.0f, false, p);
+    canvas->restore();
 }
 
 void DrawImage::draw(SkCanvas* canvas, const DrawData& drawData) {

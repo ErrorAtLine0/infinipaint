@@ -93,6 +93,13 @@ void NetClient::parse_received_messages() {
     }
 }
 
+std::pair<uint64_t, uint64_t> NetClient::get_progress_into_fragmented_message(const std::string& channel) {
+    auto& m = pfm[channel];
+    if(m.partialFragmentMessage.empty())
+        return {0, 0};
+    return {m.partialFragmentMessageLoc, m.partialFragmentMessage.size()};
+}
+
 void NetClient::send_queued_messages() {
     for(auto& [channelName, messageQueue] : messageQueues) {
         bool addMessageOrder = NetLibrary::is_ordered_channel(channelName);

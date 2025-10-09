@@ -1,4 +1,5 @@
 #include "ConnectionManager.hpp"
+#include "Helpers/Networking/NetLibrary.hpp"
 #include "Server/CommandList.hpp"
 #include <chrono>
 
@@ -37,4 +38,11 @@ bool ConnectionManager::is_client_disconnected() {
 
 bool ConnectionManager::is_host_disconnected() {
     return localServer && localServer->netServer->is_disconnected();
+}
+
+std::pair<uint64_t, uint64_t> ConnectionManager::client_get_resource_retrieval_progress() {
+    if(client)
+        return client->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
+    else
+        return {0, 0};
 }

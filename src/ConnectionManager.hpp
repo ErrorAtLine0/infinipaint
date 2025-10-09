@@ -14,6 +14,7 @@ class ConnectionManager {
         }
         bool is_client_disconnected();
         bool is_host_disconnected();
+        std::pair<uint64_t, uint64_t> client_get_resource_retrieval_progress();
     private:
         std::shared_ptr<NetClient> client;
         std::unique_ptr<MainServer> localServer;

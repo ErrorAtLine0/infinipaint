@@ -63,8 +63,10 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor);
         else {
             netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, fileDisplayName, clients, data);
-            for(auto& [id, rData] : data.resources)
-                netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE, id, rData);
+            for(auto& [id, rData] : data.resources) {
+                netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, id);
+                netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, rData);
+            }
         }
         clients.emplace(newClient.serverID, newClient);
     });
@@ -190,7 +192,8 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         if(c.pendingResourceData.empty())
             c.pendingResourceID.emplace(newID);
         else {
-            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE, newID, c.pendingResourceData.front());
+            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, newID);
+            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, c.pendingResourceData.front());
             data.resources.emplace(newID, c.pendingResourceData.front());
             c.pendingResourceData.pop();
         }
@@ -204,7 +207,8 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             c.pendingResourceData.back() = std::move(resourceData);
         }
         else {
-            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE, c.pendingResourceID.front(), resourceData);
+            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, c.pendingResourceID.front());
+            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, resourceData);
             data.resources.emplace(c.pendingResourceID.front(), resourceData);
             c.pendingResourceID.pop();
         }

@@ -18,12 +18,26 @@ ResourceManager::ResourceManager(World& initWorld):
 {}
 
 void ResourceManager::init_client_callbacks() {
-    world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE, [&](cereal::PortableBinaryInputArchive& message) {
-        ServerClientID resourceID;
-        message(resourceID);
-        message(resources[resourceID]);
-        std::cout << "Received new resource: " << resourceID.first << " " << resourceID.second << " " << resources[resourceID].data->size() << std::endl;
+    world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
+        message(resourceBeingRetrieved);
     });
+    world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
+        message(resources[resourceBeingRetrieved]);
+        Logger::get().log("INFO", "Received new resource with id: " + std::to_string(resourceBeingRetrieved.first) + " " + std::to_string(resourceBeingRetrieved.second) + " of size " + std::to_string(resources[resourceBeingRetrieved].data->size()));
+        resourceBeingRetrieved = {0, 0};
+    });
+}
+
+ServerClientID ResourceManager::get_resource_being_retrieved() {
+    return resourceBeingRetrieved;
+}
+
+float ResourceManager::get_resource_retrieval_progress() {
+    std::pair<uint64_t, uint64_t> progressBytes = world.con.client_get_resource_retrieval_progress();
+    if(progressBytes.second == 0)
+        return 0.0f;
+    else
+        return static_cast<float>(progressBytes.first) / static_cast<float>(progressBytes.second);
 }
 
 void ResourceManager::update() {

@@ -44,9 +44,13 @@ class ResourceManager {
         std::optional<ResourceData> get_resource(const ServerClientID& id) const;
         ClientPortionID get_max_id(ServerPortionID serverID) const;
         const std::unordered_map<ServerClientID, ResourceData>& resource_list();
+        ServerClientID get_resource_being_retrieved();
+        float get_resource_retrieval_progress();
 
         World& world;
     private:
+        ServerClientID resourceBeingRetrieved = {0, 0};
+
         std::unordered_map<ServerClientID, ResourceData> resources;
         std::unordered_map<ServerClientID, std::shared_ptr<ResourceDisplay>> displays;
 

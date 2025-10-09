@@ -15,6 +15,8 @@ class DrawImage : public DrawComponent {
         virtual void get_used_resources(std::unordered_set<ServerClientID>& v) const override;
         virtual void remap_resource_ids(std::unordered_map<ServerClientID, ServerClientID>& newIDs) override;
 
+        void draw_download_progress_bar(SkCanvas* canvas, const DrawData& drawData, float progress);
+
         // User input data
         struct Data {
             Vector2f p1;

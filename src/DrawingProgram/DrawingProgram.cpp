@@ -707,26 +707,6 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         }
     }
     else {
-        if(!drawData.main->takingScreenshot) {
-            for(auto& droppedDownFile : droppedDownloadingFiles) {
-                if(droppedDownFile.comp->obj->collabListInfo.lock()) {
-                    canvas->save();
-                    auto img = std::static_pointer_cast<DrawImage>(droppedDownFile.comp->obj);
-                    img->canvas_do_calculated_transform(canvas);
-                    SkPaint p;
-                    p.setStroke(true);
-                    p.setStrokeWidth(10.0f);
-                    p.setStrokeCap(SkPaint::kRound_Cap);
-                    p.setColor4f(drawData.main->toolbar.io->theme->fillColor5);
-                    Vector2f center = (img->d.p1 + img->d.p2) * 0.5f;
-
-                    const float DOWNLOAD_ARC_RADIUS = 50.0f;
-                    canvas->drawArc(SkRect::MakeLTRB(center.x() - DOWNLOAD_ARC_RADIUS, center.y() - DOWNLOAD_ARC_RADIUS, center.x() + DOWNLOAD_ARC_RADIUS, center.y() + DOWNLOAD_ARC_RADIUS), 0.0f, droppedDownFile.downData->progress * 360.0f, false, p);
-                    canvas->restore();
-                }
-            }
-        }
-
         canvas->saveLayer(nullptr, nullptr);
             canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             compCache.refresh_all_draw_cache(drawData);
@@ -735,6 +715,22 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
                 selection.draw_components(canvas, drawData);
             canvas->restore();
         canvas->restore();
+
+        if(!drawData.main->takingScreenshot) {
+            for(auto& droppedDownFile : droppedDownloadingFiles) {
+                if(droppedDownFile.comp->obj->collabListInfo.lock())
+                    std::static_pointer_cast<DrawImage>(droppedDownFile.comp->obj)->draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
+            }
+
+            for(auto& c : updateableComponents) {
+                if(c->get_type() == DRAWCOMPONENT_IMAGE) {
+                    auto img = std::static_pointer_cast<DrawImage>(c);
+                    if(img->d.imageID == drawData.main->world->rMan.get_resource_being_retrieved() && img->d.imageID != ServerClientID{0, 0})
+                        img->draw_download_progress_bar(canvas, drawData, drawData.main->world->rMan.get_resource_retrieval_progress());
+                }
+            }
+        }
+
         selection.draw_gui(canvas, drawData);
     }
 
