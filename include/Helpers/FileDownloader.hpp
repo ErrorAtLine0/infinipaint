@@ -20,7 +20,8 @@ class FileDownloader {
                 FAILURE
             };
             std::string str;
-            std::atomic<Status> status;
+            std::atomic<float> progress = 0;
+            std::atomic<Status> status = DownloadData::Status::IN_PROGRESS;
         };
 
         static void init();
@@ -45,11 +46,13 @@ class FileDownloader {
             static std::unique_ptr<std::thread> downloadThread;
 
             static void save_to_string(CURL* curl, std::string* str);
+            static int download_progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
             static void disable_ssl_verification(CURL* curl);
             static size_t write_to_string(void* contents, size_t size, size_t nmemb, void* userp);
             static void add_new_handlers_to_multi();
             static void download_thread_update();
         #else
+            static void download_progress(emscripten_fetch_t *fetch);
             static void download_succeeded(emscripten_fetch_t *fetch);
             static void download_failed(emscripten_fetch_t *fetch);
         #endif

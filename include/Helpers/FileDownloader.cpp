@@ -22,12 +22,14 @@ std::shared_ptr<FileDownloader::DownloadData> FileDownloader::download_data_from
     DownloadHandler h;
     auto downloadData = std::make_shared<DownloadData>();
     h.data = downloadData;
-    h.data->status = DownloadData::Status::IN_PROGRESS;
     h.eHandle = curl_easy_init();
     curl_easy_setopt(h.eHandle, CURLOPT_URL, url.data());
     curl_easy_setopt(h.eHandle, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(h.eHandle, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_ALL);
     curl_easy_setopt(h.eHandle, CURLOPT_USERAGENT, "InfiniPaint/1.0");
+    curl_easy_setopt(h.eHandle, CURLOPT_NOPROGRESS, 0);
+    curl_easy_setopt(h.eHandle, CURLOPT_XFERINFODATA, h.data.get());
+    curl_easy_setopt(h.eHandle, CURLOPT_XFERINFOFUNCTION, download_progress_callback);
     disable_ssl_verification(h.eHandle);
     save_to_string(h.eHandle, &h.data->str);
 
@@ -118,6 +120,15 @@ size_t FileDownloader::write_to_string(void* contents, size_t size, size_t nmemb
     auto str = reinterpret_cast<std::string*>(userp);
     str->append(reinterpret_cast<const char*>(contents), realsize);
     return realsize;
+}
+
+int FileDownloader::download_progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+    DownloadData* downData = static_cast<DownloadData*>(clientp);
+    if(dltotal == 0)
+        downData->progress = 0.0f;
+    else
+        downData->progress = static_cast<float>(dlnow) / static_cast<float>(dltotal);
+    return 0;
 }
 
 void FileDownloader::cleanup() {
