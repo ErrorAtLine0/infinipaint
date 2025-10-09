@@ -391,9 +391,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
     init_logs(mS);
 
-#ifndef __EMSCRIPTEN__
     FileDownloader::init();
-#endif
 
 #ifdef NDEBUG
     try {
@@ -779,9 +777,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
 
     delete (&mS);
 
-#ifndef __EMSCRIPTEN__
     FileDownloader::cleanup();
-#endif
 
     SDL_Quit();
 }

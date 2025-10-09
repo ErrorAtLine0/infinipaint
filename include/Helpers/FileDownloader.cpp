@@ -1,5 +1,6 @@
-#include "FileDownloader.hpp"
 #ifndef __EMSCRIPTEN__
+
+#include "FileDownloader.hpp"
 
 #include <curl/multi.h>
 #include <iostream>

@@ -106,6 +106,7 @@ set(sources "src/main.cpp"
             "include/Helpers/StringHelpers.cpp"
             "include/Helpers/Serializers.cpp"
             "include/Helpers/FileDownloader.cpp"
+            "include/Helpers/FileDownloaderEmscripten.cpp"
             "include/Helpers/VersionNumber.cpp"
         )
 
@@ -197,7 +198,7 @@ if(EMSCRIPTEN)
     endif()
 
     target_compile_options(infinipaint PRIVATE -Wall -fdiagnostics-color -sUSE_SDL=0 -include functional -fexceptions)
-    target_link_options(infinipaint PRIVATE --emrun -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 --embed-file data -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -fexceptions)
+    target_link_options(infinipaint PRIVATE --emrun -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 -sFETCH --embed-file data -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -fexceptions)
     if(EMSCRIPTEN_SINGLE_HTML_FILE)
         target_link_options(infinipaint PRIVATE --shell-file emscripteninstall/singlefilereleaseshell.html)
         set(CMAKE_EXECUTABLE_SUFFIX ".html")
