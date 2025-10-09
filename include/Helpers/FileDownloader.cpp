@@ -52,15 +52,15 @@ void FileDownloader::download_thread_update() {
     int stillRunning = 0;
 
     mHandle = curl_multi_init();
-    add_new_handlers_to_multi();
 
-    do {
+    for(;;) {
         if(shutdownThread)
             break;
 
         CURLMcode mc;
         int numfds;
 
+        add_new_handlers_to_multi();
         mc = curl_multi_perform(mHandle, &stillRunning);
 
         for(;;) {
@@ -88,13 +88,14 @@ void FileDownloader::download_thread_update() {
             std::cout << "curl_multi failed" << std::endl;
             break;
         }
-    } while(stillRunning);
+    }
 
     for(auto& download : currentDownloads) {
         download.data->status = DownloadData::Status::FAILURE;
         curl_multi_remove_handle(mHandle, download.eHandle);
         curl_easy_cleanup(download.eHandle);
     }
+
     currentDownloads.clear();
     curl_multi_cleanup(mHandle);
 }
@@ -121,6 +122,7 @@ void FileDownloader::cleanup() {
         shutdownThread = true;
         downloadThread->join();
     }
+    downloadThread = nullptr;
 
     curl_global_cleanup();
 }
