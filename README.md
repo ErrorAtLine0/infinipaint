@@ -4,7 +4,6 @@
 	<p>
 		<a href="https://infinipaint.com">🔗 Website</a> -
 		<a href="https://infinipaint.com/try.html">🌐 Try in Browser</a> -
-		<a href="https://github.com/ErrorAtLine0/infinipaint/releases/latest">⬇️ Download</a> -
 		<a href="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/MANUAL.md">📕 Usage Manual</a> -
 		<a href="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/BUILDING.md">⚒️ Build Manual</a>
 	</p>
@@ -22,6 +21,13 @@ InfiniPaint is a **collaborative, infinite** canvas note-taking/drawing app. Unl
 You can try the web version of this app at [infinipaint.com](https://infinipaint.com) (requires a WebGL2 capable browser). The web version was compiled from C++ to Javascript using Emscripten, and may contain some bugs, so if possible, please consider downloading the native version for a better experience.
 
 This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another great infinite canvas program.
+
+## Installation
+- **Windows:** Available in [Releases](https://github.com/erroratline0/infinipaint/releases/latest) page. There are two versions:
+  	- Installer version. Recommended, since it automatically associates .infpnt files with InfiniPaint
+  	- Portable version, which is a zip file containing the executable and data files, and stores configuration files next to the executable. Not recommended unless you are specifically looking for a portable version
+- **macOS:** Available in [Releases](https://github.com/erroratline0/infinipaint/releases/latest) page. Only for Apple Silicon
+- **Linux:** It is recommended that you download from [Flathub](https://flathub.org/en/apps/com.infinipaint.infinipaint) to stay updated. Otherwise, there are flatpak bundles available for download on the [Releases](https://github.com/erroratline0/infinipaint/releases/latest) page for both x86_64 and arm64
 
 ## Screenshots/GIFs
 
