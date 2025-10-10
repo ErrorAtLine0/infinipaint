@@ -185,33 +185,22 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             comp->server_send_update(*this, isFinalUpdate);
         }
     });
-    netServer->add_recv_callback(SERVER_RESOURCE_INIT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         auto& c = clients[client->customID];
-        ServerClientID newID;
-        message(newID);
-        if(c.pendingResourceData.empty())
-            c.pendingResourceID.emplace(newID);
-        else {
-            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, newID);
-            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, c.pendingResourceData.front());
-            data.resources.emplace(newID, c.pendingResourceData.front());
-            c.pendingResourceData.pop();
-        }
+        message(c.pendingResourceID);
+        if(c.pendingResourceID == ServerClientID{0, 0})
+            throw std::runtime_error("[MainServer::MainServer] Received a null resource ID");
     });
-    netServer->add_recv_callback(SERVER_RESOURCE_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ResourceData resourceData;
         message(resourceData);
         auto& c = clients[client->customID];
-        if(c.pendingResourceID.empty()) {
-            c.pendingResourceData.emplace();
-            c.pendingResourceData.back() = std::move(resourceData);
-        }
-        else {
-            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, c.pendingResourceID.front());
-            netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, resourceData);
-            data.resources.emplace(c.pendingResourceID.front(), resourceData);
-            c.pendingResourceID.pop();
-        }
+        if(c.pendingResourceID == ServerClientID{0, 0})
+            throw std::runtime_error("[MainServer::MainServer] Received data for a null resource ID");
+        netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, c.pendingResourceID);
+        netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, resourceData);
+        data.resources.emplace(c.pendingResourceID, resourceData);
+        c.pendingResourceID = ServerClientID{0, 0};
     });
     netServer->add_recv_callback(SERVER_CHAT_MESSAGE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::string chatMessage;
@@ -324,6 +313,28 @@ void MainServer::update() {
         netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_KEEP_ALIVE);
         lastKeepAliveSent = std::chrono::steady_clock::now();
     }
+}
+
+std::unordered_map<ServerClientID, NetLibrary::DownloadProgress> MainServer::resource_download_progress() {
+    std::unordered_map<ServerClientID, NetLibrary::DownloadProgress> toRet;
+
+    if(!netServer)
+        return toRet;
+
+    for(auto& [serverID, c]  : clients) {
+        if(c.pendingResourceID != ServerClientID{0, 0}) {
+            const std::vector<std::shared_ptr<NetServer::ClientData>>& clientListInNetServer = netServer->get_client_list();
+            auto netClientIt = std::find_if(clientListInNetServer.begin(), clientListInNetServer.end(), [&serverID](auto& nC) {
+                return nC->customID == serverID;
+            });
+            if(netClientIt != clientListInNetServer.end()) {
+                auto& netClient = *netClientIt;
+                toRet.emplace(c.pendingResourceID, netClient->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL));
+            }
+        }
+    }
+
+    return toRet;
 }
 
 MainServer::~MainServer() {

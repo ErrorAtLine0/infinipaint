@@ -41,7 +41,7 @@ void NetServer::update() {
     clientsToAdd.clear();
 }
 
-bool NetServer::is_disconnected() {
+bool NetServer::is_disconnected() const {
     return isDisconnected;
 }
 
@@ -178,12 +178,26 @@ void NetServer::ClientData::parse_received_messages(NetServer& server) {
     }
 }
 
+NetLibrary::DownloadProgress NetServer::ClientData::get_progress_into_fragmented_message(const std::string& channel) const {
+    auto it = pfm.find(channel);
+    if(it == pfm.end())
+        return {0, 0};
+    auto& m = it->second;
+    if(m.partialFragmentMessage.empty())
+        return {0, 0};
+    return {m.partialFragmentMessageLoc, m.partialFragmentMessage.size()};
+}
+
 void NetServer::add_recv_callback(MessageCommandType commandID, const NetServerRecvCallback& callback) {
     recvCallbacks[commandID] = callback;
 }
 
 void NetServer::add_disconnect_callback(const NetServerDisconnectCallback& callback) {
     disconnectCallback = callback;
+}
+
+const std::vector<std::shared_ptr<NetServer::ClientData>> NetServer::get_client_list() const {
+    return clients;
 }
 
 NetServer::~NetServer() {

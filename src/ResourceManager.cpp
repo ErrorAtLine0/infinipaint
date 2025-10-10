@@ -19,28 +19,48 @@ ResourceManager::ResourceManager(World& initWorld):
 
 void ResourceManager::init_client_callbacks() {
     world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
-        message(resourceBeingRetrieved);
+        message(resourceBeingRetrievedClient);
     });
     world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
-        message(resources[resourceBeingRetrieved]);
-        Logger::get().log("INFO", "Received new resource with id: " + std::to_string(resourceBeingRetrieved.first) + " " + std::to_string(resourceBeingRetrieved.second) + " of size " + std::to_string(resources[resourceBeingRetrieved].data->size()));
-        resourceBeingRetrieved = {0, 0};
+        message(resources[resourceBeingRetrievedClient]);
+        Logger::get().log("INFO", "Received new resource with id: " + std::to_string(resourceBeingRetrievedClient.first) + " " + std::to_string(resourceBeingRetrievedClient.second) + " of size " + std::to_string(resources[resourceBeingRetrievedClient].data->size()));
+        resourceBeingRetrievedClient = {0, 0};
     });
 }
 
-ServerClientID ResourceManager::get_resource_being_retrieved() {
-    return resourceBeingRetrieved;
-}
-
-float ResourceManager::get_resource_retrieval_progress() {
-    std::pair<uint64_t, uint64_t> progressBytes = world.con.client_get_resource_retrieval_progress();
-    if(progressBytes.second == 0)
+float ResourceManager::get_resource_retrieval_progress(const ServerClientID& id) {
+    if(id == ServerClientID{0, 0})
         return 0.0f;
-    else
-        return static_cast<float>(progressBytes.first) / static_cast<float>(progressBytes.second);
+    if(world.con.host_exists() && !world.con.is_host_disconnected()) {
+        auto it = serverDownloadProgress.find(id);
+        if(it == serverDownloadProgress.end())
+            return 0.0f;
+        else {
+            auto& progressBytes = it->second;
+            if(progressBytes.totalBytes == 0)
+                return 0.0f;
+            return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
+        }
+    }
+    else if(world.con.client_exists() && !world.con.is_client_disconnected()) {
+        if(id != resourceBeingRetrievedClient)
+            return 0.0f;
+        else {
+            NetLibrary::DownloadProgress progressBytes = world.con.client_get_resource_retrieval_progress();
+            if(progressBytes.totalBytes == 0)
+                return 0.0f;
+            return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
+        }
+    }
+    return 0.0f;
 }
 
 void ResourceManager::update() {
+    if(!world.con.host_exists() || world.con.is_host_disconnected())
+        serverDownloadProgress.clear();
+    else
+        serverDownloadProgress = world.con.server_get_resource_retrieval_progress();
+
     for(auto& [k, v] : displays)
         v->update(world);
 }
@@ -92,8 +112,8 @@ ServerClientID ResourceManager::add_resource(const ResourceData& resource) {
     }
     ServerClientID newID = world.get_new_id();
     resources[newID] = resource;
-    world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_RESOURCE_INIT, newID);
-    world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_RESOURCE_DATA, resource);
+    world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, newID);
+    world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     return newID;
 }
 

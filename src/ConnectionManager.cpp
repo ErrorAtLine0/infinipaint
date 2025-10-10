@@ -40,9 +40,18 @@ bool ConnectionManager::is_host_disconnected() {
     return localServer && localServer->netServer->is_disconnected();
 }
 
-std::pair<uint64_t, uint64_t> ConnectionManager::client_get_resource_retrieval_progress() {
-    if(client)
-        return client->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
-    else
-        return {0, 0};
+bool ConnectionManager::host_exists() {
+    return localServer != nullptr;
+}
+
+bool ConnectionManager::client_exists() {
+    return client != nullptr;
+}
+
+std::unordered_map<ServerClientID, NetLibrary::DownloadProgress> ConnectionManager::server_get_resource_retrieval_progress() {
+    return localServer->resource_download_progress();
+}
+
+NetLibrary::DownloadProgress ConnectionManager::client_get_resource_retrieval_progress() {
+    return client->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
 }

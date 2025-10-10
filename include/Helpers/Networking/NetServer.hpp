@@ -42,6 +42,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             void send_queued_messages(NetServer& server);
             void parse_received_messages(NetServer& server);
             void send_str_as_bytes(std::shared_ptr<rtc::DataChannel> channel, const std::string& str);
+            NetLibrary::DownloadProgress get_progress_into_fragmented_message(const std::string& channel) const;
 
             std::atomic<bool> setToDisconnect = false;
             std::chrono::steady_clock::time_point lastMessageTime;
@@ -63,13 +64,19 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
                 (m(items), ...);
             }
 
-            std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
             auto& messageQueue = client->messageQueues[channel];
-            if(fragmentedMessage.empty())
-                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
-            else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
-                for(auto& ss2 : fragmentedMessage)
-                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
+            if(channel == UNRELIABLE_COMMAND_CHANNEL) {
+                if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) // Drop unreliable messages that are too big
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+            }
+            else {
+                std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+                if(fragmentedMessage.empty())
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+                else {
+                    for(auto& ss2 : fragmentedMessage)
+                        messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
+                }
             }
         }
         template <typename... Args> void send_items_to_all_clients(const std::string& channel, Args&&... items) {
@@ -89,25 +96,40 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
                 (m(items), ...);
             }
 
-            std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+            if(channel == UNRELIABLE_COMMAND_CHANNEL) {
+                if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) { // Drop unreliable messages that are too big
+                    for(auto& client : clients) {
+                        if(client && clientChecker(client)) {
+                            auto& messageQueue = client->messageQueues[channel];
+                            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+                        }
+                    }
+                }
+            }
+            else {
+                std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
 
-            for(auto& client : clients) {
-                if(client && clientChecker(client)) {
-                    auto& messageQueue = client->messageQueues[channel];
-                    if(fragmentedMessage.empty())
-                        messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
-                    else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
-                        for(auto& ss2 : fragmentedMessage)
-                            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
+                for(auto& client : clients) {
+                    if(client && clientChecker(client)) {
+                        auto& messageQueue = client->messageQueues[channel];
+                        if(fragmentedMessage.empty())
+                            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+                        else {
+                            for(auto& ss2 : fragmentedMessage)
+                                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
+                        }
                     }
                 }
             }
         }
 
-        bool is_disconnected();
+        bool is_disconnected() const;
 
         void add_recv_callback(MessageCommandType commandID, const NetServerRecvCallback& callback);
         void add_disconnect_callback(const NetServerDisconnectCallback& callback);
+
+        const std::vector<std::shared_ptr<ClientData>> get_client_list() const;
+
     private:
         void parse_received_messages();
         void send_queued_messages();
@@ -116,8 +138,6 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
         std::atomic<bool> isDisconnected = false;
 
         std::string localID;
-
-        std::mutex clientList;
 
         std::vector<std::shared_ptr<ClientData>> clients;
 

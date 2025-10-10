@@ -31,8 +31,15 @@ class NetLibrary {
 
         static constexpr size_t LOCALID_LEN = 5;
         static constexpr size_t GLOBALID_LEN = 20;
+
+        struct DownloadProgress {
+            uint64_t downloadedBytes;
+            uint64_t totalBytes;
+        };
+
     private:
-        static constexpr size_t FRAGMENT_MESSAGE_STRIDE = 4096;
+        static constexpr size_t FRAGMENT_MESSAGE_STRIDE = 512;
+        static constexpr size_t MAX_UNRELIABLE_MESSAGE_SIZE = 4096;
         static constexpr size_t MAX_BUFFERED_DATA_PER_CHANNEL = 64000;
         static constexpr std::chrono::seconds TIMEOUT_DURATION = std::chrono::seconds(30);
 

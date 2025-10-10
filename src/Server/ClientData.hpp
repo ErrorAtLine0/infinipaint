@@ -20,8 +20,7 @@ class ClientData {
 
         uint64_t canvasScale = 0;
 
-        std::queue<ResourceData> pendingResourceData;
-        std::queue<ServerClientID> pendingResourceID;
+        ServerClientID pendingResourceID = {0, 0};
 
         template <typename Archive> void serialize(Archive& a) {
             a(camCoords, windowSize, cursorPos, cursorColor, displayName);

@@ -725,8 +725,8 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             for(auto& c : updateableComponents) {
                 if(c->get_type() == DRAWCOMPONENT_IMAGE) {
                     auto img = std::static_pointer_cast<DrawImage>(c);
-                    if(img->d.imageID == drawData.main->world->rMan.get_resource_being_retrieved() && img->d.imageID != ServerClientID{0, 0})
-                        img->draw_download_progress_bar(canvas, drawData, drawData.main->world->rMan.get_resource_retrieval_progress());
+                    float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img->d.imageID);
+                    img->draw_download_progress_bar(canvas, drawData, progress);
                 }
             }
         }

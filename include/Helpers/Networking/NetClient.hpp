@@ -25,19 +25,27 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
                 cereal::PortableBinaryOutputArchive m(*ss);
                 (m(items), ...);
             }
-            std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+
             auto& messageQueue = messageQueues[channel];
-            if(fragmentedMessage.empty())
-                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
-            else if(channel != UNRELIABLE_COMMAND_CHANNEL) { // Just drop unreliable messages that are fragmented
-                for(auto& ss2 : fragmentedMessage)
-                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss2);
+
+            if(channel == UNRELIABLE_COMMAND_CHANNEL) {
+                if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) // Drop unreliable messages that are too big
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
+            }
+            else {
+                std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+                if(fragmentedMessage.empty())
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
+                else {
+                    for(auto& ss2 : fragmentedMessage)
+                        messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss2);
+                }
             }
         }
         void update();
         void add_recv_callback(MessageCommandType commandID, const NetClientRecvCallback& callback);
-        bool is_disconnected();
-        std::pair<uint64_t, uint64_t> get_progress_into_fragmented_message(const std::string& channel);
+        bool is_disconnected() const;
+        NetLibrary::DownloadProgress get_progress_into_fragmented_message(const std::string& channel) const;
 
     private:
         std::string localID;

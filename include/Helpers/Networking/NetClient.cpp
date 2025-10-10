@@ -93,8 +93,11 @@ void NetClient::parse_received_messages() {
     }
 }
 
-std::pair<uint64_t, uint64_t> NetClient::get_progress_into_fragmented_message(const std::string& channel) {
-    auto& m = pfm[channel];
+NetLibrary::DownloadProgress NetClient::get_progress_into_fragmented_message(const std::string& channel) const {
+    auto it = pfm.find(channel);
+    if(it == pfm.end())
+        return {0, 0};
+    auto& m = it->second;
     if(m.partialFragmentMessage.empty())
         return {0, 0};
     return {m.partialFragmentMessageLoc, m.partialFragmentMessage.size()};
@@ -142,7 +145,7 @@ void NetClient::send_queued_messages() {
     }
 }
 
-bool NetClient::is_disconnected() {
+bool NetClient::is_disconnected() const {
     return isDisconnected;
 }
 
