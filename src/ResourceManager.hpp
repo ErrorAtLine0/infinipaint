@@ -41,7 +41,7 @@ class ResourceManager {
         void init_client_callbacks();
         ServerClientID add_resource_file(std::string_view fileName);
         ServerClientID add_resource(const ResourceData& resource);
-        std::shared_ptr<ResourceDisplay> get_display_data(const ServerClientID& fileID);
+        ResourceDisplay* get_display_data(const ServerClientID& fileID);
         std::optional<ResourceData> get_resource(const ServerClientID& id) const;
         ClientPortionID get_max_id(ServerPortionID serverID) const;
         const std::unordered_map<ServerClientID, ResourceData>& resource_list();
@@ -53,7 +53,7 @@ class ResourceManager {
         ServerClientID resourceBeingRetrievedClient = {0, 0};
 
         std::unordered_map<ServerClientID, ResourceData> resources;
-        std::unordered_map<ServerClientID, std::shared_ptr<ResourceDisplay>> displays;
+        std::unordered_map<ServerClientID, std::unique_ptr<ResourceDisplay>> displays;
 
         static std::array<const SkCodecs::Decoder, 5> decoders;
 };

@@ -21,21 +21,52 @@ std::array<const SkCodecs::Decoder, 7> decoders = {
     SkWebpDecoder::Decoder()
 };
 
+void ImageResourceDisplay::load_thread() {
+    for(int i = 0; i < totalFramesToLoad; i++) {
+        if(shutdownLoadThread)
+            break;
+        SkCodec::Options imageOptions;
+        imageOptions.fFrameIndex = i;
+        SkCodec::FrameInfo frameInfo;
+        float frameTime = -1.0f;
+        if(codec->getFrameInfo(i, &frameInfo))
+            frameTime = frameInfo.fDuration;
+        auto decodeResult = codec->getImage(imageInfo, &imageOptions);
+        if(std::get<1>(decodeResult) == SkCodec::Result::kSuccess)
+            frames[i] = {std::get<0>(decodeResult)->withDefaultMipmaps(), frameTime};
+        else {
+            Logger::get().log("WORLDFATAL", "Could not decode image, got error code " + std::to_string(std::get<1>(decodeResult)) + ". Image has dimensions " + std::to_string(imageInfo.width()) + " " + std::to_string(imageInfo.height()));
+            break;
+        }
+        loadedFrames++;
+    }
+    imageRawData = nullptr;
+    codec = nullptr;
+}
+
 bool ImageResourceDisplay::update_draw() const {
     return mustUpdateDraw;
 }
 
 void ImageResourceDisplay::update(World& w) {
     mustUpdateDraw = false;
-    if(frames.size() <= 1)
+    if(!loadedFirstFrame && loadedFrames >= 1) {
+        mustUpdateDraw = true;
+        loadedFirstFrame = true;
+    }
+    if(loadedFrames <= 1)
         return;
     currentTime += w.main.deltaTime * 1000.0;
     for(;;) {
         if(currentTime >= frames[frameIndex].duration) {
             currentTime -= frames[frameIndex].duration;
             frameIndex++;
-            if(frameIndex >= frames.size())
-                frameIndex = 0;
+            if(frameIndex >= loadedFrames) {
+                if(loadedFrames != totalFramesToLoad) // Dont loop the GIF if it's not completely loaded yet
+                    frameIndex--;
+                else
+                    frameIndex = 0;
+            }
             mustUpdateDraw = true;
         }
         else
@@ -46,30 +77,26 @@ void ImageResourceDisplay::update(World& w) {
 }
 
 bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileName, const std::string& fileData) {
-    sk_sp<SkData> newData = SkData::MakeWithoutCopy(fileData.c_str(), fileData.size());
-    std::unique_ptr<SkCodec> codec = SkCodec::MakeFromData(newData, decoders);
+    imageRawData = SkData::MakeWithoutCopy(fileData.c_str(), fileData.size());
+    codec = SkCodec::MakeFromData(imageRawData, decoders);
     mustUpdateDraw = true;
     if(codec) {
         auto origin = codec->getOrigin();
         bool rotate = (origin == kLeftTop_SkEncodedOrigin || origin == kRightTop_SkEncodedOrigin || origin == kRightBottom_SkEncodedOrigin || origin == kLeftBottom_SkEncodedOrigin);
-        int frameCount = codec->getFrameCount();
-        SkImageInfo imageInfo = codec->getInfo();
+        totalFramesToLoad = codec->getFrameCount();
+        imageInfo = codec->getInfo();
+        frames.resize(totalFramesToLoad);
         if(rotate) {
             Logger::get().log("INFO", "Image loaded is rotated, so must rotate dimensions");
             imageInfo = imageInfo.makeDimensions(SkISize(imageInfo.height(), imageInfo.width()));
         }
-        for(int i = 0; i < frameCount; i++) {
-            SkCodec::Options imageOptions;
-            imageOptions.fFrameIndex = i;
-            SkCodec::FrameInfo frameInfo;
-            float frameTime = -1.0f;
-            if(codec->getFrameInfo(i, &frameInfo))
-                frameTime = frameInfo.fDuration;
-            auto decodeResult = codec->getImage(imageInfo, &imageOptions);
-            if(std::get<1>(decodeResult) == SkCodec::Result::kSuccess)
-                frames.emplace_back(std::get<0>(decodeResult)->withDefaultMipmaps(), frameTime);
-            else
-                throw std::runtime_error("Could not decode image, got error code " + std::to_string(std::get<1>(decodeResult)) + ". Image has dimensions " + std::to_string(imageInfo.width()) + " " + std::to_string(imageInfo.height()));
+        try{
+            Logger::get().log("INFO", "[ImageResourceDisplay::load] Failed to create load thread, loading on main thread");
+            loadedFrames = 0;
+            loadThread = std::make_unique<std::thread>(&ImageResourceDisplay::load_thread, this);
+        }
+        catch(...) {
+            load_thread();
         }
         return true;
     }
@@ -77,11 +104,14 @@ bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileNa
 }
 
 void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) {
-    canvas->drawImageRect(frames[frameIndex].data, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});
+    if(loadedFrames == 0)
+        canvas->drawRect(imRect, SkPaint({0.5f, 0.5f, 0.5f, 0.5f}));
+    else
+        canvas->drawImageRect(frames[frameIndex].data, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});
 }
 
 Vector2f ImageResourceDisplay::get_dimensions() const {
-    return {frames.front().data->width(), frames.front().data->height()};
+    return {imageInfo.width(), imageInfo.height()};
 }
 
 float ImageResourceDisplay::get_dimension_scale() const {
@@ -90,4 +120,11 @@ float ImageResourceDisplay::get_dimension_scale() const {
 
 ResourceDisplay::Type ImageResourceDisplay::get_type() const {
     return ResourceDisplay::Type::IMAGE;
+}
+
+ImageResourceDisplay::~ImageResourceDisplay() {
+    if(loadThread) {
+        shutdownLoadThread = true;
+        loadThread->join();
+    }
 }

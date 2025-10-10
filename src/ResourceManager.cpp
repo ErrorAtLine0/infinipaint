@@ -141,31 +141,31 @@ std::optional<ResourceData> ResourceManager::get_resource(const ServerClientID& 
     return it->second;
 }
 
-std::shared_ptr<ResourceDisplay> ResourceManager::get_display_data(const ServerClientID& fileID) {
+ResourceDisplay* ResourceManager::get_display_data(const ServerClientID& fileID) {
     auto loadedDisplayIt = displays.find(fileID);
     if(loadedDisplayIt != displays.end())
-        return loadedDisplayIt->second;
+        return loadedDisplayIt->second.get();
 
     auto resourceIt = resources.find(fileID);
     if(resourceIt == resources.end())
         return nullptr;
 
-    auto imgResource(std::make_shared<ImageResourceDisplay>());
+    auto imgResource(std::make_unique<ImageResourceDisplay>());
     if(imgResource->load(*this, resourceIt->second.name, *resourceIt->second.data)) {
-        displays[fileID] = imgResource;
-        return imgResource;
+        displays.emplace(fileID, std::move(imgResource));
+        return displays[fileID].get();
     }
 
-    auto svgResource(std::make_shared<SvgResourceDisplay>());
+    auto svgResource(std::make_unique<SvgResourceDisplay>());
     if(svgResource->load(*this, resourceIt->second.name, *resourceIt->second.data)) {
-        displays[fileID] = svgResource;
-        return svgResource;
+        displays.emplace(fileID, std::move(svgResource));
+        return displays[fileID].get();
     }
 
-    auto fileResource(std::make_shared<FileResourceDisplay>());
+    auto fileResource(std::make_unique<FileResourceDisplay>());
     fileResource->load(*this, resourceIt->second.name, *resourceIt->second.data);
-    displays[fileID] = fileResource;
-    return fileResource;
+    displays.emplace(fileID, std::move(fileResource));
+    return displays[fileID].get();
 }
 
 const std::unordered_map<ServerClientID, ResourceData>& ResourceManager::resource_list() {

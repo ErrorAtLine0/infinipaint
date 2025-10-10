@@ -81,7 +81,7 @@ void DrawImage::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(drawSetupData.shouldDraw) {
         canvas->save();
         canvas_do_calculated_transform(canvas);
-        std::shared_ptr<ResourceDisplay> display = drawData.rMan->get_display_data(d.imageID);
+        ResourceDisplay* display = drawData.rMan->get_display_data(d.imageID);
         if(display)
             display->draw(canvas, drawData, imRect);
         else
@@ -91,7 +91,7 @@ void DrawImage::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void DrawImage::update(DrawingProgram& drawP) {
-    std::shared_ptr<ResourceDisplay> display = drawP.world.drawData.rMan->get_display_data(d.imageID);
+    ResourceDisplay* display = drawP.world.drawData.rMan->get_display_data(d.imageID);
     if(display) {
         if(display->update_draw() && collabListInfo.lock())
             drawP.invalidate_cache_at_component(collabListInfo.lock());

@@ -463,7 +463,7 @@ void DrawingProgram::update_downloading_dropped_files() {
                 ResourceData newResource;
                 newResource.data = std::make_shared<std::string>(downFile.downData->str);
                 ServerClientID imageID = world.rMan.add_resource(newResource);
-                std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
+                ResourceDisplay* display = world.rMan.get_display_data(imageID);
                 if(display->get_type() == ResourceDisplay::Type::FILE) {
                     Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
                     client_erase_set({downFile.comp});
@@ -504,7 +504,7 @@ void DrawingProgram::add_file_to_canvas_by_path(const std::string& filePath, Vec
 
 void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos) {
     ServerClientID imageID = world.rMan.add_resource_file(filePath);
-    std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
+    ResourceDisplay* display = world.rMan.get_display_data(imageID);
     Vector2f imTrueDim = display->get_dimensions();
     auto img(std::make_shared<DrawImage>());
     img->coords = world.drawData.cam.c;
@@ -527,7 +527,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     newResource.name = fileName;
     ServerClientID imageID = world.rMan.add_resource(newResource);
 
-    std::shared_ptr<ResourceDisplay> display = world.rMan.get_display_data(imageID);
+    ResourceDisplay* display = world.rMan.get_display_data(imageID);
     Vector2f imTrueDim = display->get_dimensions();
     auto img(std::make_shared<DrawImage>());
     img->coords = world.drawData.cam.c;
