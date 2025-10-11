@@ -93,6 +93,8 @@ class DrawingProgram {
 
         DrawingProgramSelection selection;
 
+        std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
+
         bool temporaryEraser = false;
         bool temporaryPan = false;
         DrawingProgramToolType toolTypeAfterTempPan;

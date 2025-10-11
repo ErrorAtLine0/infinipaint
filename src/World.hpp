@@ -85,7 +85,7 @@ class World {
         void undo_with_checks();
         void redo_with_checks();
 
-        ServerPortionID ownID;
+        ServerPortionID ownID = 0;
 
         std::filesystem::path filePath;
         Vector3f userColor = {0.0f, 0.0f, 0.0f};
@@ -95,8 +95,8 @@ class World {
         void set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork = true);
 
         struct CanvasTheme {
-            SkColor4f backColor;
-            SkColor4f toolFrontColor;
+            SkColor4f backColor = {0.0f, 0.0f, 0.0f, 1.0f};
+            SkColor4f toolFrontColor = {1.0f, 1.0f, 1.0f, 1.0f};
         } canvasTheme;
 
         void scale_up(const WorldScalar& scaleUpAmount);

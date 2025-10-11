@@ -16,5 +16,5 @@ class EllipseDrawEditTool : public DrawingProgramEditToolBase {
     private:
         void commit();
 
-        DrawEllipse::Data oldData;
+        std::optional<DrawEllipse::Data> oldData;
 };

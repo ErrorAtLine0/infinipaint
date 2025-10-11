@@ -39,7 +39,7 @@ bool RectDrawEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     }
     t.gui.pop_id();
 
-    bool editHappened = a->d != oldData;
+    bool editHappened = (!oldData.has_value()) || (a->d != oldData);
     oldData = a->d;
     return editHappened;
 }

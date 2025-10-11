@@ -97,14 +97,6 @@ void MainProgram::update() {
 
     deltaTime.update_time_since();
     deltaTime.update_time_point();
-    
-    toolbar.update();
-
-    if(input.key(InputManager::KEY_NOGUI).pressed)
-        drawGui = !drawGui;
-
-    if(input.key(InputManager::KEY_FULLSCREEN).pressed)
-        input.toggleFullscreen = true;
 
     for(auto& w : worlds) {
         if(w == world)
@@ -112,6 +104,14 @@ void MainProgram::update() {
         else
             w->unfocus_update();
     }
+
+    toolbar.update(); // GUI should be setup after the world data has been fully updated for this frame, so that the GUI reflects the current state of the world data
+
+    if(input.key(InputManager::KEY_NOGUI).pressed)
+        drawGui = !drawGui;
+
+    if(input.key(InputManager::KEY_FULLSCREEN).pressed)
+        input.toggleFullscreen = true;
 
     NetLibrary::update();
 

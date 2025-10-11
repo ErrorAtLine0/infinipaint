@@ -40,10 +40,10 @@ bool EllipseDrawEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         });
     }
     t.gui.pop_id();
-    
-    bool editHappened = a->d != oldData;
+ 
+    bool editHappened = (!oldData.has_value()) || (a->d != oldData);
     oldData = a->d;
-    return editHappened;
+    return editHappened;   
 }
 
 void EllipseDrawEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
