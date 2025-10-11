@@ -462,6 +462,7 @@ void DrawingProgram::update_downloading_dropped_files() {
 
                 ResourceData newResource;
                 newResource.data = std::make_shared<std::string>(downFile.downData->str);
+                newResource.name = downFile.downData->fileName;
                 ServerClientID imageID = world.rMan.add_resource(newResource);
                 ResourceDisplay* display = world.rMan.get_display_data(imageID);
                 if(display->get_type() == ResourceDisplay::Type::FILE) {

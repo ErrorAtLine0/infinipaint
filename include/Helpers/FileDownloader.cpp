@@ -1,6 +1,6 @@
-#ifndef __EMSCRIPTEN__
-
 #include "FileDownloader.hpp"
+
+#ifndef __EMSCRIPTEN__
 
 #include <curl/multi.h>
 #include <iostream>
@@ -18,18 +18,23 @@ void FileDownloader::init() {
     shutdownThread = false;
 }
 
-std::shared_ptr<FileDownloader::DownloadData> FileDownloader::download_data_from_url(std::string_view url) {
+std::shared_ptr<FileDownloader::DownloadData> FileDownloader::download_data_from_url(const std::string& url) {
     DownloadHandler h;
     auto downloadData = std::make_shared<DownloadData>();
     h.data = downloadData;
     h.eHandle = curl_easy_init();
+    downloadData->fileName = get_potential_filename_from_url(url);
+
     curl_easy_setopt(h.eHandle, CURLOPT_URL, url.data());
     curl_easy_setopt(h.eHandle, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(h.eHandle, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_ALL);
-    curl_easy_setopt(h.eHandle, CURLOPT_USERAGENT, "InfiniPaint/1.0");
+    curl_easy_setopt(h.eHandle, CURLOPT_USERAGENT, "InfiniPaint/0.2.0");
     curl_easy_setopt(h.eHandle, CURLOPT_NOPROGRESS, 0);
     curl_easy_setopt(h.eHandle, CURLOPT_XFERINFODATA, h.data.get());
     curl_easy_setopt(h.eHandle, CURLOPT_XFERINFOFUNCTION, download_progress_callback);
+    curl_easy_setopt(h.eHandle, CURLOPT_HEADERFUNCTION, header_callback);
+    curl_easy_setopt(h.eHandle, CURLOPT_HEADERDATA, h.data.get());
+
     disable_ssl_verification(h.eHandle);
     save_to_string(h.eHandle, &h.data->str);
 
@@ -131,6 +136,16 @@ int FileDownloader::download_progress_callback(void *clientp, curl_off_t dltotal
     return 0;
 }
 
+size_t FileDownloader::header_callback(char* buffer, size_t size, size_t nitems, void* userData) {
+    DownloadData* downData = static_cast<DownloadData*>(userData);
+    std::string header(buffer, nitems);
+    std::string newFilename = parse_http_headers_for_filename(header);
+    if(!newFilename.empty())
+        downData->fileName = newFilename;
+
+    return nitems;
+}
+
 void FileDownloader::cleanup() {
     if(downloadThread && downloadThread->joinable()) {
         shutdownThread = true;
@@ -142,3 +157,35 @@ void FileDownloader::cleanup() {
 }
 
 #endif
+
+std::string FileDownloader::parse_http_headers_for_filename(std::string header) {
+    std::string headerLower = header;
+    std::transform(headerLower.begin(), headerLower.end(), headerLower.begin(), ::tolower);
+    std::string contentDispositionHeader = "content-disposition:";
+    size_t contentDispositionLoc = headerLower.find(contentDispositionHeader);
+    if(contentDispositionLoc < headerLower.size()) {
+        size_t newlineHeaderLoc = std::min<size_t>(headerLower.find('\n', contentDispositionLoc), headerLower.size());
+
+        std::string filenameHeader = "filename=";
+        size_t filenameLoc = headerLower.find(filenameHeader, contentDispositionLoc);
+        if(filenameLoc < newlineHeaderLoc) {
+            header = header.substr(filenameLoc + filenameHeader.size());
+            header = header.substr(0, header.find(';'));
+            if(header.size() >= 2 && header.front() == '"' && header.back() == '"') {
+                header.erase(0, 1);
+                header.pop_back();
+            }
+            return header;
+        }
+    }
+
+    return "";
+}
+
+std::string FileDownloader::get_potential_filename_from_url(const std::string& url) {
+    size_t fileNameStart = url.find_last_of('/');
+    if(fileNameStart >= (url.size() - 1))
+        return "";
+    std::string fileName = url.substr(fileNameStart + 1);
+    return fileName.substr(0, fileName.find('?'));
+}

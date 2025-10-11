@@ -7,6 +7,7 @@
 #include "../ResourceManager.hpp"
 #include "DrawingProgramEditToolBase.hpp"
 #include <fstream>
+
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
@@ -31,6 +32,8 @@ bool ImageEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     t.gui.push_id("edit tool image");
     t.gui.text_label_centered("File Properties");
     std::optional<ResourceData> resourceData = drawP.world.rMan.get_resource(a->d.imageID);
+
+
     if(resourceData) {
         t.gui.text_label("Name: " + resourceData->name);
         if(t.gui.text_button_wide("file download", "Download file")) {

@@ -20,12 +20,13 @@ class FileDownloader {
                 FAILURE
             };
             std::string str;
+            std::string fileName;
             std::atomic<float> progress = 0;
             std::atomic<Status> status = DownloadData::Status::IN_PROGRESS;
         };
 
         static void init();
-        static std::shared_ptr<DownloadData> download_data_from_url(std::string_view url);
+        static std::shared_ptr<DownloadData> download_data_from_url(const std::string& url);
         static void cleanup();
     private:
 
@@ -38,6 +39,9 @@ class FileDownloader {
 
         static std::vector<DownloadHandler> currentDownloads;
 
+        static std::string get_potential_filename_from_url(const std::string& url);
+        static std::string parse_http_headers_for_filename(std::string header);
+
         #ifndef __EMSCRIPTEN__
             static std::mutex newDownloadsMutex;
             static std::vector<DownloadHandler> newDownloads;
@@ -47,6 +51,7 @@ class FileDownloader {
 
             static void save_to_string(CURL* curl, std::string* str);
             static int download_progress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+            static size_t header_callback(char* buffer, size_t size, size_t nitems, void* userData);
             static void disable_ssl_verification(CURL* curl);
             static size_t write_to_string(void* contents, size_t size, size_t nmemb, void* userp);
             static void add_new_handlers_to_multi();
