@@ -7,18 +7,33 @@ class CompressorRecipe(ConanFile):
 
     def requirements(self):
         if self.settings.os == "Emscripten":
-            self.requires("skia/134.20250327.0", options = {
+            self.requires("skia/142.20250802.0", options = {
                 "enable_svg": True,
+                "use_freetype":True,
+                "use_system_freetype":True,
                 "use_expat": True,
                 "use_harfbuzz": True,
-                "use_system_harfbuzz":False,
-                "use_conan_harfbuzz":True,
-                "enable_skshaper": True
+                "use_system_harfbuzz":True,
+                "use_conan_harfbuzz":False,
+                "enable_skshaper": True,
+                "canvaskit_enable_alias_font" : False,
+                "canvaskit_enable_canvas_bindings" : False,
+                "canvaskit_enable_effects_deserialization" : False,
+                "canvaskit_enable_embedded_font" : False,
+                "canvaskit_enable_font" : False,
+                "canvaskit_enable_matrix_helper" : False,
+                "canvaskit_enable_pathops" : False,
+                "canvaskit_enable_rt_shader" : False,
+                "canvaskit_enable_skp_serialization" : False,
+                "canvaskit_enable_sksl_trace" : False,
+                "canvaskit_enable_webgpu " : False,
+                "canvaskit_enable_webgl " : False
             })
         else:
-            self.requires("skia/134.20250327.0", options = {
+            self.requires("skia/142.20250802.0", options = {
                 "use_system_expat":False,
-                "use_system_freetype":False,
+                "use_system_freetype":True,
+                "use_conan_freetype":True,
                 "use_system_harfbuzz":False,
                 "use_system_icu":False,
                 "use_system_libjpeg_turbo":False,

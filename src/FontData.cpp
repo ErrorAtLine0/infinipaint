@@ -5,9 +5,29 @@
 #include <include/core/SkTextBlob.h>
 #include <iostream>
 
-FontData::FontData():
-    mgr(SkFontMgr_New_Custom_Empty())
+#ifdef __EMSCRIPTEN__
+#elif _WIN32
+    #include <include/ports/SkTypeface_win.h>
+#elif __APPLE__
+    #include <include/ports/SkFontMgr_mac_ct.h>
+#elif __linux__
+    #include <include/ports/SkFontMgr_fontconfig.h>
+    #include <include/ports/SkFontScanner_FreeType.h>
+#endif
+
+FontData::FontData()
 {
+#ifdef __EMSCRIPTEN__
+    mgr = SkFontMgr_New_Custom_Empty();
+#elif _WIN32
+    mgr = SkFontMgr_New_GDI();
+#elif __APPLE__
+    mgr = SkFontMgr_New_Custom_Empty();
+#elif __linux__
+    mgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
+#else
+    mgr = SkFontMgr_New_Custom_Empty();
+#endif
     map["Roboto"] = mgr->makeFromFile("data/fonts/Roboto-variable.ttf");
 }
 

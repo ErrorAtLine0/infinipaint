@@ -413,10 +413,10 @@ class ConanSkia(ConanFile):
         self.tool_requires("ninja/[>=1.11.0]")
 
         if self.options.use_harfbuzz and self.options.use_system_harfbuzz and self.options.use_conan_harfbuzz:
-            self.requires("harfbuzz/[>=7.3.0]", options = {"with_subset":True, "with_glib":False})
+            self.requires("harfbuzz/10.4.0", options = {"with_subset":True, "with_glib":False})
 
         if self.options.use_freetype and self.options.use_system_freetype and self.options.use_conan_freetype:
-            self.requires("freetype/[>=2.11.1]")
+            self.requires("freetype/2.13.2")
 
         if self.options.use_fontconfig and self.options.use_conan_fontconfig:
             self.requires("fontconfig/[>=2.14.2]")
@@ -629,6 +629,27 @@ class ConanSkia(ConanFile):
         else:
             raise RuntimeError("Unexpected settings.arch")
 
+        if self.settings.os == "Emscripten":
+            args += f"skia_canvaskit_enable_alias_font = false\n"
+            args += f"skia_canvaskit_enable_bidi = false\n"
+            args += f"skia_canvaskit_enable_canvas_bindings = false\n"
+            args += f"skia_canvaskit_enable_debugger = false\n"
+            args += f"skia_canvaskit_enable_effects_deserialization = false\n"
+            args += f"skia_canvaskit_enable_embedded_font = false\n"
+            args += f"skia_canvaskit_enable_font = false\n"
+            args += f"skia_canvaskit_enable_matrix_helper = false\n"
+            args += f"skia_canvaskit_enable_paragraph = false\n"
+            args += f"skia_canvaskit_enable_pathops = false\n"
+            args += f"skia_canvaskit_enable_rt_shader = false\n"
+            args += f"skia_canvaskit_enable_skp_serialization = false\n"
+            args += f"skia_canvaskit_enable_sksl_trace = false\n"
+            args += f"skia_canvaskit_enable_webgl = false\n"
+            args += f"skia_canvaskit_enable_webgpu = false\n"
+            args += f"skia_canvaskit_force_tracing = false\n"
+            args += f"skia_canvaskit_include_viewer = false\n"
+            args += f"skia_canvaskit_legacy_draw_vertices_blend_mode = false\n"
+            args += f"skia_canvaskit_profile_build = false\n"
+
         cflags = []
         ldflags = []
         asmflags = []
@@ -706,7 +727,7 @@ class ConanSkia(ConanFile):
         else:
             self.run("bin/gn gen out/conan")
 
-        self.run("ninja -C out/conan")
+        self.run("ninja -C out/conan skia svg skresources skcms skunicode skshaper skparagraph skottie bentleyottmann")
 
     def package(self):
         source_folder_include = join(self.source_folder, "include")
@@ -751,9 +772,9 @@ class ConanSkia(ConanFile):
             else:
                 copy(self, "*.a", build_folder_out, package_folder_lib, keep_path=False)
 
-        if self.settings.os == "Emscripten" and self.settings.arch == "wasm":
-            copy(self, "canvaskit.js", build_folder_out, package_folder_bin)
-            copy(self, "canvaskit.wasm", build_folder_out, package_folder_bin)
+        #if self.settings.os == "Emscripten" and self.settings.arch == "wasm":
+        #    copy(self, "canvaskit.js", build_folder_out, package_folder_bin)
+        #    copy(self, "canvaskit.wasm", build_folder_out, package_folder_bin)
 
     def package_info(self):
 
@@ -897,9 +918,10 @@ class ConanSkia(ConanFile):
             self.cpp_info.system_libs += ["gdi32"]
 
         # component: pathkit
+        # not in program's build, so it'll be commented for now
 
-        if not self.options.shared:
-            self.cpp_info.libs += ["pathkit"]
+        #if not self.options.shared:
+        #    self.cpp_info.libs += ["pathkit"]
 
         # component: skcms
 
@@ -963,5 +985,3 @@ class ConanSkia(ConanFile):
         if self.options.enable_bentleyottmann:
             if not (self.settings.os == "Windows" and self.options.shared):
                 self.cpp_info.libs += ["bentleyottmann"]
-
-        

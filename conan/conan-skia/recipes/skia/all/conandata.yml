@@ -35,3 +35,23 @@ sources:
     url:
       - "https://github.com/google/skia/archive/aefbd9403c1b3032ad4cd0281ef312ed262c7125.zip"
     sha256: "e10c67a96828b9f36364e2459cdee3e3b381a3875ff78db2b30e7b6fe69509bb"
+  "135.20250607.0":
+    url:
+      - "https://github.com/google/skia/archive/f90131803d70d767bca2f86f12494d55662bdc60.zip"
+    sha256: "20a1bc403f4a7f6571e59da851e341d5674b644b8b6ae6b9758d3684d3044f62"
+  "136.20250607.0":
+    url:
+      - "https://github.com/google/skia/archive/bcce46ca33b67cc302dd53927a63013b8f53bf73.zip"
+    sha256: "f053d8c6fd8a1a9560b81f973ddddd2ffdba50e6a0318a4207a659acc5ebe156"
+  "137.20250607.0":
+    url:
+      - "https://github.com/google/skia/archive/0dfd95a49aed617f242c8b06dd5b255d1cb07776.zip"
+    sha256: "34869886d3ec540cb05c330b34a471126b24131aaff0aa69a1bf4f161d4211f3"
+  "138.20250708.0":
+    url:
+      - "https://github.com/google/skia/archive/a46d5732d9fca93eaec23e502e2eef814b707e6b.zip"
+    sha256: "ef11a5de527636d4278a38b110f290679bf4169653720ff68cb4e148027fec22"
+  "142.20250802.0":
+    url:
+      - "https://github.com/google/skia/archive/f4ed99d2443962782cf5f8b4dd27179f131e7cbe.zip"
+    sha256: "2e00dcdb54942c1da7b2f6cfd9fef8c4899115206d940931f6c040bac08b6b79"

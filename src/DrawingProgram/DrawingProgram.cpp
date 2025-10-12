@@ -408,7 +408,7 @@ bool DrawingProgram::prevent_undo_or_redo() {
 SkPaint DrawingProgram::select_tool_line_paint() {
     SkScalar intervals[] = {10, 5};
     float timeSinceEpoch = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    sk_sp<SkPathEffect> lassoLineDashEffect = SkDashPathEffect::Make(intervals, 2, -std::fmod(timeSinceEpoch * 50, 15));
+    sk_sp<SkPathEffect> lassoLineDashEffect = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 50, 15));
 
     SkPaint selectLinePaint;
     selectLinePaint.setStyle(SkPaint::kStroke_Style);

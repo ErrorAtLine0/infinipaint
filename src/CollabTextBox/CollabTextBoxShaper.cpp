@@ -209,7 +209,7 @@ static void set_character_bounds(void* context,
     SkFontMetrics metrics;
     font.getMetrics(&metrics);
     std::unique_ptr<float[]> advances(new float[glyphCount]);
-    font.getWidths(glyphs, glyphCount, advances.get());
+    font.getWidths({glyphs, glyphCount}, {advances.get(), glyphCount});
 
     // Loop over each cluster in this run.
     size_t clusterStart = 0;
@@ -284,10 +284,11 @@ CollabTextBox::ShapeResult CollabTextBox::shape(const char* utf8Text,
     std::unique_ptr<SkShaper> shaper = nullptr;
     auto unicode = get_unicode_2();
 
-    // USING PRIMITIVE WRAPPER INSTEAD OF HARFBUZZ, BECAUSE HARFBUZZ HAS ISSUES ON EMSCRIPTEN
-    // WE MIGHT HAVE TO CHANGE THIS BACK LATER WHEN THERE'S A FIX
-    //shaper = SkShapers::HB::ShaperDrivenWrapper(unicode, fontMgr);
-    shaper = SkShaper::MakePrimitive();
+//#ifdef __EMSCRIPTEN__
+    //shaper = SkShaper::MakePrimitive();
+//#else
+    shaper = SkShapers::HB::ShaperDrivenWrapper(unicode, fontMgr);
+//#endif
 
     SkASSERT(shaper);
 
