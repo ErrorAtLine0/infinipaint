@@ -684,7 +684,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.backend_key_up_update(event->key);
                 break;
             case SDL_EVENT_TEXT_INPUT:
-                mS.m->input.text.newInput = event->text.text;
+                mS.m->input.text.newInput += event->text.text;
                 break;
             case SDL_EVENT_DROP_FILE:
                 mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
