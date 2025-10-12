@@ -45,7 +45,7 @@ modules:
         - -DSDL_X11=ON
     sources:
       - type: git
-        tag: release-3.2.20
+        tag: release-3.2.24
         url: https://github.com/libsdl-org/SDL.git
   - name: Skia
     buildsystem: simple

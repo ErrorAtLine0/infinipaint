@@ -1,0 +1,4 @@
+sources:
+  "2.32.10":
+    url: "https://www.libsdl.org/release/SDL2-2.32.10.tar.gz"
+    sha256: "5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165"
