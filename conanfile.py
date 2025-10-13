@@ -42,12 +42,10 @@ class CompressorRecipe(ConanFile):
                 "use_system_zlib":False,
                 "enable_svg": True,
                 "enable_skottie": False,
-                "enable_skunicode": True,
-                "enable_skshaper": True,
                 "enable_bentleyottmann": True, # for some reason, setting this to False results in an error when creating the project
-                "enable_skparagraph": True,
                 "use_freetype": True
             })
+            self.requires("harfbuzz/11.4.1")
 
         
         if self.settings.os == "Linux":
@@ -70,7 +68,8 @@ class CompressorRecipe(ConanFile):
             self.requires("libcurl/8.15.0")
             
         self.requires("zstd/1.5.7")
-        
+        self.requires("icu/[>=77.1]")
+
     def build_requirements(self):
         self.tool_requires("cmake/3.27.0")
 

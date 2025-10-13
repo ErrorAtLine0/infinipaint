@@ -101,6 +101,9 @@ extern "C"
 }
 #endif
 
+#include <unicode/udata.h>
+std::string icudt; // Put this in global space so that it isn't deallocated
+
 struct MainStruct {
     #ifdef USE_BACKEND_VULKAN
         #ifdef USE_SKIA_BACKEND_GANESH
@@ -384,6 +387,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     for(int i = 1; i < argc; i++)
         listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(argv[i])));
     switch_cwd();
+
+    UErrorCode uerr = U_ZERO_ERROR;
+    icudt = read_file_to_string("data/icudt77l.dat");
+    udata_setCommonData((void *) icudt.data(), &uerr);
+    if (U_FAILURE(uerr)) {
+        char* errorName = const_cast<char*>(u_errorName(uerr));
+        std::cout << errorName << std::endl;
+    }
 
     MainStruct* mSPtr = new MainStruct;
     *appstate = (void*)mSPtr;

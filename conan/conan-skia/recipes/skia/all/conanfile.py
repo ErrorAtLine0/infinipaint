@@ -425,10 +425,7 @@ class ConanSkia(ConanFile):
             self.requires("expat/[>=2.5.0]")
 
         if self.options.use_icu and self.options.use_system_icu and self.options.use_conan_icu:
-            if self.settings.os == "Emscripten":
-                self.requires("icu/[74.2]")
-            else:
-                self.requires("icu/[>=74.2]")
+            self.requires("icu/[>=77.1]")
 
         if (self.options.use_libpng_decode or self.options.use_libpng_encode) and self.options.use_system_libpng and self.options.use_conan_libpng:
             self.requires("libpng/[>=1.6.32]")

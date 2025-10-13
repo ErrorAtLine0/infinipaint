@@ -2,6 +2,8 @@
 
 #include "CollabTextBoxShaper.hpp"
 
+#include <iostream>
+
 #include <include/core/SkFont.h>
 #include <include/core/SkFontMetrics.h>
 #include <include/core/SkFontMgr.h>
@@ -12,15 +14,12 @@
 #include <include/core/SkTextBlob.h>
 #include <include/core/SkTypes.h>
 #include <include/private/base/SkTFitsIn.h>
-#include <modules/skshaper/include/SkShaper.h>
 #include <src/base/SkUTF.h>
 
+#include <modules/skshaper/include/SkShaper.h>
 #include <modules/skshaper/include/SkShaper_harfbuzz.h>
 #include <modules/skshaper/include/SkShaper_skunicode.h>
-#include <modules/skshaper/include/SkShaper_factory.h>
-
 #include <modules/skunicode/include/SkUnicode.h>
-
 #include <modules/skunicode/include/SkUnicode_icu.h>
 
 #include <cfloat>
@@ -288,8 +287,7 @@ CollabTextBox::ShapeResult CollabTextBox::shape(const char* utf8Text,
     //shaper = SkShaper::MakePrimitive();
 //#else
     shaper = SkShapers::HB::ShaperDrivenWrapper(unicode, fontMgr);
-//#endif
-
+//#endi
     SkASSERT(shaper);
 
     float height = font.getSpacing();
