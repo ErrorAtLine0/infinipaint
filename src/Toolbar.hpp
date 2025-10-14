@@ -38,6 +38,7 @@ class Toolbar {
         std::string chatMessageInput;
 
         Toolbar(MainProgram& initMain);
+        void initialize_io_before_update();
         void update();
         void draw(SkCanvas* canvas);
         void color_selector_left(Vector4f* color);

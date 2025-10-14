@@ -98,6 +98,8 @@ void MainProgram::update() {
     deltaTime.update_time_since();
     deltaTime.update_time_point();
 
+    toolbar.initialize_io_before_update();
+
     for(auto& w : worlds) {
         if(w == world)
             w->focus_update();
