@@ -102,11 +102,9 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
         }
     }
     else if(drawP.controls.leftClickHeld) {
-        if(collidesWithBox) {
-            Vector2f textSelectPos = a->get_mouse_pos(drawP);
-            SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
-            cur.pos = cur.selectionBeginPos = textbox.getPosition(p);
-        }
+        Vector2f textSelectPos = a->get_mouse_pos(drawP);
+        SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
+        cur.pos = cur.selectionBeginPos = textbox.getPosition(p);
         movedHeld = true;
     }
 
