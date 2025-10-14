@@ -23,6 +23,7 @@ class GUIManager {
         struct ElementContainer {
             std::unique_ptr<Element> elem;
             std::any extra;
+            bool isUsedThisFrame;
         };
 
         GUIManager();
@@ -90,15 +91,19 @@ class GUIManager {
 
         template <typename NewElement> NewElement* insert_element() {
             auto [it, inserted] = elements.emplace(idStack, ElementContainer());
+            auto& container = it->second;
             if(inserted)
-                it->second = {std::make_unique<NewElement>()};
+                container = {std::make_unique<NewElement>()};
+            container.isUsedThisFrame = true;
             return static_cast<NewElement*>(it->second.elem.get());
         }
 
         template <typename T> T& insert_any(const T& def) {
             auto [it, inserted] = elements.emplace(idStack, ElementContainer());
+            auto& container = it->second;
             if(inserted)
                 it->second.extra = def;
+            container.isUsedThisFrame = true;
             return std::any_cast<T&>(it->second.extra);
         }
 

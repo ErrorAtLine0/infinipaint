@@ -36,6 +36,9 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
 }
 
 void GUIManager::begin() {
+    for(auto& [id, e] : elements)
+        e.isUsedThisFrame = false;
+
     io->mouse.pos = io->mouse.globalPos - windowPos;
     io->strArena = &strArena;
     Clay_SetLayoutDimensions(Clay_Dimensions(windowSize.x(), windowSize.y()));
@@ -52,6 +55,9 @@ void GUIManager::end() {
     renderCommands = Clay_EndLayout();
     if(!idStack.empty())
         throw std::runtime_error("[GUIManager::end] ID Stack is not empty on end (push_id and pop_id calls not equal)");
+    std::erase_if(elements, [](auto& p) {
+        return !p.second.isUsedThisFrame;
+    });
 }
 
 void GUIManager::draw(SkCanvas* canvas) {

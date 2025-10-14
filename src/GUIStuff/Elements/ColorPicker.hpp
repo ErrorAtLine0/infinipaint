@@ -22,8 +22,9 @@ template <typename T> class ColorPicker : public Element {
 
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(bb.width()) }
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) }
                 },
+                .aspectRatio = 1.0f,
                 .custom = { .customData = this }
             }) {
                 selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);

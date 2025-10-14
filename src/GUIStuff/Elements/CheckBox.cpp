@@ -13,7 +13,7 @@ void CheckBox::update(UpdateInputData& io, bool newIsTicked, const std::function
     }) {
         selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
         if(isTicked != newIsTicked) {
-            hoverAnimation2 = CHECKBOX_ANIMATION_TIME;
+            hoverAnimation2 = selection.hovered ? CHECKBOX_ANIMATION_TIME : 0.0f;
             isTicked = newIsTicked;
         }
         if(elemUpdate)
