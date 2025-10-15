@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <include/core/SkFont.h>
 #include <include/core/SkFontMgr.h>
+#include <modules/skparagraph/include/FontCollection.h>
 #include <modules/svg/include/SkSVGDOM.h>
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Serializers.hpp>
@@ -95,6 +96,7 @@ struct UpdateInputData {
         bool copy = false;
         bool paste = false;
         bool cut = false;
+        bool escape = false;
     } key;
 
     struct {
@@ -106,6 +108,8 @@ struct UpdateInputData {
 
     uint16_t fontSize = 20;
     sk_sp<SkTypeface> textTypeface;
+
+    sk_sp<skia::textlayout::FontCollection> fontCollection;
 
     std::string textInput;
     bool hoverObstructed = false;

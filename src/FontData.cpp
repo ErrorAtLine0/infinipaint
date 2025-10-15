@@ -29,6 +29,8 @@ FontData::FontData()
     mgr = SkFontMgr_New_Custom_Empty();
 #endif
     map["Roboto"] = mgr->makeFromFile("data/fonts/Roboto-variable.ttf");
+    collection = sk_make_sp<skia::textlayout::FontCollection>();
+    collection->setDefaultFontManager(mgr);
 }
 
 FontData::~FontData() {

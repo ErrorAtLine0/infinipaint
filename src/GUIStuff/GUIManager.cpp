@@ -7,13 +7,21 @@
 #include "Elements/SVGIcon.hpp"
 #include "Elements/SelectableButton.hpp"
 #include "Elements/RotateWheel.hpp"
+#include "Elements/TextParagraph.hpp"
 #include "Elements/MovableTabList.hpp"
 #include "Elements/Element.hpp"
+#include "Elements/TextParagraph.hpp"
 #include <Helpers/ConvertVec.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <cmath>
+#include <limits>
+#include <modules/skparagraph/src/ParagraphBuilderImpl.h>
+#include <modules/skparagraph/include/ParagraphStyle.h>
+#include <modules/skparagraph/include/FontCollection.h>
+#include <modules/skparagraph/include/TextStyle.h>
+#include <modules/skunicode/include/SkUnicode_icu.h>
 
 namespace GUIStuff {
 
@@ -28,11 +36,20 @@ GUIManager::GUIManager()
 
 Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData) {
     GUIManager* window = static_cast<GUIManager*>(userData);
-    SkFont font = window->io->get_font(config->fontSize);
-    SkFontMetrics metrics;
-    font.getMetrics(&metrics);
-    float nextText = font.measureText(str.chars, str.length, SkTextEncoding::kUTF8, nullptr);
-    return Clay_Dimensions(nextText, - metrics.fAscent + metrics.fDescent);
+
+    skia::textlayout::ParagraphStyle pStyle;
+    pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+    skia::textlayout::TextStyle tStyle;
+    tStyle.setFontSize(config->fontSize);
+    tStyle.setFontFamilies({SkString{"Roboto"}});
+    pStyle.setTextStyle(tStyle);
+
+    skia::textlayout::ParagraphBuilderImpl a(pStyle, window->io->fontCollection, SkUnicodes::ICU::Make());
+    a.addText(str.chars, str.length);
+    std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
+    p->layout(std::numeric_limits<float>::max());
+
+    return Clay_Dimensions(p->getMaxIntrinsicWidth(), p->getHeight());
 }
 
 void GUIManager::begin() {
@@ -92,12 +109,20 @@ void GUIManager::draw(SkCanvas* canvas) {
             }
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {
                 Clay_TextRenderData* config = &command->renderData.text;
-                SkPaint paint;
-                paint.setColor4f(convert_vec4<SkColor4f>(config->textColor));
-                SkFont f = io->get_font(config->fontSize);
-                SkFontMetrics metrics;
-                f.getMetrics(&metrics);
-                canvas->drawSimpleText(config->stringContents.chars, config->stringContents.length, SkTextEncoding::kUTF8, bb.x, (bb.y + bb.height - metrics.fDescent), io->get_font(config->fontSize), paint);
+
+                skia::textlayout::ParagraphStyle pStyle;
+                pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+                skia::textlayout::TextStyle tStyle;
+                tStyle.setFontSize(config->fontSize);
+                tStyle.setFontFamilies({SkString{"Roboto"}});
+                pStyle.setTextStyle(tStyle);
+
+                skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
+                a.addText(config->stringContents.chars, config->stringContents.length);
+                std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
+                p->layout(std::numeric_limits<float>::max());
+                p->paint(canvas, bb.x, bb.y);
+
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_BORDER: {
@@ -677,6 +702,13 @@ bool GUIManager::rotate_wheel(const std::string& id, double* angle, float size, 
     }
     pop_id();
     return toRet;
+}
+
+void GUIManager::text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate) {
+    push_id(id);
+    TextParagraph* e = insert_element<TextParagraph>();
+    e->update(*io, std::move(paragraph), width, elemUpdate);
+    pop_id();
 }
 
 void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate) {

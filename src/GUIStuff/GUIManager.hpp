@@ -14,6 +14,8 @@
 #include <type_traits>
 #include <clay.h>
 
+#include <modules/skparagraph/include/Paragraph.h>
+
 using namespace Eigen;
 
 namespace GUIStuff {
@@ -43,6 +45,7 @@ class GUIManager {
 
         void input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
+        void text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate = nullptr);
         void text_label_color(const std::string& val, const SkColor4f& color);
         void text_label_size(const std::string& val, float modifier);
         void text_label(const std::string& val);

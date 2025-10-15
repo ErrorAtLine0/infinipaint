@@ -18,6 +18,12 @@
 #include <Helpers/StringHelpers.hpp>
 #include <Helpers/VersionNumber.hpp>
 
+#include <modules/skparagraph/src/ParagraphBuilderImpl.h>
+#include <modules/skparagraph/include/ParagraphStyle.h>
+#include <modules/skparagraph/include/FontCollection.h>
+#include <modules/skparagraph/include/TextStyle.h>
+#include <modules/skunicode/include/SkUnicode_icu.h>
+
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
 #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
 
@@ -33,6 +39,7 @@ Toolbar::Toolbar(MainProgram& initMain):
 {
     io->textTypeface = main.fonts.map["Roboto"];
     io->textFontMgr = main.fonts.mgr;
+    io->fontCollection = main.fonts.collection;
     io->fontSize = 20;
     
     load_default_palette();
@@ -819,6 +826,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
 }
 
 void Toolbar::chat_box() {
+    constexpr float CHATBOX_WIDTH = 700;
     if(main.world->network_being_used()) {
         CLAY({
             .layout = {
@@ -839,7 +847,7 @@ void Toolbar::chat_box() {
     }
     CLAY({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
+            .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
             .childGap = 0,
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
@@ -849,6 +857,7 @@ void Toolbar::chat_box() {
         gui.obstructing_window();
         gui.push_id("chat box");
         if(chatBoxState == CHATBOXSTATE_JUSTOPEN || chatBoxState == CHATBOXSTATE_OPEN) {
+            gui.push_id("messages");
             CLAY({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -859,7 +868,9 @@ void Toolbar::chat_box() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1)
             }) {
+                int id = 0;
                 for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
+                    id++;
                     SkColor4f c;
                     switch(chatMessage.color) {
                         case ChatMessage::COLOR_NORMAL:
@@ -869,9 +880,23 @@ void Toolbar::chat_box() {
                             c = io->theme->fillColor4;
                             break;
                     }
-                    gui.text_label_color(chatMessage.text, c);
+                    gui.push_id(id);
+                    skia::textlayout::ParagraphStyle pStyle;
+                    pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+                    skia::textlayout::TextStyle tStyle;
+                    tStyle.setFontSize(io->fontSize);
+                    tStyle.setFontFamilies({SkString{"Roboto"}});
+                    tStyle.setForegroundColor(SkPaint{c});
+                    pStyle.setTextStyle(tStyle);
+
+                    skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
+                    a.addText(chatMessage.text.c_str(), chatMessage.text.length());
+
+                    gui.text_paragraph("text", a.Build(), CHATBOX_WIDTH);
+                    gui.pop_id();
                 }
             }
+            gui.pop_id();
 
             gui.left_to_right_line_layout([&]() {
                 gui.input_text("message input", &chatMessageInput);
@@ -888,9 +913,9 @@ void Toolbar::chat_box() {
                 t.selection.selected = true;
                 chatBoxState = CHATBOXSTATE_OPEN;
             }
-            if(main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
+            if(io->key.escape)
                 t.selection.selected = false;
-            if(main.input.key(InputManager::KEY_TEXT_ENTER).pressed) {
+            if(io->key.enter) {
                 main.world->send_chat_message(chatMessageInput);
                 t.selection.selected = false;
             }
@@ -902,7 +927,10 @@ void Toolbar::chat_box() {
         else {
             constexpr float DISPLAY_TIME = 8.0f;
             constexpr float FADE_START_TIME = 7.0f;
+            gui.push_id("messages popup");
+            int id = 0;
             for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
+                id++;
                 chatMessage.time.update_time_since();
                 if(chatMessage.time < DISPLAY_TIME) {
                     float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
@@ -925,11 +953,25 @@ void Toolbar::chat_box() {
                         },
                         .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
                     }) {
+                        gui.push_id(id);
                         gui.obstructing_window();
-                        gui.text_label_color(chatMessage.text, color_mul_alpha(c, a));
+                        skia::textlayout::ParagraphStyle pStyle;
+                        pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+                        skia::textlayout::TextStyle tStyle;
+                        tStyle.setFontSize(io->fontSize);
+                        tStyle.setFontFamilies({SkString{"Roboto"}});
+                        tStyle.setForegroundColor(SkPaint{color_mul_alpha(c, a)});
+                        pStyle.setTextStyle(tStyle);
+
+                        skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
+                        a.addText(chatMessage.text.c_str(), chatMessage.text.length());
+
+                        gui.text_paragraph("text", a.Build(), CHATBOX_WIDTH);
+                        gui.pop_id();
                     }
                 }
             }
+            gui.pop_id();
         }
         gui.pop_id();
     }
@@ -1910,6 +1952,7 @@ void Toolbar::initialize_io_before_update() {
     io->key.copy = main.input.key(InputManager::KEY_TEXT_COPY).repeat;
     io->key.paste = main.input.get_clipboard_paste_happened();
     io->key.cut = main.input.key(InputManager::KEY_TEXT_CUT).repeat;
+    io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
 
     io->textInput = main.input.text.newInput;
     io->clipboard.textInFunc = [&]() {
