@@ -696,6 +696,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             case SDL_EVENT_TEXT_INPUT:
                 mS.m->input.text.newInput += event->text.text;
+                mS.m->input.text.add_text_to_textbox(event->text.text);
                 break;
             case SDL_EVENT_DROP_FILE:
                 mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);

@@ -1,4 +1,6 @@
 #include "MainProgram.hpp"
+#include "CollabTextBox/CollabTextBoxCursor.hpp"
+#include "DrawingProgram/DrawingProgramToolBase.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "cereal/details/helpers.hpp"
 #include <chrono>
@@ -35,6 +37,12 @@
 #include <Helpers/Logger.hpp>
 #include <Helpers/Networking/NetLibrary.hpp>
 
+#include "RichTextBox/RichTextBox.hpp"
+
+std::shared_ptr<RichTextBox> textBox;
+std::shared_ptr<RichTextBox::Cursor> textBoxCursor;
+RichTextBox::PaintOpts paintOpts;
+
 MainProgram::MainProgram():
     toolbar(*this)
 {
@@ -60,67 +68,97 @@ MainProgram::MainProgram():
         *logFile << "[CHAT] " << text << std::endl;
         std::cout << "[CHAT] " << text << std::endl;
     });
+
+    textBox = std::make_shared<RichTextBox>();
+    textBoxCursor = std::make_shared<RichTextBox::Cursor>();
+    textBox->set_width(1000.0f);
+    textBox->set_font_collection(fonts.collection);
+    textBox->insert(0, R"(
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+    )");
+
+    paintOpts.cursor = RichTextBox::Cursor{};
+    paintOpts.cursorColor = {1.0f, 0.0f, 0.0f, 0.7f};
 }
 
 void MainProgram::update() {
-    while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
-    lastFrameTime = std::chrono::steady_clock::now();
+    input.text.set_rich_text_box_input(textBox, textBoxCursor);
 
-    std::erase_if(input.droppedItems, [&](auto& droppedItem) {
-        if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData)) {
-            std::filesystem::path droppedFilePath(droppedItem.droppedData);
-            if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
-                new_tab({
-                    .conType = World::CONNECTIONTYPE_LOCAL,
-                    .fileSource = droppedFilePath.string()
-                }, true);
-                return true;
-            }
-        }
-        return false;
-    });
+    //while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
+    //lastFrameTime = std::chrono::steady_clock::now();
 
-    if(setTabToClose) {
-        worlds.erase(worlds.begin() + setTabToClose.value());
-        setTabToClose.reset();
-    }
+    //if(input.key(InputManager::KEY_DRAW_TOOL_BRUSH).repeat)
+    //    paintOpts.cursor.value().pos = textBox.move(paintOpts.cursor.value().pos, RichTextBox::Movement::kRight);
+    //else if(input.key(InputManager::KEY_DRAW_TOOL_ERASER).repeat)
+    //    paintOpts.cursor.value().pos = textBox.move(paintOpts.cursor.value().pos, RichTextBox::Movement::kLeft);
+    //else if(input.key(InputManager::KEY_DRAW_TOOL_TEXTBOX).repeat)
+    //    paintOpts.cursor.value().pos = textBox.move(paintOpts.cursor.value().pos, RichTextBox::Movement::kUp);
+    //else if(input.key(InputManager::KEY_DRAW_TOOL_ELLIPSE).repeat)
+    //    paintOpts.cursor.value().pos = textBox.move(paintOpts.cursor.value().pos, RichTextBox::Movement::kDown);
 
-    if(worldIndex >= worlds.size())
-        worldIndex = worlds.size() - 1;
-    if(worlds.size() == 0)
-        new_tab({
-            .conType = World::CONNECTIONTYPE_LOCAL
-        }, true);
+    //std::erase_if(input.droppedItems, [&](auto& droppedItem) {
+    //    if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData)) {
+    //        std::filesystem::path droppedFilePath(droppedItem.droppedData);
+    //        if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
+    //            new_tab({
+    //                .conType = World::CONNECTIONTYPE_LOCAL,
+    //                .fileSource = droppedFilePath.string()
+    //            }, true);
+    //            return true;
+    //        }
+    //    }
+    //    return false;
+    //});
 
-    std::shared_ptr<World> oldWorld = world;
-    world = worlds[worldIndex];
+    //if(setTabToClose) {
+    //    worlds.erase(worlds.begin() + setTabToClose.value());
+    //    setTabToClose.reset();
+    //}
 
-    deltaTime.update_time_since();
-    deltaTime.update_time_point();
+    //if(worldIndex >= worlds.size())
+    //    worldIndex = worlds.size() - 1;
+    //if(worlds.size() == 0)
+    //    new_tab({
+    //        .conType = World::CONNECTIONTYPE_LOCAL
+    //    }, true);
 
-    toolbar.initialize_io_before_update();
+    //std::shared_ptr<World> oldWorld = world;
+    //world = worlds[worldIndex];
 
-    for(auto& w : worlds) {
-        if(w == world)
-            w->focus_update();
-        else
-            w->unfocus_update();
-    }
+    //deltaTime.update_time_since();
+    //deltaTime.update_time_point();
 
-    toolbar.update(); // GUI should be setup after the world data has been fully updated for this frame, so that the GUI reflects the current state of the world data
+    //toolbar.initialize_io_before_update();
 
-    if(input.key(InputManager::KEY_NOGUI).pressed)
-        drawGui = !drawGui;
+    //for(auto& w : worlds) {
+    //    if(w == world)
+    //        w->focus_update();
+    //    else
+    //        w->unfocus_update();
+    //}
 
-    if(input.key(InputManager::KEY_FULLSCREEN).pressed)
-        input.toggleFullscreen = true;
+    //toolbar.update(); // GUI should be setup after the world data has been fully updated for this frame, so that the GUI reflects the current state of the world data
 
-    NetLibrary::update();
+    //if(input.key(InputManager::KEY_NOGUI).pressed)
+    //    drawGui = !drawGui;
 
-    if(tabSetToOpen) {
-        tabSetToOpen = false;
-        new_tab_open();
-    }
+    //if(input.key(InputManager::KEY_FULLSCREEN).pressed)
+    //    input.toggleFullscreen = true;
+
+    //NetLibrary::update();
+
+    //if(tabSetToOpen) {
+    //    tabSetToOpen = false;
+    //    new_tab_open();
+    //}
 
     return;
 }
@@ -229,9 +267,16 @@ void MainProgram::load_config() {
 }
 
 void MainProgram::draw(SkCanvas* canvas) {
-    canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.backColor);
-    world->draw(canvas);
-    toolbar.draw(canvas);
+    //canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.backColor);
+    //world->draw(canvas);
+    //toolbar.draw(canvas);
+
+    canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 1.0f});
+    canvas->save();
+    canvas->translate(200.0f, 200.0f);
+    paintOpts.cursor = *textBoxCursor;
+    textBox->paint(canvas, paintOpts);
+    canvas->restore();
 }
 
 bool MainProgram::network_being_used() {

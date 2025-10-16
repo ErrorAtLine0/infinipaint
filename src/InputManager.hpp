@@ -10,6 +10,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
+#include "RichTextBox/RichTextBox.hpp"
 
 using namespace Eigen;
 
@@ -85,9 +86,20 @@ struct InputManager {
 
         void set_accepting_input();
         bool get_accepting_input();
+
+        void set_rich_text_box_input(const std::shared_ptr<RichTextBox>& nTextBox, const std::shared_ptr<RichTextBox::Cursor>& nCursor);
+        void add_text_to_textbox(const std::string& inputText);
+
         private:
+            std::shared_ptr<RichTextBox> textBox;
+            std::shared_ptr<RichTextBox::Cursor> cursor;
+
+            std::shared_ptr<RichTextBox> newTextBox;
+            std::shared_ptr<RichTextBox::Cursor> newCursor;
+
             bool acceptingInput = false;
             bool acceptingInputNew = false;
+
             friend struct InputManager;
     } text;
 
@@ -147,22 +159,26 @@ struct InputManager {
         KEY_TEXT_BACKSPACE,
         KEY_TEXT_DELETE,
         KEY_TEXT_HOME,
+        KEY_TEXT_END,
         KEY_TEXT_SHIFT,
         KEY_TEXT_COPY,
         KEY_TEXT_CUT,
         KEY_TEXT_PASTE,
         KEY_TEXT_ENTER,
         KEY_TEXT_CTRL,
+        KEY_TEXT_META,
         KEY_TEXT_SELECTALL,
         KEY_GENERIC_ESCAPE,
         KEY_GENERIC_LSHIFT,
         KEY_GENERIC_LALT,
         KEY_GENERIC_LCTRL,
+        KEY_GENERIC_LMETA,
         KEY_COUNT
     };
 
     typedef unsigned KeyCode;
 
+    bool ctrl_or_meta_held();
     void stop_key_input();
     void set_pen_button_up(const SDL_PenButtonEvent& e);
     void set_pen_button_down(const SDL_PenButtonEvent& e);
