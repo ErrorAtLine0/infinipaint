@@ -22,6 +22,7 @@
 #include <modules/skparagraph/include/ParagraphStyle.h>
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/TextStyle.h>
+#include <include/core/SkFontStyle.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
 
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
@@ -825,6 +826,33 @@ void Toolbar::bookmark_menu(bool justOpened) {
     gui.pop_id();
 }
 
+std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_message(const ChatMessage& message, float alpha) {
+    skia::textlayout::ParagraphStyle pStyle;
+    pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+    skia::textlayout::TextStyle tStyle;
+    tStyle.setFontSize(io->fontSize);
+    tStyle.setFontFamilies({SkString{"Roboto"}});
+    tStyle.setFontStyle(SkFontStyle::Bold());
+    tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io->theme->fillColor4 : io->theme->frontColor1, alpha)});
+    pStyle.setTextStyle(tStyle);
+
+    skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
+    if(message.type == ChatMessage::JOIN) {
+        std::string messageName = message.name + " ";
+        a.addText(messageName.c_str(), messageName.length());
+    }
+    else {
+        std::string messageName = "[" + message.name + "] ";
+        a.addText(messageName.c_str(), messageName.length());
+    }
+
+    tStyle.setFontStyle(SkFontStyle::Normal());
+    a.pushStyle(tStyle);
+    a.addText(message.message.c_str(), message.message.length());
+
+    return a.Build();
+}
+
 void Toolbar::chat_box() {
     constexpr float CHATBOX_WIDTH = 700;
     if(main.world->network_being_used()) {
@@ -870,30 +898,10 @@ void Toolbar::chat_box() {
             }) {
                 int id = 0;
                 for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
-                    id++;
-                    SkColor4f c;
-                    switch(chatMessage.color) {
-                        case ChatMessage::COLOR_NORMAL:
-                            c = io->theme->frontColor1;
-                            break;
-                        case ChatMessage::COLOR_JOIN:
-                            c = io->theme->fillColor4;
-                            break;
-                    }
                     gui.push_id(id);
-                    skia::textlayout::ParagraphStyle pStyle;
-                    pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
-                    skia::textlayout::TextStyle tStyle;
-                    tStyle.setFontSize(io->fontSize);
-                    tStyle.setFontFamilies({SkString{"Roboto"}});
-                    tStyle.setForegroundColor(SkPaint{c});
-                    pStyle.setTextStyle(tStyle);
-
-                    skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
-                    a.addText(chatMessage.text.c_str(), chatMessage.text.length());
-
-                    gui.text_paragraph("text", a.Build(), CHATBOX_WIDTH);
+                    gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, 1.0f), CHATBOX_WIDTH);
                     gui.pop_id();
+                    id++;
                 }
             }
             gui.pop_id();
@@ -930,19 +938,9 @@ void Toolbar::chat_box() {
             gui.push_id("messages popup");
             int id = 0;
             for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
-                id++;
                 chatMessage.time.update_time_since();
                 if(chatMessage.time < DISPLAY_TIME) {
                     float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
-                    SkColor4f c{0, 0, 0, 0};
-                    switch(chatMessage.color) {
-                        case ChatMessage::COLOR_NORMAL:
-                            c = io->theme->frontColor1;
-                            break;
-                        case ChatMessage::COLOR_JOIN:
-                            c = io->theme->fillColor4;
-                            break;
-                    }
                     CLAY({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -955,21 +953,11 @@ void Toolbar::chat_box() {
                     }) {
                         gui.push_id(id);
                         gui.obstructing_window();
-                        skia::textlayout::ParagraphStyle pStyle;
-                        pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
-                        skia::textlayout::TextStyle tStyle;
-                        tStyle.setFontSize(io->fontSize);
-                        tStyle.setFontFamilies({SkString{"Roboto"}});
-                        tStyle.setForegroundColor(SkPaint{color_mul_alpha(c, a)});
-                        pStyle.setTextStyle(tStyle);
-
-                        skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
-                        a.addText(chatMessage.text.c_str(), chatMessage.text.length());
-
-                        gui.text_paragraph("text", a.Build(), CHATBOX_WIDTH);
+                        gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, a), CHATBOX_WIDTH);
                         gui.pop_id();
                     }
                 }
+                id++;
             }
             gui.pop_id();
         }

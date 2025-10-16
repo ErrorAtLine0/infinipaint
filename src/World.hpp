@@ -59,7 +59,7 @@ class World {
         void start_hosting(const std::string& initNetSource, const std::string& serverLocalID);
 
         void send_chat_message(const std::string& message);
-        void add_chat_message(const std::string& message, Toolbar::ChatMessage::Color color);
+        void add_chat_message(const std::string& name, const std::string& message, Toolbar::ChatMessage::Type type);
 
         WorldVec get_mouse_world_pos();
         WorldVec get_mouse_world_move();

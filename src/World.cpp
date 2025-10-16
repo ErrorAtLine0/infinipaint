@@ -6,6 +6,7 @@
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
+#include "Toolbar.hpp"
 #include "WorldGrid.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <fstream>
@@ -96,14 +97,14 @@ void World::init_client_callbacks() {
         message(id, displayName, cursorColor);
         clients[id].displayName = displayName;
         clients[id].cursorColor = cursorColor;
-        add_chat_message(clients[id].displayName + " joined", Toolbar::ChatMessage::COLOR_JOIN);
+        add_chat_message(clients[id].displayName, "joined", Toolbar::ChatMessage::Type::JOIN);
     });
     con.client_add_recv_callback(CLIENT_USER_DISCONNECT, [&](cereal::PortableBinaryInputArchive& message) {
         ServerPortionID id;
         message(id);
         auto it = clients.find(id);
         if(it != clients.end()) {
-            add_chat_message(clients[id].displayName + " left", Toolbar::ChatMessage::COLOR_JOIN);
+            add_chat_message(clients[id].displayName, "left", Toolbar::ChatMessage::Type::JOIN);
             clients.erase(id);
         }
     });
@@ -114,9 +115,12 @@ void World::init_client_callbacks() {
         message(c.camCoords, c.windowSize, c.cursorPos);
     });
     con.client_add_recv_callback(CLIENT_CHAT_MESSAGE, [&](cereal::PortableBinaryInputArchive& message) {
+        ServerPortionID senderID;
         std::string chatMessage;
-        message(chatMessage);
-        add_chat_message(chatMessage, Toolbar::ChatMessage::COLOR_NORMAL);
+        message(senderID, chatMessage);
+        auto it = clients.find(senderID);
+        if(it != clients.end())
+            add_chat_message(clients[senderID].displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
     });
     con.client_add_recv_callback(CLIENT_CANVAS_COLOR, [&](cereal::PortableBinaryInputArchive& message) {
         Vector3f newBackColor;
@@ -207,15 +211,14 @@ void World::set_canvas_background_color(const Vector3f& newBackColor, bool sendC
 
 void World::send_chat_message(const std::string& message) {
     if(!clientStillConnecting) {
-        std::string newMessage = "[" + displayName + "] " + message;
-        con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CHAT_MESSAGE, newMessage);
-        add_chat_message(newMessage, Toolbar::ChatMessage::COLOR_NORMAL);
+        con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CHAT_MESSAGE, message);
+        add_chat_message(displayName, message, Toolbar::ChatMessage::Type::NORMAL);
     }
 }
 
-void World::add_chat_message(const std::string& message, Toolbar::ChatMessage::Color color) {
-    Logger::get().log("CHAT", message);
-    chatMessages.emplace_front(Toolbar::ChatMessage{message, color});
+void World::add_chat_message(const std::string& name, const std::string& message, Toolbar::ChatMessage::Type type) {
+    Logger::get().log("CHAT", type == Toolbar::ChatMessage::JOIN ? (name + " " + message) : ("[" + name + "] " + message));
+    chatMessages.emplace_front(Toolbar::ChatMessage{name, message, type});
     if(chatMessages.size() == CHAT_SIZE)
         chatMessages.pop_back();
 }

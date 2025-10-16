@@ -4,6 +4,7 @@
 #include "Helpers/FileDownloader.hpp"
 #include "Server/CommandList.hpp"
 #include <filesystem>
+#include <modules/skparagraph/include/Paragraph.h>
 #include <nlohmann/json.hpp>
 #include <Helpers/Serializers.hpp>
 #include <SDL3/SDL_dialog.h>
@@ -22,11 +23,12 @@ class Toolbar {
         };
 
         struct ChatMessage {
-            std::string text;
-            enum Color {
-                COLOR_NORMAL = 0,
-                COLOR_JOIN
-            } color;
+            std::string name;
+            std::string message;
+            enum Type {
+                NORMAL = 0,
+                JOIN 
+            } type;
             TimePoint time;
         };
 
@@ -221,6 +223,8 @@ class Toolbar {
         std::optional<unsigned> keybindWaiting;
 
         std::filesystem::path testing;
+
+        std::unique_ptr<skia::textlayout::Paragraph> build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
 
         void start_gui();
         void end_gui();

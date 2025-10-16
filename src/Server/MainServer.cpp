@@ -204,9 +204,8 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     });
     netServer->add_recv_callback(SERVER_CHAT_MESSAGE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::string chatMessage;
-        Vector4f c{1.0f, 1.0f, 1.0f, 1.0f};
         message(chatMessage);
-        netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, chatMessage, c);
+        netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, client->customID, chatMessage);
     });
     netServer->add_recv_callback(SERVER_NEW_BOOKMARK, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::string name;
