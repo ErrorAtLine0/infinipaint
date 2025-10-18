@@ -71,26 +71,16 @@ MainProgram::MainProgram():
 
     textBox = std::make_shared<RichTextBox>();
     textBoxCursor = std::make_shared<RichTextBox::Cursor>();
-    textBox->set_width(1000.0f);
     textBox->set_font_collection(fonts.collection);
-    textBox->insert(0, R"(
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-    )");
-
+    textBox->insert({0, 0}, R"(Hello world)");
     paintOpts.cursor = RichTextBox::Cursor{};
-    paintOpts.cursorColor = {1.0f, 0.0f, 0.0f, 0.7f};
+    paintOpts.cursorColor = {1.0f, 0.0f, 0.0f};
 }
 
 void MainProgram::update() {
     input.text.set_rich_text_box_input(textBox, textBoxCursor);
+    textBox->process_mouse_left_button(*textBoxCursor, input.mouse.pos - Vector2f{10.0f, 10.0f}, input.mouse.leftClicks, input.mouse.leftDown, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+    textBox->set_width(window.size.x() - 20.0f);
 
     //while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
     //lastFrameTime = std::chrono::steady_clock::now();
@@ -273,7 +263,7 @@ void MainProgram::draw(SkCanvas* canvas) {
 
     canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 1.0f});
     canvas->save();
-    canvas->translate(200.0f, 200.0f);
+    canvas->translate(10.0f, 10.0f);
     paintOpts.cursor = *textBoxCursor;
     textBox->paint(canvas, paintOpts);
     canvas->restore();
