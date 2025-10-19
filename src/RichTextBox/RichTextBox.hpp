@@ -10,6 +10,7 @@ class RichTextBox {
         RichTextBox();
 
         enum class Movement {
+            NOWHERE,
             LEFT,
             RIGHT,
             UP,
@@ -45,8 +46,8 @@ class RichTextBox {
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr);
         void set_width(float newWidth);
-        TextPosition insert(TextPosition pos, const std::string& textToInsert);
-        TextPosition remove(TextPosition start, TextPosition end);
+        TextPosition insert(TextPosition pos, std::string_view textToInsert);
+        TextPosition remove(TextPosition p1, TextPosition p2);
         void set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC);
         void paint(SkCanvas* canvas, const PaintOpts& paintOpts);
         void set_allow_newlines(bool allow);
@@ -68,20 +69,23 @@ class RichTextBox {
         void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift);
         std::string process_copy(Cursor& cur);
         std::string process_cut(Cursor& cur);
+        std::string get_text_between(TextPosition p1, TextPosition p2);
 
         void process_text_input(Cursor& cur, const std::string& in);
     private:
-        size_t count_grapheme();
-        size_t next_grapheme(size_t textBytePos);
-        size_t prev_grapheme(size_t textBytePos);
+        static size_t count_grapheme(const std::string& text);
+        static size_t next_grapheme(const std::string& text, size_t textBytePos);
+        static size_t prev_grapheme(const std::string& text, size_t textBytePos);
+        static TextPosition get_text_pos_from_byte_pos(const std::string& text, size_t textBytePos);
+        size_t get_byte_pos_from_text_pos(TextPosition textPos);
 
-        std::vector<skia::textlayout::TextBox> rects_between_text_positions(TextPosition start, TextPosition end);
-        std::vector<SkRect> rects_between_text_positions_2(TextPosition start, TextPosition end);
-        void rects_between_text_positions_func(TextPosition start, TextPosition end, std::function<void(const SkRect& r)> f);
+        void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
+
+        TextPosition line_ends_with_whitespace_correction(TextPosition pos);
 
         SkRect get_cursor_rect(TextPosition pos);
 
-        std::optional<TextPosition> get_text_pos_closest_to_point(const Vector2f& point);
+        TextPosition get_text_pos_closest_to_point(Vector2f point);
 
         void rebuild();
 
@@ -90,6 +94,12 @@ class RichTextBox {
         float fontSize = 0.0f;
         bool needsRebuild = true;
         sk_sp<skia::textlayout::FontCollection> fontCollection;
-        std::unique_ptr<skia::textlayout::Paragraph> paragraph;
-        std::string text;
+
+        struct ParagraphData {
+            std::string text;
+            std::unique_ptr<skia::textlayout::Paragraph> p;
+            float heightOffset;
+        };
+
+        std::vector<ParagraphData> paragraphs;
 };
