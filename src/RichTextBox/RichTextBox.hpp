@@ -44,7 +44,7 @@ class RichTextBox {
             std::optional<Cursor> cursor;
         };
 
-        TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr);
+        TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
         void set_width(float newWidth);
         TextPosition insert(TextPosition pos, std::string_view textToInsert);
         TextPosition remove(TextPosition p1, TextPosition p2);
@@ -81,8 +81,6 @@ class RichTextBox {
 
         void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
 
-        TextPosition line_ends_with_whitespace_correction(TextPosition pos);
-
         SkRect get_cursor_rect(TextPosition pos);
 
         TextPosition get_text_pos_closest_to_point(Vector2f point);
@@ -99,6 +97,7 @@ class RichTextBox {
             std::string text;
             std::unique_ptr<skia::textlayout::Paragraph> p;
             float heightOffset;
+            skia::textlayout::ParagraphStyle pStyle;
         };
 
         std::vector<ParagraphData> paragraphs;

@@ -1,5 +1,6 @@
 #include "RichTextBox.hpp"
 #include <limits>
+#include <modules/skparagraph/include/DartTypes.h>
 #include <modules/skparagraph/include/Metrics.h>
 #include <modules/skparagraph/src/TextLine.h>
 #include <modules/skunicode/include/SkUnicode.h>
@@ -22,11 +23,11 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
 
     switch(in) {
         case InputKey::LEFT:
-            cur.pos = cur.selectionBeginPos = move(ctrl ? Movement::LEFT_WORD : Movement::LEFT, cur.pos);
+            cur.pos = cur.selectionBeginPos = move(ctrl ? Movement::LEFT_WORD : Movement::LEFT, cur.pos, nullptr, true);
             moved = true;
             break;
         case InputKey::RIGHT:
-            cur.pos = cur.selectionBeginPos = move(ctrl ? Movement::RIGHT_WORD : Movement::RIGHT, cur.pos);
+            cur.pos = cur.selectionBeginPos = move(ctrl ? Movement::RIGHT_WORD : Movement::RIGHT, cur.pos, nullptr, true);
             moved = true;
             break;
         case InputKey::UP:
@@ -183,9 +184,31 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
     if(foundGlyph) {
         TextPosition toRet = {0, pIndex};
         toRet.fTextByteIndex = glyphInfo.fClusterTextRange.start;
-        if(std::abs(glyphInfo.fBounds.right() - point.x()) < std::abs(glyphInfo.fBounds.left() - point.x()))
-            toRet.fTextByteIndex = next_grapheme(pData.text, toRet.fTextByteIndex);
-        return line_ends_with_whitespace_correction(toRet);
+
+        if(glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr) {
+            if(std::abs(glyphInfo.fBounds.right() - point.x()) < std::abs(glyphInfo.fBounds.left() - point.x()))
+                toRet.fTextByteIndex = next_grapheme(pData.text, toRet.fTextByteIndex);
+        }
+        else {
+            if(std::abs(glyphInfo.fBounds.left() - point.x()) < std::abs(glyphInfo.fBounds.right() - point.x()))
+                toRet.fTextByteIndex = next_grapheme(pData.text, toRet.fTextByteIndex);
+        }
+
+        // Space at the end of a line will bring the cursor to the next line, check if the cursor moved to the next line
+        if(toRet.fTextByteIndex != pData.text.size()) {
+            skia::textlayout::LineMetrics lineMetrics;
+            int lineNumber = pData.p->getLineNumberAt(toRet.fTextByteIndex);
+            if(lineNumber > 0) {
+                bool lineMetricsFound = pData.p->getLineMetricsAt(lineNumber, &lineMetrics);
+                if(lineMetricsFound) {
+                    float top = lineMetrics.fBaseline - lineMetrics.fAscent;
+                    if(point.y() < top)
+                        toRet.fTextByteIndex = prev_grapheme(pData.text, toRet.fTextByteIndex);
+                }
+            }
+        }
+
+        return toRet;
     }
     else
         return TextPosition{0, pIndex};
@@ -214,20 +237,7 @@ std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
     return toRet;
 }
 
-RichTextBox::TextPosition RichTextBox::line_ends_with_whitespace_correction(TextPosition pos) {
-    pos = move(Movement::NOWHERE, pos);
-    if(pos.fTextByteIndex != paragraphs[pos.fParagraphIndex].text.size()) {
-        const std::string& text = paragraphs[pos.fParagraphIndex].text;
-        size_t previousByteIndex = prev_grapheme(text, pos.fTextByteIndex);
-        const char* tPtr = text.c_str() + previousByteIndex;
-        SkUnichar u = SkUTF::NextUTF8(&tPtr, text.c_str() + text.size());
-        if(SkUnicodes::ICU::Make()->isWhitespace(u))
-            pos.fTextByteIndex = previousByteIndex;
-    }
-    return pos;
-}
-
-RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX) {
+RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
     rebuild();
 
     if(pos.fParagraphIndex >= paragraphs.size()) {
@@ -237,6 +247,17 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
 
     if(pos.fTextByteIndex >= paragraphs[pos.fParagraphIndex].text.size())
         pos.fTextByteIndex = paragraphs[pos.fParagraphIndex].text.size();
+
+    if(flipDependingOnTextDirection && paragraphs[pos.fParagraphIndex].pStyle.getTextDirection() == skia::textlayout::TextDirection::kRtl) {
+        if(movement == Movement::LEFT)
+            movement = Movement::RIGHT;
+        else if(movement == Movement::RIGHT)
+            movement = Movement::LEFT;
+        else if(movement == Movement::LEFT_WORD)
+            movement = Movement::RIGHT_WORD;
+        else if(movement == Movement::RIGHT_WORD)
+            movement = Movement::LEFT_WORD;
+    }
 
     switch (movement) {
         case Movement::NOWHERE:
@@ -410,17 +431,17 @@ void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollecti
 
 void RichTextBox::rebuild() {
     if(needsRebuild) {
-        skia::textlayout::ParagraphStyle pStyle;
-        pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
-        pStyle.setTextDirection(skia::textlayout::TextDirection::kLtr);
-        skia::textlayout::TextStyle tStyle;
-        tStyle.setFontSize(20.0f);
-        tStyle.setFontFamilies({SkString{"Roboto"}});
-        pStyle.setTextStyle(tStyle);
 
         float heightOffset = 0.0f;
         for(ParagraphData& pData : paragraphs) {
-            skia::textlayout::ParagraphBuilderImpl a(pStyle, fontCollection, SkUnicodes::ICU::Make());
+            pData.pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+            pData.pStyle.setTextDirection(skia::textlayout::TextDirection::kLtr);
+            skia::textlayout::TextStyle tStyle;
+            tStyle.setFontSize(20.0f);
+            tStyle.setFontFamilies({SkString{"Roboto"}});
+            pData.pStyle.setTextStyle(tStyle);
+
+            skia::textlayout::ParagraphBuilderImpl a(pData.pStyle, fontCollection, SkUnicodes::ICU::Make());
             a.addText(pData.text.c_str(), pData.text.length());
             pData.p = a.Build();
             pData.p->layout(width);
@@ -478,12 +499,13 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
 SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
     pos = move(Movement::NOWHERE, pos);
 
-    SkPoint topLeft;
+    SkPoint topPoint;
     float height;
 
     const ParagraphData& pData = paragraphs[pos.fParagraphIndex];
     if(pData.text.empty()) {
-        topLeft = {0.0f, pData.heightOffset};
+        bool isAlignLeft = (pData.pStyle.getTextAlign() == skia::textlayout::TextAlign::kLeft) || (pData.pStyle.getTextAlign() == skia::textlayout::TextAlign::kJustify && pData.pStyle.getTextDirection() == skia::textlayout::TextDirection::kLtr);
+        topPoint = {isAlignLeft ? 0.0f : pData.p->getMaxWidth(), pData.heightOffset};
         height = pData.p->getHeight();
     }
     else {
@@ -491,11 +513,12 @@ SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
             skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
             bool exists = pData.p->getGlyphClusterAt(prev_grapheme(pData.text, pos.fTextByteIndex), &glyphInfo);
             if(exists) {
-                topLeft = glyphInfo.fBounds.TR() + SkPoint{0.0f, pData.heightOffset};
+                bool isLtr = glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr;
+                topPoint = (isLtr ? glyphInfo.fBounds.TR() : glyphInfo.fBounds.TL()) + SkPoint{0.0f, pData.heightOffset};
                 height = glyphInfo.fBounds.height();
             }
             else {
-                topLeft = {0.0f, pData.heightOffset};
+                topPoint = {0.0f, pData.heightOffset};
                 height = 0.0f;
             }
         }
@@ -503,23 +526,27 @@ SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
             skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
             bool exists = pData.p->getGlyphClusterAt(pos.fTextByteIndex, &glyphInfo);
             if(exists) {
-                topLeft = glyphInfo.fBounds.TL() + SkPoint{0.0f, pData.heightOffset};
+                bool isLtr = glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr;
+                topPoint = (isLtr ? glyphInfo.fBounds.TL() : glyphInfo.fBounds.TR()) + SkPoint{0.0f, pData.heightOffset};
                 height = glyphInfo.fBounds.height();
             }
             else {
-                topLeft = {0.0f, pData.heightOffset};
+                topPoint = {0.0f, pData.heightOffset};
                 height = 0.0f;
             }
         }
     }
-    return SkRect::MakeXYWH(topLeft.x(), topLeft.y(), 3.0f, height);
+
+    constexpr float CURSOR_WIDTH = 3.0f;
+
+    return SkRect::MakeXYWH(topPoint.x() - CURSOR_WIDTH * 0.5f, topPoint.y(), CURSOR_WIDTH, height);
 }
 
 void RichTextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f) {
     p1 = move(Movement::NOWHERE, p1);
     p2 = move(Movement::NOWHERE, p2);
 
-    constexpr float SELECTION_RECT_EXTRA_AREA = 2.0f;
+    constexpr float SELECTION_RECT_EXTRA_AREA = 1.0f;
 
     TextPosition start = std::min(p1, p2);
     TextPosition end = std::max(p1, p2);
@@ -558,7 +585,6 @@ void RichTextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
             });
             canvas->restore();
         }
-
         canvas->drawRect(get_cursor_rect(cur.pos), p);
     }
 
