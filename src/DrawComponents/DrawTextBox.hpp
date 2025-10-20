@@ -1,16 +1,16 @@
 #pragma once
 #include "../SharedTypes.hpp"
 #include "DrawComponent.hpp"
-#include "../CollabTextBox/CollabTextBoxCursor.hpp"
 #include "../CoordSpaceHelper.hpp"
+#include "../RichTextBox/RichTextBox.hpp"
 
 #ifndef IS_SERVER
     #include <include/core/SkPath.h>
-    #include "../CollabTextBox/CollabTextBox.hpp"
 #endif
 
 class DrawTextBox : public DrawComponent {
     public:
+        DrawTextBox();
         virtual DrawComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
@@ -22,7 +22,6 @@ class DrawTextBox : public DrawComponent {
             Vector2f p1;
             Vector2f p2;
             std::string currentText;
-            CollabTextBox::Cursor cursor;
             bool editing = false;
             bool operator==(const Data& o) const = default;
             bool operator!=(const Data& o) const = default;
@@ -46,7 +45,8 @@ class DrawTextBox : public DrawComponent {
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 
         bool textboxUpdate = false;
-        CollabTextBox::Editor textBox;
+        std::shared_ptr<RichTextBox> textBox;
+        std::shared_ptr<RichTextBox::Cursor> cursor;
         SCollision::BVHContainer<float> collisionTree;
 #endif
 };

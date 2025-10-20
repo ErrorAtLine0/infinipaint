@@ -165,6 +165,7 @@ struct InputManager {
         KEY_TEXT_CUT,
         KEY_TEXT_PASTE,
         KEY_TEXT_ENTER,
+        KEY_TEXT_TAB,
         KEY_TEXT_CTRL,
         KEY_TEXT_META,
         KEY_TEXT_SELECTALL,

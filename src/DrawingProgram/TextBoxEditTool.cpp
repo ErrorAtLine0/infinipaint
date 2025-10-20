@@ -3,7 +3,6 @@
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
 #include "Helpers/SCollision.hpp"
-#include "../CollabTextBox/CollabTextBox.hpp"
 #include <cereal/types/vector.hpp>
 #include <memory>
 #include "EditTool.hpp"
@@ -59,11 +58,11 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
 
 void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
     std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
-    auto& cur = a->d.cursor;
+    auto& cur = a->cursor;
     auto& textbox = a->textBox;
+    cur = std::make_shared<RichTextBox::Cursor>();
     Vector2f textSelectPos = a->get_mouse_pos(drawP);
-    SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
-    cur.pos = cur.selectionBeginPos = cur.selectionEndPos = textbox.getPosition(p);
+    textbox->process_mouse_left_button(*cur, textSelectPos, true, false, false);
     prevData = a->d;
     a->d.editing = true;
     a->client_send_update(drawP, false);
@@ -78,117 +77,15 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
     mousePointCollection.circle.emplace_back(drawP.world.main.input.mouse.pos, 1.0f);
     mousePointCollection.recalculate_bounds();
 
-    a->textBox.setWidth(std::abs(a->d.p2.x() - a->d.p1.x()));
+    a->textBox->set_width(std::abs(a->d.p2.x() - a->d.p1.x()));
 
     InputManager& input = drawP.world.main.input;
-    auto& textbox = a->textBox;
-    auto& cur = a->d.cursor;
 
-    bool moved = false;
-    bool movedHeld = false;
+    bool collidesWithBox = a->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
 
-    bool collidesWithBox = false;
-    if(a->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection)) {
-        //drawP.world.main.input.cursorIcon = InputManager::SystemCursorType::TEXT;
-        collidesWithBox = true;
-    }
+    input.text.set_rich_text_box_input(a->textBox, a->cursor);
+    a->textBox->process_mouse_left_button(*a->cursor, a->get_mouse_pos(drawP), drawP.controls.leftClick && collidesWithBox, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
-    if(drawP.controls.leftClick) {
-        if(collidesWithBox) {
-            Vector2f textSelectPos = a->get_mouse_pos(drawP);
-            SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
-            cur.pos = cur.selectionBeginPos = textbox.getPosition(p);
-            moved = true;
-        }
-    }
-    else if(drawP.controls.leftClickHeld) {
-        Vector2f textSelectPos = a->get_mouse_pos(drawP);
-        SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
-        cur.pos = cur.selectionBeginPos = textbox.getPosition(p);
-        movedHeld = true;
-    }
-
-    if(input.key(InputManager::KEY_TEXT_LEFT).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(input.key(InputManager::KEY_TEXT_CTRL).held ? CollabTextBox::Movement::kWordLeft : CollabTextBox::Movement::kLeft, cur.selectionBeginPos);
-    if(input.key(InputManager::KEY_TEXT_RIGHT).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(input.key(InputManager::KEY_TEXT_CTRL).held ? CollabTextBox::Movement::kWordRight : CollabTextBox::Movement::kRight, cur.selectionBeginPos);
-    if(input.key(InputManager::KEY_TEXT_UP).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kUp, cur.selectionBeginPos);
-    if(input.key(InputManager::KEY_TEXT_DOWN).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kDown, cur.selectionBeginPos);
-    if(input.key(InputManager::KEY_TEXT_HOME).repeat)
-        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kHome, cur.selectionBeginPos);
-
-    moved = moved || input.key(InputManager::KEY_TEXT_DOWN).repeat || input.key(InputManager::KEY_TEXT_UP).repeat || input.key(InputManager::KEY_TEXT_RIGHT).repeat || input.key(InputManager::KEY_TEXT_LEFT).repeat || input.key(InputManager::KEY_TEXT_HOME).repeat;
-    if(moved && !input.key(InputManager::KEY_TEXT_SHIFT).held && !movedHeld)
-        cur.selectionEndPos = cur.selectionBeginPos;
-
-    if(moved || movedHeld)
-        update_textbox_network(a);
-
-    if(input.key(InputManager::KEY_TEXT_BACKSPACE).repeat) {
-        edit_text([&]() {
-            if(cur.selectionBeginPos != cur.selectionEndPos)
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-            else
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.pos, textbox.move(CollabTextBox::Movement::kLeft, cur.pos));
-        }, a);
-    }
-    if(input.key(InputManager::KEY_TEXT_DELETE).repeat) {
-        edit_text([&]() {
-            if(cur.selectionBeginPos != cur.selectionEndPos)
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-            else
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.pos, textbox.move(CollabTextBox::Movement::kRight, cur.pos));
-        }, a);
-    }
-    if(input.get_clipboard_paste_happened()) {
-        edit_text([&]() {
-            if(cur.selectionBeginPos != cur.selectionEndPos)
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-            std::string clipboard = input.get_clipboard_str();
-            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, clipboard);
-        }, a);
-    }
-    if(input.key(InputManager::KEY_TEXT_ENTER).repeat) {
-        edit_text([&]() {
-            if(cur.selectionBeginPos != cur.selectionEndPos)
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-            cur.pos = textbox.insert(cur.pos, "\n");
-            cur.pos.fParagraphIndex++;
-            cur.pos.fTextByteIndex = 0;
-            cur.selectionBeginPos = cur.selectionEndPos = cur.pos;
-        }, a);
-    }
-    if(input.key(InputManager::KEY_TEXT_COPY).repeat) {
-        std::string clipboardData = textbox.copy(cur.selectionBeginPos, cur.selectionEndPos);
-        input.set_clipboard_str(clipboardData);
-    }
-    if(input.key(InputManager::KEY_TEXT_CUT).repeat) {
-        edit_text([&]() {
-            std::string clipboardData = textbox.copy(cur.selectionBeginPos, cur.selectionEndPos);
-            input.set_clipboard_str(clipboardData);
-            if(cur.selectionBeginPos != cur.selectionEndPos)
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-        }, a);
-    }
-    if(input.key(InputManager::KEY_TEXT_SELECTALL).repeat) {
-        cur.selectionEndPos.fParagraphIndex = textbox.lineCount() == 0 ? 0 : textbox.lineCount() - 1;
-        cur.selectionEndPos.fTextByteIndex = textbox.line(cur.selectionEndPos.fParagraphIndex).size();
-        cur.pos = cur.selectionEndPos;
-        cur.selectionBeginPos.fTextByteIndex = 0;
-        cur.selectionBeginPos.fParagraphIndex = 0;
-        update_textbox_network(a);
-    }
-    if(!input.text.newInput.empty()) {
-        edit_text([&]() {
-            if(cur.selectionBeginPos != cur.selectionEndPos)
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, input.text.newInput);
-        }, a);
-    }
-
-    input.text.set_accepting_input();
     return true;
 }
 

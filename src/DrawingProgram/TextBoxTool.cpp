@@ -5,7 +5,6 @@
 #include "../DrawData.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
-#include "../CollabTextBox/CollabTextBox.hpp"
 #include <cereal/types/vector.hpp>
 #include <memory>
 #include "EditTool.hpp"

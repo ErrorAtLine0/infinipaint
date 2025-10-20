@@ -1,20 +1,23 @@
 #pragma once
 #include "Element.hpp"
-#include "../../CollabTextBox/CollabTextBox.hpp"
+#include "../../RichTextBox/RichTextBox.hpp"
+#include <limits>
 
 namespace GUIStuff {
 
 template <typename T> class TextBox : public Element {
     public:
         void update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+            if(!textbox || !cur)
+                force_update_textbox(io, false);
+
             data = newData;
             fromStr = newFromStr;
             toStr = newToStr;
             singleLine = newSingleLine;
-            force_update_textbox(false);
+            force_update_textbox(io, false);
 
-            textbox.setFont(SkFont(io.textTypeface, io.fontSize));
-            textbox.setFontMgr(io.textFontMgr);
+            textbox->set_width(singleLine ? std::numeric_limits<float>::max() : bb.width());
 
             CLAY({
                 .layout = {
@@ -24,109 +27,15 @@ template <typename T> class TextBox : public Element {
             }) {
                 selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
                 if(data && selection.selected) {
-                    bool moved = io.key.left || io.key.right || io.key.up || io.key.down || io.key.home;
-                    bool movedHeld = false;
-
-                    if(io.mouse.leftClick) {
-                        Vector2f textSelectPos = io.mouse.pos - bb.min;
-                        SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
-                        cur.pos = cur.selectionBeginPos = textbox.getPosition(p);
-                        moved = true;
-                    }
-                    else if(io.mouse.leftHeld) {
-                        Vector2f textSelectPos = io.mouse.pos - bb.min;
-                        SkIPoint p = convert_vec2<SkIPoint>(textSelectPos.cast<int32_t>());
-                        cur.pos = cur.selectionBeginPos = textbox.getPosition(p);
-                        movedHeld = true;
-                    }
-
-                    if(io.key.left)
-                        cur.pos = cur.selectionBeginPos = textbox.move(io.key.leftCtrl ? CollabTextBox::Movement::kWordLeft : CollabTextBox::Movement::kLeft, cur.selectionBeginPos);
-                    if(io.key.right)
-                        cur.pos = cur.selectionBeginPos = textbox.move(io.key.leftCtrl ? CollabTextBox::Movement::kWordRight : CollabTextBox::Movement::kRight, cur.selectionBeginPos);
-                    if(io.key.up && !singleLine)
-                        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kUp, cur.selectionBeginPos);
-                    if(io.key.down && !singleLine)
-                        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kDown, cur.selectionBeginPos);
-                    if(io.key.home)
-                        cur.pos = cur.selectionBeginPos = textbox.move(CollabTextBox::Movement::kHome, cur.selectionBeginPos);
-
-                    if(moved && !io.key.leftShift && !movedHeld)
-                        cur.selectionEndPos = cur.selectionBeginPos;
-
-                    if(io.key.backspace) {
-                        if(cur.selectionBeginPos != cur.selectionEndPos)
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-                        else
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.pos, textbox.move(CollabTextBox::Movement::kLeft, cur.pos));
-                        update_on_edit(updateEveryEdit);
-                    }
-                    if(io.key.del) {
-                        if(cur.selectionBeginPos != cur.selectionEndPos)
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-                        else
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.pos, textbox.move(CollabTextBox::Movement::kRight, cur.pos));
-                        update_on_edit(updateEveryEdit);
-                    }
-                    if(io.key.paste) {
-                        if(cur.selectionBeginPos != cur.selectionEndPos)
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-                        if(singleLine) {
-                            std::string removedNewlines = io.clipboard.textInFunc();
-                            std::erase(removedNewlines, '\n');
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, removedNewlines);
-                        }
-                        else
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, io.clipboard.textInFunc());
-                        update_on_edit(updateEveryEdit);
-                    }
-                    if(io.key.enter) {
-                        if(singleLine) {
-                            std::optional<T> dataToAssign = fromStr(textbox.get_string());
-                            if(dataToAssign)
-                                *data = dataToAssign.value();
-                            force_update_textbox(true);
-                        }
-                        else {
-                            if(cur.selectionBeginPos != cur.selectionEndPos)
-                                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-                            cur.pos = textbox.insert(cur.pos, "\n");
-                            cur.pos.fParagraphIndex++;
-                            cur.pos.fTextByteIndex = 0;
-                            cur.selectionBeginPos = cur.selectionEndPos = cur.pos;
-                            update_on_edit(updateEveryEdit);
-                        }
-                    }
-                    if(io.key.copy) {
-                        io.clipboard.textOut = textbox.copy(cur.selectionBeginPos, cur.selectionEndPos);
-                    }
-                    if(io.key.cut) {
-                        io.clipboard.textOut = textbox.copy(cur.selectionBeginPos, cur.selectionEndPos);
-                        if(cur.selectionBeginPos != cur.selectionEndPos)
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-                        update_on_edit(updateEveryEdit);
-                    }
-                    if(io.key.selectAll) {
-                        cur.selectionEndPos.fParagraphIndex = textbox.lineCount() == 0 ? 0 : textbox.lineCount() - 1;
-                        cur.selectionEndPos.fTextByteIndex = textbox.line(cur.selectionEndPos.fParagraphIndex).size();
-                        cur.pos = cur.selectionEndPos;
-                        cur.selectionBeginPos.fTextByteIndex = 0;
-                        cur.selectionBeginPos.fParagraphIndex = 0;
-                    }
-                    if(!io.textInput.empty()) {
-                        if(cur.selectionBeginPos != cur.selectionEndPos)
-                            cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.remove(cur.selectionBeginPos, cur.selectionEndPos);
-                        cur.selectionEndPos = cur.selectionBeginPos = cur.pos = textbox.insert(cur.pos, io.textInput);
-                        update_on_edit(updateEveryEdit);
-                    }
-
-                    io.acceptingTextInput = true;
+                    io.richTextBoxEdit(textbox, cur);
+                    textbox->process_mouse_left_button(*cur, io.mouse.pos - bb.min, io.mouse.leftClick, io.mouse.leftHeld, io.key.leftShift);
+                    update_on_edit(updateEveryEdit);
                 }
                 if(data && selection.justUnselected) {
-                    std::optional<T> dataToAssign = fromStr(textbox.get_string());
+                    std::optional<T> dataToAssign = fromStr(textbox->get_string());
                     if(dataToAssign)
                         *data = dataToAssign.value();
-                    force_update_textbox(true);
+                    force_update_textbox(io, true);
                 }
                 if(elemUpdate)
                     elemUpdate(selection);
@@ -134,7 +43,7 @@ template <typename T> class TextBox : public Element {
         }
 
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override {
-            if(!data)
+            if(!data || !textbox || !cur)
                 return;
 
             bb = get_bb(command);
@@ -150,48 +59,38 @@ template <typename T> class TextBox : public Element {
 
             canvas->clipRect(SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height()));
 
-            if(singleLine && selection.selected) {
-                SkRect cursorRect = textbox.getLocation(cur.pos);
-                canvas->translate(bb.min.x() - std::max(cursorRect.fRight - bb.width(), 0.0f), bb.min.y());
-            }
-            else
-                canvas->translate(bb.min.x(), bb.min.y());
+            canvas->translate(bb.min.x(), bb.min.y());
 
-            textbox.setFont(SkFont(io.textTypeface, io.fontSize));
-            textbox.setFontMgr(io.textFontMgr);
-            textbox.setWidth(singleLine ? 99999999 : bb.width());
+            RichTextBox::PaintOpts paintOpts;
+            if(selection.selected)
+                paintOpts.cursor = *cur;
+            paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
 
-            CollabTextBox::Editor::PaintOpts paintOpts;
-            paintOpts.fForegroundColor = io.theme->frontColor1;
-            paintOpts.fBackgroundColor = {0.0f, 0.0f, 0.0f, 0.0f};
-            paintOpts.cursorColor = io.theme->fillColor5;
-            paintOpts.showCursor = selection.selected;
-            paintOpts.cursor = cur;
-
-            textbox.paint(canvas, paintOpts);
+            textbox->paint(canvas, paintOpts);
 
             canvas->restore();
         }
 
         SelectionHelper selection;
     private:
-        void force_update_textbox(bool reallyForce) {
-            if(data && (*data == oldData) && !reallyForce)
+        void force_update_textbox(UpdateInputData& io, bool reallyForce) {
+            if(data && (*data == oldData) && !reallyForce && textbox && cur)
                 return;
 
-            textbox = CollabTextBox::Editor();
-            cur = CollabTextBox::Cursor();
+            textbox = std::make_shared<RichTextBox>();
+            textbox->set_font_collection(io.fontCollection);
+            textbox->set_allow_newlines(!singleLine);
+            cur = std::make_shared<RichTextBox::Cursor>();
+
             if(data) {
-                cur.pos = cur.selectionBeginPos = cur.selectionEndPos = textbox.insert({0, 0}, toStr(*data));
+                cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, toStr(*data));
                 oldData = *data;
             }
-            else {}
-                //oldData = T();
         }
 
         void update_on_edit(bool updateEveryEdit) {
             if(updateEveryEdit) {
-                std::optional<T> dataToAssign = fromStr(textbox.get_string());
+                std::optional<T> dataToAssign = fromStr(textbox->get_string());
                 if(dataToAssign) {
                     *data = dataToAssign.value();
                     oldData = *data;
@@ -207,8 +106,8 @@ template <typename T> class TextBox : public Element {
         std::function<std::optional<T>(const std::string&)> fromStr;
         std::function<std::string(const T&)> toStr;
 
-        CollabTextBox::Editor textbox;
-        CollabTextBox::Cursor cur;
+        std::shared_ptr<RichTextBox> textbox;
+        std::shared_ptr<RichTextBox::Cursor> cur;
 
         SCollision::AABB<float> bb;
 };

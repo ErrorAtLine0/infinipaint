@@ -9,16 +9,21 @@
 #include "../DrawCollision.hpp"
 #endif
 
+DrawTextBox::DrawTextBox():
+    textBox(std::make_shared<RichTextBox>()),
+    cursor(std::make_shared<RichTextBox::Cursor>())
+{}
+
 DrawComponentType DrawTextBox::get_type() const {
     return DRAWCOMPONENT_TEXTBOX;
 }
 
 void DrawTextBox::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(d.editing, d.p1, d.p2, d.textColor, d.textSize, d.cursor, d.currentText);
+    a(d.editing, d.p1, d.p2, d.textColor, d.textSize, *cursor, d.currentText);
 }
 
 void DrawTextBox::load(cereal::PortableBinaryInputArchive& a) {
-    a(d.editing, d.p1, d.p2, d.textColor, d.textSize, d.cursor, d.currentText);
+    a(d.editing, d.p1, d.p2, d.textColor, d.textSize, *cursor, d.currentText);
 #ifndef IS_SERVER
     textboxUpdate = true;
 #endif
@@ -39,7 +44,6 @@ std::shared_ptr<DrawComponent> DrawTextBox::deep_copy() const {
     a->coords = coords;
     a->textboxUpdate = false;
     a->collisionTree = collisionTree;
-    a->textBox = textBox;
     return a;
 }
 
@@ -50,18 +54,9 @@ void DrawTextBox::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& 
 }
 
 void DrawTextBox::init_text_box(DrawingProgram& drawP) {
-    textBox.setFontMgr(drawP.world.main.fonts.mgr);
-    SkFont f(drawP.world.main.fonts.map["Roboto"], d.textSize);
-    f.setLinearMetrics(true);
-    f.setHinting(SkFontHinting::kNormal);
-    //font.setForceAutoHinting(true);
-    f.setSubpixel(true);
-    f.setBaselineSnap(true);
-    f.setEdging(SkFont::Edging::kSubpixelAntiAlias);
-    textBox.setFont(f);
-    textBox.setWidth(d.p2.x() - d.p1.x());
-    textBox.fLines.clear();
-    textBox.insert({0, 0}, d.currentText);
+    textBox->set_font_collection(drawP.world.main.fonts.collection);
+    textBox->set_width(d.p2.x() - d.p1.x());
+    textBox->insert({0, 0}, d.currentText);
 }
 
 void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
@@ -79,14 +74,12 @@ void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->clipRect(clipR);
         canvas->translate(d.p1.x(), d.p1.y());
 
-        CollabTextBox::Editor::PaintOpts paintOpts;
-        paintOpts.fForegroundColor = convert_vec4<SkColor4f>(d.textColor);
-        paintOpts.fBackgroundColor = {0.0f, 0.0f, 0.0f, 0.0f};
-        paintOpts.cursorColor = {0.7f, 0.7f, 1.0f, 1.0f};
-        paintOpts.showCursor = d.editing;
-        paintOpts.cursor = d.cursor;
+        RichTextBox::PaintOpts paintOpts;
+        paintOpts.cursorColor = {0.7f, 0.7f, 1.0f};
+        if(d.editing && cursor)
+            paintOpts.cursor = *cursor;
 
-        textBox.paint(canvas, paintOpts);
+        textBox->paint(canvas, paintOpts);
         canvas->restore();
     }
 }
@@ -98,13 +91,13 @@ void DrawTextBox::update(DrawingProgram& drawP) {
 
 void DrawTextBox::set_textbox_string(const std::string& str) {
     d.currentText = str;
-    textBox.fLines.clear();
-    textBox.insert({0, 0}, d.currentText);
+    textBox->remove({0, 0}, textBox->move(RichTextBox::Movement::END, {0, 0}));
+    textBox->insert({0, 0}, d.currentText);
     textboxUpdate = false;
 }
 
 void DrawTextBox::update_contained_string(DrawingProgram& drawP) {
-    d.currentText = textBox.get_string();
+    d.currentText = textBox->get_string();
 }
 
 Vector2f DrawTextBox::get_mouse_pos(DrawingProgram& drawP) {

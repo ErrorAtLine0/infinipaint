@@ -36,6 +36,9 @@ class RichTextBox {
             TextPosition pos = {0, 0};
             TextPosition selectionBeginPos = {0, 0};
             TextPosition selectionEndPos = {0, 0};
+            template <typename Archive> void serialize(Archive& a) {
+                a(pos, selectionBeginPos, selectionEndPos);
+            }
             std::optional<float> previousX;
         };
 
@@ -62,6 +65,7 @@ class RichTextBox {
             BACKSPACE,
             DELETE,
             ENTER,
+            TAB,
             SELECT_ALL
         };
 
@@ -70,8 +74,10 @@ class RichTextBox {
         std::string process_copy(Cursor& cur);
         std::string process_cut(Cursor& cur);
         std::string get_text_between(TextPosition p1, TextPosition p2);
-
+        std::string get_string();
+        void set_tab_space_width(unsigned newTabWidth);
         void process_text_input(Cursor& cur, const std::string& in);
+
     private:
         static size_t count_grapheme(const std::string& text);
         static size_t next_grapheme(const std::string& text, size_t textBytePos);
@@ -91,6 +97,7 @@ class RichTextBox {
         float width = 0.0f;
         float fontSize = 0.0f;
         bool needsRebuild = true;
+        unsigned tabWidth = 8;
         sk_sp<skia::textlayout::FontCollection> fontCollection;
 
         struct ParagraphData {

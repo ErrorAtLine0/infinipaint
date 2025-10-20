@@ -301,6 +301,12 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
                 text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
             break;
         }
+        case SDLK_TAB: {
+            set_key_down(e, KEY_TEXT_TAB);
+            if(text.textBox && key(KEY_TEXT_TAB).repeat)
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::TAB, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+            break;
+        }
         case SDLK_ESCAPE:
             set_key_down(e, KEY_GENERIC_ESCAPE);
             break;
@@ -374,6 +380,9 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
             break;
         case SDLK_RETURN:
             set_key_up(e, KEY_TEXT_ENTER);
+            break;
+        case SDLK_TAB:
+            set_key_up(e, KEY_TEXT_TAB);
             break;
         case SDLK_ESCAPE:
             set_key_up(e, KEY_GENERIC_ESCAPE);

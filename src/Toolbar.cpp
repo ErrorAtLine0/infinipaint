@@ -1941,12 +1941,9 @@ void Toolbar::initialize_io_before_update() {
     io->key.paste = main.input.get_clipboard_paste_happened();
     io->key.cut = main.input.key(InputManager::KEY_TEXT_CUT).repeat;
     io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
-
-    io->textInput = main.input.text.newInput;
-    io->clipboard.textInFunc = [&]() {
-        return main.input.get_clipboard_str();
+    io->richTextBoxEdit = [&](std::shared_ptr<RichTextBox> t, std::shared_ptr<RichTextBox::Cursor> c) {
+        main.input.text.set_rich_text_box_input(t, c);
     };
-    io->clipboard.textOut = std::nullopt;
 
     if(io->acceptingTextInput)
         main.input.text_input_silence_everything();

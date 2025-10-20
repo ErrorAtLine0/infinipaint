@@ -59,8 +59,10 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(Movement::RIGHT, cur.pos));
             break;
         case InputKey::ENTER:
-            if(newlinesAllowed)
-                process_text_input(cur, "\n");
+            process_text_input(cur, "\n");
+            break;
+        case InputKey::TAB: 
+            process_text_input(cur, "\t");
             break;
         case InputKey::SELECT_ALL:
             cur.selectionBeginPos = {0, 0};
@@ -214,6 +216,10 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
         return TextPosition{0, pIndex};
 }
 
+std::string RichTextBox::get_string() {
+    return get_text_between({0, 0}, move(RichTextBox::Movement::END, {0, 0}));
+}
+
 std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
     p1 = move(Movement::NOWHERE, p1);
     p2 = move(Movement::NOWHERE, p2);
@@ -349,11 +355,10 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
             break;
         }
         case Movement::LEFT_WORD: {
-            TextPosition endPos = move(Movement::END, {0, 0});
             if(pos == TextPosition{0, 0})
                 break;
 
-            std::string fullText = get_text_between({0, 0}, endPos);
+            std::string fullText = get_string();
             size_t bytePosInFullText = get_byte_pos_from_text_pos(pos);
 
             auto u = SkUnicodes::ICU::Make();
@@ -380,7 +385,7 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
             if(pos == endPos)
                 break;
 
-            std::string fullText = get_text_between({0, 0}, endPos);
+            std::string fullText = get_string();
             size_t bytePosInFullText = get_byte_pos_from_text_pos(pos);
 
             auto u = SkUnicodes::ICU::Make();
@@ -421,7 +426,7 @@ void RichTextBox::set_width(float newWidth) {
 }
 
 void RichTextBox::set_allow_newlines(bool allow) {
-    newlinesAllowed = true;
+    newlinesAllowed = allow;
 }
 
 void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC) {
@@ -452,16 +457,26 @@ void RichTextBox::rebuild() {
     }
 }
 
+void RichTextBox::set_tab_space_width(unsigned newTabWidth) {
+    tabWidth = newTabWidth;
+}
+
 RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view textToInsert) {
     pos = move(Movement::NOWHERE, pos);
 
     for(char c : textToInsert) {
         if(c == '\n') {
-            paragraphs.insert(paragraphs.begin() + pos.fParagraphIndex + 1, ParagraphData{});
-            paragraphs[pos.fParagraphIndex + 1].text = paragraphs[pos.fParagraphIndex].text.substr(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
-            paragraphs[pos.fParagraphIndex].text.erase(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
-            pos.fParagraphIndex++;
-            pos.fTextByteIndex = 0;
+            if(newlinesAllowed) {
+                paragraphs.insert(paragraphs.begin() + pos.fParagraphIndex + 1, ParagraphData{});
+                paragraphs[pos.fParagraphIndex + 1].text = paragraphs[pos.fParagraphIndex].text.substr(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
+                paragraphs[pos.fParagraphIndex].text.erase(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
+                pos.fParagraphIndex++;
+                pos.fTextByteIndex = 0;
+            }
+        }
+        else if(c == '\t') {
+            paragraphs[pos.fParagraphIndex].text.insert(pos.fTextByteIndex, std::string(tabWidth, ' '));
+            pos.fTextByteIndex += tabWidth;
         }
         else {
             paragraphs[pos.fParagraphIndex].text.insert(paragraphs[pos.fParagraphIndex].text.begin() + pos.fTextByteIndex, c);
@@ -570,7 +585,6 @@ void RichTextBox::rects_between_text_positions_func(TextPosition p1, TextPositio
         }
     }
 }
-
 
 void RichTextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
     rebuild();
