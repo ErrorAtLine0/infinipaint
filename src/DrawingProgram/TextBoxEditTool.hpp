@@ -15,8 +15,13 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         virtual bool edit_update(const std::shared_ptr<DrawComponent>& a) override;
         virtual bool edit_gui(const std::shared_ptr<DrawComponent>& a) override;
     private:
-        void edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox);
-        void update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox);
+        struct TextBoxEditToolAllData {
+            DrawTextBox::Data textboxData;
+            RichTextBox::RichTextData richText;
+            bool operator==(const TextBoxEditToolAllData& o) const = default;
+            bool operator!=(const TextBoxEditToolAllData& o) const = default;
+        };
+        TextBoxEditToolAllData get_all_data(const std::shared_ptr<DrawTextBox>& a);
 
-        std::optional<DrawTextBox::Data> oldData;
+        TextBoxEditToolAllData oldData;
 };

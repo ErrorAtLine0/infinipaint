@@ -47,6 +47,18 @@ class RichTextBox {
             std::optional<Cursor> cursor;
         };
 
+        struct RichTextData {
+            std::string text;
+            bool operator==(const RichTextData& o) const = default;
+            bool operator!=(const RichTextData& o) const = default;
+            template <typename Archive> void save(Archive& a) const {
+                a(text);
+            }
+            template <typename Archive> void load(Archive& a) {
+                a(text);
+            }
+        };
+
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
         void set_width(float newWidth);
         TextPosition insert(TextPosition pos, std::string_view textToInsert);
@@ -68,6 +80,11 @@ class RichTextBox {
             TAB,
             SELECT_ALL
         };
+
+        RichTextData get_rich_text_data();
+        void set_rich_text_data(const RichTextData& richText);
+        void clear_text();
+        void set_string(const std::string& str);
 
         void process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift);
         void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift);

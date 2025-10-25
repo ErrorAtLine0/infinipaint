@@ -43,7 +43,7 @@ DrawingProgram::DrawingProgram(World& initWorld):
         if(addToCompCacheOnInsert)
             compCache.add_component(c);
         DrawComponentType t = c->obj->get_type();
-        if(t == DRAWCOMPONENT_IMAGE || t == DRAWCOMPONENT_TEXTBOX)
+        if(t == DRAWCOMPONENT_IMAGE)
             updateableComponents.emplace(c->obj);
     };
     components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {

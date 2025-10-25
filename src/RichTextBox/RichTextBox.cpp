@@ -216,6 +216,24 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
         return TextPosition{0, pIndex};
 }
 
+RichTextBox::RichTextData RichTextBox::get_rich_text_data() {
+    return {get_string()};
+}
+
+void RichTextBox::clear_text() {
+    paragraphs.clear();
+    paragraphs.emplace_back();
+}
+
+void RichTextBox::set_string(const std::string& str) {
+    clear_text();
+    insert({0, 0}, str);
+}
+
+void RichTextBox::set_rich_text_data(const RichTextData& richText) {
+    set_string(richText.text);
+}
+
 std::string RichTextBox::get_string() {
     return get_text_between({0, 0}, move(RichTextBox::Movement::END, {0, 0}));
 }
@@ -244,8 +262,6 @@ std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
 }
 
 RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
-    rebuild();
-
     if(pos.fParagraphIndex >= paragraphs.size()) {
         pos.fParagraphIndex = paragraphs.size() - 1;
         pos.fTextByteIndex = paragraphs[pos.fParagraphIndex].text.size();
@@ -254,15 +270,18 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
     if(pos.fTextByteIndex >= paragraphs[pos.fParagraphIndex].text.size())
         pos.fTextByteIndex = paragraphs[pos.fParagraphIndex].text.size();
 
-    if(flipDependingOnTextDirection && paragraphs[pos.fParagraphIndex].pStyle.getTextDirection() == skia::textlayout::TextDirection::kRtl) {
-        if(movement == Movement::LEFT)
-            movement = Movement::RIGHT;
-        else if(movement == Movement::RIGHT)
-            movement = Movement::LEFT;
-        else if(movement == Movement::LEFT_WORD)
-            movement = Movement::RIGHT_WORD;
-        else if(movement == Movement::RIGHT_WORD)
-            movement = Movement::LEFT_WORD;
+    if(movement != Movement::NOWHERE && movement != Movement::HOME && movement != Movement::END) {
+        rebuild();
+        if(flipDependingOnTextDirection && paragraphs[pos.fParagraphIndex].pStyle.getTextDirection() == skia::textlayout::TextDirection::kRtl) {
+            if(movement == Movement::LEFT)
+                movement = Movement::RIGHT;
+            else if(movement == Movement::RIGHT)
+                movement = Movement::LEFT;
+            else if(movement == Movement::LEFT_WORD)
+                movement = Movement::RIGHT_WORD;
+            else if(movement == Movement::RIGHT_WORD)
+                movement = Movement::LEFT_WORD;
+        }
     }
 
     switch (movement) {
@@ -430,8 +449,10 @@ void RichTextBox::set_allow_newlines(bool allow) {
 }
 
 void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC) {
-    fontCollection = fC;
-    needsRebuild = true;
+    if(fontCollection != fC) {
+        fontCollection = fC;
+        needsRebuild = true;
+    }
 }
 
 void RichTextBox::rebuild() {

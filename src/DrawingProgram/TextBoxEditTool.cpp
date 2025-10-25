@@ -16,17 +16,20 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
-    t.gui.slider_scalar_field("Text Relative Size", "Text Size", &a->d.textSize, 5.0f, 100.0f);
-    t.gui.left_to_right_line_layout([&]() {
-        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-            if(t.gui.color_button("Text Color", &a->d.textColor, &a->d.textColor == t.colorRight))
-                t.color_selector_right(&a->d.textColor == t.colorRight ? nullptr : &a->d.textColor);
-        }
-        t.gui.text_label("Text Color");
-    });
+    //t.gui.slider_scalar_field("Text Relative Size", "Text Size", &a->d.textSize, 5.0f, 100.0f);
+    //t.gui.left_to_right_line_layout([&]() {
+    //    CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
+    //        if(t.gui.color_button("Text Color", &a->d.textColor, &a->d.textColor == t.colorRight))
+    //            t.color_selector_right(&a->d.textColor == t.colorRight ? nullptr : &a->d.textColor);
+    //    }
+    //    t.gui.text_label("Text Color");
+    //});
     t.gui.pop_id();
-    bool editHappened = (!oldData.has_value()) || (a->d != oldData);
-    oldData = a->d;
+
+    TextBoxEditToolAllData newData = get_all_data(a);
+    bool editHappened = newData != oldData;
+    if(editHappened)
+        oldData = newData;
     return editHappened;
 }
 
@@ -34,26 +37,34 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
     std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
 
     a->d.editing = false;
-    DrawTextBox::Data pData = std::any_cast<DrawTextBox::Data>(prevData);
-    DrawTextBox::Data cData = a->d; 
+    auto pData = std::any_cast<TextBoxEditToolAllData>(prevData);
+    TextBoxEditToolAllData cData = get_all_data(a);
+    RichTextBox::RichTextData richText = a->textBox->get_rich_text_data();
     drawP.world.undo.push(UndoManager::UndoRedoPair{
-        [&, a, pData]() {
-            a->d = pData;
-            a->set_textbox_string(pData.currentText);
+        [&drawP = drawP, a, pData]() {
+            a->d = pData.textboxData;
+            a->textBox->set_rich_text_data(pData.richText);
             a->d.editing = false;
             a->client_send_update(drawP, true);
             a->commit_update(drawP);
             return true;
         },
-        [&, a, cData]() {
-            a->d = cData;
-            a->set_textbox_string(cData.currentText);
+        [&drawP = drawP, a, cData]() {
+            a->d = cData.textboxData;
+            a->textBox->set_rich_text_data(cData.richText);
             a->d.editing = false;
             a->client_send_update(drawP, true);
             a->commit_update(drawP);
             return true;
         }
     });
+}
+
+TextBoxEditTool::TextBoxEditToolAllData TextBoxEditTool::get_all_data(const std::shared_ptr<DrawTextBox>& a) {
+    return {
+        .textboxData = a->d,
+        .richText = a->textBox->get_rich_text_data()
+    };
 }
 
 void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
@@ -63,7 +74,8 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     cur = std::make_shared<RichTextBox::Cursor>();
     Vector2f textSelectPos = a->get_mouse_pos(drawP);
     textbox->process_mouse_left_button(*cur, textSelectPos, true, false, false);
-    prevData = a->d;
+    oldData = get_all_data(a);
+    prevData = oldData;
     a->d.editing = true;
     a->client_send_update(drawP, false);
     editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
@@ -87,16 +99,4 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
     a->textBox->process_mouse_left_button(*a->cursor, a->get_mouse_pos(drawP), drawP.controls.leftClick && collidesWithBox, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
     return true;
-}
-
-// Passing a function in, just in case we have to do something before editing the text
-void TextBoxEditTool::edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox) {
-    toRun();
-    textBox->update_contained_string(drawP);
-    update_textbox_network(textBox);
-}
-
-void TextBoxEditTool::update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox) {
-    textBox->client_send_update(drawP, false);
-    textBox->commit_update(drawP);
 }

@@ -19,14 +19,13 @@ DrawComponentType DrawTextBox::get_type() const {
 }
 
 void DrawTextBox::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(d.editing, d.p1, d.p2, d.textColor, d.textSize, *cursor, d.currentText);
+    a(d.editing, d.p1, d.p2, textBox->get_rich_text_data(), *cursor);
 }
 
 void DrawTextBox::load(cereal::PortableBinaryInputArchive& a) {
-    a(d.editing, d.p1, d.p2, d.textColor, d.textSize, *cursor, d.currentText);
-#ifndef IS_SERVER
-    textboxUpdate = true;
-#endif
+    RichTextBox::RichTextData richText;
+    a(d.editing, d.p1, d.p2, richText, *cursor);
+    textBox->set_rich_text_data(richText);
 }
 
 #ifndef IS_SERVER
@@ -34,7 +33,7 @@ std::shared_ptr<DrawComponent> DrawTextBox::copy() const {
     auto a = std::make_shared<DrawTextBox>();
     a->d = d;
     a->coords = coords;
-    a->textboxUpdate = true;
+    a->textBox->set_rich_text_data(textBox->get_rich_text_data());
     return a;
 }
 
@@ -42,7 +41,7 @@ std::shared_ptr<DrawComponent> DrawTextBox::deep_copy() const {
     auto a = std::make_shared<DrawTextBox>();
     a->d = d;
     a->coords = coords;
-    a->textboxUpdate = false;
+    a->textBox->set_rich_text_data(textBox->get_rich_text_data());
     a->collisionTree = collisionTree;
     return a;
 }
@@ -50,13 +49,11 @@ std::shared_ptr<DrawComponent> DrawTextBox::deep_copy() const {
 void DrawTextBox::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawTextBox> newPtr = std::static_pointer_cast<DrawTextBox>(delayedUpdatePtr);
     d = newPtr->d;
-    textboxUpdate = true;
 }
 
 void DrawTextBox::init_text_box(DrawingProgram& drawP) {
-    textBox->set_font_collection(drawP.world.main.fonts.collection);
+    textBox->set_font_collection(drawP.world.main.fonts.collection); // Getting a segfault relating to the paragraph cache means that the font collection hasn't been set yet
     textBox->set_width(d.p2.x() - d.p1.x());
-    textBox->insert({0, 0}, d.currentText);
 }
 
 void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
@@ -85,19 +82,6 @@ void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void DrawTextBox::update(DrawingProgram& drawP) {
-    if(textboxUpdate)
-        set_textbox_string(d.currentText);
-}
-
-void DrawTextBox::set_textbox_string(const std::string& str) {
-    d.currentText = str;
-    textBox->remove({0, 0}, textBox->move(RichTextBox::Movement::END, {0, 0}));
-    textBox->insert({0, 0}, d.currentText);
-    textboxUpdate = false;
-}
-
-void DrawTextBox::update_contained_string(DrawingProgram& drawP) {
-    d.currentText = textBox->get_string();
 }
 
 Vector2f DrawTextBox::get_mouse_pos(DrawingProgram& drawP) {

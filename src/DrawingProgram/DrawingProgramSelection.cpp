@@ -178,7 +178,7 @@ void DrawingProgramSelection::commit_transform_selection() {
     }
     DrawComponent::client_send_transform_many(drawP, transformsToSend);
     drawP.world.undo.push(UndoManager::UndoRedoPair{
-        [&, transformsFrom = transformsFrom]() {
+        [isSingleThread, &drawP = drawP, transformsFrom = transformsFrom]() {
             std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
             for(auto& [comp, coords] : transformsFrom) {
                 auto lockObjInfo = comp->obj->collabListInfo.lock();
@@ -188,7 +188,6 @@ void DrawingProgramSelection::commit_transform_selection() {
                     return false;
             }
 
-            bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
             parallel_loop_container(transformsFrom, [&](auto& p) {
                 auto& [comp, coords] = p;
                 comp->obj->coords = coords;
@@ -202,7 +201,7 @@ void DrawingProgramSelection::commit_transform_selection() {
 
             return true;
         },
-        [&, transformsTo = transformsTo]() {
+        [isSingleThread, &drawP = drawP, transformsTo = transformsTo]() {
             std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
             for(auto& [comp, coords] : transformsTo) {
                 auto lockObjInfo = comp->obj->collabListInfo.lock();
@@ -212,7 +211,6 @@ void DrawingProgramSelection::commit_transform_selection() {
                     return false;
             }
 
-            bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
             parallel_loop_container(transformsTo, [&](auto& p) {
                 auto& [comp, coords] = p;
                 comp->obj->coords = coords;

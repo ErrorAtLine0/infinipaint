@@ -39,14 +39,13 @@ void TextBoxTool::tool_update() {
                 controls.endAt = controls.startAt;
                 controls.intermediateItem->d.p1 = controls.intermediateItem->d.p2 = controls.startAt;
                 controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                controls.intermediateItem->d.textColor = drawP.controls.foregroundColor;
-                controls.intermediateItem->d.textSize = controls.textRelativeSize;
                 controls.intermediateItem->d.editing = true;
                 controls.intermediateItem->coords = drawP.world.drawData.cam.c;
                 controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
                 uint64_t placement = drawP.components.client_list().size();
                 auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
                 controls.intermediateItem->client_send_place(drawP);
+                controls.intermediateItem->commit_update(drawP);
                 drawP.add_undo_place_component(objAdd);
                 controls.drawStage = 1;
             }
