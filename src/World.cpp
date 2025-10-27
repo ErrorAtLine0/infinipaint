@@ -36,7 +36,7 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     netSource = worldInfo.netSource;
 
     if(worldInfo.conType == CONNECTIONTYPE_CLIENT || worldInfo.conType == CONNECTIONTYPE_SERVER)
-        NetLibrary::init();
+        main.init_net_library();
 
     drawData.rMan = &rMan;
     drawData.main = &main;
@@ -254,7 +254,7 @@ void World::set_name(const std::string& n) {
 void World::start_hosting(const std::string& initNetSource, const std::string& serverLocalID) {
     if(conType != CONNECTIONTYPE_LOCAL)
         return;
-    NetLibrary::init();
+    main.init_net_library();
     con.init_local_p2p(*this, serverLocalID);
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();

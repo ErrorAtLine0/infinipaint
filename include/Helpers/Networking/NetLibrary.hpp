@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <rtc/rtc.hpp>
 #include <queue>
+#include <filesystem>
 
 typedef uint64_t MessageOrder;
 class NetClient;
@@ -19,7 +20,8 @@ typedef uint8_t MessageCommandType;
 
 class NetLibrary {
     public:
-        static void init();
+        static void init(const std::filesystem::path& p2pConfigPath);
+        static void copy_default_p2p_config_to_path(const std::filesystem::path& newP2PConfigPath);
         static void update();
         static std::string get_random_server_local_id();
         static const std::string& get_global_id();
@@ -42,6 +44,13 @@ class NetLibrary {
         static constexpr size_t MAX_UNRELIABLE_MESSAGE_SIZE = 4096;
         static constexpr size_t MAX_BUFFERED_DATA_PER_CHANNEL = 64000;
         static constexpr std::chrono::seconds TIMEOUT_DURATION = std::chrono::seconds(30);
+
+        enum class LoadP2PSettingsInPathResult {
+            SUCCESS,
+            FAILED_TO_OPEN,
+            FAILED_TO_READ
+        };
+        static LoadP2PSettingsInPathResult load_p2p_settings_in_path(const std::filesystem::path& p2pConfigPath);
 
         static bool is_ordered_channel(std::string_view channelName);
         static MessageOrder calc_order_for_queued_message(std::string_view channelName, MessageOrder& mOrder);
