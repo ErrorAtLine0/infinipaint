@@ -1945,8 +1945,6 @@ float Toolbar::final_gui_scale_not_fit() {
 
 void Toolbar::end_gui() {
     gui.end();
-    if(io->acceptingTextInput)
-        main.input.text_input_silence_everything();
     if(io->clipboard.textOut)
         main.input.set_clipboard_str(*io->clipboard.textOut);
 }
