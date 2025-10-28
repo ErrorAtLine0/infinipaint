@@ -1886,7 +1886,7 @@ void Toolbar::file_picker_gui() {
     gui.pop_id();
 }
 
-void Toolbar::start_gui() {
+void Toolbar::initialize_io_before_update() {
     io->mouse.leftClick = main.input.mouse.leftClicks;
     io->mouse.rightClick = main.input.mouse.rightClicks;
     io->mouse.leftHeld = main.input.mouse.leftDown;
@@ -1916,12 +1916,16 @@ void Toolbar::start_gui() {
     };
     io->clipboard.textOut = std::nullopt;
 
+    if(io->acceptingTextInput)
+        main.input.text_input_silence_everything();
+    io->acceptingTextInput = false;
+}
+
+void Toolbar::start_gui() {
     gui.windowPos = Vector2f{0.0f, 0.0f};
     gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
-    io->hoverObstructed = false;
-    io->acceptingTextInput = false;
     gui.io = io;
-
+    io->hoverObstructed = false;
     gui.begin();
 }
 

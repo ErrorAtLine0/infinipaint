@@ -24,23 +24,15 @@ std::vector<std::weak_ptr<NetClient>> NetLibrary::clients;
 std::vector<std::weak_ptr<NetServer>> NetLibrary::servers;
 std::promise<void> NetLibrary::wsPromise;
 
-void NetLibrary::init() {
-    if(alreadyInitialized)
-        return;
+NetLibrary::LoadP2PSettingsInPathResult NetLibrary::load_p2p_settings_in_path(const std::filesystem::path& p2pConfigPath) {
+    config.iceServers.clear();
+    signalingAddr.clear();
 
-    using json = nlohmann::json;
-    std::ifstream f("data/config/p2p.json");
-
-    std::vector<std::string> stunServerList;
-    std::vector<std::string> turnServerList;
-
-    rtc::InitLogger(rtc::LogLevel::Info, [](rtc::LogLevel level, std::string message) {
-        Logger::get().log("INFO", "[LibDataChannel Log Level " + std::to_string(static_cast<int>(level)) + "] " + message);
-    });
+    std::ifstream f(p2pConfigPath);
 
     if(f.is_open()) {
         try {
-            json j;
+            nlohmann::json j;
             f >> j;
 
             j.at("signalingServer").get_to<std::string>(signalingAddr);
@@ -56,14 +48,43 @@ void NetLibrary::init() {
                 config.iceServers.emplace_back(turnServer["url"].get<std::string>(), turnServer["port"].get<uint16_t>(), turnServer["username"].get<std::string>(), turnServer["credential"].get<std::string>());
         }
         catch(...) {
-            throw std::runtime_error("[NetLibrary::init] Invalid config/p2p.json");
+            return LoadP2PSettingsInPathResult::FAILED_TO_READ;
         }
     }
     else
-        throw std::runtime_error("[NetLibrary::init] Could not open config/p2p.json");
+        return LoadP2PSettingsInPathResult::FAILED_TO_OPEN;
 
     f.close();
 
+    return LoadP2PSettingsInPathResult::SUCCESS;
+}
+
+void NetLibrary::init(const std::filesystem::path& p2pConfigPath) {
+    if(alreadyInitialized)
+        return;
+
+    rtc::InitLogger(rtc::LogLevel::Info, [](rtc::LogLevel level, std::string message) {
+        Logger::get().log("INFO", "[LibDataChannel Log Level " + std::to_string(static_cast<int>(level)) + "] " + message);
+    });
+
+    switch(load_p2p_settings_in_path(p2pConfigPath)) {
+        case LoadP2PSettingsInPathResult::SUCCESS:
+            Logger::get().log("INFO", "Successfully loaded local P2P configuration");
+            break;
+        case LoadP2PSettingsInPathResult::FAILED_TO_READ:
+            Logger::get().log("USERINFO", "Invalid custom P2P config, using defaults");
+        case LoadP2PSettingsInPathResult::FAILED_TO_OPEN:
+            switch(load_p2p_settings_in_path("data/config/default_p2p.json")) {
+                case LoadP2PSettingsInPathResult::SUCCESS:
+                    Logger::get().log("INFO", "Successfully loaded default P2P configuration");
+                    break;
+                case LoadP2PSettingsInPathResult::FAILED_TO_READ:
+                    throw std::runtime_error("[NetLibrary::init] Failed to read default_p2p.json");
+                case LoadP2PSettingsInPathResult::FAILED_TO_OPEN:
+                    throw std::runtime_error("[NetLibrary::init] Failed to open default_p2p.json");
+            }
+            break;
+    }
 
     // Not sure why, but TLS verification fails on mac
     // Should be fixed later, but for now this is fine, as the signaling server doesn't have
@@ -97,7 +118,7 @@ void NetLibrary::init() {
         if(!std::holds_alternative<std::string>(data))
             return;
 
-        json message = json::parse(std::get<std::string>(data));
+        nlohmann::json message = nlohmann::json::parse(std::get<std::string>(data));
 
         auto itID = message.find("id");
         if(itID == message.end())
@@ -149,6 +170,32 @@ void NetLibrary::init() {
     //wsFuture.get();
 
     alreadyInitialized = true;
+}
+
+void NetLibrary::copy_default_p2p_config_to_path(const std::filesystem::path& newP2PConfigPath) {
+    std::ifstream checkIfFileAlreadyExists(newP2PConfigPath);
+    if(checkIfFileAlreadyExists.is_open()) { // Don't copy if P2P config exists already
+        Logger::get().log("INFO", "Local P2P configuration already exists");
+        checkIfFileAlreadyExists.close();
+        return;
+    }
+    std::ifstream defaultP2PConfig("data/config/default_p2p.json");
+    if(defaultP2PConfig.is_open()) {
+        nlohmann::json j;
+        defaultP2PConfig >> j;
+        defaultP2PConfig.close();
+
+        std::ofstream newFile(newP2PConfigPath);
+        if(newFile.is_open()) {
+            newFile << std::setw(4) << j;
+            newFile.close();
+            Logger::get().log("INFO", "New P2P configuration created");
+        }
+        else
+            Logger::get().log("INFO", "[NetLibrary::copy_default_p2p_config_to_path] Could not open new p2p.json to write to");
+    }
+    else
+        Logger::get().log("INFO", "[NetLibrary::copy_default_p2p_config_to_path] Could not open default_p2p.json");
 }
 
 std::string NetLibrary::get_random_server_local_id() {

@@ -98,6 +98,8 @@ void MainProgram::update() {
     deltaTime.update_time_since();
     deltaTime.update_time_point();
 
+    toolbar.initialize_io_before_update();
+
     for(auto& w : worlds) {
         if(w == world)
             w->focus_update();
@@ -153,6 +155,10 @@ void MainProgram::new_tab_open() {
 
 void MainProgram::set_tab_to_close(size_t tabToClose) {
     setTabToClose = tabToClose;
+}
+
+void MainProgram::init_net_library() {
+    NetLibrary::init(configPath / "p2p.json");
 }
 
 void MainProgram::save_config() {
@@ -224,6 +230,8 @@ void MainProgram::load_config() {
     toolbar.load_palettes();
     toolbar.load_theme();
     toolbar.load_licenses();
+
+    NetLibrary::copy_default_p2p_config_to_path(configPath / "p2p.json");
 }
 
 void MainProgram::draw(SkCanvas* canvas) {

@@ -90,6 +90,8 @@ class MainProgram {
         void save_config();
         void load_config();
 
+        void init_net_library();
+
         std::filesystem::path homePath;
         std::filesystem::path configPath;
 
