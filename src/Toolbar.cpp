@@ -888,9 +888,9 @@ void Toolbar::chat_box() {
                 t.selection.selected = true;
                 chatBoxState = CHATBOXSTATE_OPEN;
             }
-            if(main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
+            if(io->key.escape)
                 t.selection.selected = false;
-            if(main.input.key(InputManager::KEY_TEXT_ENTER).pressed) {
+            if(io->key.enter) {
                 main.world->send_chat_message(chatMessageInput);
                 t.selection.selected = false;
             }
@@ -1909,6 +1909,7 @@ void Toolbar::initialize_io_before_update() {
     io->key.copy = main.input.key(InputManager::KEY_TEXT_COPY).repeat;
     io->key.paste = main.input.get_clipboard_paste_happened();
     io->key.cut = main.input.key(InputManager::KEY_TEXT_CUT).repeat;
+    io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
 
     io->textInput = main.input.text.newInput;
     io->clipboard.textInFunc = [&]() {

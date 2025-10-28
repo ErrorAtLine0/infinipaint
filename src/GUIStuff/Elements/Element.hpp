@@ -95,6 +95,7 @@ struct UpdateInputData {
         bool copy = false;
         bool paste = false;
         bool cut = false;
+        bool escape = false;
     } key;
 
     struct {
