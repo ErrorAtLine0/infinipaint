@@ -67,7 +67,7 @@ void TextBoxTool::tool_update() {
             if(!drawP.controls.leftClickHeld) {
                 auto editTool = std::make_unique<EditTool>(drawP);
                 editTool->edit_start(controls.intermediateItem);
-                drawP.switch_to_tool_ptr(std::move(editTool));
+                drawP.toolToSwitchToAfterUpdate = std::move(editTool);
                 return;
             }
             else {

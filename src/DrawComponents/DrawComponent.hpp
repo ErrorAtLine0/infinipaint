@@ -76,7 +76,7 @@ class DrawComponent {
 
         std::weak_ptr<CollabListType::ObjectInfo> collabListInfo;
         std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
-        ServerClientID id;
+        ServerClientID id = {0, 0};
 
 #ifndef IS_SERVER
         std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime;

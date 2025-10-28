@@ -15,6 +15,5 @@ class EllipseDrawEditTool : public DrawingProgramEditToolBase {
         virtual bool edit_gui(const std::shared_ptr<DrawComponent>& comp) override;
     private:
         void commit();
-
-        DrawEllipse::Data oldData;
+        std::optional<DrawEllipse::Data> oldData;
 };

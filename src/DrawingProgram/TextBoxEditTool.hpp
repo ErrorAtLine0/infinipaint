@@ -17,6 +17,5 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
     private:
         void edit_text(std::function<void()> toRun, const std::shared_ptr<DrawTextBox>& textBox);
         void update_textbox_network(const std::shared_ptr<DrawTextBox>& textBox);
-
-        DrawTextBox::Data oldData;
+        std::optional<DrawTextBox::Data> oldData;
 };

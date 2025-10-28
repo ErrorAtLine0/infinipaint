@@ -14,5 +14,5 @@ class RectDrawEditTool : public DrawingProgramEditToolBase {
         virtual bool edit_update(const std::shared_ptr<DrawComponent>& comp) override;
         virtual bool edit_gui(const std::shared_ptr<DrawComponent>& comp) override;
     private:
-        DrawRectangle::Data oldData;
+        std::optional<DrawRectangle::Data> oldData;
 };

@@ -357,6 +357,11 @@ void DrawingProgram::update() {
     selection.update();
     drawTool->tool_update();
 
+    if(toolToSwitchToAfterUpdate) {
+        switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
+        toolToSwitchToAfterUpdate = nullptr;
+    }
+
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;
 
