@@ -686,19 +686,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.backend_key_up_update(event->key);
                 break;
             case SDL_EVENT_TEXT_INPUT:
-                mS.m->input.text.newInput = event->text.text;
+                mS.m->input.text.newInput += event->text.text;
                 break;
             case SDL_EVENT_DROP_FILE:
+                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
                     true,
-                    Vector2f{event->drop.x, event->drop.y},
+                    Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
                     event->drop.data
                 });
                 break;
             case SDL_EVENT_DROP_TEXT:
+                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    true,
-                    Vector2f{event->drop.x, event->drop.y},
+                    false,
+                    Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
                     event->drop.data
                 });
                 break;
@@ -711,8 +713,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_PEN_MOTION: {
+                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
-				mS.m->input.mouse.set_pos({event->pmotion.x, event->pmotion.y});
+				mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.scale, event->pmotion.y * mS.m->window.scale});
                 break;
             }
             case SDL_EVENT_PEN_DOWN: {
