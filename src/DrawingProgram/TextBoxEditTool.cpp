@@ -38,7 +38,7 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
     DrawTextBox::Data pData = std::any_cast<DrawTextBox::Data>(prevData);
     DrawTextBox::Data cData = a->d; 
     drawP.world.undo.push(UndoManager::UndoRedoPair{
-        [&, a, pData]() {
+        [&drawP = drawP, a, pData]() {
             a->d = pData;
             a->set_textbox_string(pData.currentText);
             a->d.editing = false;
@@ -46,7 +46,7 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
             a->commit_update(drawP);
             return true;
         },
-        [&, a, cData]() {
+        [&drawP = drawP, a, cData]() {
             a->d = cData;
             a->set_textbox_string(cData.currentText);
             a->d.editing = false;

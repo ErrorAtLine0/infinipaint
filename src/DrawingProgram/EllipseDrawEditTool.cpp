@@ -60,13 +60,13 @@ void EllipseDrawEditTool::commit_edit_updates(const std::shared_ptr<DrawComponen
     DrawEllipse::Data pData = std::any_cast<DrawEllipse::Data>(prevData);
     DrawEllipse::Data cData = a->d;
     drawP.world.undo.push(UndoManager::UndoRedoPair{
-        [&, a, pData]() {
+        [&drawP = drawP, a, pData]() {
             a->d = pData;
             a->client_send_update(drawP, true);
             a->commit_update(drawP);
             return true;
         },
-        [&, a, cData]() {
+        [&drawP = drawP, a, cData]() {
             a->d = cData;
             a->client_send_update(drawP, true);
             a->commit_update(drawP);
