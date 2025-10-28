@@ -124,6 +124,9 @@ void DrawCamera::update_main(World& w) {
         isAccurateZooming = newIsAccurateZooming;
         if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
             WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? w.main.input.mouse.move.y() : -w.main.input.mouse.move.y()));
+            if(zoomFactor < WorldScalar(0.000001))
+                zoomFactor = WorldScalar(0.000001);
+
             c.scale(zoomFactor);
             if(c.inverseScale < WorldScalar(0.0001))
                 c.inverseScale = WorldScalar(0.0001);
@@ -139,6 +142,10 @@ void DrawCamera::update_main(World& w) {
             // Ignore the value of scrollAmount, since that leads to problems on macOS
 
             WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
+
+            if(zoomFactor < WorldScalar(0.000001))
+                zoomFactor = WorldScalar(0.000001);
+
             if(zoomFactor != WorldScalar(0)) {
                 if(w.main.input.mouse.scrollAmount.y() < 0.0)
                     zoomFactor = WorldScalar(1) / zoomFactor;
