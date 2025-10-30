@@ -58,6 +58,18 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.2.1" date="2025-10-29">
+            <description>
+                <p>Minor update:</p>
+                <ul>
+                    <li>Window scaling taken into account in some types of input (drag and drop files)</li>
+                    <li>Fixed program crashing when undoing an edit to an editable element (textbox, ellipse, rectangle)</li>
+                    <li>Fixed program crashing when zooming in/out too fast</li>
+                    <li>p2p.json is now accessible from the user configuration directory, allowing you to change the signaling server, STUN server, and TURN server list</li>
+                    <li>Text input is a bit more responsive</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.2.0" date="2025-10-07">
             <description>
                 <p>Major update:</p>

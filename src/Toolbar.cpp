@@ -194,9 +194,9 @@ void Toolbar::load_licenses() {
     std::sort(thirdPartyLicenses.begin(), thirdPartyLicenses.end(), [](const auto& a1, const auto& a2) {
         return std::lexicographical_compare(a1.first.begin(), a1.first.end(), a2.first.begin(), a2.first.end());
     });
-    ownLicenseText = 
+    ownLicenseText = "InfiniPaint v" + std::string(VERSION_STRING);
+    ownLicenseText +=
 R"(
-InfiniPaint v0.2.0
 
 Copyright © 2025 Yousef Khadadeh
 
