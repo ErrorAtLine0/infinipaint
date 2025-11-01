@@ -115,6 +115,7 @@ void GUIManager::draw(SkCanvas* canvas) {
                 skia::textlayout::TextStyle tStyle;
                 tStyle.setFontSize(config->fontSize);
                 tStyle.setFontFamilies({SkString{"Roboto"}});
+                tStyle.setColor(convert_vec4<SkColor4f>(config->textColor).toSkColor());
                 pStyle.setTextStyle(tStyle);
 
                 skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
@@ -272,6 +273,10 @@ void GUIManager::text_label_color(const std::string& val, const SkColor4f& color
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(color), .fontSize = io->fontSize }));
 }
 
+void GUIManager::text_label_light(const std::string& val) {
+    CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize }));
+}
+
 void GUIManager::text_label(const std::string& val) {
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize }));
 }
@@ -284,6 +289,17 @@ void GUIManager::text_label_centered(const std::string& val) {
         }
     }) {
         CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize }));
+    }
+}
+
+void GUIManager::text_label_light_centered(const std::string& val) {
+    CLAY({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+        }
+    }) {
+        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize }));
     }
 }
 

@@ -405,7 +405,7 @@ void Toolbar::top_toolbar() {
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .childGap = static_cast<uint16_t>(io->theme->childGap1 / 2),
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
@@ -428,7 +428,7 @@ void Toolbar::top_toolbar() {
             tabNames.emplace_back(main.worlds[i]->network_being_used() ? "data/icons/network.svg" : "", main.worlds[i]->name);
         std::optional<size_t> closedTab;
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
-        if(main.world->network_being_used() && gui.svg_icon_button("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
+        if(main.world->network_being_used() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
             playerMenuOpen = !playerMenuOpen;
         if(gui.svg_icon_button_transparent("Menu Undo Button", "data/icons/undo.svg"))
             main.world->undo_with_checks();
@@ -1407,7 +1407,7 @@ void Toolbar::options_menu() {
                                         gui.push_id("general settings");
                                         gui.input_text_field("display name input", "Display Name", &main.displayName);
                                         main.update_display_names();
-                                        gui.text_label("Note: Changes in display name dont affect canvases that are connected online");
+                                        gui.text_label_light("Note: Changes in display name dont affect canvases that are connected online");
                                         SkColor4f newBackColor{main.defaultCanvasBackgroundColor.x(), main.defaultCanvasBackgroundColor.y(), main.defaultCanvasBackgroundColor.z(), 1.0f};
                                         gui.color_picker_button_field("defaultCanvasBackgroundColor", "Default canvas background color", &newBackColor, false);
                                         main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);
@@ -1492,7 +1492,7 @@ void Toolbar::options_menu() {
                                             });
                                         }
                                         gui.text_label("Edit theme:");
-                                        gui.text_label("Note: Changes only remain if theme is saved");
+                                        gui.text_label_light("Note: Changes only remain if theme is saved");
                                         gui.color_picker_button_field("fillColor1", "Fill Color 1", &io->theme->fillColor1, true);
                                         gui.color_picker_button_field("fillColor2", "Fill Color 2", &io->theme->fillColor2, true);
                                         gui.color_picker_button_field("backColor1", "Back Color 1", &io->theme->backColor1, true);
@@ -1533,7 +1533,7 @@ void Toolbar::options_menu() {
                                             CLAY({
                                                 .layout = {
                                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                                    .padding = CLAY_PADDING_ALL(4),
+                                                    .padding = CLAY_PADDING_ALL(0),
                                                     .childGap = io->theme->childGap1,
                                                     .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                                                     .layoutDirection = CLAY_LEFT_TO_RIGHT 
@@ -1695,7 +1695,7 @@ void Toolbar::about_menu_gui() {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
+                    .childGap = 1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 }
@@ -1704,19 +1704,19 @@ void Toolbar::about_menu_gui() {
                     CLAY({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                            .childGap = io->theme->childGap1,
+                            .padding = CLAY_PADDING_ALL(0),
+                            .childGap = 1,
                         }
                     }) {
                         if(gui.text_button_left_transparent("infinipaintnoticebutton", "InfiniPaint", selectedLicense == -1)) selectedLicense = -1;
                     }
-                    gui.text_label_centered("Third Party Libraries");
+                    gui.text_label_light_centered("Third Party Libraries");
                     for(int i = 0; i < static_cast<int>(thirdPartyLicenses.size()); i++) {
                         CLAY({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                                .childGap = io->theme->childGap1,
+                                .padding = CLAY_PADDING_ALL(0),
+                                .childGap = 1,
                             }
                         }) {
                             gui.push_id(i);
@@ -1956,7 +1956,7 @@ float Toolbar::final_gui_scale() {
 }
 
 void Toolbar::calculate_final_gui_scale() {
-    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{800.0f, 880.0f};
+    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{700.0f, 700.0f};
     Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
     finalCalculatedGuiScale = final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
 }

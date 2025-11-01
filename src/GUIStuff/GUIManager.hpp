@@ -52,7 +52,9 @@ class GUIManager {
         void text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate = nullptr);
         void text_label_color(const std::string& val, const SkColor4f& color);
         void text_label_size(const std::string& val, float modifier);
+        void text_label_light(const std::string& val);
         void text_label(const std::string& val);
+        void text_label_light_centered(const std::string& val);
         void text_label_centered(const std::string& val);
         bool text_button_left_transparent(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
         bool text_button(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);

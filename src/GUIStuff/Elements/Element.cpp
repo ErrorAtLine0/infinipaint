@@ -26,8 +26,8 @@ namespace GUIStuff {
         theme->fillColor2 = {0.31f, 0.31f, 0.48f, 1.0f};
         theme->backColor1 = {0.156f, 0.156f, 0.18f, 1.0f};
         theme->backColor2 = {0.24f, 0.24f, 0.29f, 1.0f};
-        theme->frontColor1 = {0.9f, 0.9f, 0.9f, 1.0f};
-        theme->frontColor2 = {0.8f, 0.8f, 0.8f, 1.0f};
+        theme->frontColor1 = {0.87f, 0.87f, 0.87f, 1.0f};
+        theme->frontColor2 = {0.64f, 0.64f, 0.64f, 1.0f};
         return theme;
     }
 

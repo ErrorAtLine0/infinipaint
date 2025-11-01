@@ -59,7 +59,7 @@ struct Theme {
     SkColor4f warningColor = {1.0f, 1.0f, 0.0f, 1.0f};
 
     float hoverExpandTime = 0.1f;
-    uint16_t childGap1 = 8;
+    uint16_t childGap1 = 10;
     uint16_t padding1 = 8;
     float windowCorners1 = 8;
     uint16_t windowBorders1 = 0;
@@ -108,7 +108,7 @@ struct UpdateInputData {
 
     SkFont get_font(float fSize) const;
 
-    uint16_t fontSize = 14;
+    uint16_t fontSize = 16;
     sk_sp<SkTypeface> textTypeface;
 
     sk_sp<skia::textlayout::FontCollection> fontCollection;
