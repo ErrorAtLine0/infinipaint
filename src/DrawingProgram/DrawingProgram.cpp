@@ -201,32 +201,27 @@ void DrawingProgram::toolbar_gui() {
         .border = {.color = convert_vec4<Clay_Color>(t.io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(t.io->theme->windowBorders1)}
     }) {
         t.gui.obstructing_window();
-        if(t.gui.svg_icon_button("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
-        if(t.gui.svg_icon_button("Eraser Toolbar Button", "data/icons/eraser.svg", drawTool->get_type() == DrawingProgramToolType::ERASER)) { switch_to_tool(DrawingProgramToolType::ERASER); }
-        if(t.gui.svg_icon_button("Text Toolbar Button", "data/icons/text.svg", drawTool->get_type() == DrawingProgramToolType::TEXTBOX)) { switch_to_tool(DrawingProgramToolType::TEXTBOX); }
-        if(t.gui.svg_icon_button("Ellipse Toolbar Button", "data/icons/circle.svg", drawTool->get_type() == DrawingProgramToolType::ELLIPSE)) { switch_to_tool(DrawingProgramToolType::ELLIPSE); }
-        if(t.gui.svg_icon_button("Rect Toolbar Button", "data/icons/rectangle.svg", drawTool->get_type() == DrawingProgramToolType::RECTANGLE)) { switch_to_tool(DrawingProgramToolType::RECTANGLE); }
-        if(t.gui.svg_icon_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", drawTool->get_type() == DrawingProgramToolType::RECTSELECT)) { switch_to_tool(DrawingProgramToolType::RECTSELECT); }
-        if(t.gui.svg_icon_button("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)) { switch_to_tool(DrawingProgramToolType::LASSOSELECT); }
-        if(t.gui.svg_icon_button("Edit Toolbar Button", "data/icons/cursor.svg", drawTool->get_type() == DrawingProgramToolType::EDIT)) { switch_to_tool(DrawingProgramToolType::EDIT); }
-        if(t.gui.svg_icon_button("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", drawTool->get_type() == DrawingProgramToolType::EYEDROPPER)) { switch_to_tool(DrawingProgramToolType::EYEDROPPER); }
-        if(t.gui.svg_icon_button("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", drawTool->get_type() == DrawingProgramToolType::ZOOM)) { switch_to_tool(DrawingProgramToolType::ZOOM); }
-        if(t.gui.svg_icon_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", drawTool->get_type() == DrawingProgramToolType::PAN)) { switch_to_tool(DrawingProgramToolType::PAN); }
+        if(t.gui.svg_icon_button_transparent("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
+        if(t.gui.svg_icon_button_transparent("Eraser Toolbar Button", "data/icons/eraser.svg", drawTool->get_type() == DrawingProgramToolType::ERASER)) { switch_to_tool(DrawingProgramToolType::ERASER); }
+        if(t.gui.svg_icon_button_transparent("Text Toolbar Button", "data/icons/text.svg", drawTool->get_type() == DrawingProgramToolType::TEXTBOX)) { switch_to_tool(DrawingProgramToolType::TEXTBOX); }
+        if(t.gui.svg_icon_button_transparent("Ellipse Toolbar Button", "data/icons/circle.svg", drawTool->get_type() == DrawingProgramToolType::ELLIPSE)) { switch_to_tool(DrawingProgramToolType::ELLIPSE); }
+        if(t.gui.svg_icon_button_transparent("Rect Toolbar Button", "data/icons/rectangle.svg", drawTool->get_type() == DrawingProgramToolType::RECTANGLE)) { switch_to_tool(DrawingProgramToolType::RECTANGLE); }
+        if(t.gui.svg_icon_button_transparent("RectSelect Toolbar Button", "data/icons/rectselect.svg", drawTool->get_type() == DrawingProgramToolType::RECTSELECT)) { switch_to_tool(DrawingProgramToolType::RECTSELECT); }
+        if(t.gui.svg_icon_button_transparent("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)) { switch_to_tool(DrawingProgramToolType::LASSOSELECT); }
+        if(t.gui.svg_icon_button_transparent("Edit Toolbar Button", "data/icons/cursor.svg", drawTool->get_type() == DrawingProgramToolType::EDIT)) { switch_to_tool(DrawingProgramToolType::EDIT); }
+        if(t.gui.svg_icon_button_transparent("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", drawTool->get_type() == DrawingProgramToolType::EYEDROPPER)) { switch_to_tool(DrawingProgramToolType::EYEDROPPER); }
+        if(t.gui.svg_icon_button_transparent("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", drawTool->get_type() == DrawingProgramToolType::ZOOM)) { switch_to_tool(DrawingProgramToolType::ZOOM); }
+        if(t.gui.svg_icon_button_transparent("Pan Canvas Toolbar Button", "data/icons/hand.svg", drawTool->get_type() == DrawingProgramToolType::PAN)) { switch_to_tool(DrawingProgramToolType::PAN); }
 
         double newRotationAngle = world.drawData.cam.c.rotation, oldRotationAngle = world.drawData.cam.c.rotation;
         t.gui.rotate_wheel("Canvas Rotate Wheel", &newRotationAngle);
         if(newRotationAngle != oldRotationAngle)
             world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), newRotationAngle - oldRotationAngle);
 
-        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-            if(t.gui.color_button("Foreground Color", &controls.foregroundColor, &controls.foregroundColor == t.colorLeft)) {
-                t.color_selector_left(&controls.foregroundColor == t.colorLeft ? nullptr : &controls.foregroundColor);
-            }
-        }
-        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-            if(t.gui.color_button("Background Color", &controls.backgroundColor, &controls.backgroundColor == t.colorLeft))
-                t.color_selector_left(&controls.backgroundColor == t.colorLeft ? nullptr : &controls.backgroundColor);
-        }
+        if(t.gui.big_color_button("Foreground Color", &controls.foregroundColor, &controls.foregroundColor == t.colorLeft))
+            t.color_selector_left(&controls.foregroundColor == t.colorLeft ? nullptr : &controls.foregroundColor);
+        if(t.gui.big_color_button("Background Color", &controls.backgroundColor, &controls.backgroundColor == t.colorLeft))
+            t.color_selector_left(&controls.backgroundColor == t.colorLeft ? nullptr : &controls.backgroundColor);
     }
 }
 

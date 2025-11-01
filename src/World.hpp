@@ -11,7 +11,7 @@
 
 class MainProgram;
 
-#define DEFAULT_CANVAS_BACKGROUND_COLOR Vector3f{0.12f, 0.12f, 0.12f}
+#define DEFAULT_CANVAS_BACKGROUND_COLOR Vector3f{0.07f, 0.07f, 0.07f}
 
 class World {
     public:

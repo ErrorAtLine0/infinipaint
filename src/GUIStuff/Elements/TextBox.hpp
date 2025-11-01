@@ -52,7 +52,7 @@ template <typename T> class TextBox : public Element {
             SkRect r = SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height());
 
             canvas->drawRect(r, SkPaint(io.theme->backColor2));
-            SkPaint outline(selection.selected ? io.theme->fillColor1 : io.theme->backColor3);
+            SkPaint outline(selection.selected ? io.theme->fillColor1 : io.theme->backColor2);
             outline.setStroke(true);
             outline.setStrokeWidth(2.0f);
             canvas->drawRoundRect(r, 2.0f, 2.0f, outline);

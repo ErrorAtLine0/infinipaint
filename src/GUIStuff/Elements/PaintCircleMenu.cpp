@@ -99,7 +99,7 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io) {
     if(rotateBarSelect.held)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else if(rotateBarSelect.hovered)
-        rotateBarHolderFill.setColor4f(io.theme->fillColor2);
+        rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor2);
     float rotateBarHolderRadius = (CIRCLE_END - ROTATE_START) / 2.0f;
@@ -155,7 +155,7 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
         double angleEnd = (colorSelectionIndex + 1) * colorDistribution;
         Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
         Vector2f lineDir2{std::cos(angleEnd), std::sin(angleEnd)};
-        SkPaint lineP(io.theme->fillColor2);
+        SkPaint lineP(io.theme->fillColor1);
         lineP.setStrokeWidth(5.0f);
         lineP.setStroke(true);
         lineP.setStrokeJoin(SkPaint::kRound_Join);

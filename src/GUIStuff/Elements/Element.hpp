@@ -48,24 +48,23 @@ typedef StringArena<4000000> DefaultStringArena;
 SkFont get_setup_skfont();
 
 struct Theme {
-    SkColor4f fillColor1 = {0.5f, 0.6f, 1.0f, 1.0f};
-    SkColor4f fillColor2 = {0.4f, 0.5f, 0.9f, 1.0f};
-    SkColor4f fillColor3 = {1.0f, 0.0f, 0.0f, 1.0f};
-    SkColor4f fillColor4 = {1.0f, 1.0f, 0.0f, 1.0f};
-    SkColor4f fillColor5 = {0.7f, 0.7f, 1.0f, 1.0f};
-    SkColor4f backColor1 = {1.0f, 1.0f, 1.0f, 0.9f};
-    SkColor4f backColor2 = {0.95f, 0.95f, 0.95f, 1.0f};
-    SkColor4f backColor3 = {0.9f, 0.9f, 0.9f, 1.0f};
-    SkColor4f frontColor1 = {0.0f, 0.0f, 0.0f, 1.0f};
-    SkColor4f frontColor2 = {0.1f, 0.1f, 0.1f, 1.0f};
+    SkColor4f fillColor1 = {0.8f, 0.785f, 1.0f, 1.0f};
+    SkColor4f fillColor2 = {0.3f, 0.3f, 0.477f, 1.0f};
+    SkColor4f backColor1 = {0.0f, 0.0f, 0.0f, 1.0f};
+    SkColor4f backColor2 = {1.0f, 1.0f, 1.0f, 1.0f};
+    SkColor4f frontColor1 = {1.0f, 1.0f, 1.0f, 1.0f};
+    SkColor4f frontColor2 = {0.9f, 0.9f, 0.9f, 1.0f};
+
+    SkColor4f errorColor = {1.0f, 0.0f, 0.0f, 1.0f};
+    SkColor4f warningColor = {1.0f, 1.0f, 0.0f, 1.0f};
 
     float hoverExpandTime = 0.1f;
-    uint16_t childGap1 = 10;
-    uint16_t padding1 = 10;
-    float windowCorners1 = 10;
-    uint16_t windowBorders1 = 2;
+    uint16_t childGap1 = 8;
+    uint16_t padding1 = 8;
+    float windowCorners1 = 8;
+    uint16_t windowBorders1 = 0;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Theme, fillColor1, fillColor2, fillColor3, fillColor4, fillColor5, backColor1, backColor2, backColor3, frontColor1, frontColor2, hoverExpandTime, childGap1, padding1, windowCorners1, windowBorders1)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Theme, fillColor1, fillColor2, backColor1, backColor2, frontColor1, frontColor2, hoverExpandTime, childGap1, padding1, windowCorners1, windowBorders1)
 };
 
 std::shared_ptr<Theme> get_default_dark_mode();
@@ -109,7 +108,7 @@ struct UpdateInputData {
 
     SkFont get_font(float fSize) const;
 
-    uint16_t fontSize = 20;
+    uint16_t fontSize = 14;
     sk_sp<SkTypeface> textTypeface;
 
     sk_sp<skia::textlayout::FontCollection> fontCollection;

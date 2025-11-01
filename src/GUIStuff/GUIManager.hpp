@@ -7,6 +7,7 @@
 #include "Elements/PaintCircleMenu.hpp"
 #include "Elements/RadioButton.hpp"
 #include "Elements/ColorPicker.hpp"
+#include "Elements/SelectableButton.hpp"
 #include "Elements/TextBox.hpp"
 #include <any>
 #include "GUIManagerID.hpp"
@@ -18,10 +19,13 @@
 
 using namespace Eigen;
 
+
 namespace GUIStuff {
 
 class GUIManager {
     public:
+        constexpr static float BIG_BUTTON_SIZE = 30;
+
         struct ElementContainer {
             std::unique_ptr<Element> elem;
             std::any extra;
@@ -50,20 +54,23 @@ class GUIManager {
         void text_label_size(const std::string& val, float modifier);
         void text_label(const std::string& val);
         void text_label_centered(const std::string& val);
+        bool text_button_left_transparent(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
         bool text_button(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
         bool text_button_wide(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
         bool text_button_sized(const std::string& id, const std::string& text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
 
         void svg_icon(const std::string& id, const std::string& svgPath, bool isHighlighted = false, const std::function<void()>& elemUpdate = nullptr);
-        bool svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = 40.0f, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
+        bool svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
 
-        bool rotate_wheel(const std::string& id, double* angle, float size = 40.0f, const std::function<void()>& elemUpdate = nullptr);
+        bool svg_icon_button_transparent(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
+
+        bool rotate_wheel(const std::string& id, double* angle, float size = BIG_BUTTON_SIZE, const std::function<void()>& elemUpdate = nullptr);
 
         void top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_line_layout(const std::function<void()>& elemUpdate);
 
-        bool selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, bool hasBorder, bool hasBorderPadding, bool isSelected);
+        bool selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected);
 
         void push_id(int64_t id);
         void push_id(const std::string& id);
@@ -226,6 +233,14 @@ class GUIManager {
             pop_id();
         }
 
+        template <typename T> bool big_color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
+            bool toRet = false;
+            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE)}}}) {
+                toRet = color_button<T>(id, val, isSelected, elemUpdate);
+            }
+            return toRet;
+        }
+
         template <typename T> bool color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             return selectable_button(id, [&](SelectionHelper& s, bool iS) {
                 CLAY({.layout = { 
@@ -236,14 +251,14 @@ class GUIManager {
                 }) {}
                 if(elemUpdate)
                     elemUpdate();
-            }, true, false, isSelected);
+            }, GUIStuff::SelectableButton::DrawType::TRANSPARENT_BORDER, isSelected);
         }
 
         template <typename T> void color_picker_button(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
             push_id(id);
             bool& isOpen = insert_any_with_id<bool>(0, false);
             bool clicked;
-            CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40) } } }) {
+            CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE) } } }) {
                 clicked = color_button("0", val, isOpen, elemUpdate);
             }
             if(clicked)

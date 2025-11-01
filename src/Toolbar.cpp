@@ -41,7 +41,6 @@ Toolbar::Toolbar(MainProgram& initMain):
     io->textTypeface = main.fonts.map["Roboto"];
     io->textFontMgr = main.fonts.mgr;
     io->fontCollection = main.fonts.collection;
-    io->fontSize = 20;
     
     load_default_palette();
     load_default_theme();
@@ -226,7 +225,6 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["jumpTransitionTime"] = jumpTransitionTime;
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
-    toRet["guiFontSize"] = io->fontSize;
     toRet["showPerformance"] = showPerformance;
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
@@ -280,7 +278,6 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     j.at("dragZoomSpeed").get_to(dragZoomSpeed);
     j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);
     j.at("guiScale").get_to(guiScale);
-    j.at("guiFontSize").get_to(io->fontSize);
     j.at("showPerformance").get_to(showPerformance);
     j.at("useNativeFilePicker").get_to(useNativeFilePicker);
     j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
@@ -422,7 +419,7 @@ void Toolbar::top_toolbar() {
         bool menuPopUpJustOpen = false;
         bool bookmarkMenuPopUpJustOpen = false;
         bool gridMenuPopUpJustOpen = false;
-        if(gui.svg_icon_button("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen)) {
+        if(gui.svg_icon_button_transparent("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen)) {
             menuPopUpOpen = true;
             menuPopUpJustOpen = true;
         }
@@ -433,11 +430,11 @@ void Toolbar::top_toolbar() {
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
         if(main.world->network_being_used() && gui.svg_icon_button("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
             playerMenuOpen = !playerMenuOpen;
-        if(gui.svg_icon_button("Menu Undo Button", "data/icons/undo.svg"))
+        if(gui.svg_icon_button_transparent("Menu Undo Button", "data/icons/undo.svg"))
             main.world->undo_with_checks();
-        if(gui.svg_icon_button("Menu Redo Button", "data/icons/redo.svg"))
+        if(gui.svg_icon_button_transparent("Menu Redo Button", "data/icons/redo.svg"))
             main.world->redo_with_checks();
-        if(gui.svg_icon_button("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
+        if(gui.svg_icon_button_transparent("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
             if(gridMenu.popupOpen)
                 stop_displaying_grid_menu();
             else {
@@ -445,7 +442,7 @@ void Toolbar::top_toolbar() {
                 gridMenuPopUpJustOpen = true;
             }
         }
-        if(gui.svg_icon_button("Bookmark Menu Button", "data/icons/bookmark.svg", bookMenu.popupOpen)) {
+        if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookMenu.popupOpen)) {
             if(bookMenu.popupOpen)
                 bookMenu.popupOpen = false;
             else {
@@ -464,9 +461,9 @@ void Toolbar::top_toolbar() {
         if(menuPopUpOpen) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
+                    .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
+                    .childGap = 1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
@@ -476,20 +473,20 @@ void Toolbar::top_toolbar() {
                 .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
             }) {
                 gui.obstructing_window();
-                if(gui.text_button_wide("new file local", "New File")) {
+                if(gui.text_button_left_transparent("new file local", "New File")) {
                     main.new_tab({
                         .conType = World::CONNECTIONTYPE_LOCAL
                     }, true);
                 }
-                if(gui.text_button_wide("save file", "Save"))
+                if(gui.text_button_left_transparent("save file", "Save"))
                     save_func();
-                if(gui.text_button_wide("save as file", "Save As"))
+                if(gui.text_button_left_transparent("save as file", "Save As"))
                     save_as_func();
-                if(gui.text_button_wide("open file", "Open"))
+                if(gui.text_button_left_transparent("open file", "Open"))
                     open_world_file(World::CONNECTIONTYPE_LOCAL, "", "");
-                if(gui.text_button_wide("screenshot", "Take Screenshot"))
+                if(gui.text_button_left_transparent("screenshot", "Take Screenshot"))
                     main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
-                if(gui.text_button_wide("add image or file to canvas", "Add Image/File to Canvas")) {
+                if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
                     #ifdef __EMSCRIPTEN__
                         emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
                             if(!buffer.empty()) {
@@ -506,36 +503,36 @@ void Toolbar::top_toolbar() {
                     #endif
                 }
                 if(main.world->network_being_used()) {
-                    if(gui.text_button_wide("lobby info", "Lobby Info")) {
+                    if(gui.text_button_left_transparent("lobby info", "Lobby Info")) {
                         optionsMenuOpen = true;
                         optionsMenuType = LOBBY_INFO_MENU;
                     }
                 }
-                else if(gui.text_button_wide("start hosting", "Host")) {
+                else if(gui.text_button_left_transparent("start hosting", "Host")) {
                     serverLocalID = NetLibrary::get_random_server_local_id();
                     serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
                     optionsMenuOpen = true;
                     optionsMenuType = HOST_MENU;
                 }
-                if(gui.text_button_wide("start connecting", "Connect")) {
+                if(gui.text_button_left_transparent("start connecting", "Connect")) {
                     serverToConnectTo.clear();
                     optionsMenuOpen = true;
                     optionsMenuType = CONNECT_MENU;
                 }
-                if(gui.text_button_wide("canvas specific settings", "Canvas Settings")) {
+                if(gui.text_button_left_transparent("canvas specific settings", "Canvas Settings")) {
                     optionsMenuOpen = true;
                     optionsMenuType = CANVAS_SETTINGS_MENU;
                 }
-                if(gui.text_button_wide("open options", "Settings")) {
+                if(gui.text_button_left_transparent("open options", "Settings")) {
                     optionsMenuOpen = true;
                     optionsMenuType = GENERAL_SETTINGS_MENU;
                 }
-                if(gui.text_button_wide("about menu button", "About")) {
+                if(gui.text_button_left_transparent("about menu button", "About")) {
                     optionsMenuOpen = true;
                     optionsMenuType = ABOUT_MENU;
                 }
                 #ifndef __EMSCRIPTEN__
-                    if(gui.text_button_wide("quit button", "Quit"))
+                    if(gui.text_button_left_transparent("quit button", "Quit"))
                         main.setToQuit = true;
                 #endif
                 if(io->mouse.leftClick && !menuPopUpJustOpen)
@@ -696,17 +693,17 @@ void Toolbar::grid_menu(bool justOpened) {
                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                     }
                 }) {
-                    if(gui.svg_icon_button("visibility eye", grid.visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
+                    if(gui.svg_icon_button_transparent("visibility eye", grid.visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
                         grid.visible = !grid.visible;
                         main.world->gridMan.send_grid_info(gridID);
                     }
-                    if(gui.svg_icon_button("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
+                    if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
                         main.world->drawProg.modify_grid(gridID);
                         stop_displaying_grid_menu();
                     }
-                    if(gui.svg_icon_button("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
+                    if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
                         toDelete = gridID;
                     }
@@ -789,11 +786,11 @@ void Toolbar::bookmark_menu(bool justOpened) {
                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                     }
                 }) {
-                    if(gui.svg_icon_button("bookmark jump button", "data/icons/jump.svg", false, entryHeight, false)) {
+                    if(gui.svg_icon_button_transparent("bookmark jump button", "data/icons/jump.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
                         main.world->bMan.jump_to_bookmark(bookmark);
                     }
-                    if(gui.svg_icon_button("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
+                    if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
                         toDelete = bookmark;
                     }
@@ -833,7 +830,7 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
     tStyle.setFontSize(io->fontSize);
     tStyle.setFontFamilies({SkString{"Roboto"}});
     tStyle.setFontStyle(SkFontStyle::Bold());
-    tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io->theme->fillColor4 : io->theme->frontColor1, alpha)});
+    tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io->theme->warningColor : io->theme->frontColor1, alpha)});
     pStyle.setTextStyle(tStyle);
 
     skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
@@ -1000,7 +997,7 @@ void Toolbar::global_log() {
                             c = io->theme->frontColor1;
                             break;
                         case LogMessage::COLOR_ERROR:
-                            c = io->theme->fillColor3;
+                            c = io->theme->errorColor;
                             break;
                     }
                     gui.text_label_color(logM.text, color_mul_alpha(c, a));
@@ -1025,7 +1022,7 @@ void Toolbar::drawing_program_gui() {
         if(colorLeft) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+                    .sizing = {.width = CLAY_SIZING_FIT(250), .height = CLAY_SIZING_FIT(0)},
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
                     .childGap = io->theme->childGap1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -1051,7 +1048,7 @@ void Toolbar::drawing_program_gui() {
         if(colorRight) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+                    .sizing = {.width = CLAY_SIZING_FIT(250), .height = CLAY_SIZING_FIT(0)},
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
                     .childGap = io->theme->childGap1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -1077,7 +1074,7 @@ void Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
     gui.push_id(id);
     auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
     size_t i = 0;
-    constexpr float COLOR_BUTTON_SIZE = 35.0f;
+    constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
     while(i < palette.size()) {
         CLAY({
             .layout = {
@@ -1371,18 +1368,18 @@ void Toolbar::options_menu() {
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIT(150), .height = CLAY_SIZING_GROW(0) },
                             .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                            .childGap = io->theme->childGap1,
+                            .childGap = 2,
                             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                             .layoutDirection = CLAY_TOP_TO_BOTTOM
                         }
                     }) {
                         auto oldOption = generalSettingsOptions;
-                        if(gui.text_button_wide("Generalbutton", "General", generalSettingsOptions == GSETTINGS_GENERAL)) generalSettingsOptions = GSETTINGS_GENERAL;
-                        if(gui.text_button_wide("Appearancebutton", "Appearance", generalSettingsOptions == GSETTINGS_APPEARANCE)) generalSettingsOptions = GSETTINGS_APPEARANCE;
-                        if(gui.text_button_wide("Tabletbutton", "Tablet", generalSettingsOptions == GSETTINGS_TABLET)) generalSettingsOptions = GSETTINGS_TABLET;
-                        if(gui.text_button_wide("Themebutton", "Theme", generalSettingsOptions == GSETTINGS_THEME)) generalSettingsOptions = GSETTINGS_THEME;
-                        if(gui.text_button_wide("Keybindsbutton", "Keybinds", generalSettingsOptions == GSETTINGS_KEYBINDS)) generalSettingsOptions = GSETTINGS_KEYBINDS;
-                        if(gui.text_button_wide("Debugbutton", "Debug", generalSettingsOptions == GSETTINGS_DEBUG)) generalSettingsOptions = GSETTINGS_DEBUG;
+                        if(gui.text_button_left_transparent("Generalbutton", "General", generalSettingsOptions == GSETTINGS_GENERAL)) generalSettingsOptions = GSETTINGS_GENERAL;
+                        if(gui.text_button_left_transparent("Appearancebutton", "Appearance", generalSettingsOptions == GSETTINGS_APPEARANCE)) generalSettingsOptions = GSETTINGS_APPEARANCE;
+                        if(gui.text_button_left_transparent("Tabletbutton", "Tablet", generalSettingsOptions == GSETTINGS_TABLET)) generalSettingsOptions = GSETTINGS_TABLET;
+                        if(gui.text_button_left_transparent("Themebutton", "Theme", generalSettingsOptions == GSETTINGS_THEME)) generalSettingsOptions = GSETTINGS_THEME;
+                        if(gui.text_button_left_transparent("Keybindsbutton", "Keybinds", generalSettingsOptions == GSETTINGS_KEYBINDS)) generalSettingsOptions = GSETTINGS_KEYBINDS;
+                        if(gui.text_button_left_transparent("Debugbutton", "Debug", generalSettingsOptions == GSETTINGS_DEBUG)) generalSettingsOptions = GSETTINGS_DEBUG;
                         if(oldOption != generalSettingsOptions) {
                             load_theme();
                             themeData.selectedThemeIndex = std::nullopt;
@@ -1429,8 +1426,6 @@ void Toolbar::options_menu() {
                                     case GSETTINGS_APPEARANCE: {
                                         gui.push_id("appearance settings");
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 3.0f, 1);
-                                        gui.input_scalar_field<uint16_t>("GUI Font Size", "GUI Font Size", &io->fontSize, 10, 30);
-                                        gui.text_label("Note: Changing font size may break UI in some cases.");
                                         gui.pop_id();
                                         break;
                                     }
@@ -1500,14 +1495,12 @@ void Toolbar::options_menu() {
                                         gui.text_label("Note: Changes only remain if theme is saved");
                                         gui.color_picker_button_field("fillColor1", "Fill Color 1", &io->theme->fillColor1, true);
                                         gui.color_picker_button_field("fillColor2", "Fill Color 2", &io->theme->fillColor2, true);
-                                        gui.color_picker_button_field("fillColor3", "Fill Color 3", &io->theme->fillColor3, true);
-                                        gui.color_picker_button_field("fillColor4", "Fill Color 4", &io->theme->fillColor4, true);
-                                        gui.color_picker_button_field("fillColor5", "Fill Color 5", &io->theme->fillColor5, true);
                                         gui.color_picker_button_field("backColor1", "Back Color 1", &io->theme->backColor1, true);
                                         gui.color_picker_button_field("backColor2", "Back Color 2", &io->theme->backColor2, true);
-                                        gui.color_picker_button_field("backColor3", "Back Color 3", &io->theme->backColor3, true);
                                         gui.color_picker_button_field("frontColor1", "Front Color 1", &io->theme->frontColor1, true);
                                         gui.color_picker_button_field("frontColor2", "Front Color 2", &io->theme->frontColor2, true);
+                                        gui.color_picker_button_field("warningColor", "Warning Color", &io->theme->warningColor, true);
+                                        gui.color_picker_button_field("errorColor", "Error Color", &io->theme->errorColor, true);
                                         //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io->theme->hoverExpandTime, 0.001f, 1.0f);
                                         gui.input_scalar_field<uint16_t>("childGap1", "Gap between child elements", &io->theme->childGap1, 0, 30);
                                         gui.input_scalar_field<uint16_t>("padding1", "Window padding", &io->theme->padding1, 0, 30);
@@ -1715,7 +1708,7 @@ void Toolbar::about_menu_gui() {
                             .childGap = io->theme->childGap1,
                         }
                     }) {
-                        if(gui.text_button_wide("infinipaintnoticebutton", "InfiniPaint", selectedLicense == -1)) selectedLicense = -1;
+                        if(gui.text_button_left_transparent("infinipaintnoticebutton", "InfiniPaint", selectedLicense == -1)) selectedLicense = -1;
                     }
                     gui.text_label_centered("Third Party Libraries");
                     for(int i = 0; i < static_cast<int>(thirdPartyLicenses.size()); i++) {
@@ -1727,7 +1720,7 @@ void Toolbar::about_menu_gui() {
                             }
                         }) {
                             gui.push_id(i);
-                            if(gui.text_button_wide("noticebutton", thirdPartyLicenses[i].first, selectedLicense == i)) selectedLicense = i;
+                            if(gui.text_button_left_transparent("noticebutton", thirdPartyLicenses[i].first, selectedLicense == i)) selectedLicense = i;
                             gui.pop_id();
                         }
                     }
@@ -1857,7 +1850,7 @@ void Toolbar::file_picker_gui() {
                 CLAY({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
-                        .childGap = 2,
+                        .childGap = 1,
                         .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                         .layoutDirection = CLAY_LEFT_TO_RIGHT 
                     },

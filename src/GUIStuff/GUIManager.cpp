@@ -365,10 +365,10 @@ void GUIManager::input_text(const std::string& id, std::string* val, const std::
     pop_id();
 }
 
-bool GUIManager::selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, bool hasBorder, bool hasBorderPadding, bool isSelected) {
+bool GUIManager::selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected) {
     push_id(id);
     SelectableButton* e = insert_element<SelectableButton>();
-    e->update(*io, hasBorder, hasBorderPadding, elemUpdate, isSelected);
+    e->update(*io, drawType, elemUpdate, isSelected);
     bool toRet = e->selection.clicked;
     pop_id();
     return toRet;
@@ -388,7 +388,21 @@ bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPa
             svg_icon("1", svgPath, is || s.held || s.hovered);
             if(elemUpdate)
                 elemUpdate();
-        }, hasBorder, true, isSelected);
+        }, SelectableButton::DrawType::FILLED, isSelected);
+    }
+    pop_id();
+    return toRet;
+}
+
+bool GUIManager::svg_icon_button_transparent(const std::string& id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
+    bool toRet = false;
+    push_id(id);
+    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
+        toRet = selectable_button("0", [&](SelectionHelper& s, bool is) {
+            svg_icon("1", svgPath, is || s.held || s.hovered);
+            if(elemUpdate)
+                elemUpdate();
+        }, SelectableButton::DrawType::TRANSPARENT, isSelected);
     }
     pop_id();
     return toRet;
@@ -401,7 +415,7 @@ bool GUIManager::text_button_sized(const std::string& id, const std::string& tex
             text_label(text);
             if(elemUpdate)
                 elemUpdate();
-        }, true, true, isSelected);
+        }, SelectableButton::DrawType::FILLED, isSelected);
     }
     return toRet;
 }
@@ -413,19 +427,45 @@ bool GUIManager::text_button(const std::string& id, const std::string& text, boo
             text_label(text);
             if(elemUpdate)
                 elemUpdate();
-        }, true, true, isSelected);
+        }, SelectableButton::DrawType::FILLED, isSelected);
     }
     return toRet;
 }
 
 bool GUIManager::text_button_wide(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
-    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) } } }) {
+    CLAY ({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+        }}) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
             text_label(text);
             if(elemUpdate)
                 elemUpdate();
-        }, true, true, isSelected);
+        }, SelectableButton::DrawType::FILLED, isSelected);
+    }
+    return toRet;
+}
+
+bool GUIManager::text_button_left_transparent(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
+    bool toRet = false;
+    CLAY ({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+        }}) {
+        toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
+            CLAY ({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                    .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
+                }}) {
+                text_label(text);
+                if(elemUpdate)
+                    elemUpdate();
+            }
+        }, SelectableButton::DrawType::TRANSPARENT, isSelected);
     }
     return toRet;
 }
@@ -495,7 +535,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                     svg_icon("dropico", "data/icons/droparrow.svg", dropDownOpen);
                 }
             }
-        }, true, false, dropDownOpen);
+        }, SelectableButton::DrawType::FILLED, dropDownOpen);
         if(dropDownOpen) {
             CLAY({
                 .layout = {
@@ -516,7 +556,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                     .attachTo = CLAY_ATTACH_TO_PARENT
                 },
                 .border = {
-                    .color = convert_vec4<Clay_Color>(io->theme->backColor3),
+                    .color = convert_vec4<Clay_Color>(io->theme->backColor2),
                     .width = CLAY_BORDER_OUTSIDE(4)
                 }
             }) {
@@ -532,7 +572,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                         if(selectedEntry)
                             entryColor = io->theme->backColor2;
                         else if(Clay_Hovered())
-                            entryColor = io->theme->backColor3;
+                            entryColor = io->theme->backColor2;
                         else
                             entryColor = io->theme->backColor1;
                         CLAY({
@@ -621,9 +661,9 @@ void GUIManager::scroll_bar_area(const std::string& uniqueId, const std::functio
                 if(sD.isMoving)
                     scrollerColor = io->theme->fillColor1;
                 else if(Clay_Hovered())
-                    scrollerColor = io->theme->fillColor2;
+                    scrollerColor = io->theme->fillColor1;
                 else
-                    scrollerColor = io->theme->backColor3;
+                    scrollerColor = io->theme->backColor2;
 
                 CLAY({ 
                     .layout = {

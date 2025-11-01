@@ -463,7 +463,7 @@ void RichTextBox::rebuild() {
             pData.pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
             pData.pStyle.setTextDirection(skia::textlayout::TextDirection::kLtr);
             skia::textlayout::TextStyle tStyle;
-            tStyle.setFontSize(20.0f);
+            tStyle.setFontSize(14.0f);
             tStyle.setFontFamilies({SkString{"Roboto"}});
             pData.pStyle.setTextStyle(tStyle);
 

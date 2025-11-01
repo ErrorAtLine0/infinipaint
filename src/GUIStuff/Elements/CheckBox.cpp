@@ -7,7 +7,7 @@ namespace GUIStuff {
 void CheckBox::update(UpdateInputData& io, bool newIsTicked, const std::function<void()>& elemUpdate) {
     CLAY({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
+            .sizing = {.width = CLAY_SIZING_FIXED(15), .height = CLAY_SIZING_FIXED(15)}
         },
         .custom = { .customData = this }
     }) {
@@ -38,7 +38,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
     }
     else {
         SkRect checkBox = SkRect::MakeLTRB(-0.45f, -0.45f, 0.45f, 0.45f);
-        p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->backColor3));
+        p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->fillColor2));
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.15f);
         canvas->drawRoundRect(checkBox, 0.25f, 0.25f, p);
@@ -47,7 +47,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
 
     if(isTicked) {
         SkPaint checkP;
-        checkP.setColor4f(io.theme->backColor2);
+        checkP.setColor4f(io.theme->backColor1);
         checkP.setStyle(SkPaint::kFill_Style);
         checkP.setStrokeWidth(0.12);
         checkP.setStrokeCap(SkPaint::kRound_Cap);

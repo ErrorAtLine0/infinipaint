@@ -15,9 +15,9 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
     }
 
     CLAY({.layout = { 
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(45)},
-            .padding = CLAY_PADDING_ALL(2),
-            .childGap = 8,
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(35)},
+            .padding = CLAY_PADDING_ALL(0),
+            .childGap = 4,
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER },
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
@@ -31,11 +31,11 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
                     .sizing = {.width = CLAY_SIZING_FIT(250), .height = CLAY_SIZING_GROW(0)},
                 }
             }) {
-                buttons[i].update(io, true, true, [&](SelectionHelper& s, bool iS) {
+                buttons[i].update(io, SelectableButton::DrawType::FILLED, [&](SelectionHelper& s, bool iS) {
                     CLAY({.layout = { 
                               .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                              .padding = CLAY_PADDING_ALL(4),
-                              .childGap = 4,
+                              .padding = CLAY_PADDING_ALL(0),
+                              .childGap = 0,
                               .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
                               .layoutDirection = CLAY_LEFT_TO_RIGHT 
                           }
@@ -60,7 +60,7 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
                                   .layoutDirection = CLAY_LEFT_TO_RIGHT 
                               }
                         }) {
-                            closeButtons[i].update(io, false, false, [&](SelectionHelper& s, bool iS) {
+                            closeButtons[i].update(io, SelectableButton::DrawType::TRANSPARENT, [&](SelectionHelper& s, bool iS) {
                                 if(s.clicked)
                                     closedTab = i;
                                 closeIcons[i].update(io, "data/icons/close.svg", s.held || s.hovered, nullptr);

@@ -45,7 +45,7 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
     }
     else {
         SkPaint p;
-        p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->backColor3));
+        p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->backColor2));
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.15f);
         canvas->drawCircle(0.0f, 0.0f, 0.5f, p);

@@ -84,7 +84,7 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
     if(selection.held)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else if(selection.hovered)
-        rotateBarHolderFill.setColor4f(io.theme->fillColor2);
+        rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor2);
     float rotateBarHolderRadius = (wheelEnd - wheelStart) / 2.0f;

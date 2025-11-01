@@ -67,7 +67,7 @@ void DrawImage::draw_download_progress_bar(SkCanvas* canvas, const DrawData& dra
         p.setStroke(true);
         p.setStrokeWidth(10.0f);
         p.setStrokeCap(SkPaint::kRound_Cap);
-        p.setColor4f(drawData.main->toolbar.io->theme->fillColor5);
+        p.setColor4f(drawData.main->toolbar.io->theme->fillColor1);
         Vector2f center = convert_vec2<Vector2f>(imRect.center());
 
         const float DOWNLOAD_ARC_RADIUS = 50.0f;

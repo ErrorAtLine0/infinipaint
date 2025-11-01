@@ -12,7 +12,7 @@ template <typename T> class NumberSlider : public Element {
 
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(100), .height = CLAY_SIZING_FIXED(15)}
+                    .sizing = {.width = CLAY_SIZING_GROW(100), .height = CLAY_SIZING_FIXED(10)}
                 },
                 .custom = { .customData = this }
             }) {
