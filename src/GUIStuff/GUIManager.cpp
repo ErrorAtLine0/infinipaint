@@ -210,7 +210,7 @@ void GUIManager::draw(SkCanvas* canvas) {
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
                 canvas->save();
-                SkRect clipRect = SkRect::MakeXYWH(bb.x, bb.y, bb.width, bb.height);
+                SkRect clipRect = SkRect::MakeXYWH(bb.x - 1.0f, bb.y - 1.0f, bb.width + 1.0f, bb.height + 1.0f);
                 canvas->clipRect(clipRect);
                 break;
             }
@@ -241,7 +241,7 @@ void GUIManager::top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_Sizin
     .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
     .cornerRadius = CLAY_CORNER_RADIUS(10),
     .floating = { .attachTo = CLAY_ATTACH_TO_PARENT },
-    .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(2)}
+    .border = {.color = convert_vec4<Clay_Color>(io->theme->fillColor2), .width = CLAY_BORDER_OUTSIDE(1)}
     }) {
         if(Clay_Hovered())
             io->hoverObstructed = true;
@@ -556,10 +556,8 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
             CLAY({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0)},
-                    .padding = {.left = 2, .right = 2},
-                    .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
+                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(4),
                 .floating = {
                     .offset = {
@@ -572,35 +570,44 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                     .attachTo = CLAY_ATTACH_TO_PARENT
                 },
                 .border = {
-                    .color = convert_vec4<Clay_Color>(io->theme->backColor2),
-                    .width = CLAY_BORDER_OUTSIDE(4)
+                    .color = convert_vec4<Clay_Color>(io->theme->fillColor2),
+                    .width = CLAY_BORDER_OUTSIDE(1)
                 }
             }) {
                 obstructing_window();
-                for(size_t i = 0; i < selections.size(); i++) {
-                    bool selectedEntry = *val == i;
-                    CLAY({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-                        },
-                    }) {
-                        SkColor4f entryColor;
-                        if(selectedEntry)
-                            entryColor = io->theme->backColor2;
-                        else if(Clay_Hovered())
-                            entryColor = io->theme->backColor2;
-                        else
-                            entryColor = io->theme->backColor1;
+                CLAY({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                        .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    }
+                }) {
+                    for(size_t i = 0; i < selections.size(); i++) {
+                        bool selectedEntry = *val == i;
                         CLAY({
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
                             },
-                            .backgroundColor = convert_vec4<Clay_Color>(entryColor)
                         }) {
-                            text_label(selections[i]);
-                            if(io->mouse.leftClick && Clay_Hovered()) {
-                                *val = i;
-                                dropDownOpen = false;
+                            SkColor4f entryColor;
+                            if(selectedEntry)
+                                entryColor = io->theme->backColor2;
+                            else if(Clay_Hovered())
+                                entryColor = io->theme->backColor2;
+                            else
+                                entryColor = io->theme->backColor1;
+                            CLAY({
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                                    .padding = {.left = 2, .right = 2},
+                                },
+                                .backgroundColor = convert_vec4<Clay_Color>(entryColor)
+                            }) {
+                                text_label(selections[i]);
+                                if(io->mouse.leftClick && Clay_Hovered()) {
+                                    *val = i;
+                                    dropDownOpen = false;
+                                }
                             }
                         }
                     }
@@ -677,7 +684,7 @@ void GUIManager::scroll_bar_area(const std::string& uniqueId, const std::functio
                 if(sD.isMoving)
                     scrollerColor = io->theme->fillColor1;
                 else if(Clay_Hovered())
-                    scrollerColor = io->theme->fillColor1;
+                    scrollerColor = io->theme->fillColor2;
                 else
                     scrollerColor = io->theme->backColor2;
 

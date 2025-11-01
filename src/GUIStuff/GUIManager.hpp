@@ -25,6 +25,7 @@ namespace GUIStuff {
 class GUIManager {
     public:
         constexpr static float BIG_BUTTON_SIZE = 30;
+        constexpr static float SMALL_BUTTON_SIZE = 20;
 
         struct ElementContainer {
             std::unique_ptr<Element> elem;

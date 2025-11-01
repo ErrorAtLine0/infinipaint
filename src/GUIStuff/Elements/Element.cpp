@@ -23,7 +23,7 @@ namespace GUIStuff {
     std::shared_ptr<Theme> get_default_dark_mode() {
         std::shared_ptr<Theme> theme(std::make_shared<Theme>());
         theme->fillColor1 = {0.65f, 0.64f, 1.0f, 1.0f};
-        theme->fillColor2 = {0.31f, 0.31f, 0.48f, 1.0f};
+        theme->fillColor2 = {0.6f, 0.6f, 0.785f, 1.0f};
         theme->backColor1 = {0.156f, 0.156f, 0.18f, 1.0f};
         theme->backColor2 = {0.24f, 0.24f, 0.29f, 1.0f};
         theme->frontColor1 = {0.87f, 0.87f, 0.87f, 1.0f};

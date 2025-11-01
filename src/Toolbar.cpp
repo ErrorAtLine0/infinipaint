@@ -404,14 +404,13 @@ void Toolbar::top_toolbar() {
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io->theme->padding1 / 2)),
             .childGap = static_cast<uint16_t>(io->theme->childGap1 / 2),
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
     }) {
         gui.obstructing_window();
         gui.push_id("menu top toolbar");
@@ -469,8 +468,7 @@ void Toolbar::top_toolbar() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT},
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.obstructing_window();
                 if(gui.text_button_left_transparent("new file local", "New File")) {
@@ -554,8 +552,7 @@ void Toolbar::web_version_welcome() {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         gui.push_id("web version welcome gui");
@@ -628,8 +625,7 @@ void Toolbar::update_notification_gui() {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         gui.push_id("update notification gui");
@@ -661,8 +657,7 @@ void Toolbar::grid_menu(bool justOpened) {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         gui.text_label_centered("Grids");
@@ -755,8 +750,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         float entryHeight = 25.0f;
@@ -987,8 +981,7 @@ void Toolbar::global_log() {
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     },
                     .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
-                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                    .border = {.color = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor2, a)), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
                 }) {
                     gui.obstructing_window();
                     SkColor4f c{0, 0, 0, 0};
@@ -1029,8 +1022,7 @@ void Toolbar::drawing_program_gui() {
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
             }) {
                 gui.obstructing_window();
                 gui.color_picker_items("colorpickerleft", colorLeft, true);
@@ -1055,8 +1047,7 @@ void Toolbar::drawing_program_gui() {
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
             }) {
                 gui.obstructing_window();
                 gui.color_picker_items("colorpickerright", colorRight, true);
@@ -1204,8 +1195,7 @@ void Toolbar::player_list() {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         gui.push_id("client list");
@@ -1294,8 +1284,7 @@ void Toolbar::options_menu() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.obstructing_window();
                 if(optionsMenuType == HOST_MENU) {
@@ -1350,8 +1339,7 @@ void Toolbar::options_menu() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("gsettings");
                 CLAY({
@@ -1375,7 +1363,6 @@ void Toolbar::options_menu() {
                     }) {
                         auto oldOption = generalSettingsOptions;
                         if(gui.text_button_left_transparent("Generalbutton", "General", generalSettingsOptions == GSETTINGS_GENERAL)) generalSettingsOptions = GSETTINGS_GENERAL;
-                        if(gui.text_button_left_transparent("Appearancebutton", "Appearance", generalSettingsOptions == GSETTINGS_APPEARANCE)) generalSettingsOptions = GSETTINGS_APPEARANCE;
                         if(gui.text_button_left_transparent("Tabletbutton", "Tablet", generalSettingsOptions == GSETTINGS_TABLET)) generalSettingsOptions = GSETTINGS_TABLET;
                         if(gui.text_button_left_transparent("Themebutton", "Theme", generalSettingsOptions == GSETTINGS_THEME)) generalSettingsOptions = GSETTINGS_THEME;
                         if(gui.text_button_left_transparent("Keybindsbutton", "Keybinds", generalSettingsOptions == GSETTINGS_KEYBINDS)) generalSettingsOptions = GSETTINGS_KEYBINDS;
@@ -1420,11 +1407,6 @@ void Toolbar::options_menu() {
                                         gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.checkbox_field("changebrushwidthwithspeed", "Change brush size with mouse speed", &velocityAffectsBrushWidth);
-                                        gui.pop_id();
-                                        break;
-                                    }
-                                    case GSETTINGS_APPEARANCE: {
-                                        gui.push_id("appearance settings");
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 3.0f, 1);
                                         gui.pop_id();
                                         break;
@@ -1505,7 +1487,6 @@ void Toolbar::options_menu() {
                                         gui.input_scalar_field<uint16_t>("childGap1", "Gap between child elements", &io->theme->childGap1, 0, 30);
                                         gui.input_scalar_field<uint16_t>("padding1", "Window padding", &io->theme->padding1, 0, 30);
                                         gui.slider_scalar_field<float>("windowCorners1", "Window corner radius", &io->theme->windowCorners1, 0, 30);
-                                        gui.input_scalar_field<uint16_t>("windowBorders1", "Window border thickness", &io->theme->windowBorders1, 0, 20);
                                         gui.pop_id();
                                         break;
                                     }
@@ -1588,8 +1569,7 @@ void Toolbar::options_menu() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("lobby info menu");
                 gui.obstructing_window();
@@ -1621,8 +1601,7 @@ void Toolbar::options_menu() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("canvas settings menu");
                 gui.obstructing_window();
@@ -1646,8 +1625,7 @@ void Toolbar::options_menu() {
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-                .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("set download name menu");
                 gui.obstructing_window();
@@ -1676,7 +1654,7 @@ void Toolbar::options_menu() {
 void Toolbar::about_menu_gui() {
     CLAY({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(850), .height = CLAY_SIZING_FIXED(600) },
+            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -1684,8 +1662,7 @@ void Toolbar::about_menu_gui() {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.push_id("about menu popup");
         gui.obstructing_window();
@@ -1772,8 +1749,7 @@ void Toolbar::file_picker_gui() {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT},
-        .border = {.color = convert_vec4<Clay_Color>(io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(io->theme->windowBorders1)}
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         gui.text_label_centered(filePicker.filePickerWindowName);

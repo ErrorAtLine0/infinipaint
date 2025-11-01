@@ -191,14 +191,13 @@ void DrawingProgram::toolbar_gui() {
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
-            .padding = CLAY_PADDING_ALL(t.io->theme->padding1),
+            .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
             .childGap = static_cast<uint16_t>(t.io->theme->childGap1 / 2), 
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
         .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1),
-        .border = {.color = convert_vec4<Clay_Color>(t.io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(t.io->theme->windowBorders1)}
+        .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
     }) {
         t.gui.obstructing_window();
         if(t.gui.svg_icon_button_transparent("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
@@ -237,8 +236,7 @@ void DrawingProgram::tool_options_gui() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
         .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1),
-        .border = {.color = convert_vec4<Clay_Color>(t.io->theme->backColor2), .width = CLAY_BORDER_OUTSIDE(t.io->theme->windowBorders1)}
+        .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
     }) {
         t.gui.obstructing_window();
         drawTool->gui_toolbox();

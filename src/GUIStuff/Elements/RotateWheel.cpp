@@ -3,7 +3,7 @@
 
 namespace GUIStuff {
 
-constexpr float WHEEL_WIDTH = 15.0f;
+constexpr float WHEEL_WIDTH = 10.0f;
 
 constexpr double ROTATE_BAR_SNAP_DISTANCE = 0.3;
 constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
@@ -75,7 +75,7 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
         for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
             Vector2f lineDir{std::cos(snapPos), -std::sin(snapPos)};
             SkPaint p(snapPos == 0.0 ? io.theme->fillColor1 : io.theme->frontColor2);
-            p.setStrokeWidth(2.0f);
+            p.setStrokeWidth(1.0f);
             canvas->drawLine(lineDir.x() * wheelStart, lineDir.y() * wheelStart, lineDir.x() * wheelEnd, lineDir.y() * wheelEnd, p);
         }
     }
@@ -84,7 +84,7 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
     if(selection.held)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else if(selection.hovered)
-        rotateBarHolderFill.setColor4f(io.theme->fillColor1);
+        rotateBarHolderFill.setColor4f(io.theme->fillColor2);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor2);
     float rotateBarHolderRadius = (wheelEnd - wheelStart) / 2.0f;
@@ -97,7 +97,7 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
 
     SkPaint rotateBarOutline(io.theme->frontColor2);
     rotateBarOutline.setStroke(true);
-    rotateBarOutline.setStrokeWidth(2.0f);
+    rotateBarOutline.setStrokeWidth(1.0f);
     canvas->drawCircle(0.0f, 0.0f, wheelStart, rotateBarOutline);
     canvas->drawCircle(0.0f, 0.0f, wheelEnd, rotateBarOutline);
 }

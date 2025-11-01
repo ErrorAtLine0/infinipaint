@@ -99,9 +99,9 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io) {
     if(rotateBarSelect.held)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else if(rotateBarSelect.hovered)
-        rotateBarHolderFill.setColor4f(io.theme->fillColor1);
+        rotateBarHolderFill.setColor4f(io.theme->fillColor2);
     else
-        rotateBarHolderFill.setColor4f(io.theme->frontColor2);
+        rotateBarHolderFill.setColor4f(io.theme->frontColor1);
     float rotateBarHolderRadius = (CIRCLE_END - ROTATE_START) / 2.0f;
     Vector2f rotateBarHolderPos{std::cos(rotationAngle) * rotateBarMiddleRadius, -std::sin(rotationAngle) * rotateBarMiddleRadius};
     canvas->drawCircle(rotateBarHolderPos.x(), rotateBarHolderPos.y(), rotateBarHolderRadius, rotateBarHolderFill);

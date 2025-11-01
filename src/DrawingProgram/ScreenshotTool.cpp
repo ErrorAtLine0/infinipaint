@@ -500,7 +500,7 @@ void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 
             path1.setFillType(SkPathFillType::kWinding);
             SkPaint paint2;
-            paint2.setColor4f({0.0f, 0.0f, 0.0f, 0.9f});
+            paint2.setColor4f({1.0f, 1.0f, 1.0f, 0.9f});
             paint2.setStyle(SkPaint::kStroke_Style);
             canvas->drawPath(path1, paint2);
 
