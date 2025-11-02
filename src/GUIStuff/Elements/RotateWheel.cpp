@@ -3,7 +3,7 @@
 
 namespace GUIStuff {
 
-constexpr float WHEEL_WIDTH = 10.0f;
+constexpr float WHEEL_WIDTH = 13.0f;
 
 constexpr double ROTATE_BAR_SNAP_DISTANCE = 0.3;
 constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;

@@ -545,7 +545,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                 CLAY({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
                 CLAY({
                     .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIT(20), .height = CLAY_SIZING_FIT(20)}
+                        .sizing = {.width = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE)}
                     }
                 }) {
                     svg_icon("dropico", "data/icons/droparrow.svg", dropDownOpen);

@@ -719,7 +719,7 @@ void Toolbar::grid_menu(bool justOpened) {
             gui.input_text("grid text input", &gridMenu.newName, [&](GUIStuff::SelectionHelper& s) {
                 addByEnter = s.selected && io->key.enter;
             });
-            if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, 25.0f) || (addByEnter && !gridMenu.newName.empty())) {
+            if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
                 main.world->drawProg.modify_grid(main.world->gridMan.add_default_grid(gridMenu.newName));
                 stop_displaying_grid_menu();
             }
@@ -805,7 +805,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
                 addByEnter = s.selected && io->key.enter;
             });
             if(!bookmarkExists) {
-                if((gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, 25.0f) || addByEnter) && !bookMenu.newName.empty())
+                if((gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || addByEnter) && !bookMenu.newName.empty())
                     main.world->bMan.add_bookmark(bookMenu.newName);
             }
         });
@@ -1015,7 +1015,7 @@ void Toolbar::drawing_program_gui() {
         if(colorLeft) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(250), .height = CLAY_SIZING_FIT(0)},
+                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
                     .childGap = io->theme->childGap1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -1040,7 +1040,7 @@ void Toolbar::drawing_program_gui() {
         if(colorRight) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(250), .height = CLAY_SIZING_FIT(0)},
+                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
                     .childGap = io->theme->childGap1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},

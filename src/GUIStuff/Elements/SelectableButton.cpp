@@ -4,11 +4,16 @@
 namespace GUIStuff {
 
 void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std::function<void(SelectionHelper&, bool)>& elemUpdate, bool isSelected) {
-    bool hasBorders = selection.held || ((isSelected || selection.hovered) && drawType == DrawType::TRANSPARENT_BORDER);
-
-    SkColor4f borderColor = hasBorders ? io.theme->fillColor1 : SkColor4f{0.0f, 0.0f, 0.0f, 0.0f};
+    SkColor4f borderColor;
     SkColor4f backgroundColorHighlight;
     SkColor4f backgroundColor;
+
+    if(selection.held || ((isSelected || selection.hovered) && drawType == DrawType::TRANSPARENT_BORDER))
+        borderColor = io.theme->fillColor1;
+    else if(drawType == DrawType::TRANSPARENT_BORDER)
+        borderColor = io.theme->backColor2;
+    else
+        borderColor = SkColor4f{0.0f, 0.0f, 0.0f, 0.0f};
 
     if(isSelected)
         backgroundColorHighlight = color_mul_alpha(io.theme->fillColor1, 0.4f);

@@ -21,7 +21,7 @@ template <typename T> class TextBox : public Element {
 
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 1.25f))}
+                    .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = singleLine ? CLAY_SIZING_FIXED(static_cast<float>(io.fontSize * 1.25f)) : CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 1.25f))}
                 },
                 .custom = { .customData = this }
             }) {
