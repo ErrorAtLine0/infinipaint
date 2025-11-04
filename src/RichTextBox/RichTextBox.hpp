@@ -34,6 +34,8 @@ class RichTextBox {
             bool operator==(const TextPosition& o) const = default;
             bool operator<(const TextPosition& o) const;
             bool operator>(const TextPosition& o) const;
+            bool operator>=(const RichTextBox::TextPosition& o) const;
+            bool operator<=(const RichTextBox::TextPosition& o) const;
         };
 
         struct TextStyleRangeModifier {

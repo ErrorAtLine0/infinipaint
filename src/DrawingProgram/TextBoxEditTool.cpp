@@ -32,6 +32,16 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         redMod->color = {1.0f, 0.0f, 0.0f, 1.0f};
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
     }
+    if(t.gui.text_button_wide("Green button", "Green")) {
+        auto redMod = std::make_shared<ColorTextStyleModifier>();
+        redMod->color = {0.0f, 1.0f, 0.0f, 1.0f};
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
+    }
+    if(t.gui.text_button_wide("Blue button", "Blue")) {
+        auto redMod = std::make_shared<ColorTextStyleModifier>();
+        redMod->color = {0.0f, 0.0f, 1.0f, 1.0f};
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
+    }
     //t.gui.left_to_right_line_layout([&]() {
     //    CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
     //        if(t.gui.color_button("Text Color", &a->d.textColor, &a->d.textColor == t.colorRight))

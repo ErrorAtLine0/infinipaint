@@ -37,6 +37,14 @@ bool RichTextBox::TextPosition::operator>(const RichTextBox::TextPosition& o) co
     return !(*this < o) && !(*this == o);
 }
 
+bool RichTextBox::TextPosition::operator>=(const RichTextBox::TextPosition& o) const {
+    return (*this > o) || (*this == o);
+}
+
+bool RichTextBox::TextPosition::operator<=(const RichTextBox::TextPosition& o) const {
+    return (*this < o) || (*this == o);
+}
+
 RichTextBox::RichTextBox() {
     paragraphs.emplace_back();
 }
@@ -317,7 +325,33 @@ void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition 
         toPlace.start = std::min(p1, p2);
         toPlace.end = std::max(p1, p2);
         toPlace.modifier = modifier;
+        std::erase_if(tStyleModifiers, [&toPlace](TextStyleRangeModifier& tStyleMod) {
+            if(tStyleMod.modifier->equivalent(*toPlace.modifier)) {
+                // The equivalent modifiers collide, so merge them into one modifier
+                if((tStyleMod.start >= toPlace.start && tStyleMod.start <= toPlace.end) || (tStyleMod.end >= toPlace.start && tStyleMod.end <= toPlace.end) ||
+                   (toPlace.start >= tStyleMod.start && toPlace.start <= tStyleMod.end) || (toPlace.end >= tStyleMod.start && toPlace.end <= tStyleMod.end)) {
+                    toPlace.start = std::min(toPlace.start, tStyleMod.start);
+                    toPlace.end = std::max(toPlace.end, tStyleMod.end);
+                    return true;
+                }
+            }
+            return false;
+        });
+        std::erase_if(tStyleModifiers, [&toPlace](TextStyleRangeModifier& tStyleMod) {
+            if(tStyleMod.modifier->get_type() == toPlace.modifier->get_type()) {
+                bool tStyleModStartInToPlace = (tStyleMod.start >= toPlace.start && tStyleMod.start <= toPlace.end);
+                bool tStyleModEndInToPlace = (tStyleMod.end >= toPlace.start && tStyleMod.end <= toPlace.end);
+                if(tStyleModStartInToPlace && tStyleModEndInToPlace)
+                    return true;
+                else if(tStyleModStartInToPlace)
+                    tStyleMod.start = toPlace.end;
+                else if(tStyleModEndInToPlace)
+                    tStyleMod.end = toPlace.start;
+            }
+            return false;
+        });
         tStyleModifiers.emplace_back(toPlace);
+        fit_text_style_ranges_in_text();
         needsRebuild = true;
     }
 }
@@ -535,7 +569,7 @@ void RichTextBox::rebuild() {
         }
 
         auto nextStackCommandIt = modifierStackCommands.begin();
-        std::unordered_map<TextStyleModifier::ModifierType, std::stack<std::shared_ptr<TextStyleModifier>>> modifierStacks;
+        std::unordered_map<TextStyleModifier::ModifierType, std::vector<std::shared_ptr<TextStyleModifier>>> modifierStacks; // Not really a stack, but we use the last element as the modifier
 
         skia::textlayout::TextStyle tStyle = initialTStyle;
 
@@ -566,17 +600,18 @@ void RichTextBox::rebuild() {
                     // Modify stack with new data
                     for(const std::shared_ptr<TextStyleModifier>& modifier : nextStackCommand.second) {
                         auto& modStack = modifierStacks[modifier->get_type()];
-                        if(modStack.empty() || modStack.top() != modifier)
-                            modStack.emplace(modifier);
+                        auto foundInStackIt = std::find(modStack.begin(), modStack.end(), modifier);
+                        if(foundInStackIt == modStack.end())
+                            modStack.emplace_back(modifier);
                         else
-                            modStack.pop();
+                            modStack.erase(foundInStackIt);
                     }
 
                     // Modify style with new stacks
                     tStyle = initialTStyle;
                     for(auto& [modType, modifier] : modifierStacks) {
                         if(!modifier.empty())
-                            modifier.top()->modify_text_style(tStyle);
+                            modifier.back()->modify_text_style(tStyle);
                     }
 
                     ++nextStackCommandIt;
