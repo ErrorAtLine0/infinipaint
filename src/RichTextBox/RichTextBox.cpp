@@ -12,38 +12,29 @@
 #include <src/base/SkUTF.h>
 #include <cereal/types/string.hpp>
 
-void RichTextBox::RichTextData::Paragraph::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(text);
-    a(static_cast<uint32_t>(tStyles.size()));
-    for(auto& [pos, styles] : tStyles) {
-        a(pos, static_cast<uint16_t>(styles.size()));
-        for(auto& [styleType, style] : styles)
-            a(static_cast<uint16_t>(styleType), *style);
-    }
+void RichTextBox::TextStyleRangeModifier::save(cereal::PortableBinaryOutputArchive& a) const {
+    a(start, end, modifier->get_type(), *modifier);
 }
 
-void RichTextBox::RichTextData::Paragraph::load(cereal::PortableBinaryInputArchive& a) {
-    a(text);
-    uint32_t styleCount;
-    a(styleCount);
-    tStyles.clear();
-    for(uint32_t i = 0; i < styleCount; i++) {
-        uint32_t pos;
-        uint16_t styleCountAtPos;
-        a(pos, styleCountAtPos);
-        TextModAtPosContainer& mods = tStyles[pos];
-        for(uint16_t j = 0; j < styleCountAtPos; j++) {
-            uint16_t styleType;
-            a(styleType);
-            std::shared_ptr<TextStyleModifier> modifier = TextStyleModifier::allocate_modifier(static_cast<TextStyleModifier::ModifierType>(styleType));
-            a(*modifier);
-            mods.emplace(static_cast<TextStyleModifier::ModifierType>(styleType), modifier);
-        }
-    }
+void RichTextBox::TextStyleRangeModifier::load(cereal::PortableBinaryInputArchive& a) {
+    a(start, end);
+    TextStyleModifier::ModifierType mType;
+    a(mType);
+    modifier = TextStyleModifier::allocate_modifier(mType);
+    a(*modifier);
+}
+
+void RichTextBox::TextStyleRangeModifier::apply_to_start_and_end(const std::function<void(TextPosition&)>& f) {
+    f(start);
+    f(end);
 }
 
 bool RichTextBox::TextPosition::operator<(const RichTextBox::TextPosition& o) const {
     return (this->fParagraphIndex < o.fParagraphIndex) || (this->fParagraphIndex == o.fParagraphIndex && this->fTextByteIndex < o.fTextByteIndex);
+}
+
+bool RichTextBox::TextPosition::operator>(const RichTextBox::TextPosition& o) const {
+    return !(*this < o) && !(*this == o);
 }
 
 RichTextBox::RichTextBox() {
@@ -97,8 +88,8 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
             process_text_input(cur, "\t");
             break;
         case InputKey::SELECT_ALL:
-            cur.selectionBeginPos = {0, 0};
-            cur.pos = cur.selectionEndPos = {paragraphs.back().text.size(), paragraphs.size() - 1};
+            cur.selectionBeginPos = move(Movement::HOME, cur.pos);
+            cur.pos = cur.selectionEndPos = move(Movement::END, cur.pos);
             break;
     }
 
@@ -216,7 +207,7 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
 
     bool foundGlyph = pData.p->getClosestGlyphClusterAt(point.x(), point.y(), &glyphInfo);
     if(foundGlyph) {
-        TextPosition toRet = {0, pIndex};
+        TextPosition toRet = {pIndex, 0};
         toRet.fTextByteIndex = glyphInfo.fClusterTextRange.start;
 
         if(glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr) {
@@ -245,7 +236,7 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
         return toRet;
     }
     else
-        return TextPosition{0, pIndex};
+        return TextPosition{pIndex, 0};
 }
 
 RichTextBox::RichTextData RichTextBox::get_rich_text_data() {
@@ -253,13 +244,14 @@ RichTextBox::RichTextData RichTextBox::get_rich_text_data() {
     for(auto& p : paragraphs) {
         toRet.paragraphs.emplace_back();
         toRet.paragraphs.back().text = p.text;
-        toRet.paragraphs.back().tStyles = p.tStyles;
     }
+    toRet.tStyleModifiers = tStyleModifiers;
     return toRet;
 }
 
 void RichTextBox::clear_text() {
     paragraphs.clear();
+    tStyleModifiers.clear();
     paragraphs.emplace_back();
 }
 
@@ -273,10 +265,11 @@ void RichTextBox::set_rich_text_data(const RichTextData& richText) {
     for(auto& p : richText.paragraphs) {
         paragraphs.emplace_back();
         paragraphs.back().text = p.text;
-        paragraphs.back().tStyles = p.tStyles;
     }
     if(richText.paragraphs.empty())
         paragraphs.emplace_back();
+    tStyleModifiers = richText.tStyleModifiers;
+    fit_text_style_ranges_in_text();
     needsRebuild = true;
 }
 
@@ -307,14 +300,26 @@ std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
     return toRet;
 }
 
-void RichTextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier) {
-    std::shared_ptr<TextStyleModifier>& modToSet = paragraphs.back().tStyles[0][modifier->get_type()];
-    needsRebuild |= ((modToSet == nullptr) || (!modifier->equivalent(*modToSet)));
-    modToSet = modifier;
+
+void RichTextBox::set_initial_text_style(const skia::textlayout::TextStyle& tStyle) {
+    if(!tStyle.equals(initialTStyle)) {
+        initialTStyle = tStyle;
+        needsRebuild = true;
+    }
 }
 
 void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier) {
-    needsRebuild = true;
+    p1 = move(Movement::NOWHERE, p1);
+    p2 = move(Movement::NOWHERE, p2);
+    if(p1 != p2) {
+        fit_text_style_ranges_in_text();
+        TextStyleRangeModifier toPlace;
+        toPlace.start = std::min(p1, p2);
+        toPlace.end = std::max(p1, p2);
+        toPlace.modifier = modifier;
+        tStyleModifiers.emplace_back(toPlace);
+        needsRebuild = true;
+    }
 }
 
 RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
@@ -378,7 +383,7 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
                 if(lineNumber <= 0 && paragraphs[pos.fParagraphIndex - 1].text.empty()) {
                     if(previousX != nullptr && !previousX->has_value())
                         *previousX = get_cursor_rect(pos).centerX();
-                    pos = TextPosition{0, pos.fParagraphIndex - 1};
+                    pos = TextPosition{pos.fParagraphIndex - 1, 0};
                 }
                 else {
                     skia::textlayout::LineMetrics prevLineMetrics;
@@ -410,7 +415,7 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
                 if((lineNumber == -1 || lineNumber == static_cast<int>(paragraphs[pos.fParagraphIndex].p->lineNumber() - 1)) && paragraphs[pos.fParagraphIndex + 1].text.empty()) {
                     if(previousX != nullptr && !previousX->has_value())
                         *previousX = get_cursor_rect(pos).centerX();
-                    pos = TextPosition{0, pos.fParagraphIndex + 1};
+                    pos = TextPosition{pos.fParagraphIndex + 1, 0};
                 }
                 else {
                     skia::textlayout::LineMetrics nextLineMetrics;
@@ -511,35 +516,71 @@ void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollecti
     }
 }
 
+void RichTextBox::fit_text_style_ranges_in_text() {
+    std::erase_if(tStyleModifiers, [&](TextStyleRangeModifier& tStyleMod) {
+        tStyleMod.start = move(Movement::NOWHERE, tStyleMod.start);
+        tStyleMod.end = move(Movement::NOWHERE, tStyleMod.end);
+        return tStyleMod.start == tStyleMod.end;
+    });
+}
+
 void RichTextBox::rebuild() {
     if(needsRebuild) {
         float heightOffset = 0.0f;
-        skia::textlayout::TextStyle tStyle;
+        std::map<TextPosition, std::vector<std::shared_ptr<TextStyleModifier>>> modifierStackCommands;
 
-        for(ParagraphData& pData : paragraphs) {
+        for(TextStyleRangeModifier& modifierRange : tStyleModifiers) {
+            modifierStackCommands[modifierRange.start].emplace_back(modifierRange.modifier);
+            modifierStackCommands[modifierRange.end].emplace_back(modifierRange.modifier);
+        }
+
+        auto nextStackCommandIt = modifierStackCommands.begin();
+        std::unordered_map<TextStyleModifier::ModifierType, std::stack<std::shared_ptr<TextStyleModifier>>> modifierStacks;
+
+        skia::textlayout::TextStyle tStyle = initialTStyle;
+
+        for(size_t pIndex = 0; pIndex < paragraphs.size(); pIndex++) {
+            ParagraphData& pData = paragraphs[pIndex];
             pData.pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
             pData.pStyle.setTextDirection(skia::textlayout::TextDirection::kLtr);
+            pData.pStyle.setTextStyle(tStyle);
+            size_t tIndex = 0;
             skia::textlayout::ParagraphBuilderImpl a(pData.pStyle, fontCollection, SkUnicodes::ICU::Make());
 
-            size_t startPos = 0;
-            for(auto& [pos, tStylesAtPos] : pData.tStyles) {
-                if(pos > pData.text.size())
-                    break;
-
-                for(auto& [styleType, styleMod] : tStylesAtPos)
-                    styleMod->modify_text_style(tStyle);
-                if(startPos != pos) {
+            for(;;) {
+                if(nextStackCommandIt == modifierStackCommands.end() || nextStackCommandIt->first.fParagraphIndex != pIndex) {
                     a.pushStyle(tStyle);
-                    a.addText(pData.text.c_str() + startPos, pos - startPos);
+                    a.addText(pData.text.c_str() + tIndex, pData.text.length() - tIndex);
                     a.pop();
+                    break;
                 }
-                startPos = pos;
-            }
+                else {
+                    auto& nextStackCommand = *nextStackCommandIt;
 
-            if(startPos < pData.text.size()) {
-                a.pushStyle(tStyle);
-                a.addText(pData.text.c_str() + startPos, pData.text.size() - startPos);
-                a.pop();
+                    // Print with previous style
+                    a.pushStyle(tStyle);
+                    a.addText(pData.text.c_str() + tIndex, nextStackCommand.first.fTextByteIndex - tIndex);
+                    a.pop();
+                    tIndex = nextStackCommand.first.fTextByteIndex;
+
+                    // Modify stack with new data
+                    for(const std::shared_ptr<TextStyleModifier>& modifier : nextStackCommand.second) {
+                        auto& modStack = modifierStacks[modifier->get_type()];
+                        if(modStack.empty() || modStack.top() != modifier)
+                            modStack.emplace(modifier);
+                        else
+                            modStack.pop();
+                    }
+
+                    // Modify style with new stacks
+                    tStyle = initialTStyle;
+                    for(auto& [modType, modifier] : modifierStacks) {
+                        if(!modifier.empty())
+                            modifier.top()->modify_text_style(tStyle);
+                    }
+
+                    ++nextStackCommandIt;
+                }
             }
 
             pData.p = a.Build();
@@ -547,6 +588,7 @@ void RichTextBox::rebuild() {
             pData.heightOffset = heightOffset;
             heightOffset += pData.p->getHeight();
         }
+
         needsRebuild = false;
     }
 }
@@ -561,6 +603,16 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
     for(char c : textToInsert) {
         if(c == '\n') {
             if(newlinesAllowed) {
+                for(TextStyleRangeModifier& tStyle : tStyleModifiers) {
+                    tStyle.apply_to_start_and_end([&pos](TextPosition& p){
+                        if(p.fParagraphIndex > pos.fParagraphIndex)
+                            p.fParagraphIndex++;
+                        else if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex) {
+                            p.fTextByteIndex = p.fTextByteIndex - pos.fTextByteIndex;
+                            p.fParagraphIndex++;
+                        }
+                    });
+                }
                 paragraphs.insert(paragraphs.begin() + pos.fParagraphIndex + 1, ParagraphData{});
                 paragraphs[pos.fParagraphIndex + 1].text = paragraphs[pos.fParagraphIndex].text.substr(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
                 paragraphs[pos.fParagraphIndex].text.erase(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
@@ -569,15 +621,28 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
             }
         }
         else if(c == '\t') {
+            for(TextStyleRangeModifier& tStyle : tStyleModifiers) {
+                tStyle.apply_to_start_and_end([&pos, tabWidth = tabWidth](TextPosition& p) {
+                    if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex)
+                        p.fTextByteIndex += tabWidth;
+                });
+            }
             paragraphs[pos.fParagraphIndex].text.insert(pos.fTextByteIndex, std::string(tabWidth, ' '));
             pos.fTextByteIndex += tabWidth;
         }
         else {
+            for(TextStyleRangeModifier& tStyle : tStyleModifiers) {
+                tStyle.apply_to_start_and_end([&pos](TextPosition& p) {
+                    if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex)
+                        p.fTextByteIndex++;
+                });
+            }
             paragraphs[pos.fParagraphIndex].text.insert(paragraphs[pos.fParagraphIndex].text.begin() + pos.fTextByteIndex, c);
             pos.fTextByteIndex++;
         }
     }
 
+    fit_text_style_ranges_in_text();
     needsRebuild = true;
     return pos;
 }
@@ -601,6 +666,25 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
         paragraph.text.insert(start.fTextByteIndex, paragraphs[end.fParagraphIndex].text.substr(end.fTextByteIndex));
         paragraphs.erase(paragraphs.begin() + start.fParagraphIndex + 1, paragraphs.begin() + end.fParagraphIndex + 1);
     }
+
+    for(TextStyleRangeModifier& tStyle : tStyleModifiers) {
+        tStyle.apply_to_start_and_end([&start, &end](TextPosition& p) {
+            if(p > start) {
+                if(end > p)
+                    p = start;
+                else if(start.fParagraphIndex == p.fParagraphIndex)
+                    p.fTextByteIndex -= (end.fTextByteIndex - start.fTextByteIndex);
+                else if(end.fParagraphIndex == p.fParagraphIndex) {
+                    p.fParagraphIndex = start.fParagraphIndex;
+                    p.fTextByteIndex = start.fTextByteIndex + (p.fTextByteIndex - end.fTextByteIndex);
+                }
+                else
+                    p.fParagraphIndex -= (end.fParagraphIndex - start.fParagraphIndex);
+            }
+        });
+    }
+
+    fit_text_style_ranges_in_text();
     needsRebuild = true;
     return start;
 }

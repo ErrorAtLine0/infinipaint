@@ -2,6 +2,7 @@
 #include "Element.hpp"
 #include "../../RichTextBox/RichTextBox.hpp"
 #include <limits>
+#include <modules/skparagraph/include/TextStyle.h>
 
 namespace GUIStuff {
 
@@ -66,15 +67,13 @@ template <typename T> class TextBox : public Element {
                 paintOpts.cursor = *cur;
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
 
-            auto fontFamiliesMod = std::make_shared<FontFamiliesTextStyleModifier>();
-            fontFamiliesMod->families.emplace_back("Roboto");
-            textbox->set_initial_text_style_modifier(fontFamiliesMod);
-            auto fontSizeMod = std::make_shared<SizeTextStyleModifier>();
-            fontSizeMod->size = io.fontSize;
-            textbox->set_initial_text_style_modifier(fontSizeMod);
-            auto fontColorMod = std::make_shared<ColorTextStyleModifier>();
-            fontColorMod->color = convert_vec4<Vector4f>(io.theme->frontColor1);
-            textbox->set_initial_text_style_modifier(fontColorMod);
+            skia::textlayout::TextStyle tStyle;
+            std::vector<SkString> families;
+            families.emplace_back("Roboto");
+            tStyle.setFontFamilies(families);
+            tStyle.setFontSize(io.fontSize);
+            tStyle.setForegroundPaint(SkPaint{io.theme->frontColor1});
+            textbox->set_initial_text_style(tStyle);
 
             textbox->paint(canvas, paintOpts);
 

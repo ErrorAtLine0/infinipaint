@@ -3,16 +3,13 @@
 #include <include/core/SkCanvas.h>
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/Paragraph.h>
-#include <map>
+#include <modules/skparagraph/include/TextStyle.h>
 #include "../SharedTypes.hpp"
 #include "TextStyleModifier.hpp"
 #include "cereal/archives/portable_binary.hpp"
 
 class RichTextBox {
     public:
-        typedef std::unordered_map<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>> TextModAtPosContainer;
-        typedef std::map<size_t, TextModAtPosContainer> TextModContainer;
-
         RichTextBox();
 
         enum class Movement {
@@ -29,13 +26,23 @@ class RichTextBox {
 
         struct TextPosition {
             // Set to uint32_t values because theyll be saved and sent over networks. Size has to be consistent
-            size_t fTextByteIndex = std::numeric_limits<uint32_t>::max();
             size_t fParagraphIndex = std::numeric_limits<uint32_t>::max();
+            size_t fTextByteIndex = std::numeric_limits<uint32_t>::max();
             template <typename Archive> void serialize(Archive& a) {
-                a((uint32_t)fTextByteIndex, (uint32_t)fParagraphIndex);
+                a((uint32_t)fParagraphIndex, (uint32_t)fTextByteIndex);
             }
             bool operator==(const TextPosition& o) const = default;
             bool operator<(const TextPosition& o) const;
+            bool operator>(const TextPosition& o) const;
+        };
+
+        struct TextStyleRangeModifier {
+            TextPosition start;
+            TextPosition end;
+            std::shared_ptr<TextStyleModifier> modifier;
+            void apply_to_start_and_end(const std::function<void(TextPosition&)>& f);
+            void save(cereal::PortableBinaryOutputArchive& a) const;
+            void load(cereal::PortableBinaryInputArchive& a);
         };
 
         struct Cursor {
@@ -56,14 +63,15 @@ class RichTextBox {
         struct RichTextData {
             struct Paragraph {
                 std::string text;
-                TextModContainer tStyles;
-                void save(cereal::PortableBinaryOutputArchive& a) const;
-                void load(cereal::PortableBinaryInputArchive& a);
+                template<typename Archive> void serialize(Archive& a) {
+                    a(text);
+                }
             };
             template<typename Archive> void serialize(Archive& a) {
-                a(paragraphs);
+                a(paragraphs, tStyleModifiers);
             }
             std::vector<Paragraph> paragraphs;
+            std::vector<TextStyleRangeModifier> tStyleModifiers;
         };
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
@@ -88,7 +96,7 @@ class RichTextBox {
             SELECT_ALL
         };
 
-        void set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier);
+        void set_initial_text_style(const skia::textlayout::TextStyle& tStyle);
         void set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier);
 
         RichTextData get_rich_text_data();
@@ -115,6 +123,8 @@ class RichTextBox {
 
         void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
 
+        void fit_text_style_ranges_in_text();
+
         SkRect get_cursor_rect(TextPosition pos);
 
         TextPosition get_text_pos_closest_to_point(Vector2f point);
@@ -132,8 +142,9 @@ class RichTextBox {
             std::unique_ptr<skia::textlayout::Paragraph> p;
             float heightOffset;
             skia::textlayout::ParagraphStyle pStyle;
-            TextModContainer tStyles;
         };
 
+        skia::textlayout::TextStyle initialTStyle;
         std::vector<ParagraphData> paragraphs;
+        std::vector<TextStyleRangeModifier> tStyleModifiers;
 };

@@ -4,6 +4,7 @@
 #include "../DrawData.hpp"
 #include "Helpers/SCollision.hpp"
 #include <cereal/types/vector.hpp>
+#include <include/core/SkFontStyle.h>
 #include <memory>
 #include "EditTool.hpp"
 
@@ -16,7 +17,21 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
-    //t.gui.slider_scalar_field("Text Relative Size", "Text Size", &a->d.textSize, 5.0f, 100.0f);
+    if(t.gui.text_button_wide("Bold button", "Bold")) {
+        auto boldMod = std::make_shared<WeightTextStyleModifier>();
+        boldMod->set_weight(SkFontStyle::kBold_Weight);
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, boldMod);
+    }
+    if(t.gui.text_button_wide("Italic button", "Italic")) {
+        auto italicMod = std::make_shared<SlantTextStyleModifier>();
+        italicMod->set_slant(SkFontStyle::Slant::kItalic_Slant);
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, italicMod);
+    }
+    if(t.gui.text_button_wide("Red button", "Red")) {
+        auto redMod = std::make_shared<ColorTextStyleModifier>();
+        redMod->color = {1.0f, 0.0f, 0.0f, 1.0f};
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
+    }
     //t.gui.left_to_right_line_layout([&]() {
     //    CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
     //        if(t.gui.color_button("Text Color", &a->d.textColor, &a->d.textColor == t.colorRight))

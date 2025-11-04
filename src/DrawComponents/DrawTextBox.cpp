@@ -54,6 +54,10 @@ void DrawTextBox::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& 
 void DrawTextBox::init_text_box(DrawingProgram& drawP) {
     textBox->set_font_collection(drawP.world.main.fonts.collection); // Getting a segfault relating to the paragraph cache means that the font collection hasn't been set yet
     textBox->set_width(d.p2.x() - d.p1.x());
+    skia::textlayout::TextStyle tStyle;
+    tStyle.setFontFamilies({SkString{"Roboto"}});
+    tStyle.setFontSize(16.0f);
+    textBox->set_initial_text_style(tStyle);
 }
 
 void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
