@@ -3,10 +3,16 @@
 #include <include/core/SkCanvas.h>
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/Paragraph.h>
+#include <map>
 #include "../SharedTypes.hpp"
+#include "TextStyleModifier.hpp"
+#include "cereal/archives/portable_binary.hpp"
 
 class RichTextBox {
     public:
+        typedef std::unordered_map<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>> TextModAtPosContainer;
+        typedef std::map<size_t, TextModAtPosContainer> TextModContainer;
+
         RichTextBox();
 
         enum class Movement {
@@ -48,15 +54,16 @@ class RichTextBox {
         };
 
         struct RichTextData {
-            std::string text;
-            bool operator==(const RichTextData& o) const = default;
-            bool operator!=(const RichTextData& o) const = default;
-            template <typename Archive> void save(Archive& a) const {
-                a(text);
+            struct Paragraph {
+                std::string text;
+                TextModContainer tStyles;
+                void save(cereal::PortableBinaryOutputArchive& a) const;
+                void load(cereal::PortableBinaryInputArchive& a);
+            };
+            template<typename Archive> void serialize(Archive& a) {
+                a(paragraphs);
             }
-            template <typename Archive> void load(Archive& a) {
-                a(text);
-            }
+            std::vector<Paragraph> paragraphs;
         };
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
@@ -81,6 +88,9 @@ class RichTextBox {
             SELECT_ALL
         };
 
+        void set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier);
+        void set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier);
+
         RichTextData get_rich_text_data();
         void set_rich_text_data(const RichTextData& richText);
         void clear_text();
@@ -100,6 +110,7 @@ class RichTextBox {
         static size_t next_grapheme(const std::string& text, size_t textBytePos);
         static size_t prev_grapheme(const std::string& text, size_t textBytePos);
         static TextPosition get_text_pos_from_byte_pos(const std::string& text, size_t textBytePos);
+
         size_t get_byte_pos_from_text_pos(TextPosition textPos);
 
         void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
@@ -112,7 +123,6 @@ class RichTextBox {
 
         bool newlinesAllowed = true;
         float width = 0.0f;
-        float fontSize = 0.0f;
         bool needsRebuild = true;
         unsigned tabWidth = 8;
         sk_sp<skia::textlayout::FontCollection> fontCollection;
@@ -122,6 +132,7 @@ class RichTextBox {
             std::unique_ptr<skia::textlayout::Paragraph> p;
             float heightOffset;
             skia::textlayout::ParagraphStyle pStyle;
+            TextModContainer tStyles;
         };
 
         std::vector<ParagraphData> paragraphs;

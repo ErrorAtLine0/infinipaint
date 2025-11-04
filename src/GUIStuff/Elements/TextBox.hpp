@@ -59,12 +59,22 @@ template <typename T> class TextBox : public Element {
 
             canvas->clipRect(SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height()));
 
-            canvas->translate(bb.min.x(), bb.min.y());
+            canvas->translate(bb.min.x() + 2.0f, bb.min.y());
 
             RichTextBox::PaintOpts paintOpts;
             if(selection.selected)
                 paintOpts.cursor = *cur;
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
+
+            auto fontFamiliesMod = std::make_shared<FontFamiliesTextStyleModifier>();
+            fontFamiliesMod->families.emplace_back("Roboto");
+            textbox->set_initial_text_style_modifier(fontFamiliesMod);
+            auto fontSizeMod = std::make_shared<SizeTextStyleModifier>();
+            fontSizeMod->size = io.fontSize;
+            textbox->set_initial_text_style_modifier(fontSizeMod);
+            auto fontColorMod = std::make_shared<ColorTextStyleModifier>();
+            fontColorMod->color = convert_vec4<Vector4f>(io.theme->frontColor1);
+            textbox->set_initial_text_style_modifier(fontColorMod);
 
             textbox->paint(canvas, paintOpts);
 
@@ -80,6 +90,7 @@ template <typename T> class TextBox : public Element {
             textbox = std::make_shared<RichTextBox>();
             textbox->set_font_collection(io.fontCollection);
             textbox->set_allow_newlines(!singleLine);
+
             cur = std::make_shared<RichTextBox::Cursor>();
 
             if(data) {

@@ -209,6 +209,16 @@ void GUIManager::draw(SkCanvas* canvas) {
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
+                Clay_ClipRenderData* clip = &command->renderData.clip;
+                if(!clip->horizontal) {
+                    bb.x = 0.0f;
+                    bb.width = std::numeric_limits<float>::max();
+                }
+                if(!clip->vertical) {
+                    bb.y = 0.0f;
+                    bb.height = std::numeric_limits<float>::max();
+                }
+
                 canvas->save();
                 SkRect clipRect = SkRect::MakeXYWH(bb.x - 1.0f, bb.y - 1.0f, bb.width + 1.0f, bb.height + 1.0f);
                 canvas->clipRect(clipRect);
@@ -578,6 +588,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                 CLAY({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                        .childGap = 1,
                         .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     }
@@ -727,7 +738,7 @@ void GUIManager::scroll_bar_many_entries_area(const std::string& uniqueId, float
         scrollAmount = std::fabs(scrollAmount);
         float entryHeight = 25.0f;
         size_t startPoint = scrollAmount / entryHeight;
-        size_t elementsContainable = (containerHeight / entryHeight) + 1;
+        size_t elementsContainable = (containerHeight / entryHeight) + 2; // Displaying 2 more elements ensures that there isn't any empty space in the container
         size_t endPoint = std::min(entryCount, startPoint + elementsContainable);
 
         if(startPoint != 0) {

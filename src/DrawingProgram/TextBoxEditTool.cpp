@@ -26,11 +26,7 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     //});
     t.gui.pop_id();
 
-    TextBoxEditToolAllData newData = get_all_data(a);
-    bool editHappened = newData != oldData;
-    if(editHappened)
-        oldData = newData;
-    return editHappened;
+    return true; // NOTE: In general, the update data should always be sent even if no changes were made, because we're sending the data over an unreliable channel.
 }
 
 void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
@@ -74,8 +70,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     cur = std::make_shared<RichTextBox::Cursor>();
     Vector2f textSelectPos = a->get_mouse_pos(drawP);
     textbox->process_mouse_left_button(*cur, textSelectPos, true, false, false);
-    oldData = get_all_data(a);
-    prevData = oldData;
+    prevData = get_all_data(a);
     a->d.editing = true;
     a->client_send_update(drawP, false);
     editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});

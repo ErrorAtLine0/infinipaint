@@ -1,4 +1,5 @@
 #include "RichTextBox.hpp"
+#include "TextStyleModifier.hpp"
 #include <limits>
 #include <modules/skparagraph/include/DartTypes.h>
 #include <modules/skparagraph/include/Metrics.h>
@@ -9,6 +10,37 @@
 #include <modules/skparagraph/src/ParagraphImpl.h>
 #include <Helpers/MathExtras.hpp>
 #include <src/base/SkUTF.h>
+#include <cereal/types/string.hpp>
+
+void RichTextBox::RichTextData::Paragraph::save(cereal::PortableBinaryOutputArchive& a) const {
+    a(text);
+    a(static_cast<uint32_t>(tStyles.size()));
+    for(auto& [pos, styles] : tStyles) {
+        a(pos, static_cast<uint16_t>(styles.size()));
+        for(auto& [styleType, style] : styles)
+            a(static_cast<uint16_t>(styleType), *style);
+    }
+}
+
+void RichTextBox::RichTextData::Paragraph::load(cereal::PortableBinaryInputArchive& a) {
+    a(text);
+    uint32_t styleCount;
+    a(styleCount);
+    tStyles.clear();
+    for(uint32_t i = 0; i < styleCount; i++) {
+        uint32_t pos;
+        uint16_t styleCountAtPos;
+        a(pos, styleCountAtPos);
+        TextModAtPosContainer& mods = tStyles[pos];
+        for(uint16_t j = 0; j < styleCountAtPos; j++) {
+            uint16_t styleType;
+            a(styleType);
+            std::shared_ptr<TextStyleModifier> modifier = TextStyleModifier::allocate_modifier(static_cast<TextStyleModifier::ModifierType>(styleType));
+            a(*modifier);
+            mods.emplace(static_cast<TextStyleModifier::ModifierType>(styleType), modifier);
+        }
+    }
+}
 
 bool RichTextBox::TextPosition::operator<(const RichTextBox::TextPosition& o) const {
     return (this->fParagraphIndex < o.fParagraphIndex) || (this->fParagraphIndex == o.fParagraphIndex && this->fTextByteIndex < o.fTextByteIndex);
@@ -50,13 +82,13 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
             if(cur.selectionBeginPos != cur.selectionEndPos)
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
             else
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(Movement::LEFT, cur.pos));
+                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::LEFT_WORD : Movement::LEFT, cur.pos));
             break;
         case InputKey::DELETE:
             if(cur.selectionBeginPos != cur.selectionEndPos)
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
             else
-                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(Movement::RIGHT, cur.pos));
+                cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::RIGHT_WORD : Movement::RIGHT, cur.pos));
             break;
         case InputKey::ENTER:
             process_text_input(cur, "\n");
@@ -217,7 +249,13 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
 }
 
 RichTextBox::RichTextData RichTextBox::get_rich_text_data() {
-    return {get_string()};
+    RichTextData toRet;
+    for(auto& p : paragraphs) {
+        toRet.paragraphs.emplace_back();
+        toRet.paragraphs.back().text = p.text;
+        toRet.paragraphs.back().tStyles = p.tStyles;
+    }
+    return toRet;
 }
 
 void RichTextBox::clear_text() {
@@ -231,7 +269,15 @@ void RichTextBox::set_string(const std::string& str) {
 }
 
 void RichTextBox::set_rich_text_data(const RichTextData& richText) {
-    set_string(richText.text);
+    paragraphs.clear();
+    for(auto& p : richText.paragraphs) {
+        paragraphs.emplace_back();
+        paragraphs.back().text = p.text;
+        paragraphs.back().tStyles = p.tStyles;
+    }
+    if(richText.paragraphs.empty())
+        paragraphs.emplace_back();
+    needsRebuild = true;
 }
 
 std::string RichTextBox::get_string() {
@@ -259,6 +305,16 @@ std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
     }
 
     return toRet;
+}
+
+void RichTextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier) {
+    std::shared_ptr<TextStyleModifier>& modToSet = paragraphs.back().tStyles[0][modifier->get_type()];
+    needsRebuild |= ((modToSet == nullptr) || (!modifier->equivalent(*modToSet)));
+    modToSet = modifier;
+}
+
+void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier) {
+    needsRebuild = true;
 }
 
 RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
@@ -457,18 +513,35 @@ void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollecti
 
 void RichTextBox::rebuild() {
     if(needsRebuild) {
-
         float heightOffset = 0.0f;
+        skia::textlayout::TextStyle tStyle;
+
         for(ParagraphData& pData : paragraphs) {
             pData.pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
             pData.pStyle.setTextDirection(skia::textlayout::TextDirection::kLtr);
-            skia::textlayout::TextStyle tStyle;
-            tStyle.setFontSize(16.0f);
-            tStyle.setFontFamilies({SkString{"Roboto"}});
-            pData.pStyle.setTextStyle(tStyle);
-
             skia::textlayout::ParagraphBuilderImpl a(pData.pStyle, fontCollection, SkUnicodes::ICU::Make());
-            a.addText(pData.text.c_str(), pData.text.length());
+
+            size_t startPos = 0;
+            for(auto& [pos, tStylesAtPos] : pData.tStyles) {
+                if(pos > pData.text.size())
+                    break;
+
+                for(auto& [styleType, styleMod] : tStylesAtPos)
+                    styleMod->modify_text_style(tStyle);
+                if(startPos != pos) {
+                    a.pushStyle(tStyle);
+                    a.addText(pData.text.c_str() + startPos, pos - startPos);
+                    a.pop();
+                }
+                startPos = pos;
+            }
+
+            if(startPos < pData.text.size()) {
+                a.pushStyle(tStyle);
+                a.addText(pData.text.c_str() + startPos, pData.text.size() - startPos);
+                a.pop();
+            }
+
             pData.p = a.Build();
             pData.p->layout(width);
             pData.heightOffset = heightOffset;

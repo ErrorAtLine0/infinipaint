@@ -18,10 +18,6 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         struct TextBoxEditToolAllData {
             DrawTextBox::Data textboxData;
             RichTextBox::RichTextData richText;
-            bool operator==(const TextBoxEditToolAllData& o) const = default;
-            bool operator!=(const TextBoxEditToolAllData& o) const = default;
         };
         TextBoxEditToolAllData get_all_data(const std::shared_ptr<DrawTextBox>& a);
-
-        TextBoxEditToolAllData oldData;
 };

@@ -38,7 +38,7 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
         .cornerRadius = CLAY_CORNER_RADIUS(4),
         .border = {
             .color = convert_vec4<Clay_Color>(borderColor),
-            .width = CLAY_BORDER_OUTSIDE(1)
+            .width = CLAY_BORDER_OUTSIDE(2)
         }
     }) {
         CLAY({.layout = { 
