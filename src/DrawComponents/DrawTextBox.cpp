@@ -58,6 +58,16 @@ void DrawTextBox::init_text_box(DrawingProgram& drawP) {
     tStyle.setFontFamilies({SkString{"Roboto"}});
     tStyle.setFontSize(16.0f);
     textBox->set_initial_text_style(tStyle);
+
+    auto boldMod = std::make_shared<WeightTextStyleModifier>();
+    boldMod->set_weight(SkFontStyle::kNormal_Weight);
+    textBox->set_initial_text_style_modifier(boldMod);
+    auto italicMod = std::make_shared<SlantTextStyleModifier>();
+    italicMod->set_slant(SkFontStyle::Slant::kUpright_Slant);
+    textBox->set_initial_text_style_modifier(italicMod);
+    auto colorMod = std::make_shared<ColorTextStyleModifier>();
+    colorMod->color = {1.0f, 1.0f, 1.0f, 1.0f};
+    textBox->set_initial_text_style_modifier(colorMod);
 }
 
 void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {

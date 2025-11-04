@@ -10,6 +10,7 @@
 
 class RichTextBox {
     public:
+
         RichTextBox();
 
         enum class Movement {
@@ -38,14 +39,12 @@ class RichTextBox {
             bool operator<=(const RichTextBox::TextPosition& o) const;
         };
 
-        struct TextStyleRangeModifier {
-            TextPosition start;
-            TextPosition end;
-            std::shared_ptr<TextStyleModifier> modifier;
-            void apply_to_start_and_end(const std::function<void(TextPosition&)>& f);
-            void save(cereal::PortableBinaryOutputArchive& a) const;
-            void load(cereal::PortableBinaryInputArchive& a);
+        struct PositionedTextStyleMod {
+            TextPosition pos;
+            std::unordered_map<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>> mods;
         };
+
+        typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
 
         struct Cursor {
             TextPosition pos = {0, 0};
@@ -69,11 +68,10 @@ class RichTextBox {
                     a(text);
                 }
             };
-            template<typename Archive> void serialize(Archive& a) {
-                a(paragraphs, tStyleModifiers);
-            }
+            void save(cereal::PortableBinaryOutputArchive& a) const;
+            void load(cereal::PortableBinaryInputArchive& a);
+            TextStyleModContainer tStyleMods;
             std::vector<Paragraph> paragraphs;
-            std::vector<TextStyleRangeModifier> tStyleModifiers;
         };
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
@@ -99,6 +97,7 @@ class RichTextBox {
         };
 
         void set_initial_text_style(const skia::textlayout::TextStyle& tStyle);
+        void set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier);
         void set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier);
 
         RichTextData get_rich_text_data();
@@ -125,11 +124,12 @@ class RichTextBox {
 
         void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
 
-        void fit_text_style_ranges_in_text();
-
         SkRect get_cursor_rect(TextPosition pos);
 
         TextPosition get_text_pos_closest_to_point(Vector2f point);
+        std::shared_ptr<TextStyleModifier> get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType);
+        void erase_if_over_all_styles_until_pos(TextPosition pos, const std::function<bool(TextPosition, const std::shared_ptr<TextStyleModifier>&)>& func);
+        void insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier);
 
         void rebuild();
 
@@ -147,6 +147,6 @@ class RichTextBox {
         };
 
         skia::textlayout::TextStyle initialTStyle;
+        TextStyleModContainer tStyleMods;
         std::vector<ParagraphData> paragraphs;
-        std::vector<TextStyleRangeModifier> tStyleModifiers;
 };
