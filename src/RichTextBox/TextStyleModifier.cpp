@@ -2,6 +2,7 @@
 #include <Helpers/ConvertVec.hpp>
 #include <Helpers/Serializers.hpp>
 #include <include/core/SkFontStyle.h>
+#include <modules/skparagraph/include/TextStyle.h>
 
 #define WEIGHT_VALUE_MODIFIER 100
 
@@ -17,6 +18,8 @@ std::shared_ptr<TextStyleModifier> TextStyleModifier::allocate_modifier(Modifier
             return std::make_shared<WeightTextStyleModifier>();
         case ModifierType::SLANT:
             return std::make_shared<SlantTextStyleModifier>();
+        case ModifierType::DECORATION:
+            return std::make_shared<DecorationTextStyleModifier>();
         case ModifierType::FONT_FAMILIES:
             return std::make_shared<FontFamiliesTextStyleModifier>();
         case ModifierType::COUNT:
@@ -42,6 +45,10 @@ const TextStyleModifier::ModifierMap& TextStyleModifier::get_default_modifiers()
         auto slantMod = std::make_shared<SlantTextStyleModifier>();
         slantMod->set_slant(SkFontStyle::kUpright_Slant);
         defaultMods[ModifierType::SLANT] = slantMod;
+
+        auto decorationMod = std::make_shared<DecorationTextStyleModifier>();
+        decorationMod->decorationValue = skia::textlayout::TextDecoration::kNoDecoration;
+        defaultMods[ModifierType::DECORATION] = decorationMod;
     }
     return defaultMods;
 }
@@ -130,6 +137,7 @@ void ColorTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) {
 
 void ColorTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
     style.setForegroundPaint(SkPaint{convert_vec4<SkColor4f>(color)});
+    style.setDecorationColor(convert_vec4<SkColor4f>(color).toSkColor());
 }
 
 bool ColorTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
@@ -178,4 +186,26 @@ void FontFamiliesTextStyleModifier::modify_text_style(skia::textlayout::TextStyl
 
 bool FontFamiliesTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
     return families == static_cast<FontFamiliesTextStyleModifier&>(modifier).families;
+}
+
+
+
+TextStyleModifier::ModifierType DecorationTextStyleModifier::get_type() const {
+    return ModifierType::DECORATION;
+}
+
+void DecorationTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
+    a(decorationValue);
+}
+
+void DecorationTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) {
+    a(decorationValue);
+}
+
+void DecorationTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
+    style.setDecoration(static_cast<skia::textlayout::TextDecoration>(decorationValue));
+}
+
+bool DecorationTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
+    return decorationValue == static_cast<DecorationTextStyleModifier&>(modifier).decorationValue;
 }

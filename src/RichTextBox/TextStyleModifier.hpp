@@ -12,6 +12,7 @@ class TextStyleModifier {
             COLOR,
             WEIGHT,
             SLANT,
+            DECORATION,
             FONT_FAMILIES,
 
             COUNT
@@ -31,6 +32,17 @@ class TextStyleModifier {
     private:
         static ModifierMap defaultMods;
         virtual bool equivalent_data(TextStyleModifier& modifier) const = 0;
+};
+
+class DecorationTextStyleModifier : public TextStyleModifier {
+    public:
+        virtual ModifierType get_type() const override;
+        virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
+        virtual void load(cereal::PortableBinaryInputArchive& a) override;
+        virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
+        uint8_t decorationValue;
+    private:
+        virtual bool equivalent_data(TextStyleModifier& modifier) const override;
 };
 
 class WeightTextStyleModifier : public TextStyleModifier {

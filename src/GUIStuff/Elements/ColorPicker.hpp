@@ -11,12 +11,14 @@ namespace GUIStuff {
 
 template <typename T> class ColorPicker : public Element {
     public:
-        void update(UpdateInputData& io, T* newData, bool newSelectAlpha, const std::function<void()>& elemUpdate) {
+        bool update(UpdateInputData& io, T* newData, bool newSelectAlpha, const std::function<void()>& elemUpdate) {
+            bool isChanged = false;
+
             T* data = newData;
             selectAlpha = newSelectAlpha;
 
             if(!data)
-                return;
+                return false;
 
             force_update_colorpicker(data);
 
@@ -39,6 +41,7 @@ template <typename T> class ColorPicker : public Element {
                         Vector2f alphaBarDim = get_alpha_bar_dim();
                         modifyingAlpha = SCollision::collide(SCollision::AABB<float>(alphaBarPos, alphaBarPos + alphaBarDim), io.mouse.pos);
                     }
+                    isChanged = true;
                 }
                 if(selection.held && modifyingSv) {
                     float svSelectionAreaSize = bb.width() - (BAR_GAP + BAR_WIDTH);
@@ -46,18 +49,21 @@ template <typename T> class ColorPicker : public Element {
                     savedHsv.y() = newSv.x();
                     savedHsv.z() = 1.0f - newSv.y();
                     set_hsv(data, savedHsv);
+                    isChanged = true;
                 }
                 if(selection.held && modifyingHue) {
                     Vector2f huePos = get_hue_bar_pos();
                     Vector2f hueDim = get_hue_bar_dim();
                     savedHsv.x() = (1.0f - std::clamp((io.mouse.pos.y() - huePos.y()) / hueDim.y(), 0.0f, 1.0f)) * 360.0f;
                     set_hsv(data, savedHsv);
+                    isChanged = true;
                 }
                 if(selection.held && modifyingAlpha) {
                     Vector2f alphaPos = get_alpha_bar_pos();
                     Vector2f alphaDim = get_alpha_bar_dim();
                     (*data)[3] = std::clamp((io.mouse.pos.x() - alphaPos.x()) / alphaDim.x(), 0.0f, 1.0f);
                     oldData = *data;
+                    isChanged = true;
                 }
                 if(!selection.held) {
                     modifyingSv = false;
@@ -67,6 +73,8 @@ template <typename T> class ColorPicker : public Element {
                 if(elemUpdate)
                     elemUpdate();
             }
+
+            return isChanged;
         }
         
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {

@@ -21,7 +21,6 @@ class TextBoxTool : public DrawingProgramToolBase {
         void commit();
 
         struct TextBoxControls {
-            float textRelativeSize = 20.0f;
             Vector2f startAt;
             Vector2f endAt;
             int drawStage = 0;

@@ -610,7 +610,7 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
 
 void RichTextBox::set_width(float newWidth) {
     if(width != newWidth) {
-        width = newWidth;
+        width = std::max(newWidth, 4.0f);
         inputChangedTextBox = true;
         needsRebuild = true;
     }

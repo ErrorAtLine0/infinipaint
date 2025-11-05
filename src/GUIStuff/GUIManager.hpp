@@ -72,6 +72,7 @@ class GUIManager {
         void top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_line_layout(const std::function<void()>& elemUpdate);
+        void left_to_right_line_centered_layout(const std::function<void()>& elemUpdate);
 
         bool selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected);
 
@@ -82,7 +83,7 @@ class GUIManager {
         void scroll_bar_area(const std::string& uniqueId, const std::function<void(float scrollContentHeight, float containerHeight, float scrollAmount)>& elemUpdate);
         void scroll_bar_many_entries_area(const std::string& uniqueId, float entryHeight, size_t entryCount, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float scrollAmount)>& elemUpdate = nullptr);
 
-        void input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        bool input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
         void input_text(const std::string& id, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         bool radio_button(const std::string& id, bool val, const std::function<void()>& elemUpdate = nullptr);
@@ -162,18 +163,20 @@ class GUIManager {
 
         bool input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
 
-        template <typename TContainer, typename T> void input_scalar_fields(const std::string& id, const std::string& name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename TContainer, typename T> bool input_scalar_fields(const std::string& id, const std::string& name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+            bool isUpdating = false;
             push_id(id);
             left_to_right_line_layout([&]() {
                 text_label(name);
                 for(size_t i = 0; i < elemCount; i++)
-                    input_scalar<T>(std::to_string(i), &(*val)[i], min, max, decimalPrecision, elemUpdate);
+                    isUpdating |= input_scalar<T>(std::to_string(i), &(*val)[i], min, max, decimalPrecision, elemUpdate);
             });
             pop_id();
+            return isUpdating;
         }
 
-        template <typename T> void input_color_hex(const std::string& id, T* val, bool selectAlpha, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
-            input_generic<T>(id, val, 
+        template <typename T> bool input_color_hex(const std::string& id, T* val, bool selectAlpha, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+            return input_generic<T>(id, val, 
                 [&](const std::string& str) {
                     T def = {0.0f, 0.0f, 0.0f, 1.0f};
                     unsigned startIndex = 0;
@@ -209,10 +212,11 @@ class GUIManager {
                 true, false, elemUpdate);
         }
 
-        template <typename T> void color_picker(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_picker(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
             push_id(id);
-            insert_element<ColorPicker<T>>()->update(*io, val, selectAlpha, elemUpdate);
+            bool isUpdating = insert_element<ColorPicker<T>>()->update(*io, val, selectAlpha, elemUpdate);
             pop_id();
+            return isUpdating;
         }
 
         template <typename T> bool slider_scalar(const std::string& id, T* val, T min, T max, const std::function<void()>& elemUpdate = nullptr) {
@@ -264,7 +268,8 @@ class GUIManager {
             }, GUIStuff::SelectableButton::DrawType::TRANSPARENT_BORDER, isSelected);
         }
 
-        template <typename T> void color_picker_button(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_picker_button(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+            bool isUpdating = false;
             push_id(id);
             bool& isOpen = insert_any_with_id<bool>(0, false);
             bool clicked;
@@ -275,41 +280,46 @@ class GUIManager {
                 isOpen = true;
             if(isOpen) {
                 top_to_bottom_window_popup_layout(CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&]() {
-                    color_picker_items("c", val, selectAlpha);
+                    isUpdating = color_picker_items("c", val, selectAlpha);
                     if(io->mouse.leftClick && !Clay_Hovered() && !clicked)
                         isOpen = false;
                 });
             }
             pop_id();
+            return isUpdating;
         }
 
-        template <typename T> void color_picker_items(const std::string& id, T* val, bool selectAlpha) {
+        template <typename T> bool color_picker_items(const std::string& id, T* val, bool selectAlpha) {
+            bool isUpdating = false;
             push_id(id);
-            color_picker("c", val, selectAlpha);
+            isUpdating |= color_picker("c", val, selectAlpha);
             left_to_right_line_layout([&]() {
                 text_label("R");
-                input_color_component_255("r", &(*val)[0]);
+                isUpdating |= input_color_component_255("r", &(*val)[0]);
                 text_label("G");
-                input_color_component_255("g", &(*val)[1]);
+                isUpdating |= input_color_component_255("g", &(*val)[1]);
                 text_label("B");
-                input_color_component_255("b", &(*val)[2]);
+                isUpdating |= input_color_component_255("b", &(*val)[2]);
                 if(selectAlpha) {
                     text_label("A");
-                    input_color_component_255("a", &(*val)[3]);
+                    isUpdating |= input_color_component_255("a", &(*val)[3]);
                 }
             });
             left_to_right_line_layout([&]() {
                 text_label("Hex");
-                input_color_hex("h", val, selectAlpha);
+                isUpdating |= input_color_hex("h", val, selectAlpha);
             });
             pop_id();
+            return isUpdating;
         }
 
-        template <typename T> void color_picker_button_field(const std::string& id, const std::string& name, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_picker_button_field(const std::string& id, const std::string& name, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+            bool isUpdating = false;
             left_to_right_line_layout([&]() {
-                color_picker_button(id, val, selectAlpha, elemUpdate);
+                isUpdating = color_picker_button(id, val, selectAlpha, elemUpdate);
                 text_label(name);
             });
+            return isUpdating;
         }
 
     private:

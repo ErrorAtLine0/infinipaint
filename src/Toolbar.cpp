@@ -1012,6 +1012,7 @@ void Toolbar::drawing_program_gui() {
         },
     }) {
         main.world->drawProg.toolbar_gui();
+        isUpdatingColorLeft = isUpdatingColorRight = false;
         if(colorLeft) {
             CLAY({
                 .layout = {
@@ -1025,9 +1026,9 @@ void Toolbar::drawing_program_gui() {
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
             }) {
                 gui.obstructing_window();
-                gui.color_picker_items("colorpickerleft", colorLeft, true);
+                isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true);
                 bool hoveringOnDropdown = false;
-                color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
+                isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
                 if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io->mouse.leftClick)
                     colorLeft = nullptr;
             }
@@ -1050,9 +1051,9 @@ void Toolbar::drawing_program_gui() {
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
             }) {
                 gui.obstructing_window();
-                gui.color_picker_items("colorpickerright", colorRight, true);
+                isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true);
                 bool hoveringOnDropdown = false;
-                color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
+                isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
                 if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io->mouse.leftClick)
                     colorRight = nullptr;
             }
@@ -1061,7 +1062,8 @@ void Toolbar::drawing_program_gui() {
     }
 }
 
-void Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveringOnDropdown) {
+bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveringOnDropdown) {
+    bool isUpdating = false;
     gui.push_id(id);
     auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
     size_t i = 0;
@@ -1089,6 +1091,7 @@ void Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
                         color->x() = newC.x();
                         color->y() = newC.y();
                         color->z() = newC.z();
+                        isUpdating = true;
                     }
                     if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
                         paletteData.selectedColor = -1;
@@ -1154,6 +1157,8 @@ void Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
         }
     }
     gui.pop_id();
+
+    return isUpdating;
 }
 
 void Toolbar::performance_metrics() {

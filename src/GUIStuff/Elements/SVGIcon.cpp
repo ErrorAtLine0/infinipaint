@@ -26,6 +26,8 @@ void SVGIcon::update(UpdateInputData& io, const std::string& newSvgPath, bool ne
         else {
             io.svgData[newSvgPath] = newSvgDom;
             svgDom = newSvgDom;
+            if(svgDom->containerSize().width() == 0 || svgDom->containerSize().height() == 0)
+                svgDom->setContainerSize({1000, 1000});
         }
     }
     else

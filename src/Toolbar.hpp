@@ -80,6 +80,9 @@ class Toolbar {
 
         Vector4f* colorLeft = nullptr;
         Vector4f* colorRight = nullptr;
+        bool isUpdatingColorLeft = false;
+        bool isUpdatingColorRight = false;
+
         std::optional<Vector2f> paintPopupLocation;
 
         bool flipZoomToolDirection = false;
@@ -103,7 +106,7 @@ class Toolbar {
         void options_menu();
         void file_picker_gui();
         void performance_metrics();
-        void color_palette(const std::string& id, Vector4f* color, bool& hoveringOnDropdown);
+        bool color_palette(const std::string& id, Vector4f* color, bool& hoveringOnDropdown);
         void open_world_file(int conType, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
         void load_default_theme();

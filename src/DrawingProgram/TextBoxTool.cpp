@@ -21,7 +21,6 @@ void TextBoxTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("textbox tool");
     t.gui.text_label_centered("Textbox");
-    t.gui.slider_scalar_field("Text Relative Size", "Text Size", &controls.textRelativeSize, 5.0f, 100.0f);
     t.gui.pop_id();
 }
 

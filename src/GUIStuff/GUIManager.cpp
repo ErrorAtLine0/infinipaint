@@ -275,6 +275,18 @@ void GUIManager::left_to_right_line_layout(const std::function<void()>& elemUpda
     left_to_right_layout(CLAY_SIZING_GROW(0), CLAY_SIZING_FIT(0), elemUpdate);
 }
 
+void GUIManager::left_to_right_line_centered_layout(const std::function<void()>& elemUpdate) {
+    CLAY({.layout = { 
+          .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+          .childGap = io->theme->childGap1,
+          .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+          .layoutDirection = CLAY_LEFT_TO_RIGHT,
+    }
+    }) {
+        elemUpdate();
+    }
+}
+
 void GUIManager::text_label_size(const std::string& val, float modifier) {
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = static_cast<uint16_t>(io->fontSize * modifier)}));
 }
@@ -360,9 +372,9 @@ bool GUIManager::radio_button_field(const std::string& id, const std::string& na
     return toRet;
 }
 
-void GUIManager::input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
-    insert_element<TextBox<float>>()->update(*io, val,
+    bool isUpdating = insert_element<TextBox<float>>()->update(*io, val,
         [&](const std::string& str) {
             int roundTo255;
             std::stringstream ss;
@@ -377,6 +389,7 @@ void GUIManager::input_color_component_255(const std::string& id, float* val, co
             return ss.str();
         }, true, false, elemUpdate);
     pop_id();
+    return isUpdating;
 }
 
 void GUIManager::input_text(const std::string& id, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate) {

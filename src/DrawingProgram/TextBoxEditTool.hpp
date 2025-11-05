@@ -19,7 +19,9 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
             DrawTextBox::Data textboxData;
             RichTextBox::RichTextData richText;
         };
-        uint32_t newFontSize;
+
+        uint32_t newFontSize = 15;
+        Vector4f newTextColor{1.0f, 1.0f, 1.0f, 1.0f};
 
         void set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a);
         TextStyleModifier::ModifierMap modsAtStartOfSelection;
