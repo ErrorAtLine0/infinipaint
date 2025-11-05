@@ -336,6 +336,7 @@ void RichTextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyl
         tStyleMods[0].pos = {0, 0};
     }
     tStyleMods[0].mods[modifier->get_type()] = modifier;
+    remove_duplicate_text_style_mods();
 }
 
 std::shared_ptr<TextStyleModifier> RichTextBox::get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType) {
@@ -376,22 +377,32 @@ void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition 
             return p >= start && modifier->get_type() == modToCheck->get_type();
         });
         insert_style_at_pos(start, modifier);
-        insert_style_at_pos(end, lastModOfThisTypeBeforeEnd);
+        if(end != move(Movement::END, {0, 0}))
+            insert_style_at_pos(end, lastModOfThisTypeBeforeEnd);
+        remove_duplicate_text_style_mods();
         needsRebuild = true;
     }
 }
 
 void RichTextBox::insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier) {
     size_t indexToPlaceAt = 0;
+    bool finishedInsertingStyle = false;
     for(auto& [tPos, tStyleModsInPos] : tStyleMods) {
         if(tPos > pos)
             break;
-        else if(tPos == pos)
+        else if(tPos == pos) {
             tStyleModsInPos[modifier->get_type()] = modifier;
-        indexToPlaceAt++;
+            finishedInsertingStyle = true;
+            break;
+        }
+        else
+            indexToPlaceAt++;
     }
-    auto it = tStyleMods.insert(tStyleMods.begin() + indexToPlaceAt, PositionedTextStyleMod{pos});
-    it->mods[modifier->get_type()] = modifier;
+    if(!finishedInsertingStyle) {
+        auto it = tStyleMods.insert(tStyleMods.begin() + indexToPlaceAt, PositionedTextStyleMod{});
+        it->pos = pos;
+        it->mods[modifier->get_type()] = modifier;
+    }
 }
 
 RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
@@ -615,6 +626,7 @@ void RichTextBox::rebuild() {
                     auto& nextTStyleMod = *nextTStyleModIt;
 
                     // Print with previous style
+
                     a.pushStyle(tStyle);
                     a.addText(pData.text.c_str() + tIndex, nextTStyleMod.pos.fTextByteIndex - tIndex);
                     a.pop();
@@ -634,8 +646,28 @@ void RichTextBox::rebuild() {
             heightOffset += pData.p->getHeight();
         }
 
+        //std::cout << "size: " << tStyleMods.size() << std::endl;
+        //for(auto& s : tStyleMods)
+        //    std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
+
         needsRebuild = false;
     }
+}
+
+void RichTextBox::remove_duplicate_text_style_mods() {
+    std::unordered_map<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>> previouslyAppliedMods;
+    std::erase_if(tStyleMods, [&previouslyAppliedMods](PositionedTextStyleMod& tStyleModsInPos) {
+        std::erase_if(tStyleModsInPos.mods, [&previouslyAppliedMods](const std::pair<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>>& tStyleModPair) {
+            auto [placedIt, insertionTookPlace] = previouslyAppliedMods.emplace(tStyleModPair.first, tStyleModPair.second);
+            if(!insertionTookPlace) {
+                if(placedIt->second->equivalent(*tStyleModPair.second))
+                    return true;
+                placedIt->second = tStyleModPair.second;
+            }
+            return false;
+        });
+        return tStyleModsInPos.mods.empty();
+    });
 }
 
 void RichTextBox::set_tab_space_width(unsigned newTabWidth) {
@@ -651,7 +683,7 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
                 for(auto& [p, tStylesInPos] : tStyleMods) {
                     if(p.fParagraphIndex > pos.fParagraphIndex)
                         p.fParagraphIndex++;
-                    else if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex) {
+                    else if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex && !(p.fTextByteIndex == pos.fTextByteIndex && p.fTextByteIndex == 0)) {
                         p.fTextByteIndex = p.fTextByteIndex - pos.fTextByteIndex;
                         p.fParagraphIndex++;
                     }
@@ -665,7 +697,7 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
         }
         else if(c == '\t') {
             for(auto& [p, tStylesInPos] : tStyleMods) {
-                if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex)
+                if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex && !(p.fTextByteIndex == pos.fTextByteIndex && p.fTextByteIndex == 0))
                     p.fTextByteIndex += tabWidth;
             }
             paragraphs[pos.fParagraphIndex].text.insert(pos.fTextByteIndex, std::string(tabWidth, ' '));
@@ -673,7 +705,7 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
         }
         else {
             for(auto& [p, tStylesInPos] : tStyleMods) {
-                if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex)
+                if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex && !(p.fTextByteIndex == pos.fTextByteIndex && p.fTextByteIndex == 0))
                     p.fTextByteIndex++;
             }
             paragraphs[pos.fParagraphIndex].text.insert(paragraphs[pos.fParagraphIndex].text.begin() + pos.fTextByteIndex, c);
@@ -681,7 +713,11 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
         }
     }
 
-    needsRebuild = true;
+    if(!textToInsert.empty()) {
+        remove_duplicate_text_style_mods();
+        needsRebuild = true;
+    }
+
     return pos;
 }
 
@@ -705,8 +741,6 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
         paragraphs.erase(paragraphs.begin() + start.fParagraphIndex + 1, paragraphs.begin() + end.fParagraphIndex + 1);
     }
 
-    std::optional<int32_t> prevTextStyleModIndex;
-
     for(int32_t i = 0; i < static_cast<int32_t>(tStyleMods.size()); i++) {
         PositionedTextStyleMod& tStyleMod = tStyleMods[i];
         auto& p = tStyleMod.pos;
@@ -722,8 +756,8 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
             else
                 p.fParagraphIndex -= (end.fParagraphIndex - start.fParagraphIndex);
         }
-        if(prevTextStyleModIndex.has_value() && tStyleMods[prevTextStyleModIndex.value()].pos == p) {
-            auto& tStyleModsToMergeWith = tStyleMods[prevTextStyleModIndex.value()].mods;
+        if(i > 0 && tStyleMods[i - 1].pos == p) {
+            auto& tStyleModsToMergeWith = tStyleMods[i - 1].mods;
             for(auto& [modType, tStyle] : tStyleMod.mods)
                 tStyleModsToMergeWith[modType] = tStyle;
             tStyleMods.erase(tStyleMods.begin() + i);
@@ -731,7 +765,9 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
         }
     }
 
+    remove_duplicate_text_style_mods();
     needsRebuild = true;
+
     return start;
 }
 

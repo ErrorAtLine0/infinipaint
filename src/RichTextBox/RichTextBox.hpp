@@ -131,6 +131,8 @@ class RichTextBox {
         void erase_if_over_all_styles_until_pos(TextPosition pos, const std::function<bool(TextPosition, const std::shared_ptr<TextStyleModifier>&)>& func);
         void insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier);
 
+        void remove_duplicate_text_style_mods();
+
         void rebuild();
 
         bool newlinesAllowed = true;
