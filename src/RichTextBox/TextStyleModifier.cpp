@@ -1,8 +1,11 @@
 #include "TextStyleModifier.hpp"
 #include <Helpers/ConvertVec.hpp>
 #include <Helpers/Serializers.hpp>
+#include <include/core/SkFontStyle.h>
 
 #define WEIGHT_VALUE_MODIFIER 100
+
+TextStyleModifier::ModifierMap TextStyleModifier::defaultMods;
 
 std::shared_ptr<TextStyleModifier> TextStyleModifier::allocate_modifier(ModifierType type) {
     switch(type) {
@@ -16,8 +19,31 @@ std::shared_ptr<TextStyleModifier> TextStyleModifier::allocate_modifier(Modifier
             return std::make_shared<SlantTextStyleModifier>();
         case ModifierType::FONT_FAMILIES:
             return std::make_shared<FontFamiliesTextStyleModifier>();
+        case ModifierType::COUNT:
+            return nullptr;
     }
     return nullptr;
+}
+
+std::shared_ptr<TextStyleModifier> TextStyleModifier::get_default_modifier(ModifierType type) {
+    auto& defaultMods = get_default_modifiers();
+    auto it = defaultMods.find(type);
+    if(it == defaultMods.end())
+        return nullptr;
+    return it->second;
+}
+
+const TextStyleModifier::ModifierMap& TextStyleModifier::get_default_modifiers() {
+    if(defaultMods.empty()) {
+        auto weightMod = std::make_shared<WeightTextStyleModifier>();
+        weightMod->set_weight(SkFontStyle::kNormal_Weight);
+        defaultMods[ModifierType::WEIGHT] = weightMod;
+
+        auto slantMod = std::make_shared<SlantTextStyleModifier>();
+        slantMod->set_slant(SkFontStyle::kUpright_Slant);
+        defaultMods[ModifierType::SLANT] = slantMod;
+    }
+    return defaultMods;
 }
 
 bool TextStyleModifier::equivalent(TextStyleModifier& modifier) const {

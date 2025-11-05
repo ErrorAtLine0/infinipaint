@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cwchar>
 #include <include/core/SkCanvas.h>
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/Paragraph.h>
@@ -10,8 +11,9 @@
 
 class RichTextBox {
     public:
-
         RichTextBox();
+
+        bool inputChangedTextBox = false;
 
         enum class Movement {
             NOWHERE,
@@ -41,7 +43,7 @@ class RichTextBox {
 
         struct PositionedTextStyleMod {
             TextPosition pos;
-            std::unordered_map<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>> mods;
+            TextStyleModifier::ModifierMap mods;
         };
 
         typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
@@ -54,6 +56,8 @@ class RichTextBox {
                 a(pos, selectionBeginPos, selectionEndPos);
             }
             std::optional<float> previousX;
+            bool operator==(const Cursor& o) const = default;
+            bool operator!=(const Cursor& o) const = default;
         };
 
         struct PaintOpts {
@@ -99,6 +103,7 @@ class RichTextBox {
         void set_initial_text_style(const skia::textlayout::TextStyle& tStyle);
         void set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier);
         void set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier);
+        TextStyleModifier::ModifierMap get_mods_used_at_pos(TextPosition p);
 
         RichTextData get_rich_text_data();
         void set_rich_text_data(const RichTextData& richText);

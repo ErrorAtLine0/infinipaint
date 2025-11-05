@@ -12,9 +12,16 @@ class TextStyleModifier {
             COLOR,
             WEIGHT,
             SLANT,
-            FONT_FAMILIES
+            FONT_FAMILIES,
+
+            COUNT
         };
+
+        typedef std::unordered_map<ModifierType, std::shared_ptr<TextStyleModifier>> ModifierMap;
+
         static std::shared_ptr<TextStyleModifier> allocate_modifier(ModifierType type);
+        static std::shared_ptr<TextStyleModifier> get_default_modifier(ModifierType type);
+        static const ModifierMap& get_default_modifiers();
         virtual ModifierType get_type() const = 0;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const = 0;
         virtual void load(cereal::PortableBinaryInputArchive& a) = 0;
@@ -22,6 +29,7 @@ class TextStyleModifier {
         bool equivalent(TextStyleModifier& modifier) const;
         virtual ~TextStyleModifier();
     private:
+        static ModifierMap defaultMods;
         virtual bool equivalent_data(TextStyleModifier& modifier) const = 0;
 };
 

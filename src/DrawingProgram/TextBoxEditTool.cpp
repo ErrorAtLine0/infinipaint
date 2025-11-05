@@ -15,16 +15,20 @@ TextBoxEditTool::TextBoxEditTool(DrawingProgram& initDrawP):
 bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
     Toolbar& t = drawP.world.main.toolbar;
+
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
-    if(t.gui.text_button_wide("Bold button", "Bold")) {
+    
+    bool isBold = std::static_pointer_cast<WeightTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::WEIGHT])->get_weight() == SkFontStyle::Weight::kBold_Weight;
+    if(t.gui.text_button_wide("Bold button", "Bold", isBold)) {
         auto boldMod = std::make_shared<WeightTextStyleModifier>();
-        boldMod->set_weight(SkFontStyle::kBold_Weight);
+        boldMod->set_weight(isBold ? SkFontStyle::Weight::kNormal_Weight : SkFontStyle::Weight::kBold_Weight);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, boldMod);
     }
-    if(t.gui.text_button_wide("Italic button", "Italic")) {
+    bool isItalic = std::static_pointer_cast<SlantTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::SLANT])->get_slant() == SkFontStyle::Slant::kItalic_Slant;
+    if(t.gui.text_button_wide("Italic button", "Italic", isItalic)) {
         auto italicMod = std::make_shared<SlantTextStyleModifier>();
-        italicMod->set_slant(SkFontStyle::Slant::kItalic_Slant);
+        italicMod->set_slant(isItalic ? SkFontStyle::Slant::kUpright_Slant : SkFontStyle::Slant::kItalic_Slant);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, italicMod);
     }
     if(t.gui.text_button_wide("Red button", "Red")) {
@@ -51,7 +55,13 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     //});
     t.gui.pop_id();
 
-    return true; // NOTE: In general, the update data should always be sent even if no changes were made, because we're sending the data over an unreliable channel.
+    if(a->textBox->inputChangedTextBox)
+        modsAtStartOfSelection = a->textBox->get_mods_used_at_pos(std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos));
+
+    // NOTE: There should be a system that periodically sends updates even if no changes are made, since unreliable channels can drop update data
+    bool oldInputChangedTextBox = a->textBox->inputChangedTextBox;
+    a->textBox->inputChangedTextBox = false;
+    return oldInputChangedTextBox;
 }
 
 void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
@@ -97,7 +107,13 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     textbox->process_mouse_left_button(*cur, textSelectPos, true, false, false);
     prevData = get_all_data(a);
     a->d.editing = true;
+    a->textBox->inputChangedTextBox = true;
+
+    a->commit_update(drawP);
     a->client_send_update(drawP, false);
+
+    modsAtStartOfSelection = a->textBox->get_mods_used_at_pos(std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos));
+
     editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
     editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});
 }

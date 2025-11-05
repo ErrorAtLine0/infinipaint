@@ -118,17 +118,23 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
 
     if(in != InputKey::UP && in != InputKey::DOWN)
         cur.previousX = std::nullopt;
+
+    inputChangedTextBox = true;
 }
 
 void RichTextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift) {
     if(clicked || held) {
         rebuild();
 
+        Cursor oldCursor = cur;
+
         cur.pos = get_text_pos_closest_to_point(pos);
         cur.selectionBeginPos = cur.pos;
         if(clicked && !shift)
             cur.selectionEndPos = cur.selectionBeginPos;
         cur.previousX = std::nullopt;
+
+        inputChangedTextBox |= (oldCursor != cur);
     }
 }
 
@@ -141,6 +147,7 @@ std::string RichTextBox::process_cut(Cursor& cur) {
     if(cur.selectionBeginPos != cur.selectionEndPos) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.previousX = std::nullopt;
+        inputChangedTextBox = true;
     }
     return toRet;
 }
@@ -151,6 +158,7 @@ void RichTextBox::process_text_input(Cursor& cur, const std::string& in) {
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert(cur.pos, in);
         cur.previousX = std::nullopt;
+        inputChangedTextBox = true;
     }
 }
 
@@ -289,6 +297,7 @@ void RichTextBox::set_rich_text_data(const RichTextData& richText) {
     if(richText.paragraphs.empty())
         paragraphs.emplace_back();
     tStyleMods = richText.tStyleMods;
+    inputChangedTextBox = true;
     needsRebuild = true;
 }
 
@@ -323,6 +332,7 @@ std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
 void RichTextBox::set_initial_text_style(const skia::textlayout::TextStyle& tStyle) {
     if(!tStyle.equals(initialTStyle)) {
         initialTStyle = tStyle;
+        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -339,8 +349,25 @@ void RichTextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyl
     remove_duplicate_text_style_mods();
 }
 
+TextStyleModifier::ModifierMap RichTextBox::get_mods_used_at_pos(TextPosition p) {
+    p = move(Movement::NOWHERE, p);
+
+    TextStyleModifier::ModifierMap toRet = TextStyleModifier::get_default_modifiers();
+
+    for(auto& [pos, tStyleModInPos] : tStyleMods) {
+        if(pos <= p) {
+            for(auto& [modType, tStyle] : tStyleModInPos)
+                toRet[modType] = tStyle;
+        }
+        else
+            break;
+    }
+
+    return toRet;
+}
+
 std::shared_ptr<TextStyleModifier> RichTextBox::get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType) {
-    std::shared_ptr<TextStyleModifier> lastModOfThisTypeBeforeEnd;
+    std::shared_ptr<TextStyleModifier> lastModOfThisTypeBeforeEnd = TextStyleModifier::get_default_modifier(modType);
     for(auto& [tPos, tStyleModsInPos] : tStyleMods) {
         if(tPos <= pos) {
             auto containedOfSameType = tStyleModsInPos.find(modType);
@@ -377,9 +404,9 @@ void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition 
             return p >= start && modifier->get_type() == modToCheck->get_type();
         });
         insert_style_at_pos(start, modifier);
-        if(end != move(Movement::END, {0, 0}))
-            insert_style_at_pos(end, lastModOfThisTypeBeforeEnd);
+        insert_style_at_pos(end, lastModOfThisTypeBeforeEnd); // Even if the end is the literal end of the text (which wont be seen), the end style must still be placed at the end so that it can merge with and delete the start style when the styled text is erased
         remove_duplicate_text_style_mods();
+        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -584,6 +611,7 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
 void RichTextBox::set_width(float newWidth) {
     if(width != newWidth) {
         width = newWidth;
+        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -595,6 +623,7 @@ void RichTextBox::set_allow_newlines(bool allow) {
 void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC) {
     if(fontCollection != fC) {
         fontCollection = fC;
+        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -646,16 +675,17 @@ void RichTextBox::rebuild() {
             heightOffset += pData.p->getHeight();
         }
 
-        //std::cout << "size: " << tStyleMods.size() << std::endl;
-        //for(auto& s : tStyleMods)
-        //    std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
+        std::cout << "size: " << tStyleMods.size() << std::endl;
+        for(auto& s : tStyleMods)
+            std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
 
         needsRebuild = false;
     }
 }
 
 void RichTextBox::remove_duplicate_text_style_mods() {
-    std::unordered_map<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>> previouslyAppliedMods;
+    TextStyleModifier::ModifierMap previouslyAppliedMods = TextStyleModifier::get_default_modifiers();
+
     std::erase_if(tStyleMods, [&previouslyAppliedMods](PositionedTextStyleMod& tStyleModsInPos) {
         std::erase_if(tStyleModsInPos.mods, [&previouslyAppliedMods](const std::pair<TextStyleModifier::ModifierType, std::shared_ptr<TextStyleModifier>>& tStyleModPair) {
             auto [placedIt, insertionTookPlace] = previouslyAppliedMods.emplace(tStyleModPair.first, tStyleModPair.second);
@@ -715,6 +745,7 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
 
     if(!textToInsert.empty()) {
         remove_duplicate_text_style_mods();
+        inputChangedTextBox = true;
         needsRebuild = true;
     }
 
@@ -766,6 +797,7 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
     }
 
     remove_duplicate_text_style_mods();
+    inputChangedTextBox = true;
     needsRebuild = true;
 
     return start;

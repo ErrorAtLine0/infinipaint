@@ -14,20 +14,19 @@ DrawTextBox::DrawTextBox():
     cursor(std::make_shared<RichTextBox::Cursor>())
 {
     skia::textlayout::TextStyle tStyle;
-    tStyle.setFontFamilies({SkString{"Roboto"}});
-    tStyle.setFontSize(16.0f);
-    tStyle.setForegroundPaint(SkPaint{SkColor4f{0.0f, 1.0f, 1.0f, 1.0f}});
     textBox->set_initial_text_style(tStyle);
 
-    auto boldMod = std::make_shared<WeightTextStyleModifier>();
-    boldMod->set_weight(SkFontStyle::kNormal_Weight);
-    textBox->set_initial_text_style_modifier(boldMod);
-    auto italicMod = std::make_shared<SlantTextStyleModifier>();
-    italicMod->set_slant(SkFontStyle::Slant::kUpright_Slant);
-    textBox->set_initial_text_style_modifier(italicMod);
     auto colorMod = std::make_shared<ColorTextStyleModifier>();
     colorMod->color = {1.0f, 1.0f, 1.0f, 1.0f};
     textBox->set_initial_text_style_modifier(colorMod);
+
+    auto textSizeMod = std::make_shared<SizeTextStyleModifier>();
+    textSizeMod->size = 16.0f;
+    textBox->set_initial_text_style_modifier(textSizeMod);
+
+    auto fontFamilyMod = std::make_shared<FontFamiliesTextStyleModifier>();
+    fontFamilyMod->families = {SkString{"Roboto"}};
+    textBox->set_initial_text_style_modifier(fontFamilyMod);
 }
 
 DrawComponentType DrawTextBox::get_type() const {

@@ -19,5 +19,8 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
             DrawTextBox::Data textboxData;
             RichTextBox::RichTextData richText;
         };
+
+        TextStyleModifier::ModifierMap modsAtStartOfSelection;
+
         TextBoxEditToolAllData get_all_data(const std::shared_ptr<DrawTextBox>& a);
 };
