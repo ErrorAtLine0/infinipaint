@@ -21,7 +21,7 @@ DrawTextBox::DrawTextBox():
     textBox->set_initial_text_style_modifier(colorMod);
 
     auto textSizeMod = std::make_shared<SizeTextStyleModifier>();
-    textSizeMod->size = 16.0f;
+    textSizeMod->size = 18.0f;
     textBox->set_initial_text_style_modifier(textSizeMod);
 
     auto fontFamilyMod = std::make_shared<FontFamiliesTextStyleModifier>();

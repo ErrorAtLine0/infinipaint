@@ -8,7 +8,9 @@ namespace GUIStuff {
 
 template <typename T> class TextBox : public Element {
     public:
-        void update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+        bool update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+            bool isUpdating = false;
+
             if(!textbox || !cur)
                 force_update_textbox(io, false);
 
@@ -30,17 +32,23 @@ template <typename T> class TextBox : public Element {
                 if(data && selection.selected) {
                     io.richTextBoxEdit(textbox, cur);
                     textbox->process_mouse_left_button(*cur, io.mouse.pos - bb.min, io.mouse.leftClick, io.mouse.leftHeld, io.key.leftShift);
-                    update_on_edit(updateEveryEdit);
+                    if(updateEveryEdit || io.key.enter) {
+                        update_on_edit();
+                        isUpdating = true;
+                    }
                 }
                 if(data && selection.justUnselected) {
                     std::optional<T> dataToAssign = fromStr(textbox->get_string());
                     if(dataToAssign)
                         *data = dataToAssign.value();
                     force_update_textbox(io, true);
+                    isUpdating = true;
                 }
                 if(elemUpdate)
                     elemUpdate(selection);
             }
+
+            return isUpdating;
         }
 
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override {
@@ -98,13 +106,11 @@ template <typename T> class TextBox : public Element {
             }
         }
 
-        void update_on_edit(bool updateEveryEdit) {
-            if(updateEveryEdit) {
-                std::optional<T> dataToAssign = fromStr(textbox->get_string());
-                if(dataToAssign) {
-                    *data = dataToAssign.value();
-                    oldData = *data;
-                }
+        void update_on_edit() {
+            std::optional<T> dataToAssign = fromStr(textbox->get_string());
+            if(dataToAssign) {
+                *data = dataToAssign.value();
+                oldData = *data;
             }
         }
 

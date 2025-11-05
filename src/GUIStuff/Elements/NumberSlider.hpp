@@ -5,8 +5,9 @@ namespace GUIStuff {
 
 template <typename T> class NumberSlider : public Element {
     public:
-        void update(UpdateInputData& io, T* dataPtr, T minNew, T maxNew, const std::function<void()>& elemUpdate) {
-            data = dataPtr;
+        bool update(UpdateInputData& io, T* data, T minNew, T maxNew, const std::function<void()>& elemUpdate) {
+            bool isUpdating = false;
+
             min = minNew;
             max = maxNew;
 
@@ -19,17 +20,22 @@ template <typename T> class NumberSlider : public Element {
                 selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
                 if(selection.held && data) {
                     float fracPosOnSlider = (io.mouse.pos.x() - bb.min.x()) / bb.width();
-                    *data = std::clamp<T>(std::lerp<double>(min, max, fracPosOnSlider), min, max);
+                    *data = static_cast<T>(std::clamp<double>(std::lerp<double>(min, max, fracPosOnSlider), min, max)); // Clamp as double then cast so that unsigned types dont wrap on clamp
+                    isUpdating = true;
                 }
                 if(elemUpdate)
                     elemUpdate();
             }
+
+            if(data)
+                cachedData = *data;
+            else
+                cachedData = 0.0;
+
+            return isUpdating;
         }
 
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override {
-            if(!data)
-                return;
-
             bb = get_bb(command);
 
             canvas->save();
@@ -47,7 +53,7 @@ template <typename T> class NumberSlider : public Element {
 
             const float yChange = bb.height() * 0.5f - holderRadius * 0.5f;
 
-            float holderPos = lerp_time<float>(*data, max, min) * bb.width();
+            float holderPos = lerp_time<float>(cachedData, max, min) * bb.width();
 
             SkRect barFull = SkRect::MakeXYWH(0.0f, yChange, holderPos, holderRadius);
             SkRect barEmpty = SkRect::MakeXYWH(holderPos, yChange, bb.width() - holderPos, holderRadius);
@@ -80,9 +86,9 @@ template <typename T> class NumberSlider : public Element {
         SCollision::AABB<float> bb;
         SelectionHelper selection;
 
-        T* data = nullptr;
         T min = 0.0;
         T max = 1.0;
+        T cachedData = 0.0;
 
         float hoverAnimation = 0.0;
         float holdAnimation = 0.0;

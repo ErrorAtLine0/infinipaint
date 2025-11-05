@@ -496,9 +496,10 @@ bool GUIManager::text_button_left_transparent(const std::string& id, const std::
     return toRet;
 }
 
-void GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate) {
+    bool isUpdating = false;
     push_id(id);
-    insert_element<TextBox<uint8_t>>()->update(*io, val, 
+    isUpdating = insert_element<TextBox<uint8_t>>()->update(*io, val, 
         [&](const std::string& a) {
             if(a.empty())
                 return min;
@@ -514,6 +515,7 @@ void GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, 
             return std::to_string(static_cast<uint32_t>(a));
         }, true, false, elemUpdate);
     pop_id();
+    return isUpdating;
 }
 
 void GUIManager::input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {

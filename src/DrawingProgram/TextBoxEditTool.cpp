@@ -31,21 +31,13 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         italicMod->set_slant(isItalic ? SkFontStyle::Slant::kUpright_Slant : SkFontStyle::Slant::kItalic_Slant);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, italicMod);
     }
-    if(t.gui.text_button_wide("Red button", "Red")) {
-        auto redMod = std::make_shared<ColorTextStyleModifier>();
-        redMod->color = {1.0f, 0.0f, 0.0f, 1.0f};
-        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
+    newFontSize = std::static_pointer_cast<SizeTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::SIZE])->size;
+    if(t.gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100)) {
+        auto sizeMod = std::make_shared<SizeTextStyleModifier>();
+        sizeMod->size = newFontSize;
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, sizeMod);
     }
-    if(t.gui.text_button_wide("Green button", "Green")) {
-        auto redMod = std::make_shared<ColorTextStyleModifier>();
-        redMod->color = {0.0f, 1.0f, 0.0f, 1.0f};
-        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
-    }
-    if(t.gui.text_button_wide("Blue button", "Blue")) {
-        auto redMod = std::make_shared<ColorTextStyleModifier>();
-        redMod->color = {0.0f, 0.0f, 1.0f, 1.0f};
-        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, redMod);
-    }
+
     //t.gui.left_to_right_line_layout([&]() {
     //    CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
     //        if(t.gui.color_button("Text Color", &a->d.textColor, &a->d.textColor == t.colorRight))
@@ -56,12 +48,21 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     t.gui.pop_id();
 
     if(a->textBox->inputChangedTextBox)
-        modsAtStartOfSelection = a->textBox->get_mods_used_at_pos(std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos));
+        set_mods_at_selection(a);
 
     // NOTE: There should be a system that periodically sends updates even if no changes are made, since unreliable channels can drop update data
     bool oldInputChangedTextBox = a->textBox->inputChangedTextBox;
     a->textBox->inputChangedTextBox = false;
     return oldInputChangedTextBox;
+}
+
+void TextBoxEditTool::set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a) {
+    RichTextBox::TextPosition start = std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
+    RichTextBox::TextPosition end = std::max(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
+    if(start == end)
+        modsAtStartOfSelection = a->textBox->get_mods_used_at_pos(a->textBox->move(RichTextBox::Movement::LEFT, start));
+    else
+        modsAtStartOfSelection = a->textBox->get_mods_used_at_pos(start);
 }
 
 void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
@@ -112,7 +113,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     a->commit_update(drawP);
     a->client_send_update(drawP, false);
 
-    modsAtStartOfSelection = a->textBox->get_mods_used_at_pos(std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos));
+    set_mods_at_selection(a);
 
     editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
     editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});

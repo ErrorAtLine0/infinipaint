@@ -675,9 +675,9 @@ void RichTextBox::rebuild() {
             heightOffset += pData.p->getHeight();
         }
 
-        std::cout << "size: " << tStyleMods.size() << std::endl;
-        for(auto& s : tStyleMods)
-            std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
+        //std::cout << "size: " << tStyleMods.size() << std::endl;
+        //for(auto& s : tStyleMods)
+        //    std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
 
         needsRebuild = false;
     }
@@ -816,12 +816,12 @@ SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
         height = pData.p->getHeight();
     }
     else {
-        if(pos.fTextByteIndex == pData.text.size()) {
+        if(pos.fTextByteIndex == 0) {
             skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
-            bool exists = pData.p->getGlyphClusterAt(prev_grapheme(pData.text, pos.fTextByteIndex), &glyphInfo);
+            bool exists = pData.p->getGlyphClusterAt(pos.fTextByteIndex, &glyphInfo);
             if(exists) {
                 bool isLtr = glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr;
-                topPoint = (isLtr ? glyphInfo.fBounds.TR() : glyphInfo.fBounds.TL()) + SkPoint{0.0f, pData.heightOffset};
+                topPoint = (isLtr ? glyphInfo.fBounds.TL() : glyphInfo.fBounds.TR()) + SkPoint{0.0f, pData.heightOffset};
                 height = glyphInfo.fBounds.height();
             }
             else {
@@ -831,10 +831,10 @@ SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
         }
         else {
             skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
-            bool exists = pData.p->getGlyphClusterAt(pos.fTextByteIndex, &glyphInfo);
+            bool exists = pData.p->getGlyphClusterAt(prev_grapheme(pData.text, pos.fTextByteIndex), &glyphInfo);
             if(exists) {
                 bool isLtr = glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr;
-                topPoint = (isLtr ? glyphInfo.fBounds.TL() : glyphInfo.fBounds.TR()) + SkPoint{0.0f, pData.heightOffset};
+                topPoint = (isLtr ? glyphInfo.fBounds.TR() : glyphInfo.fBounds.TL()) + SkPoint{0.0f, pData.heightOffset};
                 height = glyphInfo.fBounds.height();
             }
             else {

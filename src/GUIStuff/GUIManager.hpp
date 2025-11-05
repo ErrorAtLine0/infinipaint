@@ -127,14 +127,16 @@ class GUIManager {
             return toRet;
         }
         
-        template <typename T> void input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+            bool isUpdating = false;
             push_id(id);
-            insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
+            isUpdating = insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
             pop_id();
+            return isUpdating;
         }
 
-        template <typename T> void input_scalar(const std::string& id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
-            input_generic<T>(id, val, 
+        template <typename T> bool input_scalar(const std::string& id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+            return input_generic<T>(id, val, 
                 [&](const std::string& a) {
                     if(a.empty())
                         return min;
@@ -158,7 +160,7 @@ class GUIManager {
                 }, true, false, elemUpdate);
         }
 
-        void input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
+        bool input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
 
         template <typename TContainer, typename T> void input_scalar_fields(const std::string& id, const std::string& name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             push_id(id);
@@ -213,27 +215,32 @@ class GUIManager {
             pop_id();
         }
 
-        template <typename T> void slider_scalar(const std::string& id, T* val, T min, T max, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool slider_scalar(const std::string& id, T* val, T min, T max, const std::function<void()>& elemUpdate = nullptr) {
             push_id(id);
-            insert_element<NumberSlider<T>>()->update(*io, val, min, max, elemUpdate); 
+            bool isUpdating = insert_element<NumberSlider<T>>()->update(*io, val, min, max, elemUpdate); 
             pop_id();
+            return isUpdating;
         }
 
-        template <typename T> void input_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+            bool isUpdating = false;
             left_to_right_line_layout([&]() {
                 text_label(name);
-                input_scalar(id, val, min, max, decimalPrecision, elemUpdate);
+                isUpdating = input_scalar(id, val, min, max, decimalPrecision, elemUpdate);
             });
+            return isUpdating;
         }
 
-        template <typename T> void slider_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool slider_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
+            bool isUpdating = false;
             push_id(id);
             left_to_right_line_layout([&]() {
                 text_label(name);
-                input_scalar("0", val, min, max, decimalPrecision, nullptr);
+                isUpdating |= input_scalar("0", val, min, max, decimalPrecision, nullptr);
             });
-            slider_scalar("1", val, min, max, elemUpdate);
+            isUpdating |= slider_scalar("1", val, min, max, elemUpdate);
             pop_id();
+            return isUpdating;
         }
 
         template <typename T> bool big_color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
