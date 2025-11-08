@@ -562,7 +562,7 @@ bool GUIManager::font_picker(const std::string& id, std::string* fontName) {
     return toRet;
 }
 
-void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
+void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, float maxHeight, const std::function<void()>& hoverboxElemUpdate) {
     push_id(id);
     bool& dropDownOpen = insert_any_with_id(0, false);
     left_to_right_layout(CLAY_SIZING_FIXED(width), CLAY_SIZING_FIT(0), [&]() {
@@ -590,7 +590,8 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
         if(dropDownOpen) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0)},
+                    .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0, maxHeight)},
+                    .childGap = 0
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(4),
@@ -610,44 +611,42 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                 }
             }) {
                 obstructing_window();
-                CLAY({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-                        .childGap = 1,
-                        .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-                    }
-                }) {
-                    for(size_t i = 0; i < selections.size(); i++) {
-                        bool selectedEntry = *val == i;
+                scroll_bar_many_entries_area("dropdown scroll area", 18.0f, selections.size(), [&](size_t i, bool) {
+                    bool selectedEntry = *val == i;
+
+                    CLAY({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIXED(18)},
+                            .padding = CLAY_PADDING_ALL(0),
+                            .childGap = 0,
+                            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        }
+                    }) {
+                        SkColor4f entryColor;
+                        if(selectedEntry)
+                            entryColor = io->theme->backColor2;
+                        else if(Clay_Hovered())
+                            entryColor = io->theme->backColor2;
+                        else
+                            entryColor = io->theme->backColor1;
                         CLAY({
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                                .padding = {.left = 2, .right = 2, .top = 0, .bottom = 0},
+                                .childGap = 0,
+                                .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
                             },
+                            .backgroundColor = convert_vec4<Clay_Color>(entryColor)
                         }) {
-                            SkColor4f entryColor;
-                            if(selectedEntry)
-                                entryColor = io->theme->backColor2;
-                            else if(Clay_Hovered())
-                                entryColor = io->theme->backColor2;
-                            else
-                                entryColor = io->theme->backColor1;
-                            CLAY({
-                                .layout = {
-                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-                                    .padding = {.left = 2, .right = 2},
-                                },
-                                .backgroundColor = convert_vec4<Clay_Color>(entryColor)
-                            }) {
-                                text_label(selections[i]);
-                                if(io->mouse.leftClick && Clay_Hovered()) {
-                                    *val = i;
-                                    dropDownOpen = false;
-                                }
+                            text_label(selections[i]);
+                            if(io->mouse.leftClick && Clay_Hovered()) {
+                                *val = i;
+                                dropDownOpen = false;
                             }
                         }
                     }
-                }
+                });
                 if(hoverboxElemUpdate)
                     hoverboxElemUpdate();
             }

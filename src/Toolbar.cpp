@@ -1136,7 +1136,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
         std::vector<std::string> paletteNames;
         for(auto& p : paletteData.palettes)
             paletteNames.emplace_back(p.name);
-        gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, [&]() {
+        gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, 90.0f, [&]() {
             hoveringOnDropdown = Clay_Hovered();
         });
         if(gui.svg_icon_button("paletteadd", "data/icons/plus.svg", paletteData.addingPalette, 25.0f)) paletteData.addingPalette = !paletteData.addingPalette;

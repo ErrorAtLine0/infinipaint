@@ -181,7 +181,9 @@ void FontFamiliesTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) 
 }
 
 void FontFamiliesTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
-    style.setFontFamilies(families);
+    auto familiesToPush = families;
+    familiesToPush.emplace_back("Roboto");
+    style.setFontFamilies(familiesToPush);
 }
 
 bool FontFamiliesTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {

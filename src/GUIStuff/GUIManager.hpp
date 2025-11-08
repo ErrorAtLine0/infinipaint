@@ -97,7 +97,7 @@ class GUIManager {
         void input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
         void input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
-        void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
+        void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, float maxHeight = 0.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
 
         void paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
 
