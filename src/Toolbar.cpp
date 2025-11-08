@@ -716,7 +716,7 @@ void Toolbar::grid_menu(bool justOpened) {
             main.world->gridMan.remove_grid(toDelete);
         gui.left_to_right_line_layout([&]() {
             bool addByEnter = false;
-            gui.input_text("grid text input", &gridMenu.newName, [&](GUIStuff::SelectionHelper& s) {
+            gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
                 addByEnter = s.selected && io->key.enter;
             });
             if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
@@ -801,7 +801,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
         bool bookmarkExists = std::find(main.world->bMan.sorted_names().begin(), main.world->bMan.sorted_names().end(), bookMenu.newName) != main.world->bMan.sorted_names().end();
         gui.left_to_right_line_layout([&]() {
             bool addByEnter = false;
-            gui.input_text("bookmark text input", &bookMenu.newName, [&](GUIStuff::SelectionHelper& s) {
+            gui.input_text("bookmark text input", &bookMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
                 addByEnter = s.selected && io->key.enter;
             });
             if(!bookmarkExists) {
@@ -1692,7 +1692,7 @@ void Toolbar::about_menu_gui() {
                     }) {
                         if(gui.text_button_left_transparent("infinipaintnoticebutton", "InfiniPaint", selectedLicense == -1)) selectedLicense = -1;
                     }
-                    gui.text_label_light_centered("Third Party Libraries");
+                    gui.text_label_light_centered("Third Party Components");
                     for(int i = 0; i < static_cast<int>(thirdPartyLicenses.size()); i++) {
                         CLAY({
                             .layout = {

@@ -5,6 +5,7 @@
 #include <include/core/SkFontMetrics.h>
 #include <include/core/SkPath.h>
 #include "Elements/SVGIcon.hpp"
+#include "Elements/FontPicker.hpp"
 #include "Elements/SelectableButton.hpp"
 #include "Elements/RotateWheel.hpp"
 #include "Elements/TextParagraph.hpp"
@@ -22,6 +23,7 @@
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/TextStyle.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
+#include <Helpers/Random.hpp>
 
 namespace GUIStuff {
 
@@ -342,10 +344,10 @@ void GUIManager::checkbox(const std::string& id, bool* val, const std::function<
     pop_id();
 }
 
-void GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
+void GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
     left_to_right_line_layout([&]() {
         text_label(name);
-        input_text(id, val, elemUpdate);
+        input_text(id, val, updateEveryEdit, elemUpdate);
     });
 }
 
@@ -392,16 +394,17 @@ bool GUIManager::input_color_component_255(const std::string& id, float* val, co
     return isUpdating;
 }
 
-void GUIManager::input_text(const std::string& id, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_text(const std::string& id, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
-    insert_element<TextBox<std::string>>()->update(*io, val,
+    bool toRet = insert_element<TextBox<std::string>>()->update(*io, val,
         [&](const std::string& str) {
             return str;
         },
         [&](const std::string& str) {
             return str;
-        }, true, true, elemUpdate);
+        }, true, updateEveryEdit, elemUpdate);
     pop_id();
+    return toRet;
 }
 
 bool GUIManager::selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected) {
@@ -552,6 +555,13 @@ void GUIManager::tab_list(const std::string& id, const std::vector<std::pair<std
     pop_id();
 }
 
+bool GUIManager::font_picker(const std::string& id, std::string* fontName) {
+    push_id(id);
+    bool toRet = insert_element<FontPicker>()->update(*io, fontName, this);
+    pop_id();
+    return toRet;
+}
+
 void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
     push_id(id);
     bool& dropDownOpen = insert_any_with_id(0, false);
@@ -648,7 +658,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
     pop_id();
 }
 
-void GUIManager::scroll_bar_area(const std::string& uniqueId, const std::function<void(float, float, float)>& elemUpdate) {
+void GUIManager::scroll_bar_area(const std::string& id, const std::function<void(float, float, float&)>& elemUpdate) {
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -661,12 +671,16 @@ void GUIManager::scroll_bar_area(const std::string& uniqueId, const std::functio
             bool isMoving = false;
             float contentDimensions = 100.0f;
             float containerDimensions = 100.0f;
+            std::string uniqueID;
         };
-        push_id(uniqueId);
-        ScrollAreaData& sD = insert_any(ScrollAreaData{});
+
+        push_id(id);
+        ScrollAreaData& sD = insert_any(ScrollAreaData{
+            .uniqueID = Random::get().alphanumeric_str(30)
+        });
         pop_id();
 
-        Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(uniqueId));
+        Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(sD.uniqueID));
 
         CLAY({
             .id = clayID,
@@ -675,7 +689,7 @@ void GUIManager::scroll_bar_area(const std::string& uniqueId, const std::functio
                 .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()}
+            .clip = {.horizontal = true, .vertical = true, .childOffset = {.x = 0, .y = Clay_GetScrollOffset().y}}
         }) {
             elemUpdate(sD.contentDimensions, sD.containerDimensions, sD.currentScrollPos);
         }
@@ -742,17 +756,16 @@ void GUIManager::scroll_bar_area(const std::string& uniqueId, const std::functio
 }
 
 
-void GUIManager::scroll_bar_many_entries_area(const std::string& uniqueId, float entryHeight, size_t entryCount, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float)>& elemUpdate) {
-    push_id(uniqueId);
-    scroll_bar_area(uniqueId, [&](float scrollContentHeight, float containerHeight, float scrollAmount) {
+void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float&)>& elemUpdate) {
+    push_id(id);
+    scroll_bar_area(id, [&](float scrollContentHeight, float containerHeight, float& scrollAmount) {
         if(elemUpdate)
             elemUpdate(scrollContentHeight, containerHeight, scrollAmount);
 
         bool listHovered = Clay_Hovered();
 
-        scrollAmount = std::fabs(scrollAmount);
-        float entryHeight = 25.0f;
-        size_t startPoint = scrollAmount / entryHeight;
+        float absScrollAmount = std::fabs(scrollAmount);
+        size_t startPoint = absScrollAmount / entryHeight;
         size_t elementsContainable = (containerHeight / entryHeight) + 2; // Displaying 2 more elements ensures that there isn't any empty space in the container
         size_t endPoint = std::min(entryCount, startPoint + elementsContainable);
 

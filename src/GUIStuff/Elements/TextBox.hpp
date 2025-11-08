@@ -32,7 +32,7 @@ template <typename T> class TextBox : public Element {
                 if(data && selection.selected) {
                     io.richTextBoxEdit(textbox, cur);
                     textbox->process_mouse_left_button(*cur, io.mouse.pos - bb.min, io.mouse.leftClick, io.mouse.leftHeld, io.key.leftShift);
-                    if(updateEveryEdit || io.key.enter) {
+                    if((updateEveryEdit && textbox->inputChangedTextBox) || io.key.enter) {
                         update_on_edit();
                         isUpdating = true;
                     }
@@ -47,6 +47,9 @@ template <typename T> class TextBox : public Element {
                 if(elemUpdate)
                     elemUpdate(selection);
             }
+
+            if(textbox)
+                textbox->inputChangedTextBox = false;
 
             return isUpdating;
         }

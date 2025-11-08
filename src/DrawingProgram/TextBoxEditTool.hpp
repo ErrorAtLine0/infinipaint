@@ -22,9 +22,12 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         uint32_t newFontSize = 15;
         Vector4f newTextColor{1.0f, 1.0f, 1.0f, 1.0f};
+        std::string newFontName;
 
         void set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a);
         TextStyleModifier::ModifierMap modsAtStartOfSelection;
+
+        std::vector<std::string> sortedFontList;
 
         TextBoxEditToolAllData get_all_data(const std::shared_ptr<DrawTextBox>& a);
 };

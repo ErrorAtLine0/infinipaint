@@ -2,9 +2,14 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include "Helpers/ConvertVec.hpp"
 #include "Helpers/SCollision.hpp"
 #include <cereal/types/vector.hpp>
 #include <include/core/SkFontStyle.h>
+#include <modules/skparagraph/include/DartTypes.h>
+#include <modules/skparagraph/include/ParagraphStyle.h>
+#include <modules/skparagraph/src/ParagraphBuilderImpl.h>
+#include <modules/skunicode/include/SkUnicode_icu.h>
 #include <memory>
 #include "EditTool.hpp"
 
@@ -18,6 +23,18 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
 
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
+
+    newFontName = std::static_pointer_cast<FontFamiliesTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::FONT_FAMILIES])->families.back().c_str();
+
+    t.gui.left_to_right_line_layout([&]() {
+        t.gui.text_label("Font");
+        if(t.gui.font_picker("font picker", &newFontName)) {
+            auto fontFamilyMod = std::make_shared<FontFamiliesTextStyleModifier>();
+            fontFamilyMod->families.clear();
+            fontFamilyMod->families.emplace_back(newFontName);
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, fontFamilyMod);
+        }
+    });
     
     t.gui.left_to_right_line_centered_layout([&]() {
         bool isBold = std::static_pointer_cast<WeightTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::WEIGHT])->get_weight() == SkFontStyle::Weight::kBold_Weight;
@@ -77,6 +94,7 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, colorMod);
     }
     newTextColor = std::static_pointer_cast<ColorTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::COLOR])->color;
+
 
     t.gui.pop_id();
 

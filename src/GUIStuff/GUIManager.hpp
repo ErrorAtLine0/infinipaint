@@ -48,7 +48,7 @@ class GUIManager {
         Vector2f screen_pos_to_window_pos(const Vector2f& screenPos);
         Vector2f get_mouse_pos();
 
-        void input_text_field(const std::string& id, const std::string& name, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        void input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         void text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate = nullptr);
         void text_label_color(const std::string& val, const SkColor4f& color);
@@ -80,11 +80,11 @@ class GUIManager {
         void push_id(const std::string& id);
         void pop_id();
 
-        void scroll_bar_area(const std::string& uniqueId, const std::function<void(float scrollContentHeight, float containerHeight, float scrollAmount)>& elemUpdate);
-        void scroll_bar_many_entries_area(const std::string& uniqueId, float entryHeight, size_t entryCount, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float scrollAmount)>& elemUpdate = nullptr);
+        void scroll_bar_area(const std::string& id, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate);
+        void scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate = nullptr);
 
         bool input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
-        void input_text(const std::string& id, std::string* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        bool input_text(const std::string& id, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         bool radio_button(const std::string& id, bool val, const std::function<void()>& elemUpdate = nullptr);
         bool radio_button_field(const std::string& id, const std::string& name, bool val, const std::function<void()>& elemUpdate = nullptr);
@@ -288,6 +288,8 @@ class GUIManager {
             pop_id();
             return isUpdating;
         }
+
+        bool font_picker(const std::string& id, std::string* fontName);
 
         template <typename T> bool color_picker_items(const std::string& id, T* val, bool selectAlpha) {
             bool isUpdating = false;
