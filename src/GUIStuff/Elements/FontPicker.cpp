@@ -51,7 +51,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
             std::string lowerFamilyName = *fontName;
             std::transform(lowerFamilyName.begin(), lowerFamilyName.end(), lowerFamilyName.begin(), ::tolower);
             auto itLower = std::lower_bound(sortedFontListLowercase.begin(), sortedFontListLowercase.end(), lowerFamilyName);
-            val = (itLower != sortedFontListLowercase.end() && *itLower == *fontName) ? (itLower - sortedFontListLowercase.begin()): std::numeric_limits<size_t>::max();
+            val = (itLower != sortedFontListLowercase.end() && *itLower == lowerFamilyName) ? (itLower - sortedFontListLowercase.begin()): std::numeric_limits<size_t>::max();
             if(val != std::numeric_limits<size_t>::max())
                 *fontName = sortedFontList[val];
         }

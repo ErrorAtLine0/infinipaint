@@ -668,6 +668,11 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
         struct ScrollAreaData {
             float currentScrollPos = 0.0f;
             bool isMoving = false;
+
+            bool clickedOnScroller = false;
+            float scrollerStartPos;
+            float mouseStartPos;
+
             float contentDimensions = 100.0f;
             float containerDimensions = 100.0f;
             std::string uniqueID;
@@ -717,16 +722,17 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
                     .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1)
+                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2)
             }) {
                 SkColor4f scrollerColor;
                 if(sD.isMoving)
                     scrollerColor = io->theme->fillColor1;
                 else if(Clay_Hovered())
-                    scrollerColor = io->theme->fillColor2;
+                    scrollerColor = io->theme->fillColor1;
                 else
-                    scrollerColor = io->theme->backColor2;
+                    scrollerColor = io->theme->fillColor2;
 
+                bool isHoveringOverScroller = false;
                 CLAY({ 
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(areaAboveScrollerSize)}
@@ -737,14 +743,28 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
                     .backgroundColor = convert_vec4<Clay_Color>(scrollerColor),
                     .cornerRadius = CLAY_CORNER_RADIUS(3),
                 }) {
+                    if(Clay_Hovered())
+                        isHoveringOverScroller = true;
                 }
                 CLAY({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                if(Clay_Hovered() && io->mouse.leftClick)
+                if(Clay_Hovered() && io->mouse.leftClick) {
                     sD.isMoving = true;
+                    sD.clickedOnScroller = isHoveringOverScroller;
+                    if(isHoveringOverScroller) {
+                        sD.scrollerStartPos = scrollAreaBB.y + areaAboveScrollerSize + scrollerSize * 0.5f;
+                        sD.mouseStartPos = io->mouse.pos.y();
+                    }
+                }
                 if(!io->mouse.leftHeld)
                     sD.isMoving = false;
-                if(sD.isMoving)
-                    sD.currentScrollPos = ((io->mouse.pos.y() - scrollAreaBB.y) / scrollAreaBB.height) * (-scrollPosMax);
+                if(sD.isMoving) {
+                    float newScrollPosFrac;
+                    if(sD.clickedOnScroller)
+                        newScrollPosFrac = std::clamp((sD.scrollerStartPos - (sD.mouseStartPos - io->mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
+                    else
+                        newScrollPosFrac = std::clamp((io->mouse.pos.y() - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
+                    sD.currentScrollPos = newScrollPosFrac * (-scrollPosMax);
+                }
                 sD.currentScrollPos = std::clamp(sD.currentScrollPos, -scrollPosMax, 0.0f);
                 scrollData.scrollPosition->y = sD.currentScrollPos;
             }
