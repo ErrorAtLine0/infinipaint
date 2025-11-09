@@ -36,23 +36,27 @@ class TextStyleModifier {
 
 class DecorationTextStyleModifier : public TextStyleModifier {
     public:
+        DecorationTextStyleModifier() = default;
+        DecorationTextStyleModifier(uint8_t initDecorationValue);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
-        uint8_t decorationValue;
+        uint8_t get_decoration_value() const;
     private:
+        uint8_t decorationValue;
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
 };
 
 class WeightTextStyleModifier : public TextStyleModifier {
     public:
+        WeightTextStyleModifier() = default;
+        WeightTextStyleModifier(SkFontStyle::Weight initWeight);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
-        void set_weight(SkFontStyle::Weight newWeight);
-        SkFontStyle::Weight get_weight();
+        SkFontStyle::Weight get_weight() const;
     private:
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
         uint8_t weightValue;
@@ -60,12 +64,13 @@ class WeightTextStyleModifier : public TextStyleModifier {
 
 class SlantTextStyleModifier : public TextStyleModifier {
     public:
+        SlantTextStyleModifier() = default;
+        SlantTextStyleModifier(uint8_t initSlantValue);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
-        void set_slant(SkFontStyle::Slant newSlant);
-        SkFontStyle::Slant get_slant();
+        SkFontStyle::Slant get_slant() const;
     private:
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
         uint8_t slantValue;
@@ -73,33 +78,42 @@ class SlantTextStyleModifier : public TextStyleModifier {
 
 class ColorTextStyleModifier : public TextStyleModifier {
     public:
+        ColorTextStyleModifier() = default;
+        ColorTextStyleModifier(const Vector4f& initColor);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
-        Vector4f color;
+        const Vector4f& get_color() const;
     private:
+        Vector4f color;
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
 };
 
 class SizeTextStyleModifier : public TextStyleModifier {
     public:
+        SizeTextStyleModifier() = default;
+        SizeTextStyleModifier(float initSize);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
-        float size;
+        float get_size() const;
     private:
+        float size;
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
 };
 
 class FontFamiliesTextStyleModifier : public TextStyleModifier {
     public:
+        FontFamiliesTextStyleModifier() = default;
+        FontFamiliesTextStyleModifier(const std::vector<SkString>& initFamilies);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
-        std::vector<SkString> families;
+        const std::vector<SkString>& get_families() const;
     private:
+        std::vector<SkString> families;
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
 };

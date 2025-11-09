@@ -16,17 +16,9 @@ DrawTextBox::DrawTextBox():
     skia::textlayout::TextStyle tStyle;
     textBox->set_initial_text_style(tStyle);
 
-    auto colorMod = std::make_shared<ColorTextStyleModifier>();
-    colorMod->color = {1.0f, 1.0f, 1.0f, 1.0f};
-    textBox->set_initial_text_style_modifier(colorMod);
-
-    auto textSizeMod = std::make_shared<SizeTextStyleModifier>();
-    textSizeMod->size = 18.0f;
-    textBox->set_initial_text_style_modifier(textSizeMod);
-
-    auto fontFamilyMod = std::make_shared<FontFamiliesTextStyleModifier>();
-    fontFamilyMod->families = {SkString{"Roboto"}};
-    textBox->set_initial_text_style_modifier(fontFamilyMod);
+    textBox->set_initial_text_style_modifier(std::make_shared<ColorTextStyleModifier>(Vector4f{1.0f, 1.0f, 1.0f, 1.0f}));
+    textBox->set_initial_text_style_modifier(std::make_shared<SizeTextStyleModifier>(18.0f));
+    textBox->set_initial_text_style_modifier(std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{"Roboto"}}));
 }
 
 DrawComponentType DrawTextBox::get_type() const {

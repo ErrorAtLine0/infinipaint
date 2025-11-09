@@ -24,62 +24,41 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
 
-    newFontName = std::static_pointer_cast<FontFamiliesTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::FONT_FAMILIES])->families.back().c_str();
+    newFontName = std::static_pointer_cast<FontFamiliesTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::FONT_FAMILIES])->get_families().back().c_str();
 
     t.gui.left_to_right_line_layout([&]() {
         t.gui.text_label("Font");
-        if(t.gui.font_picker("font picker", &newFontName)) {
-            auto fontFamilyMod = std::make_shared<FontFamiliesTextStyleModifier>();
-            fontFamilyMod->families.clear();
-            fontFamilyMod->families.emplace_back(newFontName);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, fontFamilyMod);
-        }
+        if(t.gui.font_picker("font picker", &newFontName))
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{newFontName.c_str(), newFontName.size()}}));
     });
     
     t.gui.left_to_right_line_centered_layout([&]() {
         bool isBold = std::static_pointer_cast<WeightTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::WEIGHT])->get_weight() == SkFontStyle::Weight::kBold_Weight;
-        if(t.gui.svg_icon_button("Bold button", "data/icons/RemixIcon/bold.svg", isBold)) {
-            auto boldMod = std::make_shared<WeightTextStyleModifier>();
-            boldMod->set_weight(isBold ? SkFontStyle::Weight::kNormal_Weight : SkFontStyle::Weight::kBold_Weight);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, boldMod);
-        }
+        if(t.gui.svg_icon_button("Bold button", "data/icons/RemixIcon/bold.svg", isBold))
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<WeightTextStyleModifier>(isBold ? SkFontStyle::Weight::kNormal_Weight : SkFontStyle::Weight::kBold_Weight));
 
         bool isItalic = std::static_pointer_cast<SlantTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::SLANT])->get_slant() == SkFontStyle::Slant::kItalic_Slant;
-        if(t.gui.svg_icon_button("Italic button", "data/icons/RemixIcon/italic.svg", isItalic)) {
-            auto italicMod = std::make_shared<SlantTextStyleModifier>();
-            italicMod->set_slant(isItalic ? SkFontStyle::Slant::kUpright_Slant : SkFontStyle::Slant::kItalic_Slant);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, italicMod);
-        }
+        if(t.gui.svg_icon_button("Italic button", "data/icons/RemixIcon/italic.svg", isItalic))
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<SlantTextStyleModifier>(isItalic ? SkFontStyle::Slant::kUpright_Slant : SkFontStyle::Slant::kItalic_Slant));
 
-        uint8_t currentDecorationValue = std::static_pointer_cast<DecorationTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::DECORATION])->decorationValue;
+        uint8_t currentDecorationValue = std::static_pointer_cast<DecorationTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value();
         bool isUnderlined = currentDecorationValue & skia::textlayout::TextDecoration::kUnderline;
-        if(t.gui.svg_icon_button("Underline button", "data/icons/RemixIcon/underline.svg", isUnderlined)) {
-            auto decorationMod = std::make_shared<DecorationTextStyleModifier>();
-            decorationMod->decorationValue = isUnderlined ? (currentDecorationValue & ~static_cast<uint8_t>(skia::textlayout::TextDecoration::kUnderline)) : currentDecorationValue | static_cast<uint8_t>(skia::textlayout::TextDecoration::kUnderline);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, decorationMod);
-        }
+        if(t.gui.svg_icon_button("Underline button", "data/icons/RemixIcon/underline.svg", isUnderlined))
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<DecorationTextStyleModifier>(isUnderlined ? (currentDecorationValue & ~static_cast<uint8_t>(skia::textlayout::TextDecoration::kUnderline)) : currentDecorationValue | static_cast<uint8_t>(skia::textlayout::TextDecoration::kUnderline)));
 
         bool isLinethrough = currentDecorationValue & skia::textlayout::TextDecoration::kLineThrough;
-        if(t.gui.svg_icon_button("Strikethrough button", "data/icons/RemixIcon/strikethrough.svg", isLinethrough)) {
-            auto decorationMod = std::make_shared<DecorationTextStyleModifier>();
-            decorationMod->decorationValue = isLinethrough ? (currentDecorationValue & ~static_cast<uint8_t>(skia::textlayout::TextDecoration::kLineThrough)) : currentDecorationValue | static_cast<uint8_t>(skia::textlayout::TextDecoration::kLineThrough);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, decorationMod);
-        }
+        if(t.gui.svg_icon_button("Strikethrough button", "data/icons/RemixIcon/strikethrough.svg", isLinethrough))
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<DecorationTextStyleModifier>(isLinethrough ? (currentDecorationValue & ~static_cast<uint8_t>(skia::textlayout::TextDecoration::kLineThrough)) : currentDecorationValue | static_cast<uint8_t>(skia::textlayout::TextDecoration::kLineThrough)));
 
         bool isOverline = currentDecorationValue & skia::textlayout::TextDecoration::kOverline;
-        if(t.gui.svg_icon_button("Overline button", "data/icons/RemixIcon/overline.svg", isOverline)) {
-            auto decorationMod = std::make_shared<DecorationTextStyleModifier>();
-            decorationMod->decorationValue = isOverline ? (currentDecorationValue & ~static_cast<uint8_t>(skia::textlayout::TextDecoration::kOverline)) : currentDecorationValue | static_cast<uint8_t>(skia::textlayout::TextDecoration::kOverline);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, decorationMod);
-        }
+        if(t.gui.svg_icon_button("Overline button", "data/icons/RemixIcon/overline.svg", isOverline))
+            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<DecorationTextStyleModifier>(isOverline ? (currentDecorationValue & ~static_cast<uint8_t>(skia::textlayout::TextDecoration::kOverline)) : currentDecorationValue | static_cast<uint8_t>(skia::textlayout::TextDecoration::kOverline)));
     });
 
-    newFontSize = std::static_pointer_cast<SizeTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::SIZE])->size;
-    if(t.gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100)) {
-        auto sizeMod = std::make_shared<SizeTextStyleModifier>();
-        sizeMod->size = newFontSize;
-        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, sizeMod);
-    }
+    newFontSize = std::static_pointer_cast<SizeTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::SIZE])->get_size();
+    if(t.gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100))
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<SizeTextStyleModifier>(newFontSize));
+
     t.gui.left_to_right_line_layout([&]() {
         CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
             if(t.gui.color_button("Text Color", &newTextColor, &newTextColor == t.colorRight)) {
@@ -88,12 +67,9 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         }
         t.gui.text_label("Text Color");
     });
-    if((&newTextColor == t.colorRight) && t.isUpdatingColorRight) {
-        auto colorMod = std::make_shared<ColorTextStyleModifier>();
-        colorMod->color = newTextColor;
-        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, colorMod);
-    }
-    newTextColor = std::static_pointer_cast<ColorTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::COLOR])->color;
+    if((&newTextColor == t.colorRight) && t.isUpdatingColorRight)
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, std::make_shared<ColorTextStyleModifier>(newTextColor));
+    newTextColor = std::static_pointer_cast<ColorTextStyleModifier>(modsAtStartOfSelection[TextStyleModifier::ModifierType::COLOR])->get_color();
 
 
     t.gui.pop_id();

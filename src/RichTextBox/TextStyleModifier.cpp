@@ -38,17 +38,9 @@ std::shared_ptr<TextStyleModifier> TextStyleModifier::get_default_modifier(Modif
 
 const TextStyleModifier::ModifierMap& TextStyleModifier::get_default_modifiers() {
     if(defaultMods.empty()) {
-        auto weightMod = std::make_shared<WeightTextStyleModifier>();
-        weightMod->set_weight(SkFontStyle::kNormal_Weight);
-        defaultMods[ModifierType::WEIGHT] = weightMod;
-
-        auto slantMod = std::make_shared<SlantTextStyleModifier>();
-        slantMod->set_slant(SkFontStyle::kUpright_Slant);
-        defaultMods[ModifierType::SLANT] = slantMod;
-
-        auto decorationMod = std::make_shared<DecorationTextStyleModifier>();
-        decorationMod->decorationValue = skia::textlayout::TextDecoration::kNoDecoration;
-        defaultMods[ModifierType::DECORATION] = decorationMod;
+        defaultMods[ModifierType::WEIGHT] = std::make_shared<WeightTextStyleModifier>(SkFontStyle::kNormal_Weight);
+        defaultMods[ModifierType::SLANT] = std::make_shared<SlantTextStyleModifier>(SkFontStyle::kUpright_Slant);
+        defaultMods[ModifierType::DECORATION] = std::make_shared<DecorationTextStyleModifier>(skia::textlayout::TextDecoration::kNoDecoration);
     }
     return defaultMods;
 }
@@ -63,8 +55,14 @@ TextStyleModifier::~TextStyleModifier() {}
 
 
 
+WeightTextStyleModifier::WeightTextStyleModifier(SkFontStyle::Weight initWeight): weightValue(initWeight / WEIGHT_VALUE_MODIFIER) {}
+
 TextStyleModifier::ModifierType WeightTextStyleModifier::get_type() const {
     return ModifierType::WEIGHT;
+}
+
+SkFontStyle::Weight WeightTextStyleModifier::get_weight() const {
+    return static_cast<SkFontStyle::Weight>(static_cast<int>(weightValue) * WEIGHT_VALUE_MODIFIER);
 }
 
 void WeightTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -73,14 +71,6 @@ void WeightTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const
 
 void WeightTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) {
     a(weightValue);
-}
-
-void WeightTextStyleModifier::set_weight(SkFontStyle::Weight newWeight) {
-    weightValue = newWeight / WEIGHT_VALUE_MODIFIER;
-}
-
-SkFontStyle::Weight WeightTextStyleModifier::get_weight() {
-    return static_cast<SkFontStyle::Weight>(static_cast<int>(weightValue) * WEIGHT_VALUE_MODIFIER);
 }
 
 void WeightTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
@@ -93,8 +83,14 @@ bool WeightTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const
 
 
 
+SlantTextStyleModifier::SlantTextStyleModifier(uint8_t initSlantValue): slantValue(initSlantValue) {}
+
 TextStyleModifier::ModifierType SlantTextStyleModifier::get_type() const {
     return ModifierType::SLANT;
+}
+
+SkFontStyle::Slant SlantTextStyleModifier::get_slant() const {
+    return static_cast<SkFontStyle::Slant>(slantValue);
 }
 
 void SlantTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -103,14 +99,6 @@ void SlantTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const 
 
 void SlantTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) {
     a(slantValue);
-}
-
-void SlantTextStyleModifier::set_slant(SkFontStyle::Slant newSlant) {
-    slantValue = newSlant;
-}
-
-SkFontStyle::Slant SlantTextStyleModifier::get_slant() {
-    return static_cast<SkFontStyle::Slant>(slantValue);
 }
 
 void SlantTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
@@ -123,8 +111,14 @@ bool SlantTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const 
 
 
 
+ColorTextStyleModifier::ColorTextStyleModifier(const Vector4f& initColor): color(initColor) {}
+
 TextStyleModifier::ModifierType ColorTextStyleModifier::get_type() const {
     return ModifierType::COLOR;
+}
+
+const Vector4f& ColorTextStyleModifier::get_color() const {
+    return color;
 }
 
 void ColorTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -146,8 +140,14 @@ bool ColorTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const 
 
 
 
+SizeTextStyleModifier::SizeTextStyleModifier(float initSize): size(initSize) {}
+
 TextStyleModifier::ModifierType SizeTextStyleModifier::get_type() const {
     return ModifierType::SIZE;
+}
+
+float SizeTextStyleModifier::get_size() const {
+    return size;
 }
 
 void SizeTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -168,8 +168,14 @@ bool SizeTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
 
 
 
+FontFamiliesTextStyleModifier::FontFamiliesTextStyleModifier(const std::vector<SkString>& initFamilies): families(initFamilies) {}
+
 TextStyleModifier::ModifierType FontFamiliesTextStyleModifier::get_type() const {
     return ModifierType::FONT_FAMILIES;
+}
+
+const std::vector<SkString>& FontFamiliesTextStyleModifier::get_families() const {
+    return families;
 }
 
 void FontFamiliesTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -192,8 +198,14 @@ bool FontFamiliesTextStyleModifier::equivalent_data(TextStyleModifier& modifier)
 
 
 
+DecorationTextStyleModifier::DecorationTextStyleModifier(uint8_t initDecorationValue): decorationValue(initDecorationValue) {}
+
 TextStyleModifier::ModifierType DecorationTextStyleModifier::get_type() const {
     return ModifierType::DECORATION;
+}
+
+uint8_t DecorationTextStyleModifier::get_decoration_value() const {
+    return decorationValue;
 }
 
 void DecorationTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
