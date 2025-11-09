@@ -77,15 +77,16 @@ void InputManager::text_input_silence_everything() {
     text.newInput.clear();
 }
 
-void InputManager::Text::set_rich_text_box_input(const std::shared_ptr<RichTextBox>& nTextBox, const std::shared_ptr<RichTextBox::Cursor>& nCursor) {
+void InputManager::Text::set_rich_text_box_input(const std::shared_ptr<RichTextBox>& nTextBox, const std::shared_ptr<RichTextBox::Cursor>& nCursor, const std::optional<TextStyleModifier::ModifierMap>& nModMap) {
     set_accepting_input();
     newTextBox = nTextBox;
     newCursor = nCursor;
+    newModMap = nModMap;
 }
 
 void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
     if(textBox)
-        textBox->process_text_input(*cursor, inputText);
+        textBox->process_text_input(*cursor, inputText, modMap);
 }
 
 void InputManager::Text::set_accepting_input() {
@@ -218,42 +219,42 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         case SDLK_UP:
             set_key_down(e, KEY_TEXT_UP);
             if(text.textBox && key(KEY_TEXT_UP).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::UP, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::UP, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_DOWN:
             set_key_down(e, KEY_TEXT_DOWN);
             if(text.textBox && key(KEY_TEXT_DOWN).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::DOWN, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::DOWN, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_LEFT:
             set_key_down(e, KEY_TEXT_LEFT);
             if(text.textBox && key(KEY_TEXT_LEFT).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::LEFT, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::LEFT, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_RIGHT:
             set_key_down(e, KEY_TEXT_RIGHT);
             if(text.textBox && key(KEY_TEXT_RIGHT).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::RIGHT, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::RIGHT, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_BACKSPACE:
             set_key_down(e, KEY_TEXT_BACKSPACE);
             if(text.textBox && key(KEY_TEXT_BACKSPACE).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::BACKSPACE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::BACKSPACE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_DELETE:
             set_key_down(e, KEY_TEXT_DELETE);
             if(text.textBox && key(KEY_TEXT_DELETE).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::DELETE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::DELETE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_HOME:
             set_key_down(e, KEY_TEXT_HOME);
             if(text.textBox && key(KEY_TEXT_HOME).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::HOME, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::HOME, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_END:
             set_key_down(e, KEY_TEXT_END);
             if(text.textBox && key(KEY_TEXT_END).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::END, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::END, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_LSHIFT:
             set_key_down(e, KEY_TEXT_SHIFT);
@@ -287,24 +288,24 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_PASTE);
             if(text.textBox && key(KEY_TEXT_PASTE).repeat)
-                text.textBox->process_text_input(*text.cursor, get_clipboard_str());
+                text.textBox->process_text_input(*text.cursor, get_clipboard_str(), text.modMap);
             break;
         case SDLK_A:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_SELECTALL);
             if(text.textBox && key(KEY_TEXT_SELECTALL).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::SELECT_ALL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::SELECT_ALL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         case SDLK_RETURN: {
             set_key_down(e, KEY_TEXT_ENTER);
             if(text.textBox && key(KEY_TEXT_ENTER).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         }
         case SDLK_TAB: {
             set_key_down(e, KEY_TEXT_TAB);
             if(text.textBox && key(KEY_TEXT_TAB).repeat)
-                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::TAB, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held);
+                text.textBox->process_key_input(*text.cursor, RichTextBox::InputKey::TAB, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
         }
         case SDLK_ESCAPE:
@@ -417,6 +418,7 @@ void InputManager::frame_reset(const Vector2i& windowSize) {
     text.acceptingInputNew = false;
     text.cursor = text.newCursor;
     text.textBox = text.newTextBox;
+    text.modMap = text.newModMap;
     text.newCursor = nullptr;
     text.newTextBox = nullptr;
 

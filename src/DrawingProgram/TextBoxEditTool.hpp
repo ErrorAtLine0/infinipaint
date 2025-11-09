@@ -22,10 +22,16 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         uint32_t newFontSize = 15;
         Vector4f newTextColor{1.0f, 1.0f, 1.0f, 1.0f};
+        bool newIsBold = false;
+        bool newIsItalic = false;
+        bool newIsUnderlined = false;
+        bool newIsLinethrough = false;
+        bool newIsOverline = false;
         std::string newFontName;
 
+        uint8_t get_new_decoration_value();
         void set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a);
-        TextStyleModifier::ModifierMap modsAtStartOfSelection;
+        TextStyleModifier::ModifierMap currentMods;
 
         std::vector<std::string> sortedFontList;
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <array>
+#include "RichTextBox/TextStyleModifier.hpp"
 #include "TimePoint.hpp"
 #include <Helpers/Hashes.hpp>
 #include <unordered_map>
@@ -87,15 +88,17 @@ struct InputManager {
         void set_accepting_input();
         bool get_accepting_input();
 
-        void set_rich_text_box_input(const std::shared_ptr<RichTextBox>& nTextBox, const std::shared_ptr<RichTextBox::Cursor>& nCursor);
+        void set_rich_text_box_input(const std::shared_ptr<RichTextBox>& nTextBox, const std::shared_ptr<RichTextBox::Cursor>& nCursor, const std::optional<TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
         void add_text_to_textbox(const std::string& inputText);
 
         private:
             std::shared_ptr<RichTextBox> textBox;
             std::shared_ptr<RichTextBox::Cursor> cursor;
+            std::optional<TextStyleModifier::ModifierMap> modMap;
 
             std::shared_ptr<RichTextBox> newTextBox;
             std::shared_ptr<RichTextBox::Cursor> newCursor;
+            std::optional<TextStyleModifier::ModifierMap> newModMap;
 
             bool acceptingInput = false;
             bool acceptingInputNew = false;

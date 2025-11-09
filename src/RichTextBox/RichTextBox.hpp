@@ -80,7 +80,7 @@ class RichTextBox {
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
         void set_width(float newWidth);
-        TextPosition insert(TextPosition pos, std::string_view textToInsert);
+        TextPosition insert(TextPosition pos, std::string_view textToInsert, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
         TextPosition remove(TextPosition p1, TextPosition p2);
         void set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC);
         void paint(SkCanvas* canvas, const PaintOpts& paintOpts);
@@ -111,13 +111,13 @@ class RichTextBox {
         void set_string(const std::string& str);
 
         void process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift);
-        void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift);
+        void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
         std::string process_copy(Cursor& cur);
         std::string process_cut(Cursor& cur);
         std::string get_text_between(TextPosition p1, TextPosition p2);
         std::string get_string();
         void set_tab_space_width(unsigned newTabWidth);
-        void process_text_input(Cursor& cur, const std::string& in);
+        void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
 
     private:
         static size_t count_grapheme(const std::string& text);

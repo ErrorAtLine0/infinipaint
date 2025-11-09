@@ -61,7 +61,7 @@ RichTextBox::RichTextBox() {
     paragraphs.emplace_back();
 }
 
-void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift) {
+void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     bool moved = false;
 
     switch(in) {
@@ -102,10 +102,10 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::RIGHT_WORD : Movement::RIGHT, cur.pos));
             break;
         case InputKey::ENTER:
-            process_text_input(cur, "\n");
+            process_text_input(cur, "\n", inputModMap);
             break;
         case InputKey::TAB: 
-            process_text_input(cur, "\t");
+            process_text_input(cur, "\t", inputModMap);
             break;
         case InputKey::SELECT_ALL:
             cur.selectionBeginPos = move(Movement::HOME, cur.pos);
@@ -152,11 +152,11 @@ std::string RichTextBox::process_cut(Cursor& cur) {
     return toRet;
 }
 
-void RichTextBox::process_text_input(Cursor& cur, const std::string& in) {
+void RichTextBox::process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     if(!in.empty()) {
         if(cur.selectionBeginPos != cur.selectionEndPos)
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
-        cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert(cur.pos, in);
+        cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert(cur.pos, in, inputModMap);
         cur.previousX = std::nullopt;
         inputChangedTextBox = true;
     }
@@ -704,8 +704,8 @@ void RichTextBox::set_tab_space_width(unsigned newTabWidth) {
     tabWidth = newTabWidth;
 }
 
-RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view textToInsert) {
-    pos = move(Movement::NOWHERE, pos);
+RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view textToInsert, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+    TextPosition oldPos = pos = move(Movement::NOWHERE, pos);
 
     for(char c : textToInsert) {
         if(c == '\n') {
@@ -745,6 +745,10 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
 
     if(!textToInsert.empty()) {
         remove_duplicate_text_style_mods();
+        if(inputModMap.has_value()) {
+            for(const auto& [modType, modifier] : inputModMap.value())
+                set_text_style_modifier_between(oldPos, pos, modifier);
+        }
         inputChangedTextBox = true;
         needsRebuild = true;
     }
