@@ -669,7 +669,6 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
             float currentScrollPos = 0.0f;
             bool isMoving = false;
 
-            bool clickedOnScroller = false;
             float scrollerStartPos;
             float mouseStartPos;
 
@@ -749,20 +748,17 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
                 CLAY({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
                 if(Clay_Hovered() && io->mouse.leftClick) {
                     sD.isMoving = true;
-                    sD.clickedOnScroller = isHoveringOverScroller;
-                    if(isHoveringOverScroller) {
+                    if(isHoveringOverScroller)
                         sD.scrollerStartPos = scrollAreaBB.y + areaAboveScrollerSize + scrollerSize * 0.5f;
-                        sD.mouseStartPos = io->mouse.pos.y();
-                    }
+                    else
+                        sD.scrollerStartPos = std::clamp(io->mouse.pos.y(), scrollAreaBB.y + scrollerSize * 0.5f, scrollAreaBB.y + scrollAreaBB.height - scrollerSize * 0.5f);
+                    sD.mouseStartPos = io->mouse.pos.y();
                 }
                 if(!io->mouse.leftHeld)
                     sD.isMoving = false;
                 if(sD.isMoving) {
                     float newScrollPosFrac;
-                    if(sD.clickedOnScroller)
-                        newScrollPosFrac = std::clamp((sD.scrollerStartPos - (sD.mouseStartPos - io->mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
-                    else
-                        newScrollPosFrac = std::clamp((io->mouse.pos.y() - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
+                    newScrollPosFrac = std::clamp((sD.scrollerStartPos - (sD.mouseStartPos - io->mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
                     sD.currentScrollPos = newScrollPosFrac * (-scrollPosMax);
                 }
                 sD.currentScrollPos = std::clamp(sD.currentScrollPos, -scrollPosMax, 0.0f);

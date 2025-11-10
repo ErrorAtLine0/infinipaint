@@ -1,7 +1,8 @@
 #pragma once
 #include <Eigen/Dense>
 #include <array>
-#include "RichTextBox/TextStyleModifier.hpp"
+#include "RichText/TextStyleModifier.hpp"
+#include "RichText/TextBox.hpp"
 #include "TimePoint.hpp"
 #include <Helpers/Hashes.hpp>
 #include <unordered_map>
@@ -11,7 +12,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
-#include "RichTextBox/RichTextBox.hpp"
 
 using namespace Eigen;
 
@@ -88,17 +88,17 @@ struct InputManager {
         void set_accepting_input();
         bool get_accepting_input();
 
-        void set_rich_text_box_input(const std::shared_ptr<RichTextBox>& nTextBox, const std::shared_ptr<RichTextBox::Cursor>& nCursor, const std::optional<TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+        void set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
         void add_text_to_textbox(const std::string& inputText);
 
         private:
-            std::shared_ptr<RichTextBox> textBox;
-            std::shared_ptr<RichTextBox::Cursor> cursor;
-            std::optional<TextStyleModifier::ModifierMap> modMap;
+            std::shared_ptr<RichText::TextBox> textBox;
+            std::shared_ptr<RichText::TextBox::Cursor> cursor;
+            std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
 
-            std::shared_ptr<RichTextBox> newTextBox;
-            std::shared_ptr<RichTextBox::Cursor> newCursor;
-            std::optional<TextStyleModifier::ModifierMap> newModMap;
+            std::shared_ptr<RichText::TextBox> newTextBox;
+            std::shared_ptr<RichText::TextBox::Cursor> newCursor;
+            std::optional<RichText::TextStyleModifier::ModifierMap> newModMap;
 
             bool acceptingInput = false;
             bool acceptingInputNew = false;

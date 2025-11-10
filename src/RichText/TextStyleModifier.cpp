@@ -6,6 +6,8 @@
 
 #define WEIGHT_VALUE_MODIFIER 100
 
+namespace RichText {
+
 TextStyleModifier::ModifierMap TextStyleModifier::defaultMods;
 
 std::shared_ptr<TextStyleModifier> TextStyleModifier::allocate_modifier(ModifierType type) {
@@ -222,4 +224,6 @@ void DecorationTextStyleModifier::modify_text_style(skia::textlayout::TextStyle&
 
 bool DecorationTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
     return decorationValue == static_cast<DecorationTextStyleModifier&>(modifier).decorationValue;
+}
+
 }

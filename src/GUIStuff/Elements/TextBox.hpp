@@ -1,6 +1,6 @@
 #pragma once
 #include "Element.hpp"
-#include "../../RichTextBox/RichTextBox.hpp"
+#include "../../RichText/TextBox.hpp"
 #include <limits>
 #include <modules/skparagraph/include/TextStyle.h>
 
@@ -73,7 +73,7 @@ template <typename T> class TextBox : public Element {
 
             canvas->translate(bb.min.x() + 2.0f, bb.min.y());
 
-            RichTextBox::PaintOpts paintOpts;
+            RichText::TextBox::PaintOpts paintOpts;
             if(selection.selected)
                 paintOpts.cursor = *cur;
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
@@ -97,11 +97,11 @@ template <typename T> class TextBox : public Element {
             if(data && (*data == oldData) && !reallyForce && textbox && cur)
                 return;
 
-            textbox = std::make_shared<RichTextBox>();
+            textbox = std::make_shared<RichText::TextBox>();
             textbox->set_font_collection(io.fontCollection);
             textbox->set_allow_newlines(!singleLine);
 
-            cur = std::make_shared<RichTextBox::Cursor>();
+            cur = std::make_shared<RichText::TextBox::Cursor>();
 
             if(data) {
                 cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, toStr(*data));
@@ -125,8 +125,8 @@ template <typename T> class TextBox : public Element {
         std::function<std::optional<T>(const std::string&)> fromStr;
         std::function<std::string(const T&)> toStr;
 
-        std::shared_ptr<RichTextBox> textbox;
-        std::shared_ptr<RichTextBox::Cursor> cur;
+        std::shared_ptr<RichText::TextBox> textbox;
+        std::shared_ptr<RichText::TextBox::Cursor> cur;
 
         SCollision::AABB<float> bb;
 };

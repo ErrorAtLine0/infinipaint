@@ -17,7 +17,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
     private:
         struct TextBoxEditToolAllData {
             DrawTextBox::Data textboxData;
-            RichTextBox::RichTextData richText;
+            RichText::TextData richText;
         };
 
         uint32_t newFontSize = 15;
@@ -31,7 +31,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         uint8_t get_new_decoration_value();
         void set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a);
-        TextStyleModifier::ModifierMap currentMods;
+        RichText::TextStyleModifier::ModifierMap currentMods;
 
         std::vector<std::string> sortedFontList;
 

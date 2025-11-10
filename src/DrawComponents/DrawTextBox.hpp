@@ -2,7 +2,7 @@
 #include "../SharedTypes.hpp"
 #include "DrawComponent.hpp"
 #include "../CoordSpaceHelper.hpp"
-#include "../RichTextBox/RichTextBox.hpp"
+#include "../RichText/TextBox.hpp"
 
 #ifndef IS_SERVER
     #include <include/core/SkPath.h>
@@ -39,8 +39,8 @@ class DrawTextBox : public DrawComponent {
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 
-        std::shared_ptr<RichTextBox> textBox;
-        std::shared_ptr<RichTextBox::Cursor> cursor;
+        std::shared_ptr<RichText::TextBox> textBox;
+        std::shared_ptr<RichText::TextBox::Cursor> cursor;
         SCollision::BVHContainer<float> collisionTree;
 #endif
 };

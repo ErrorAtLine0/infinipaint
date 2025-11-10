@@ -5,6 +5,8 @@
 #include "cereal/archives/portable_binary.hpp"
 #include "../SharedTypes.hpp"
 
+namespace RichText {
+
 class TextStyleModifier {
     public:
         enum class ModifierType : uint16_t {
@@ -117,3 +119,5 @@ class FontFamiliesTextStyleModifier : public TextStyleModifier {
         std::vector<SkString> families;
         virtual bool equivalent_data(TextStyleModifier& modifier) const override;
 };
+
+}

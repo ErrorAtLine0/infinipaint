@@ -1915,7 +1915,7 @@ void Toolbar::initialize_io_before_update() {
     io->key.paste = main.input.get_clipboard_paste_happened();
     io->key.cut = main.input.key(InputManager::KEY_TEXT_CUT).repeat;
     io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
-    io->richTextBoxEdit = [&](std::shared_ptr<RichTextBox> t, std::shared_ptr<RichTextBox::Cursor> c) {
+    io->richTextBoxEdit = [&](std::shared_ptr<RichText::TextBox> t, std::shared_ptr<RichText::TextBox::Cursor> c) {
         main.input.text.set_rich_text_box_input(t, c);
     };
 

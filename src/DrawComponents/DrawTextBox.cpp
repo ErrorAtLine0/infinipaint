@@ -9,9 +9,11 @@
 #include "../DrawCollision.hpp"
 #endif
 
+using namespace RichText;
+
 DrawTextBox::DrawTextBox():
-    textBox(std::make_shared<RichTextBox>()),
-    cursor(std::make_shared<RichTextBox::Cursor>())
+    textBox(std::make_shared<TextBox>()),
+    cursor(std::make_shared<TextBox::Cursor>())
 {
     skia::textlayout::TextStyle tStyle;
     textBox->set_initial_text_style(tStyle);
@@ -30,7 +32,7 @@ void DrawTextBox::save(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void DrawTextBox::load(cereal::PortableBinaryInputArchive& a) {
-    RichTextBox::RichTextData richText;
+    TextData richText;
     a(d.editing, d.p1, d.p2, richText, *cursor);
     textBox->set_rich_text_data(richText);
 }
@@ -78,7 +80,7 @@ void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->clipRect(clipR);
         canvas->translate(d.p1.x(), d.p1.y());
 
-        RichTextBox::PaintOpts paintOpts;
+        TextBox::PaintOpts paintOpts;
         paintOpts.cursorColor = {0.7f, 0.7f, 1.0f};
         if(d.editing && cursor)
             paintOpts.cursor = *cursor;

@@ -1,4 +1,4 @@
-#include "RichTextBox.hpp"
+#include "TextBox.hpp"
 #include "TextStyleModifier.hpp"
 #include <limits>
 #include <modules/skparagraph/include/DartTypes.h>
@@ -12,7 +12,9 @@
 #include <src/base/SkUTF.h>
 #include <cereal/types/string.hpp>
 
-void RichTextBox::RichTextData::save(cereal::PortableBinaryOutputArchive& a) const {
+namespace RichText {
+
+void TextData::save(cereal::PortableBinaryOutputArchive& a) const {
     a(paragraphs);
     a(static_cast<uint32_t>(tStyleMods.size()));
     for(auto& [pos, modsInPos] : tStyleMods) {
@@ -22,7 +24,7 @@ void RichTextBox::RichTextData::save(cereal::PortableBinaryOutputArchive& a) con
     }
 }
 
-void RichTextBox::RichTextData::load(cereal::PortableBinaryInputArchive& a) {
+void TextData::load(cereal::PortableBinaryInputArchive& a) {
     a(paragraphs);
     uint32_t tStyleModCount;
     a(tStyleModCount);
@@ -41,27 +43,27 @@ void RichTextBox::RichTextData::load(cereal::PortableBinaryInputArchive& a) {
     }
 }
 
-bool RichTextBox::TextPosition::operator<(const RichTextBox::TextPosition& o) const {
+bool TextPosition::operator<(const TextPosition& o) const {
     return (this->fParagraphIndex < o.fParagraphIndex) || (this->fParagraphIndex == o.fParagraphIndex && this->fTextByteIndex < o.fTextByteIndex);
 }
 
-bool RichTextBox::TextPosition::operator>(const RichTextBox::TextPosition& o) const {
+bool TextPosition::operator>(const TextPosition& o) const {
     return !(*this < o) && !(*this == o);
 }
 
-bool RichTextBox::TextPosition::operator>=(const RichTextBox::TextPosition& o) const {
+bool TextPosition::operator>=(const TextPosition& o) const {
     return (*this > o) || (*this == o);
 }
 
-bool RichTextBox::TextPosition::operator<=(const RichTextBox::TextPosition& o) const {
+bool TextPosition::operator<=(const TextPosition& o) const {
     return (*this < o) || (*this == o);
 }
 
-RichTextBox::RichTextBox() {
+TextBox::TextBox() {
     paragraphs.emplace_back();
 }
 
-void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     bool moved = false;
 
     switch(in) {
@@ -122,7 +124,7 @@ void RichTextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool sh
     inputChangedTextBox = true;
 }
 
-void RichTextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift) {
+void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift) {
     if(clicked || held) {
         rebuild();
 
@@ -138,11 +140,11 @@ void RichTextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, bo
     }
 }
 
-std::string RichTextBox::process_copy(Cursor& cur) {
+std::string TextBox::process_copy(Cursor& cur) {
     return get_text_between(cur.selectionBeginPos, cur.selectionEndPos);
 }
 
-std::string RichTextBox::process_cut(Cursor& cur) {
+std::string TextBox::process_cut(Cursor& cur) {
     std::string toRet = process_copy(cur);
     if(cur.selectionBeginPos != cur.selectionEndPos) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
@@ -152,7 +154,7 @@ std::string RichTextBox::process_cut(Cursor& cur) {
     return toRet;
 }
 
-void RichTextBox::process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     if(!in.empty()) {
         if(cur.selectionBeginPos != cur.selectionEndPos)
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
@@ -162,7 +164,7 @@ void RichTextBox::process_text_input(Cursor& cur, const std::string& in, const s
     }
 }
 
-size_t RichTextBox::count_grapheme(const std::string& text) {
+size_t TextBox::count_grapheme(const std::string& text) {
     auto u = SkUnicodes::ICU::Make();
     auto breakIterator = u->makeBreakIterator(SkUnicode::BreakType::kGraphemes);
     breakIterator->setText(text.c_str(), text.size());
@@ -174,7 +176,7 @@ size_t RichTextBox::count_grapheme(const std::string& text) {
     return count - 1;
 }
 
-size_t RichTextBox::next_grapheme(const std::string& text, size_t textBytePos) {
+size_t TextBox::next_grapheme(const std::string& text, size_t textBytePos) {
     if(textBytePos == text.size())
         return text.size();
     auto u = SkUnicodes::ICU::Make();
@@ -184,7 +186,7 @@ size_t RichTextBox::next_grapheme(const std::string& text, size_t textBytePos) {
     return count + textBytePos;
 }
 
-size_t RichTextBox::prev_grapheme(const std::string& text, size_t textBytePos) {
+size_t TextBox::prev_grapheme(const std::string& text, size_t textBytePos) {
     if(textBytePos == 0)
         return 0;
     auto u = SkUnicodes::ICU::Make();
@@ -199,7 +201,7 @@ size_t RichTextBox::prev_grapheme(const std::string& text, size_t textBytePos) {
     }
 }
 
-RichTextBox::TextPosition RichTextBox::get_text_pos_from_byte_pos(const std::string& text, size_t textBytePos) {
+TextPosition TextBox::get_text_pos_from_byte_pos(const std::string& text, size_t textBytePos) {
     TextPosition toRet{0, 0};
     for(size_t i = 0; i < textBytePos; i++) {
         char c = text[i];
@@ -213,7 +215,7 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_from_byte_pos(const std::str
     return toRet;
 }
 
-size_t RichTextBox::get_byte_pos_from_text_pos(TextPosition textPos) {
+size_t TextBox::get_byte_pos_from_text_pos(TextPosition textPos) {
     size_t toRet = 0;
     for(size_t pIndex = 0; pIndex < textPos.fParagraphIndex; pIndex++)
         toRet += paragraphs[pIndex].text.size() + 1; // Add 1 byte for newline
@@ -221,7 +223,7 @@ size_t RichTextBox::get_byte_pos_from_text_pos(TextPosition textPos) {
     return toRet;
 }
 
-RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f point) {
+TextPosition TextBox::get_text_pos_closest_to_point(Vector2f point) {
     rebuild();
 
     skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
@@ -267,8 +269,8 @@ RichTextBox::TextPosition RichTextBox::get_text_pos_closest_to_point(Vector2f po
         return TextPosition{pIndex, 0};
 }
 
-RichTextBox::RichTextData RichTextBox::get_rich_text_data() {
-    RichTextData toRet;
+TextData TextBox::get_rich_text_data() {
+    TextData toRet;
     for(auto& p : paragraphs) {
         toRet.paragraphs.emplace_back();
         toRet.paragraphs.back().text = p.text;
@@ -277,18 +279,18 @@ RichTextBox::RichTextData RichTextBox::get_rich_text_data() {
     return toRet;
 }
 
-void RichTextBox::clear_text() {
+void TextBox::clear_text() {
     paragraphs.clear();
     tStyleMods.clear();
     paragraphs.emplace_back();
 }
 
-void RichTextBox::set_string(const std::string& str) {
+void TextBox::set_string(const std::string& str) {
     clear_text();
     insert({0, 0}, str);
 }
 
-void RichTextBox::set_rich_text_data(const RichTextData& richText) {
+void TextBox::set_rich_text_data(const TextData& richText) {
     paragraphs.clear();
     for(auto& p : richText.paragraphs) {
         paragraphs.emplace_back();
@@ -301,11 +303,11 @@ void RichTextBox::set_rich_text_data(const RichTextData& richText) {
     needsRebuild = true;
 }
 
-std::string RichTextBox::get_string() {
-    return get_text_between({0, 0}, move(RichTextBox::Movement::END, {0, 0}));
+std::string TextBox::get_string() {
+    return get_text_between({0, 0}, move(TextBox::Movement::END, {0, 0}));
 }
 
-std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
+std::string TextBox::get_text_between(TextPosition p1, TextPosition p2) {
     p1 = move(Movement::NOWHERE, p1);
     p2 = move(Movement::NOWHERE, p2);
 
@@ -329,7 +331,7 @@ std::string RichTextBox::get_text_between(TextPosition p1, TextPosition p2) {
 }
 
 
-void RichTextBox::set_initial_text_style(const skia::textlayout::TextStyle& tStyle) {
+void TextBox::set_initial_text_style(const skia::textlayout::TextStyle& tStyle) {
     if(!tStyle.equals(initialTStyle)) {
         initialTStyle = tStyle;
         inputChangedTextBox = true;
@@ -337,7 +339,7 @@ void RichTextBox::set_initial_text_style(const skia::textlayout::TextStyle& tSty
     }
 }
 
-void RichTextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier) {
+void TextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier) {
     if(tStyleMods.empty() || tStyleMods[0].pos != TextPosition{0, 0}) {
         if(tStyleMods.empty())
             tStyleMods.emplace_back();
@@ -349,7 +351,7 @@ void RichTextBox::set_initial_text_style_modifier(const std::shared_ptr<TextStyl
     remove_duplicate_text_style_mods();
 }
 
-TextStyleModifier::ModifierMap RichTextBox::get_mods_used_at_pos(TextPosition p) {
+TextStyleModifier::ModifierMap TextBox::get_mods_used_at_pos(TextPosition p) {
     p = move(Movement::NOWHERE, p);
 
     TextStyleModifier::ModifierMap toRet = TextStyleModifier::get_default_modifiers();
@@ -366,7 +368,7 @@ TextStyleModifier::ModifierMap RichTextBox::get_mods_used_at_pos(TextPosition p)
     return toRet;
 }
 
-std::shared_ptr<TextStyleModifier> RichTextBox::get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType) {
+std::shared_ptr<TextStyleModifier> TextBox::get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType) {
     std::shared_ptr<TextStyleModifier> lastModOfThisTypeBeforeEnd = TextStyleModifier::get_default_modifier(modType);
     for(auto& [tPos, tStyleModsInPos] : tStyleMods) {
         if(tPos <= pos) {
@@ -380,7 +382,7 @@ std::shared_ptr<TextStyleModifier> RichTextBox::get_last_text_style_mod_before_p
     return lastModOfThisTypeBeforeEnd;
 }
 
-void RichTextBox::erase_if_over_all_styles_until_pos(TextPosition pos, const std::function<bool(TextPosition, const std::shared_ptr<TextStyleModifier>&)>& func) {
+void TextBox::erase_if_over_all_styles_until_pos(TextPosition pos, const std::function<bool(TextPosition, const std::shared_ptr<TextStyleModifier>&)>& func) {
     for(auto& [tPos, tStyleModsInPos] : tStyleMods) {
         if(tPos <= pos) {
             std::erase_if(tStyleModsInPos, [&](auto& item) {
@@ -392,7 +394,7 @@ void RichTextBox::erase_if_over_all_styles_until_pos(TextPosition pos, const std
     }
 }
 
-void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier) {
+void TextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier) {
     p1 = move(Movement::NOWHERE, p1);
     p2 = move(Movement::NOWHERE, p2);
     if(p1 != p2) {
@@ -411,7 +413,7 @@ void RichTextBox::set_text_style_modifier_between(TextPosition p1, TextPosition 
     }
 }
 
-void RichTextBox::insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier) {
+void TextBox::insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier) {
     size_t indexToPlaceAt = 0;
     bool finishedInsertingStyle = false;
     for(auto& [tPos, tStyleModsInPos] : tStyleMods) {
@@ -432,7 +434,7 @@ void RichTextBox::insert_style_at_pos(TextPosition pos, const std::shared_ptr<Te
     }
 }
 
-RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
+TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<float>* previousX, bool flipDependingOnTextDirection) {
     if(pos.fParagraphIndex >= paragraphs.size()) {
         pos.fParagraphIndex = paragraphs.size() - 1;
         pos.fTextByteIndex = paragraphs[pos.fParagraphIndex].text.size();
@@ -608,7 +610,7 @@ RichTextBox::TextPosition RichTextBox::move(Movement movement, TextPosition pos,
 
 }
 
-void RichTextBox::set_width(float newWidth) {
+void TextBox::set_width(float newWidth) {
     if(width != newWidth) {
         width = std::max(newWidth, 4.0f);
         inputChangedTextBox = true;
@@ -616,11 +618,11 @@ void RichTextBox::set_width(float newWidth) {
     }
 }
 
-void RichTextBox::set_allow_newlines(bool allow) {
+void TextBox::set_allow_newlines(bool allow) {
     newlinesAllowed = allow;
 }
 
-void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC) {
+void TextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC) {
     if(fontCollection != fC) {
         fontCollection = fC;
         inputChangedTextBox = true;
@@ -628,7 +630,7 @@ void RichTextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollecti
     }
 }
 
-void RichTextBox::rebuild() {
+void TextBox::rebuild() {
     if(needsRebuild) {
         float heightOffset = 0.0f;
 
@@ -683,7 +685,7 @@ void RichTextBox::rebuild() {
     }
 }
 
-void RichTextBox::remove_duplicate_text_style_mods() {
+void TextBox::remove_duplicate_text_style_mods() {
     TextStyleModifier::ModifierMap previouslyAppliedMods = TextStyleModifier::get_default_modifiers();
 
     std::erase_if(tStyleMods, [&previouslyAppliedMods](PositionedTextStyleMod& tStyleModsInPos) {
@@ -700,11 +702,11 @@ void RichTextBox::remove_duplicate_text_style_mods() {
     });
 }
 
-void RichTextBox::set_tab_space_width(unsigned newTabWidth) {
+void TextBox::set_tab_space_width(unsigned newTabWidth) {
     tabWidth = newTabWidth;
 }
 
-RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view textToInsert, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     TextPosition oldPos = pos = move(Movement::NOWHERE, pos);
 
     for(char c : textToInsert) {
@@ -756,7 +758,7 @@ RichTextBox::TextPosition RichTextBox::insert(TextPosition pos, std::string_view
     return pos;
 }
 
-RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) {
+TextPosition TextBox::remove(TextPosition p1, TextPosition p2) {
     p1 = move(Movement::NOWHERE, p1);
     p2 = move(Movement::NOWHERE, p2);
 
@@ -807,7 +809,7 @@ RichTextBox::TextPosition RichTextBox::remove(TextPosition p1, TextPosition p2) 
     return start;
 }
 
-SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
+SkRect TextBox::get_cursor_rect(TextPosition pos) {
     pos = move(Movement::NOWHERE, pos);
 
     SkPoint topPoint;
@@ -853,7 +855,7 @@ SkRect RichTextBox::get_cursor_rect(TextPosition pos) {
     return SkRect::MakeXYWH(topPoint.x() - CURSOR_WIDTH * 0.5f, topPoint.y(), CURSOR_WIDTH, height);
 }
 
-void RichTextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f) {
+void TextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f) {
     p1 = move(Movement::NOWHERE, p1);
     p2 = move(Movement::NOWHERE, p2);
 
@@ -882,7 +884,7 @@ void RichTextBox::rects_between_text_positions_func(TextPosition p1, TextPositio
     }
 }
 
-void RichTextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
+void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
     rebuild();
 
     if(paintOpts.cursor.has_value()) {
@@ -900,4 +902,6 @@ void RichTextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
 
     for(auto& pData : paragraphs)
         pData.p->paint(canvas, 0.0f, pData.heightOffset);
+}
+
 }

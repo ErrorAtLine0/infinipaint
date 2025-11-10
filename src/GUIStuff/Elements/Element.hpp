@@ -10,7 +10,7 @@
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Serializers.hpp>
 #include <nlohmann/json.hpp>
-#include "../../RichTextBox/RichTextBox.hpp"
+#include "../../RichText/TextBox.hpp"
 
 using namespace Eigen;
 
@@ -103,7 +103,7 @@ struct UpdateInputData {
         std::optional<std::string> textOut;
     } clipboard;
 
-    std::function<void(std::shared_ptr<RichTextBox>, std::shared_ptr<RichTextBox::Cursor>)> richTextBoxEdit;
+    std::function<void(std::shared_ptr<RichText::TextBox>, std::shared_ptr<RichText::TextBox::Cursor>)> richTextBoxEdit;
 
     SkFont get_font(float fSize) const;
 

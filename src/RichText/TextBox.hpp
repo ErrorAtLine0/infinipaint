@@ -9,9 +9,45 @@
 #include "TextStyleModifier.hpp"
 #include "cereal/archives/portable_binary.hpp"
 
-class RichTextBox {
+namespace RichText {
+
+struct TextPosition {
+    // Set to uint32_t values because theyll be saved and sent over networks. Size has to be consistent
+    size_t fParagraphIndex = std::numeric_limits<uint32_t>::max();
+    size_t fTextByteIndex = std::numeric_limits<uint32_t>::max();
+    template <typename Archive> void serialize(Archive& a) {
+        a((uint32_t)fParagraphIndex, (uint32_t)fTextByteIndex);
+    }
+    bool operator==(const TextPosition& o) const = default;
+    bool operator<(const TextPosition& o) const;
+    bool operator>(const TextPosition& o) const;
+    bool operator>=(const TextPosition& o) const;
+    bool operator<=(const TextPosition& o) const;
+};
+
+struct PositionedTextStyleMod {
+    TextPosition pos;
+    TextStyleModifier::ModifierMap mods;
+};
+
+typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
+
+struct TextData {
+    struct Paragraph {
+        std::string text;
+        template<typename Archive> void serialize(Archive& a) {
+            a(text);
+        }
+    };
+    void save(cereal::PortableBinaryOutputArchive& a) const;
+    void load(cereal::PortableBinaryInputArchive& a);
+    TextStyleModContainer tStyleMods;
+    std::vector<Paragraph> paragraphs;
+};
+
+class TextBox {
     public:
-        RichTextBox();
+        TextBox();
 
         bool inputChangedTextBox = false;
 
@@ -26,27 +62,6 @@ class RichTextBox {
             HOME,
             END
         };
-
-        struct TextPosition {
-            // Set to uint32_t values because theyll be saved and sent over networks. Size has to be consistent
-            size_t fParagraphIndex = std::numeric_limits<uint32_t>::max();
-            size_t fTextByteIndex = std::numeric_limits<uint32_t>::max();
-            template <typename Archive> void serialize(Archive& a) {
-                a((uint32_t)fParagraphIndex, (uint32_t)fTextByteIndex);
-            }
-            bool operator==(const TextPosition& o) const = default;
-            bool operator<(const TextPosition& o) const;
-            bool operator>(const TextPosition& o) const;
-            bool operator>=(const RichTextBox::TextPosition& o) const;
-            bool operator<=(const RichTextBox::TextPosition& o) const;
-        };
-
-        struct PositionedTextStyleMod {
-            TextPosition pos;
-            TextStyleModifier::ModifierMap mods;
-        };
-
-        typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
 
         struct Cursor {
             TextPosition pos = {0, 0};
@@ -63,19 +78,6 @@ class RichTextBox {
         struct PaintOpts {
             Vector3f cursorColor = {1, 0, 0};
             std::optional<Cursor> cursor;
-        };
-
-        struct RichTextData {
-            struct Paragraph {
-                std::string text;
-                template<typename Archive> void serialize(Archive& a) {
-                    a(text);
-                }
-            };
-            void save(cereal::PortableBinaryOutputArchive& a) const;
-            void load(cereal::PortableBinaryInputArchive& a);
-            TextStyleModContainer tStyleMods;
-            std::vector<Paragraph> paragraphs;
         };
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
@@ -105,8 +107,8 @@ class RichTextBox {
         void set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier);
         TextStyleModifier::ModifierMap get_mods_used_at_pos(TextPosition p);
 
-        RichTextData get_rich_text_data();
-        void set_rich_text_data(const RichTextData& richText);
+        TextData get_rich_text_data();
+        void set_rich_text_data(const TextData& richText);
         void clear_text();
         void set_string(const std::string& str);
 
@@ -157,3 +159,5 @@ class RichTextBox {
         TextStyleModContainer tStyleMods;
         std::vector<ParagraphData> paragraphs;
 };
+
+}

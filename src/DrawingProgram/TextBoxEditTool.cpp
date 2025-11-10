@@ -14,11 +14,14 @@
 #include <memory>
 #include "EditTool.hpp"
 
+using namespace RichText;
+
 TextBoxEditTool::TextBoxEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
 bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
+
     std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
     Toolbar& t = drawP.world.main.toolbar;
 
@@ -117,10 +120,10 @@ uint8_t TextBoxEditTool::get_new_decoration_value() {
 }
 
 void TextBoxEditTool::set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a) {
-    RichTextBox::TextPosition start = std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
-    RichTextBox::TextPosition end = std::max(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
+    TextPosition start = std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
+    TextPosition end = std::max(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
     if(start == end)
-        currentMods = a->textBox->get_mods_used_at_pos(a->textBox->move(RichTextBox::Movement::LEFT, start));
+        currentMods = a->textBox->get_mods_used_at_pos(a->textBox->move(TextBox::Movement::LEFT, start));
     else
         currentMods = a->textBox->get_mods_used_at_pos(start);
 }
@@ -131,7 +134,7 @@ void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& 
     a->d.editing = false;
     auto pData = std::any_cast<TextBoxEditToolAllData>(prevData);
     TextBoxEditToolAllData cData = get_all_data(a);
-    RichTextBox::RichTextData richText = a->textBox->get_rich_text_data();
+    TextData richText = a->textBox->get_rich_text_data();
     drawP.world.undo.push(UndoManager::UndoRedoPair{
         [&drawP = drawP, a, pData]() {
             a->d = pData.textboxData;
@@ -163,7 +166,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
     auto& cur = a->cursor;
     auto& textbox = a->textBox;
-    cur = std::make_shared<RichTextBox::Cursor>();
+    cur = std::make_shared<TextBox::Cursor>();
     Vector2f textSelectPos = a->get_mouse_pos(drawP);
     textbox->process_mouse_left_button(*cur, textSelectPos, true, false, false);
     prevData = get_all_data(a);
