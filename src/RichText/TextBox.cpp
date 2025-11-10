@@ -829,8 +829,16 @@ SkRect TextBox::get_cursor_rect(TextPosition pos) {
 
     const ParagraphData& pData = paragraphs[pos.fParagraphIndex];
     if(pData.text.empty()) {
-        bool isAlignLeft = (pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kLeft) || (pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kJustify && pData.pStyleData.textDirection == skia::textlayout::TextDirection::kLtr);
-        topPoint = {isAlignLeft ? 0.0f : pData.p->getMaxWidth(), pData.heightOffset};
+        // Left aligned
+        if((pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kLeft) || (pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kJustify && pData.pStyleData.textDirection == skia::textlayout::TextDirection::kLtr))
+            topPoint.fX = 0.0f;
+        // Right aligned
+        else if((pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kRight) || (pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kJustify && pData.pStyleData.textDirection == skia::textlayout::TextDirection::kRtl))
+            topPoint.fX = pData.p->getMaxWidth();
+        // Centered
+        else
+            topPoint.fX = pData.p->getMaxWidth() * 0.5f;
+        topPoint.fY = pData.heightOffset;
         height = pData.p->getHeight();
     }
     else {
