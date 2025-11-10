@@ -68,6 +68,21 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         }
     });
 
+    t.gui.left_to_right_line_centered_layout([&]() {
+        if(t.gui.svg_icon_button("Align left button", "data/icons/RemixIcon/align-left.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kLeft))
+            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kLeft);
+        if(t.gui.svg_icon_button("Align center button", "data/icons/RemixIcon/align-center.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kCenter))
+            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kCenter);
+        if(t.gui.svg_icon_button("Align right button", "data/icons/RemixIcon/align-right.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kRight))
+            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kRight);
+        if(t.gui.svg_icon_button("Align justify button", "data/icons/RemixIcon/align-justify.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kJustify))
+            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kJustify);
+        if(t.gui.svg_icon_button("Text direction left", "data/icons/RemixIcon/text-direction-l.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kLtr))
+            a->textBox->set_text_direction_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kLtr);
+        if(t.gui.svg_icon_button("Text direction right", "data/icons/RemixIcon/text-direction-r.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kRtl))
+            a->textBox->set_text_direction_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kRtl);
+    });
+
     if(t.gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100)) {
         currentMods[TextStyleModifier::ModifierType::SIZE] = std::make_shared<SizeTextStyleModifier>(newFontSize);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SIZE]);
@@ -90,17 +105,8 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
 
     t.gui.pop_id();
 
-    if(a->textBox->inputChangedTextBox) {
-        set_mods_at_selection(a);
-        newFontName = std::static_pointer_cast<FontFamiliesTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES])->get_families().back().c_str();
-        newFontSize = std::static_pointer_cast<SizeTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::SIZE])->get_size();
-        newTextColor = std::static_pointer_cast<ColorTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::COLOR])->get_color();
-        newIsBold = std::static_pointer_cast<WeightTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::WEIGHT])->get_weight() == SkFontStyle::Weight::kBold_Weight;
-        newIsItalic = std::static_pointer_cast<SlantTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::SLANT])->get_slant() == SkFontStyle::Slant::kItalic_Slant;
-        newIsUnderlined = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kUnderline;
-        newIsLinethrough = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kLineThrough;
-        newIsOverline = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kOverline;
-    }
+    if(a->textBox->inputChangedTextBox)
+        set_styles_at_selection(a);
 
     // NOTE: There should be a system that periodically sends updates even if no changes are made, since unreliable channels can drop update data
     bool oldInputChangedTextBox = a->textBox->inputChangedTextBox;
@@ -119,13 +125,24 @@ uint8_t TextBoxEditTool::get_new_decoration_value() {
     return toRet;
 }
 
-void TextBoxEditTool::set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a) {
+void TextBoxEditTool::set_styles_at_selection(const std::shared_ptr<DrawTextBox>& a) {
     TextPosition start = std::min(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
     TextPosition end = std::max(a->cursor->selectionBeginPos, a->cursor->selectionEndPos);
     if(start == end)
         currentMods = a->textBox->get_mods_used_at_pos(a->textBox->move(TextBox::Movement::LEFT, start));
     else
         currentMods = a->textBox->get_mods_used_at_pos(start);
+
+    newFontName = std::static_pointer_cast<FontFamiliesTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES])->get_families().back().c_str();
+    newFontSize = std::static_pointer_cast<SizeTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::SIZE])->get_size();
+    newTextColor = std::static_pointer_cast<ColorTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::COLOR])->get_color();
+    newIsBold = std::static_pointer_cast<WeightTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::WEIGHT])->get_weight() == SkFontStyle::Weight::kBold_Weight;
+    newIsItalic = std::static_pointer_cast<SlantTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::SLANT])->get_slant() == SkFontStyle::Slant::kItalic_Slant;
+    newIsUnderlined = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kUnderline;
+    newIsLinethrough = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kLineThrough;
+    newIsOverline = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kOverline;
+
+    currentPStyle = a->textBox->get_paragraph_style_data_at(start.fParagraphIndex);
 }
 
 void TextBoxEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
@@ -176,7 +193,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     a->commit_update(drawP);
     a->client_send_update(drawP, false);
 
-    set_mods_at_selection(a);
+    set_styles_at_selection(a);
 
     editTool.add_point_handle({&a->d.p1, nullptr, &a->d.p2});
     editTool.add_point_handle({&a->d.p2, &a->d.p1, nullptr});

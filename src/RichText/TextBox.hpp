@@ -8,6 +8,7 @@
 #include "../SharedTypes.hpp"
 #include "TextStyleModifier.hpp"
 #include "cereal/archives/portable_binary.hpp"
+#include "ParagraphStyleData.hpp"
 
 namespace RichText {
 
@@ -35,8 +36,9 @@ typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
 struct TextData {
     struct Paragraph {
         std::string text;
+        ParagraphStyleData pStyleData;
         template<typename Archive> void serialize(Archive& a) {
-            a(text);
+            a(text, pStyleData);
         }
     };
     void save(cereal::PortableBinaryOutputArchive& a) const;
@@ -105,6 +107,11 @@ class TextBox {
         void set_initial_text_style(const skia::textlayout::TextStyle& tStyle);
         void set_initial_text_style_modifier(const std::shared_ptr<TextStyleModifier>& modifier);
         void set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier);
+
+        void set_text_alignment_between(size_t paragraphIndex1, size_t paragraphIndex2, skia::textlayout::TextAlign newAlignment);
+        void set_text_direction_between(size_t paragraphIndex1, size_t paragraphIndex2, skia::textlayout::TextDirection newDirection);
+        ParagraphStyleData get_paragraph_style_data_at(size_t paragraphIndex);
+
         TextStyleModifier::ModifierMap get_mods_used_at_pos(TextPosition p);
 
         TextData get_rich_text_data();
@@ -122,6 +129,9 @@ class TextBox {
         void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
 
     private:
+        std::pair<TextPosition, TextPosition> get_start_end_text_pos(TextPosition p1, TextPosition p2);
+        std::pair<size_t, size_t> get_start_end_paragraph_pos(size_t p1, size_t p2);
+
         static size_t count_grapheme(const std::string& text);
         static size_t next_grapheme(const std::string& text, size_t textBytePos);
         static size_t prev_grapheme(const std::string& text, size_t textBytePos);
@@ -152,7 +162,7 @@ class TextBox {
             std::string text;
             std::unique_ptr<skia::textlayout::Paragraph> p;
             float heightOffset;
-            skia::textlayout::ParagraphStyle pStyle;
+            ParagraphStyleData pStyleData;
         };
 
         skia::textlayout::TextStyle initialTStyle;

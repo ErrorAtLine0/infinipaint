@@ -274,6 +274,7 @@ TextData TextBox::get_rich_text_data() {
     for(auto& p : paragraphs) {
         toRet.paragraphs.emplace_back();
         toRet.paragraphs.back().text = p.text;
+        toRet.paragraphs.back().pStyleData = p.pStyleData;
     }
     toRet.tStyleMods = tStyleMods;
     return toRet;
@@ -295,6 +296,7 @@ void TextBox::set_rich_text_data(const TextData& richText) {
     for(auto& p : richText.paragraphs) {
         paragraphs.emplace_back();
         paragraphs.back().text = p.text;
+        paragraphs.back().pStyleData = p.pStyleData;
     }
     if(richText.paragraphs.empty())
         paragraphs.emplace_back();
@@ -308,14 +310,10 @@ std::string TextBox::get_string() {
 }
 
 std::string TextBox::get_text_between(TextPosition p1, TextPosition p2) {
-    p1 = move(Movement::NOWHERE, p1);
-    p2 = move(Movement::NOWHERE, p2);
+    auto [start, end] = get_start_end_text_pos(p1, p2);
 
-    if(p1 == p2)
+    if(start == end)
         return "";
-
-    TextPosition start = std::min(p1, p2);
-    TextPosition end = std::max(p1, p2);
 
     std::string toRet;
 
@@ -395,11 +393,8 @@ void TextBox::erase_if_over_all_styles_until_pos(TextPosition pos, const std::fu
 }
 
 void TextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, const std::shared_ptr<TextStyleModifier>& modifier) {
-    p1 = move(Movement::NOWHERE, p1);
-    p2 = move(Movement::NOWHERE, p2);
-    if(p1 != p2) {
-        TextPosition start = std::min(p1, p2);
-        TextPosition end = std::max(p1, p2);
+    auto [start, end] = get_start_end_text_pos(p1, p2);
+    if(start != end) {
         auto lastModOfThisTypeBeforeEnd = get_last_text_style_mod_before_pos(end, modifier->get_type());
         assert(lastModOfThisTypeBeforeEnd != nullptr);
         erase_if_over_all_styles_until_pos(end, [&](TextPosition p, const std::shared_ptr<TextStyleModifier>& modToCheck) {
@@ -411,6 +406,26 @@ void TextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, 
         inputChangedTextBox = true;
         needsRebuild = true;
     }
+}
+
+void TextBox::set_text_alignment_between(size_t paragraphIndex1, size_t paragraphIndex2, skia::textlayout::TextAlign newAlignment) {
+    auto [start, end] = get_start_end_paragraph_pos(paragraphIndex1, paragraphIndex2);
+    for(size_t i = start; i <= end; i++)
+        paragraphs[i].pStyleData.textAlignment = newAlignment;
+    inputChangedTextBox = true;
+    needsRebuild = true;
+}
+
+void TextBox::set_text_direction_between(size_t paragraphIndex1, size_t paragraphIndex2, skia::textlayout::TextDirection newDirection) {
+    auto [start, end] = get_start_end_paragraph_pos(paragraphIndex1, paragraphIndex2);
+    for(size_t i = start; i <= end; i++)
+        paragraphs[i].pStyleData.textDirection = newDirection;
+    inputChangedTextBox = true;
+    needsRebuild = true;
+}
+
+ParagraphStyleData TextBox::get_paragraph_style_data_at(size_t paragraphIndex) {
+    return paragraphs[std::min(paragraphIndex, paragraphs.size() - 1)].pStyleData;
 }
 
 void TextBox::insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier) {
@@ -445,7 +460,7 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
 
     if(movement != Movement::NOWHERE && movement != Movement::HOME && movement != Movement::END) {
         rebuild();
-        if(flipDependingOnTextDirection && paragraphs[pos.fParagraphIndex].pStyle.getTextDirection() == skia::textlayout::TextDirection::kRtl) {
+        if(flipDependingOnTextDirection && paragraphs[pos.fParagraphIndex].pStyleData.textDirection == skia::textlayout::TextDirection::kRtl) {
             if(movement == Movement::LEFT)
                 movement = Movement::RIGHT;
             else if(movement == Movement::RIGHT)
@@ -640,11 +655,10 @@ void TextBox::rebuild() {
 
         for(size_t pIndex = 0; pIndex < paragraphs.size(); pIndex++) {
             ParagraphData& pData = paragraphs[pIndex];
-            pData.pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
-            pData.pStyle.setTextDirection(skia::textlayout::TextDirection::kLtr);
-            pData.pStyle.setTextStyle(tStyle);
+            skia::textlayout::ParagraphStyle pStyle = pData.pStyleData.get_paragraph_style();
+            pStyle.setTextStyle(tStyle);
             size_t tIndex = 0;
-            skia::textlayout::ParagraphBuilderImpl a(pData.pStyle, fontCollection, SkUnicodes::ICU::Make());
+            skia::textlayout::ParagraphBuilderImpl a(pStyle, fontCollection, SkUnicodes::ICU::Make());
 
             for(;;) {
                 if(nextTStyleModIt == tStyleMods.end() || nextTStyleModIt->pos.fParagraphIndex != pIndex) {
@@ -721,6 +735,7 @@ TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, co
                     }
                 }
                 paragraphs.insert(paragraphs.begin() + pos.fParagraphIndex + 1, ParagraphData{});
+                paragraphs[pos.fParagraphIndex + 1].pStyleData = paragraphs[pos.fParagraphIndex].pStyleData;
                 paragraphs[pos.fParagraphIndex + 1].text = paragraphs[pos.fParagraphIndex].text.substr(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
                 paragraphs[pos.fParagraphIndex].text.erase(pos.fTextByteIndex, paragraphs[pos.fParagraphIndex].text.size() - pos.fTextByteIndex);
                 pos.fParagraphIndex++;
@@ -759,11 +774,8 @@ TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, co
 }
 
 TextPosition TextBox::remove(TextPosition p1, TextPosition p2) {
-    p1 = move(Movement::NOWHERE, p1);
-    p2 = move(Movement::NOWHERE, p2);
+    auto [start, end] = get_start_end_text_pos(p1, p2);
 
-    TextPosition start = std::min(p1, p2);
-    TextPosition end = std::max(p1, p2);
     if(start == end || start.fParagraphIndex == paragraphs.size())
         return start;
     if(start.fParagraphIndex == end.fParagraphIndex) {
@@ -817,7 +829,7 @@ SkRect TextBox::get_cursor_rect(TextPosition pos) {
 
     const ParagraphData& pData = paragraphs[pos.fParagraphIndex];
     if(pData.text.empty()) {
-        bool isAlignLeft = (pData.pStyle.getTextAlign() == skia::textlayout::TextAlign::kLeft) || (pData.pStyle.getTextAlign() == skia::textlayout::TextAlign::kJustify && pData.pStyle.getTextDirection() == skia::textlayout::TextDirection::kLtr);
+        bool isAlignLeft = (pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kLeft) || (pData.pStyleData.textAlignment == skia::textlayout::TextAlign::kJustify && pData.pStyleData.textDirection == skia::textlayout::TextDirection::kLtr);
         topPoint = {isAlignLeft ? 0.0f : pData.p->getMaxWidth(), pData.heightOffset};
         height = pData.p->getHeight();
     }
@@ -856,13 +868,9 @@ SkRect TextBox::get_cursor_rect(TextPosition pos) {
 }
 
 void TextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f) {
-    p1 = move(Movement::NOWHERE, p1);
-    p2 = move(Movement::NOWHERE, p2);
+    auto [start, end] = get_start_end_text_pos(p1, p2);
 
     constexpr float SELECTION_RECT_EXTRA_AREA = 1.0f;
-
-    TextPosition start = std::min(p1, p2);
-    TextPosition end = std::max(p1, p2);
 
     for(size_t p = start.fParagraphIndex; p <= end.fParagraphIndex; p++) {
         size_t tStart = p == start.fParagraphIndex ? start.fTextByteIndex : 0;
@@ -882,6 +890,18 @@ void TextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2
             }
         }
     }
+}
+
+std::pair<TextPosition, TextPosition> TextBox::get_start_end_text_pos(TextPosition p1, TextPosition p2) {
+    p1 = move(Movement::NOWHERE, p1);
+    p2 = move(Movement::NOWHERE, p2);
+    return {std::min(p1, p2), std::max(p1, p2)};
+}
+
+std::pair<size_t, size_t> TextBox::get_start_end_paragraph_pos(size_t p1, size_t p2) {
+    p1 = std::min(p1, paragraphs.size() - 1);
+    p2 = std::min(p2, paragraphs.size() - 1);
+    return {std::min(p1, p2), std::max(p1, p2)};
 }
 
 void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {

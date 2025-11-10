@@ -28,9 +28,10 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         bool newIsLinethrough = false;
         bool newIsOverline = false;
         std::string newFontName;
+        ParagraphStyleData currentPStyle;
 
         uint8_t get_new_decoration_value();
-        void set_mods_at_selection(const std::shared_ptr<DrawTextBox>& a);
+        void set_styles_at_selection(const std::shared_ptr<DrawTextBox>& a);
         RichText::TextStyleModifier::ModifierMap currentMods;
 
         std::vector<std::string> sortedFontList;
