@@ -101,8 +101,6 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
     }
 
-
-
     t.gui.pop_id();
 
     if(a->textBox->inputChangedTextBox)

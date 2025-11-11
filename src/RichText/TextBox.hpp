@@ -33,18 +33,22 @@ struct PositionedTextStyleMod {
 
 typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
 
-struct TextData {
-    struct Paragraph {
-        std::string text;
-        ParagraphStyleData pStyleData;
-        template<typename Archive> void serialize(Archive& a) {
-            a(text, pStyleData);
-        }
-    };
-    void save(cereal::PortableBinaryOutputArchive& a) const;
-    void load(cereal::PortableBinaryInputArchive& a);
-    TextStyleModContainer tStyleMods;
-    std::vector<Paragraph> paragraphs;
+class TextData {
+    public:
+        struct Paragraph {
+            std::string text;
+            ParagraphStyleData pStyleData;
+            template<typename Archive> void serialize(Archive& a) {
+                a(text, pStyleData);
+            }
+        };
+        std::string get_html();
+        void save(cereal::PortableBinaryOutputArchive& a) const;
+        void load(cereal::PortableBinaryInputArchive& a);
+        TextStyleModContainer tStyleMods;
+        std::vector<Paragraph> paragraphs;
+    private:
+        std::string get_css_from_textstyle(const skia::textlayout::TextStyle& tStyle);
 };
 
 class TextBox {
@@ -116,6 +120,9 @@ class TextBox {
 
         TextData get_rich_text_data();
         void set_rich_text_data(const TextData& richText);
+
+        TextData get_rich_text_data_between(TextPosition p1, TextPosition p2);
+
         void clear_text();
         void set_string(const std::string& str);
 

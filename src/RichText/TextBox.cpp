@@ -3,6 +3,7 @@
 #include <limits>
 #include <modules/skparagraph/include/DartTypes.h>
 #include <modules/skparagraph/include/Metrics.h>
+#include <modules/skparagraph/include/TextStyle.h>
 #include <modules/skparagraph/src/TextLine.h>
 #include <modules/skunicode/include/SkUnicode.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
@@ -13,6 +14,96 @@
 #include <cereal/types/string.hpp>
 
 namespace RichText {
+
+std::string TextData::get_html() {
+    auto nextTStyleModIt = tStyleMods.begin();
+
+    skia::textlayout::TextStyle tStyle;
+
+    std::stringstream toRet;
+
+    for(size_t pIndex = 0; pIndex < paragraphs.size(); pIndex++) {
+        Paragraph& pData = paragraphs[pIndex];
+        size_t tIndex = 0;
+
+        toRet << "<p>";
+
+        for(;;) {
+            if(nextTStyleModIt == tStyleMods.end() || nextTStyleModIt->pos.fParagraphIndex != pIndex) {
+                if(pData.text.length() != tIndex) {
+                    toRet << "<span style=\"" << get_css_from_textstyle(tStyle) << "\">"
+                          << pData.text.substr(tIndex, pData.text.length() - tIndex)
+                          << "</span>";
+                }
+                break;
+            }
+            else {
+                auto& nextTStyleMod = *nextTStyleModIt;
+
+                // Print with previous style
+                if(nextTStyleMod.pos.fTextByteIndex != tIndex) {
+                    toRet << "<span style=\"" << get_css_from_textstyle(tStyle) << "\">"
+                          << pData.text.substr(tIndex, nextTStyleMod.pos.fTextByteIndex - tIndex)
+                          << "</span>";
+                }
+
+                tIndex = nextTStyleMod.pos.fTextByteIndex;
+
+                // Modify tStyle with new data
+                for(auto& [modType, modifier] : nextTStyleMod.mods)
+                    modifier->modify_text_style(tStyle);
+
+                ++nextTStyleModIt;
+            }
+        }
+
+        toRet << "</p>";
+    }
+
+    return toRet.str();
+}
+
+std::string TextData::get_css_from_textstyle(const skia::textlayout::TextStyle& tStyle) {
+    std::stringstream toRet;
+    toRet << "font: " << tStyle.getFontSize() << "px ";
+    auto& fontFamilies = tStyle.getFontFamilies();
+    for(size_t i = 0; i < fontFamilies.size(); i++) {
+        auto& family = fontFamilies[i];
+        toRet << std::string(family.c_str(), family.size());
+        if(i != fontFamilies.size() - 1)
+            toRet << ",";
+    }
+    SkPaint paint = tStyle.getForeground();
+    toRet << ";"
+          << "color: rgb(" << static_cast<int>(paint.getColor4f().fR * 255.0f) << " " << static_cast<int>(paint.getColor4f().fG * 255.0f) << " " << static_cast<int>(paint.getColor4f().fB * 255.0f) << " / " << paint.getColor4f().fA << ");"
+          << "font-weight:" << tStyle.getFontStyle().weight() << "; "
+          << "font-style:";
+    switch(tStyle.getFontStyle().slant()) {
+        case SkFontStyle::Slant::kUpright_Slant:
+            toRet << "normal";
+            break;
+        case SkFontStyle::Slant::kItalic_Slant:
+            toRet << "italic";
+            break;
+        case SkFontStyle::Slant::kOblique_Slant:
+            toRet << "oblique";
+            break;
+    }
+    toRet << ";"
+          << "text-decoration-line:";
+    if(tStyle.getDecorationType() == skia::textlayout::TextDecoration::kNoDecoration)
+        toRet << " none";
+    else {
+        if(tStyle.getDecorationType() & skia::textlayout::TextDecoration::kOverline)
+            toRet << " overline";
+        if(tStyle.getDecorationType() & skia::textlayout::TextDecoration::kUnderline)
+            toRet << " underline";
+        if(tStyle.getDecorationType() & skia::textlayout::TextDecoration::kLineThrough)
+            toRet << " line-through";
+    }
+    toRet << ";";
+    return toRet.str();
+}
 
 void TextData::save(cereal::PortableBinaryOutputArchive& a) const {
     a(paragraphs);
@@ -277,6 +368,43 @@ TextData TextBox::get_rich_text_data() {
         toRet.paragraphs.back().pStyleData = p.pStyleData;
     }
     toRet.tStyleMods = tStyleMods;
+    return toRet;
+}
+
+TextData TextBox::get_rich_text_data_between(TextPosition p1, TextPosition p2) {
+    auto [start, end] = get_start_end_text_pos(p1, p2);
+
+    TextData toRet;
+
+    if(start == end) {
+        toRet.paragraphs.emplace_back();
+        return toRet;
+    }
+
+    for(size_t pIndex = start.fParagraphIndex; pIndex <= end.fParagraphIndex; pIndex++) {
+        size_t textIndexStart = pIndex == start.fParagraphIndex ? start.fTextByteIndex : 0;
+        size_t textIndexEnd = pIndex == end.fParagraphIndex ? end.fTextByteIndex : paragraphs[pIndex].text.size();
+        toRet.paragraphs.emplace_back();
+        toRet.paragraphs.back().text = paragraphs[pIndex].text.substr(textIndexStart, textIndexEnd - textIndexStart);
+        toRet.paragraphs.back().pStyleData = paragraphs[pIndex].pStyleData;
+    }
+
+    toRet.tStyleMods.emplace_back(TextPosition{0, 0}, get_mods_used_at_pos(p1));
+
+    for(auto& [modPos, modifiers] : tStyleMods) {
+        if(modPos <= p1)
+            continue;
+        else if(modPos > p2)
+            break;
+        TextPosition insertPos;
+        insertPos.fParagraphIndex = modPos.fParagraphIndex - p1.fParagraphIndex;
+        if(modPos.fParagraphIndex == p1.fParagraphIndex)
+            insertPos.fTextByteIndex = modPos.fTextByteIndex - p1.fTextByteIndex;
+        else
+            insertPos.fTextByteIndex = modPos.fTextByteIndex;
+        toRet.tStyleMods.emplace_back(insertPos, modifiers);
+    }
+
     return toRet;
 }
 
