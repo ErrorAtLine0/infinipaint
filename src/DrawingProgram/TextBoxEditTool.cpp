@@ -101,11 +101,6 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
     }
 
-    if(t.gui.text_button_wide("print text", "Print HTML Selection")) {
-        std::cout << "-----HTML-----\n" << a->textBox->get_rich_text_data_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos).get_html() << std::endl;
-    }
-
-
     t.gui.pop_id();
 
     if(a->textBox->inputChangedTextBox)

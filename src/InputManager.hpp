@@ -195,7 +195,15 @@ struct InputManager {
 
     bool get_clipboard_paste_happened();
     std::string get_clipboard_str();
+
+    std::string get_clipboard_data_for_mimetype(const std::string& mimeType);
+
     void set_clipboard_str(std::string_view s);
+    void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, std::string>& plainAndRichtextPair);
+    void set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData);
+    std::string get_infpnt_richtext_mimetype();
+
+    std::unordered_map<std::string, std::string> clipboardData;
 
 #ifdef __EMSCRIPTEN__
     bool clipboardPasteEventHappened = false;

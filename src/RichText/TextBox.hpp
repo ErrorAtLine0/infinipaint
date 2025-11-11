@@ -16,8 +16,14 @@ struct TextPosition {
     // Set to uint32_t values because theyll be saved and sent over networks. Size has to be consistent
     size_t fParagraphIndex = std::numeric_limits<uint32_t>::max();
     size_t fTextByteIndex = std::numeric_limits<uint32_t>::max();
-    template <typename Archive> void serialize(Archive& a) {
-        a((uint32_t)fParagraphIndex, (uint32_t)fTextByteIndex);
+    template <typename Archive> void save(Archive& a) const {
+        a(static_cast<uint32_t>(fParagraphIndex), static_cast<uint32_t>(fTextByteIndex));
+    }
+    template <typename Archive> void load(Archive& a) {
+        uint32_t p, t;
+        a(p, t);
+        fParagraphIndex = p;
+        fTextByteIndex = t;
     }
     bool operator==(const TextPosition& o) const = default;
     bool operator<(const TextPosition& o) const;
@@ -42,14 +48,11 @@ class TextData {
                 a(text, pStyleData);
             }
         };
-        std::string get_html();
+        std::string get_serialized();
         void save(cereal::PortableBinaryOutputArchive& a) const;
         void load(cereal::PortableBinaryInputArchive& a);
         TextStyleModContainer tStyleMods;
         std::vector<Paragraph> paragraphs;
-    private:
-        std::string get_css_from_text_style(const skia::textlayout::TextStyle& tStyle);
-        std::string get_css_from_paragraph_style(const ParagraphStyleData& pStyle);
 };
 
 class TextBox {
@@ -123,18 +126,20 @@ class TextBox {
         void set_rich_text_data(const TextData& richText);
 
         TextData get_rich_text_data_between(TextPosition p1, TextPosition p2);
+        TextPosition insert_rich_text(TextPosition p, const TextData& richText);
 
         void clear_text();
         void set_string(const std::string& str);
 
         void process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift);
         void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
-        std::string process_copy(Cursor& cur);
-        std::string process_cut(Cursor& cur);
+        std::pair<std::string, std::string> process_copy(Cursor& cur);
+        std::pair<std::string, std::string> process_cut(Cursor& cur);
         std::string get_text_between(TextPosition p1, TextPosition p2);
         std::string get_string();
         void set_tab_space_width(unsigned newTabWidth);
         void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
+        void process_rich_text_input(Cursor& cur, const std::string& serializedRichText);
 
     private:
         std::pair<TextPosition, TextPosition> get_start_end_text_pos(TextPosition p1, TextPosition p2);

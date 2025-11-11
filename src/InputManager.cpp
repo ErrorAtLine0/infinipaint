@@ -5,6 +5,8 @@
 
 #include <optional>
 
+#include "Server/CommandList.hpp"
+
 #ifdef __EMSCRIPTEN__
 #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
 
@@ -116,12 +118,54 @@ std::string InputManager::get_clipboard_str() {
 #endif
 }
 
+std::string InputManager::get_clipboard_data_for_mimetype(const std::string& mimeType) {
+    size_t datSize = 0;
+    void* dat = SDL_GetClipboardData(mimeType.c_str(), &datSize);
+    if(!dat)
+        return "";
+    return std::string(static_cast<char*>(dat), datSize);
+}
+
 void InputManager::set_clipboard_str(std::string_view s) {
 #ifdef __EMSCRIPTEN__
     emscripten_browser_clipboard::copy(std::string(s));
 #else
     SDL_SetClipboardText(s.data());
 #endif
+}
+
+std::string InputManager::get_infpnt_richtext_mimetype() {
+    return "infpnt/richtext" + std::string(VERSION_STRING);
+}
+
+void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::string, std::string>& plainAndRichtextPair) {
+    std::unordered_map<std::string, std::string> clipboardData;
+    clipboardData["text/plain"] = plainAndRichtextPair.first;
+    clipboardData[get_infpnt_richtext_mimetype()] = plainAndRichtextPair.second;
+    set_clipboard_data(clipboardData);
+}
+
+void InputManager::set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData) {
+    SDL_ClearClipboardData();
+    clipboardData = newClipboardData;
+
+    std::vector<const char*> mimeTypes;
+    for(auto& [k, v] : clipboardData)
+        mimeTypes.emplace_back(k.c_str());
+
+    SDL_SetClipboardData(
+    [](void *userdata, const char *mime_type, size_t *size) {
+        std::unordered_map<std::string, std::string>& clipboardData = *static_cast<std::unordered_map<std::string, std::string>*>(userdata);
+        std::string mimeTypeStr(mime_type);
+        auto it = clipboardData.find(mimeTypeStr);
+        if(it == clipboardData.end())
+            return static_cast<const void*>(nullptr);
+        *size = it->second.length();
+        return static_cast<const void*>(it->second.c_str());
+    },
+    [](void *userdata) {
+    },
+    static_cast<void*>(&clipboardData), mimeTypes.data(), mimeTypes.size());
 }
 
 std::string InputManager::key_assignment_to_str(const Vector2ui32& k) {
@@ -276,19 +320,24 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_COPY);
             if(text.textBox && key(KEY_TEXT_COPY).repeat)
-                set_clipboard_str(text.textBox->process_copy(*text.cursor));
+                set_clipboard_plain_and_richtext_pair(text.textBox->process_copy(*text.cursor));
             break;
         case SDLK_X:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_CUT);
             if(text.textBox && key(KEY_TEXT_CUT).repeat)
-                set_clipboard_str(text.textBox->process_cut(*text.cursor));
+                set_clipboard_plain_and_richtext_pair(text.textBox->process_cut(*text.cursor));
             break;
         case SDLK_V:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_PASTE);
-            if(text.textBox && key(KEY_TEXT_PASTE).repeat)
-                text.textBox->process_text_input(*text.cursor, get_clipboard_str(), text.modMap);
+            if(text.textBox && key(KEY_TEXT_PASTE).repeat) {
+                std::string richTextClipboard = get_clipboard_data_for_mimetype(get_infpnt_richtext_mimetype());
+                if(!richTextClipboard.empty())
+                    text.textBox->process_rich_text_input(*text.cursor, richTextClipboard);
+                else
+                    text.textBox->process_text_input(*text.cursor, get_clipboard_data_for_mimetype("text/plain"), text.modMap);
+            }
             break;
         case SDLK_A:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
