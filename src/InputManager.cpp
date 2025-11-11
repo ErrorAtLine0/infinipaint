@@ -62,8 +62,14 @@ InputManager::InputManager() {
     emscripten_browser_clipboard::paste([](std::string&& pasteData, void* callbackData){
         InputManager* inMan = (InputManager*)callbackData;
         inMan->clipboardPasteEventHappened = true;
-        inMan->clipboardPasteEventData = pasteData;
-    }, this);
+        inMan->clipboardPasteEventData["text/plain"] = pasteData;
+    }, "text/plain", this);
+
+    emscripten_browser_clipboard::paste([](std::string&& pasteData, void* callbackData){
+        InputManager* inMan = (InputManager*)callbackData;
+        inMan->clipboardPasteEventHappened = true;
+        inMan->clipboardPasteEventData[inMan->get_infpnt_richtext_mimetype()] = pasteData;
+    }, get_infpnt_richtext_mimetype().c_str(), this);
 #endif
 
     keyAssignments = defaultKeyAssignments;
@@ -109,7 +115,10 @@ bool InputManager::get_clipboard_paste_happened() {
 
 std::string InputManager::get_clipboard_str() {
 #ifdef __EMSCRIPTEN__
-    return clipboardPasteEventData;
+    auto it = clipboardPasteEventData.find("text/plain");
+    if(it == clipboardPasteEventData.end())
+        return "";
+    return it->second;
 #else
     char* data = SDL_GetClipboardText();
     std::string toRet(data);
@@ -119,11 +128,18 @@ std::string InputManager::get_clipboard_str() {
 }
 
 std::string InputManager::get_clipboard_data_for_mimetype(const std::string& mimeType) {
+#ifdef __EMSCRIPTEN__
+    auto it = clipboardPasteEventData.find(mimeType);
+    if(it == clipboardPasteEventData.end())
+        return "";
+    return it->second;
+#else
     size_t datSize = 0;
     void* dat = SDL_GetClipboardData(mimeType.c_str(), &datSize);
     if(!dat)
         return "";
     return std::string(static_cast<char*>(dat), datSize);
+#endif
 }
 
 void InputManager::set_clipboard_str(std::string_view s) {

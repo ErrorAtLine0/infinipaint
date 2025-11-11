@@ -207,7 +207,7 @@ struct InputManager {
 
 #ifdef __EMSCRIPTEN__
     bool clipboardPasteEventHappened = false;
-    std::string clipboardPasteEventData;
+    std::unordered_map<std::string, std::string> clipboardPasteEventData;
 #endif
 
     std::string key_assignment_to_str(const Vector2ui32& k);

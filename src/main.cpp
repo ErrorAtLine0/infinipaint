@@ -393,6 +393,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     udata_setCommonData((void *) icudt.data(), &uerr);
     if (U_FAILURE(uerr)) {
         char* errorName = const_cast<char*>(u_errorName(uerr));
+        std::cout << "Failed to load icudt77l.dat" << std::endl;
         std::cout << errorName << std::endl;
     }
 
