@@ -19,7 +19,7 @@ struct InputManager {
     InputManager();
 
     void frame_reset(const Vector2i& windowSize);
-    
+
     // Just renamed SDL3 cursor types, but if we need to change to a different backend we can
     // translate this enum to different commands in main.cpp
     enum class SystemCursorType : unsigned {
@@ -201,7 +201,9 @@ struct InputManager {
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, std::string>& plainAndRichtextPair);
     void set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData);
-    std::string get_infpnt_richtext_mimetype();
+    void process_text_paste();
+
+    static std::string get_infpnt_richtext_mimetype();
 
     std::unordered_map<std::string, std::string> clipboardData;
 

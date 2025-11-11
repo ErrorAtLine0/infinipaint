@@ -28,16 +28,16 @@ inline void copy(std::string const &content);
 
 namespace detail {
 
-EM_JS_INLINE(void, paste_js, (paste_handler callback, const char* mimeType, void *callback_data), {
+EM_JS_INLINE(void, paste_js, (paste_handler callback, void *callback_data), {
   /// Register the given callback to handle paste events. Callback data pointer is passed through to the callback.
   /// Paste handler callback signature is:
   ///   void my_handler(std::string const &paste_data, void *callback_data = nullptr);
   document.addEventListener('paste', (event) => {
-    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData(mimeType), callback, callback_data]);
+    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData('text/plain'), callback, callback_data]);
   });
 });
 
-EM_JS_INLINE(void, copy_js, (copy_handler callback, const char* mimeType, void *callback_data), {
+EM_JS_INLINE(void, copy_js, (copy_handler callback, void *callback_data), {
   /// Register the given callback to handle copy events. Callback data pointer is passed through to the callback.
   /// Copy handler callback signature is:
   ///   char const *my_handler(void *callback_data = nullptr);
@@ -55,14 +55,14 @@ EM_JS_INLINE(void, copy_async_js, (char const *content_ptr), {
 
 } // namespace detail
 
-inline void paste(paste_handler callback, const char* mimeType, void *callback_data) {
+inline void paste(paste_handler callback, void *callback_data) {
   /// C++ wrapper for javascript paste call
-  detail::paste_js(callback, mimeType, callback_data);
+  detail::paste_js(callback, callback_data);
 }
 
-inline void copy(copy_handler callback, const char* mimeType, void *callback_data) {
+inline void copy(copy_handler callback, void *callback_data) {
   /// C++ wrapper for javascript copy call
-  detail::copy_js(callback, mimeType, callback_data);
+  detail::copy_js(callback, callback_data);
 }
 
 inline void copy(std::string const &content) {

@@ -376,6 +376,12 @@ TextPosition TextBox::insert_rich_text(TextPosition p, const TextData& richText)
             set_text_style_modifier_between(shiftedModPos, lastPos, modifier);
     }
 
+    for(size_t pIndex = p.fParagraphIndex; pIndex <= lastPos.fParagraphIndex; pIndex++) {
+        // If the first line was empty before pasting (it's not empty right now, which is why the comparison is required), we will apply the paragraph style to the first line as well
+        if((pIndex == p.fParagraphIndex && paragraphs[pIndex].text.size() == richText.paragraphs[0].text.size()) || pIndex != p.fParagraphIndex)
+            paragraphs[pIndex].pStyleData = richText.paragraphs[pIndex - p.fParagraphIndex].pStyleData;
+    }
+
     inputChangedTextBox = true;
     needsRebuild = true;
 

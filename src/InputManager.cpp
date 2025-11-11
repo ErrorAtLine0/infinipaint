@@ -47,6 +47,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_F2}] = KEY_SHOW_PLAYER_LIST;
     defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
 
+
 #ifdef __EMSCRIPTEN__
     // Without this, SDL eats the CTRL-V event that initiates the paste event
     // https://github.com/pthom/hello_imgui/issues/3#issuecomment-1564536870
@@ -63,13 +64,8 @@ InputManager::InputManager() {
         InputManager* inMan = (InputManager*)callbackData;
         inMan->clipboardPasteEventHappened = true;
         inMan->clipboardPasteEventData["text/plain"] = pasteData;
-    }, "text/plain", this);
-
-    emscripten_browser_clipboard::paste([](std::string&& pasteData, void* callbackData){
-        InputManager* inMan = (InputManager*)callbackData;
-        inMan->clipboardPasteEventHappened = true;
-        inMan->clipboardPasteEventData[inMan->get_infpnt_richtext_mimetype()] = pasteData;
-    }, get_infpnt_richtext_mimetype().c_str(), this);
+        inMan->process_text_paste();
+    }, this);
 #endif
 
     keyAssignments = defaultKeyAssignments;
@@ -151,14 +147,18 @@ void InputManager::set_clipboard_str(std::string_view s) {
 }
 
 std::string InputManager::get_infpnt_richtext_mimetype() {
-    return "infpnt/richtext" + std::string(VERSION_STRING);
+    return "web text/infpnt";
 }
 
 void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::string, std::string>& plainAndRichtextPair) {
+#ifdef __EMSCRIPTEN__
+    set_clipboard_str(plainAndRichtextPair.first);
+#else
     std::unordered_map<std::string, std::string> clipboardData;
     clipboardData["text/plain"] = plainAndRichtextPair.first;
     clipboardData[get_infpnt_richtext_mimetype()] = plainAndRichtextPair.second;
     set_clipboard_data(clipboardData);
+#endif
 }
 
 void InputManager::set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData) {
@@ -347,13 +347,8 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         case SDLK_V:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_PASTE);
-            if(text.textBox && key(KEY_TEXT_PASTE).repeat) {
-                std::string richTextClipboard = get_clipboard_data_for_mimetype(get_infpnt_richtext_mimetype());
-                if(!richTextClipboard.empty())
-                    text.textBox->process_rich_text_input(*text.cursor, richTextClipboard);
-                else
-                    text.textBox->process_text_input(*text.cursor, get_clipboard_data_for_mimetype("text/plain"), text.modMap);
-            }
+            if(text.textBox && key(KEY_TEXT_PASTE).repeat)
+                process_text_paste();
             break;
         case SDLK_A:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
@@ -386,6 +381,16 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
     auto f = keyAssignments.find({make_generic_key_mod(kMod), kPress});
     if(f != keyAssignments.end())
         set_key_down(e, f->second);
+}
+
+void InputManager::process_text_paste() {
+    if(text.textBox) {
+        std::string richTextClipboard = get_clipboard_data_for_mimetype(get_infpnt_richtext_mimetype());
+        if(!richTextClipboard.empty())
+            text.textBox->process_rich_text_input(*text.cursor, richTextClipboard);
+        else
+            text.textBox->process_text_input(*text.cursor, get_clipboard_data_for_mimetype("text/plain"), text.modMap);
+    }
 }
 
 bool InputManager::ctrl_or_meta_held() {
