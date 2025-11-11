@@ -26,12 +26,12 @@ std::string TextData::get_html() {
         Paragraph& pData = paragraphs[pIndex];
         size_t tIndex = 0;
 
-        toRet << "<p>";
+        toRet << "<p style=\"" << get_css_from_paragraph_style(pData.pStyleData) << "\">";
 
         for(;;) {
             if(nextTStyleModIt == tStyleMods.end() || nextTStyleModIt->pos.fParagraphIndex != pIndex) {
                 if(pData.text.length() != tIndex) {
-                    toRet << "<span style=\"" << get_css_from_textstyle(tStyle) << "\">"
+                    toRet << "<span style=\"" << get_css_from_text_style(tStyle) << "\">"
                           << pData.text.substr(tIndex, pData.text.length() - tIndex)
                           << "</span>";
                 }
@@ -42,7 +42,7 @@ std::string TextData::get_html() {
 
                 // Print with previous style
                 if(nextTStyleMod.pos.fTextByteIndex != tIndex) {
-                    toRet << "<span style=\"" << get_css_from_textstyle(tStyle) << "\">"
+                    toRet << "<span style=\"" << get_css_from_text_style(tStyle) << "\">"
                           << pData.text.substr(tIndex, nextTStyleMod.pos.fTextByteIndex - tIndex)
                           << "</span>";
                 }
@@ -63,9 +63,43 @@ std::string TextData::get_html() {
     return toRet.str();
 }
 
-std::string TextData::get_css_from_textstyle(const skia::textlayout::TextStyle& tStyle) {
+std::string TextData::get_css_from_paragraph_style(const ParagraphStyleData& pStyle) {
     std::stringstream toRet;
-    toRet << "font: " << tStyle.getFontSize() << "px ";
+    toRet << "text-align:";
+    switch(pStyle.textAlignment) {
+        case skia::textlayout::TextAlign::kLeft:
+            toRet << "left";
+            break;
+        case skia::textlayout::TextAlign::kRight:
+            toRet << "right";
+            break;
+        case skia::textlayout::TextAlign::kCenter:
+            toRet << "center";
+            break;
+        case skia::textlayout::TextAlign::kJustify:
+            toRet << "justify";
+            break;
+        default:
+            toRet << "left";
+            break;
+    }
+    toRet << ";"
+          << "direction:";
+    switch(pStyle.textDirection) {
+        case skia::textlayout::TextDirection::kLtr:
+            toRet << "ltr";
+            break;
+        case skia::textlayout::TextDirection::kRtl:
+            toRet << "rtl";
+            break;
+    }
+    toRet << ";";
+    return toRet.str();
+}
+
+std::string TextData::get_css_from_text_style(const skia::textlayout::TextStyle& tStyle) {
+    std::stringstream toRet;
+    toRet << "font: " << static_cast<int>(tStyle.getFontSize()) << "px ";
     auto& fontFamilies = tStyle.getFontFamilies();
     for(size_t i = 0; i < fontFamilies.size(); i++) {
         auto& family = fontFamilies[i];
@@ -75,7 +109,7 @@ std::string TextData::get_css_from_textstyle(const skia::textlayout::TextStyle& 
     }
     SkPaint paint = tStyle.getForeground();
     toRet << ";"
-          << "color: rgb(" << static_cast<int>(paint.getColor4f().fR * 255.0f) << " " << static_cast<int>(paint.getColor4f().fG * 255.0f) << " " << static_cast<int>(paint.getColor4f().fB * 255.0f) << " / " << paint.getColor4f().fA << ");"
+          << "color: rgb(" << std::fixed << std::setprecision(7) << paint.getColor4f().fR * 255.0f << " " << paint.getColor4f().fG * 255.0f << " " << paint.getColor4f().fB * 255.0f << " / " << paint.getColor4f().fA << ");" << std::defaultfloat
           << "font-weight:" << tStyle.getFontStyle().weight() << "; "
           << "font-style:";
     switch(tStyle.getFontStyle().slant()) {

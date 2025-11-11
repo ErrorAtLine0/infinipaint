@@ -48,7 +48,8 @@ class TextData {
         TextStyleModContainer tStyleMods;
         std::vector<Paragraph> paragraphs;
     private:
-        std::string get_css_from_textstyle(const skia::textlayout::TextStyle& tStyle);
+        std::string get_css_from_text_style(const skia::textlayout::TextStyle& tStyle);
+        std::string get_css_from_paragraph_style(const ParagraphStyleData& pStyle);
 };
 
 class TextBox {
