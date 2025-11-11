@@ -10,7 +10,8 @@ using namespace Eigen;
 
 struct FontData {
     FontData();
-    sk_sp<SkFontMgr> mgr;
+    sk_sp<SkFontMgr> defaultFontMgr;
+    sk_sp<SkFontMgr> localFontMgr;
     sk_sp<skia::textlayout::FontCollection> collection;
     std::unordered_map<std::string, sk_sp<SkTypeface>> map;
     ~FontData();

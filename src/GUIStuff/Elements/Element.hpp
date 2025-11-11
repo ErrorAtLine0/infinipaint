@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <include/core/SkFont.h>
 #include <include/core/SkFontMgr.h>
+#include <include/core/SkTypeface.h>
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/svg/include/SkSVGDOM.h>
 #include <Helpers/SCollision.hpp>
@@ -108,7 +109,6 @@ struct UpdateInputData {
     SkFont get_font(float fSize) const;
 
     uint16_t fontSize = 16;
-    sk_sp<SkTypeface> textTypeface;
 
     sk_sp<skia::textlayout::FontCollection> fontCollection;
 
@@ -116,7 +116,11 @@ struct UpdateInputData {
     bool hoverObstructed = false;
     bool acceptingTextInput = false;
     float deltaTime = 0.0f;
-    sk_sp<SkFontMgr> textFontMgr;
+
+    sk_sp<SkFontMgr> textFontMgrLocal;
+    sk_sp<SkFontMgr> textFontMgrFallback;
+    sk_sp<SkTypeface> textTypeface;
+
     DefaultStringArena* strArena;
     std::shared_ptr<Theme> theme;
     std::unordered_map<std::string, sk_sp<SkSVGDOM>> svgData;

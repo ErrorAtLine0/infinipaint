@@ -1,5 +1,5 @@
 #include "FontData.hpp"
-//#include <include/ports/SkFontMgr_directory.h>
+#include <include/ports/SkFontMgr_directory.h>
 #include <include/ports/SkFontMgr_empty.h>
 #include <include/core/SkFontMetrics.h>
 #include <include/core/SkTextBlob.h>
@@ -18,19 +18,24 @@
 FontData::FontData()
 {
 #ifdef __EMSCRIPTEN__
-    mgr = SkFontMgr_New_Custom_Empty();
+    localFontMgr = SkFontMgr_New_Custom_Empty();
 #elif _WIN32
-    mgr = SkFontMgr_New_GDI();
+    localFontMgr = SkFontMgr_New_GDI();
 #elif __APPLE__
-    mgr = SkFontMgr_New_Custom_Empty();
+    localFontMgr = SkFontMgr_New_Custom_Empty();
 #elif __linux__
-    mgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
+    localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
 #else
-    mgr = SkFontMgr_New_Custom_Empty();
+    localFontMgr = SkFontMgr_New_Custom_Empty();
 #endif
-    map["Roboto"] = mgr->makeFromFile("data/fonts/Roboto-variable.ttf");
+
+    defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
+
+    map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf");
+
     collection = sk_make_sp<skia::textlayout::FontCollection>();
-    collection->setDefaultFontManager(mgr, {SkString{"Roboto"}});
+    collection->setDefaultFontManager(defaultFontMgr, {SkString{"Roboto"}});
+    collection->setDynamicFontManager(localFontMgr);
 }
 
 FontData::~FontData() {

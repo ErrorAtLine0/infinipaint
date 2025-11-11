@@ -39,7 +39,8 @@ Toolbar::Toolbar(MainProgram& initMain):
     main(initMain)
 {
     io->textTypeface = main.fonts.map["Roboto"];
-    io->textFontMgr = main.fonts.mgr;
+    io->textFontMgrLocal = main.fonts.localFontMgr;
+    io->textFontMgrFallback = main.fonts.defaultFontMgr;
     io->fontCollection = main.fonts.collection;
     
     load_default_palette();

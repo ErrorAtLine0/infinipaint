@@ -290,7 +290,7 @@ class ConanSkia(ConanFile):
             self.options.enable_fontmgr_android = enabled
 
         if self.options.enable_fontmgr_custom_directory == None:
-            enabled = self.options.use_freetype and arch != "wasm"
+            enabled = self.options.use_freetype
             self.options.enable_fontmgr_custom_directory = enabled
 
         if self.options.enable_fontmgr_custom_embedded == None:

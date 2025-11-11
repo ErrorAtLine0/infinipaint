@@ -10,9 +10,21 @@
 bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GUIManager* gui) {
     if(sortedFontList.empty()) {
         auto icu = SkUnicodes::ICU::Make();
-        for(int i = 0; i < io.textFontMgr->countFamilies(); i++) {
+        for(int i = 0; i < io.textFontMgrLocal->countFamilies(); i++) {
             SkString familyNameSkString;
-            io.textFontMgr->getFamilyName(i, &familyNameSkString);
+            io.textFontMgrLocal->getFamilyName(i, &familyNameSkString);
+            if(familyNameSkString.isEmpty())
+                continue;
+            std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
+            sortedFontList.emplace_back(familyName);
+            std::transform(familyName.begin(), familyName.end(), familyName.begin(), ::tolower);
+            sortedFontListLowercase.emplace_back(familyName);
+        }
+        for(int i = 0; i < io.textFontMgrFallback->countFamilies(); i++) {
+            SkString familyNameSkString;
+            io.textFontMgrFallback->getFamilyName(i, &familyNameSkString);
+            if(familyNameSkString.isEmpty())
+                continue;
             std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
             sortedFontList.emplace_back(familyName);
             std::transform(familyName.begin(), familyName.end(), familyName.begin(), ::tolower);
