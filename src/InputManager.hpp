@@ -203,15 +203,14 @@ struct InputManager {
     void set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData);
     void process_text_paste();
 
-    static std::string get_infpnt_richtext_mimetype();
-
     std::unordered_map<std::string, std::string> clipboardData;
 
 #ifdef __EMSCRIPTEN__
     bool clipboardPasteEventHappened = false;
     std::unordered_map<std::string, std::string> clipboardPasteEventData;
-    std::optional<RichText::TextData> lastCopiedRichText;
 #endif
+
+    std::optional<RichText::TextData> lastCopiedRichText;
 
     std::string key_assignment_to_str(const Vector2ui32& k);
     Vector2ui32 key_assignment_from_str(const std::string& s);

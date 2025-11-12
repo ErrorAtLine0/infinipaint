@@ -33,7 +33,7 @@ EM_JS_INLINE(void, paste_js, (paste_handler callback, void *callback_data), {
   /// Paste handler callback signature is:
   ///   void my_handler(std::string const &paste_data, void *callback_data = nullptr);
   document.addEventListener('paste', (event) => {
-    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData('text/plain'), callback, callback_data]);
+    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData('text/plain;charset=UTF-8'), callback, callback_data]);
   });
 });
 

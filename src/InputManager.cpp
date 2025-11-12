@@ -147,20 +147,9 @@ void InputManager::set_clipboard_str(std::string_view s) {
 #endif
 }
 
-std::string InputManager::get_infpnt_richtext_mimetype() {
-    return "web text/infpnt";
-}
-
 void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair) {
-#ifdef __EMSCRIPTEN__
     set_clipboard_str(plainAndRichtextPair.first);
     lastCopiedRichText = plainAndRichtextPair.second;
-#else
-    std::unordered_map<std::string, std::string> clipboardData;
-    clipboardData["text/plain"] = plainAndRichtextPair.first;
-    clipboardData[get_infpnt_richtext_mimetype()] = plainAndRichtextPair.second.get_serialized();
-    set_clipboard_data(clipboardData);
-#endif
 }
 
 void InputManager::set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData) {
@@ -176,6 +165,7 @@ void InputManager::set_clipboard_data(const std::unordered_map<std::string, std:
         std::unordered_map<std::string, std::string>& clipboardData = *static_cast<std::unordered_map<std::string, std::string>*>(userdata);
         std::string mimeTypeStr(mime_type);
         auto it = clipboardData.find(mimeTypeStr);
+        std::cout << "requesting: " << mime_type << std::endl;
         if(it == clipboardData.end())
             return static_cast<const void*>(nullptr);
         *size = it->second.length();
@@ -387,24 +377,16 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
 void InputManager::process_text_paste() {
     if(text.textBox) {
-        #ifdef __EMSCRIPTEN__
-            // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
-            std::string plainClipboardStr = get_clipboard_str();
-            if(lastCopiedRichText.has_value()) {
-                if(lastCopiedRichText.value().get_plain_text() == plainClipboardStr)
-                    text.textBox->process_rich_text_input(*text.cursor, lastCopiedRichText.value());
-                else
-                    text.textBox->process_text_input(*text.cursor, plainClipboardStr, text.modMap);
-            }
+        // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
+        std::string plainClipboardStr = get_clipboard_str();
+        if(lastCopiedRichText.has_value()) {
+            if(lastCopiedRichText.value().get_plain_text() == plainClipboardStr)
+                text.textBox->process_rich_text_input(*text.cursor, lastCopiedRichText.value());
             else
                 text.textBox->process_text_input(*text.cursor, plainClipboardStr, text.modMap);
-        #else
-            std::string richTextClipboard = get_clipboard_data_for_mimetype(get_infpnt_richtext_mimetype());
-            if(!richTextClipboard.empty())
-                text.textBox->process_rich_text_input(*text.cursor, RichText::TextData::deserialize_string(richTextClipboard));
-            else
-                text.textBox->process_text_input(*text.cursor, get_clipboard_data_for_mimetype("text/plain"), text.modMap);
-        #endif
+        }
+        else
+            text.textBox->process_text_input(*text.cursor, plainClipboardStr, text.modMap);
     }
 }
 
