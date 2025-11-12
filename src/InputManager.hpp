@@ -199,7 +199,7 @@ struct InputManager {
     std::string get_clipboard_data_for_mimetype(const std::string& mimeType);
 
     void set_clipboard_str(std::string_view s);
-    void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, std::string>& plainAndRichtextPair);
+    void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
     void set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData);
     void process_text_paste();
 
@@ -210,6 +210,7 @@ struct InputManager {
 #ifdef __EMSCRIPTEN__
     bool clipboardPasteEventHappened = false;
     std::unordered_map<std::string, std::string> clipboardPasteEventData;
+    std::optional<RichText::TextData> lastCopiedRichText;
 #endif
 
     std::string key_assignment_to_str(const Vector2ui32& k);

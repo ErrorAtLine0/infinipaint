@@ -48,7 +48,9 @@ class TextData {
                 a(text, pStyleData);
             }
         };
-        std::string get_serialized();
+        std::string get_serialized() const;
+        static TextData deserialize_string(std::string& s);
+        std::string get_plain_text() const;
         void save(cereal::PortableBinaryOutputArchive& a) const;
         void load(cereal::PortableBinaryInputArchive& a);
         TextStyleModContainer tStyleMods;
@@ -133,13 +135,13 @@ class TextBox {
 
         void process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift);
         void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
-        std::pair<std::string, std::string> process_copy(Cursor& cur);
-        std::pair<std::string, std::string> process_cut(Cursor& cur);
+        std::pair<std::string, TextData> process_copy(Cursor& cur);
+        std::pair<std::string, TextData> process_cut(Cursor& cur);
         std::string get_text_between(TextPosition p1, TextPosition p2);
         std::string get_string();
         void set_tab_space_width(unsigned newTabWidth);
         void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
-        void process_rich_text_input(Cursor& cur, const std::string& serializedRichText);
+        void process_rich_text_input(Cursor& cur, const TextData& richText);
 
     private:
         std::pair<TextPosition, TextPosition> get_start_end_text_pos(TextPosition p1, TextPosition p2);

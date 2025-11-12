@@ -1,4 +1,5 @@
 #include "TextBox.hpp"
+#include "Helpers/Networking/ByteStream.hpp"
 #include "TextStyleModifier.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <limits>
@@ -16,7 +17,7 @@
 
 namespace RichText {
 
-std::string TextData::get_serialized() {
+std::string TextData::get_serialized() const {
     std::stringstream s;
     {
         cereal::PortableBinaryOutputArchive a(s);
@@ -52,6 +53,33 @@ void TextData::load(cereal::PortableBinaryInputArchive& a) {
             modsInPos.mods[modType] = modifier;
         }
     }
+}
+
+TextData TextData::deserialize_string(std::string& s) {
+    if(s.empty()) {
+        RichText::TextData textData;
+        textData.paragraphs.emplace_back();
+        return textData;
+    }
+    RichText::TextData textData;
+    ByteMemStream ss(s.data(), s.length());
+    {
+        cereal::PortableBinaryInputArchive a(ss);
+        a(textData);
+    }
+    return textData;
+}
+
+std::string TextData::get_plain_text() const {
+    if(paragraphs.empty())
+        return "";
+    std::string toRet;
+    for(auto& p : paragraphs) {
+        toRet += p.text;
+        toRet += '\n';
+    }
+    toRet.pop_back();
+    return toRet;
 }
 
 bool TextPosition::operator<(const TextPosition& o) const {
@@ -151,11 +179,11 @@ void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool c
     }
 }
 
-std::pair<std::string, std::string> TextBox::process_copy(Cursor& cur) {
-    return {get_text_between(cur.selectionBeginPos, cur.selectionEndPos), get_rich_text_data_between(cur.selectionBeginPos, cur.selectionEndPos).get_serialized()};
+std::pair<std::string, TextData> TextBox::process_copy(Cursor& cur) {
+    return {get_text_between(cur.selectionBeginPos, cur.selectionEndPos), get_rich_text_data_between(cur.selectionBeginPos, cur.selectionEndPos)};
 }
 
-std::pair<std::string, std::string> TextBox::process_cut(Cursor& cur) {
+std::pair<std::string, TextData> TextBox::process_cut(Cursor& cur) {
     auto toRet = process_copy(cur);
     if(cur.selectionBeginPos != cur.selectionEndPos) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
@@ -175,17 +203,11 @@ void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::
     }
 }
 
-void TextBox::process_rich_text_input(Cursor& cur, const std::string& serializedRichText) {
-    if(!serializedRichText.empty()) {
+void TextBox::process_rich_text_input(Cursor& cur, const TextData& richText) {
+    if(!richText.paragraphs.empty() && !(richText.paragraphs.size() == 1 && richText.paragraphs[0].text.empty())) {
         if(cur.selectionBeginPos != cur.selectionEndPos)
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
-        RichText::TextData textData;
-        std::stringstream ss(serializedRichText);
-        {
-            cereal::PortableBinaryInputArchive a(ss);
-            a(textData);
-        }
-        cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert_rich_text(cur.pos, textData);
+        cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert_rich_text(cur.pos, richText);
         cur.previousX = std::nullopt;
         inputChangedTextBox = true;
     }

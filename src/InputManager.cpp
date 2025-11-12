@@ -141,6 +141,7 @@ std::string InputManager::get_clipboard_data_for_mimetype(const std::string& mim
 void InputManager::set_clipboard_str(std::string_view s) {
 #ifdef __EMSCRIPTEN__
     emscripten_browser_clipboard::copy(std::string(s));
+    lastCopiedRichText = std::nullopt;
 #else
     SDL_SetClipboardText(s.data());
 #endif
@@ -150,13 +151,14 @@ std::string InputManager::get_infpnt_richtext_mimetype() {
     return "web text/infpnt";
 }
 
-void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::string, std::string>& plainAndRichtextPair) {
+void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair) {
 #ifdef __EMSCRIPTEN__
     set_clipboard_str(plainAndRichtextPair.first);
+    lastCopiedRichText = plainAndRichtextPair.second;
 #else
     std::unordered_map<std::string, std::string> clipboardData;
     clipboardData["text/plain"] = plainAndRichtextPair.first;
-    clipboardData[get_infpnt_richtext_mimetype()] = plainAndRichtextPair.second;
+    clipboardData[get_infpnt_richtext_mimetype()] = plainAndRichtextPair.second.get_serialized();
     set_clipboard_data(clipboardData);
 #endif
 }
@@ -385,11 +387,24 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
 void InputManager::process_text_paste() {
     if(text.textBox) {
-        std::string richTextClipboard = get_clipboard_data_for_mimetype(get_infpnt_richtext_mimetype());
-        if(!richTextClipboard.empty())
-            text.textBox->process_rich_text_input(*text.cursor, richTextClipboard);
-        else
-            text.textBox->process_text_input(*text.cursor, get_clipboard_data_for_mimetype("text/plain"), text.modMap);
+        #ifdef __EMSCRIPTEN__
+            // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
+            std::string plainClipboardStr = get_clipboard_str();
+            if(lastCopiedRichText.has_value()) {
+                if(lastCopiedRichText.value().get_plain_text() == plainClipboardStr)
+                    text.textBox->process_rich_text_input(*text.cursor, lastCopiedRichText.value());
+                else
+                    text.textBox->process_text_input(*text.cursor, plainClipboardStr, text.modMap);
+            }
+            else
+                text.textBox->process_text_input(*text.cursor, plainClipboardStr, text.modMap);
+        #else
+            std::string richTextClipboard = get_clipboard_data_for_mimetype(get_infpnt_richtext_mimetype());
+            if(!richTextClipboard.empty())
+                text.textBox->process_rich_text_input(*text.cursor, RichText::TextData::deserialize_string(richTextClipboard));
+            else
+                text.textBox->process_text_input(*text.cursor, get_clipboard_data_for_mimetype("text/plain"), text.modMap);
+        #endif
     }
 }
 
