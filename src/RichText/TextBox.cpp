@@ -98,6 +98,14 @@ bool TextPosition::operator<=(const TextPosition& o) const {
     return (*this < o) || (*this == o);
 }
 
+bool TextBox::Cursor::operator==(const Cursor& o) const {
+    return o.selectionBeginPos == selectionBeginPos && o.selectionEndPos == selectionEndPos && o.pos == pos;
+}
+
+bool TextBox::Cursor::operator!=(const Cursor& o) const {
+    return !(*this == o);
+}
+
 TextBox::TextBox() {
     paragraphs.emplace_back();
 }

@@ -92,10 +92,10 @@ struct InputManager {
         void set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
         void add_text_to_textbox(const std::string& inputText);
 
-        private:
-            void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
-            void do_textbox_operation_with_undo(const std::function<void()>& func);
+        void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
+        void do_textbox_operation_with_undo(const std::function<void()>& func);
 
+        private:
             std::shared_ptr<RichText::TextBox> textBox;
             std::shared_ptr<RichText::TextBox::Cursor> cursor;
             std::optional<RichText::TextStyleModifier::ModifierMap> modMap;

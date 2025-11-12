@@ -83,8 +83,8 @@ class TextBox {
                 a(pos, selectionBeginPos, selectionEndPos);
             }
             std::optional<float> previousX;
-            bool operator==(const Cursor& o) const = default;
-            bool operator!=(const Cursor& o) const = default;
+            bool operator==(const Cursor& o) const;
+            bool operator!=(const Cursor& o) const;
         };
 
         struct PaintOpts {

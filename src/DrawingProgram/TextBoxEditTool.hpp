@@ -32,6 +32,14 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         uint8_t get_new_decoration_value();
         void set_styles_at_selection(const std::shared_ptr<DrawTextBox>& a);
+        void add_undo_if_selecting_area(const std::shared_ptr<DrawTextBox>& a, const std::function<void()>& func);
+        void add_undo(const std::function<void()>& func);
+
+        void hold_undo_data(const std::string& undoName, const std::shared_ptr<DrawTextBox>& a);
+        void release_undo_data(const std::string& undoName);
+
+        std::unordered_map<std::string, std::pair<RichText::TextBox::Cursor, RichText::TextData>> undoHeldData;
+
         RichText::TextStyleModifier::ModifierMap currentMods;
 
         std::vector<std::string> sortedFontList;

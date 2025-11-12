@@ -21,7 +21,6 @@ TextBoxEditTool::TextBoxEditTool(DrawingProgram& initDrawP):
 {}
 
 bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
-
     std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
     Toolbar& t = drawP.world.main.toolbar;
 
@@ -32,7 +31,7 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         t.gui.text_label("Font");
         if(t.gui.font_picker("font picker", &newFontName)) {
             currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES] = std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{newFontName.c_str(), newFontName.size()}});
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES]);
+            add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES]);});
         }
     });
     
@@ -40,13 +39,13 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         if(t.gui.svg_icon_button("Bold button", "data/icons/RemixIcon/bold.svg", newIsBold)) {
             newIsBold = !newIsBold;
             currentMods[TextStyleModifier::ModifierType::WEIGHT] = std::make_shared<WeightTextStyleModifier>(newIsBold ? SkFontStyle::Weight::kBold_Weight : SkFontStyle::Weight::kNormal_Weight);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::WEIGHT]);
+            add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::WEIGHT]);});
         }
 
         if(t.gui.svg_icon_button("Italic button", "data/icons/RemixIcon/italic.svg", newIsItalic)) {
             newIsItalic = !newIsItalic;
             currentMods[TextStyleModifier::ModifierType::SLANT] = std::make_shared<SlantTextStyleModifier>(newIsItalic ? SkFontStyle::Slant::kItalic_Slant : SkFontStyle::Slant::kUpright_Slant);
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SLANT]);
+            add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SLANT]);});
         }
 
         bool decorationEdited = false;
@@ -64,38 +63,46 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         }
         if(decorationEdited) {
             currentMods[TextStyleModifier::ModifierType::DECORATION] = std::make_shared<DecorationTextStyleModifier>(get_new_decoration_value());
-            a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::DECORATION]);
+            add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::DECORATION]);});
         }
     });
 
     t.gui.left_to_right_line_centered_layout([&]() {
         if(t.gui.svg_icon_button("Align left button", "data/icons/RemixIcon/align-left.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kLeft))
-            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kLeft);
+            add_undo([&](){a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kLeft);});
         if(t.gui.svg_icon_button("Align center button", "data/icons/RemixIcon/align-center.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kCenter))
-            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kCenter);
+            add_undo([&](){a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kCenter);});
         if(t.gui.svg_icon_button("Align right button", "data/icons/RemixIcon/align-right.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kRight))
-            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kRight);
+            add_undo([&](){a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kRight);});
         if(t.gui.svg_icon_button("Align justify button", "data/icons/RemixIcon/align-justify.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kJustify))
-            a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kJustify);
+            add_undo([&](){a->textBox->set_text_alignment_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kJustify);});
         if(t.gui.svg_icon_button("Text direction left", "data/icons/RemixIcon/text-direction-l.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kLtr))
-            a->textBox->set_text_direction_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kLtr);
+            add_undo([&](){a->textBox->set_text_direction_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kLtr);});
         if(t.gui.svg_icon_button("Text direction right", "data/icons/RemixIcon/text-direction-r.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kRtl))
-            a->textBox->set_text_direction_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kRtl);
+            add_undo([&](){a->textBox->set_text_direction_between(a->cursor->selectionBeginPos.fParagraphIndex, a->cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kRtl);});
     });
 
     if(t.gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100)) {
+        hold_undo_data("Font Size", a);
         currentMods[TextStyleModifier::ModifierType::SIZE] = std::make_shared<SizeTextStyleModifier>(newFontSize);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SIZE]);
     }
+    else
+        release_undo_data("Font Size");
 
     t.gui.left_to_right_line_layout([&]() {
         CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-            if(t.gui.color_button("Text Color", &newTextColor, &newTextColor == t.colorRight)) {
+            if(t.gui.color_button("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
                 t.color_selector_right(&newTextColor == t.colorRight ? nullptr : &newTextColor);
-            }
         }
         t.gui.text_label("Text Color");
     });
+
+    if(&newTextColor == t.colorRight)
+        hold_undo_data("Text Color", a);
+    else
+        release_undo_data("Text Color");
+
     if((&newTextColor == t.colorRight) && t.isUpdatingColorRight) {
         currentMods[TextStyleModifier::ModifierType::COLOR] = std::make_shared<ColorTextStyleModifier>(newTextColor);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
@@ -110,6 +117,42 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     bool oldInputChangedTextBox = a->textBox->inputChangedTextBox;
     a->textBox->inputChangedTextBox = false;
     return oldInputChangedTextBox;
+}
+
+void TextBoxEditTool::hold_undo_data(const std::string& undoName, const std::shared_ptr<DrawTextBox>& a) {
+    auto it = undoHeldData.find(undoName);
+    if(it != undoHeldData.end()) {
+        std::pair<RichText::TextBox::Cursor, RichText::TextData>& undoData = it->second;
+        if(undoData.first != *a->cursor)
+            undoHeldData.erase(it);
+    }
+    else if(a->cursor->selectionBeginPos != a->cursor->selectionEndPos)
+        undoHeldData.emplace(undoName, std::pair<RichText::TextBox::Cursor, RichText::TextData>{*a->cursor, a->textBox->get_rich_text_data()});
+}
+
+void TextBoxEditTool::release_undo_data(const std::string& undoName) {
+    auto it = undoHeldData.find(undoName);
+    if(it != undoHeldData.end()) {
+        std::pair<RichText::TextBox::Cursor, RichText::TextData>& undoData = it->second;
+        InputManager& input = drawP.world.main.input;
+        input.text.add_textbox_undo(undoData.first, undoData.second);
+        undoHeldData.erase(it);
+        std::cout << "Yay 2!" << std::endl;
+    }
+}
+
+void TextBoxEditTool::add_undo_if_selecting_area(const std::shared_ptr<DrawTextBox>& a, const std::function<void()>& func) {
+    if(a->cursor->selectionBeginPos == a->cursor->selectionEndPos)
+        func();
+    else {
+        InputManager& input = drawP.world.main.input;
+        input.text.do_textbox_operation_with_undo(func);
+    }
+}
+
+void TextBoxEditTool::add_undo(const std::function<void()>& func) {
+    InputManager& input = drawP.world.main.input;
+    input.text.do_textbox_operation_with_undo(func);
 }
 
 uint8_t TextBoxEditTool::get_new_decoration_value() {
