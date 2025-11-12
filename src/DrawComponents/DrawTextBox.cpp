@@ -62,7 +62,7 @@ void DrawTextBox::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& 
 
 void DrawTextBox::init_text_box(DrawingProgram& drawP) {
     textBox->set_font_collection(drawP.world.main.fonts.collection); // Getting a segfault relating to the paragraph cache means that the font collection hasn't been set yet
-    textBox->set_width(d.p2.x() - d.p1.x());
+    textBox->set_width(d.p2.x() - d.p1.x() - TEXTBOX_PADDING * 2.0f);
 }
 
 void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
@@ -78,7 +78,7 @@ void DrawTextBox::draw(SkCanvas* canvas, const DrawData& drawData) {
             canvas->drawRect(clipR, p);
         }
         canvas->clipRect(clipR);
-        canvas->translate(d.p1.x(), d.p1.y());
+        canvas->translate(d.p1.x() + TEXTBOX_PADDING, d.p1.y() + TEXTBOX_PADDING);
 
         TextBox::PaintOpts paintOpts;
         paintOpts.cursorColor = {0.7f, 0.7f, 1.0f};
@@ -94,7 +94,7 @@ void DrawTextBox::update(DrawingProgram& drawP) {
 }
 
 Vector2f DrawTextBox::get_mouse_pos(DrawingProgram& drawP) {
-    return coords.get_mouse_pos(drawP.world) - d.p1;
+    return coords.get_mouse_pos(drawP.world) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
 }
 
 void DrawTextBox::initialize_draw_data(DrawingProgram& drawP) {

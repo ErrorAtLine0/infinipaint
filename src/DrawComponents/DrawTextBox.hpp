@@ -10,6 +10,8 @@
 
 class DrawTextBox : public DrawComponent {
     public:
+        constexpr static float TEXTBOX_PADDING = 5.0f;
+
         DrawTextBox();
         virtual DrawComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;

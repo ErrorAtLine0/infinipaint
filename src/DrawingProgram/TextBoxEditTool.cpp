@@ -204,7 +204,7 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
     mousePointCollection.circle.emplace_back(drawP.world.main.input.mouse.pos, 1.0f);
     mousePointCollection.recalculate_bounds();
 
-    a->textBox->set_width(std::abs(a->d.p2.x() - a->d.p1.x()));
+    a->init_text_box(drawP);
 
     InputManager& input = drawP.world.main.input;
 
