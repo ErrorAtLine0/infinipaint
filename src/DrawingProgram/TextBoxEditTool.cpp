@@ -137,7 +137,6 @@ void TextBoxEditTool::release_undo_data(const std::string& undoName) {
         InputManager& input = drawP.world.main.input;
         input.text.add_textbox_undo(undoData.first, undoData.second);
         undoHeldData.erase(it);
-        std::cout << "Yay 2!" << std::endl;
     }
 }
 
