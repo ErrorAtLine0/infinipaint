@@ -51,7 +51,6 @@ void UndoManager::redo() {
 }
 
 void UndoManager::clear() {
-    std::cout << "[UndoManager::clear] Clearing undo queue" << std::endl;
     redoQueue.clear();
     undoQueue.clear();
 }

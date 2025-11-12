@@ -89,8 +89,10 @@ void InputManager::Text::set_rich_text_box_input(const std::shared_ptr<RichText:
 }
 
 void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
-    if(textBox)
-        textBox->process_text_input(*cursor, inputText, modMap);
+    if(textBox && !inputText.empty())
+        do_textbox_operation_with_undo([&]() {
+            textBox->process_text_input(*cursor, inputText, modMap);
+        });
 }
 
 void InputManager::Text::set_accepting_input() {
@@ -99,6 +101,32 @@ void InputManager::Text::set_accepting_input() {
 
 bool InputManager::Text::get_accepting_input() {
     return acceptingInput;
+}
+
+void InputManager::Text::add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText) {
+    if(textBox) {
+        textboxUndo.push({[textBox = textBox, cursor = cursor, prevCursor = prevCursor, prevRichText = prevRichText]() {
+            textBox->set_rich_text_data(prevRichText);
+            *cursor = prevCursor;
+            cursor->previousX = std::nullopt;
+            return true;
+        },
+        [textBox = textBox, cursor = cursor, currentCursor = *cursor, currentRichText = textBox->get_rich_text_data()]() {
+            textBox->set_rich_text_data(currentRichText);
+            *cursor = currentCursor;
+            cursor->previousX = std::nullopt;
+            return true;
+        }});
+    }
+}
+
+void InputManager::Text::do_textbox_operation_with_undo(const std::function<void()>& func) {
+    if(textBox) {
+        auto prevRichText = textBox->get_rich_text_data();
+        auto prevCursor = *cursor;
+        func();
+        add_textbox_undo(prevCursor, prevRichText);
+    }
 }
 
 bool InputManager::get_clipboard_paste_happened() {
@@ -291,12 +319,16 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         case SDLK_BACKSPACE:
             set_key_down(e, KEY_TEXT_BACKSPACE);
             if(text.textBox && key(KEY_TEXT_BACKSPACE).repeat)
-                text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::BACKSPACE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                text.do_textbox_operation_with_undo([&]() {
+                    text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::BACKSPACE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                });
             break;
         case SDLK_DELETE:
             set_key_down(e, KEY_TEXT_DELETE);
             if(text.textBox && key(KEY_TEXT_DELETE).repeat)
-                text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::DELETE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                text.do_textbox_operation_with_undo([&]() {
+                    text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::DELETE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                });
             break;
         case SDLK_HOME:
             set_key_down(e, KEY_TEXT_HOME);
@@ -334,13 +366,17 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_CUT);
             if(text.textBox && key(KEY_TEXT_CUT).repeat)
-                set_clipboard_plain_and_richtext_pair(text.textBox->process_cut(*text.cursor));
+                text.do_textbox_operation_with_undo([&]() {
+                    set_clipboard_plain_and_richtext_pair(text.textBox->process_cut(*text.cursor));
+                });
             break;
         case SDLK_V:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
                 set_key_down(e, KEY_TEXT_PASTE);
             if(text.textBox && key(KEY_TEXT_PASTE).repeat)
-                process_text_paste();
+                text.do_textbox_operation_with_undo([&]() {
+                    process_text_paste();
+                });
             break;
         case SDLK_A:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
@@ -348,16 +384,32 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             if(text.textBox && key(KEY_TEXT_SELECTALL).repeat)
                 text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::SELECT_ALL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
             break;
+        case SDLK_Z:
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+                set_key_down(e, KEY_TEXT_UNDO);
+            if(text.textBox && key(KEY_TEXT_UNDO).repeat)
+                text.textboxUndo.undo();
+            break;
+        case SDLK_R:
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+                set_key_down(e, KEY_TEXT_REDO);
+            if(text.textBox && key(KEY_TEXT_REDO).repeat)
+                text.textboxUndo.redo();
+            break;
         case SDLK_RETURN: {
             set_key_down(e, KEY_TEXT_ENTER);
             if(text.textBox && key(KEY_TEXT_ENTER).repeat)
-                text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                text.do_textbox_operation_with_undo([&]() {
+                    text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                });
             break;
         }
         case SDLK_TAB: {
             set_key_down(e, KEY_TEXT_TAB);
             if(text.textBox && key(KEY_TEXT_TAB).repeat)
-                text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::TAB, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                text.do_textbox_operation_with_undo([&]() {
+                    text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::TAB, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                });
             break;
         }
         case SDLK_ESCAPE:
@@ -446,6 +498,12 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
         case SDLK_A:
             set_key_up(e, KEY_TEXT_SELECTALL);
             break;
+        case SDLK_Z:
+            set_key_up(e, KEY_TEXT_UNDO);
+            break;
+        case SDLK_R:
+            set_key_up(e, KEY_TEXT_REDO);
+            break;
         case SDLK_RETURN:
             set_key_up(e, KEY_TEXT_ENTER);
             break;
@@ -483,6 +541,8 @@ void InputManager::frame_reset(const Vector2i& windowSize) {
     mouse.middleClicks = 0;
     text.acceptingInput = text.acceptingInputNew;
     text.acceptingInputNew = false;
+    if(text.cursor != text.newCursor || text.textBox != text.newTextBox)
+        text.textboxUndo.clear();
     text.cursor = text.newCursor;
     text.textBox = text.newTextBox;
     text.modMap = text.newModMap;

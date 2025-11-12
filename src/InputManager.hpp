@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <queue>
+#include "UndoManager.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
@@ -92,6 +93,9 @@ struct InputManager {
         void add_text_to_textbox(const std::string& inputText);
 
         private:
+            void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
+            void do_textbox_operation_with_undo(const std::function<void()>& func);
+
             std::shared_ptr<RichText::TextBox> textBox;
             std::shared_ptr<RichText::TextBox::Cursor> cursor;
             std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
@@ -99,6 +103,8 @@ struct InputManager {
             std::shared_ptr<RichText::TextBox> newTextBox;
             std::shared_ptr<RichText::TextBox::Cursor> newCursor;
             std::optional<RichText::TextStyleModifier::ModifierMap> newModMap;
+
+            UndoManager textboxUndo;
 
             bool acceptingInput = false;
             bool acceptingInputNew = false;
@@ -172,6 +178,8 @@ struct InputManager {
         KEY_TEXT_CTRL,
         KEY_TEXT_META,
         KEY_TEXT_SELECTALL,
+        KEY_TEXT_UNDO,
+        KEY_TEXT_REDO,
         KEY_GENERIC_ESCAPE,
         KEY_GENERIC_LSHIFT,
         KEY_GENERIC_LALT,
