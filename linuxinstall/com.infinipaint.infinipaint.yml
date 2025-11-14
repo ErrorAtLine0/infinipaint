@@ -1,12 +1,24 @@
 id: com.infinipaint.infinipaint
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 command: infinipaint
 build-options:
   build-args:
     - --share=network
 modules:
+  - name: ICU
+    buildsystem: simple
+    subdir: source
+    build-commands:
+      - chmod +x runConfigureICU configure install-sh
+      - ./runConfigureICU Linux --prefix=/app --disable-icu-config --disable-icuio --disable-extras --disable-tools --disable-tests --disable-samples --disable-layoutex --disable-layout
+      - make -j$(nproc)
+      - make install
+    sources:
+      - type: archive
+        url: https://github.com/unicode-org/icu/releases/download/release-77-1/icu4c-77_1-src.tgz
+        sha256: 588e431f77327c39031ffbb8843c0e3bc122c211374485fa87dc5f3faff24061
   - name: zstd
     buildsystem: cmake-ninja
     subdir: build/cmake
@@ -45,13 +57,13 @@ modules:
         - -DSDL_X11=ON
     sources:
       - type: git
-        tag: release-3.2.24
+        tag: release-3.2.26
         url: https://github.com/libsdl-org/SDL.git
   - name: Skia
     buildsystem: simple
     build-commands:
       - python3 tools/git-sync-deps
-      - bin/gn gen out/Static --args='is_official_build=true skia_use_system_expat=false skia_use_system_freetype2=false skia_use_system_harfbuzz=false skia_use_system_icu=false skia_use_system_libjpeg_turbo=false skia_use_system_libpng=false skia_use_system_libwebp=false skia_use_system_zlib=false'
+      - bin/gn gen out/Static --args='is_official_build=true skia_use_system_expat=false skia_use_system_freetype2=true skia_use_system_harfbuzz=true skia_use_system_icu=true skia_use_system_libjpeg_turbo=false skia_use_system_libpng=true skia_use_system_libwebp=false skia_use_system_zlib=true'
       - ninja -C out/Static skia svg skunicode_core skunicode_icu skparagraph skresources skshaper
       - mkdir /app/Skia
       - mv out /app/Skia
@@ -62,15 +74,15 @@ modules:
       - '*'
     sources:
       - type: archive
-        url: https://github.com/google/skia/archive/aefbd9403c1b3032ad4cd0281ef312ed262c7125.zip
-        sha256: e10c67a96828b9f36364e2459cdee3e3b381a3875ff78db2b30e7b6fe69509bb
+        url: https://github.com/google/skia/archive/f4ed99d2443962782cf5f8b4dd27179f131e7cbe.zip
+        sha256: 2e00dcdb54942c1da7b2f6cfd9fef8c4899115206d940931f6c040bac08b6b79
   - name: infinipaint-x86_64
     buildsystem: cmake-ninja
     builddir: true
     only-arches:
         - x86_64
     config-opts:
-        - -DLINK_SKIA_MANUALLY=ON
+        - -DNO_CONAN_BUILD=ON
         - -DSKIA_INCLUDE=/app/Skia
         - -DSKIA_LIB=/app/Skia/out/Static/libskia.a
         - -DSKIA_SVG_LIB=/app/Skia/out/Static/libsvg.a
@@ -80,7 +92,6 @@ modules:
         - -DSKIA_UNICODE_CORE_LIB=/app/Skia/out/Static/libskunicode_icu.a
         - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
         - -DCMAKE_BUILD_TYPE=Release
-        - -DTBB_NOT_ONETBB=ON
         - -DGRAPHICS_BACKEND=OpenGL3.3
     sources:
       - type: dir
@@ -92,7 +103,7 @@ modules:
     only-arches:
         - aarch64
     config-opts:
-        - -DLINK_SKIA_MANUALLY=ON
+        - -DNO_CONAN_BUILD=ON
         - -DSKIA_INCLUDE=/app/Skia
         - -DSKIA_LIB=/app/Skia/out/Static/libskia.a
         - -DSKIA_SVG_LIB=/app/Skia/out/Static/libsvg.a
@@ -102,7 +113,6 @@ modules:
         - -DSKIA_UNICODE_CORE_LIB=/app/Skia/out/Static/libskunicode_icu.a
         - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
         - -DCMAKE_BUILD_TYPE=Release
-        - -DTBB_NOT_ONETBB=ON
         - -DGRAPHICS_BACKEND=OpenGLES3.0
     sources:
       - type: dir
@@ -118,6 +128,10 @@ cleanup:
   - /lib/libupb.a
   - /bin/proto*
   - /lib/*.a
+  - /lib/libicui18n*
+  - /lib/libicudata*
+  - /bin/zstd*
+  - /bin/unzstd
         
 finish-args:
   - --share=ipc

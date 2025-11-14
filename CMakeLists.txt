@@ -21,9 +21,8 @@ option(USE_LEAKSAN "Enable Leak Sanitizer" OFF)
 option(USE_THREADSAN "Enable Thread Sanitizer" OFF)
 option(USE_MEMORYSAN "Enable Memory Sanitizer" OFF)
 
-option(LINK_SKIA_MANUALLY "Link skia not as a package, but as separate libraries for non-Conan builds" OFF)
+option(NO_CONAN_BUILD "Not using conan to get packages" OFF)
 option(EMSCRIPTEN_SINGLE_HTML_FILE "Building with emscripten generates a single HTML file" OFF)
-option(TBB_NOT_ONETBB "Use TBB::tbb package and not onetbb::onetbb package from conan" OFF)
 option(CONFIG_NEXT_TO_EXECUTABLE "Place configuration folder next to executable (portable executable)" OFF)
 
 # Setting sources
@@ -134,9 +133,9 @@ if(WIN32)
 endif()
 
 # Get libraries
-find_package(ICU REQUIRED)
+find_package(ICU 77.1 REQUIRED COMPONENTS uc)
 
-if(LINK_SKIA_MANUALLY)
+if(NO_CONAN_BUILD)
     set(SKIA_INCLUDE "modules/skia" CACHE PATH "Path to Skia root directory")
     set(SKIA_LIB_PATH "modules/skia/out/Static" CACHE PATH "Path to Skia libs")
     find_library(SKIA_LIB skia PATHS ${SKIA_LIB_PATH})
@@ -146,6 +145,11 @@ if(LINK_SKIA_MANUALLY)
     find_library(SKIA_SHAPER_LIB skshaper PATHS ${SKIA_LIB_PATH})
     find_library(SKIA_UNICODE_ICU_LIB skunicode_icu PATHS ${SKIA_LIB_PATH})
     find_library(SKIA_UNICODE_CORE_LIB skunicode_core PATHS ${SKIA_LIB_PATH})
+
+    find_package(Freetype REQUIRED)
+    find_package(Fontconfig REQUIRED)
+    find_package(PNG REQUIRED)
+    find_package(ZLIB REQUIRED)
 else()
     find_package(skia)
 endif()
@@ -275,18 +279,14 @@ if(NOT EMSCRIPTEN AND ((GRAPHICS_BACKEND STREQUAL "OpenGL3.3") OR (GRAPHICS_BACK
 endif()
 
 if((NOT EMSCRIPTEN) AND (NOT APPLE))
-    if(TBB_NOT_ONETBB)
+    if(NO_CONAN_BUILD)
         target_link_libraries(infinipaint TBB::tbb)
     else()
         target_link_libraries(infinipaint onetbb::onetbb)
     endif()
 endif()
 
-target_link_libraries(infinipaint SDL3::SDL3 zstd::libzstd_static icu::icu)
-
-if(NOT EMSCRIPTEN)
-    target_link_libraries(infinipaint harfbuzz::harfbuzz)
-endif()
+target_link_libraries(infinipaint SDL3::SDL3 zstd::libzstd_static)
 
 if(EMSCRIPTEN)
     add_subdirectory(deps/datachannel-wasm EXCLUDE_FROM_ALL)
@@ -295,11 +295,17 @@ else()
     target_link_libraries(infinipaint LibDataChannel::LibDataChannel CURL::libcurl)
 endif()
 
-if(LINK_SKIA_MANUALLY)
+if(NO_CONAN_BUILD)
     target_link_libraries(infinipaint ${SKIA_SVG_LIB} ${SKIA_RESOURCES_LIB} ${SKIA_LIB} ${SKIA_UNICODE_CORE_LIB} ${SKIA_UNICODE_ICU_LIB} ${SKIA_UNICODE_CORE_LIB} ${SKIA_PARAGRAPH_LIB} ${SKIA_SHAPER_LIB})
     target_include_directories(infinipaint PRIVATE ${SKIA_INCLUDE})
+    target_link_libraries(infinipaint ICU::uc Fontconfig::Fontconfig Freetype::Freetype PNG::PNG ZLIB::ZLIB)
 else()
     target_link_libraries(infinipaint skia::skia)
+    target_link_libraries(infinipaint icu::icu)
+endif()
+
+if(NOT EMSCRIPTEN)
+    target_link_libraries(infinipaint harfbuzz::harfbuzz)
 endif()
 
 if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX)
