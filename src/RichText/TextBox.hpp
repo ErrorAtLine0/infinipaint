@@ -144,6 +144,7 @@ class TextBox {
         void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
         void process_rich_text_input(Cursor& cur, const TextData& richText);
 
+        SkRect get_cursor_rect(TextPosition pos);
     private:
         std::pair<TextPosition, TextPosition> get_start_end_text_pos(TextPosition p1, TextPosition p2);
         std::pair<size_t, size_t> get_start_end_paragraph_pos(size_t p1, size_t p2);
@@ -157,7 +158,6 @@ class TextBox {
 
         void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
 
-        SkRect get_cursor_rect(TextPosition pos);
 
         TextPosition get_text_pos_closest_to_point(Vector2f point);
         std::shared_ptr<TextStyleModifier> get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType);

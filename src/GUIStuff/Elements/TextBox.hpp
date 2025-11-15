@@ -73,11 +73,15 @@ template <typename T> class TextBox : public Element {
 
             float yOffset = bb.height() * 0.5f;
             yOffset -= textbox->get_height() * 0.5f;
-            canvas->translate(bb.min.x() + 2.0f, bb.min.y() + yOffset);
 
             RichText::TextBox::PaintOpts paintOpts;
-            if(selection.selected)
+            if(selection.selected) {
                 paintOpts.cursor = *cur;
+                SkRect cursorRect = textbox->get_cursor_rect(cur->pos);
+                canvas->translate(bb.min.x() - std::max(cursorRect.fRight - bb.width(), -2.0f), bb.min.y() + yOffset);
+            }
+            else
+                canvas->translate(bb.min.x() + 2.0f, bb.min.y() + yOffset);
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
 
             skia::textlayout::TextStyle tStyle;
