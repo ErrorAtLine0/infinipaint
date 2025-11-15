@@ -355,17 +355,17 @@ TextData TextBox::get_rich_text_data_between(TextPosition p1, TextPosition p2) {
         toRet.paragraphs.back().pStyleData = paragraphs[pIndex].pStyleData;
     }
 
-    toRet.tStyleMods.emplace_back(TextPosition{0, 0}, get_mods_used_at_pos(p1));
+    toRet.tStyleMods.emplace_back(TextPosition{0, 0}, get_mods_used_at_pos(start));
 
     for(auto& [modPos, modifiers] : tStyleMods) {
-        if(modPos <= p1)
+        if(modPos <= start)
             continue;
-        else if(modPos > p2)
+        else if(modPos > end)
             break;
         TextPosition insertPos;
-        insertPos.fParagraphIndex = modPos.fParagraphIndex - p1.fParagraphIndex;
-        if(modPos.fParagraphIndex == p1.fParagraphIndex)
-            insertPos.fTextByteIndex = modPos.fTextByteIndex - p1.fTextByteIndex;
+        insertPos.fParagraphIndex = modPos.fParagraphIndex - start.fParagraphIndex;
+        if(modPos.fParagraphIndex == start.fParagraphIndex)
+            insertPos.fTextByteIndex = modPos.fTextByteIndex - start.fTextByteIndex;
         else
             insertPos.fTextByteIndex = modPos.fTextByteIndex;
         toRet.tStyleMods.emplace_back(insertPos, modifiers);
@@ -844,9 +844,12 @@ void TextBox::rebuild() {
             heightOffset += pData.p->getHeight();
         }
 
-        //std::cout << "size: " << tStyleMods.size() << std::endl;
-        //for(auto& s : tStyleMods)
-        //    std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
+        //if(tStyleMods.size() != 0) {
+        //    std::cout << "-------" << std::endl;
+        //    for(auto& s : tStyleMods)
+        //        std::cout << s.pos.fParagraphIndex << " " << s.pos.fTextByteIndex << std::endl;
+        //    std::cout << "size: " << tStyleMods.size() << std::endl;
+        //}
 
         needsRebuild = false;
     }
