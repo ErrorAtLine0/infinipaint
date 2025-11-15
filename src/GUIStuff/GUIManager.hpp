@@ -19,7 +19,6 @@
 
 using namespace Eigen;
 
-
 namespace GUIStuff {
 
 class GUIManager {

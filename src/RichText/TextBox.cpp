@@ -771,6 +771,11 @@ void TextBox::set_width(float newWidth) {
     }
 }
 
+float TextBox::get_height() {
+    rebuild();
+    return paragraphs.back().heightOffset + paragraphs.back().p->getHeight();
+}
+
 void TextBox::set_allow_newlines(bool allow) {
     newlinesAllowed = allow;
 }
@@ -795,6 +800,16 @@ void TextBox::rebuild() {
             ParagraphData& pData = paragraphs[pIndex];
             skia::textlayout::ParagraphStyle pStyle = pData.pStyleData.get_paragraph_style();
             pStyle.setTextStyle(tStyle);
+
+            if(!newlinesAllowed) {
+                pStyle.setTextHeightBehavior(skia::textlayout::kDisableAll);
+
+                skia::textlayout::StrutStyle strutStyle;
+                strutStyle.setStrutEnabled(true);
+                strutStyle.setForceStrutHeight(true);
+                pStyle.setStrutStyle(strutStyle);
+            }
+
             size_t tIndex = 0;
             skia::textlayout::ParagraphBuilderImpl a(pStyle, fontCollection, SkUnicodes::ICU::Make());
 

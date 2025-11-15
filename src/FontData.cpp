@@ -15,6 +15,10 @@
     #include <include/ports/SkFontScanner_FreeType.h>
 #endif
 
+#include <src/base/SkUTF.h>
+
+bool fallbackOnEmoji = false;
+
 FontData::FontData()
 {
 #ifdef __EMSCRIPTEN__
@@ -34,8 +38,14 @@ FontData::FontData()
     map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf");
 
     collection = sk_make_sp<skia::textlayout::FontCollection>();
-    collection->setDefaultFontManager(defaultFontMgr, {SkString{"Roboto"}});
+    collection->setDefaultFontManager(defaultFontMgr, std::vector<SkString>{SkString{"Roboto"}, SkString{"Noto Emoji"}, SkString{"Noto Kufi Arabic"}});
     collection->setDynamicFontManager(localFontMgr);
+    std::string s = "🙂";
+    const char* sPtr = s.data();
+    SkFontStyle defaultStyle;
+    SkString defaultLocale("en");
+    auto defaultEmojiFallback = collection->defaultEmojiFallback(SkUTF::NextUTF8(&sPtr, s.c_str() + s.length()), defaultStyle, defaultLocale);
+    fallbackOnEmoji = !defaultEmojiFallback;
 }
 
 FontData::~FontData() {
@@ -46,4 +56,22 @@ Vector2f get_str_font_bounds(const SkFont& font, const std::string& str) {
     font.getMetrics(&metrics);
     float nextText = font.measureText(str.data(), str.length(), SkTextEncoding::kUTF8, nullptr);
     return Vector2f{nextText, - metrics.fAscent + metrics.fDescent};
+}
+
+const std::vector<SkString>& get_default_font_families() {
+    static std::vector<SkString> defaultFontFamilies;
+    if(defaultFontFamilies.empty()) {
+        defaultFontFamilies.emplace_back("Roboto");
+        if(fallbackOnEmoji)
+            defaultFontFamilies.emplace_back("Noto Emoji");
+        defaultFontFamilies.emplace_back("Noto Kufi Arabic");
+    }
+    return defaultFontFamilies;
+}
+
+void push_default_font_families(std::vector<SkString>& fontFamilies) {
+    fontFamilies.emplace_back("Roboto");
+    if(fallbackOnEmoji)
+        fontFamilies.emplace_back("Noto Emoji");
+    fontFamilies.emplace_back("Noto Kufi Arabic");
 }

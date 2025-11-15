@@ -140,13 +140,13 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                             entryColor = io.theme->backColor1;
                         CLAY({
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(25)},
                                 .padding = {.left = 2, .right = 2},
                                 .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
                             },
                             .backgroundColor = convert_vec4<Clay_Color>(entryColor)
                         }) {
-                            gui->text_paragraph("font name", std::move(p), std::numeric_limits<float>::max());
+                            gui->text_paragraph("font name", std::move(p), 10000.0f); // Setting width to numeric_limits::max will lead to multiplying it by any number greater than 1 to = infinity, which will cause issues
         
                             if(io.mouse.leftClick && Clay_Hovered()) {
                                 *fontName = sortedFontList[i];

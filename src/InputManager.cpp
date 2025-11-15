@@ -52,8 +52,8 @@ InputManager::InputManager() {
     // Without this, SDL eats the CTRL-V event that initiates the paste event
     // https://github.com/pthom/hello_imgui/issues/3#issuecomment-1564536870
 	EM_ASM({
-		window.addEventListener('keydown', function(event){
-			if (event.ctrlKey && event.key == 'v') {
+		window.addEventListener('keydown', function(event) {
+			if((event.ctrlKey || event.metaKey) && (event.key == 'v' || event.code == 'KeyV')) {
                 if(Module["ccall"]('is_text_input_happening', 'number', [], []) === 1)
 				    event.stopImmediatePropagation();
             }

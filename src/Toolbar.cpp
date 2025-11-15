@@ -1,6 +1,7 @@
 #include "Toolbar.hpp"
 #include "DrawingProgram/DrawingProgramToolBase.hpp"
 #include "DrawingProgram/ScreenshotTool.hpp"
+#include "FontData.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/FileDownloader.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
@@ -823,7 +824,7 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
     pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
     skia::textlayout::TextStyle tStyle;
     tStyle.setFontSize(io->fontSize);
-    tStyle.setFontFamilies({SkString{"Roboto"}});
+    tStyle.setFontFamilies(get_default_font_families());
     tStyle.setFontStyle(SkFontStyle::Bold());
     tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io->theme->warningColor : io->theme->frontColor1, alpha)});
     pStyle.setTextStyle(tStyle);
@@ -1400,7 +1401,6 @@ void Toolbar::options_menu() {
                                         gui.push_id("general settings");
                                         gui.input_text_field("display name input", "Display Name", &main.displayName);
                                         main.update_display_names();
-                                        gui.text_label_light("Note: Changes in display name dont affect canvases that are connected online");
                                         SkColor4f newBackColor{main.defaultCanvasBackgroundColor.x(), main.defaultCanvasBackgroundColor.y(), main.defaultCanvasBackgroundColor.z(), 1.0f};
                                         gui.color_picker_button_field("defaultCanvasBackgroundColor", "Default canvas background color", &newBackColor, false);
                                         main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);

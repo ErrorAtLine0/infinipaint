@@ -3,6 +3,7 @@
 #include "../../RichText/TextBox.hpp"
 #include <limits>
 #include <modules/skparagraph/include/TextStyle.h>
+#include "../../FontData.hpp"
 
 namespace GUIStuff {
 
@@ -17,14 +18,13 @@ template <typename T> class TextBox : public Element {
             data = newData;
             fromStr = newFromStr;
             toStr = newToStr;
-            singleLine = newSingleLine;
             force_update_textbox(io, false);
 
-            textbox->set_width(singleLine ? std::numeric_limits<float>::max() : bb.width());
+            textbox->set_width(std::numeric_limits<float>::max());
 
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = singleLine ? CLAY_SIZING_FIXED(static_cast<float>(io.fontSize * 1.25f)) : CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 1.25f))}
+                    .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_FIXED(static_cast<float>(io.fontSize * 1.25f))}
                 },
                 .custom = { .customData = this }
             }) {
@@ -71,7 +71,9 @@ template <typename T> class TextBox : public Element {
 
             canvas->clipRect(SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height()));
 
-            canvas->translate(bb.min.x() + 2.0f, bb.min.y());
+            float yOffset = bb.height() * 0.5f;
+            yOffset -= textbox->get_height() * 0.5f;
+            canvas->translate(bb.min.x() + 2.0f, bb.min.y() + yOffset);
 
             RichText::TextBox::PaintOpts paintOpts;
             if(selection.selected)
@@ -79,9 +81,7 @@ template <typename T> class TextBox : public Element {
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
 
             skia::textlayout::TextStyle tStyle;
-            std::vector<SkString> families;
-            families.emplace_back("Roboto");
-            tStyle.setFontFamilies(families);
+            tStyle.setFontFamilies(get_default_font_families());
             tStyle.setFontSize(io.fontSize);
             tStyle.setForegroundPaint(SkPaint{io.theme->frontColor1});
             textbox->set_initial_text_style(tStyle);
@@ -99,7 +99,7 @@ template <typename T> class TextBox : public Element {
 
             textbox = std::make_shared<RichText::TextBox>();
             textbox->set_font_collection(io.fontCollection);
-            textbox->set_allow_newlines(!singleLine);
+            textbox->set_allow_newlines(false);
 
             cur = std::make_shared<RichText::TextBox::Cursor>();
 
@@ -119,8 +119,6 @@ template <typename T> class TextBox : public Element {
 
         T* data = nullptr;
         T oldData;
-
-        bool singleLine = true;
 
         std::function<std::optional<T>(const std::string&)> fromStr;
         std::function<std::string(const T&)> toStr;

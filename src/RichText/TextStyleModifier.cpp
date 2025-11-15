@@ -3,6 +3,7 @@
 #include <Helpers/Serializers.hpp>
 #include <include/core/SkFontStyle.h>
 #include <modules/skparagraph/include/TextStyle.h>
+#include "../FontData.hpp"
 
 #define WEIGHT_VALUE_MODIFIER 100
 
@@ -190,7 +191,7 @@ void FontFamiliesTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) 
 
 void FontFamiliesTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
     auto familiesToPush = families;
-    familiesToPush.emplace_back("Roboto");
+    push_default_font_families(familiesToPush);
     style.setFontFamilies(familiesToPush);
 }
 

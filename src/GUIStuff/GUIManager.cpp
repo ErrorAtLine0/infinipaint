@@ -24,6 +24,7 @@
 #include <modules/skparagraph/include/TextStyle.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
 #include <Helpers/Random.hpp>
+#include "../FontData.hpp"
 
 namespace GUIStuff {
 
@@ -43,7 +44,7 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
     pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
     skia::textlayout::TextStyle tStyle;
     tStyle.setFontSize(config->fontSize);
-    tStyle.setFontFamilies({SkString{"Roboto"}});
+    tStyle.setFontFamilies(get_default_font_families());
     pStyle.setTextStyle(tStyle);
 
     skia::textlayout::ParagraphBuilderImpl a(pStyle, window->io->fontCollection, SkUnicodes::ICU::Make());
@@ -116,7 +117,7 @@ void GUIManager::draw(SkCanvas* canvas) {
                 pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
                 skia::textlayout::TextStyle tStyle;
                 tStyle.setFontSize(config->fontSize);
-                tStyle.setFontFamilies({SkString{"Roboto"}});
+                tStyle.setFontFamilies(get_default_font_families());
                 tStyle.setColor(convert_vec4<SkColor4f>(config->textColor).toSkColor());
                 pStyle.setTextStyle(tStyle);
 

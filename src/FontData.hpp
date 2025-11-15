@@ -18,3 +18,5 @@ struct FontData {
 };
 
 Vector2f get_str_font_bounds(const SkFont& font, const std::string& str);
+const std::vector<SkString>& get_default_font_families();
+void push_default_font_families(std::vector<SkString>& fontFamilies);

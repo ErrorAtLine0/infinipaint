@@ -99,6 +99,7 @@ class TextBox {
         void set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC);
         void paint(SkCanvas* canvas, const PaintOpts& paintOpts);
         void set_allow_newlines(bool allow);
+        float get_height();
 
         enum class InputKey {
             LEFT,
