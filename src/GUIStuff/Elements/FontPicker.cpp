@@ -10,15 +10,15 @@
 bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GUIManager* gui) {
     if(sortedFontList.empty()) {
         auto icu = SkUnicodes::ICU::Make();
+        std::set<std::string> sortedFontSet;
+
         for(int i = 0; i < io.textFontMgrLocal->countFamilies(); i++) {
             SkString familyNameSkString;
             io.textFontMgrLocal->getFamilyName(i, &familyNameSkString);
             if(familyNameSkString.isEmpty())
                 continue;
             std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
-            sortedFontList.emplace_back(familyName);
-            std::transform(familyName.begin(), familyName.end(), familyName.begin(), ::tolower);
-            sortedFontListLowercase.emplace_back(familyName);
+            sortedFontSet.emplace(familyName);
         }
         for(int i = 0; i < io.textFontMgrFallback->countFamilies(); i++) {
             SkString familyNameSkString;
@@ -26,12 +26,12 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
             if(familyNameSkString.isEmpty())
                 continue;
             std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
-            sortedFontList.emplace_back(familyName);
-            std::transform(familyName.begin(), familyName.end(), familyName.begin(), ::tolower);
-            sortedFontListLowercase.emplace_back(familyName);
+            sortedFontSet.emplace(familyName);
         }
-        std::sort(sortedFontList.begin(), sortedFontList.end());
-        std::sort(sortedFontListLowercase.begin(), sortedFontListLowercase.end());
+        sortedFontList = std::vector<std::string>(sortedFontSet.begin(), sortedFontSet.end());
+        sortedFontListLowercase = sortedFontList;
+        for(std::string& s : sortedFontListLowercase)
+            std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     }
 
     if(!fontName)

@@ -81,6 +81,7 @@ class ConanSkia(ConanFile):
         "use_fontconfig" : [True, False],
         "use_fonthost_mac" : [True, False],
         "use_perfetto" : [True, False],
+        "use_egl": [True, False],
         # backend toggles
         "enable_ganesh" : [True, False],
         "enable_graphite" : [True, False],
@@ -162,6 +163,7 @@ class ConanSkia(ConanFile):
         "use_wuffs" : True,
         "use_libavif" : False,
         "use_libjxl_decode" : False,
+        "use_egl": False,
         # backend toggles 
         "enable_ganesh" : True,
         "enable_graphite" : False,
@@ -268,6 +270,10 @@ class ConanSkia(ConanFile):
         if self.options.use_x11 == None:
             enabled = (os == "Linux")
             self.options.use_x11 = enabled
+
+        if self.options.use_egl == None:
+            enabled = (os == "Linux")
+            self.options.use_egl = enabled
         
         if self.options.use_fontconfig == None:
             enabled = (os == "Linux")
@@ -646,6 +652,16 @@ class ConanSkia(ConanFile):
             args += f"skia_canvaskit_include_viewer = false\n"
             args += f"skia_canvaskit_legacy_draw_vertices_blend_mode = false\n"
             args += f"skia_canvaskit_profile_build = false\n"
+
+        if self.settings.os == "Linux" and self.options.use_egl == True:
+            args += f"skia_use_egl = true\n"
+        else:
+            args += f"skia_use_egl = false\n"
+
+        if self.settings.os == "Linux" and self.options.use_x11 == True:
+            args += f"skia_use_x11 = true\n"
+        else:
+            args += f"skia_use_x11 = false\n"
 
         cflags = []
         ldflags = []

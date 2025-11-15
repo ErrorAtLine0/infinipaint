@@ -47,6 +47,8 @@ class CompressorRecipe(ConanFile):
                 "use_system_libpng": False,
                 "use_system_libwebp": False,
                 "use_system_zlib": False,
+                "use_x11": False,
+                "use_egl": True,
                 "enable_svg": True,
                 "enable_skottie": False,
                 "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
@@ -56,6 +58,7 @@ class CompressorRecipe(ConanFile):
         if self.settings.os == "Linux":
             self.requires("sdl/3.2.26", options = {
                 "wayland": False,
+                "x11": True,
                 "pulseaudio": False,
                 "alsa": False,
                 "sndio": False,

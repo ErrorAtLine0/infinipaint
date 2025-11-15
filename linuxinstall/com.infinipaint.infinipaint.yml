@@ -63,7 +63,7 @@ modules:
     buildsystem: simple
     build-commands:
       - python3 tools/git-sync-deps
-      - bin/gn gen out/Static --args='is_official_build=true skia_use_system_expat=false skia_use_system_freetype2=true skia_use_system_harfbuzz=true skia_use_system_icu=true skia_use_system_libjpeg_turbo=false skia_use_system_libpng=true skia_use_system_libwebp=false skia_use_system_zlib=true'
+      - bin/gn gen out/Static --args='is_official_build=true skia_use_system_expat=false skia_use_system_freetype2=true skia_use_system_harfbuzz=true skia_use_system_icu=true skia_use_system_libjpeg_turbo=false skia_use_system_libpng=true skia_use_system_libwebp=false skia_use_system_zlib=true skia_use_egl=true skia_use_x11=false'
       - ninja -C out/Static skia svg skunicode_core skunicode_icu skparagraph skresources skshaper
       - mkdir /app/Skia
       - mv out /app/Skia
