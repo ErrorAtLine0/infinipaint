@@ -389,11 +389,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     switch_cwd();
 
     UErrorCode uerr = U_ZERO_ERROR;
-    icudt = read_file_to_string("data/icudt77l.dat");
+    icudt = read_file_to_string("data/icudt77l-small.dat");
     udata_setCommonData((void *) icudt.data(), &uerr);
     if (U_FAILURE(uerr)) {
         char* errorName = const_cast<char*>(u_errorName(uerr));
-        std::cout << "Failed to load icudt77l.dat" << std::endl;
+        std::cout << "Failed to load icudt77l-small.dat" << std::endl;
         std::cout << errorName << std::endl;
     }
 

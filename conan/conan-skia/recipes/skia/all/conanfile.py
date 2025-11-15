@@ -425,7 +425,7 @@ class ConanSkia(ConanFile):
             self.requires("expat/[>=2.5.0]")
 
         if self.options.use_icu and self.options.use_system_icu and self.options.use_conan_icu:
-            self.requires("icu/[>=77.1]")
+            self.requires("icu/77.1")
 
         if (self.options.use_libpng_decode or self.options.use_libpng_encode) and self.options.use_system_libpng and self.options.use_conan_libpng:
             self.requires("libpng/[>=1.6.32]")
@@ -537,7 +537,7 @@ class ConanSkia(ConanFile):
         if self.options.use_icu and self.options.use_system_icu and self.options.use_conan_icu:
             replace_in_file(self, join(self.source_folder, "third_party", "icu", "BUILD.gn"),
                             # icu-data must come after other components, otherwise it leaves an undefined symbol in shared library. 
-                            "libs = [ \"icuuc\" ]", f"libs = {json.dumps(self._link_libs('icu', components=['icu-uc','icu-data']))}",
+                            "libs = [ \"icuuc\" ]", f"libs = {json.dumps(self._link_libs('icu', components=['icu-uc']))}", # 'icu-data' removed
                             strict=False)
 
         if (self.options.use_libjpeg_turbo_encode or self.options.use_libjpeg_turbo_decode) and self.options.use_system_libjpeg_turbo and self.options.use_conan_libjpeg_turbo:
