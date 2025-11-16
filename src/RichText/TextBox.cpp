@@ -548,18 +548,32 @@ void TextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, 
 
 void TextBox::set_text_alignment_between(size_t paragraphIndex1, size_t paragraphIndex2, skia::textlayout::TextAlign newAlignment) {
     auto [start, end] = get_start_end_paragraph_pos(paragraphIndex1, paragraphIndex2);
-    for(size_t i = start; i <= end; i++)
-        paragraphs[i].pStyleData.textAlignment = newAlignment;
-    inputChangedTextBox = true;
-    needsRebuild = true;
+    bool anythingChanged = false;
+    for(size_t i = start; i <= end; i++) {
+        if(paragraphs[i].pStyleData.textAlignment != newAlignment) {
+            anythingChanged = true;
+            paragraphs[i].pStyleData.textAlignment = newAlignment;
+        }
+    }
+    if(anythingChanged) {
+        inputChangedTextBox = true;
+        needsRebuild = true;
+    }
 }
 
 void TextBox::set_text_direction_between(size_t paragraphIndex1, size_t paragraphIndex2, skia::textlayout::TextDirection newDirection) {
     auto [start, end] = get_start_end_paragraph_pos(paragraphIndex1, paragraphIndex2);
-    for(size_t i = start; i <= end; i++)
-        paragraphs[i].pStyleData.textDirection = newDirection;
-    inputChangedTextBox = true;
-    needsRebuild = true;
+    bool anythingChanged = false;
+    for(size_t i = start; i <= end; i++) {
+        if(paragraphs[i].pStyleData.textDirection != newDirection) {
+            anythingChanged = true;
+            paragraphs[i].pStyleData.textDirection = newDirection;
+        }
+    }
+    if(anythingChanged) {
+        inputChangedTextBox = true;
+        needsRebuild = true;
+    }
 }
 
 ParagraphStyleData TextBox::get_paragraph_style_data_at(size_t paragraphIndex) {
@@ -1029,6 +1043,22 @@ SkRect TextBox::get_cursor_rect(TextPosition pos) {
     constexpr float CURSOR_WIDTH = 3.0f;
 
     return SkRect::MakeXYWH(topPoint.x() - CURSOR_WIDTH * 0.5f, topPoint.y(), CURSOR_WIDTH, height);
+}
+
+skia::textlayout::TextDirection TextBox::get_suggested_direction(size_t pIndex) {
+    rebuild();
+
+    auto u = SkUnicodes::ICU::Make();
+
+    pIndex = std::min(pIndex, paragraphs.size() - 1);
+    auto& pData = paragraphs[pIndex];
+    if(pData.text.empty())
+        return skia::textlayout::TextDirection::kLtr;
+    skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
+    bool exists = pData.p->getGlyphClusterAt(0, &glyphInfo);
+    if(!exists)
+        return skia::textlayout::TextDirection::kLtr;
+    return glyphInfo.fGlyphClusterPosition;
 }
 
 void TextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f) {

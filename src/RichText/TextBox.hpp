@@ -145,6 +145,8 @@ class TextBox {
         void process_rich_text_input(Cursor& cur, const TextData& richText);
 
         SkRect get_cursor_rect(TextPosition pos);
+
+        skia::textlayout::TextDirection get_suggested_direction(size_t pIndex);
     private:
         std::pair<TextPosition, TextPosition> get_start_end_text_pos(TextPosition p1, TextPosition p2);
         std::pair<size_t, size_t> get_start_end_paragraph_pos(size_t p1, size_t p2);

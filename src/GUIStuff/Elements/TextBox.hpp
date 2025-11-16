@@ -21,6 +21,7 @@ template <typename T> class TextBox : public Element {
             force_update_textbox(io, false);
 
             textbox->set_width(std::numeric_limits<float>::max());
+            textbox->set_text_direction_between(0, 0, textbox->get_suggested_direction(0));
 
             CLAY({
                 .layout = {
