@@ -61,20 +61,22 @@ void DrawTextBox::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber
 }
 
 #ifndef IS_SERVER
-std::shared_ptr<DrawComponent> DrawTextBox::copy() const {
+std::shared_ptr<DrawComponent> DrawTextBox::copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawTextBox>();
     a->d = d;
     a->coords = coords;
     a->textBox->set_rich_text_data(textBox->get_rich_text_data());
+    a->init_text_box(drawP);
     return a;
 }
 
-std::shared_ptr<DrawComponent> DrawTextBox::deep_copy() const {
+std::shared_ptr<DrawComponent> DrawTextBox::deep_copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawTextBox>();
     a->d = d;
     a->coords = coords;
     a->textBox->set_rich_text_data(textBox->get_rich_text_data());
     a->collisionTree = collisionTree;
+    a->init_text_box(drawP);
     return a;
 }
 

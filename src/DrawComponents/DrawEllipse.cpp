@@ -27,14 +27,14 @@ void DrawEllipse::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber
 }
 
 #ifndef IS_SERVER
-std::shared_ptr<DrawComponent> DrawEllipse::copy() const {
+std::shared_ptr<DrawComponent> DrawEllipse::copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawEllipse>();
     a->d = d;
     a->coords = coords;
     return a;
 }
 
-std::shared_ptr<DrawComponent> DrawEllipse::deep_copy() const {
+std::shared_ptr<DrawComponent> DrawEllipse::deep_copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawEllipse>();
     a->d = d;
     a->coords = coords;

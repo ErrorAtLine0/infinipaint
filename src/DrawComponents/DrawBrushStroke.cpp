@@ -37,14 +37,14 @@ DrawComponentType DrawBrushStroke::get_type() const {
 
 #ifndef IS_SERVER
 
-std::shared_ptr<DrawComponent> DrawBrushStroke::copy() const {
+std::shared_ptr<DrawComponent> DrawBrushStroke::copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawBrushStroke>();
     a->d = d;
     a->coords = coords;
     return a;
 }
 
-std::shared_ptr<DrawComponent> DrawBrushStroke::deep_copy() const {
+std::shared_ptr<DrawComponent> DrawBrushStroke::deep_copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawBrushStroke>();
     a->d = d;
     a->coords = coords;

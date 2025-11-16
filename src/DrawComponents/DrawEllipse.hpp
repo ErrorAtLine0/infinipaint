@@ -27,8 +27,8 @@ class DrawEllipse : public DrawComponent {
         } d;
 
 #ifndef IS_SERVER
-        virtual std::shared_ptr<DrawComponent> copy() const override;
-        virtual std::shared_ptr<DrawComponent> deep_copy() const override;
+        virtual std::shared_ptr<DrawComponent> copy(DrawingProgram& drawP) const override;
+        virtual std::shared_ptr<DrawComponent> deep_copy(DrawingProgram& drawP) const override;
 
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;

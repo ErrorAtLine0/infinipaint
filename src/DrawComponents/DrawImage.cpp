@@ -43,14 +43,14 @@ void DrawImage::remap_resource_ids(std::unordered_map<ServerClientID, ServerClie
 }
 
 #ifndef IS_SERVER
-std::shared_ptr<DrawComponent> DrawImage::copy() const {
+std::shared_ptr<DrawComponent> DrawImage::copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawImage>();
     a->d = d;
     a->coords = coords;
     return a;
 }
 
-std::shared_ptr<DrawComponent> DrawImage::deep_copy() const {
+std::shared_ptr<DrawComponent> DrawImage::deep_copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawImage>();
     a->d = d;
     a->coords = coords;

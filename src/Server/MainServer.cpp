@@ -26,7 +26,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     world(initWorld)
 {
     for(auto& c : world.drawProg.components.client_list()) {
-        data.components.emplace_back(c->obj->copy());
+        data.components.emplace_back(c->obj->copy(world.drawProg));
         data.components.back()->id = c->obj->id;
         data.idToComponentMap.emplace(data.components.back()->id, data.components.back());
     }

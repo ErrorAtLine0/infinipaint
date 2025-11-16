@@ -271,7 +271,7 @@ void DrawingProgramSelection::selection_to_clipboard() {
     });
     clipboard.components.clear();
     for(auto& c : compVecSort)
-        clipboard.components.emplace_back(c->obj->deep_copy());
+        clipboard.components.emplace_back(c->obj->deep_copy(drawP));
     clipboard.pos = initialSelectionAABB.center();
     clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
     drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
@@ -417,7 +417,7 @@ void DrawingProgramSelection::paste_clipboard() {
     for(auto& r : clipboard.resources)
         resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
     for(auto& c : clipboard.components)
-        placedComponents.emplace_back(c->deep_copy());
+        placedComponents.emplace_back(c->deep_copy(drawP));
     drawP.addToCompCacheOnInsert = false;
     auto compListInserted = drawP.components.client_insert_ordered_vector_items(allPlacement, placedComponents);
     parallel_loop_container(compListInserted, [&](auto& c) {

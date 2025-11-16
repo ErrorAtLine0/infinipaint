@@ -30,14 +30,14 @@ void DrawRectangle::load_file(cereal::PortableBinaryInputArchive& a, VersionNumb
 }
 
 #ifndef IS_SERVER
-std::shared_ptr<DrawComponent> DrawRectangle::copy() const {
+std::shared_ptr<DrawComponent> DrawRectangle::copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawRectangle>();
     a->d = d;
     a->coords = coords;
     return a;
 }
 
-std::shared_ptr<DrawComponent> DrawRectangle::deep_copy() const {
+std::shared_ptr<DrawComponent> DrawRectangle::deep_copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawRectangle>();
     a->d = d;
     a->coords = coords;

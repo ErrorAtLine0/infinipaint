@@ -100,8 +100,8 @@ class DrawComponent {
         void calculate_world_bounds();
         virtual SCollision::AABB<float> get_obj_coord_bounds() const = 0;
 
-        virtual std::shared_ptr<DrawComponent> copy() const = 0;
-        virtual std::shared_ptr<DrawComponent> deep_copy() const = 0;
+        virtual std::shared_ptr<DrawComponent> copy(DrawingProgram& drawP) const = 0;
+        virtual std::shared_ptr<DrawComponent> deep_copy(DrawingProgram& drawP) const = 0;
 
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         void commit_update(DrawingProgram& drawP, bool invalidateCache = true); // invalidateCache = false version should be thread safe
