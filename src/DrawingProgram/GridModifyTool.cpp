@@ -14,6 +14,7 @@ void GridModifyTool::set_grid_id(ServerClientID newGridID) {
     auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
         WorldGrid& g = gridFoundIt->second;
+        oldGrid = g;
         CoordSpaceHelper newCam;
         newCam.inverseScale = g.size / WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
         newCam.pos = g.offset - drawP.world.main.window.size.cast<WorldScalar>() * newCam.inverseScale * WorldScalar(0.5);
@@ -173,5 +174,5 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {
-    drawP.world.gridMan.send_grid_info(gridID);
+    drawP.world.gridMan.send_grid_info(oldGrid, gridID);
 }

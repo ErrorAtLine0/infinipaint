@@ -19,7 +19,7 @@ class GridManager {
             changed = true;
         }
 
-        void send_grid_info(ServerClientID gridID);
+        void send_grid_info(WorldGrid oldGrid, ServerClientID gridID);
         void remove_grid(ServerClientID idToRemove);
         void draw_back(SkCanvas* canvas, const DrawData& drawData);
         void draw_front(SkCanvas* canvas, const DrawData& drawData);

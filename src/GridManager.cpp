@@ -32,22 +32,77 @@ ServerClientID GridManager::add_default_grid(const std::string& newName) {
     g.size = world.drawData.cam.c.inverseScale * WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
     g.offset = world.drawData.cam.c.pos + world.drawData.cam.c.dir_from_space(world.main.window.size.cast<float>() * 0.5f);
     grids[newID] = g;
+    world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_SET_GRID, newID, g);
+
     changed = true;
+
+    world.undo.push({[&world = world, &changed = changed, &grids = grids, newID]() {
+        grids.erase(newID);
+        world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_REMOVE_GRID, newID);
+        changed = true;
+        return true;
+    },
+    [&world = world, &changed = changed, &grids = grids, g, newID]() {
+        grids[newID] = g;
+        world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_SET_GRID, newID, g);
+        changed = true;
+        return true;
+    }});
+
     return newID;
 }
 
-void GridManager::send_grid_info(ServerClientID gridID) {
+void GridManager::send_grid_info(WorldGrid oldGrid, ServerClientID gridID) {
     auto gridFoundIt = grids.find(gridID);
     if(gridFoundIt != grids.end()) {
         WorldGrid& g = gridFoundIt->second;
         world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_SET_GRID, gridID, g);
+
+        world.undo.push({[&world = world, &changed = changed, &grids = grids, gridID, oldGrid]() {
+            auto gridFoundIt = grids.find(gridID);
+            if(gridFoundIt == grids.end())
+                return false;
+            gridFoundIt->second = oldGrid;
+            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_SET_GRID, gridID, oldGrid);
+            changed = true;
+            return true;
+        },
+        [&world = world, &changed = changed, &grids = grids, gridID, g]() {
+            auto gridFoundIt = grids.find(gridID);
+            if(gridFoundIt == grids.end())
+                return false;
+            gridFoundIt->second = g;
+            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_SET_GRID, gridID, g);
+            changed = true;
+            return true;
+        }});
+
+        changed = true;
     }
 }
 
 void GridManager::remove_grid(ServerClientID idToRemove) {
-    grids.erase(idToRemove);
     world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_REMOVE_GRID, idToRemove);
     changed = true;
+    auto it = grids.find(idToRemove);
+    if(it == grids.end())
+        return;
+
+    WorldGrid g = it->second;
+    grids.erase(it);
+
+    world.undo.push({[&world = world, &changed = changed, &grids = grids, idToRemove, g]() {
+        grids[idToRemove] = g;
+        world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_SET_GRID, idToRemove, g);
+        changed = true;
+        return true;
+    },
+    [&world = world, &changed = changed, &grids = grids, idToRemove]() {
+        grids.erase(idToRemove);
+        world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_REMOVE_GRID, idToRemove);
+        changed = true;
+        return true;
+    }});
 }
 
 const std::vector<ServerClientID>& GridManager::sorted_grid_ids() {

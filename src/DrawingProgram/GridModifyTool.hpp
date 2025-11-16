@@ -1,5 +1,6 @@
 #pragma once
 #include "DrawingProgramToolBase.hpp"
+#include "../WorldGrid.hpp"
 
 class DrawingProgram;
 
@@ -14,6 +15,7 @@ class GridModifyTool : public DrawingProgramToolBase {
         virtual bool prevent_undo_or_redo() override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
     private:
+        WorldGrid oldGrid;
         ServerClientID gridID;
         unsigned selectionMode = 0;
 };

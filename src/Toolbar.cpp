@@ -690,8 +690,9 @@ void Toolbar::grid_menu(bool justOpened) {
                 }) {
                     if(gui.svg_icon_button_transparent("visibility eye", grid.visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
+                        WorldGrid oldGrid = grid;
                         grid.visible = !grid.visible;
-                        main.world->gridMan.send_grid_info(gridID);
+                        main.world->gridMan.send_grid_info(oldGrid, gridID);
                     }
                     if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
