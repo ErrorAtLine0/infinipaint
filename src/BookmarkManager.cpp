@@ -34,12 +34,43 @@ void BookmarkManager::add_bookmark(const std::string& name) {
     bookmarks[name] = b;
     world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_NEW_BOOKMARK, name, b);
     changed = true;
+
+    world.undo.push({[&world = world, &changed = changed, &bookmarks = bookmarks, name](){
+        bookmarks.erase(name);
+        world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_REMOVE_BOOKMARK, name);
+        changed = true;
+        return true;
+    },
+    [&world = world, &changed = changed, &bookmarks = bookmarks, name, b]() {
+        bookmarks[name] = b;
+        world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_NEW_BOOKMARK, name, b);
+        changed = true;
+        return true;
+    }});
 }
 
 void BookmarkManager::remove_bookmark(const std::string& name) {
-    bookmarks.erase(name);
     world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_REMOVE_BOOKMARK, name);
-    changed = true;
+    auto it = bookmarks.find(name);
+    if(it != bookmarks.end()) {
+        Bookmark b = it->second;
+        bookmarks.erase(it);
+
+        changed = true;
+
+        world.undo.push({[&world = world, &changed = changed, &bookmarks = bookmarks, name, b](){
+            bookmarks[name] = b;
+            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_NEW_BOOKMARK, name, b);
+            changed = true;
+            return true;
+        },
+        [&world = world, &changed = changed, &bookmarks = bookmarks, name]() {
+            bookmarks.erase(name);
+            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_REMOVE_BOOKMARK, name);
+            changed = true;
+            return true;
+        }});
+    }
 }
 
 void BookmarkManager::jump_to_bookmark(const std::string& name) {
