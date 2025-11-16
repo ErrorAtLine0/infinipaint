@@ -12,17 +12,17 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
         auto icu = SkUnicodes::ICU::Make();
         std::set<std::string> sortedFontSet;
 
-        for(int i = 0; i < io.textFontMgrLocal->countFamilies(); i++) {
+        for(int i = 0; i < io.fonts->localFontMgr->countFamilies(); i++) {
             SkString familyNameSkString;
-            io.textFontMgrLocal->getFamilyName(i, &familyNameSkString);
+            io.fonts->localFontMgr->getFamilyName(i, &familyNameSkString);
             if(familyNameSkString.isEmpty())
                 continue;
             std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
             sortedFontSet.emplace(familyName);
         }
-        for(int i = 0; i < io.textFontMgrFallback->countFamilies(); i++) {
+        for(int i = 0; i < io.fonts->defaultFontMgr->countFamilies(); i++) {
             SkString familyNameSkString;
-            io.textFontMgrFallback->getFamilyName(i, &familyNameSkString);
+            io.fonts->defaultFontMgr->getFamilyName(i, &familyNameSkString);
             if(familyNameSkString.isEmpty())
                 continue;
             std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
@@ -115,7 +115,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                     tStyle.setForegroundColor(SkPaint{io.theme->frontColor1});
                     pStyle.setTextStyle(tStyle);
         
-                    skia::textlayout::ParagraphBuilderImpl pBuilder(pStyle, io.fontCollection, SkUnicodes::ICU::Make());
+                    skia::textlayout::ParagraphBuilderImpl pBuilder(pStyle, io.fonts->collection, SkUnicodes::ICU::Make());
                     tStyle.setFontStyle(SkFontStyle::Normal());
         
                     pBuilder.pushStyle(tStyle);

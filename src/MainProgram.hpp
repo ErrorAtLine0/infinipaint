@@ -63,7 +63,7 @@ class MainProgram {
             WorldScalar inverseScale;
         } clipboard;
 
-        FontData fonts;
+        std::shared_ptr<FontData> fonts;
         TimePoint deltaTime;
         Toolbar toolbar;
         std::shared_ptr<World> world;

@@ -96,7 +96,7 @@ class TextBox {
         void set_width(float newWidth);
         TextPosition insert(TextPosition pos, std::string_view textToInsert, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
         TextPosition remove(TextPosition p1, TextPosition p2);
-        void set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC);
+        void set_font_data(const std::shared_ptr<FontData>& fD);
         void paint(SkCanvas* canvas, const PaintOpts& paintOpts);
         void set_allow_newlines(bool allow);
         float get_height();
@@ -174,7 +174,7 @@ class TextBox {
         float width = 0.0f;
         bool needsRebuild = true;
         unsigned tabWidth = 8;
-        sk_sp<skia::textlayout::FontCollection> fontCollection;
+        std::shared_ptr<FontData> fontData;
 
         struct ParagraphData {
             std::string text;

@@ -17,8 +17,6 @@
 
 #include <src/base/SkUTF.h>
 
-bool fallbackOnEmoji = false;
-
 FontData::FontData()
 {
 #ifdef __EMSCRIPTEN__
@@ -48,17 +46,7 @@ FontData::FontData()
     fallbackOnEmoji = !defaultEmojiFallback;
 }
 
-FontData::~FontData() {
-}
-
-Vector2f get_str_font_bounds(const SkFont& font, const std::string& str) {
-    SkFontMetrics metrics;
-    font.getMetrics(&metrics);
-    float nextText = font.measureText(str.data(), str.length(), SkTextEncoding::kUTF8, nullptr);
-    return Vector2f{nextText, - metrics.fAscent + metrics.fDescent};
-}
-
-const std::vector<SkString>& get_default_font_families() {
+const std::vector<SkString>& FontData::get_default_font_families() const {
     static std::vector<SkString> defaultFontFamilies;
     if(defaultFontFamilies.empty()) {
         defaultFontFamilies.emplace_back("Roboto");
@@ -69,9 +57,19 @@ const std::vector<SkString>& get_default_font_families() {
     return defaultFontFamilies;
 }
 
-void push_default_font_families(std::vector<SkString>& fontFamilies) {
+void FontData::push_default_font_families(std::vector<SkString>& fontFamilies) const {
     fontFamilies.emplace_back("Roboto");
     if(fallbackOnEmoji)
         fontFamilies.emplace_back("Noto Emoji");
     fontFamilies.emplace_back("Noto Kufi Arabic");
+}
+
+FontData::~FontData() {
+}
+
+Vector2f get_str_font_bounds(const SkFont& font, const std::string& str) {
+    SkFontMetrics metrics;
+    font.getMetrics(&metrics);
+    float nextText = font.measureText(str.data(), str.length(), SkTextEncoding::kUTF8, nullptr);
+    return Vector2f{nextText, - metrics.fAscent + metrics.fDescent};
 }

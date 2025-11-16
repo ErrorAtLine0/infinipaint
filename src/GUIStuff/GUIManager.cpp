@@ -44,10 +44,10 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
     pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
     skia::textlayout::TextStyle tStyle;
     tStyle.setFontSize(config->fontSize);
-    tStyle.setFontFamilies(get_default_font_families());
+    tStyle.setFontFamilies(window->io->fonts->get_default_font_families());
     pStyle.setTextStyle(tStyle);
 
-    skia::textlayout::ParagraphBuilderImpl a(pStyle, window->io->fontCollection, SkUnicodes::ICU::Make());
+    skia::textlayout::ParagraphBuilderImpl a(pStyle, window->io->fonts->collection, SkUnicodes::ICU::Make());
     a.addText(str.chars, str.length);
     std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
     p->layout(std::numeric_limits<float>::max());
@@ -117,11 +117,11 @@ void GUIManager::draw(SkCanvas* canvas) {
                 pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
                 skia::textlayout::TextStyle tStyle;
                 tStyle.setFontSize(config->fontSize);
-                tStyle.setFontFamilies(get_default_font_families());
+                tStyle.setFontFamilies(io->fonts->get_default_font_families());
                 tStyle.setColor(convert_vec4<SkColor4f>(config->textColor).toSkColor());
                 pStyle.setTextStyle(tStyle);
 
-                skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
+                skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fonts->collection, SkUnicodes::ICU::Make());
                 a.addText(config->stringContents.chars, config->stringContents.length);
                 std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
                 p->layout(std::numeric_limits<float>::max());

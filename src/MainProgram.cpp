@@ -37,6 +37,7 @@
 #include <Helpers/Networking/NetLibrary.hpp>
 
 MainProgram::MainProgram():
+    fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
     displayName = Random::get().alphanumeric_str(10);

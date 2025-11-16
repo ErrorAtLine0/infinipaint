@@ -4,6 +4,7 @@
 #include <modules/skparagraph/include/TextStyle.h>
 #include "cereal/archives/portable_binary.hpp"
 #include "../SharedTypes.hpp"
+#include "../FontData.hpp"
 
 namespace RichText {
 
@@ -108,6 +109,8 @@ class SizeTextStyleModifier : public TextStyleModifier {
 
 class FontFamiliesTextStyleModifier : public TextStyleModifier {
     public:
+        static std::shared_ptr<FontData> globalFontData;
+
         FontFamiliesTextStyleModifier() = default;
         FontFamiliesTextStyleModifier(const std::vector<SkString>& initFamilies);
         virtual ModifierType get_type() const override;

@@ -170,6 +170,7 @@ bool SizeTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
 }
 
 
+std::shared_ptr<FontData> FontFamiliesTextStyleModifier::globalFontData = nullptr;
 
 FontFamiliesTextStyleModifier::FontFamiliesTextStyleModifier(const std::vector<SkString>& initFamilies): families(initFamilies) {}
 
@@ -190,8 +191,11 @@ void FontFamiliesTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) 
 }
 
 void FontFamiliesTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
+    if(!globalFontData)
+        throw std::runtime_error("[FontFamiliesTextStyleModifier::modify_text_style] global font data not set");
+
     auto familiesToPush = families;
-    push_default_font_families(familiesToPush);
+    globalFontData->push_default_font_families(familiesToPush);
     style.setFontFamilies(familiesToPush);
 }
 

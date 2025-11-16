@@ -86,7 +86,7 @@ template <typename T> class TextBox : public Element {
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
 
             skia::textlayout::TextStyle tStyle;
-            tStyle.setFontFamilies(get_default_font_families());
+            tStyle.setFontFamilies(io.fonts->get_default_font_families());
             tStyle.setFontSize(io.fontSize);
             tStyle.setForegroundPaint(SkPaint{io.theme->frontColor1});
             textbox->set_initial_text_style(tStyle);
@@ -103,7 +103,7 @@ template <typename T> class TextBox : public Element {
                 return;
 
             textbox = std::make_shared<RichText::TextBox>();
-            textbox->set_font_collection(io.fontCollection);
+            textbox->set_font_data(io.fonts);
             textbox->set_allow_newlines(false);
 
             cur = std::make_shared<RichText::TextBox::Cursor>();

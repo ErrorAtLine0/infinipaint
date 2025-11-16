@@ -39,10 +39,8 @@ Toolbar::Toolbar(MainProgram& initMain):
     io(std::make_shared<GUIStuff::UpdateInputData>()),
     main(initMain)
 {
-    io->textTypeface = main.fonts.map["Roboto"];
-    io->textFontMgrLocal = main.fonts.localFontMgr;
-    io->textFontMgrFallback = main.fonts.defaultFontMgr;
-    io->fontCollection = main.fonts.collection;
+    io->textTypeface = main.fonts->map["Roboto"];
+    io->fonts = main.fonts;
     
     load_default_palette();
     load_default_theme();
@@ -824,12 +822,12 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
     pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
     skia::textlayout::TextStyle tStyle;
     tStyle.setFontSize(io->fontSize);
-    tStyle.setFontFamilies(get_default_font_families());
+    tStyle.setFontFamilies(main.fonts->get_default_font_families());
     tStyle.setFontStyle(SkFontStyle::Bold());
     tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io->theme->warningColor : io->theme->frontColor1, alpha)});
     pStyle.setTextStyle(tStyle);
 
-    skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fontCollection, SkUnicodes::ICU::Make());
+    skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fonts->collection, SkUnicodes::ICU::Make());
     if(message.type == ChatMessage::JOIN) {
         std::string messageName = message.name + " ";
         a.addText(messageName.c_str(), messageName.length());

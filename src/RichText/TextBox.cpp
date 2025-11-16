@@ -794,9 +794,9 @@ void TextBox::set_allow_newlines(bool allow) {
     newlinesAllowed = allow;
 }
 
-void TextBox::set_font_collection(const sk_sp<skia::textlayout::FontCollection>& fC) {
-    if(fontCollection != fC) {
-        fontCollection = fC;
+void TextBox::set_font_data(const std::shared_ptr<FontData>& fD) {
+    if(fontData != fD) {
+        fontData = fD;
         inputChangedTextBox = true;
         needsRebuild = true;
     }
@@ -809,6 +809,8 @@ void TextBox::rebuild() {
         auto nextTStyleModIt = tStyleMods.begin();
 
         skia::textlayout::TextStyle tStyle = initialTStyle;
+
+        FontFamiliesTextStyleModifier::globalFontData = fontData;
 
         for(size_t pIndex = 0; pIndex < paragraphs.size(); pIndex++) {
             ParagraphData& pData = paragraphs[pIndex];
@@ -825,7 +827,7 @@ void TextBox::rebuild() {
             }
 
             size_t tIndex = 0;
-            skia::textlayout::ParagraphBuilderImpl a(pStyle, fontCollection, SkUnicodes::ICU::Make());
+            skia::textlayout::ParagraphBuilderImpl a(pStyle, fontData->collection, SkUnicodes::ICU::Make());
 
             for(;;) {
                 if(nextTStyleModIt == tStyleMods.end() || nextTStyleModIt->pos.fParagraphIndex != pIndex) {
