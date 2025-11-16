@@ -7,6 +7,7 @@
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
 #include "Toolbar.hpp"
+#include "VersionConstants.hpp"
 #include "WorldGrid.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <fstream>
@@ -273,14 +274,13 @@ void World::save_to_file(const std::filesystem::path& fileName) {
         filePath = force_extension_on_path(fileName, FILE_EXTENSION);
 
         std::stringstream f;
-        f.write(SAVEFILE_HEADER, SAVEFILE_HEADER_LEN);
+        f.write(VersionConstants::CURRENT_SAVEFILE_HEADER.c_str(), VersionConstants::SAVEFILE_HEADER_LEN);
 
         {
             std::stringstream fWorldDataToCompress;
             {
                 cereal::PortableBinaryOutputArchive a(fWorldDataToCompress);
-                SaveLoadFileOp op{.world = this, .versionStr = SAVEFILE_HEADER};
-                a(op);
+                save_file(a);
             }
 
             std::vector<char> compressedData(ZSTD_compressBound(fWorldDataToCompress.view().size()));
@@ -321,30 +321,26 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
         buffer = byteDataFromFile;
     }
 
-    if(buffer.size() < SAVEFILE_HEADER_LEN)
+    if(buffer.size() < VersionConstants::SAVEFILE_HEADER_LEN)
         throw std::runtime_error("[World::load_from_file] File is not an InfiniPaint canvas (File too small)");
 
-    std::string_view fileHeader = buffer.substr(0, SAVEFILE_HEADER_LEN);
+    std::string_view fileHeader = buffer.substr(0, VersionConstants::SAVEFILE_HEADER_LEN);
+    VersionNumber fileVersion = VersionConstants::header_to_version_number(std::string(fileHeader));
     std::string_view uncompressedDataView;
     std::vector<char> uncompressedDataVector;
 
-    if(fileHeader == SAVEFILE_HEADER || fileHeader == SAVEFILE_HEADER_V2) {
-        uncompressedDataVector.resize(ZSTD_getFrameContentSize(buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN));
-        size_t trueUncompressedSize = ZSTD_decompress(uncompressedDataVector.data(), uncompressedDataVector.size(), buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN);
+    if(fileVersion < VersionNumber(0, 1, 0))
+        uncompressedDataView = std::string_view(buffer.data() + VersionConstants::SAVEFILE_HEADER_LEN, buffer.size() - VersionConstants::SAVEFILE_HEADER_LEN);
+    else {
+        uncompressedDataVector.resize(ZSTD_getFrameContentSize(buffer.data() + VersionConstants::SAVEFILE_HEADER_LEN, buffer.size() - VersionConstants::SAVEFILE_HEADER_LEN));
+        size_t trueUncompressedSize = ZSTD_decompress(uncompressedDataVector.data(), uncompressedDataVector.size(), buffer.data() + VersionConstants::SAVEFILE_HEADER_LEN, buffer.size() - VersionConstants::SAVEFILE_HEADER_LEN);
         uncompressedDataView = std::string_view(uncompressedDataVector.data(), trueUncompressedSize);
     }
-    else if(fileHeader == SAVEFILE_HEADER_V1)
-        uncompressedDataView = std::string_view(buffer.data() + SAVEFILE_HEADER_LEN, buffer.size() - SAVEFILE_HEADER_LEN);
-    else
-        throw std::runtime_error("[World::load_from_file] File is not an InfiniPaint canvas (Wrong header)");
-
-
 
     ByteMemStream f((char*)uncompressedDataView.data(), uncompressedDataView.size());
 
     cereal::PortableBinaryInputArchive a(f);
-    SaveLoadFileOp op{.world = this, .versionStr = std::string(fileHeader)};
-    a(op);
+    load_file(a, fileVersion);
     nextClientID = get_max_id(ownID);
 
     Logger::get().log("USERINFO", "File loaded");
@@ -355,34 +351,34 @@ ClientPortionID World::get_max_id(ServerPortionID serverID) {
     return std::max(std::max(rMan.get_max_id(serverID), drawProg.get_max_id(serverID)), gridMan.get_max_id(serverID));
 }
 
-void World::SaveLoadFileOp::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(world->drawData.cam.c, world->main.window.size.cast<float>().eval());
-    a(convert_vec3<Vector3f>(world->canvasTheme.backColor));
-    world->drawProg.write_to_file(a);
-    a(world->bMan);
-    a(world->gridMan);
-    world->rMan.save_strip_unused_resources(a, world->drawProg.get_used_resources());
+void World::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(drawData.cam.c, main.window.size.cast<float>().eval());
+    a(convert_vec3<Vector3f>(canvasTheme.backColor));
+    drawProg.save_file(a);
+    a(bMan);
+    a(gridMan);
+    rMan.save_strip_unused_resources(a, drawProg.get_used_resources());
 }
 
-void World::SaveLoadFileOp::load(cereal::PortableBinaryInputArchive& a) {
+void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
     CoordSpaceHelper coordsToJumpTo;
     Vector2f windowSizeToJumpTo;
     a(coordsToJumpTo, windowSizeToJumpTo);
 
-    if(versionStr == SAVEFILE_HEADER_V1)
-        world->set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+    if(version < VersionNumber(0, 1, 0))
+        set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
     else {
         Vector3f canvasBackColor;
         a(canvasBackColor);
-        world->set_canvas_background_color(canvasBackColor);
+        set_canvas_background_color(canvasBackColor);
     }
 
-    world->drawData.cam.smooth_move_to(*world, coordsToJumpTo, windowSizeToJumpTo, true);
-    world->drawProg.initialize_draw_data(a);
-    a(world->bMan);
-    if(versionStr == SAVEFILE_HEADER)
-        a(world->gridMan);
-    a(world->rMan);
+    drawData.cam.smooth_move_to(*this, coordsToJumpTo, windowSizeToJumpTo, true);
+    drawProg.load_file(a, version);
+    a(bMan);
+    if(version >= VersionNumber(0, 2, 0))
+        a(gridMan);
+    a(rMan);
 }
 
 WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize) {

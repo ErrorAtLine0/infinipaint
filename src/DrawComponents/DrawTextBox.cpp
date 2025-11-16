@@ -37,6 +37,29 @@ void DrawTextBox::load(cereal::PortableBinaryInputArchive& a) {
     textBox->set_rich_text_data(richText);
 }
 
+void DrawTextBox::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(d.p1, d.p2, textBox->get_rich_text_data());
+}
+
+void DrawTextBox::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    if(version < VersionNumber(0, 3, 0)) {
+        bool editing; // Unused
+        Vector4f textColor;
+        float textSize;
+        RichText::TextBox::Cursor cursor; // Unused, Equivalent to old cursor structure, just paragraph index and text index flipped
+        std::string currentText;
+        a(editing, d.p1, d.p2, textColor, textSize, cursor, currentText);
+        textBox->insert({0, 0}, currentText);
+        textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<ColorTextStyleModifier>(textColor));
+        textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<SizeTextStyleModifier>(textSize));
+    }
+    else {
+        TextData richText;
+        a(d.p1, d.p2, richText);
+        textBox->set_rich_text_data(richText);
+    }
+}
+
 #ifndef IS_SERVER
 std::shared_ptr<DrawComponent> DrawTextBox::copy() const {
     auto a = std::make_shared<DrawTextBox>();

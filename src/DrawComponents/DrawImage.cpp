@@ -24,6 +24,14 @@ void DrawImage::load(cereal::PortableBinaryInputArchive& a) {
     a(d.p1, d.p2, d.imageID);
 }
 
+void DrawImage::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(d.p1, d.p2, d.imageID);
+}
+
+void DrawImage::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    a(d.p1, d.p2, d.imageID);
+}
+
 void DrawImage::get_used_resources(std::unordered_set<ServerClientID>& v) const {
     v.emplace(d.imageID);
 }

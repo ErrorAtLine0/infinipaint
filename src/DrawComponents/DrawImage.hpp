@@ -11,6 +11,8 @@ class DrawImage : public DrawComponent {
     public:
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
+        virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
+        virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
         virtual DrawComponentType get_type() const override;
         virtual void get_used_resources(std::unordered_set<ServerClientID>& v) const override;
         virtual void remap_resource_ids(std::unordered_map<ServerClientID, ServerClientID>& newIDs) override;

@@ -48,14 +48,5 @@ enum ClientCommands : MessageCommandType {
     CLIENT_CANVAS_SCALE
 };
 
-// NOTE: Do not change savefile header length
-#define SAVEFILE_HEADER_LEN 12
-// NOTE: Change these values whenever savefile is incompatible with previous version
-#define SAVEFILE_HEADER    "INFPNT000003"
-#define SAVEFILE_HEADER_V2 "INFPNT000002"
-#define SAVEFILE_HEADER_V1 "INFPNT000001"
-// Version header
-#define VERSION_STRING "0.3.0"
-
 // Arbitrary value. Higher scale up values lead to less scale up events (which can cause stuttering), but leads to larger numbers overall, which can cause a tiny bit of lag and increased memory usage
 #define CANVAS_SCALE_UP_STEP WorldScalar("100000000000000000000000000000000000000000000000000")

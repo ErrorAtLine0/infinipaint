@@ -5,12 +5,28 @@ std::string version_numbers_to_version_str(const VersionNumber& versionNum) {
     return std::to_string(versionNum.major) + "." + std::to_string(versionNum.minor) + "." + std::to_string(versionNum.patch);
 }
 
+bool operator<=(const VersionNumber& a, const VersionNumber& b) {
+    return !(a > b);
+}
+
+bool operator<(const VersionNumber& a, const VersionNumber& b) {
+    return !(a >= b);
+}
+
+bool operator>=(const VersionNumber& a, const VersionNumber& b) {
+    return (a > b) || (a == b);
+}
+
 bool operator>(const VersionNumber& a, const VersionNumber& b) {
     return (a.major > b.major) || (a.major == b.major && (a.minor > b.minor || (a.minor == b.minor && a.patch > b.patch)));
 }
 
 bool operator==(const VersionNumber& a, const VersionNumber& b) {
     return a.major == b.major && a.minor == b.minor && a.patch == b.patch;
+}
+
+bool operator!=(const VersionNumber& a, const VersionNumber& b) {
+    return a.major != b.major || a.minor != b.minor || a.patch != b.patch;
 }
 
 std::optional<VersionNumber> version_str_to_version_numbers(const std::string& versionStr) {

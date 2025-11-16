@@ -23,6 +23,14 @@ void DrawBrushStroke::load(cereal::PortableBinaryInputArchive& a) {
     a(d->points, d->color, d->hasRoundCaps);
 }
 
+void DrawBrushStroke::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(d->points, d->color, d->hasRoundCaps);
+}
+
+void DrawBrushStroke::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    a(d->points, d->color, d->hasRoundCaps);
+}
+
 DrawComponentType DrawBrushStroke::get_type() const {
     return DRAWCOMPONENT_BRUSHSTROKE;
 }

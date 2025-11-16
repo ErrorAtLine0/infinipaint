@@ -34,12 +34,8 @@ class World {
 
         World(MainProgram& initMain, OpenWorldInfo& worldInfo);
 
-        struct SaveLoadFileOp {
-            World* world;
-            std::string versionStr;
-            void save(cereal::PortableBinaryOutputArchive& a) const;
-            void load(cereal::PortableBinaryInputArchive& a);
-        };
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
 
         MainProgram& main;
         DrawData drawData;

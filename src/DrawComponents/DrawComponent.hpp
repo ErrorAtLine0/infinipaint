@@ -6,6 +6,7 @@
 #include "../CoordSpaceHelper.hpp"
 #include "../Server/MainServer.hpp"
 #include "../CollabList.hpp"
+#include <Helpers/VersionNumber.hpp>
 
 #ifndef IS_SERVER
 #include "../DrawData.hpp"
@@ -43,6 +44,8 @@ class DrawComponent {
         static std::shared_ptr<DrawComponent> allocate_comp_type(DrawComponentType type);
         virtual void save(cereal::PortableBinaryOutputArchive& a) const = 0;
         virtual void load(cereal::PortableBinaryInputArchive& a) = 0;
+        virtual void save_file(cereal::PortableBinaryOutputArchive& a) const = 0;
+        virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) = 0;
         virtual DrawComponentType get_type() const = 0;
         virtual void get_used_resources(std::unordered_set<ServerClientID>& v) const;
         virtual void remap_resource_ids(std::unordered_map<ServerClientID, ServerClientID>& newIDs);

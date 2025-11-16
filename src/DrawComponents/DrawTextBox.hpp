@@ -16,6 +16,8 @@ class DrawTextBox : public DrawComponent {
         virtual DrawComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
+        virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
+        virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
 
         // User input data
         struct Data {

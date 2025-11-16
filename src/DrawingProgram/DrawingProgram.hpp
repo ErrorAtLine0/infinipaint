@@ -30,10 +30,13 @@ class DrawingProgram {
         void update();
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
+
         void initialize_draw_data(cereal::PortableBinaryInputArchive& a);
-        std::unordered_set<ServerClientID> get_used_resources();
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
+
+        std::unordered_set<ServerClientID> get_used_resources() const;
         ClientPortionID get_max_id(ServerPortionID serverID);
-        void write_to_file(cereal::PortableBinaryOutputArchive& a);
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
         World& world;
 
         bool prevent_undo_or_redo();

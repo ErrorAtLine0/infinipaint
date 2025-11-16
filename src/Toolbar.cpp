@@ -9,6 +9,7 @@
 #include "GUIStuff/Elements/Element.hpp"
 #include "GUIStuff/GUIManager.hpp"
 #include "InputManager.hpp"
+#include "VersionConstants.hpp"
 #include "World.hpp"
 #include <SDL3/SDL_dialog.h>
 #include <algorithm>
@@ -193,7 +194,7 @@ void Toolbar::load_licenses() {
     std::sort(thirdPartyLicenses.begin(), thirdPartyLicenses.end(), [](const auto& a1, const auto& a2) {
         return std::lexicographical_compare(a1.first.begin(), a1.first.end(), a2.first.begin(), a2.first.end());
     });
-    ownLicenseText = "InfiniPaint v" + std::string(VERSION_STRING);
+    ownLicenseText = "InfiniPaint v" + VersionConstants::CURRENT_VERSION_STRING;
     ownLicenseText +=
 R"(
 
@@ -583,7 +584,7 @@ void Toolbar::update_notification_check() {
                     case FileDownloader::DownloadData::Status::SUCCESS: {
                         updateCheckerData.updateCheckDone = true;
                         std::optional<VersionNumber> newVersion = version_str_to_version_numbers(updateCheckerData.versionFile->str);
-                        std::optional<VersionNumber> currentVersion = version_str_to_version_numbers(VERSION_STRING);
+                        std::optional<VersionNumber> currentVersion = VersionConstants::CURRENT_VERSION_NUMBER;
                         if(newVersion.has_value() && currentVersion.has_value()) {
                             VersionNumber& newV = newVersion.value();
                             VersionNumber& currentV = currentVersion.value();

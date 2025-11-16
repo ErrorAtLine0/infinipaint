@@ -174,7 +174,7 @@ void DrawingProgram::parallel_loop_all_components(std::function<void(const std::
     parallel_loop_container(components.client_list(), func);
 }
 
-std::unordered_set<ServerClientID> DrawingProgram::get_used_resources() {
+std::unordered_set<ServerClientID> DrawingProgram::get_used_resources() const {
     std::unordered_set<ServerClientID> toRet;
     for(auto& c : components.client_list())
         c->obj->get_used_resources(toRet);
@@ -559,6 +559,23 @@ void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a)
     compCache.test_rebuild(components.client_list(), true);
 }
 
+void DrawingProgram::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    uint64_t compCount;
+    a(compCount);
+    for(uint64_t i = 0; i < compCount; i++) {
+        DrawComponentType t;
+        a(t);
+        auto newComp = DrawComponent::allocate_comp_type(t);
+        a(newComp->id, newComp->coords);
+        newComp->load_file(a, version);
+        components.init_emplace_back(newComp);
+    }
+    parallel_loop_all_components([&](const auto& c){
+        c->obj->commit_update(*this, false);
+    });
+    compCache.test_rebuild(components.client_list(), true);
+}
+
 void DrawingProgram::client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents) {
     std::unordered_set<ServerClientID> idsToErase;
     for(auto& c : erasedComponents)
@@ -687,11 +704,12 @@ void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, co
     canvas->drawCircle(sPos.x(), sPos.y(), constantRadius, paintOutline);
 }
 
-void DrawingProgram::write_to_file(cereal::PortableBinaryOutputArchive& a) {
+void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
     auto& cList = components.client_list();
     a((uint64_t)cList.size());
     for(size_t i = 0; i < cList.size(); i++) {
-        a(cList[i]->obj->get_type(), cList[i]->obj->id, cList[i]->obj->coords, *cList[i]->obj);
+        a(cList[i]->obj->get_type(), cList[i]->obj->id, cList[i]->obj->coords);
+        cList[i]->obj->save_file(a);
     }
 }
 

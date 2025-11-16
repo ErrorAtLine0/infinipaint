@@ -18,6 +18,14 @@ void DrawEllipse::load(cereal::PortableBinaryInputArchive& a) {
     a(d.strokeColor, d.fillColor, d.strokeWidth, d.p1, d.p2, d.fillStrokeMode);
 }
 
+void DrawEllipse::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(d.strokeColor, d.fillColor, d.strokeWidth, d.p1, d.p2, d.fillStrokeMode);
+}
+
+void DrawEllipse::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    a(d.strokeColor, d.fillColor, d.strokeWidth, d.p1, d.p2, d.fillStrokeMode);
+}
+
 #ifndef IS_SERVER
 std::shared_ptr<DrawComponent> DrawEllipse::copy() const {
     auto a = std::make_shared<DrawEllipse>();
