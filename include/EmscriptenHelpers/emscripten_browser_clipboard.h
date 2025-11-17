@@ -33,7 +33,7 @@ EM_JS_INLINE(void, paste_js, (paste_handler callback, void *callback_data), {
   /// Paste handler callback signature is:
   ///   void my_handler(std::string const &paste_data, void *callback_data = nullptr);
   document.addEventListener('paste', (event) => {
-    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData('text/plain;charset=UTF-8'), callback, callback_data]);
+    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData('text/plain'), callback, callback_data]);
   });
 });
 
@@ -43,7 +43,7 @@ EM_JS_INLINE(void, copy_js, (copy_handler callback, void *callback_data), {
   ///   char const *my_handler(void *callback_data = nullptr);
   document.addEventListener('copy', (event) => {
     const content_ptr = Module["ccall"]('emscripten_browser_clipboard_detail_copy_return', 'number', ['number', 'number'], [callback, callback_data]);
-    event.clipboardData.setData(mimeType, UTF8ToString(content_ptr));
+    event.clipboardData.setData('text/plain', UTF8ToString(content_ptr));
     event.preventDefault();
   });
 });
