@@ -373,7 +373,11 @@ void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber versi
     else {
         Vector3f canvasBackColor;
         a(canvasBackColor);
-        set_canvas_background_color(canvasBackColor);
+        const Vector3f OLD_DEFAULT_CANVAS_BACKGROUND_COLOR{0.12f, 0.12f, 0.12f};
+        if(version < VersionNumber(0, 3, 0) && canvasBackColor == OLD_DEFAULT_CANVAS_BACKGROUND_COLOR)
+            set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+        else
+            set_canvas_background_color(canvasBackColor);
     }
 
     drawData.cam.smooth_move_to(*this, coordsToJumpTo, windowSizeToJumpTo, true);
