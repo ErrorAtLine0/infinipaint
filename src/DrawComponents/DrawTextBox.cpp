@@ -43,12 +43,12 @@ void DrawTextBox::save_file(cereal::PortableBinaryOutputArchive& a) const {
 
 void DrawTextBox::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
     if(version < VersionNumber(0, 3, 0)) {
-        bool editing; // Unused
+        bool loadedEditing; // Unused
         Vector4f textColor;
         float textSize;
-        RichText::TextBox::Cursor cursor; // Unused, Equivalent to old cursor structure, just paragraph index and text index flipped
+        RichText::TextBox::Cursor loadedCursor; // Unused, Equivalent to old cursor structure, just paragraph index and text index flipped
         std::string currentText;
-        a(editing, d.p1, d.p2, textColor, textSize, cursor, currentText);
+        a(loadedEditing, d.p1, d.p2, textColor, textSize, loadedCursor, currentText);
         textBox->insert({0, 0}, currentText);
         textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<ColorTextStyleModifier>(textColor));
         textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<SizeTextStyleModifier>(textSize));
@@ -64,6 +64,7 @@ void DrawTextBox::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber
 std::shared_ptr<DrawComponent> DrawTextBox::copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawTextBox>();
     a->d = d;
+    *a->cursor = *cursor;
     a->coords = coords;
     a->textBox->set_rich_text_data(textBox->get_rich_text_data());
     a->init_text_box(drawP);
@@ -73,6 +74,7 @@ std::shared_ptr<DrawComponent> DrawTextBox::copy(DrawingProgram& drawP) const {
 std::shared_ptr<DrawComponent> DrawTextBox::deep_copy(DrawingProgram& drawP) const {
     auto a = std::make_shared<DrawTextBox>();
     a->d = d;
+    *a->cursor = *cursor;
     a->coords = coords;
     a->textBox->set_rich_text_data(textBox->get_rich_text_data());
     a->collisionTree = collisionTree;
@@ -83,6 +85,8 @@ std::shared_ptr<DrawComponent> DrawTextBox::deep_copy(DrawingProgram& drawP) con
 void DrawTextBox::update_from_delayed_ptr(const std::shared_ptr<DrawComponent>& delayedUpdatePtr) {
     std::shared_ptr<DrawTextBox> newPtr = std::static_pointer_cast<DrawTextBox>(delayedUpdatePtr);
     d = newPtr->d;
+    *cursor = *newPtr->cursor;
+    textBox->set_rich_text_data(newPtr->textBox->get_rich_text_data());
 }
 
 void DrawTextBox::init_text_box(DrawingProgram& drawP) {

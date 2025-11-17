@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <Helpers/Serializers.hpp>
 #include <SDL3/SDL_dialog.h>
+#include <Helpers/VersionNumber.hpp>
 
 class MainProgram;
 
@@ -55,7 +56,7 @@ class Toolbar {
         GUIStuff::GUIManager gui;
 
         nlohmann::json get_config_json();
-        void set_config_json(const nlohmann::json& j);
+        void set_config_json(const nlohmann::json& j, VersionNumber version);
 
         void save_palettes();
         void load_palettes();

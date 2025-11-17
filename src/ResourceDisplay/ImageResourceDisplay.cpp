@@ -86,16 +86,16 @@ bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileNa
         totalFramesToLoad = codec->getFrameCount();
         imageInfo = codec->getInfo();
         frames.resize(totalFramesToLoad);
+        loadedFrames = 0;
         if(rotate) {
             Logger::get().log("INFO", "Image loaded is rotated, so must rotate dimensions");
             imageInfo = imageInfo.makeDimensions(SkISize(imageInfo.height(), imageInfo.width()));
         }
         try{
-            Logger::get().log("INFO", "[ImageResourceDisplay::load] Failed to create load thread, loading on main thread");
-            loadedFrames = 0;
             loadThread = std::make_unique<std::thread>(&ImageResourceDisplay::load_thread, this);
         }
         catch(...) {
+            Logger::get().log("INFO", "[ImageResourceDisplay::load] Failed to create load thread, loading on main thread");
             load_thread();
         }
         return true;

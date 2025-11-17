@@ -221,7 +221,6 @@ nlohmann::json Toolbar::get_config_json() {
             jKeybinds[json(static_cast<InputManager::KeyCodeEnum>(i))] = main.input.key_assignment_to_str(f->first);
     }
     toRet["keybinds"] = jKeybinds;
-
     toRet["guiScale"] = guiScale;
     toRet["jumpTransitionTime"] = jumpTransitionTime;
     toRet["dragZoomSpeed"] = dragZoomSpeed;
@@ -250,7 +249,7 @@ nlohmann::json Toolbar::get_config_json() {
     return toRet;
 }
 
-void Toolbar::set_config_json(const nlohmann::json& j) {
+void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     using json = nlohmann::json;
     main.input.keyAssignments.clear();
     try {
@@ -274,27 +273,28 @@ void Toolbar::set_config_json(const nlohmann::json& j) {
     catch(...) {
         main.input.keyAssignments = main.input.defaultKeyAssignments;
     }
-    j.at("displayName").get_to(main.displayName);
-    j.at("jumpTransitionTime").get_to(jumpTransitionTime);
-    j.at("dragZoomSpeed").get_to(dragZoomSpeed);
-    j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);
-    j.at("guiScale").get_to(guiScale);
-    j.at("showPerformance").get_to(showPerformance);
-    j.at("useNativeFilePicker").get_to(useNativeFilePicker);
-    j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);
-    j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);
-    j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);
-    j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);
-    j.at("flipZoomToolDirection").get_to(flipZoomToolDirection);
+    try{j.at("displayName").get_to(main.displayName);} catch(...) {}
+    try{j.at("jumpTransitionTime").get_to(jumpTransitionTime);} catch(...) {}
+    try{j.at("dragZoomSpeed").get_to(dragZoomSpeed);} catch(...) {}
+    try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
+    try{j.at("guiScale").get_to(guiScale);} catch(...) {}
+    try{j.at("showPerformance").get_to(showPerformance);} catch(...) {}
+    try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
+    try{j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);} catch(...) {}
+    try{j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);} catch(...) {}
+    try{j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
+    if(version >= VersionNumber(0, 3, 0))
+        try{j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);} catch(...) {}
+    try{j.at("flipZoomToolDirection").get_to(flipZoomToolDirection);} catch(...) {}
 #ifndef __EMSCRIPTEN__
-    j.at("checkForUpdates").get_to(updateCheckerData.checkForUpdates);
+    try{j.at("checkForUpdates").get_to(updateCheckerData.checkForUpdates);} catch(...) {}
 #endif
 
-    j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);
-    j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);
-    j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);
-    j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);
-    j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);
+    try{j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);} catch(...) {}
+    try{j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);} catch(...) {}
+    try{j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);} catch(...) {}
+    try{j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);} catch(...) {}
+    try{j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);} catch(...) {}
 
     main.update_display_names();
 }
@@ -563,6 +563,8 @@ R"(This version contains more known issues than the native version of the app. T
 - Rare crashes
 - If this browser tab is unfocused, or the window is minimized, any InfiniPaint tabs connected online (whether host or client) will be disconnected
 - 4GB memory limit. Might be a problem if you're uploading many files/images
+- Not multithreaded
+- Can't access local fonts
 
 If you like this app, consider downloading the native version for your system)");
         if(gui.text_button_wide("got it", "Got It"))

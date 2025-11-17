@@ -76,6 +76,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
             CLAY({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIT(0, 300)},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(4),
@@ -158,6 +159,14 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                     if(fontChangedFromTextbox && !io->mouse.leftClick && val != std::numeric_limits<size_t>::max())
                         scrollAmount = -static_cast<float>(val) * ENTRY_HEIGHT;
                 });
+                #ifdef __EMSCRIPTEN__
+                    CLAY({
+                        .layout = {
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1)
+                    }}) {
+                        gui->text_label_light_centered("Local fonts not usable in web version");
+                    }
+                #endif
             }
         }
     }

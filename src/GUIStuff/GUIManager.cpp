@@ -313,7 +313,7 @@ void GUIManager::text_label_centered(const std::string& val) {
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
         }
     }) {
-        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize }));
+        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize, .textAlignment = CLAY_TEXT_ALIGN_CENTER}));
     }
 }
 
@@ -324,7 +324,7 @@ void GUIManager::text_label_light_centered(const std::string& val) {
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
         }
     }) {
-        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize }));
+        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize, .textAlignment = CLAY_TEXT_ALIGN_CENTER}));
     }
 }
 

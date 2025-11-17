@@ -3,6 +3,7 @@
 #include "Helpers/HsvRgb.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/Networking/ByteStream.hpp"
+#include "Helpers/VersionNumber.hpp"
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
@@ -338,6 +339,8 @@ void World::load_from_file(const std::filesystem::path& fileName, std::string_vi
     }
 
     ByteMemStream f((char*)uncompressedDataView.data(), uncompressedDataView.size());
+
+    Logger::get().log("INFO", "Loading file from version " + version_numbers_to_version_str(fileVersion));
 
     cereal::PortableBinaryInputArchive a(f);
     load_file(a, fileVersion);

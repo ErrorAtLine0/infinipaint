@@ -1,5 +1,7 @@
 #include "MainProgram.hpp"
 #include "DrawingProgram/DrawingProgramToolBase.hpp"
+#include "Helpers/VersionNumber.hpp"
+#include "VersionConstants.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "cereal/details/helpers.hpp"
 #include <chrono>
@@ -169,6 +171,7 @@ void MainProgram::save_config() {
         using json = nlohmann::json;
         json j;
 
+        j["version"] = VersionConstants::CURRENT_VERSION_STRING;
         j["settings"] = toolbar.get_config_json();
         j["window"]["pos"] = window.writtenPos;
         j["window"]["size"] = window.writtenSize;
@@ -198,11 +201,23 @@ void MainProgram::load_config() {
     toolbar.file_selector_path() = homePath;
     if(f.is_open()) {
         using json = nlohmann::json;
+
         try {
             json j;
             f >> j;
+
+            VersionNumber version(0, 0, 1);
             try {
-                toolbar.set_config_json(j["settings"]);
+                std::string versionStr;
+                j.at("version").get_to(versionStr);
+                auto optVersion = version_str_to_version_numbers(versionStr);
+                if(optVersion.has_value())
+                    version = optVersion.value();
+            }
+            catch(...) {}
+
+            try {
+                toolbar.set_config_json(j["settings"], version);
             }
             catch(...) {}
 #ifndef __EMSCRIPTEN__
