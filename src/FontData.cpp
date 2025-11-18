@@ -1,13 +1,16 @@
 #include "FontData.hpp"
-#include <include/ports/SkFontMgr_directory.h>
 #include <include/ports/SkFontMgr_empty.h>
 #include <include/core/SkFontMetrics.h>
 #include <include/core/SkTextBlob.h>
 #include <iostream>
 
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+    #include <include/ports/SkFontMgr_directory.h>
+#elif _WIN32
+#else
     #include <include/ports/SkFontMgr_fontconfig.h>
     #include <include/ports/SkFontScanner_FreeType.h>
+    #include <include/ports/SkFontMgr_directory.h>
 #endif
 
 #include <src/base/SkUTF.h>
@@ -16,11 +19,15 @@ FontData::FontData()
 {
 #ifdef __EMSCRIPTEN__
     localFontMgr = SkFontMgr_New_Custom_Empty();
+    defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
+#elif _WIN32
+    localFontMgr = SkFontMgr_New_Custom_Empty();
+    defaultFontMgr = SkFontMgr_New_Custom_Empty();
 #else
     localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
+    defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
 #endif
 
-    defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
 
     map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf");
 

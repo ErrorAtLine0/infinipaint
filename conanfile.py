@@ -33,6 +33,22 @@ class CompressorRecipe(ConanFile):
                 "use_system_libwebp": False, # There's a problem compiling libwebp with emscripten in conan
                 "use_conan_libwebp": False
             })
+        elif self.settings.os == "Windows":
+            self.requires("skia/143.20251028.0", options = {
+                "use_system_expat": False,
+                "use_freetype": False,
+                "use_system_harfbuzz": True,
+                "use_conan_harfbuzz": True,
+                "use_system_icu": True,
+                "use_conan_icu": True,
+                "use_system_libjpeg_turbo": False,
+                "use_system_libpng": False,
+                "use_system_libwebp": False,
+                "use_system_zlib": False,
+                "enable_svg": True,
+                "enable_skottie": False,
+                "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
+            })
         else:
             self.requires("skia/143.20251028.0", options = {
                 "use_system_expat": False,
