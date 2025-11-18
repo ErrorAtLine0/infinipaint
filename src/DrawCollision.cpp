@@ -1,6 +1,7 @@
 #include "DrawCollision.hpp"
 #include <include/core/SkPaint.h>
 #include <include/core/SkPath.h>
+#include <include/core/SkPathBuilder.h>
 
 void draw_collider(SkCanvas* canvas, const DrawData& drawData, const SCollision::AABB<float>& aabb, const SkPaint& p) {
     SkRect r = SkRect::MakeLTRB(aabb.min.x(), aabb.min.y(), aabb.max.x(), aabb.max.y());
@@ -12,12 +13,12 @@ void draw_collider(SkCanvas* canvas, const DrawData& drawData, const SCollision:
 }
 
 void draw_collider(SkCanvas* canvas, const DrawData& drawData, const SCollision::Triangle<float>& triangle, const SkPaint& p) {
-    SkPath path;
+    SkPathBuilder path;
     path.moveTo(convert_vec2<SkPoint>(triangle.p[0]));
     path.lineTo(convert_vec2<SkPoint>(triangle.p[1]));
     path.lineTo(convert_vec2<SkPoint>(triangle.p[2]));
     path.close();
-    canvas->drawPath(path, p);
+    canvas->drawPath(path.detach(), p);
 }
 
 void draw_collider(SkCanvas* canvas, const DrawData& drawData, const SCollision::ColliderCollection<float>& collection, const SkPaint& p) {

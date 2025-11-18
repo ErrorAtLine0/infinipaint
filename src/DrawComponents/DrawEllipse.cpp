@@ -1,6 +1,7 @@
 #include "DrawEllipse.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/SCollision.hpp"
+#include <include/core/SkPathBuilder.h>
 
 #ifndef IS_SERVER
 #include "../DrawCollision.hpp"
@@ -70,9 +71,10 @@ void DrawEllipse::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void DrawEllipse::create_draw_data() {
-    ellipsePath = SkPath();
+    SkPathBuilder ellipsePathBuilder;
     SkRect newRect = SkRect::MakeLTRB(d.p1.x(), d.p1.y(), d.p2.x(), d.p2.y());
-    ellipsePath.addOval(newRect);
+    ellipsePathBuilder.addOval(newRect);
+    ellipsePath = ellipsePathBuilder.detach();
 }
 
 void DrawEllipse::initialize_draw_data(DrawingProgram& drawP) {

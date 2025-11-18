@@ -3,6 +3,7 @@
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
 #include <include/core/SkFontMetrics.h>
+#include <include/core/SkPathBuilder.h>
 
 sk_sp<SkRuntimeEffect> WorldGrid::circlePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
@@ -313,13 +314,13 @@ void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawDa
         Vector2f b2 = drawData.cam.c.to_space(b.top_right());
         Vector2f b3 = drawData.cam.c.to_space(b.max);
         Vector2f b4 = drawData.cam.c.to_space(b.bottom_left());
-        SkPath clipPath;
+        SkPathBuilder clipPath;
         clipPath.moveTo(b1.x(), b1.y());
         clipPath.lineTo(b2.x(), b2.y());
         clipPath.lineTo(b3.x(), b3.y());
         clipPath.lineTo(b4.x(), b4.y());
         clipPath.close();
-        canvas->clipPath(clipPath);
+        canvas->clipPath(clipPath.detach());
     }
     canvas->rotate(-drawData.cam.c.rotation * 180.0 / std::numbers::pi);
     canvas->drawPaint(linePaint);

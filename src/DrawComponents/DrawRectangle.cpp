@@ -3,6 +3,7 @@
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkPaint.h>
+#include <include/core/SkPathBuilder.h>
 #include "../SharedTypes.hpp"
 
 #ifndef IS_SERVER
@@ -87,14 +88,16 @@ bool DrawRectangle::collides_within_coords(const SCollision::ColliderCollection<
 }
 
 void DrawRectangle::create_draw_data() {
-    rectPath = SkPath();
+    SkPathBuilder rectPathBuilder;
     if(d.p1.x() == d.p2.x() || d.p1.y() == d.p2.y()) {
-        rectPath.moveTo(convert_vec2<SkPoint>(d.p1));
-        rectPath.lineTo(convert_vec2<SkPoint>(d.p2));
+        rectPathBuilder.moveTo(convert_vec2<SkPoint>(d.p1));
+        rectPathBuilder.lineTo(convert_vec2<SkPoint>(d.p2));
+        rectPath = rectPathBuilder.detach();
     }
     else {
-        SkRect newRect = SkRect::MakeLTRB(d.p1.x(), d.p1.y(), d.p2.x(), d.p2.y());
-        rectPath.addRoundRect(newRect, d.cornerRadius, d.cornerRadius);
+        SkRRect newRect = SkRRect::MakeRectXY(SkRect::MakeLTRB(d.p1.x(), d.p1.y(), d.p2.x(), d.p2.y()), d.cornerRadius, d.cornerRadius);
+        rectPathBuilder.addRRect(newRect);
+        rectPath = rectPathBuilder.detach();
     }
 }
 

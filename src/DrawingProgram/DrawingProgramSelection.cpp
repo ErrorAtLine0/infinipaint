@@ -17,6 +17,7 @@
 #endif
 
 #include <include/effects/SkImageFilters.h>
+#include <include/core/SkPathBuilder.h>
 
 #define ROTATION_POINT_RADIUS_MULTIPLIER 0.7f
 #define ROTATION_POINTS_DISTANCE 20.0f
@@ -515,14 +516,14 @@ void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& 
 
 void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawData) {
     if(is_something_selected() && !camSpaceSelection.triangle.empty()) {
-        SkPath selectionRectPath;
+        SkPathBuilder selectionRectPath;
         selectionRectPath.moveTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[0]));
         selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[1]));
         selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[0].p[2]));
         selectionRectPath.lineTo(convert_vec2<SkPoint>(camSpaceSelection.triangle[1].p[2]));
         selectionRectPath.close();
         SkPaint p{SkColor4f{0.3f, 0.6f, 0.9f, 0.4f}};
-        canvas->drawPath(selectionRectPath, p);
+        canvas->drawPath(selectionRectPath.detach(), p);
 
         if(drawP.is_actual_selection_tool(drawP.drawTool->get_type())) {
             if(transformOpHappening == TransformOperation::NONE || transformOpHappening == TransformOperation::ROTATE || transformOpHappening == TransformOperation::ROTATE_RELOCATE_CENTER)

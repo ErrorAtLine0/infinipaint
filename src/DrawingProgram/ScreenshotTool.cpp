@@ -13,6 +13,7 @@
 #include <include/core/SkSurface.h>
 #include <include/core/SkImage.h>
 #include <include/core/SkData.h>
+#include <include/core/SkPathBuilder.h>
 #include <include/svg/SkSVGCanvas.h>
 #include <include/encode/SkPngEncoder.h>
 #include <include/encode/SkWebpEncoder.h>
@@ -491,9 +492,10 @@ void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             float y2 = std::max(controls.rectY1, controls.rectY2);
             SkPoint p1{x1, y1};
             SkPoint p2{x2, y2};
-            SkPath path1;
-            path1.addRect(p1.x(), p1.y(), p2.x(), p2.y());
-            path1.setFillType(SkPathFillType::kInverseWinding);
+            SkPathBuilder path1B;
+            path1B.addRect(SkRect::MakeLTRB(p1.x(), p1.y(), p2.x(), p2.y()));
+            path1B.setFillType(SkPathFillType::kInverseWinding);
+            SkPath path1 = path1B.detach();
             SkPaint paint1;
             paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
             canvas->drawPath(path1, paint1);

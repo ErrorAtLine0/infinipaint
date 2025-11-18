@@ -4,6 +4,7 @@
 #include <include/core/SkFont.h>
 #include <include/core/SkFontMetrics.h>
 #include <include/core/SkPath.h>
+#include <include/core/SkPathBuilder.h>
 #include "Elements/SVGIcon.hpp"
 #include "Elements/FontPicker.hpp"
 #include "Elements/SelectableButton.hpp"
@@ -139,75 +140,75 @@ void GUIManager::draw(SkCanvas* canvas) {
                 float halfLineWidth = 0.0f;
                 // Top Left corner
                 if (config->cornerRadius.topLeft > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.top;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo(bb.x + halfLineWidth, bb.y + config->cornerRadius.topLeft + halfLineWidth);
-                    path.arcTo((bb.x + halfLineWidth), (bb.y + halfLineWidth), (bb.x + config->cornerRadius.topLeft + halfLineWidth), (bb.y + halfLineWidth), config->cornerRadius.topLeft);
-                    canvas->drawPath(path, p);
+                    path.arcTo(SkPoint{(bb.x + halfLineWidth), (bb.y + halfLineWidth)}, SkPoint{(bb.x + config->cornerRadius.topLeft + halfLineWidth), (bb.y + halfLineWidth)}, config->cornerRadius.topLeft);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Top border
                 if (config->width.top > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.top;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + config->cornerRadius.topLeft + halfLineWidth), (bb.y + halfLineWidth));
                     path.lineTo((bb.x + bb.width - config->cornerRadius.topRight - halfLineWidth), (bb.y + halfLineWidth));
-                    canvas->drawPath(path, p);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Top Right Corner
                 if (config->cornerRadius.topRight > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.top;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + bb.width - config->cornerRadius.topRight - halfLineWidth), (bb.y + halfLineWidth));
-                    path.arcTo((bb.x + bb.width - halfLineWidth), (bb.y + halfLineWidth), (bb.x + bb.width - halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth), config->cornerRadius.topRight);
-                    canvas->drawPath(path, p);
+                    path.arcTo(SkPoint{(bb.x + bb.width - halfLineWidth), (bb.y + halfLineWidth)}, SkPoint{(bb.x + bb.width - halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth)}, config->cornerRadius.topRight);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Right border
                 if (config->width.right > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.right;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + bb.width - halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth));
                     path.lineTo((bb.x + bb.width - halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomRight - halfLineWidth));
-                    canvas->drawPath(path, p);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Bottom Right Corner
                 if (config->cornerRadius.bottomRight > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.bottom;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + bb.width - halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomRight - halfLineWidth));
-                    path.arcTo((bb.x + bb.width - halfLineWidth), (bb.y + bb.height - halfLineWidth), (bb.x + bb.width - config->cornerRadius.bottomRight - halfLineWidth), (bb.y + bb.height - halfLineWidth), config->cornerRadius.bottomRight);
-                    canvas->drawPath(path, p);
+                    path.arcTo(SkPoint{(bb.x + bb.width - halfLineWidth), (bb.y + bb.height - halfLineWidth)}, SkPoint{(bb.x + bb.width - config->cornerRadius.bottomRight - halfLineWidth), (bb.y + bb.height - halfLineWidth)}, config->cornerRadius.bottomRight);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Bottom Border
                 if (config->width.bottom > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.bottom;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + config->cornerRadius.bottomLeft + halfLineWidth), (bb.y + bb.height - halfLineWidth));
                     path.lineTo((bb.x + bb.width - config->cornerRadius.bottomRight - halfLineWidth), (bb.y + bb.height - halfLineWidth));
-                    canvas->drawPath(path, p);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Bottom Left Corner
                 if (config->cornerRadius.bottomLeft > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.bottom;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + config->cornerRadius.bottomLeft + halfLineWidth), (bb.y + bb.height - halfLineWidth));
-                    path.arcTo((bb.x + halfLineWidth), (bb.y + bb.height - halfLineWidth), (bb.x + halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomLeft - halfLineWidth), config->cornerRadius.bottomLeft);
-                    canvas->drawPath(path, p);
+                    path.arcTo(SkPoint{(bb.x + halfLineWidth), (bb.y + bb.height - halfLineWidth)}, SkPoint{(bb.x + halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomLeft - halfLineWidth)}, config->cornerRadius.bottomLeft);
+                    canvas->drawPath(path.detach(), p);
                 }
                 // Left Border
                 if (config->width.left > 0.0f) {
-                    SkPath path;
+                    SkPathBuilder path;
                     float lineWidth = config->width.left;
                     p.setStrokeWidth(lineWidth);
                     path.moveTo((bb.x + halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomLeft - halfLineWidth));
                     path.lineTo((bb.x + halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth));
-                    canvas->drawPath(path, p);
+                    canvas->drawPath(path.detach(), p);
                 }
                 break;
             }

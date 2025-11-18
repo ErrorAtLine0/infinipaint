@@ -1,5 +1,6 @@
 #include "CheckBox.hpp"
 #include <include/core/SkPath.h>
+#include <include/core/SkPathBuilder.h>
 #include <iostream>
 
 namespace GUIStuff {
@@ -53,7 +54,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
         checkP.setStrokeCap(SkPaint::kRound_Cap);
         checkP.setStrokeJoin(SkPaint::kRound_Join);
 
-        SkPath checkPath;
+        SkPathBuilder checkPathB;
         Vector2f checkP1{(4.5/17.0) - 0.5, (8.5/17.0) - 0.5};
         Vector2f checkP2{(7.5/17.0) - 0.5, (12.0/17.0) - 0.5};
         Vector2f checkP3{(12.5/17.0) - 0.5, (6.0/17.0) - 0.5};
@@ -75,11 +76,12 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
         points[3] = lerp_vec(checkP2, rectP4, lerpTime2);
         points[4] = points[0];
 
-        checkPath.moveTo(points[0].x(), points[0].y());
+        checkPathB.moveTo(points[0].x(), points[0].y());
         for(unsigned i = 1; i < 5; i++)
-            checkPath.lineTo(points[i].x(), points[i].y());
-        checkPath.close();
+            checkPathB.lineTo(points[i].x(), points[i].y());
+        checkPathB.close();
 
+        SkPath checkPath = checkPathB.detach();
         canvas->drawPath(checkPath, checkP);
         checkP.setStyle(SkPaint::kStroke_Style);
         canvas->drawPath(checkPath, checkP);

@@ -9,6 +9,7 @@
 #include <ranges>
 #include "../DrawCollision.hpp"
 #include <earcut.hpp>
+#include <include/core/SkPathBuilder.h>
 
 namespace mapbox {
 namespace util {
@@ -111,12 +112,12 @@ void LassoSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->save();
         controls.coords.transform_sk_canvas(canvas, drawData);
 
-        SkPath lassoPath;
+        SkPathBuilder lassoPath;
         lassoPath.moveTo(convert_vec2<SkPoint>(controls.lassoPoints.front()));
         for(Vector2f& p : controls.lassoPoints | std::views::drop(1))
             lassoPath.lineTo(convert_vec2<SkPoint>(p));
 
-        canvas->drawPath(lassoPath, drawP.select_tool_line_paint());
+        canvas->drawPath(lassoPath.detach(), drawP.select_tool_line_paint());
 
         canvas->restore();
     }

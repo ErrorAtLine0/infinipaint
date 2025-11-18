@@ -113,13 +113,17 @@ void DrawBrushStroke::initialize_draw_data(DrawingProgram& drawP) {
             return false;
         };
 
-        brushPath = std::make_shared<SkPath>();
-        brushPathLOD[0] = std::make_shared<SkPath>();
-        brushPathLOD[1] = std::make_shared<SkPath>();
+        auto brushPathBuilder = std::make_shared<SkPathBuilder>();
+        auto brushPathLOD0Builder = std::make_shared<SkPathBuilder>();
+        auto brushPathLOD1Builder = std::make_shared<SkPathBuilder>();
 
-        create_triangles(triangleFunc, points, 0, brushPath);
-        create_triangles(triangleFunc, points, 4, brushPathLOD[0]);
-        create_triangles(triangleFunc, points, 30, brushPathLOD[1]);
+        create_triangles(triangleFunc, points, 0, brushPathBuilder);
+        create_triangles(triangleFunc, points, 4, brushPathLOD0Builder);
+        create_triangles(triangleFunc, points, 30, brushPathLOD1Builder);
+
+        brushPath = std::make_shared<SkPath>(brushPathBuilder->detach());
+        brushPathLOD[0] = std::make_shared<SkPath>(brushPathLOD0Builder->detach());
+        brushPathLOD[1] = std::make_shared<SkPath>(brushPathLOD1Builder->detach());
     }
     create_collider();
 }
@@ -223,7 +227,7 @@ std::vector<DrawBrushStrokePoint> DrawBrushStroke::every_nth_point_include_front
     return toRet;
 }
 
-void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& smoothedPoints, size_t skipVertexCount, std::shared_ptr<SkPath> bPath) {
+void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<DrawBrushStrokePoint>& smoothedPoints, size_t skipVertexCount, std::shared_ptr<SkPathBuilder> bPathBuilder) {
     const int ARC_SMOOTHNESS = 10;
     const int CIRCLE_SMOOTHNESS = 20;
     const std::vector<DrawBrushStrokePoint>& pointsN = d->points;
@@ -239,8 +243,8 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
     }
 
     if(pointsN.size() < 2) {
-        if(bPath && !topPoints.empty())
-            bPath->addPoly({topPoints.data(), topPoints.size()}, false);
+        if(bPathBuilder && !topPoints.empty())
+            bPathBuilder->addPolygon({topPoints.data(), topPoints.size()}, false);
         return;
     }
 
@@ -387,9 +391,9 @@ void DrawBrushStroke::create_triangles(const std::function<bool(Vector2f, Vector
         }
     }
 
-    if(bPath && !topPoints.empty()) {
+    if(bPathBuilder && !topPoints.empty()) {
         topPoints.insert(topPoints.begin(), bottomPoints.rbegin(), bottomPoints.rend());
-        bPath->addPoly({topPoints.data(), topPoints.size()}, false);
+        bPathBuilder->addPolygon({topPoints.data(), topPoints.size()}, false);
     }
 }
 

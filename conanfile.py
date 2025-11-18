@@ -7,7 +7,7 @@ class CompressorRecipe(ConanFile):
 
     def requirements(self):
         if self.settings.os == "Emscripten":
-            self.requires("skia/142.20250802.0", options = {
+            self.requires("skia/143.20251028.0", options = {
                 "enable_svg": True,
                 "use_freetype": True,
                 "use_system_freetype": True,
@@ -34,7 +34,7 @@ class CompressorRecipe(ConanFile):
                 "use_conan_libwebp": False
             })
         else:
-            self.requires("skia/142.20250802.0", options = {
+            self.requires("skia/143.20251028.0", options = {
                 "use_system_expat": False,
                 "use_freetype": True,
                 "use_system_freetype": True,

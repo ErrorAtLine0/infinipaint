@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include <include/core/SkPathBuilder.h>
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -81,9 +82,9 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         linePaint.setStyle(SkPaint::kStroke_Style);
         linePaint.setStrokeCap(SkPaint::kRound_Cap);
         linePaint.setStrokeWidth(drawP.controls.relativeWidth * 2.0f);
-        SkPath erasePath;
+        SkPathBuilder erasePath;
         erasePath.moveTo(convert_vec2<SkPoint>(drawData.main->input.mouse.lastPos));
         erasePath.lineTo(convert_vec2<SkPoint>(drawData.main->input.mouse.pos));
-        canvas->drawPath(erasePath, linePaint);
+        canvas->drawPath(erasePath.detach(), linePaint);
     }
 }

@@ -1,5 +1,6 @@
 #include "PaintCircleMenu.hpp"
 #include "Helpers/ConvertVec.hpp"
+#include <include/core/SkPathBuilder.h>
 
 namespace GUIStuff {
 
@@ -150,7 +151,7 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
     SkRect startOval = SkRect::MakeLTRB(-PALETTE_START, -PALETTE_START, PALETTE_START, PALETTE_START);
     SkRect endOval = SkRect::MakeLTRB(-ROTATE_START, -ROTATE_START, ROTATE_START, ROTATE_START);
     if(colorBarSelect.hovered) {
-        SkPath selectionPath;
+        SkPathBuilder selectionPathBuilder;
         double angleStart = colorSelectionIndex * colorDistribution;
         double angleEnd = (colorSelectionIndex + 1) * colorDistribution;
         Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
@@ -159,17 +160,17 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
         lineP.setStrokeWidth(5.0f);
         lineP.setStroke(true);
         lineP.setStrokeJoin(SkPaint::kRound_Join);
-        selectionPath.moveTo(lineDir1.x() * PALETTE_START, lineDir1.y() * PALETTE_START);
-        selectionPath.lineTo(lineDir1.x() * ROTATE_START, lineDir1.y() * ROTATE_START);
-        selectionPath.arcTo(endOval, angleStart * 180.0 / std::numbers::pi, (angleEnd - angleStart) * 180.0 / std::numbers::pi, false);
-        selectionPath.lineTo(lineDir2.x() * PALETTE_START, lineDir2.y() * PALETTE_START);
-        selectionPath.arcTo(startOval, angleEnd * 180.0 / std::numbers::pi, (angleStart - angleEnd) * 180.0 / std::numbers::pi, false);
-        selectionPath.close();
-        canvas->drawPath(selectionPath, lineP);
+        selectionPathBuilder.moveTo(lineDir1.x() * PALETTE_START, lineDir1.y() * PALETTE_START);
+        selectionPathBuilder.lineTo(lineDir1.x() * ROTATE_START, lineDir1.y() * ROTATE_START);
+        selectionPathBuilder.arcTo(endOval, angleStart * 180.0 / std::numbers::pi, (angleEnd - angleStart) * 180.0 / std::numbers::pi, false);
+        selectionPathBuilder.lineTo(lineDir2.x() * PALETTE_START, lineDir2.y() * PALETTE_START);
+        selectionPathBuilder.arcTo(startOval, angleEnd * 180.0 / std::numbers::pi, (angleStart - angleEnd) * 180.0 / std::numbers::pi, false);
+        selectionPathBuilder.close();
+        canvas->drawPath(selectionPathBuilder.detach(), lineP);
     }
     for(unsigned i = 0; i < d.palette.size(); i++) {
         if(d.palette[i].x() == d.selectedColor->x() && d.palette[i].y() == d.selectedColor->y() && d.palette[i].z() == d.selectedColor->z()) {
-            SkPath selectionPath;
+            SkPathBuilder selectionPathBuilder;
             double angleStart = i * colorDistribution;
             double angleEnd = (i + 1) * colorDistribution;
             Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
@@ -178,13 +179,13 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
             lineP.setStrokeWidth(5.0f);
             lineP.setStroke(true);
             lineP.setStrokeJoin(SkPaint::kRound_Join);
-            selectionPath.moveTo(lineDir1.x() * PALETTE_START, lineDir1.y() * PALETTE_START);
-            selectionPath.lineTo(lineDir1.x() * ROTATE_START, lineDir1.y() * ROTATE_START);
-            selectionPath.arcTo(endOval, angleStart * 180.0 / std::numbers::pi, (angleEnd - angleStart) * 180.0 / std::numbers::pi, false);
-            selectionPath.lineTo(lineDir2.x() * PALETTE_START, lineDir2.y() * PALETTE_START);
-            selectionPath.arcTo(startOval, angleEnd * 180.0 / std::numbers::pi, (angleStart - angleEnd) * 180.0 / std::numbers::pi, false);
-            selectionPath.close();
-            canvas->drawPath(selectionPath, lineP);
+            selectionPathBuilder.moveTo(lineDir1.x() * PALETTE_START, lineDir1.y() * PALETTE_START);
+            selectionPathBuilder.lineTo(lineDir1.x() * ROTATE_START, lineDir1.y() * ROTATE_START);
+            selectionPathBuilder.arcTo(endOval, angleStart * 180.0 / std::numbers::pi, (angleEnd - angleStart) * 180.0 / std::numbers::pi, false);
+            selectionPathBuilder.lineTo(lineDir2.x() * PALETTE_START, lineDir2.y() * PALETTE_START);
+            selectionPathBuilder.arcTo(startOval, angleEnd * 180.0 / std::numbers::pi, (angleStart - angleEnd) * 180.0 / std::numbers::pi, false);
+            selectionPathBuilder.close();
+            canvas->drawPath(selectionPathBuilder.detach(), lineP);
             break;
         }
     }

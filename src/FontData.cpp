@@ -5,12 +5,7 @@
 #include <include/core/SkTextBlob.h>
 #include <iostream>
 
-#ifdef __EMSCRIPTEN__
-#elif _WIN32
-    #include <include/ports/SkTypeface_win.h>
-#elif __APPLE__
-    #include <include/ports/SkFontMgr_mac_ct.h>
-#elif __linux__
+#ifndef __EMSCRIPTEN__
     #include <include/ports/SkFontMgr_fontconfig.h>
     #include <include/ports/SkFontScanner_FreeType.h>
 #endif
@@ -21,14 +16,8 @@ FontData::FontData()
 {
 #ifdef __EMSCRIPTEN__
     localFontMgr = SkFontMgr_New_Custom_Empty();
-#elif _WIN32
-    localFontMgr = SkFontMgr_New_GDI();
-#elif __APPLE__
-    localFontMgr = SkFontMgr_New_Custom_Empty();
-#elif __linux__
-    localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
 #else
-    localFontMgr = SkFontMgr_New_Custom_Empty();
+    localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
 #endif
 
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
