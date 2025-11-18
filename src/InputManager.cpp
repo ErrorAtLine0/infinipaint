@@ -327,7 +327,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             set_key_down(e, KEY_TEXT_DELETE);
             if(text.textBox && key(KEY_TEXT_DELETE).repeat)
                 text.do_textbox_operation_with_undo([&]() {
-                    text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::DELETE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
+                    text.textBox->process_key_input(*text.cursor, RichText::TextBox::InputKey::DEL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, text.modMap);
                 });
             break;
         case SDLK_HOME:

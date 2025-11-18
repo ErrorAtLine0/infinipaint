@@ -144,7 +144,7 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
             else
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::LEFT_WORD : Movement::LEFT, cur.pos));
             break;
-        case InputKey::DELETE:
+        case InputKey::DEL:
             if(cur.selectionBeginPos != cur.selectionEndPos)
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
             else

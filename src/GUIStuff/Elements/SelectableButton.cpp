@@ -22,7 +22,7 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
     else
         backgroundColorHighlight = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    if(drawType == DrawType::TRANSPARENT || drawType == DrawType::TRANSPARENT_BORDER)
+    if(drawType == DrawType::TRANSPARENT_ALL || drawType == DrawType::TRANSPARENT_BORDER)
         backgroundColor = {0.0f, 0.0f, 0.0f, 0.0f};
     else if(drawType == DrawType::FILLED)
         backgroundColor = io.theme->backColor2;

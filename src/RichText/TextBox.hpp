@@ -109,7 +109,7 @@ class TextBox {
             HOME,
             END,
             BACKSPACE,
-            DELETE,
+            DEL,
             ENTER,
             TAB,
             SELECT_ALL

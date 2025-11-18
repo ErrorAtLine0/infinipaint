@@ -61,7 +61,7 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
                                   .layoutDirection = CLAY_LEFT_TO_RIGHT 
                               }
                         }) {
-                            closeButtons[i].update(io, SelectableButton::DrawType::TRANSPARENT, [&](SelectionHelper& s, bool iS) {
+                            closeButtons[i].update(io, SelectableButton::DrawType::TRANSPARENT_ALL, [&](SelectionHelper& s, bool iS) {
                                 if(s.clicked)
                                     closedTab = i;
                                 closeIcons[i].update(io, "data/icons/close.svg", s.held || s.hovered, nullptr);

@@ -6,7 +6,7 @@ namespace GUIStuff {
 class SelectableButton : public Element {
     public:
         enum class DrawType {
-            TRANSPARENT,
+            TRANSPARENT_ALL,
             FILLED,
             FILLED_INVERSE,
             TRANSPARENT_BORDER

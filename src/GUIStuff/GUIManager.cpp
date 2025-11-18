@@ -446,7 +446,7 @@ bool GUIManager::svg_icon_button_transparent(const std::string& id, const std::s
             svg_icon("1", svgPath, is || s.held || s.hovered);
             if(elemUpdate)
                 elemUpdate();
-        }, SelectableButton::DrawType::TRANSPARENT, isSelected);
+        }, SelectableButton::DrawType::TRANSPARENT_ALL, isSelected);
     }
     pop_id();
     return toRet;
@@ -509,7 +509,7 @@ bool GUIManager::text_button_left_transparent(const std::string& id, const std::
                 if(elemUpdate)
                     elemUpdate();
             }
-        }, SelectableButton::DrawType::TRANSPARENT, isSelected);
+        }, SelectableButton::DrawType::TRANSPARENT_ALL, isSelected);
     }
     return toRet;
 }
