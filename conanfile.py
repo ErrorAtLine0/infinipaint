@@ -7,7 +7,7 @@ class CompressorRecipe(ConanFile):
 
     def requirements(self):
         if self.settings.os == "Emscripten":
-            self.requires("skia/143.20251028.0", options = {
+            self.requires("skia-infinipaint/143.20251028.0", options = {
                 "enable_svg": True,
                 "use_freetype": True,
                 "use_system_freetype": True,
@@ -34,7 +34,7 @@ class CompressorRecipe(ConanFile):
                 "use_conan_libwebp": False
             })
         elif self.settings.os == "Windows":
-            self.requires("skia/143.20251028.0", options = {
+            self.requires("skia-infinipaint/143.20251028.0", options = {
                 "use_system_expat": False,
                 "use_freetype": False,
                 "use_system_harfbuzz": True,
@@ -50,7 +50,7 @@ class CompressorRecipe(ConanFile):
                 "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
             })
         else:
-            self.requires("skia/143.20251028.0", options = {
+            self.requires("skia-infinipaint/143.20251028.0", options = {
                 "use_system_expat": False,
                 "use_freetype": True,
                 "use_system_freetype": True,
@@ -92,7 +92,7 @@ class CompressorRecipe(ConanFile):
             self.requires("libcurl/8.16.0")
             
         self.requires("zstd/1.5.7")
-        self.requires("icu/77.1")
+        self.requires("icu-infinipaint/77.1")
 
     def build_requirements(self):
         self.tool_requires("cmake/3.27.0")
