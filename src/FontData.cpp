@@ -7,6 +7,7 @@
 #ifdef __EMSCRIPTEN__
     #include <include/ports/SkFontMgr_directory.h>
 #elif _WIN32
+    #include <include/ports/SkTypeface_win.h>
 #else
     #include <include/ports/SkFontMgr_fontconfig.h>
     #include <include/ports/SkFontScanner_FreeType.h>
@@ -21,8 +22,8 @@ FontData::FontData()
     localFontMgr = SkFontMgr_New_Custom_Empty();
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
 #elif _WIN32
-    localFontMgr = SkFontMgr_New_Custom_Empty();
-    defaultFontMgr = SkFontMgr_New_Custom_Empty();
+    localFontMgr = SkFontMgr_New_DirectWrite();
+    defaultFontMgr = SkFontMgr_New_DirectWrite();
 #else
     localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");

@@ -5,6 +5,7 @@
 #include <curl/multi.h>
 #include <iostream>
 #include <curl/curl.h>
+#include <algorithm>
 
 std::mutex FileDownloader::newDownloadsMutex;
 std::vector<FileDownloader::DownloadHandler> FileDownloader::newDownloads;
