@@ -130,7 +130,9 @@ if((NOT EMSCRIPTEN) AND (GRAPHICS_BACKEND STREQUAL "Vulkan"))
 endif()
 
 if(WIN32)
-    list(APPEND sources "windowsinstall/app.rc")
+    list(APPEND sources 
+        "src/WindowsFontData/CustomFontSetManager.cpp"
+        "windowsinstall/app.rc")
 endif()
 
 # Get libraries
@@ -288,6 +290,10 @@ if((NOT EMSCRIPTEN) AND (NOT APPLE))
 endif()
 
 target_link_libraries(infinipaint zstd::libzstd_static)
+
+if((NOT EMSCRIPTEN) AND WIN32)
+    target_link_libraries(infinipaint dwrite)
+endif()
 
 if(EMSCRIPTEN)
     add_subdirectory(deps/datachannel-wasm EXCLUDE_FROM_ALL)

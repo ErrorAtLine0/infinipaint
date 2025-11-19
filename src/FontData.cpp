@@ -8,6 +8,10 @@
     #include <include/ports/SkFontMgr_directory.h>
 #elif _WIN32
     #include <include/ports/SkTypeface_win.h>
+    #include "WindowsFontData/CustomFontSetManager.h"
+
+    DWriteCustomFontSets::CustomFontSetManager fontSetManagerWindows;
+
 #else
     #include <include/ports/SkFontMgr_fontconfig.h>
     #include <include/ports/SkFontScanner_FreeType.h>
@@ -15,20 +19,28 @@
 #endif
 
 #include <src/base/SkUTF.h>
+#include <filesystem>
 
 FontData::FontData()
 {
+
 #ifdef __EMSCRIPTEN__
     localFontMgr = SkFontMgr_New_Custom_Empty();
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
 #elif _WIN32
     localFontMgr = SkFontMgr_New_DirectWrite();
-    defaultFontMgr = SkFontMgr_New_DirectWrite();
+    std::vector<std::wstring> fontPaths;
+    for(const std::filesystem::path& dirEntry : std::filesystem::recursive_directory_iterator(std::filesystem::path(L"data\\fonts")))
+        fontPaths.emplace_back(dirEntry.wstring());
+    fontSetManagerWindows.CreateFontSetUsingLocalFontFiles(fontPaths);
+    fontSetManagerWindows.CreateFontCollectionFromFontSet();
+
+    IDWriteFactory* fac = fontSetManagerWindows.IDWriteFactory5_IsAvailable() ? fontSetManagerWindows.m_dwriteFactory5.Get() : fontSetManagerWindows.m_dwriteFactory3.Get();
+    defaultFontMgr = SkFontMgr_New_DirectWrite(fac, fontSetManagerWindows.m_customFontCollection.Get());
 #else
     localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
 #endif
-
 
     map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf");
 

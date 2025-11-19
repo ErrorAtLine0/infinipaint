@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 #include <modules/skparagraph/include/FontCollection.h>
 
+#include <dwrite.h>
+
 using namespace Eigen;
 
 struct FontData {
