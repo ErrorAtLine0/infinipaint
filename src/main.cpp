@@ -792,7 +792,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
 
     delete (&mS);
 
-    FileDownloader::cleanup();
-
     SDL_Quit();
+    
+    FileDownloader::cleanup();
 }
