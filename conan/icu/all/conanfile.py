@@ -150,7 +150,7 @@ class ICUConan(ConanFile):
             "--disable-samples",
         ])
         if cross_building(self):
-            base_path = unix_path(self, self.dependencies.build["icu"].package_folder)
+            base_path = unix_path(self, self.dependencies.build["icu-infinipaint"].package_folder)
             tc.configure_args.append(f"--with-cross-build={base_path}")
             if self.settings.os in ["iOS", "tvOS", "watchOS"]:
                 # ICU build scripts interpret all Apple platforms as 'darwin'.

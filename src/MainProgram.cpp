@@ -4,6 +4,8 @@
 #include "VersionConstants.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "cereal/details/helpers.hpp"
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_video.h>
 #include <chrono>
 #include <include/core/SkAlphaType.h>
 #include <include/core/SkColor.h>
@@ -249,6 +251,14 @@ void MainProgram::load_config() {
     toolbar.load_licenses();
 
     NetLibrary::copy_default_p2p_config_to_path(configPath / "p2p.json");
+}
+
+void MainProgram::set_vsync_value(int vsyncValue) {
+    if(!SDL_GL_SetSwapInterval(vsyncValue)) {
+        Logger::get().log("INFO", "Vsync value " + std::to_string(vsyncValue) + " not available. Setting to 1");
+        SDL_GL_SetSwapInterval(1);
+    }
+    window.vsyncValue = vsyncValue;
 }
 
 void MainProgram::draw(SkCanvas* canvas) {

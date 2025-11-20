@@ -12,6 +12,7 @@
 #include "VersionConstants.hpp"
 #include "World.hpp"
 #include <SDL3/SDL_dialog.h>
+#include <SDL3/SDL_render.h>
 #include <algorithm>
 #include <filesystem>
 #include <optional>
@@ -225,6 +226,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["jumpTransitionTime"] = jumpTransitionTime;
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
+    toRet["vsync"] = main.window.vsyncValue;
     toRet["showPerformance"] = showPerformance;
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
@@ -277,6 +279,13 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("jumpTransitionTime").get_to(jumpTransitionTime);} catch(...) {}
     try{j.at("dragZoomSpeed").get_to(dragZoomSpeed);} catch(...) {}
     try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
+    try {
+        j.at("vsync").get_to(main.window.vsyncValue);
+        main.set_vsync_value(main.window.vsyncValue);
+    }
+    catch(...) {
+        main.set_vsync_value(1);
+    }
     try{j.at("guiScale").get_to(guiScale);} catch(...) {}
     try{j.at("showPerformance").get_to(showPerformance);} catch(...) {}
     try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
@@ -1416,6 +1425,15 @@ void Toolbar::options_menu() {
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.checkbox_field("changebrushwidthwithspeed", "Change brush size with mouse speed", &velocityAffectsBrushWidth);
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 3.0f, 1);
+
+                                        gui.text_label("VSync:");
+                                        if(gui.radio_button_field("Vsync On", "On", main.window.vsyncValue == 1))
+                                            main.set_vsync_value(1);
+                                        if(gui.radio_button_field("Vsync Off", "Off", main.window.vsyncValue == 0))
+                                            main.set_vsync_value(0);
+                                        if(gui.radio_button_field("Vsync Adaptive", "Adaptive", main.window.vsyncValue == -1))
+                                            main.set_vsync_value(-1);
+
                                         gui.pop_id();
                                         break;
                                     }
@@ -1426,7 +1444,7 @@ void Toolbar::options_menu() {
                                         gui.input_scalar_field<uint8_t>("middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
                                         gui.input_scalar_field<uint8_t>("right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
                                         #ifdef _WIN32
-                                            gui.checkbox_field("mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity (may fix some issues on Windows, dont check if not required)", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
+                                            gui.checkbox_field("mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
                                         #endif
                                         gui.pop_id();
                                         break;

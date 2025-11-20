@@ -1,5 +1,6 @@
 #pragma once
 #include "DrawData.hpp"
+#include <SDL3/SDL_render.h>
 #include <chrono>
 #include <include/core/SkCanvas.h>
 #include "InputManager.hpp"
@@ -40,6 +41,7 @@ class MainProgram {
             bool fullscreen = false;
             SkColorType defaultColorType;
             SkAlphaType defaultAlphaType;
+            int vsyncValue = 1;
 
             float scale = 1.0f;
 
@@ -91,6 +93,7 @@ class MainProgram {
         void load_config();
 
         void init_net_library();
+        void set_vsync_value(int vsyncValue);
 
         std::filesystem::path homePath;
         std::filesystem::path configPath;

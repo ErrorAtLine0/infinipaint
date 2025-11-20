@@ -310,7 +310,7 @@ void resize_window(MainStruct& mS) {
 
     SkSurfaceProps props2;
     mS.target = GrBackendRenderTargets::MakeGL(mS.m->window.size.x(), mS.m->window.size.y(), 0, mS.kStencilBits, info);
-    mS.surface = SkSurfaces::WrapBackendRenderTarget(mS.ctx.get(), mS.target, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, nullptr, &props2);
+    mS.surface = SkSurfaces::WrapBackendRenderTarget(mS.ctx.get(), mS.target, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, SkColorSpace::MakeSRGB(), &props2);
 
     if(!mS.surface)
         throw std::runtime_error("[resize_window] Could not make surface");
