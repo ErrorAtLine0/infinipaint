@@ -65,9 +65,9 @@ namespace DWriteCustomFontSets
 
     void CustomFontSetManager::CreateFontCollectionFromFontSet() {
         if(IDWriteFactory5_IsAvailable())
-            m_dwriteFactory5->CreateFontCollectionFromFontSet(m_customFontSet.Get(), m_customFontCollection.GetAddressOf());
+            m_dwriteFactory5->CreateFontCollectionFromFontSet(m_customFontSet.Get(), &m_customFontCollection);
         else
-            m_dwriteFactory3->CreateFontCollectionFromFontSet(m_customFontSet.Get(), m_customFontCollection.GetAddressOf());
+            m_dwriteFactory3->CreateFontCollectionFromFontSet(m_customFontSet.Get(), &m_customFontCollection);
     }
 
     //**********************************************************************
