@@ -256,6 +256,10 @@ void MainProgram::load_config() {
 void MainProgram::set_vsync_value(int vsyncValue) {
     if(!SDL_GL_SetSwapInterval(vsyncValue)) {
         Logger::get().log("INFO", "Vsync value " + std::to_string(vsyncValue) + " not available. Setting to 1");
+        if(vsyncValue == -1) {
+            Logger::get().log("USERINFO", "Adaptive VSync not available. Setting Vsync to On");
+            vsyncValue = 1;
+        }
         SDL_GL_SetSwapInterval(1);
     }
     window.vsyncValue = vsyncValue;
