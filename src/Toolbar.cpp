@@ -59,6 +59,7 @@ void Toolbar::load_icons_at(const std::filesystem::path& pathToLoad) {
     for(auto& iconDirEntry : std::filesystem::recursive_directory_iterator(pathToLoad)) {
         if(iconDirEntry.is_regular_file()) {
             std::string iconRelativePath = iconDirEntry.path().relative_path().string();
+            std::replace(iconRelativePath.begin(), iconRelativePath.end(), '\\', '/');
             auto stream = SkStream::MakeFromFile(iconRelativePath.c_str());
             if(!stream)
                 throw std::runtime_error("[Toolbar::Toolbar] Could not open file " + iconRelativePath);
