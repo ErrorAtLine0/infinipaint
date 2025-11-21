@@ -25,9 +25,17 @@ void switch_cwd() {
 
     std::filesystem::current_path(std::filesystem::path(newCWD));
 #elif _WIN32
-	char buffer[4096];
-	GetModuleFileName(NULL, buffer, 4096);
-	std::filesystem::path exePath(buffer);
+    // https://stackoverflow.com/a/33613252 but UTF-8
+    constexpr int MAX_PATH_STEP = 2048;
+    std::string pathStr;
+    DWORD copied = 0;
+    do {
+        pathStr.resize(pathStr.size() + MAX_PATH_STEP);
+        copied = GetModuleFileName(NULL, pathStr.data(), pathStr.size());
+    } while(copied >= pathStr.size());
+    pathStr.resize(copied);
+    
+	std::filesystem::path exePath(pathStr);
 	std::filesystem::current_path(exePath.parent_path());
 #elif __linux__
     std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
