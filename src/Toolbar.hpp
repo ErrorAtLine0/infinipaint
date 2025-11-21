@@ -232,6 +232,8 @@ class Toolbar {
         void start_gui();
         void end_gui();
 
+        void load_icons_at(const std::filesystem::path& pathToLoad);
+
         std::string serverToConnectTo;
         std::string serverLocalID;
 

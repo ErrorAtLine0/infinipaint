@@ -26,14 +26,8 @@ void FileResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const
     std::shared_ptr<GUIStuff::UpdateInputData>& io = drawData.main->toolbar.io;
     auto findSVGData = io->svgData.find(FILE_ICON_PATH);
     sk_sp<SkSVGDOM> svgDom;
-    if(findSVGData == io->svgData.end()) {
-        auto stream = SkStream::MakeFromFile(FILE_ICON_PATH.c_str());
-        if(!stream)
-            throw std::runtime_error("[FileResourceDisplay::draw] Could not open file " + FILE_ICON_PATH);
-        svgDom = SkSVGDOM::Builder().make(*stream);
-        if(!svgDom)
-            throw std::runtime_error("[SVGIcon::update] Could not parse SVG " + FILE_ICON_PATH);
-    }
+    if(findSVGData == io->svgData.end())
+        throw std::runtime_error("[FileResourceDisplay::draw] Could not load icon " + FILE_ICON_PATH);
     else
         svgDom = findSVGData->second;
 

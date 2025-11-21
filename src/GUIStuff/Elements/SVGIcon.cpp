@@ -1,7 +1,5 @@
 #include "SVGIcon.hpp"
 #include "Helpers/ConvertVec.hpp"
-#include <modules/svg/include/SkSVGNode.h>
-#include <include/core/SkStream.h>
 #include <include/core/SkColorFilter.h>
 #include <include/core/SkColorSpace.h>
 #include <iostream>
@@ -10,26 +8,8 @@ namespace GUIStuff {
 
 void SVGIcon::update(UpdateInputData& io, const std::string& newSvgPath, bool newIsHighlighted, const std::function<void()>& elemUpdate) {
     auto findSVGData = io.svgData.find(newSvgPath);
-    if(findSVGData == io.svgData.end()) {
-        auto stream = SkStream::MakeFromFile(newSvgPath.c_str());
-        if(!stream) {
-            std::cout << "[SVGIcon::update] Could not open file " << newSvgPath << std::endl;
-            io.svgData[newSvgPath] = nullptr;
-            svgDom = nullptr;
-        }
-        auto newSvgDom = SkSVGDOM::Builder().make(*stream);
-        if(!newSvgDom) {
-            io.svgData[newSvgPath] = nullptr;
-            svgDom = nullptr;
-            std::cout << "[SVGIcon::update] Could not parse SVG " << newSvgPath << std::endl;
-        }
-        else {
-            io.svgData[newSvgPath] = newSvgDom;
-            svgDom = newSvgDom;
-            if(svgDom->containerSize().width() == 0 || svgDom->containerSize().height() == 0)
-                svgDom->setContainerSize({1000, 1000});
-        }
-    }
+    if(findSVGData == io.svgData.end())
+        throw std::runtime_error("[SVGIcon::update] Could not load icon " + newSvgPath);
     else
         svgDom = findSVGData->second;
 

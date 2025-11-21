@@ -28,6 +28,9 @@
 #include <include/core/SkFontStyle.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
 
+#include <modules/svg/include/SkSVGNode.h>
+#include <include/core/SkStream.h>
+
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
 #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
 
@@ -43,9 +46,34 @@ Toolbar::Toolbar(MainProgram& initMain):
 {
     io->textTypeface = main.fonts->map["Roboto"];
     io->fonts = main.fonts;
+
+    // NOTE: On windows, when the native file picker is open, any call to MakeFromFile fails
+    // So, it's better to load the icons at the beginning of the program so that the icon loading doesn't fail later
+    load_icons_at("data/icons");
     
     load_default_palette();
     load_default_theme();
+}
+
+void Toolbar::load_icons_at(const std::filesystem::path& pathToLoad) {
+    for(auto& iconDirEntry : std::filesystem::recursive_directory_iterator(pathToLoad)) {
+        if(iconDirEntry.is_regular_file()) {
+            std::string iconRelativePath = iconDirEntry.path().relative_path().string();
+            auto stream = SkStream::MakeFromFile(iconRelativePath.c_str());
+            if(!stream)
+                throw std::runtime_error("[Toolbar::Toolbar] Could not open file " + iconRelativePath);
+            auto svgDom = SkSVGDOM::Builder().make(*stream);
+            if(!svgDom)
+                throw std::runtime_error("[Toolbar::Toolbar] Could not parse SVG " + iconRelativePath);
+            else {
+                if(svgDom->containerSize().width() == 0 || svgDom->containerSize().height() == 0)
+                    svgDom->setContainerSize({1000, 1000});
+                io->svgData[iconRelativePath] = svgDom;
+            }
+        }
+        else if(iconDirEntry.is_directory())
+            load_icons_at(iconDirEntry.path());
+    }
 }
 
 void Toolbar::load_default_theme() {
