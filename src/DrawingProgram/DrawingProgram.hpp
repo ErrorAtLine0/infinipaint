@@ -41,7 +41,7 @@ class DrawingProgram {
 
         bool prevent_undo_or_redo();
 
-        void add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread);
+        void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread);
         void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
 
         void parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func);
@@ -82,7 +82,7 @@ class DrawingProgram {
         std::atomic<bool> addFileInNextFrame = false;
         std::pair<std::string, Vector2f> addFileInfo;
 
-        void add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos);
+        void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
 
         void drag_drop_update();
 

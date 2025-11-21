@@ -385,7 +385,7 @@ void init_logs(MainStruct& mS) {
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
     for(int i = 1; i < argc; i++)
-        listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(argv[i])));
+        listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(std::u8string_view(reinterpret_cast<char8_t*>(argv[i])))));
     switch_cwd();
 
     UErrorCode uerr = U_ZERO_ERROR;
@@ -530,10 +530,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             }, true);
         }
         else {
-            for(auto& f : listOfFilesToOpenFromCommand) {
+            for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
                 mS.m->new_tab({
                     .conType = World::CONNECTIONTYPE_LOCAL,
-                    .fileSource = f.string()
+                    .filePathSource = f
                 }, true);
             }
         }
@@ -702,17 +702,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDL_EVENT_DROP_FILE:
                 mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    true,
-                    Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
-                    event->drop.data
+                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
+                    .dataPath = std::u8string_view(reinterpret_cast<const char8_t*>(event->drop.data))
                 });
                 break;
             case SDL_EVENT_DROP_TEXT:
                 mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    false,
-                    Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
-                    event->drop.data
+                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
+                    .dataText = event->drop.data
                 });
                 break;
             case SDL_EVENT_PEN_PROXIMITY_IN: {

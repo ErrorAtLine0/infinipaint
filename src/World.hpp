@@ -26,7 +26,7 @@ class World {
 
         struct OpenWorldInfo {
             ConnectionType conType;
-            std::string fileSource;
+            std::optional<std::filesystem::path> filePathSource;
             std::string netSource;
             std::string serverLocalID;
             std::string_view fileDataBuffer;
@@ -75,8 +75,8 @@ class World {
         ConnectionType conType;
         bool clientStillConnecting = false;
 
-        void save_to_file(const std::filesystem::path& fileName);
-        void load_from_file(const std::filesystem::path& fileName, std::string_view buffer);
+        void save_to_file(const std::filesystem::path& filePathToSaveAt);
+        void load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer);
 
         void undo_with_checks();
         void redo_with_checks();

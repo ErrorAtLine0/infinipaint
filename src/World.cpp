@@ -52,8 +52,8 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
             break;
         }
         case CONNECTIONTYPE_LOCAL: {
-            if(!worldInfo.fileSource.empty())
-                load_from_file(worldInfo.fileSource, worldInfo.fileDataBuffer);
+            if(worldInfo.filePathSource.has_value())
+                load_from_file(worldInfo.filePathSource.value(), worldInfo.fileDataBuffer);
             set_name(name);
             break;
         }
@@ -270,9 +270,9 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     clientStillConnecting = true;
 }
 
-void World::save_to_file(const std::filesystem::path& fileName) {
+void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
     try {
-        filePath = force_extension_on_path(fileName, FILE_EXTENSION);
+        filePath = force_extension_on_path(filePathToSaveAt, FILE_EXTENSION);
 
         std::stringstream f;
         f.write(VersionConstants::CURRENT_SAVEFILE_HEADER.c_str(), VersionConstants::SAVEFILE_HEADER_LEN);
@@ -312,13 +312,13 @@ void World::save_to_file(const std::filesystem::path& fileName) {
     }
 }
 
-void World::load_from_file(const std::filesystem::path& fileName, std::string_view buffer) {
-    filePath = force_extension_on_path(fileName, FILE_EXTENSION);
+void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer) {
+    filePath = force_extension_on_path(filePathToLoadFrom, FILE_EXTENSION);
 
     std::string byteDataFromFile;
 
     if(buffer.empty()) {
-        byteDataFromFile = read_file_to_string(fileName);
+        byteDataFromFile = read_file_to_string(filePath);
         buffer = byteDataFromFile;
     }
 

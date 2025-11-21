@@ -113,9 +113,9 @@ struct InputManager {
     } text;
 
     struct DroppedItem {
-        bool isFile;
         Vector2f pos;
-        std::string droppedData;
+        std::optional<std::string> dataText;
+        std::optional<std::filesystem::path> dataPath;
     };
 
 #ifdef __APPLE__

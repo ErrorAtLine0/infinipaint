@@ -39,7 +39,7 @@ class ResourceManager {
         void update();
         void copy_resource_set_to_map(const std::unordered_set<ServerClientID>& resourceSet, std::unordered_map<ServerClientID, ResourceData>& resourceMap) const;
         void init_client_callbacks();
-        ServerClientID add_resource_file(std::string_view fileName);
+        ServerClientID add_resource_file(const std::filesystem::path& filePath);
         ServerClientID add_resource(const ResourceData& resource);
         ResourceDisplay* get_display_data(const ServerClientID& fileID);
         std::optional<ResourceData> get_resource(const ServerClientID& id) const;

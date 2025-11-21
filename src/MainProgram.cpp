@@ -73,12 +73,12 @@ void MainProgram::update() {
     lastFrameTime = std::chrono::steady_clock::now();
 
     std::erase_if(input.droppedItems, [&](auto& droppedItem) {
-        if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData)) {
-            std::filesystem::path droppedFilePath(droppedItem.droppedData);
+        if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
+            const std::filesystem::path& droppedFilePath = droppedItem.dataPath.value();
             if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
                 new_tab({
                     .conType = World::CONNECTIONTYPE_LOCAL,
-                    .fileSource = droppedFilePath.string()
+                    .filePathSource = droppedFilePath
                 }, true);
                 return true;
             }
@@ -152,7 +152,7 @@ void MainProgram::new_tab_open() {
         newWorld = std::make_unique<World>(*this, newTabToOpenInfo);
     }
     catch(const std::runtime_error& e) {
-        Logger::get().log("WORLDFATAL", "Failed to open canvas: " + std::string(newTabToOpenInfo.fileSource) + " with error: " + e.what());
+        Logger::get().log("WORLDFATAL", "Failed to open canvas: " + (newTabToOpenInfo.filePathSource.has_value() ? newTabToOpenInfo.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
         return;
     }
     worlds.emplace_back(std::move(newWorld));

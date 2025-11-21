@@ -426,14 +426,14 @@ void DrawingProgram::force_rebuild_cache() {
 void DrawingProgram::drag_drop_update() {
     if(controls.cursorHoveringOverCanvas) {
         for(auto& droppedItem : world.main.input.droppedItems) {
-            if(droppedItem.isFile && std::filesystem::is_regular_file(droppedItem.droppedData)) {
+            if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
 #ifdef __EMSCRIPTEN_
-                add_file_to_canvas_by_path(droppedItem.droppedData, world.main.input.mouse.pos, true);
+                add_file_to_canvas_by_path(droppedItem.dataPath.value(), world.main.input.mouse.pos, true);
 #else
-                add_file_to_canvas_by_path(droppedItem.droppedData, droppedItem.pos, true);
+                add_file_to_canvas_by_path(droppedItem.dataPath.value(), droppedItem.pos, true);
 #endif
             }
-            else if(!droppedItem.isFile && is_valid_http_url(droppedItem.droppedData)) {
+            else if(!droppedItem.dataText.has_value() && is_valid_http_url(droppedItem.dataText.value())) {
                 auto img(std::make_shared<DrawImage>());
                 img->coords = world.drawData.cam.c;
                 Vector2f imDim = Vector2f{100.0f, 100.0f};
@@ -445,7 +445,7 @@ void DrawingProgram::drag_drop_update() {
                 auto objAdd = components.client_insert(placement, img);
                 img->client_send_place(*this);
                 add_undo_place_component(objAdd);
-                droppedDownloadingFiles.emplace_back(objAdd, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.droppedData));
+                droppedDownloadingFiles.emplace_back(objAdd, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.dataText.value()));
             }
         }
     }
@@ -492,7 +492,7 @@ void DrawingProgram::update_downloading_dropped_files() {
     });
 }
 
-void DrawingProgram::add_file_to_canvas_by_path(const std::string& filePath, Vector2f dropPos, bool addInSameThread) {
+void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread) {
     if(addInSameThread)
         add_file_to_canvas_by_path_execute(filePath, dropPos);
     else if(!addFileInNextFrame) {
@@ -501,23 +501,25 @@ void DrawingProgram::add_file_to_canvas_by_path(const std::string& filePath, Vec
     }
 }
 
-void DrawingProgram::add_file_to_canvas_by_path_execute(const std::string& filePath, Vector2f dropPos) {
+void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos) {
     ServerClientID imageID = world.rMan.add_resource_file(filePath);
-    ResourceDisplay* display = world.rMan.get_display_data(imageID);
-    Vector2f imTrueDim = display->get_dimensions();
-    auto img(std::make_shared<DrawImage>());
-    img->coords = world.drawData.cam.c;
-    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-    Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
-    img->d.p1 = dropPos - imDim;
-    img->d.p2 = dropPos + imDim;
-    img->d.imageID = imageID;
-    img->commit_update(*this);
-    uint64_t placement = components.client_list().size();
-    auto objAdd = components.client_insert(placement, img);
-    img->client_send_place(*this);
-    add_undo_place_component(objAdd);
+    if(imageID != ServerClientID{0, 0}) {
+        ResourceDisplay* display = world.rMan.get_display_data(imageID);
+        Vector2f imTrueDim = display->get_dimensions();
+        auto img(std::make_shared<DrawImage>());
+        img->coords = world.drawData.cam.c;
+        float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+        float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+        Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
+        img->d.p1 = dropPos - imDim;
+        img->d.p2 = dropPos + imDim;
+        img->d.imageID = imageID;
+        img->commit_update(*this);
+        uint64_t placement = components.client_list().size();
+        auto objAdd = components.client_insert(placement, img);
+        img->client_send_place(*this);
+        add_undo_place_component(objAdd);
+    }
 }
 
 void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {

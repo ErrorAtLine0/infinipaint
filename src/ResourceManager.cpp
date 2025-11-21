@@ -65,11 +65,11 @@ void ResourceManager::update() {
         v->update(world);
 }
 
-ServerClientID ResourceManager::add_resource_file(std::string_view fileName) {
+ServerClientID ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
     // https://nullptr.org/cpp-read-file-into-string/
-    std::ifstream file(fileName.data(), std::ios::in | std::ios::binary | std::ios::ate);
+    std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
     if(!file.is_open()) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + std::string(fileName));
+        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + std::string(filePath));
         return {0, 0};
     }
 
@@ -78,7 +78,7 @@ ServerClientID ResourceManager::add_resource_file(std::string_view fileName) {
     auto tellgResult = file.tellg();
 
     if(tellgResult == -1) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] tellg failed for file " + std::string(fileName));
+        Logger::get().log("INFO", "[ResourceManager::add_resource_file] tellg failed for file " + std::string(filePath));
         return {0, 0};
     }
 
@@ -88,7 +88,7 @@ ServerClientID ResourceManager::add_resource_file(std::string_view fileName) {
 
     ResourceData resource;
     resource.data = std::make_shared<std::string>();
-    resource.name = std::filesystem::path(fileName).filename().string();
+    resource.name = std::filesystem::path(filePath).filename().string();
     std::string& toPlaceIn = *resource.data;
 
     toPlaceIn.resize(resourcesize);
@@ -97,7 +97,7 @@ ServerClientID ResourceManager::add_resource_file(std::string_view fileName) {
 
     file.close();
 
-    Logger::get().log("INFO", "[ResourceManager::add_resource_file] Successfully read file " + std::string(fileName));
+    Logger::get().log("INFO", "[ResourceManager::add_resource_file] Successfully read file " + filePath.string());
 
     return add_resource(resource);
 }

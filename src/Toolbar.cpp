@@ -187,7 +187,7 @@ void Toolbar::color_selector_right(Vector4f* color) {
 }
 
 void Toolbar::load_licenses() {
-    std::filesystem::path third_party_license_path = "data/third_party_licenses";
+    std::filesystem::path third_party_license_path("data/third_party_licenses");
     for(const auto& entry : std::filesystem::directory_iterator(third_party_license_path)) {
         if(entry.is_regular_file())
             thirdPartyLicenses.emplace_back(entry.path().filename().string(), read_file_to_string(entry.path()));
@@ -1269,7 +1269,7 @@ void Toolbar::open_world_file(int conType, const std::string& netSource, const s
             UploadData* uD = (UploadData*)callbackData;
             uD->main->new_tab({
                 .conType = (World::ConnectionType)uD->cT,
-                .fileSource = fileName,
+                .filePathSource = std::filesystem::path(fileName),
                 .netSource = uD->nS,
                 .serverLocalID = uD->sLID,
                 .fileDataBuffer = buffer
@@ -1280,7 +1280,7 @@ void Toolbar::open_world_file(int conType, const std::string& netSource, const s
     open_file_selector("Open", {{"Any File", "*"}, {"InfiniPaint Canvas", World::FILE_EXTENSION}}, [&, conType = conType, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
         main.new_tab({
             .conType = (World::ConnectionType)conType,
-            .fileSource = p.string(),
+            .filePathSource = p,
             .netSource = netSource,
             .serverLocalID = serverLocalID2
         });
@@ -1334,7 +1334,6 @@ void Toolbar::options_menu() {
                             else {
                                 main.new_tab({
                                     .conType = World::CONNECTIONTYPE_CLIENT,
-                                    .fileSource = "",
                                     .netSource = serverToConnectTo
                                 }, true);
                                 optionsMenuOpen = false;
