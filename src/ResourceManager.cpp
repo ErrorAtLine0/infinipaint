@@ -69,7 +69,7 @@ ServerClientID ResourceManager::add_resource_file(const std::filesystem::path& f
     // https://nullptr.org/cpp-read-file-into-string/
     std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
     if(!file.is_open()) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + std::string(filePath));
+        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + filePath.string());
         return {0, 0};
     }
 
@@ -78,7 +78,7 @@ ServerClientID ResourceManager::add_resource_file(const std::filesystem::path& f
     auto tellgResult = file.tellg();
 
     if(tellgResult == -1) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] tellg failed for file " + std::string(filePath));
+        Logger::get().log("INFO", "[ResourceManager::add_resource_file] tellg failed for file " + filePath.string());
         return {0, 0};
     }
 

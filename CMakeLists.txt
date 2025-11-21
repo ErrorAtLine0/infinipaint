@@ -132,6 +132,7 @@ endif()
 if(WIN32)
     list(APPEND sources 
         "src/WindowsFontData/CustomFontSetManager.cpp"
+        "windowsinstall/infinipaint.manifest"
         "windowsinstall/app.rc")
 endif()
 

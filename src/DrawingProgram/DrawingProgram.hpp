@@ -80,7 +80,7 @@ class DrawingProgram {
         bool addToCompCacheOnInsert = true;
 
         std::atomic<bool> addFileInNextFrame = false;
-        std::pair<std::string, Vector2f> addFileInfo;
+        std::pair<std::filesystem::path, Vector2f> addFileInfo;
 
         void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
 
