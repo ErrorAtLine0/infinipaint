@@ -540,7 +540,7 @@ void GUIManager::input_path(const std::string& id, std::filesystem::path* val, s
     push_id(id);
     insert_element<TextBox<std::filesystem::path>>()->update(*io, val, 
         [&](const std::string& a) {
-            std::filesystem::path toRet = std::filesystem::path(a);
+            std::filesystem::path toRet = std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(a.c_str()), a.length()));
             if(fileTypeRestriction != std::filesystem::file_type::none && std::filesystem::status(toRet).type() != fileTypeRestriction)
                 return std::optional<std::filesystem::path>(std::nullopt);
             return std::optional<std::filesystem::path>(toRet);
