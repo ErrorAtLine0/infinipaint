@@ -9,8 +9,6 @@
 #elif __APPLE__
     #include <include/ports/SkFontMgr_mac_ct.h>
     #include <ApplicationServices/ApplicationServices.h>
-#include <string>
-    CTFontCollectionRef fontCollectionRef = nullptr;
 #elif _WIN32
     #include <include/ports/SkTypeface_win.h>
     #include "WindowsFontData/CustomFontSetManager.h"
@@ -91,10 +89,6 @@ void FontData::push_default_font_families(std::vector<SkString>& fontFamilies) c
 }
 
 FontData::~FontData() {
-#ifdef __APPLE__
-    if(fontCollectionRef)
-        CFRelease(fontCollectionRef);
-#endif
 }
 
 Vector2f get_str_font_bounds(const SkFont& font, const std::string& str) {
