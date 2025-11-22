@@ -6,19 +6,22 @@
 #include <modules/skparagraph/src/ParagraphBuilderImpl.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
 #include <Helpers/Random.hpp>
+#include <Helpers/Logger.hpp>
 
 bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GUIManager* gui) {
     if(sortedFontList.empty()) {
         auto icu = SkUnicodes::ICU::Make();
         std::set<std::string> sortedFontSet;
 
-        for(int i = 0; i < io.fonts->localFontMgr->countFamilies(); i++) {
-            SkString familyNameSkString;
-            io.fonts->localFontMgr->getFamilyName(i, &familyNameSkString);
-            if(familyNameSkString.isEmpty())
-                continue;
-            std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
-            sortedFontSet.emplace(familyName);
+        if(io.fonts->localFontMgr) {
+            for(int i = 0; i < io.fonts->localFontMgr->countFamilies(); i++) {
+                SkString familyNameSkString;
+                io.fonts->localFontMgr->getFamilyName(i, &familyNameSkString);
+                if(familyNameSkString.isEmpty())
+                    continue;
+                std::string familyName(familyNameSkString.c_str(), familyNameSkString.size());
+                sortedFontSet.emplace(familyName);
+            }
         }
         for(int i = 0; i < io.fonts->defaultFontMgr->countFamilies(); i++) {
             SkString familyNameSkString;
@@ -30,8 +33,10 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
         }
         sortedFontList = std::vector<std::string>(sortedFontSet.begin(), sortedFontSet.end());
         sortedFontListLowercase = sortedFontList;
-        for(std::string& s : sortedFontListLowercase)
+        for(std::string& s : sortedFontListLowercase) {
             std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+            Logger::get().log("INFO", s);
+        }
     }
 
     if(!fontName)
@@ -57,16 +62,19 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
             }
         });
 
-        auto it = std::lower_bound(sortedFontList.begin(), sortedFontList.end(), *fontName);
-        size_t val = (it != sortedFontList.end() && *it == *fontName) ? (it - sortedFontList.begin()): std::numeric_limits<size_t>::max();
-        if(val == std::numeric_limits<size_t>::max()) {
+        auto it = std::find(sortedFontList.begin(), sortedFontList.end(), *fontName);
+        size_t val = std::numeric_limits<size_t>::max();
+        if(it == sortedFontList.end()) {
             std::string lowerFamilyName = *fontName;
             std::transform(lowerFamilyName.begin(), lowerFamilyName.end(), lowerFamilyName.begin(), ::tolower);
-            auto itLower = std::lower_bound(sortedFontListLowercase.begin(), sortedFontListLowercase.end(), lowerFamilyName);
-            val = (itLower != sortedFontListLowercase.end() && *itLower == lowerFamilyName) ? (itLower - sortedFontListLowercase.begin()): std::numeric_limits<size_t>::max();
-            if(val != std::numeric_limits<size_t>::max())
+            auto itLower = std::find(sortedFontListLowercase.begin(), sortedFontListLowercase.end(), lowerFamilyName);
+            if(itLower != sortedFontListLowercase.end()) {
+                val = itLower - sortedFontListLowercase.begin();
                 *fontName = sortedFontList[val];
+            }
         }
+        else
+            val = it - sortedFontList.begin();
 
         if(gui->svg_icon_button("Open font dropdown", "data/icons/droparrow.svg", dropdownOpen, GUIManager::SMALL_BUTTON_SIZE)) {
             dropdownOpen = !dropdownOpen;

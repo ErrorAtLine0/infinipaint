@@ -6,12 +6,15 @@
 
 #ifdef __EMSCRIPTEN__
     #include <include/ports/SkFontMgr_directory.h>
+#elif __APPLE__
+    #include <include/ports/SkFontMgr_mac_ct.h>
+    #include <ApplicationServices/ApplicationServices.h>
+#include <string>
+    CTFontCollectionRef fontCollectionRef = nullptr;
 #elif _WIN32
     #include <include/ports/SkTypeface_win.h>
     #include "WindowsFontData/CustomFontSetManager.h"
-
     DWriteCustomFontSets::CustomFontSetManager fontSetManagerWindows;
-
 #else
     #include <include/ports/SkFontMgr_fontconfig.h>
     #include <include/ports/SkFontScanner_FreeType.h>
@@ -21,17 +24,30 @@
 #include <src/base/SkUTF.h>
 #include <filesystem>
 
+#include <Helpers/Logger.hpp>
+
 FontData::FontData()
 {
 
 #ifdef __EMSCRIPTEN__
-    localFontMgr = SkFontMgr_New_Custom_Empty();
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
+#elif __APPLE__
+    for(const auto& dirEntry : std::filesystem::recursive_directory_iterator("data/fonts")) {
+        if(dirEntry.is_regular_file()) {
+            std::string urlStr = std::string(std::filesystem::canonical(dirEntry.path()).string());
+            CFURLRef fontURL = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, reinterpret_cast<const UInt8*>(urlStr.c_str()), urlStr.size(), false);
+            CTFontManagerRegisterFontsForURL(fontURL, CTFontManagerScope::kCTFontManagerScopeProcess, nullptr);
+            CFRelease(fontURL);
+        }
+    }
+    defaultFontMgr = SkFontMgr_New_CoreText(nullptr);
 #elif _WIN32
     localFontMgr = SkFontMgr_New_DirectWrite();
     std::vector<std::wstring> fontPaths;
-    for(const std::filesystem::path& dirEntry : std::filesystem::recursive_directory_iterator(std::filesystem::path(L"data\\fonts")))
-        fontPaths.emplace_back(dirEntry.wstring());
+    for(const auto& dirEntry : std::filesystem::recursive_directory_iterator(std::filesystem::path(L"data\\fonts"))) {
+        if(dirEntry.is_regular_file())
+            fontPaths.emplace_back(dirEntry.path().wstring());
+    }
     fontSetManagerWindows.CreateFontSetUsingLocalFontFiles(fontPaths);
     fontSetManagerWindows.CreateFontCollectionFromFontSet();
 
@@ -46,7 +62,8 @@ FontData::FontData()
 
     collection = sk_make_sp<skia::textlayout::FontCollection>();
     collection->setDefaultFontManager(defaultFontMgr, std::vector<SkString>{SkString{"Roboto"}, SkString{"Noto Emoji"}, SkString{"Noto Kufi Arabic"}});
-    collection->setDynamicFontManager(localFontMgr);
+    if(localFontMgr)
+        collection->setDynamicFontManager(localFontMgr);
     std::string s = "🙂";
     const char* sPtr = s.data();
     SkFontStyle defaultStyle;
@@ -74,6 +91,10 @@ void FontData::push_default_font_families(std::vector<SkString>& fontFamilies) c
 }
 
 FontData::~FontData() {
+#ifdef __APPLE__
+    if(fontCollectionRef)
+        CFRelease(fontCollectionRef);
+#endif
 }
 
 Vector2f get_str_font_bounds(const SkFont& font, const std::string& str) {

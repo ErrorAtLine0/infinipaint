@@ -49,6 +49,24 @@ class CompressorRecipe(ConanFile):
                 "enable_skottie": False,
                 "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
             })
+        elif self.settings.os == "Macos":
+            self.requires("skia-infinipaint/143.20251028.0", options = {
+                "use_system_expat": False,
+                "use_freetype": False,
+                "use_system_harfbuzz": True,
+                "use_conan_harfbuzz": True,
+                "use_system_icu": True,
+                "use_conan_icu": True,
+                "use_system_libjpeg_turbo": False,
+                "use_system_libpng": False,
+                "use_system_libwebp": False,
+                "use_system_zlib": False,
+                "use_x11": False,
+                "use_egl": False,
+                "enable_svg": True,
+                "enable_skottie": False,
+                "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
+            })
         else:
             self.requires("skia-infinipaint/143.20251028.0", options = {
                 "use_system_expat": False,

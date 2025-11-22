@@ -72,8 +72,6 @@ void Toolbar::load_icons_at(const std::filesystem::path& pathToLoad) {
                 io->svgData[iconRelativePath] = svgDom;
             }
         }
-        else if(iconDirEntry.is_directory())
-            load_icons_at(iconDirEntry.path());
     }
 }
 
