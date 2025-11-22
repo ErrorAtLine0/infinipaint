@@ -79,8 +79,8 @@ class GUIManager {
         void push_id(const std::string& id);
         void pop_id();
 
-        void scroll_bar_area(const std::string& id, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate);
-        void scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate = nullptr);
+        void scroll_bar_area(const std::string& id, bool clipHorizontal, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate);
+        void scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate = nullptr);
 
         bool input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
         bool input_text(const std::string& id, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);

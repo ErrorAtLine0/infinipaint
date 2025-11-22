@@ -704,7 +704,7 @@ void Toolbar::grid_menu(bool justOpened) {
         if(main.world->gridMan.sorted_grid_ids().empty())
             gui.text_label_centered("No grids yet...");
         ServerClientID toDelete{0, 0};
-        gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.sorted_grid_ids().size(), [&](size_t i, bool isListHovered) {
+        gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.sorted_grid_ids().size(), true, [&](size_t i, bool isListHovered) {
             ServerClientID gridID = main.world->gridMan.sorted_grid_ids()[i];
             WorldGrid& grid = main.world->gridMan.grids[gridID];
             bool selectedEntry = gridID == gridMenu.gridSelected;
@@ -798,7 +798,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
         if(main.world->bMan.sorted_names().empty())
             gui.text_label_centered("No bookmarks yet...");
         std::string toDelete;
-        gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.sorted_names().size(), [&](size_t i, bool isListHovered) {
+        gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.sorted_names().size(), true, [&](size_t i, bool isListHovered) {
             const std::string& bookmark = main.world->bMan.sorted_names()[i];
             bool selectedEntry = bookmark == bookMenu.newName;
             CLAY({
@@ -1423,7 +1423,7 @@ void Toolbar::options_menu() {
                             .layoutDirection = CLAY_TOP_TO_BOTTOM
                         }
                     }) {
-                        gui.scroll_bar_area("general settings scroll area", [&](float, float, float) {
+                        gui.scroll_bar_area("general settings scroll area", false, [&](float, float, float) {
                             CLAY({
                                 .layout = {
                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
@@ -1724,17 +1724,14 @@ void Toolbar::about_menu_gui() {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = 1,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 }
             }) {
-                gui.scroll_bar_area("About Menu Selector Scroll Area", [&](float, float, float) {
+                gui.scroll_bar_area("About Menu Selector Scroll Area", true, [&](float, float, float) {
                     CLAY({
                         .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                            .padding = CLAY_PADDING_ALL(0),
-                            .childGap = 1,
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
                         }
                     }) {
                         if(gui.text_button_left_transparent("infinipaintnoticebutton", "InfiniPaint", selectedLicense == -1)) selectedLicense = -1;
@@ -1744,8 +1741,7 @@ void Toolbar::about_menu_gui() {
                         CLAY({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                .padding = CLAY_PADDING_ALL(0),
-                                .childGap = 1,
+                                .padding = CLAY_PADDING_ALL(1)
                             }
                         }) {
                             gui.push_id(i);
@@ -1756,7 +1752,7 @@ void Toolbar::about_menu_gui() {
                 });
             }
             gui.pop_id();
-            gui.scroll_bar_area("About Menu Text Scroll Area", [&](float, float, float) {
+            gui.scroll_bar_area("About Menu Text Scroll Area", false, [&](float, float, float) {
                 gui.text_label_size((selectedLicense == -1) ? ownLicenseText : thirdPartyLicenses[selectedLicense].second, 0.8f);
             });
         });
@@ -1872,7 +1868,7 @@ void Toolbar::file_picker_gui() {
                 filePicker.refreshEntries = false;
             }
             float entryHeight = 25.0f;
-            gui.scroll_bar_many_entries_area("file picker entries", entryHeight, filePicker.entries.size(), [&](size_t i, bool isListHovered) {
+            gui.scroll_bar_many_entries_area("file picker entries", entryHeight, filePicker.entries.size(), true, [&](size_t i, bool isListHovered) {
                 const std::filesystem::path& entry = filePicker.entries[i];
                 bool selectedEntry = filePicker.currentSelectedPath == entry;
                 CLAY({

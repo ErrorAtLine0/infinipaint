@@ -613,7 +613,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                 }
             }) {
                 obstructing_window();
-                scroll_bar_many_entries_area("dropdown scroll area", 18.0f, selections.size(), [&](size_t i, bool) {
+                scroll_bar_many_entries_area("dropdown scroll area", 18.0f, selections.size(), true, [&](size_t i, bool) {
                     bool selectedEntry = *val == i;
 
                     CLAY({
@@ -659,7 +659,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
     pop_id();
 }
 
-void GUIManager::scroll_bar_area(const std::string& id, const std::function<void(float, float, float&)>& elemUpdate) {
+void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, const std::function<void(float, float, float&)>& elemUpdate) {
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -694,7 +694,7 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
                 .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .clip = {.horizontal = true, .vertical = true, .childOffset = {.x = 0, .y = Clay_GetScrollOffset().y}}
+            .clip = {.horizontal = clipHorizontal, .vertical = true, .childOffset = {.x = 0, .y = Clay_GetScrollOffset().y}}
         }) {
             elemUpdate(sD.contentDimensions, sD.containerDimensions, sD.currentScrollPos);
         }
@@ -773,9 +773,9 @@ void GUIManager::scroll_bar_area(const std::string& id, const std::function<void
 }
 
 
-void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float&)>& elemUpdate) {
+void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float&)>& elemUpdate) {
     push_id(id);
-    scroll_bar_area(id, [&](float scrollContentHeight, float containerHeight, float& scrollAmount) {
+    scroll_bar_area(id, clipHorizontal, [&](float scrollContentHeight, float containerHeight, float& scrollAmount) {
         if(elemUpdate)
             elemUpdate(scrollContentHeight, containerHeight, scrollAmount);
 

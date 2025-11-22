@@ -103,7 +103,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                 gui->obstructing_window();
                 if(Clay_Hovered())
                     clickedOut = false;
-                gui->scroll_bar_many_entries_area("Font Selector", ENTRY_HEIGHT, sortedFontList.size(), [fontName, gui, &fontChangedFromSelection, &sortedFontList = sortedFontList, val, &io = io](size_t i, bool listHovered) {
+                gui->scroll_bar_many_entries_area("Font Selector", ENTRY_HEIGHT, sortedFontList.size(), true, [fontName, gui, &fontChangedFromSelection, &sortedFontList = sortedFontList, val, &io = io](size_t i, bool listHovered) {
                     bool selectedEntry = val == i;
         
                     skia::textlayout::ParagraphStyle pStyle;
