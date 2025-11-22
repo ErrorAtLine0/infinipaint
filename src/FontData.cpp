@@ -22,8 +22,6 @@
 #include <src/base/SkUTF.h>
 #include <filesystem>
 
-#include <Helpers/Logger.hpp>
-
 FontData::FontData()
 {
 

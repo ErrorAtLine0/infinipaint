@@ -6,7 +6,6 @@
 #include <modules/skparagraph/src/ParagraphBuilderImpl.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
 #include <Helpers/Random.hpp>
-#include <Helpers/Logger.hpp>
 
 bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GUIManager* gui) {
     if(sortedFontList.empty()) {
@@ -33,10 +32,8 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
         }
         sortedFontList = std::vector<std::string>(sortedFontSet.begin(), sortedFontSet.end());
         sortedFontListLowercase = sortedFontList;
-        for(std::string& s : sortedFontListLowercase) {
+        for(std::string& s : sortedFontListLowercase)
             std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-            Logger::get().log("INFO", s);
-        }
     }
 
     if(!fontName)
