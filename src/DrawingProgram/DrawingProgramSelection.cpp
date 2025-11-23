@@ -471,7 +471,7 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 }
 
 Vector2f DrawingProgramSelection::get_rotation_point_pos_from_angle(double angle) {
-    return Vector2f{rotateData.centerHandlePoint + ROTATION_POINTS_DISTANCE * Vector2f{std::cos(angle), std::sin(angle)}};
+    return Vector2f{rotateData.centerHandlePoint + ROTATION_POINTS_DISTANCE * drawP.world.main.toolbar.final_gui_scale() * Vector2f{std::cos(angle), std::sin(angle)}};
 }
 
 void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {
