@@ -459,15 +459,15 @@ bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
 }
 
 bool DrawingProgramSelection::mouse_collided_with_scale_point() {
-    return SCollision::collide(SCollision::Circle(scaleData.handlePoint, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos);
+    return SCollision::collide(SCollision::Circle(scaleData.handlePoint, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos);
 }
 
 bool DrawingProgramSelection::mouse_collided_with_rotate_center_handle_point() {
-    return SCollision::collide(SCollision::Circle(rotateData.centerHandlePoint, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos);
+    return SCollision::collide(SCollision::Circle(rotateData.centerHandlePoint, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos);
 }
 
 bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
-    return SCollision::collide(SCollision::Circle(rotateData.handlePoint, DRAG_POINT_RADIUS * ROTATION_POINT_RADIUS_MULTIPLIER), drawP.world.main.input.mouse.pos);
+    return SCollision::collide(SCollision::Circle(rotateData.handlePoint, drawP.drag_point_radius() * ROTATION_POINT_RADIUS_MULTIPLIER), drawP.world.main.input.mouse.pos);
 }
 
 Vector2f DrawingProgramSelection::get_rotation_point_pos_from_angle(double angle) {

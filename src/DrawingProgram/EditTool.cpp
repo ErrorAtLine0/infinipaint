@@ -143,7 +143,7 @@ void EditTool::tool_update() {
             bool clickedAway = false;
             if(!controls.pointDragging && drawP.controls.leftClick) {
                 for(HandleData& h : controls.pointHandles) {
-                    if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(a->coords.from_space(*h.p)), DRAG_POINT_RADIUS))) {
+                    if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(a->coords.from_space(*h.p)), drawP.drag_point_radius()))) {
                         controls.pointDragging = &h;
                         isMovingPoint = true;
                         break;

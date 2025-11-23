@@ -87,17 +87,17 @@ void GridModifyTool::tool_update() {
                 if(drawP.controls.leftClick) {
                     Vector2f gOffsetScreenPos = drawP.world.drawData.cam.c.to_space(g.offset);
                     Vector2f gSizeScreenPos = drawP.world.drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
-                    if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                    if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
                         selectionMode = 1;
-                    else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                    else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
                         selectionMode = 2;
                     else if(g.bounds.has_value()) {
                         const auto& b = g.bounds.value();
                         Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
                         Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
-                        if(SCollision::collide(SCollision::Circle(bMin, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                        if(SCollision::collide(SCollision::Circle(bMin, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
                             selectionMode = 3;
-                        else if(SCollision::collide(SCollision::Circle(bMax, DRAG_POINT_RADIUS), drawP.world.main.input.mouse.pos))
+                        else if(SCollision::collide(SCollision::Circle(bMax, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
                             selectionMode = 4;
                     }
                 }

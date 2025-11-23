@@ -19,8 +19,6 @@
 
 class World;
 
-#define DRAG_POINT_RADIUS 10.0f
-
 class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
@@ -86,6 +84,7 @@ class DrawingProgram {
 
         void drag_drop_update();
 
+        float drag_point_radius();
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
 
         void add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo);

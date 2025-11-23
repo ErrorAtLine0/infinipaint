@@ -462,14 +462,14 @@ void ScreenshotTool::commit_rect() {
     controls.rectY1 = std::min(y1, y2);
     controls.rectY2 = std::max(y1, y2);
 
-    controls.circles[0] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2                          , controls.rectY2})), DRAG_POINT_RADIUS};
-    controls.circles[1] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({(controls.rectX1 + controls.rectX2) * 0.5, controls.rectY2})), DRAG_POINT_RADIUS};
-    controls.circles[2] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX1                          , controls.rectY2})), DRAG_POINT_RADIUS};
-    controls.circles[3] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX1, (controls.rectY1 + controls.rectY2) * 0.5})), DRAG_POINT_RADIUS};
-    controls.circles[4] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX1                          , controls.rectY1})), DRAG_POINT_RADIUS};
-    controls.circles[5] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({(controls.rectX1 + controls.rectX2) * 0.5, controls.rectY1})), DRAG_POINT_RADIUS};
-    controls.circles[6] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2                          , controls.rectY1})), DRAG_POINT_RADIUS};
-    controls.circles[7] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2, (controls.rectY1 + controls.rectY2) * 0.5})), DRAG_POINT_RADIUS};
+    controls.circles[0] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2                          , controls.rectY2})), drawP.drag_point_radius()};
+    controls.circles[1] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({(controls.rectX1 + controls.rectX2) * 0.5, controls.rectY2})), drawP.drag_point_radius()};
+    controls.circles[2] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX1                          , controls.rectY2})), drawP.drag_point_radius()};
+    controls.circles[3] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX1, (controls.rectY1 + controls.rectY2) * 0.5})), drawP.drag_point_radius()};
+    controls.circles[4] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX1                          , controls.rectY1})), drawP.drag_point_radius()};
+    controls.circles[5] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({(controls.rectX1 + controls.rectX2) * 0.5, controls.rectY1})), drawP.drag_point_radius()};
+    controls.circles[6] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2                          , controls.rectY1})), drawP.drag_point_radius()};
+    controls.circles[7] = {drawP.world.drawData.cam.c.to_space(controls.coords.from_space({controls.rectX2, (controls.rectY1 + controls.rectY2) * 0.5})), drawP.drag_point_radius()};
 }
 
 bool ScreenshotTool::prevent_undo_or_redo() {

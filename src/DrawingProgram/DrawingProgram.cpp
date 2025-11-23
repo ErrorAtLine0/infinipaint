@@ -696,8 +696,12 @@ ClientPortionID DrawingProgram::get_max_id(ServerPortionID serverID) {
     return maxClientID;
 }
 
+float DrawingProgram::drag_point_radius() {
+    return 8.0f * world.main.toolbar.final_gui_scale();
+}
+
 void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier) {
-    float constantRadius = DRAG_POINT_RADIUS * radiusMultiplier;
+    float constantRadius = drag_point_radius() * radiusMultiplier;
     float constantThickness = constantRadius * 0.2f;
     canvas->drawCircle(sPos.x(), sPos.y(), constantRadius, SkPaint(c));
     SkPaint paintOutline(SkColor4f{0.95f, 0.95f, 0.95f, 1.0f});
