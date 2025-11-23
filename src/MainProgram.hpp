@@ -45,7 +45,9 @@ class MainProgram {
 
             float density = 1.0f;
             float scale = 1.0f;
-            bool applyDisplayScale = true;
+            #ifndef __EMSCRIPTEN__
+                bool applyDisplayScale = true;
+            #endif
 
             int defaultMSAASampleCount = 0;
             SkSurfaceProps defaultMSAASurfaceProps;

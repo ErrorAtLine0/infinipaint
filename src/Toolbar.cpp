@@ -254,7 +254,9 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
     toRet["vsync"] = main.window.vsyncValue;
+#ifndef __EMSCRIPTEN__
     toRet["applyDisplayScale"] = main.window.applyDisplayScale;
+#endif
     toRet["showPerformance"] = showPerformance;
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
@@ -314,7 +316,9 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     catch(...) {
         main.set_vsync_value(1);
     }
+#ifndef __EMSCRIPTEN__
     try{j.at("applyDisplayScale").get_to(main.window.applyDisplayScale);} catch(...) {}
+#endif
     try{j.at("guiScale").get_to(guiScale);} catch(...) {}
     try{j.at("showPerformance").get_to(showPerformance);} catch(...) {}
     try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
@@ -1462,7 +1466,9 @@ void Toolbar::options_menu() {
                                         if(gui.radio_button_field("Vsync Adaptive", "Adaptive", main.window.vsyncValue == -1))
                                             main.set_vsync_value(-1);
 
+                                        #ifndef __EMSCRIPTEN__
                                         gui.checkbox_field("apply display scale", "Apply display scale", &main.window.applyDisplayScale);
+                                        #endif
 
                                         gui.pop_id();
                                         break;

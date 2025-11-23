@@ -266,7 +266,11 @@ void MainProgram::set_vsync_value(int vsyncValue) {
 }
 
 void MainProgram::update_scale_and_density() {
+#ifdef __EMSCRIPTEN__
+    window.scale = 1.0f;
+#else
     window.scale = window.applyDisplayScale ? SDL_GetWindowDisplayScale(window.sdlWindow) : 1.0f;
+#endif
     window.density = SDL_GetWindowPixelDensity(window.sdlWindow);
 }
 
