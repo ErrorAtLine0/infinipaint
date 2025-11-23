@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity version="0.3.0.0" processorArchitecture="*" name="com.infinipaint.infinipaint" type="win32" />
-  <!-- Enable UTF-8 -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
+        <!-- Enable UTF-8 -->
         <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
+        <!-- Enable DPI Awareness -->
+        <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">permonitorv2,permonitor,unaware</dpiAwareness>
     </windowsSettings>
   </application>
-  <!-- Enable DPI Awareness -->
 </assembly>
