@@ -74,8 +74,8 @@ modules:
       - '*'
     sources:
       - type: archive
-        url: https://github.com/google/skia/archive/f4ed99d2443962782cf5f8b4dd27179f131e7cbe.zip
-        sha256: 2e00dcdb54942c1da7b2f6cfd9fef8c4899115206d940931f6c040bac08b6b79
+        url: https://github.com/google/skia/archive/da51f0d60ea2b14e845a823dc11b405dbeef42d8.zip
+        sha256: 1f5140d5908031d8cdd06429a633a1583b12fc43dc1c768374ed1e91ab9fa596
   - name: infinipaint-x86_64
     buildsystem: cmake-ninja
     builddir: true

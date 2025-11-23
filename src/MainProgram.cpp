@@ -265,6 +265,15 @@ void MainProgram::set_vsync_value(int vsyncValue) {
     window.vsyncValue = vsyncValue;
 }
 
+void MainProgram::update_scale_and_density() {
+    window.scale = window.applyDisplayScale ? SDL_GetWindowDisplayScale(window.sdlWindow) : 1.0f;
+    window.density = SDL_GetWindowPixelDensity(window.sdlWindow);
+}
+
+float MainProgram::get_scale_and_density_factor_gui() {
+    return window.scale * window.density;
+}
+
 void MainProgram::draw(SkCanvas* canvas) {
     canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.backColor);
     world->draw(canvas);

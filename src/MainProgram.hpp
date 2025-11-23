@@ -43,7 +43,9 @@ class MainProgram {
             SkAlphaType defaultAlphaType;
             int vsyncValue = 1;
 
+            float density = 1.0f;
             float scale = 1.0f;
+            bool applyDisplayScale = true;
 
             int defaultMSAASampleCount = 0;
             SkSurfaceProps defaultMSAASurfaceProps;
@@ -94,6 +96,8 @@ class MainProgram {
 
         void init_net_library();
         void set_vsync_value(int vsyncValue);
+        void update_scale_and_density();
+        float get_scale_and_density_factor_gui();
 
         std::filesystem::path homePath;
         std::filesystem::path configPath;

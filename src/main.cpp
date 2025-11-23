@@ -438,7 +438,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.m->configPath = mS.configPath;
         mS.m->homePath = mS.homePath;
         mS.m->window.sdlWindow = mS.window;
-        mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
+        mS.m->update_scale_and_density();
 #ifdef __EMSCRIPTEN__
         emscripten_set_beforeunload_callback((void*)mSPtr, emscripten_before_unload);
 #else
@@ -554,7 +554,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 #ifdef NDEBUG
     try {
 #endif
-        mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
+        mS.m->update_scale_and_density();
 
 #ifdef __EMSCRIPTEN__
         if(emscriptenFilesystemReadReady && !emscriptenFilesystemLoadConfigDone) {
@@ -655,12 +655,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->window.maximized = false;
                 break;
             case SDL_EVENT_MOUSE_MOTION:
-                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
+                mS.m->update_scale_and_density();
                 #ifdef _WIN32
                     if(!mS.m->toolbar.tabletOptions.ignoreMouseMovementWhenPenInProximity || !mS.m->input.pen.inProximity)
                 #endif
                     {
-					    mS.m->input.mouse.set_pos({event->motion.x * mS.m->window.scale, event->motion.y * mS.m->window.scale});
+					    mS.m->input.mouse.set_pos({event->motion.x * mS.m->window.density, event->motion.y * mS.m->window.density});
                     }
                 break;
             case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -700,16 +700,16 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.text.add_text_to_textbox(event->text.text);
                 break;
             case SDL_EVENT_DROP_FILE:
-                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
+                mS.m->update_scale_and_density();
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
+                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.density,
                     .dataPath = std::u8string_view(reinterpret_cast<const char8_t*>(event->drop.data))
                 });
                 break;
             case SDL_EVENT_DROP_TEXT:
-                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
+                mS.m->update_scale_and_density();
                 mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.scale,
+                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.density,
                     .dataText = event->drop.data
                 });
                 break;
@@ -722,9 +722,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_PEN_MOTION: {
-                mS.m->window.scale = SDL_GetWindowPixelDensity(mS.window);
+                mS.m->update_scale_and_density();
                 mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
-				mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.scale, event->pmotion.y * mS.m->window.scale});
+				mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.density, event->pmotion.y * mS.m->window.density});
                 break;
             }
             case SDL_EVENT_PEN_DOWN: {

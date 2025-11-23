@@ -49,7 +49,8 @@
             <li>Place bookmarks on the canvas to jump to later</li>
             <li>Undo/Redo</li>
             <li>Screenshot to export parts of the canvas to a picture (can export to raster formats or SVG)</li>
-            <li>Other tools such as: Textbox tool, Rectangle select tool, Lasso select tool, Color picker tool, Grid tool, Square and Ellipse tools</li>
+            <li>Place text boxes with formatting</li>
+            <li>Other tools such as: Rectangle select tool, Lasso select tool, Color picker tool, Grid tool, Square and Ellipse tools</li>
             <li>Copy and paste objects on the canvas, and between different canvases</li>
             <li>Insert images and files on the canvas</li>
         </ul>
@@ -58,6 +59,20 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.3.0" date="2025-11-23">
+            <description>
+                <p>Major update:</p>
+                <ul>
+                    <li>Unicode support across the entire app</li>
+                    <li>Text boxes now have many more formatting options</li>
+                    <li>UI theme changed</li>
+                    <li>Drag and drop direct URLs to images to download them onto the canvas</li>
+                    <li>Images/Resources that are being downloaded will show download progress</li>
+                    <li>Downloading resources won't completely stop other types of data from being sent</li>
+                    <li>VSync and display scaling options added</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.2.1" date="2025-10-29">
             <description>
                 <p>Minor update:</p>

@@ -254,6 +254,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
     toRet["vsync"] = main.window.vsyncValue;
+    toRet["applyDisplayScale"] = main.window.applyDisplayScale;
     toRet["showPerformance"] = showPerformance;
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
@@ -313,6 +314,7 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     catch(...) {
         main.set_vsync_value(1);
     }
+    try{j.at("applyDisplayScale").get_to(main.window.applyDisplayScale);} catch(...) {}
     try{j.at("guiScale").get_to(guiScale);} catch(...) {}
     try{j.at("showPerformance").get_to(showPerformance);} catch(...) {}
     try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
@@ -1450,7 +1452,7 @@ void Toolbar::options_menu() {
                                         gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.checkbox_field("changebrushwidthwithspeed", "Change brush size with mouse speed", &velocityAffectsBrushWidth);
-                                        gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 3.0f, 1);
+                                        gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, 1);
 
                                         gui.text_label("VSync:");
                                         if(gui.radio_button_field("Vsync On", "On", main.window.vsyncValue == 1))
@@ -1459,6 +1461,8 @@ void Toolbar::options_menu() {
                                             main.set_vsync_value(0);
                                         if(gui.radio_button_field("Vsync Adaptive", "Adaptive", main.window.vsyncValue == -1))
                                             main.set_vsync_value(-1);
+
+                                        gui.checkbox_field("apply display scale", "Apply display scale", &main.window.applyDisplayScale);
 
                                         gui.pop_id();
                                         break;
@@ -1986,7 +1990,7 @@ void Toolbar::calculate_final_gui_scale() {
 }
 
 float Toolbar::final_gui_scale_not_fit() {
-    return guiScale * main.window.scale;
+    return guiScale * main.get_scale_and_density_factor_gui();
 }
 
 void Toolbar::end_gui() {
