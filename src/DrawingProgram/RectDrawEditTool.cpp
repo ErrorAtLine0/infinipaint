@@ -20,20 +20,16 @@ bool RectDrawEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     if(t.gui.radio_button_field("filloutline", "Fill and Outline", a->d.fillStrokeMode == 2)) a->d.fillStrokeMode = 2;
     if(a->d.fillStrokeMode == 0 || a->d.fillStrokeMode == 2) {
         t.gui.left_to_right_line_layout([&]() {
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-                if(t.gui.color_button("Fill Color", &a->d.fillColor, &a->d.fillColor == t.colorRight))
-                    t.color_selector_right(&a->d.fillColor == t.colorRight ? nullptr : &a->d.fillColor);
-            }
+            if(t.gui.color_button_big("Fill Color", &a->d.fillColor, &a->d.fillColor == t.colorRight))
+                t.color_selector_right(&a->d.fillColor == t.colorRight ? nullptr : &a->d.fillColor);
             t.gui.text_label("Fill Color");
         });
     }
     if(a->d.fillStrokeMode == 1 || a->d.fillStrokeMode == 2) {
         t.gui.slider_scalar_field("relstrokewidth", "Outline Size", &a->d.strokeWidth, 3.0f, 40.0f);
         t.gui.left_to_right_line_layout([&]() {
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-                if(t.gui.color_button("Outline Color", &a->d.strokeColor, &a->d.strokeColor == t.colorRight))
-                    t.color_selector_right(&a->d.strokeColor == t.colorRight ? nullptr : &a->d.strokeColor);
-            }
+            if(t.gui.color_button_big("Outline Color", &a->d.strokeColor, &a->d.strokeColor == t.colorRight))
+                t.color_selector_right(&a->d.strokeColor == t.colorRight ? nullptr : &a->d.strokeColor);
             t.gui.text_label("Outline Color");
         });
     }

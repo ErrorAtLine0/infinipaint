@@ -56,10 +56,8 @@ void GridModifyTool::gui_toolbox() {
         t.gui.checkbox_field("Subdivide outwards", "Subdivide when zooming out", &divOut);
         g.set_remove_divisions_outwards(divOut);
         t.gui.left_to_right_line_layout([&]() {
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-                if(t.gui.color_button("Grid Color", &g.color, &g.color == t.colorRight))
-                    t.color_selector_right(&g.color == t.colorRight ? nullptr : &g.color);
-            }
+            if(t.gui.color_button_big("Grid Color", &g.color, &g.color == t.colorRight))
+                t.color_selector_right(&g.color == t.colorRight ? nullptr : &g.color);
             t.gui.text_label("Grid Color");
         });
         bool bounded = g.bounds.has_value();

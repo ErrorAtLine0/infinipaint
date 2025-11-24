@@ -92,10 +92,8 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
 
     // Text color
     t.gui.left_to_right_line_layout([&]() {
-        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-            if(t.gui.color_button("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
-                t.color_selector_right(&newTextColor == t.colorRight ? nullptr : &newTextColor);
-        }
+        if(t.gui.color_button_big("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
+            t.color_selector_right(&newTextColor == t.colorRight ? nullptr : &newTextColor);
         t.gui.text_label("Text Color");
     });
 
@@ -113,21 +111,22 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
 
     // Highlight color
     t.gui.left_to_right_line_layout([&]() {
-        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
-            if(t.gui.color_button("Highlight Color", &newHighlightColor, &newHighlightColor == t.colorRight)) {
-                if(newHighlightColor.w() == 0.0f) // Make highlight appear when the button is pressed
-                    newHighlightColor.w() = 1.0f;
-                t.color_selector_right(&newHighlightColor == t.colorRight ? nullptr : &newHighlightColor);
+        if(t.gui.color_button_big("Highlight Color", &newHighlightColor, &newHighlightColor == t.colorRight)) {
+            if(newHighlightColor.w() == 0.0f) { // Make highlight appear when the button is pressed
+                newHighlightColor.w() = 1.0f;
+                currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
+                add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
             }
+            t.color_selector_right(&newHighlightColor == t.colorRight ? nullptr : &newHighlightColor);
         }
-        t.gui.text_label("Highlight Color");
         if(newHighlightColor.w() != 0.0f) {
             if(t.gui.svg_icon_button("Remove Highlight Color", "data/icons/close.svg")) {
-                newHighlightColor = Vector4f{0.0f, 0.0f, 0.0f, 0.0f};
+                newHighlightColor = {0.0f, 0.0f, 0.0f, 0.0f};
                 currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
                 add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
             }
         }
+        t.gui.text_label("Highlight Color");
     });
 
     if(&newHighlightColor == t.colorRight)

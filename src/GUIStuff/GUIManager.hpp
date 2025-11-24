@@ -267,6 +267,23 @@ class GUIManager {
             }, GUIStuff::SelectableButton::DrawType::TRANSPARENT_BORDER, isSelected);
         }
 
+        template <typename T> bool color_button_big(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
+            bool toRet = false;
+            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)}}}) {
+                toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
+                    CLAY({.layout = { 
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(*val),
+                        .cornerRadius = CLAY_CORNER_RADIUS(5),
+                    }) {}
+                    if(elemUpdate)
+                        elemUpdate();
+                }, GUIStuff::SelectableButton::DrawType::TRANSPARENT_BORDER, isSelected);
+            }
+            return toRet;
+        }
+
         template <typename T> bool color_picker_button(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
