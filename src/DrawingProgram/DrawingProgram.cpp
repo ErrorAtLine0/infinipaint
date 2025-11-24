@@ -426,7 +426,6 @@ void DrawingProgram::force_rebuild_cache() {
 void DrawingProgram::drag_drop_update() {
     if(controls.cursorHoveringOverCanvas) {
         for(auto& droppedItem : world.main.input.droppedItems) {
-            std::cout << "huh..." << std::endl;
             if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
 #ifdef __EMSCRIPTEN_
                 add_file_to_canvas_by_path(droppedItem.dataPath.value(), world.main.input.mouse.pos, true);
