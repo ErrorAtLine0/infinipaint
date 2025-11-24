@@ -121,6 +121,13 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
             }
         }
         t.gui.text_label("Highlight Color");
+        if(newHighlightColor.w() != 0.0f) {
+            if(t.gui.svg_icon_button("Remove Highlight Color", "data/icons/close.svg")) {
+                newHighlightColor = Vector4f{0.0f, 0.0f, 0.0f, 0.0f};
+                currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
+                add_undo_if_selecting_area(a, [&]() {a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
+            }
+        }
     });
 
     if(&newHighlightColor == t.colorRight)
