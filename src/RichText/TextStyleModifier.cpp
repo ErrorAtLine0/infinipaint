@@ -25,6 +25,8 @@ std::shared_ptr<TextStyleModifier> TextStyleModifier::allocate_modifier(Modifier
             return std::make_shared<DecorationTextStyleModifier>();
         case ModifierType::FONT_FAMILIES:
             return std::make_shared<FontFamiliesTextStyleModifier>();
+        case ModifierType::HIGHLIGHT_COLOR:
+            return std::make_shared<HighlightColorTextStyleModifier>();
         case ModifierType::COUNT:
             return nullptr;
     }
@@ -44,6 +46,7 @@ const TextStyleModifier::ModifierMap& TextStyleModifier::get_default_modifiers()
         defaultMods[ModifierType::WEIGHT] = std::make_shared<WeightTextStyleModifier>(SkFontStyle::kNormal_Weight);
         defaultMods[ModifierType::SLANT] = std::make_shared<SlantTextStyleModifier>(SkFontStyle::kUpright_Slant);
         defaultMods[ModifierType::DECORATION] = std::make_shared<DecorationTextStyleModifier>(skia::textlayout::TextDecoration::kNoDecoration);
+        defaultMods[ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(Vector4f{0.0f, 0.0f, 0.0f, 0.0f});
     }
     return defaultMods;
 }
@@ -229,6 +232,36 @@ void DecorationTextStyleModifier::modify_text_style(skia::textlayout::TextStyle&
 
 bool DecorationTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
     return decorationValue == static_cast<DecorationTextStyleModifier&>(modifier).decorationValue;
+}
+
+
+HighlightColorTextStyleModifier::HighlightColorTextStyleModifier(const Vector4f& initColor): color(initColor) {}
+
+TextStyleModifier::ModifierType HighlightColorTextStyleModifier::get_type() const {
+    return ModifierType::HIGHLIGHT_COLOR;
+}
+
+const Vector4f& HighlightColorTextStyleModifier::get_color() const {
+    return color;
+}
+
+void HighlightColorTextStyleModifier::save(cereal::PortableBinaryOutputArchive& a) const {
+    a(color);
+}
+
+void HighlightColorTextStyleModifier::load(cereal::PortableBinaryInputArchive& a) {
+    a(color);
+}
+
+void HighlightColorTextStyleModifier::modify_text_style(skia::textlayout::TextStyle& style) const {
+    if(color.w() == 0.0f)
+        style.clearBackgroundColor();
+    else
+        style.setBackgroundPaint(SkPaint{convert_vec4<SkColor4f>(color)});
+}
+
+bool HighlightColorTextStyleModifier::equivalent_data(TextStyleModifier& modifier) const {
+    return color == static_cast<HighlightColorTextStyleModifier&>(modifier).color;
 }
 
 }

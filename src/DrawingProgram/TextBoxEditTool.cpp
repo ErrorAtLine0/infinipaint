@@ -90,6 +90,7 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     else
         release_undo_data("Font Size");
 
+    // Text color
     t.gui.left_to_right_line_layout([&]() {
         CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
             if(t.gui.color_button("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
@@ -107,6 +108,32 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
         currentMods[TextStyleModifier::ModifierType::COLOR] = std::make_shared<ColorTextStyleModifier>(newTextColor);
         a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
     }
+
+
+
+    // Highlight color
+    t.gui.left_to_right_line_layout([&]() {
+        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(40), .height = CLAY_SIZING_FIXED(40)}}}) {
+            if(t.gui.color_button("Highlight Color", &newHighlightColor, &newHighlightColor == t.colorRight)) {
+                if(newHighlightColor.w() == 0.0f) // Make highlight appear when the button is pressed
+                    newHighlightColor.w() = 1.0f;
+                t.color_selector_right(&newHighlightColor == t.colorRight ? nullptr : &newHighlightColor);
+            }
+        }
+        t.gui.text_label("Highlight Color");
+    });
+
+    if(&newHighlightColor == t.colorRight)
+        hold_undo_data("Highlight Color", a);
+    else
+        release_undo_data("Highlight Color");
+
+    if((&newHighlightColor == t.colorRight) && t.isUpdatingColorRight) {
+        currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
+        a->textBox->set_text_style_modifier_between(a->cursor->selectionBeginPos, a->cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
+    }
+
+
 
     t.gui.pop_id();
 
@@ -176,6 +203,7 @@ void TextBoxEditTool::set_styles_at_selection(const std::shared_ptr<DrawTextBox>
     newFontName = std::static_pointer_cast<FontFamiliesTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES])->get_families().back().c_str();
     newFontSize = std::static_pointer_cast<SizeTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::SIZE])->get_size();
     newTextColor = std::static_pointer_cast<ColorTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::COLOR])->get_color();
+    newHighlightColor = std::static_pointer_cast<HighlightColorTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR])->get_color();
     newIsBold = std::static_pointer_cast<WeightTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::WEIGHT])->get_weight() == SkFontStyle::Weight::kBold_Weight;
     newIsItalic = std::static_pointer_cast<SlantTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::SLANT])->get_slant() == SkFontStyle::Slant::kItalic_Slant;
     newIsUnderlined = std::static_pointer_cast<DecorationTextStyleModifier>(currentMods[TextStyleModifier::ModifierType::DECORATION])->get_decoration_value() & skia::textlayout::TextDecoration::kUnderline;

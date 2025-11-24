@@ -22,6 +22,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         uint32_t newFontSize = 15;
         Vector4f newTextColor{1.0f, 1.0f, 1.0f, 1.0f};
+        Vector4f newHighlightColor{1.0f, 1.0f, 1.0f, 0.0f};
         bool newIsBold = false;
         bool newIsItalic = false;
         bool newIsUnderlined = false;

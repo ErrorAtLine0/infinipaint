@@ -1042,7 +1042,7 @@ SkRect TextBox::get_cursor_rect(TextPosition pos) {
         }
     }
 
-    constexpr float CURSOR_WIDTH = 3.0f;
+    constexpr float CURSOR_WIDTH = 2.0f;
 
     return SkRect::MakeXYWH(topPoint.x() - CURSOR_WIDTH * 0.5f, topPoint.y(), CURSOR_WIDTH, height);
 }
@@ -1103,21 +1103,22 @@ std::pair<size_t, size_t> TextBox::get_start_end_paragraph_pos(size_t p1, size_t
 void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
     rebuild();
 
+    for(auto& pData : paragraphs)
+        pData.p->paint(canvas, 0.0f, pData.heightOffset);
+
     if(paintOpts.cursor.has_value()) {
         auto& cur = paintOpts.cursor.value();
-        SkPaint p{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
+        SkPaint selectionP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
         if(cur.selectionBeginPos != cur.selectionEndPos) {
-            canvas->saveLayerAlphaf(nullptr, 0.6f);
+            canvas->saveLayerAlphaf(nullptr, 0.3f);
             rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
-                canvas->drawRect(rect, p);
+                canvas->drawRect(rect, selectionP);
             });
             canvas->restore();
         }
-        canvas->drawRect(get_cursor_rect(cur.pos), p);
+        SkPaint cursorP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 0.8f}};
+        canvas->drawRect(get_cursor_rect(cur.pos), cursorP);
     }
-
-    for(auto& pData : paragraphs)
-        pData.p->paint(canvas, 0.0f, pData.heightOffset);
 }
 
 }

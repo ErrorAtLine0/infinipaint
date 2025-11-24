@@ -17,6 +17,7 @@ class TextStyleModifier {
             SLANT,
             DECORATION,
             FONT_FAMILIES,
+            HIGHLIGHT_COLOR,
 
             COUNT
         };
@@ -83,6 +84,20 @@ class ColorTextStyleModifier : public TextStyleModifier {
     public:
         ColorTextStyleModifier() = default;
         ColorTextStyleModifier(const Vector4f& initColor);
+        virtual ModifierType get_type() const override;
+        virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
+        virtual void load(cereal::PortableBinaryInputArchive& a) override;
+        virtual void modify_text_style(skia::textlayout::TextStyle& style) const override;
+        const Vector4f& get_color() const;
+    private:
+        Vector4f color;
+        virtual bool equivalent_data(TextStyleModifier& modifier) const override;
+};
+
+class HighlightColorTextStyleModifier : public TextStyleModifier {
+    public:
+        HighlightColorTextStyleModifier() = default;
+        HighlightColorTextStyleModifier(const Vector4f& initColor);
         virtual ModifierType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
