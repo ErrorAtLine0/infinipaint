@@ -21,7 +21,9 @@ void switch_cwd() {
     CFStringGetCString(str, path, 4096, kCFStringEncodingUTF8);
     CFRelease(str);
     std::string newCWD(path);
+#ifdef MACOS_MAKE_BUNDLE
     newCWD += "/Contents/Resources";
+#endif
 
     std::filesystem::current_path(std::filesystem::path(newCWD));
 #elif _WIN32

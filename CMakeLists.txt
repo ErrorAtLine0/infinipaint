@@ -24,6 +24,7 @@ option(USE_MEMORYSAN "Enable Memory Sanitizer" OFF)
 option(NO_CONAN_BUILD "Not using conan to get packages" OFF)
 option(EMSCRIPTEN_SINGLE_HTML_FILE "Building with emscripten generates a single HTML file" OFF)
 option(CONFIG_NEXT_TO_EXECUTABLE "Place configuration folder next to executable (portable executable)" OFF)
+option(MACOS_MAKE_BUNDLE "Package the application as a bundle" ON)
 
 # Setting sources
 set(sources "src/main.cpp"
@@ -181,25 +182,28 @@ add_executable(infinipaint ${sources})
 if(WIN32)
     set_target_properties(infinipaint PROPERTIES WIN32_EXECUTABLE TRUE)
 elseif(APPLE)
-    set_target_properties(infinipaint PROPERTIES MACOSX_BUNDLE TRUE)
-    set_target_properties(infinipaint PROPERTIES
-        BUNDLE True
-        MACOSX_BUNDLE_GUI_IDENTIFIER com.erroratline0.infinipaint
-        MACOSX_BUNDLE_BUNDLE_NAME infinipaint
-        MACOSX_BUNDLE_BUNDLE_VERSION "0.3.0"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.3.0"
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/macosinstall/Info.plist
-    )
-    add_custom_command(TARGET infinipaint POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/data"
-        "$<TARGET_FILE_DIR:infinipaint>/../Resources/data"
-    )
-    add_custom_command(TARGET infinipaint POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_SOURCE_DIR}/macosinstall/appicon.icns"
-        "$<TARGET_FILE_DIR:infinipaint>/../Resources/appicon.icns"
-    )
+    if(MACOS_MAKE_BUNDLE)
+        target_compile_definitions(infinipaint PRIVATE MACOS_MAKE_BUNDLE)
+        set_target_properties(infinipaint PROPERTIES MACOSX_BUNDLE TRUE)
+        set_target_properties(infinipaint PROPERTIES
+            BUNDLE True
+            MACOSX_BUNDLE_GUI_IDENTIFIER com.erroratline0.infinipaint
+            MACOSX_BUNDLE_BUNDLE_NAME infinipaint
+            MACOSX_BUNDLE_BUNDLE_VERSION "0.3.0"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "0.3.0"
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/macosinstall/Info.plist
+        )
+        add_custom_command(TARGET infinipaint POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/data"
+            "$<TARGET_FILE_DIR:infinipaint>/../Resources/data"
+        )
+        add_custom_command(TARGET infinipaint POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/macosinstall/appicon.icns"
+            "$<TARGET_FILE_DIR:infinipaint>/../Resources/appicon.icns"
+        )
+    endif()
 endif()
 
 if(EMSCRIPTEN)

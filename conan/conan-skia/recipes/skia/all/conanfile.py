@@ -419,7 +419,7 @@ class ConanSkia(ConanFile):
         self.tool_requires("ninja/[>=1.11.0]")
 
         if self.options.use_harfbuzz and self.options.use_system_harfbuzz and self.options.use_conan_harfbuzz:
-            self.requires("harfbuzz/10.4.0", options = {"with_subset":True, "with_glib":False})
+            self.requires("harfbuzz/11.4.1", options = {"with_subset":True, "with_glib":False})
 
         if self.options.use_freetype and self.options.use_system_freetype and self.options.use_conan_freetype:
             self.requires("freetype/2.13.2")
