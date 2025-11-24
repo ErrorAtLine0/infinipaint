@@ -426,6 +426,7 @@ void DrawingProgram::force_rebuild_cache() {
 void DrawingProgram::drag_drop_update() {
     if(controls.cursorHoveringOverCanvas) {
         for(auto& droppedItem : world.main.input.droppedItems) {
+            std::cout << "huh..." << std::endl;
             if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
 #ifdef __EMSCRIPTEN_
                 add_file_to_canvas_by_path(droppedItem.dataPath.value(), world.main.input.mouse.pos, true);
@@ -433,7 +434,7 @@ void DrawingProgram::drag_drop_update() {
                 add_file_to_canvas_by_path(droppedItem.dataPath.value(), droppedItem.pos, true);
 #endif
             }
-            else if(!droppedItem.dataText.has_value() && is_valid_http_url(droppedItem.dataText.value())) {
+            else if(droppedItem.dataText.has_value() && is_valid_http_url(droppedItem.dataText.value())) {
                 auto img(std::make_shared<DrawImage>());
                 img->coords = world.drawData.cam.c;
                 Vector2f imDim = Vector2f{100.0f, 100.0f};
