@@ -33,11 +33,12 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 
 <img alt="Zoom Forever Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/zoomforever.png?raw=true" width="100%"/>
 <img alt="Sketches Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/sketches.png?raw=true" width="100%"/>
-<img alt="Online Collaboration Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/tictactoe.png?raw=true" width="100%"/>
-<img alt="Images Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/images.png?raw=true" width="100%"/>
+<img alt="Online Collaboration Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/collaboration.png?raw=true" width="100%"/>
+<img alt="Images Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/pictures.png?raw=true" width="100%"/>
 <img alt="Right Click Menu Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/rotate.png?raw=true" width="100%"/>
+<img alt="Bookmark Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/bookmarks.png?raw=true" width="100%"/>
+<img alt="Textbox Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/textbox.png?raw=true" width="100%"/>
 <img alt="Zoom Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/zoom.gif?raw=true" width="100%"/>
-<img alt="Bookmark Showcase" src="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/showcase/bookmarkslideshow.gif?raw=true" width="100%"/>
 
 ## Features
 
@@ -64,6 +65,7 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 - Create custom UI themes
 - Place infinite square grids on the canvas as guides for drawing
     - Grids come with various properties, including changing color, and displaying coordinate axes.
-- Other tools: Textbox, Rectangle, Circle, Eye dropper/color picker, Edit/cursor
+- Textbox tool with formatting support (Bold, italics, underline, strikethrough, overline, fonts, text color, highlight color, text size, paragraph alignment, text direction)
+- Other tools: Rectangle, Circle, Eye dropper/color picker, Edit/cursor
 - Can copy/paste selected objects (Ctrl-C Ctrl-V). This can also be done between different files, as long as they're open in different tabs in the same window.
 - Any file can be placed on the canvas. Using the edit tool, you can download any file/image on the canvas to your computer. This can be used as a sort of file sharing mechanism in a collaborative canvas (should probably only use this for small files...)
