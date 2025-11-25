@@ -121,7 +121,6 @@ modules:
 cleanup:
   - /Skia
   - /include
-  - /lib/debug
   - /lib/pkgconfig
   - /lib/cmake
   - /lib/libupb.a
