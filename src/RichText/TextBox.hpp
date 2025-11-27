@@ -9,6 +9,7 @@
 #include "TextStyleModifier.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "ParagraphStyleData.hpp"
+#include <modules/skparagraph/include/ParagraphBuilder.h>
 
 namespace RichText {
 
@@ -140,7 +141,6 @@ class TextBox {
         std::pair<std::string, TextData> process_cut(Cursor& cur);
         std::string get_text_between(TextPosition p1, TextPosition p2);
         std::string get_string();
-        void set_tab_space_width(unsigned newTabWidth);
         void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
         void process_rich_text_input(Cursor& cur, const TextData& richText);
 
@@ -166,14 +166,21 @@ class TextBox {
         void erase_if_over_all_styles_until_pos(TextPosition pos, const std::function<bool(TextPosition, const std::shared_ptr<TextStyleModifier>&)>& func);
         void insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier);
 
+        TextPosition byte_text_pos_to_render_text_pos(TextPosition pos);
+        TextPosition render_text_pos_to_byte_text_pos(TextPosition pos);
+        size_t get_render_text_length(const std::string& str);
+
         void remove_duplicate_text_style_mods();
 
         void rebuild();
+        void rebuild_build_run_of_text_with_tabs(std::string_view s, const skia::textlayout::TextStyle& tStyle, skia::textlayout::ParagraphBuilder& a);
+
+        int get_line_number_at_from_byte_text_pos(TextPosition pos);
 
         bool newlinesAllowed = true;
         float width = 0.0f;
         bool needsRebuild = true;
-        unsigned tabWidth = 8;
+        unsigned tabWidth = 4;
         std::shared_ptr<FontData> fontData;
 
         struct ParagraphData {

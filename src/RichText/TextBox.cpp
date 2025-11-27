@@ -2,9 +2,11 @@
 #include "Helpers/Networking/ByteStream.hpp"
 #include "TextStyleModifier.hpp"
 #include "cereal/archives/portable_binary.hpp"
+#include <include/core/SkFontMetrics.h>
 #include <limits>
 #include <modules/skparagraph/include/DartTypes.h>
 #include <modules/skparagraph/include/Metrics.h>
+#include <modules/skparagraph/include/Paragraph.h>
 #include <modules/skparagraph/include/TextStyle.h>
 #include <modules/skparagraph/src/TextLine.h>
 #include <modules/skunicode/include/SkUnicode.h>
@@ -296,6 +298,7 @@ TextPosition TextBox::get_text_pos_closest_to_point(Vector2f point) {
     if(foundGlyph) {
         TextPosition toRet = {pIndex, 0};
         toRet.fTextByteIndex = glyphInfo.fClusterTextRange.start;
+        toRet = render_text_pos_to_byte_text_pos(toRet);
 
         if(glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr) {
             if(std::abs(glyphInfo.fBounds.right() - point.x()) < std::abs(glyphInfo.fBounds.left() - point.x()))
@@ -652,7 +655,7 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
         case Movement::UP: {
             assert(previousX != nullptr);
 
-            int lineNumber = paragraphs[pos.fParagraphIndex].p->getLineNumberAt(pos.fTextByteIndex == paragraphs[pos.fParagraphIndex].text.size() ? prev_grapheme(paragraphs[pos.fParagraphIndex].text, pos.fTextByteIndex) : pos.fTextByteIndex);
+            int lineNumber = get_line_number_at_from_byte_text_pos({pos.fParagraphIndex, (pos.fTextByteIndex == paragraphs[pos.fParagraphIndex].text.size() ? prev_grapheme(paragraphs[pos.fParagraphIndex].text, pos.fTextByteIndex) : pos.fTextByteIndex)});
             if(lineNumber <= 0 && pos.fParagraphIndex == 0) {
                 pos.fTextByteIndex = 0;
                 if(previousX != nullptr)
@@ -684,7 +687,7 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
         case Movement::DOWN: {
             assert(previousX != nullptr);
 
-            int lineNumber = paragraphs[pos.fParagraphIndex].p->getLineNumberAt(pos.fTextByteIndex);
+            int lineNumber = get_line_number_at_from_byte_text_pos(pos);
             if((lineNumber == -1 || lineNumber == static_cast<int>(paragraphs[pos.fParagraphIndex].p->lineNumber() - 1)) && pos.fParagraphIndex == (paragraphs.size() - 1)) {
                 pos.fTextByteIndex = paragraphs[pos.fParagraphIndex].text.size();
                 if(previousX != nullptr)
@@ -777,6 +780,11 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
 
 }
 
+int TextBox::get_line_number_at_from_byte_text_pos(TextPosition pos) {
+    TextPosition renderPos = byte_text_pos_to_render_text_pos(pos);
+    return paragraphs[pos.fParagraphIndex].p->getLineNumberAt(renderPos.fTextByteIndex);
+}
+
 void TextBox::set_width(float newWidth) {
     if(width != newWidth) {
         width = std::max(newWidth, 4.0f);
@@ -832,7 +840,7 @@ void TextBox::rebuild() {
             for(;;) {
                 if(nextTStyleModIt == tStyleMods.end() || nextTStyleModIt->pos.fParagraphIndex != pIndex) {
                     a.pushStyle(tStyle);
-                    a.addText(pData.text.c_str() + tIndex, pData.text.length() - tIndex);
+                    rebuild_build_run_of_text_with_tabs(std::string_view(pData.text.c_str() + tIndex, pData.text.length() - tIndex), tStyle, a);
                     a.pop();
                     break;
                 }
@@ -842,7 +850,7 @@ void TextBox::rebuild() {
                     // Print with previous style
 
                     a.pushStyle(tStyle);
-                    a.addText(pData.text.c_str() + tIndex, nextTStyleMod.pos.fTextByteIndex - tIndex);
+                    rebuild_build_run_of_text_with_tabs(std::string_view(pData.text.c_str() + tIndex, nextTStyleMod.pos.fTextByteIndex - tIndex), tStyle, a);
                     a.pop();
                     tIndex = nextTStyleMod.pos.fTextByteIndex;
 
@@ -871,6 +879,37 @@ void TextBox::rebuild() {
     }
 }
 
+void TextBox::rebuild_build_run_of_text_with_tabs(std::string_view s, const skia::textlayout::TextStyle& tStyle, skia::textlayout::ParagraphBuilder& a) {
+    if(s.empty())
+        return;
+    size_t tabLocation = s.find('\t');
+    for(;;) {
+        if(tabLocation == std::string_view::npos) {
+            a.addText(s.data(), s.size());
+            break;
+        }
+        a.addText(s.data(), tabLocation);
+
+        skia::textlayout::PlaceholderStyle tabPlaceholderStyle;
+
+        skia::textlayout::ParagraphStyle tabPStyle;
+        tabPStyle.setTextStyle(tStyle);
+        skia::textlayout::ParagraphBuilderImpl tabParagraphBuilder(tabPStyle, fontData->collection, SkUnicodes::ICU::Make());
+        std::string indentStr(tabWidth, ' ');
+        tabParagraphBuilder.addText(indentStr.c_str(), indentStr.size());
+        auto tabParagraph = tabParagraphBuilder.Build();
+        tabParagraph->layout(10000000.0f);
+        tabPlaceholderStyle.fWidth = tabParagraph->getMaxIntrinsicWidth();
+        tabPlaceholderStyle.fHeight = tabParagraph->getHeight();
+        tabPlaceholderStyle.fAlignment = skia::textlayout::PlaceholderAlignment::kMiddle;
+
+        a.addPlaceholder(tabPlaceholderStyle);
+
+        s = std::string_view(s.data() + tabLocation + 1, s.size() - tabLocation - 1);
+        tabLocation = s.find('\t');
+    }
+}
+
 void TextBox::remove_duplicate_text_style_mods() {
     TextStyleModifier::ModifierMap previouslyAppliedMods = TextStyleModifier::get_default_modifiers();
 
@@ -886,10 +925,6 @@ void TextBox::remove_duplicate_text_style_mods() {
         });
         return tStyleModsInPos.mods.empty();
     });
-}
-
-void TextBox::set_tab_space_width(unsigned newTabWidth) {
-    tabWidth = newTabWidth;
 }
 
 TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
@@ -914,7 +949,7 @@ TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, co
                 pos.fTextByteIndex = 0;
             }
         }
-        else if(c == '\t') {
+        else if(c == '\t' && !newlinesAllowed) {
             for(auto& [p, tStylesInPos] : tStyleMods) {
                 if(p.fParagraphIndex == pos.fParagraphIndex && p.fTextByteIndex >= pos.fTextByteIndex && !(p.fTextByteIndex == pos.fTextByteIndex && p.fTextByteIndex == 0))
                     p.fTextByteIndex += tabWidth;
@@ -993,6 +1028,43 @@ TextPosition TextBox::remove(TextPosition p1, TextPosition p2) {
     return start;
 }
 
+TextPosition TextBox::byte_text_pos_to_render_text_pos(TextPosition pos) {
+    pos = move(Movement::NOWHERE, pos);
+    const ParagraphData& pData = paragraphs[pos.fParagraphIndex];
+    size_t tabsBeforeTextByteIndex = std::count(pData.text.begin(), pData.text.begin() + pos.fTextByteIndex, '\t');
+    pos.fTextByteIndex += tabsBeforeTextByteIndex * 2;
+    return pos;
+}
+
+TextPosition TextBox::render_text_pos_to_byte_text_pos(TextPosition pos) {
+    if(pos.fParagraphIndex >= paragraphs.size()) {
+        pos.fParagraphIndex = paragraphs.size() - 1;
+        pos.fTextByteIndex = get_render_text_length(paragraphs[pos.fParagraphIndex].text);
+    }
+    else if(pos.fTextByteIndex > get_render_text_length(paragraphs[pos.fParagraphIndex].text))
+        pos.fTextByteIndex = get_render_text_length(paragraphs[pos.fParagraphIndex].text);
+
+    const std::string& text = paragraphs[pos.fParagraphIndex].text;
+    size_t renderPosToTrack = 0;
+    size_t i;
+    for(i = 0; i <= text.size(); i++) {
+        if(renderPosToTrack == pos.fTextByteIndex)
+            break;
+        assert(renderPosToTrack < pos.fTextByteIndex);
+        if(i != text.size() && text[i] == '\t')
+            renderPosToTrack += 3;
+        else
+            renderPosToTrack++;
+    }
+    pos.fTextByteIndex = i;
+    return pos;
+}
+
+size_t TextBox::get_render_text_length(const std::string& str) {
+    size_t tabCount = std::count(str.begin(), str.end(), '\t');
+    return str.size() + tabCount * 2;
+}
+
 SkRect TextBox::get_cursor_rect(TextPosition pos) {
     pos = move(Movement::NOWHERE, pos);
 
@@ -1029,7 +1101,9 @@ SkRect TextBox::get_cursor_rect(TextPosition pos) {
         }
         else {
             skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
-            bool exists = pData.p->getGlyphClusterAt(prev_grapheme(pData.text, pos.fTextByteIndex), &glyphInfo);
+            pos.fTextByteIndex = prev_grapheme(pData.text, pos.fTextByteIndex);
+            pos = byte_text_pos_to_render_text_pos(pos);
+            bool exists = pData.p->getGlyphClusterAt(pos.fTextByteIndex, &glyphInfo);
             if(exists) {
                 bool isLtr = glyphInfo.fGlyphClusterPosition == skia::textlayout::TextDirection::kLtr;
                 topPoint = (isLtr ? glyphInfo.fBounds.TR() : glyphInfo.fBounds.TL()) + SkPoint{0.0f, pData.heightOffset};
@@ -1065,12 +1139,14 @@ skia::textlayout::TextDirection TextBox::get_suggested_direction(size_t pIndex) 
 
 void TextBox::rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f) {
     auto [start, end] = get_start_end_text_pos(p1, p2);
+    start = byte_text_pos_to_render_text_pos(start);
+    end = byte_text_pos_to_render_text_pos(end);
 
     constexpr float SELECTION_RECT_EXTRA_AREA = 1.0f;
 
     for(size_t p = start.fParagraphIndex; p <= end.fParagraphIndex; p++) {
         size_t tStart = p == start.fParagraphIndex ? start.fTextByteIndex : 0;
-        size_t tEnd = p == end.fParagraphIndex ? end.fTextByteIndex : paragraphs[p].text.size();
+        size_t tEnd = p == end.fParagraphIndex ? end.fTextByteIndex : get_render_text_length(paragraphs[p].text);
         ParagraphData& pData = paragraphs[p];
         for(size_t t = tStart; t < tEnd; t++) {
             skia::textlayout::Paragraph::GlyphClusterInfo glyphInfo;
