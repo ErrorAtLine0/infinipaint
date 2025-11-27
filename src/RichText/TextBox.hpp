@@ -71,7 +71,9 @@ class TextBox {
             UP,
             DOWN,
             LEFT_WORD,
+            LEFT_WORD_TIGHT,
             RIGHT_WORD,
+            RIGHT_WORD_TIGHT,
             HOME,
             END
         };
@@ -84,6 +86,7 @@ class TextBox {
                 a(pos, selectionBeginPos, selectionEndPos);
             }
             std::optional<float> previousX;
+            std::optional<TextPosition> selectionEndPosBeforeHeld;
             bool operator==(const Cursor& o) const;
             bool operator!=(const Cursor& o) const;
         };
@@ -135,7 +138,7 @@ class TextBox {
         void clear_text();
         void set_string(const std::string& str);
 
-        void process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift);
+        void process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift);
         void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
         std::pair<std::string, TextData> process_copy(Cursor& cur);
         std::pair<std::string, TextData> process_cut(Cursor& cur);
@@ -182,6 +185,9 @@ class TextBox {
         bool needsRebuild = true;
         unsigned tabWidth = 4;
         std::shared_ptr<FontData> fontData;
+
+        int lastClicksWhileHeld = 0;
+        TextPosition lastClicksCursorPos{0, 0};
 
         struct ParagraphData {
             std::string text;

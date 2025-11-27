@@ -259,7 +259,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawC
     auto& textbox = a->textBox;
     cur = std::make_shared<TextBox::Cursor>();
     Vector2f textSelectPos = a->get_mouse_pos(drawP);
-    textbox->process_mouse_left_button(*cur, textSelectPos, true, false, false);
+    textbox->process_mouse_left_button(*cur, textSelectPos, 1, false, false);
     prevData = get_all_data(a);
     a->d.editing = true;
     a->textBox->inputChangedTextBox = true;
@@ -287,7 +287,7 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
     bool collidesWithBox = a->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
 
     input.text.set_rich_text_box_input(a->textBox, a->cursor, currentMods);
-    a->textBox->process_mouse_left_button(*a->cursor, a->get_mouse_pos(drawP), drawP.controls.leftClick && collidesWithBox, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+    a->textBox->process_mouse_left_button(*a->cursor, a->get_mouse_pos(drawP), (drawP.controls.leftClick && collidesWithBox) ? drawP.world.main.input.mouse.leftClicks : 0, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
     return true;
 }

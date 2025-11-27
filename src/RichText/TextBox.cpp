@@ -173,20 +173,58 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
     inputChangedTextBox = true;
 }
 
-void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, bool clicked, bool held, bool shift) {
-    if(clicked || held) {
+void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift) {
+    if(!held)
+        lastClicksWhileHeld = clickCount;
+    else
+        lastClicksWhileHeld = std::max(lastClicksWhileHeld, clickCount);
+
+    if(lastClicksWhileHeld || held) {
         rebuild();
 
         Cursor oldCursor = cur;
 
         cur.pos = get_text_pos_closest_to_point(pos);
+        if(lastClicksCursorPos != cur.pos && clickCount) {
+            lastClicksWhileHeld = std::min(1, lastClicksWhileHeld);
+            lastClicksCursorPos = cur.pos;
+        }
         cur.selectionBeginPos = cur.pos;
-        if(clicked && !shift)
-            cur.selectionEndPos = cur.selectionBeginPos;
+        if(lastClicksWhileHeld && !shift) {
+            if(!cur.selectionEndPosBeforeHeld.has_value()) {
+                cur.selectionEndPos = cur.selectionBeginPos;
+                cur.selectionEndPosBeforeHeld = cur.selectionEndPos;
+            }
+            if(lastClicksWhileHeld == 3) {
+                cur.selectionEndPos = cur.selectionEndPosBeforeHeld.value();
+                if(cur.selectionBeginPos < cur.selectionEndPos) {
+                    cur.selectionBeginPos.fTextByteIndex = 0;
+                    cur.selectionEndPos.fTextByteIndex = paragraphs[cur.selectionEndPos.fParagraphIndex].text.size();
+                }
+                else {
+                    cur.selectionBeginPos.fTextByteIndex = paragraphs[cur.selectionBeginPos.fParagraphIndex].text.size();
+                    cur.selectionEndPos.fTextByteIndex = 0;
+                }
+            }
+            else if(lastClicksWhileHeld == 2) {
+                cur.selectionEndPos = cur.selectionEndPosBeforeHeld.value();
+                if(cur.selectionBeginPos < cur.selectionEndPos) {
+                    cur.selectionBeginPos = move(Movement::LEFT_WORD_TIGHT, cur.selectionBeginPos);
+                    cur.selectionEndPos = move(Movement::RIGHT_WORD_TIGHT, cur.selectionEndPos);
+                }
+                else {
+                    cur.selectionBeginPos = move(Movement::RIGHT_WORD_TIGHT, cur.selectionBeginPos);
+                    cur.selectionEndPos = move(Movement::LEFT_WORD_TIGHT, cur.selectionEndPos);
+                }
+            }
+        }
+
         cur.previousX = std::nullopt;
 
         inputChangedTextBox |= (oldCursor != cur);
     }
+    else
+        cur.selectionEndPosBeforeHeld = std::nullopt;
 }
 
 std::pair<std::string, TextData> TextBox::process_copy(Cursor& cur) {
@@ -716,7 +754,8 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
             }
             break;
         }
-        case Movement::LEFT_WORD: {
+        case Movement::LEFT_WORD:
+        case Movement::LEFT_WORD_TIGHT: {
             if(pos == TextPosition{0, 0})
                 break;
 
@@ -737,12 +776,13 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
 
                 const char* tPtr = fullText.c_str() + nextByteIndex;
                 SkUnichar u = SkUTF::NextUTF8(&tPtr, fullText.c_str() + fullText.size());
-                if(!SkUnicodes::ICU::Make()->isWhitespace(u))
+                if(!SkUnicodes::ICU::Make()->isWhitespace(u) || movement == Movement::LEFT_WORD_TIGHT)
                     byteIndexToRet = nextByteIndex;
             }
             break;
         }
-        case Movement::RIGHT_WORD: {
+        case Movement::RIGHT_WORD:
+        case Movement::RIGHT_WORD_TIGHT: {
             TextPosition endPos = move(Movement::END, {0, 0});
             if(pos == endPos)
                 break;
@@ -761,7 +801,7 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
                     return get_text_pos_from_byte_pos(fullText, p);
                 const char* tPtr = fullText.c_str() + p;
                 SkUnichar u = SkUTF::NextUTF8(&tPtr, fullText.c_str() + fullText.size());
-                if(!SkUnicodes::ICU::Make()->isWhitespace(u))
+                if(!SkUnicodes::ICU::Make()->isWhitespace(u) || movement == Movement::RIGHT_WORD_TIGHT)
                     return get_text_pos_from_byte_pos(fullText, p);
             }
 
