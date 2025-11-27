@@ -1,6 +1,8 @@
 #pragma once
 #include <modules/skparagraph/include/ParagraphStyle.h>
 
+namespace RichText {
+
 struct ParagraphStyleData {
     skia::textlayout::TextAlign textAlignment = skia::textlayout::TextAlign::kLeft;
     skia::textlayout::TextDirection textDirection = skia::textlayout::TextDirection::kLtr;
@@ -16,3 +18,4 @@ struct ParagraphStyleData {
     skia::textlayout::ParagraphStyle get_paragraph_style() const;
 };
 
+}
