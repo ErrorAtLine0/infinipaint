@@ -759,6 +759,16 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
             if(pos == TextPosition{0, 0})
                 break;
 
+            if(movement == Movement::LEFT_WORD_TIGHT) {
+                if(pos.fTextByteIndex == 0)
+                    return pos;
+                const std::string& text = paragraphs[pos.fParagraphIndex].text;
+                const char* tPtr = text.c_str() + prev_grapheme(text, pos.fTextByteIndex);
+                SkUnichar u = SkUTF::NextUTF8(&tPtr, text.c_str() + text.size());
+                if(SkUnicodes::ICU::Make()->isWhitespace(u))
+                    return pos;
+            }
+
             std::string fullText = get_string();
             size_t bytePosInFullText = get_byte_pos_from_text_pos(pos);
 
@@ -776,7 +786,7 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
 
                 const char* tPtr = fullText.c_str() + nextByteIndex;
                 SkUnichar u = SkUTF::NextUTF8(&tPtr, fullText.c_str() + fullText.size());
-                if(!SkUnicodes::ICU::Make()->isWhitespace(u) || movement == Movement::LEFT_WORD_TIGHT)
+                if(!SkUnicodes::ICU::Make()->isWhitespace(u))
                     byteIndexToRet = nextByteIndex;
             }
             break;
@@ -786,6 +796,16 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
             TextPosition endPos = move(Movement::END, {0, 0});
             if(pos == endPos)
                 break;
+
+            if(movement == Movement::RIGHT_WORD_TIGHT) {
+                if(pos.fTextByteIndex == paragraphs[pos.fParagraphIndex].text.size())
+                    return pos;
+                const std::string& text = paragraphs[pos.fParagraphIndex].text;
+                const char* tPtr = text.c_str() + pos.fTextByteIndex;
+                SkUnichar u = SkUTF::NextUTF8(&tPtr, text.c_str() + text.size());
+                if(SkUnicodes::ICU::Make()->isWhitespace(u))
+                    return pos;
+            }
 
             std::string fullText = get_string();
             size_t bytePosInFullText = get_byte_pos_from_text_pos(pos);
