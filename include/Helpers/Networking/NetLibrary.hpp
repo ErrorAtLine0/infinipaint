@@ -31,8 +31,8 @@ class NetLibrary {
 
         static void destroy();
 
-        static constexpr size_t LOCALID_LEN = 5;
-        static constexpr size_t GLOBALID_LEN = 20;
+        static constexpr size_t LOCALID_LEN = 10;
+        static constexpr size_t GLOBALID_LEN = 40;
 
         struct DownloadProgress {
             uint64_t downloadedBytes;
