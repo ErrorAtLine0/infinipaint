@@ -261,7 +261,6 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
-    toRet["velocityAffectsBrushWidth"] = velocityAffectsBrushWidth;
     toRet["jumpTransitionEasing"] = jumpTransitionEasing;
     toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
     toRet["flipZoomToolDirection"] = flipZoomToolDirection;
@@ -275,6 +274,7 @@ nlohmann::json Toolbar::get_config_json() {
     tablet["middleClickButton"] = tabletOptions.middleClickButton;
     tablet["rightClickButton"] = tabletOptions.rightClickButton;
     tablet["ignoreMouseMovementWhenPenInProximity"] = tabletOptions.ignoreMouseMovementWhenPenInProximity;
+    tablet["brushMinimumSize"] = tabletOptions.brushMinimumSize;
 
     toRet["tablet"] = tablet;
 
@@ -323,7 +323,6 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("showPerformance").get_to(showPerformance);} catch(...) {}
     try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
     try{j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);} catch(...) {}
-    try{j.at("velocityAffectsBrushWidth").get_to(velocityAffectsBrushWidth);} catch(...) {}
     try{j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
     if(version >= VersionNumber(0, 3, 0))
         try{j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);} catch(...) {}
@@ -337,6 +336,7 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);} catch(...) {}
     try{j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);} catch(...) {}
     try{j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);} catch(...) {}
+    try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
 
     main.update_display_names();
 }
@@ -1455,7 +1455,6 @@ void Toolbar::options_menu() {
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
                                         gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
-                                        gui.checkbox_field("changebrushwidthwithspeed", "Change brush size with mouse speed", &velocityAffectsBrushWidth);
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, 1);
 
                                         gui.text_label("VSync:");
@@ -1479,6 +1478,7 @@ void Toolbar::options_menu() {
                                         gui.slider_scalar_field("smoothing time", "Smoothing sampling time", &tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, 3);
                                         gui.input_scalar_field<uint8_t>("middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
                                         gui.input_scalar_field<uint8_t>("right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
+                                        gui.slider_scalar_field("tablet brush minimum size", "Brush relative minimum size", &tabletOptions.brushMinimumSize, 0.0f, 1.0f, 3);
                                         #ifdef _WIN32
                                             gui.checkbox_field("mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
                                         #endif

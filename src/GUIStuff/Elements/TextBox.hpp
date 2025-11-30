@@ -13,7 +13,7 @@ template <typename T> class TextBox : public Element {
             bool isUpdating = false;
 
             if(!textbox || !cur)
-                force_update_textbox(io, false);
+                force_update_textbox(io, true);
 
             data = newData;
             fromStr = newFromStr;
@@ -40,7 +40,7 @@ template <typename T> class TextBox : public Element {
                 }
                 if(data && selection.justUnselected) {
                     std::optional<T> dataToAssign = fromStr(textbox->get_string());
-                    if(dataToAssign)
+                    if(dataToAssign.has_value())
                         *data = dataToAssign.value();
                     force_update_textbox(io, true);
                     isUpdating = true;
@@ -99,7 +99,7 @@ template <typename T> class TextBox : public Element {
         SelectionHelper selection;
     private:
         void force_update_textbox(UpdateInputData& io, bool reallyForce) {
-            if(data && (*data == oldData) && !reallyForce && textbox && cur)
+            if(data && oldData.has_value() && (*data == oldData.value()) && !reallyForce && textbox && cur)
                 return;
 
             textbox = std::make_shared<RichText::TextBox>();
@@ -116,14 +116,14 @@ template <typename T> class TextBox : public Element {
 
         void update_on_edit() {
             std::optional<T> dataToAssign = fromStr(textbox->get_string());
-            if(dataToAssign) {
+            if(dataToAssign.has_value()) {
                 *data = dataToAssign.value();
                 oldData = *data;
             }
         }
 
         T* data = nullptr;
-        T oldData;
+        std::optional<T> oldData;
 
         std::function<std::optional<T>(const std::string&)> fromStr;
         std::function<std::string(const T&)> toStr;

@@ -52,17 +52,6 @@ void BrushTool::tool_update() {
     if(!controls.isDrawing)
         controls.penSmoothingData.clear();
 
-    float averageScreenSize = (drawP.world.main.window.size.x() + drawP.world.main.window.size.y()) / 2.0f;
-    float minVel = 0.2f * averageScreenSize;
-    float maxVel = 3.5f * averageScreenSize;
-
-    while(!controls.velocitySmoothingData.empty() && (std::chrono::steady_clock::now() - controls.velocitySmoothingData.front().t) > std::chrono::milliseconds(200))
-        controls.velocitySmoothingData.pop_front();
-    controls.velocitySmoothingData.emplace_back(
-        drawP.world.main.input.mouse.move.norm() / drawP.world.main.deltaTime,
-        std::chrono::steady_clock::now()
-    );
-
     if(drawP.world.main.input.pen.isDown && drawP.controls.leftClickHeld && drawP.world.main.toolbar.tabletOptions.pressureAffectsBrushWidth) {
         while(!controls.penSmoothingData.empty() && (std::chrono::steady_clock::now() - controls.penSmoothingData.front().t) > std::chrono::milliseconds(static_cast<int>(drawP.world.main.toolbar.tabletOptions.smoothingSamplingTime * 1000.0f)))
             controls.penSmoothingData.pop_front();
@@ -75,13 +64,10 @@ void BrushTool::tool_update() {
             averagePressure += width;
         averagePressure /= controls.penSmoothingData.size();
         controls.penWidth = averagePressure;
-    }
-    else if(drawP.world.main.toolbar.velocityAffectsBrushWidth) {
-        float averageVel = 0.0f;
-        for(auto& [width, t] : controls.velocitySmoothingData)
-            averageVel += width;
-        averageVel /= controls.velocitySmoothingData.size();
-        controls.penWidth = std::clamp<float>((averageVel - minVel) / (maxVel - minVel), VEL_SMOOTH_MIN, VEL_SMOOTH_MAX);
+        if(controls.penWidth != 0.0f) {
+            float brushMinSize = drawP.world.main.toolbar.tabletOptions.brushMinimumSize;
+            controls.penWidth = brushMinSize + controls.penWidth * (1.0f - brushMinSize);
+        }
     }
     else
         controls.penWidth = 1.0f;

@@ -64,7 +64,6 @@ class Toolbar {
         bool load_theme();
         void load_licenses();
 
-        bool velocityAffectsBrushWidth = false;
         double dragZoomSpeed = 0.02;
         double scrollZoomSpeed = 0.4;
         float jumpTransitionTime = 0.5f;
@@ -77,6 +76,7 @@ class Toolbar {
             uint8_t middleClickButton = 1;
             uint8_t rightClickButton = 2;
             bool ignoreMouseMovementWhenPenInProximity = false;
+            float brushMinimumSize = 0.0f;
         } tabletOptions;
 
         Vector4f* colorLeft = nullptr;

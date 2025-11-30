@@ -34,7 +34,6 @@ class BrushTool : public DrawingProgramToolBase {
                 float val;
                 std::chrono::steady_clock::time_point t;
             };
-            std::deque<SmoothingPoint> velocitySmoothingData;
             std::deque<SmoothingPoint> penSmoothingData;
 
             std::shared_ptr<DrawBrushStroke> intermediateItem;
