@@ -76,18 +76,17 @@ void World::init_client_callbacks() {
         message(isDirectConnect, ownID, userColor);
         if(!isDirectConnect) {
             std::string fileDisplayName;
-            message(displayName, fileDisplayName, clients);
+            CoordSpaceHelper camCoordsToMoveTo;
+            Vector2f windowSizeToMoveTo;
+            message(displayName, camCoordsToMoveTo, windowSizeToMoveTo, fileDisplayName, clients);
             set_name(fileDisplayName);
+            drawData.cam.smooth_move_to(*main.world, camCoordsToMoveTo, windowSizeToMoveTo, true);
             Vector3f newBackColor;
             message(newBackColor);
             set_canvas_background_color(newBackColor, false);
             message(canvasScale);
             drawProg.initialize_draw_data(message);
             message(bMan, gridMan);
-            if(!clients.empty()) {
-                auto& [randomClientServerID, randomClient] = *clients.begin();
-                drawData.cam.smooth_move_to(*main.world, randomClient.camCoords, randomClient.windowSize, true);
-            }
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
@@ -110,11 +109,17 @@ void World::init_client_callbacks() {
             clients.erase(id);
         }
     });
-    con.client_add_recv_callback(CLIENT_MOVE_MOUSE, [&](cereal::PortableBinaryInputArchive& message) {
+    con.client_add_recv_callback(CLIENT_MOVE_CAMERA, [&](cereal::PortableBinaryInputArchive& message) {
         ServerPortionID id;
         message(id);
         auto& c = clients[id];
-        message(c.camCoords, c.windowSize, c.cursorPos);
+        message(c.camCoords, c.windowSize);
+    });
+    con.client_add_recv_callback(CLIENT_MOVE_SCREEN_MOUSE, [&](cereal::PortableBinaryInputArchive& message) {
+        ServerPortionID id;
+        message(id);
+        auto& c = clients[id];
+        message(c.cursorPos);
     });
     con.client_add_recv_callback(CLIENT_CHAT_MESSAGE, [&](cereal::PortableBinaryInputArchive& message) {
         ServerPortionID senderID;
@@ -164,7 +169,19 @@ void World::focus_update() {
     }
 
     if(!clientStillConnecting) {
-        con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_MOVE_MOUSE, drawData.cam.c, main.window.size.cast<float>().eval(), main.input.mouse.pos);
+        constexpr float SECONDS_TO_SEND_CAMERA_DATA = 0.5f;
+        timeToSendCameraData.update_time_since();
+        if(timeToSendCameraData.get_time_since() > SECONDS_TO_SEND_CAMERA_DATA) {
+            timeToSendCameraData.update_time_point();
+            if(!sentCameraData.has_value() || (sentCameraData.value().windowSize != main.window.size.cast<float>().eval() || sentCameraData.value().camTransform != drawData.cam.c)) {
+                con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_MOVE_CAMERA, drawData.cam.c, main.window.size.cast<float>().eval());
+                sentCameraData = {
+                    .camTransform = drawData.cam.c,
+                    .windowSize = main.window.size.cast<float>()
+                };
+            }
+        }
+        con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_MOVE_SCREEN_MOUSE, main.input.mouse.pos);
         drawProg.update();
     }
 
@@ -263,7 +280,7 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     bMan.init_client_callbacks();
     gridMan.init_client_callbacks();
     init_client_callbacks();
-    con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true);
+    con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true, drawData.cam.c, main.window.size.cast<float>().eval());
     conType = CONNECTIONTYPE_SERVER;
     netSource = initNetSource;
     drawProg.components.set_server_from_client_list();

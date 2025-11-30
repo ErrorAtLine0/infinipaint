@@ -53,8 +53,15 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         message(newClient.displayName, isDirectConnect);
         ensure_display_name_unique(newClient.displayName);
 
-        if(isDirectConnect)
+        if(isDirectConnect) {
             fileDisplayName = newClient.displayName;
+            message(newClient.camCoords, newClient.windowSize);
+        }
+        else {
+            auto& [randomClientServerID, randomClient] = *clients.begin();
+            newClient.camCoords = randomClient.camCoords;
+            newClient.windowSize = randomClient.windowSize;
+        }
 
         newClient.serverID = Random::get().int_range<ServerPortionID>(1, std::numeric_limits<ServerPortionID>::max());
         client->customID = newClient.serverID;
@@ -62,7 +69,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         if(isDirectConnect)
             netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor);
         else {
-            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, fileDisplayName, clients, data);
+            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, newClient.camCoords, newClient.windowSize, fileDisplayName, clients, data);
             for(auto& [id, rData] : data.resources) {
                 netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, id);
                 netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, rData);
@@ -70,10 +77,15 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         }
         clients.emplace(newClient.serverID, newClient);
     });
-    netServer->add_recv_callback(SERVER_MOVE_MOUSE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    netServer->add_recv_callback(SERVER_MOVE_CAMERA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         auto& c = clients[client->customID];
-        message(c.camCoords, c.windowSize, c.cursorPos);
-        netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_MOUSE, c.serverID, c.camCoords, c.windowSize, c.cursorPos);
+        message(c.camCoords, c.windowSize);
+        netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_CAMERA, c.serverID, c.camCoords, c.windowSize);
+    });
+    netServer->add_recv_callback(SERVER_MOVE_SCREEN_MOUSE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        auto& c = clients[client->customID];
+        message(c.cursorPos);
+        netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_SCREEN_MOUSE, c.serverID, c.cursorPos);
     });
     netServer->add_recv_callback(SERVER_PLACE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         uint64_t placement;

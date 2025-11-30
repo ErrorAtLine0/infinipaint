@@ -11,10 +11,10 @@ class MainServer;
 class ClientData {
     public:
         CoordSpaceHelper camCoords;
-        Vector2f windowSize;
-        Vector2f cursorPos;
+        Vector2f windowSize = {1000.0f, 1000.0f};
+        Vector2f cursorPos = {1.0f, 1.0f};
 
-        Vector3f cursorColor;
+        Vector3f cursorColor = {1.0f, 1.0f, 1.0f};
         std::string displayName;
         ServerPortionID serverID = 0;
 

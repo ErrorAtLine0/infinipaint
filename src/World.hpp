@@ -100,13 +100,19 @@ class World {
 
         uint64_t canvasScale = 0;
     private:
-
         ClientPortionID get_max_id(ServerPortionID serverID);
 
         void init_client_callbacks();
         void set_name(const std::string& n);
 
         void draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData);
+
+        TimePoint timeToSendCameraData;
+        struct SentCameraData {
+            CoordSpaceHelper camTransform;
+            Vector2f windowSize;
+        };
+        std::optional<SentCameraData> sentCameraData;
 
         ClientPortionID nextClientID = 0;
         WorldVec mousePreviousWorldVec = {0, 0};
