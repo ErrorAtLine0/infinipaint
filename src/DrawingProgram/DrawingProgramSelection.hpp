@@ -30,11 +30,11 @@ class DrawingProgramSelection {
 
         void selection_to_clipboard();
         void paste_clipboard(Vector2f pasteScreenPos);
+        void delete_all();
     private:
         std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld);
         void fully_collided_erase_select_objects_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
 
-        void delete_all();
         bool mouse_collided_with_selection_aabb();
         bool mouse_collided_with_scale_point();
         bool mouse_collided_with_rotate_center_handle_point();

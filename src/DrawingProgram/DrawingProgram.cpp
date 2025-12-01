@@ -229,12 +229,24 @@ void DrawingProgram::toolbar_gui() {
 bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
     Toolbar& t = world.main.toolbar;
     // Paste objects action only works on selection allowing tools
-    return !t.gui.action_list_popup_menu("General popup menu", popupPos, {
-        {"Paste Objects", [&]() {
-            selection.deselect_all();
-            selection.paste_clipboard(popupPos);
-        }}
+    std::vector<std::pair<std::string, std::function<void()>>> actions;
+    actions.emplace_back("Paste Objects", [&]() {
+        selection.deselect_all();
+        selection.paste_clipboard(popupPos);
     });
+    if(selection.is_something_selected()) {
+        actions.emplace_back("Copy Selection", [&]() {
+            selection.selection_to_clipboard();
+        });
+        actions.emplace_back("Cut Selection", [&]() {
+            selection.selection_to_clipboard();
+            selection.delete_all();
+        });
+        actions.emplace_back("Delete Selection", [&]() {
+            selection.delete_all();
+        });
+    }
+    return !t.gui.action_list_popup_menu("General popup menu", popupPos, actions);
 }
 
 bool DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
