@@ -154,6 +154,12 @@ void BrushTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool BrushTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
 bool BrushTool::prevent_undo_or_redo() {
     return controls.intermediateItem != nullptr;
 }

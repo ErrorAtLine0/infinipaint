@@ -46,6 +46,7 @@ class Toolbar {
         void draw(SkCanvas* canvas);
         void color_selector_left(Vector4f* color);
         void color_selector_right(Vector4f* color);
+        void paint_popup(Vector2f popupPos);
 
         typedef std::function<void(const std::filesystem::path&, const ExtensionFilter& extensionSelected)> OpenFileSelectorCallback;
         void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);
@@ -84,7 +85,7 @@ class Toolbar {
         bool isUpdatingColorLeft = false;
         bool isUpdatingColorRight = false;
 
-        std::optional<Vector2f> paintPopupLocation;
+        std::optional<Vector2f> rightClickPopupLocation;
 
         bool flipZoomToolDirection = false;
 
@@ -111,7 +112,6 @@ class Toolbar {
         void open_world_file(int conType, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
         void load_default_theme();
-        void paint_popup();
         void about_menu_gui();
         void web_version_welcome();
 

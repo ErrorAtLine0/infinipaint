@@ -25,6 +25,7 @@ class DrawingProgram {
         void init_client_callbacks();
         void toolbar_gui();
         void tool_options_gui();
+        bool right_click_popup_gui(Vector2f popupPos);
         void update();
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
@@ -67,6 +68,8 @@ class DrawingProgram {
     private:
         std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
+
+        bool selection_action_menu(Vector2f popupPos);
 
         void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
 

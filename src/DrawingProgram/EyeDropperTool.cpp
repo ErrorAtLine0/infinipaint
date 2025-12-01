@@ -39,6 +39,12 @@ void EyeDropperTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
 void EyeDropperTool::tool_update() {
     if(drawP.controls.leftClick) {
         SkSurfaceProps props;

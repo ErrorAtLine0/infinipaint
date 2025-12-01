@@ -27,6 +27,9 @@ class DrawingProgramSelection {
         void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);
         void clear_own_cached_surfaces();
         void preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck);
+
+        void selection_to_clipboard();
+        void paste_clipboard(Vector2f pasteScreenPos);
     private:
         std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld);
         void fully_collided_erase_select_objects_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
@@ -36,8 +39,6 @@ class DrawingProgramSelection {
         bool mouse_collided_with_scale_point();
         bool mouse_collided_with_rotate_center_handle_point();
         bool mouse_collided_with_rotate_handle_point();
-        void selection_to_clipboard();
-        void paste_clipboard();
 
         void set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection);
         void add_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection);

@@ -20,6 +20,12 @@ void EraserTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool EraserTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     if(!erasedComponents.empty()) {
         DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);

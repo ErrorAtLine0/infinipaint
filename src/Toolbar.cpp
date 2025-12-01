@@ -390,12 +390,15 @@ void Toolbar::update() {
     }
 
     if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
-        paintPopupLocation = std::nullopt;
+        rightClickPopupLocation = std::nullopt;
 
-    paint_popup();
+    if(rightClickPopupLocation.has_value()) {
+        if(!main.world->drawProg.right_click_popup_gui(rightClickPopupLocation.value()))
+            rightClickPopupLocation = std::nullopt;
+    }
 
     if(io->hoverObstructed && io->mouse.rightClick) // This runs specifically if the paint popup has the cursor
-        paintPopupLocation = std::nullopt;
+        rightClickPopupLocation = std::nullopt;
 
     end_gui();
 
@@ -428,18 +431,16 @@ void Toolbar::save_as_func() {
     #endif
 }
 
-void Toolbar::paint_popup() {
-    if(paintPopupLocation) {
-        double newRotationAngle = 0.0;
-        gui.paint_circle_popup_menu("paint circle popup", paintPopupLocation.value(), {
-            .currentRotationAngle = main.world->drawData.cam.c.rotation,
-            .newRotationAngle = &newRotationAngle,
-            .selectedColor = main.world->drawProg.get_foreground_color_ptr(),
-            .palette = paletteData.palettes[paletteData.selectedPalette].colors
-        });
-        if(newRotationAngle != main.world->drawData.cam.c.rotation) {
-            main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), newRotationAngle - main.world->drawData.cam.c.rotation);
-        }
+void Toolbar::paint_popup(Vector2f popupPos) {
+    double newRotationAngle = 0.0;
+    gui.paint_circle_popup_menu("paint circle popup", popupPos, {
+        .currentRotationAngle = main.world->drawData.cam.c.rotation,
+        .newRotationAngle = &newRotationAngle,
+        .selectedColor = main.world->drawProg.get_foreground_color_ptr(),
+        .palette = paletteData.palettes[paletteData.selectedPalette].colors
+    });
+    if(newRotationAngle != main.world->drawData.cam.c.rotation) {
+        main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), newRotationAngle - main.world->drawData.cam.c.rotation);
     }
 }
 

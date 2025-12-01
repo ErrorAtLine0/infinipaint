@@ -188,6 +188,7 @@ void DrawingProgram::clear_draw_cache() {
 
 void DrawingProgram::toolbar_gui() {
     Toolbar& t = world.main.toolbar;
+    t.gui.push_id("Drawing Program Toolbar GUI");
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
@@ -222,6 +223,26 @@ void DrawingProgram::toolbar_gui() {
         if(t.gui.big_color_button("Background Color", &controls.backgroundColor, &controls.backgroundColor == t.colorLeft))
             t.color_selector_left(&controls.backgroundColor == t.colorLeft ? nullptr : &controls.backgroundColor);
     }
+    t.gui.pop_id();
+}
+
+bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
+    Toolbar& t = world.main.toolbar;
+    // Paste objects action only works on selection allowing tools
+    return !t.gui.action_list_popup_menu("General popup menu", popupPos, {
+        {"Paste Objects", [&]() {
+            selection.deselect_all();
+            selection.paste_clipboard(popupPos);
+        }}
+    });
+}
+
+bool DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = world.main.toolbar;
+    t.gui.push_id("Drawing Program right click GUI");
+    bool toRet = drawTool->right_click_popup_gui(popupPos);
+    t.gui.pop_id();
+    return toRet;
 }
 
 void DrawingProgram::tool_options_gui() {
@@ -295,7 +316,7 @@ void DrawingProgram::update() {
     controls.leftClick = controls.cursorHoveringOverCanvas && world.main.input.mouse.leftClicks;
     if(controls.leftClick) {
         controls.leftClickHeld = true;
-        world.main.toolbar.paintPopupLocation = std::nullopt;
+        world.main.toolbar.rightClickPopupLocation = std::nullopt;
     }
     if(controls.leftClickHeld && !world.main.input.mouse.leftDown) {
         controls.leftClick = false;
@@ -307,7 +328,7 @@ void DrawingProgram::update() {
     bool middleHeld = world.main.input.mouse.middleDown || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].held;
     if(controls.middleClick) {
         controls.middleClickHeld = true;
-        world.main.toolbar.paintPopupLocation = std::nullopt;
+        world.main.toolbar.rightClickPopupLocation = std::nullopt;
     }
     if(controls.middleClickHeld && !middleHeld) {
         controls.middleClick = false;
@@ -316,10 +337,10 @@ void DrawingProgram::update() {
     }
 
     if(controls.cursorHoveringOverCanvas && (world.main.input.mouse.rightClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.rightClickButton].pressed)) {
-        if(world.main.toolbar.paintPopupLocation)
-            world.main.toolbar.paintPopupLocation = std::nullopt;
+        if(world.main.toolbar.rightClickPopupLocation)
+            world.main.toolbar.rightClickPopupLocation = std::nullopt;
         else
-            world.main.toolbar.paintPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
+            world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
     }
 
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;
@@ -385,12 +406,14 @@ bool DrawingProgram::is_selection_allowing_tool(DrawingProgramToolType typeToChe
 void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool) {
     drawTool->switch_tool(newTool->get_type());
     drawTool = std::move(newTool);
+    world.main.toolbar.rightClickPopupLocation = std::nullopt;
 }
 
 void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool force) {
     if(newToolType != drawTool->get_type() || force) {
         drawTool->switch_tool(newToolType);
         drawTool = DrawingProgramToolBase::allocate_tool_type(*this, newToolType);
+        world.main.toolbar.rightClickPopupLocation = std::nullopt;
     }
 }
 

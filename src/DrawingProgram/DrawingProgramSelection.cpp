@@ -383,11 +383,11 @@ void DrawingProgramSelection::update() {
         }
         else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed) {
             deselect_all();
-            paste_clipboard();
+            paste_clipboard(drawP.world.main.input.mouse.pos);
         }
     }
     else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed && !drawP.prevent_undo_or_redo())
-        paste_clipboard();
+        paste_clipboard(drawP.world.main.input.mouse.pos);
     else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
         drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
 }
@@ -396,14 +396,15 @@ bool DrawingProgramSelection::is_being_transformed() {
     return transformOpHappening != TransformOperation::NONE;
 }
 
-void DrawingProgramSelection::paste_clipboard() {
+void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
     auto& clipboard = drawP.world.main.clipboard;
 
-    drawP.switch_to_tool(DrawingProgramToolType::RECTSELECT);
+    if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
+        drawP.switch_to_tool(DrawingProgramToolType::EDIT);
 
     uint64_t allPlacement = drawP.components.client_list().size();
     std::vector<std::shared_ptr<DrawComponent>> placedComponents;
-    WorldVec mousePos = drawP.world.get_mouse_world_pos();
+    WorldVec mousePos = drawP.world.drawData.cam.c.from_space(pasteScreenPos);
     WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
     WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
     WorldScalar scaleLimit(0.001);

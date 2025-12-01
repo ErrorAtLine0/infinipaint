@@ -21,6 +21,10 @@ void ZoomCanvasTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool ZoomCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+    return drawP.selection_action_menu(popupPos);
+}
+
 void ZoomCanvasTool::tool_update() {
 }
 

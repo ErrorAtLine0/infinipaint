@@ -99,6 +99,7 @@ class GUIManager {
         void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
 
         void paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
+        bool action_list_popup_menu(const std::string& id, Vector2f popupPos, const std::vector<std::pair<std::string, std::function<void()>>>& actions);
 
         void obstructing_window();
 

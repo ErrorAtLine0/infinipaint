@@ -32,6 +32,12 @@ void EllipseDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
 void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
     commit();
 }

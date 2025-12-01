@@ -870,6 +870,56 @@ void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& 
     pop_id();
 }
 
+bool GUIManager::action_list_popup_menu(const std::string& id, Vector2f popupPos, const std::vector<std::pair<std::string, std::function<void()>>>& actions) {
+    push_id(id);
+
+    std::string& uniqueID = insert_any_with_id_with_function<std::string>(0, [&]() {
+        return get_clay_unique_id();
+    });
+
+    Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(uniqueID));
+    Clay_ElementData actionListElemData = Clay_GetElementData(clayID);
+
+    if(actionListElemData.found) {
+        if((popupPos.y() + actionListElemData.boundingBox.height) > windowSize.y()) {
+            popupPos.y() -= actionListElemData.boundingBox.height;
+        }
+    }
+
+    bool toRet = false;
+
+    CLAY({
+        .id = clayID,
+        .layout = { 
+            .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0)},
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = 1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {
+            .offset = {popupPos.x(), popupPos.y()},
+            .zIndex = -1,
+            .attachTo = CLAY_ATTACH_TO_ROOT
+        }
+    }) {
+        obstructing_window();
+        push_id(1);
+        for(auto& [actionName, actionFunc] : actions) {
+            if(text_button_left_transparent(actionName, actionName)) {
+                actionFunc();
+                toRet = true;
+            }
+        }
+        pop_id();
+    }
+    pop_id();
+
+    return toRet;
+}
+
 void GUIManager::obstructing_window() {
     if(Clay_Hovered())
         io->hoverObstructed = true;

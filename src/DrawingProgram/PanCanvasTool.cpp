@@ -21,6 +21,10 @@ void PanCanvasTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+    return drawP.selection_action_menu(popupPos);
+}
+
 void PanCanvasTool::tool_update() {
 }
 

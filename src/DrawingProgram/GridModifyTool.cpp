@@ -76,6 +76,12 @@ void GridModifyTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+bool GridModifyTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
 void GridModifyTool::tool_update() {
     auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
     if(gridFoundIt != drawP.world.gridMan.grids.end()) {
