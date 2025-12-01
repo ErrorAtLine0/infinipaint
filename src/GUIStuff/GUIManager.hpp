@@ -96,7 +96,7 @@ class GUIManager {
         void input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
         void input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
-        void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, float maxHeight = 0.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
+        void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
 
         void paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
 
@@ -123,6 +123,22 @@ class GUIManager {
         template <typename T> T& insert_any_with_id(int64_t id, const T& def) {
             push_id(id);
             T& toRet = insert_any(def);
+            pop_id();
+            return toRet;
+        }
+
+        template <typename T> T& insert_any_with_function(std::function<T()> funcToRun) {
+            auto [it, inserted] = elements.emplace(idStack, ElementContainer());
+            auto& container = it->second;
+            if(inserted)
+                it->second.extra = funcToRun();
+            container.isUsedThisFrame = true;
+            return std::any_cast<T&>(it->second.extra);
+        }
+
+        template <typename T> T& insert_any_with_id_with_function(int64_t id, std::function<T()> funcToRun) {
+            push_id(id);
+            T& toRet = insert_any_with_function(funcToRun);
             pop_id();
             return toRet;
         }
@@ -307,10 +323,20 @@ class GUIManager {
 
         bool font_picker(const std::string& id, std::string* fontName);
 
-        template <typename T> bool color_picker_items(const std::string& id, T* val, bool selectAlpha) {
+        template <typename T> bool color_picker_items(const std::string& id, T* val, bool selectAlpha, float fixedPickerWidth = 0.0f) {
             bool isUpdating = false;
             push_id(id);
-            isUpdating |= color_picker("c", val, selectAlpha);
+            if(fixedPickerWidth == 0.0f)
+                isUpdating |= color_picker("c", val, selectAlpha);
+            else {
+                CLAY({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIXED(fixedPickerWidth), .height = CLAY_SIZING_FIXED(fixedPickerWidth)}
+                    }
+                }) {
+                    isUpdating |= color_picker("c", val, selectAlpha);
+                }
+            }
             left_to_right_line_layout([&]() {
                 text_label("R");
                 isUpdating |= input_color_component_255("r", &(*val)[0]);
@@ -341,6 +367,9 @@ class GUIManager {
         }
 
     private:
+        std::string get_clay_unique_id();
+        uint64_t clayUniqueIDCounter = 0;
+
         static void clay_error_handler(Clay_ErrorData errorData);
         static Clay_Dimensions clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData);
 

@@ -1062,21 +1062,27 @@ void Toolbar::drawing_program_gui() {
         if(colorLeft) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+                    .padding = {.top = 40, .bottom = 40}
+                }
             }) {
-                gui.obstructing_window();
-                isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true);
-                bool hoveringOnDropdown = false;
-                isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
-                if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io->mouse.leftClick)
-                    colorLeft = nullptr;
+                CLAY({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                        .childGap = io->theme->childGap1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+                }) {
+                    gui.obstructing_window();
+                    isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io->theme->padding1 * 2.0f);
+                    bool hoveringOnDropdown = false;
+                    isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
+                    if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io->mouse.leftClick)
+                        colorLeft = nullptr;
+                }
             }
         }
         CLAY({
@@ -1087,21 +1093,27 @@ void Toolbar::drawing_program_gui() {
         if(colorRight) {
             CLAY({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+                    .padding = {.top = 40, .bottom = 40}
+                }
             }) {
-                gui.obstructing_window();
-                isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true);
-                bool hoveringOnDropdown = false;
-                isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
-                if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io->mouse.leftClick)
-                    colorRight = nullptr;
+                CLAY({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                        .childGap = io->theme->childGap1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+                }) {
+                    gui.obstructing_window();
+                    isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io->theme->padding1 * 2.0f);
+                    bool hoveringOnDropdown = false;
+                    isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
+                    if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io->mouse.leftClick)
+                        colorRight = nullptr;
+                }
             }
         }
         main.world->drawProg.tool_options_gui();
@@ -1112,42 +1124,53 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
     bool isUpdating = false;
     gui.push_id(id);
     auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
-    size_t i = 0;
     constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
-    while(i < palette.size()) {
+
+    gui.scroll_bar_area("color palette scroll area", false, [&](float, float, float &) {
         CLAY({
             .layout = {
-                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
-                .padding = {.top = 3, .bottom = 3},
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                 .childGap = io->theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                .layoutDirection = CLAY_LEFT_TO_RIGHT
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
             }
         }) {
+            size_t i = 0;
             while(i < palette.size()) {
                 CLAY({
                     .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
+                        .childGap = io->theme->childGap1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT
                     }
                 }) {
-                    Vector4f newC = {palette[i].x(), palette[i].y(), palette[i].z(), 1.0f};
-                    if(gui.color_button("c" + std::to_string(i), &newC, (paletteData.selectedColor == (int)i))) {
-                        paletteData.selectedColor = (int)i;
-                        // We want to keep the old color's alpha
-                        color->x() = newC.x();
-                        color->y() = newC.y();
-                        color->z() = newC.z();
-                        isUpdating = true;
+                    while(i < palette.size()) {
+                        CLAY({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)}
+                            }
+                        }) {
+                            Vector4f newC = {palette[i].x(), palette[i].y(), palette[i].z(), 1.0f};
+                            if(gui.color_button("c" + std::to_string(i), &newC, (paletteData.selectedColor == (int)i))) {
+                                paletteData.selectedColor = (int)i;
+                                // We want to keep the old color's alpha
+                                color->x() = newC.x();
+                                color->y() = newC.y();
+                                color->z() = newC.z();
+                                isUpdating = true;
+                            }
+                            if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
+                                paletteData.selectedColor = -1;
+                        }
+                        i++;
+                        if(i % 6 == 0)
+                            break;
                     }
-                    if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
-                        paletteData.selectedColor = -1;
                 }
-                i++;
-                if(i % 6 == 0)
-                    break;
             }
         }
-    }
+    });
+
     if(paletteData.selectedPalette != 0) {
         CLAY({
             .layout = {
@@ -1182,7 +1205,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
         std::vector<std::string> paletteNames;
         for(auto& p : paletteData.palettes)
             paletteNames.emplace_back(p.name);
-        gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, 90.0f, [&]() {
+        gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, [&]() {
             hoveringOnDropdown = Clay_Hovered();
         });
         if(gui.svg_icon_button("paletteadd", "data/icons/plus.svg", paletteData.addingPalette, 25.0f)) paletteData.addingPalette = !paletteData.addingPalette;
@@ -1442,14 +1465,14 @@ void Toolbar::options_menu() {
                                 switch(generalSettingsOptions) {
                                     case GSETTINGS_GENERAL: {
                                         gui.push_id("general settings");
-                                        gui.input_text_field("display name input", "Display Name", &main.displayName);
+                                        gui.input_text_field("display name input", "Display name", &main.displayName);
                                         main.update_display_names();
                                         SkColor4f newBackColor{main.defaultCanvasBackgroundColor.x(), main.defaultCanvasBackgroundColor.y(), main.defaultCanvasBackgroundColor.z(), 1.0f};
                                         gui.color_picker_button_field("defaultCanvasBackgroundColor", "Default canvas background color", &newBackColor, false);
                                         main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);
                                         #ifndef __EMSCRIPTEN__
-                                            gui.checkbox_field("native file pick", "Use Native File Picker", &useNativeFilePicker);
-                                            gui.checkbox_field("update notifications enable", "Check For Updates on Startup", &updateCheckerData.checkForUpdates);
+                                            gui.checkbox_field("native file pick", "Use native file picker", &useNativeFilePicker);
+                                            gui.checkbox_field("update notifications enable", "Check for updates on startup", &updateCheckerData.checkForUpdates);
                                         #endif
                                         gui.slider_scalar_field("drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, 3);
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
@@ -1597,8 +1620,8 @@ void Toolbar::options_menu() {
                                     }
                                     case GSETTINGS_DEBUG: {
                                         gui.push_id("debug settings menu");
-                                        gui.checkbox_field("show performance metrics", "Show Metrics", &showPerformance);
-                                        gui.input_scalar_fields("jump transition easing", "Jump Easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, 2);
+                                        gui.checkbox_field("show performance metrics", "Show metrics", &showPerformance);
+                                        gui.input_scalar_fields("jump transition easing", "Jump easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, 2);
                                         #ifndef __EMSCRIPTEN__
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif

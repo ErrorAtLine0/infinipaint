@@ -24,7 +24,6 @@
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/TextStyle.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
-#include <Helpers/Random.hpp>
 #include "../FontData.hpp"
 
 namespace GUIStuff {
@@ -536,6 +535,11 @@ bool GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, 
     return isUpdating;
 }
 
+std::string GUIManager::get_clay_unique_id() {
+    std::string toRet = "CLAY_UNIQUE_ID_" + std::to_string(clayUniqueIDCounter++);
+    return toRet;
+}
+
 void GUIManager::input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<std::filesystem::path>>()->update(*io, val, 
@@ -564,9 +568,17 @@ bool GUIManager::font_picker(const std::string& id, std::string* fontName) {
     return toRet;
 }
 
-void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, float maxHeight, const std::function<void()>& hoverboxElemUpdate) {
+void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
     push_id(id);
-    bool& dropDownOpen = insert_any_with_id(0, false);
+    struct DropdownData {
+        std::string uniqueID;
+        bool isOpen = false;
+    };
+    DropdownData& dropdownData = insert_any_with_id_with_function<DropdownData>(0, [&]() {
+        return DropdownData {
+            .uniqueID = get_clay_unique_id()
+        };
+    });
     left_to_right_layout(CLAY_SIZING_FIXED(width), CLAY_SIZING_FIT(0), [&]() {
         bool click = selectable_button(id, [&](SelectionHelper& s, bool iS) {
             CLAY({
@@ -585,14 +597,20 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                         .sizing = {.width = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE)}
                     }
                 }) {
-                    svg_icon("dropico", "data/icons/droparrow.svg", dropDownOpen);
+                    svg_icon("dropico", "data/icons/droparrow.svg", dropdownData.isOpen);
                 }
             }
-        }, SelectableButton::DrawType::FILLED, dropDownOpen);
-        if(dropDownOpen) {
+        }, SelectableButton::DrawType::FILLED, dropdownData.isOpen);
+        if(dropdownData.isOpen) {
+            Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(dropdownData.uniqueID));
+            Clay_ElementData dropdownElemData = Clay_GetElementData(clayID);
+            float calculatedDropdownMaxHeight = 0.0f;
+            if(dropdownElemData.found)
+                calculatedDropdownMaxHeight = std::max(windowSize.y() - dropdownElemData.boundingBox.y - 2.0f, 0.0f);
             CLAY({
+                .id = clayID,
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0, maxHeight)},
+                    .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0, calculatedDropdownMaxHeight)},
                     .childGap = 0
                 },
                 .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
@@ -644,7 +662,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                             text_label(selections[i]);
                             if(io->mouse.leftClick && Clay_Hovered()) {
                                 *val = i;
-                                dropDownOpen = false;
+                                dropdownData.isOpen = false;
                             }
                         }
                     }
@@ -654,12 +672,13 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
             }
         }
         if(click)
-            dropDownOpen = !dropDownOpen;
+            dropdownData.isOpen = !dropdownData.isOpen;
     });
     pop_id();
 }
 
 void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, const std::function<void(float, float, float&)>& elemUpdate) {
+    push_id(id);
     CLAY({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -679,11 +698,11 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
             std::string uniqueID;
         };
 
-        push_id(id);
-        ScrollAreaData& sD = insert_any(ScrollAreaData{
-            .uniqueID = Random::get().alphanumeric_str(30)
+        ScrollAreaData& sD = insert_any_with_id_with_function<ScrollAreaData>(0, [&](){
+            return ScrollAreaData{
+                .uniqueID = get_clay_unique_id()
+            };
         });
-        pop_id();
 
         Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(sD.uniqueID));
 
@@ -696,7 +715,9 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
             },
             .clip = {.horizontal = clipHorizontal, .vertical = true, .childOffset = {.x = 0, .y = Clay_GetScrollOffset().y}}
         }) {
+            push_id(1);
             elemUpdate(sD.contentDimensions, sD.containerDimensions, sD.currentScrollPos);
+            pop_id();
         }
 
         // Make sure you are accessing this data after the element has been created
@@ -770,6 +791,7 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
         else
             sD.currentScrollPos = 0.0f;
     }
+    pop_id();
 }
 
 
