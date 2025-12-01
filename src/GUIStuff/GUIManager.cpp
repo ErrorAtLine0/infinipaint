@@ -870,7 +870,7 @@ void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& 
     pop_id();
 }
 
-bool GUIManager::action_list_popup_menu(const std::string& id, Vector2f popupPos, const std::vector<std::pair<std::string, std::function<void()>>>& actions) {
+void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const std::function<void()>& elemUpdate) {
     push_id(id);
 
     std::string& uniqueID = insert_any_with_id_with_function<std::string>(0, [&]() {
@@ -885,8 +885,6 @@ bool GUIManager::action_list_popup_menu(const std::string& id, Vector2f popupPos
             popupPos.y() -= actionListElemData.boundingBox.height;
         }
     }
-
-    bool toRet = false;
 
     CLAY({
         .id = clayID,
@@ -907,17 +905,10 @@ bool GUIManager::action_list_popup_menu(const std::string& id, Vector2f popupPos
     }) {
         obstructing_window();
         push_id(1);
-        for(auto& [actionName, actionFunc] : actions) {
-            if(text_button_left_transparent(actionName, actionName)) {
-                actionFunc();
-                toRet = true;
-            }
-        }
+        elemUpdate();
         pop_id();
     }
     pop_id();
-
-    return toRet;
 }
 
 void GUIManager::obstructing_window() {

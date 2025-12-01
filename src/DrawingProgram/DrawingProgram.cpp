@@ -226,27 +226,34 @@ void DrawingProgram::toolbar_gui() {
     t.gui.pop_id();
 }
 
+// Should only be used in selection allowing tools
 bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
     Toolbar& t = world.main.toolbar;
-    // Paste objects action only works on selection allowing tools
-    std::vector<std::pair<std::string, std::function<void()>>> actions;
-    actions.emplace_back("Paste Objects", [&]() {
-        selection.deselect_all();
-        selection.paste_clipboard(popupPos);
+    bool shouldClose = false;
+    t.gui.list_popup_menu("Selection popup menu", popupPos, [&]() {
+        t.gui.text_label_light("Selection menu");
+        if(t.gui.text_button_left_transparent("Paste", "Paste")) {
+            selection.deselect_all();
+            selection.paste_clipboard(popupPos);
+            shouldClose = true;
+        }
+        if(selection.is_something_selected()) {
+            if(t.gui.text_button_left_transparent("Copy", "Copy")) {
+                selection.selection_to_clipboard();
+                shouldClose = true;
+            }
+            if(t.gui.text_button_left_transparent("Cut", "Cut")) {
+                selection.selection_to_clipboard();
+                selection.delete_all();
+                shouldClose = true;
+            }
+            if(t.gui.text_button_left_transparent("Delete", "Delete")) {
+                selection.delete_all();
+                shouldClose = true;
+            }
+        }
     });
-    if(selection.is_something_selected()) {
-        actions.emplace_back("Copy Selection", [&]() {
-            selection.selection_to_clipboard();
-        });
-        actions.emplace_back("Cut Selection", [&]() {
-            selection.selection_to_clipboard();
-            selection.delete_all();
-        });
-        actions.emplace_back("Delete Selection", [&]() {
-            selection.delete_all();
-        });
-    }
-    return !t.gui.action_list_popup_menu("General popup menu", popupPos, actions);
+    return !shouldClose;
 }
 
 bool DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
