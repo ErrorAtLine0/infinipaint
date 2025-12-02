@@ -47,6 +47,24 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_F2}] = KEY_SHOW_PLAYER_LIST;
     defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
 
+#ifdef __EMSCRIPTEN__
+    // Without this, SDL eats the CTRL-V event that initiates the paste event
+    // https://github.com/pthom/hello_imgui/issues/3#issuecomment-1564536870
+	EM_ASM({
+		window.addEventListener('keydown', function(event) {
+			if((event.ctrlKey || event.metaKey) && (event.key == 'v' || event.code == 'KeyV')) {
+                if(Module["ccall"]('is_text_input_happening', 'number', [], []) === 1)
+				    event.stopImmediatePropagation();
+            }
+		}, true);
+	});
+    emscripten_browser_clipboard::paste_event([](std::string&& pasteData, void* callbackData){
+        InputManager* inMan = (InputManager*)callbackData;
+        inMan->text.isNextPasteRich = true;
+        std::string pData = pasteData;
+        inMan->process_text_paste(pData);
+    }, this);
+#endif
 
     keyAssignments = defaultKeyAssignments;
 }
@@ -357,7 +375,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 void InputManager::call_text_paste(bool isRichTextPaste) {
     text.isNextPasteRich = isRichTextPaste;
 #ifdef __EMSCRIPTEN__
-    emscripten_browser_clipboard::paste([](std::string&& pasteData, void* callbackData){
+    emscripten_browser_clipboard::paste_async([](std::string&& pasteData, void* callbackData){
         InputManager* inMan = (InputManager*)callbackData;
         std::string pData = pasteData;
         inMan->process_text_paste(pData);
@@ -513,8 +531,6 @@ void InputManager::frame_reset(const Vector2i& windowSize) {
     hideCursor = false;
 
 #ifdef __EMSCRIPTEN__
-    clipboardPasteEventHappened = false;
-    clipboardPasteEventData.clear();
     isAcceptingInputEmscripten = text.acceptingInput ? 1 : 0;
 #endif
 }
