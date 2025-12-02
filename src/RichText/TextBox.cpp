@@ -174,28 +174,31 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
 }
 
 void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift) {
-    if(!held)
-        lastClicksWhileHeld = clickCount;
-    else
-        lastClicksWhileHeld = std::max(lastClicksWhileHeld, clickCount);
+    if(clickCount == 1)
+        lastClicksAtCursorPos = 1;
+    else if(clickCount >= 2) {
+        lastClicksAtCursorPos++;
+        if(lastClicksAtCursorPos > 3)
+            lastClicksAtCursorPos = 1;
+    }
 
-    if(lastClicksWhileHeld || held) {
+    if(clickCount || held) {
         rebuild();
 
         Cursor oldCursor = cur;
 
         cur.pos = get_text_pos_closest_to_point(pos);
         if(lastClicksCursorPos != cur.pos && clickCount) {
-            lastClicksWhileHeld = std::min(1, lastClicksWhileHeld);
+            lastClicksAtCursorPos = 1;
             lastClicksCursorPos = cur.pos;
         }
         cur.selectionBeginPos = cur.pos;
-        if(lastClicksWhileHeld && !shift) {
+        if(lastClicksAtCursorPos && !shift) {
             if(!cur.selectionEndPosBeforeHeld.has_value()) {
                 cur.selectionEndPos = cur.selectionBeginPos;
                 cur.selectionEndPosBeforeHeld = cur.selectionEndPos;
             }
-            if(lastClicksWhileHeld == 3) {
+            if(lastClicksAtCursorPos == 3) {
                 cur.selectionEndPos = cur.selectionEndPosBeforeHeld.value();
                 if(cur.selectionBeginPos < cur.selectionEndPos) {
                     cur.selectionBeginPos.fTextByteIndex = 0;
@@ -206,7 +209,7 @@ void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int cl
                     cur.selectionEndPos.fTextByteIndex = 0;
                 }
             }
-            else if(lastClicksWhileHeld == 2) {
+            else if(lastClicksAtCursorPos == 2) {
                 cur.selectionEndPos = cur.selectionEndPosBeforeHeld.value();
                 if(cur.selectionBeginPos < cur.selectionEndPos) {
                     cur.selectionBeginPos = move(Movement::LEFT_WORD_TIGHT, cur.selectionBeginPos);

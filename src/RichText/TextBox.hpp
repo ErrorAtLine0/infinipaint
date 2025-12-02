@@ -186,7 +186,7 @@ class TextBox {
         unsigned tabWidth = 4;
         std::shared_ptr<FontData> fontData;
 
-        int lastClicksWhileHeld = 0;
+        int lastClicksAtCursorPos = 0;
         TextPosition lastClicksCursorPos{0, 0};
 
         struct ParagraphData {

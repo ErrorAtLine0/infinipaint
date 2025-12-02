@@ -57,7 +57,7 @@ FontData::FontData()
     map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf");
 
     collection = sk_make_sp<skia::textlayout::FontCollection>();
-    collection->setDefaultFontManager(defaultFontMgr, std::vector<SkString>{SkString{"Roboto"}, SkString{"Noto Emoji"}, SkString{"Noto Kufi Arabic"}});
+    collection->setDefaultFontManager(defaultFontMgr, std::vector<SkString>{SkString{"Roboto"}, SkString{"Noto Emoji"}, SkString{"Amiri"}});
     if(localFontMgr)
         collection->setDynamicFontManager(localFontMgr);
     std::string s = "🙂";
@@ -74,7 +74,7 @@ const std::vector<SkString>& FontData::get_default_font_families() const {
         defaultFontFamilies.emplace_back("Roboto");
         if(fallbackOnEmoji)
             defaultFontFamilies.emplace_back("Noto Emoji");
-        defaultFontFamilies.emplace_back("Noto Kufi Arabic");
+        defaultFontFamilies.emplace_back("Amiri");
     }
     return defaultFontFamilies;
 }
@@ -83,7 +83,7 @@ void FontData::push_default_font_families(std::vector<SkString>& fontFamilies) c
     fontFamilies.emplace_back("Roboto");
     if(fallbackOnEmoji)
         fontFamilies.emplace_back("Noto Emoji");
-    fontFamilies.emplace_back("Noto Kufi Arabic");
+    fontFamilies.emplace_back("Amiri");
 }
 
 FontData::~FontData() {

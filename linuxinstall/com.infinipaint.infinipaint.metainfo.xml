@@ -59,6 +59,18 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.3.1" date="2025-12-02">
+            <description>
+                <p>Minor update:</p>
+                <ul>
+                    <li>Add right click popup menu for selection and text editing</li>
+                    <li>Fixed crash when pasting rich text in GUI textbox</li>
+                    <li>Added mouse double click and triple click text selection</li>
+                    <li>Can now type tabs into textboxes</li>
+                    <li>Replaced an embedded font</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.3.0" date="2025-11-23">
             <description>
                 <p>Major update:</p>
