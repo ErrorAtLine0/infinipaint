@@ -9,7 +9,3 @@ os=Linux
 
 [tool_requires]
 cmake/3.27.0
-
-[replace_requires]
-libiconv/*: libiconv/1.18
-mpg123/*: mpg123/1.32.10
