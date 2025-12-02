@@ -2,7 +2,6 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-conan export "$(dirname "$0")/mpg123/all/conanfile.py" --version=1.32.10
 conan export "$(dirname "$0")/conan-skia/recipes/skia/all/conanfile.py" --version=143.20251028.0
 conan export "$(dirname "$0")/sdl3/3.x/conanfile.py" --version=3.2.26
 conan export "$(dirname "$0")/icu/all/conanfile.py" --version=77.1
