@@ -6,7 +6,7 @@
 namespace GUIStuff {
 
 void CheckBox::update(UpdateInputData& io, bool newIsTicked, const std::function<void()>& elemUpdate) {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(15), .height = CLAY_SIZING_FIXED(15)}
         },

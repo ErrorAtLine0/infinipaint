@@ -23,7 +23,7 @@ template <typename T> class TextBox : public Element {
             textbox->set_width(std::numeric_limits<float>::max());
             //textbox->set_text_direction_between(0, 0, textbox->get_suggested_direction(0));
 
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_FIXED(static_cast<float>(io.fontSize * 1.25f))}
                 },

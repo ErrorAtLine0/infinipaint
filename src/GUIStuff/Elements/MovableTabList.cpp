@@ -15,7 +15,7 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
         oldTabNames = tabNames;
     }
 
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE)},
             .padding = CLAY_PADDING_ALL(0),
             .childGap = 4,
@@ -28,12 +28,12 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
         if(elemUpdate)
             elemUpdate();
         for(size_t i = 0; i < buttons.size(); i++) {
-            CLAY({.layout = { 
+            CLAY_AUTO_ID({.layout = { 
                     .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_GROW(0)},
                 }
             }) {
                 buttons[i].update(io, SelectableButton::DrawType::FILLED, [&](SelectionHelper& s, bool iS) {
-                    CLAY({.layout = { 
+                    CLAY_AUTO_ID({.layout = { 
                               .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                               .padding = CLAY_PADDING_ALL(0),
                               .childGap = 4,
@@ -42,7 +42,7 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
                           }
                     }) {
                         if(!tabNames[i].first.empty()) {
-                            CLAY({.layout = { 
+                            CLAY_AUTO_ID({.layout = { 
                                       .sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::GUIManager::SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::SMALL_BUTTON_SIZE)},
                                       .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
                                       .layoutDirection = CLAY_LEFT_TO_RIGHT 
@@ -54,8 +54,8 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
                         CLAY_TEXT(io.strArena->std_str_to_clay_str(tabNames[i].second), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io.theme->frontColor1), .fontSize = io.fontSize }));
                         if(s.clicked)
                             selectedTab = i;
-                        CLAY({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                        CLAY({.layout = { 
+                        CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                        CLAY_AUTO_ID({.layout = { 
                                   .sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::GUIManager::SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::SMALL_BUTTON_SIZE)},
                                   .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
                                   .layoutDirection = CLAY_LEFT_TO_RIGHT 

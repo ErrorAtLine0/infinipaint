@@ -46,7 +46,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
 
     const float ENTRY_HEIGHT = 25.0f;
 
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIT(0)},
             .childGap = 4
@@ -78,7 +78,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
             clickedOut = false;
         }
         if(dropdownOpen) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIT(0, 300)},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
@@ -129,7 +129,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
         
                     auto p = pBuilder.Build();
         
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIXED(25)},
                             .childGap = 1,
@@ -144,7 +144,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                             entryColor = io.theme->backColor2;
                         else
                             entryColor = io.theme->backColor1;
-                        CLAY({
+                        CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(25)},
                                 .padding = {.left = 2, .right = 2},
@@ -165,7 +165,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                         scrollAmount = -static_cast<float>(val) * ENTRY_HEIGHT;
                 });
                 #ifdef __EMSCRIPTEN__
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .padding = CLAY_PADDING_ALL(io.theme->padding1)
                     }}) {

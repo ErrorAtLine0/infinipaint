@@ -265,7 +265,7 @@ class GUIManager {
 
         template <typename T> bool big_color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             bool toRet = false;
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE)}}}) {
+            CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE)}}}) {
                 toRet = color_button<T>(id, val, isSelected, elemUpdate);
             }
             return toRet;
@@ -273,7 +273,7 @@ class GUIManager {
 
         template <typename T> bool color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             return selectable_button(id, [&](SelectionHelper& s, bool iS) {
-                CLAY({.layout = { 
+                CLAY_AUTO_ID({.layout = { 
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                     },
                     .backgroundColor = convert_vec4<Clay_Color>(*val),
@@ -286,9 +286,9 @@ class GUIManager {
 
         template <typename T> bool color_button_big(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             bool toRet = false;
-            CLAY({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)}}}) {
+            CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)}}}) {
                 toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-                    CLAY({.layout = { 
+                    CLAY_AUTO_ID({.layout = { 
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                         },
                         .backgroundColor = convert_vec4<Clay_Color>(*val),
@@ -306,7 +306,7 @@ class GUIManager {
             push_id(id);
             bool& isOpen = insert_any_with_id<bool>(0, false);
             bool clicked;
-            CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE) } } }) {
+            CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE) } } }) {
                 clicked = color_button("0", val, isOpen, elemUpdate);
             }
             if(clicked)
@@ -330,7 +330,7 @@ class GUIManager {
             if(fixedPickerWidth == 0.0f)
                 isUpdating |= color_picker("c", val, selectAlpha);
             else {
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIXED(fixedPickerWidth), .height = CLAY_SIZING_FIXED(fixedPickerWidth)}
                     }
@@ -368,9 +368,6 @@ class GUIManager {
         }
 
     private:
-        std::string get_clay_unique_id();
-        uint64_t clayUniqueIDCounter = 0;
-
         static void clay_error_handler(Clay_ErrorData errorData);
         static Clay_Dimensions clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData);
 

@@ -7,7 +7,7 @@ namespace GUIStuff {
 void TextParagraph::update(UpdateInputData& io, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate) {
     data = std::move(paragraph);
     data->layout(width);
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIXED(data->getHeight())}
         },

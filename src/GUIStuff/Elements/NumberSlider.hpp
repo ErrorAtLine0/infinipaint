@@ -11,7 +11,7 @@ template <typename T> class NumberSlider : public Element {
             min = minNew;
             max = maxNew;
 
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(100), .height = CLAY_SIZING_FIXED(10)}
                 },

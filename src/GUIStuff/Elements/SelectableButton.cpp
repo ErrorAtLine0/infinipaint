@@ -29,7 +29,7 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
     else
         backgroundColor = io.theme->fillColor2;
 
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
             .childGap = 0,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
@@ -41,7 +41,7 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
             .width = CLAY_BORDER_OUTSIDE(2)
         }
     }) {
-        CLAY({.layout = { 
+        CLAY_AUTO_ID({.layout = { 
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                 .padding = (drawType == DrawType::TRANSPARENT_BORDER) ? CLAY_PADDING_ALL(0) : CLAY_PADDING_ALL(4),
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },

@@ -13,7 +13,7 @@ void RotateWheel::update(UpdateInputData& io, double* newRotationAnglePtr, const
     if(!newRotationAnglePtr)
         return;
 
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },
         .custom = { .customData = this }

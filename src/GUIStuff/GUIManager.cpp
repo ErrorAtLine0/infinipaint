@@ -16,6 +16,7 @@
 #include <Helpers/ConvertVec.hpp>
 #include <filesystem>
 #include <fstream>
+#include <Helpers/Logger.hpp>
 #include <iostream>
 #include <cmath>
 #include <limits>
@@ -245,7 +246,7 @@ void GUIManager::draw(SkCanvas* canvas) {
 }
 
 void GUIManager::top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate) {
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = x, .height = y },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
@@ -263,7 +264,7 @@ void GUIManager::top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_Sizin
 }
 
 void GUIManager::left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate) {
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
           .sizing = {.width = x, .height = y },
           .childGap = io->theme->childGap1,
           .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
@@ -279,7 +280,7 @@ void GUIManager::left_to_right_line_layout(const std::function<void()>& elemUpda
 }
 
 void GUIManager::left_to_right_line_centered_layout(const std::function<void()>& elemUpdate) {
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
           .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
           .childGap = io->theme->childGap1,
           .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
@@ -307,7 +308,7 @@ void GUIManager::text_label(const std::string& val) {
 }
 
 void GUIManager::text_label_centered(const std::string& val) {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
@@ -318,7 +319,7 @@ void GUIManager::text_label_centered(const std::string& val) {
 }
 
 void GUIManager::text_label_light_centered(const std::string& val) {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
@@ -426,7 +427,7 @@ void GUIManager::svg_icon(const std::string& id, const std::string& svgPath, boo
 bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
-    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
+    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
         toRet = selectable_button("0", [&](SelectionHelper& s, bool is) {
             svg_icon("1", svgPath, is || s.held || s.hovered);
             if(elemUpdate)
@@ -440,7 +441,7 @@ bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPa
 bool GUIManager::svg_icon_button_transparent(const std::string& id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
-    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
+    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
         toRet = selectable_button("0", [&](SelectionHelper& s, bool is) {
             svg_icon("1", svgPath, is || s.held || s.hovered);
             if(elemUpdate)
@@ -453,7 +454,7 @@ bool GUIManager::svg_icon_button_transparent(const std::string& id, const std::s
 
 bool GUIManager::text_button_sized(const std::string& id, const std::string& text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
-    CLAY ({.layout = {.sizing = {.width = x, .height = y } } }) {
+    CLAY_AUTO_ID({.layout = {.sizing = {.width = x, .height = y } } }) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
             text_label(text);
             if(elemUpdate)
@@ -465,7 +466,7 @@ bool GUIManager::text_button_sized(const std::string& id, const std::string& tex
 
 bool GUIManager::text_button(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
-    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) } } }) {
+    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) } } }) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
             text_label(text);
             if(elemUpdate)
@@ -477,7 +478,7 @@ bool GUIManager::text_button(const std::string& id, const std::string& text, boo
 
 bool GUIManager::text_button_wide(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
-    CLAY ({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
@@ -493,13 +494,13 @@ bool GUIManager::text_button_wide(const std::string& id, const std::string& text
 
 bool GUIManager::text_button_left_transparent(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
-    CLAY ({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
         }}) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            CLAY ({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                     .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
@@ -535,11 +536,6 @@ bool GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, 
     return isUpdating;
 }
 
-std::string GUIManager::get_clay_unique_id() {
-    std::string toRet = "CLAY_UNIQUE_ID_" + std::to_string(clayUniqueIDCounter++);
-    return toRet;
-}
-
 void GUIManager::input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<std::filesystem::path>>()->update(*io, val, 
@@ -571,17 +567,12 @@ bool GUIManager::font_picker(const std::string& id, std::string* fontName) {
 void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
     push_id(id);
     struct DropdownData {
-        std::string uniqueID;
         bool isOpen = false;
     };
-    DropdownData& dropdownData = insert_any_with_id_with_function<DropdownData>(0, [&]() {
-        return DropdownData {
-            .uniqueID = get_clay_unique_id()
-        };
-    });
+    DropdownData& dropdownData = insert_any_with_id<DropdownData>(0, {});
     left_to_right_layout(CLAY_SIZING_FIXED(width), CLAY_SIZING_FIT(0), [&]() {
         bool click = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
                     .padding = {.left = 4, .right = 4},
@@ -591,8 +582,8 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                 }
             }) {
                 text_label(selections[*val]);
-                CLAY({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                CLAY({
+                CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE)}
                     }
@@ -602,13 +593,12 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
             }
         }, SelectableButton::DrawType::FILLED, dropdownData.isOpen);
         if(dropdownData.isOpen) {
-            Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(dropdownData.uniqueID));
-            Clay_ElementData dropdownElemData = Clay_GetElementData(clayID);
+            Clay_ElementId localID = CLAY_ID_LOCAL("DROPDOWN");
+            Clay_ElementData dropdownElemData = Clay_GetElementData(localID);
             float calculatedDropdownMaxHeight = 0.0f;
             if(dropdownElemData.found)
                 calculatedDropdownMaxHeight = std::max(windowSize.y() - dropdownElemData.boundingBox.y - 2.0f, 0.0f);
-            CLAY({
-                .id = clayID,
+            CLAY(localID, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0, calculatedDropdownMaxHeight)},
                     .childGap = 0
@@ -634,7 +624,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                 scroll_bar_many_entries_area("dropdown scroll area", 18.0f, selections.size(), true, [&](size_t i, bool) {
                     bool selectedEntry = *val == i;
 
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIXED(18)},
                             .padding = CLAY_PADDING_ALL(0),
@@ -650,7 +640,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
                             entryColor = io->theme->backColor2;
                         else
                             entryColor = io->theme->backColor1;
-                        CLAY({
+                        CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                                 .padding = {.left = 2, .right = 2, .top = 0, .bottom = 0},
@@ -679,7 +669,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
 
 void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, const std::function<void(float, float, float&)>& elemUpdate) {
     push_id(id);
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
             .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
@@ -695,19 +685,13 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
 
             float contentDimensions = 100.0f;
             float containerDimensions = 100.0f;
-            std::string uniqueID;
         };
 
-        ScrollAreaData& sD = insert_any_with_id_with_function<ScrollAreaData>(0, [&](){
-            return ScrollAreaData{
-                .uniqueID = get_clay_unique_id()
-            };
-        });
+        ScrollAreaData& sD = insert_any_with_id<ScrollAreaData>(0, {});
 
-        Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(sD.uniqueID));
+        Clay_ElementId localID = CLAY_ID_LOCAL("SCROLL_AREA");
 
-        CLAY({
-            .id = clayID,
+        CLAY(localID, {
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                 .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
@@ -721,8 +705,8 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
         }
 
         // Make sure you are accessing this data after the element has been created
-        Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(clayID);
-        Clay_BoundingBox scrollAreaBB = Clay_GetElementData(clayID).boundingBox;
+        Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(localID);
+        Clay_BoundingBox scrollAreaBB = Clay_GetElementData(localID).boundingBox;
 
         sD.contentDimensions = scrollData.contentDimensions.height;
         sD.containerDimensions = scrollData.scrollContainerDimensions.height;
@@ -738,7 +722,7 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
             if(Clay_Hovered())
                 sD.currentScrollPos += io->mouse.scroll.y() * io->deltaTime * 3000.0f;
 
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(12), .height = CLAY_SIZING_GROW(0)},
                     .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
@@ -755,12 +739,12 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
                     scrollerColor = io->theme->fillColor2;
 
                 bool isHoveringOverScroller = false;
-                CLAY({ 
+                CLAY_AUTO_ID({ 
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(areaAboveScrollerSize)}
                     }
                 }) {}
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(scrollerSize)}},
                     .backgroundColor = convert_vec4<Clay_Color>(scrollerColor),
                     .cornerRadius = CLAY_CORNER_RADIUS(3),
@@ -768,7 +752,7 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
                     if(Clay_Hovered())
                         isHoveringOverScroller = true;
                 }
-                CLAY({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                CLAY_AUTO_ID({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
                 if(Clay_Hovered() && io->mouse.leftClick) {
                     sD.isMoving = true;
                     if(isHoveringOverScroller)
@@ -809,7 +793,7 @@ void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entry
         size_t endPoint = std::min(entryCount, startPoint + elementsContainable);
 
         if(startPoint != 0) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(startPoint * entryHeight)},
                 }
@@ -823,7 +807,7 @@ void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entry
         }
 
         if(endPoint != entryCount) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((entryCount - endPoint) * entryHeight)},
                 }
@@ -836,7 +820,7 @@ void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entry
 bool GUIManager::rotate_wheel(const std::string& id, double* angle, float size, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
-    CLAY ({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
+    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
         RotateWheel* e = insert_element<RotateWheel>();
         e->update(*io, angle, elemUpdate);
         toRet = e->selection.clicked;
@@ -855,7 +839,7 @@ void GUIManager::text_paragraph(const std::string& id, std::unique_ptr<skia::tex
 void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate) {
     float size = 300.0f;
     push_id(id);
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size)}
         },
         .floating = {
@@ -871,44 +855,46 @@ void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& 
 }
 
 void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const std::function<void()>& elemUpdate) {
-    push_id(id);
-
-    std::string& uniqueID = insert_any_with_id_with_function<std::string>(0, [&]() {
-        return get_clay_unique_id();
-    });
-
-    Clay_ElementId clayID = Clay_GetElementId(strArena.std_str_to_clay_str(uniqueID));
-    Clay_ElementData actionListElemData = Clay_GetElementData(clayID);
-
-    if(actionListElemData.found) {
-        if((popupPos.y() + actionListElemData.boundingBox.height) > windowSize.y()) {
-            popupPos.y() -= actionListElemData.boundingBox.height;
-        }
-    }
-
-    CLAY({
-        .id = clayID,
-        .layout = { 
-            .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0)},
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = 1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {
-            .offset = {popupPos.x(), popupPos.y()},
-            .zIndex = -1,
-            .attachTo = CLAY_ATTACH_TO_ROOT
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         }
     }) {
-        obstructing_window();
-        push_id(1);
-        elemUpdate();
+        push_id(id);
+
+        Clay_ElementId localID = CLAY_ID_LOCAL("LIST_POPUP");
+
+        Clay_ElementData actionListElemData = Clay_GetElementData(localID);
+
+        if(actionListElemData.found) {
+            if((popupPos.y() + actionListElemData.boundingBox.height) > windowSize.y()) {
+                popupPos.y() -= actionListElemData.boundingBox.height;
+            }
+        }
+
+        CLAY(localID, {
+            .layout = { 
+                .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0)},
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childGap = 1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+            .floating = {
+                .offset = {popupPos.x(), popupPos.y()},
+                .zIndex = -1,
+                .attachTo = CLAY_ATTACH_TO_ROOT
+            }
+        }) {
+            obstructing_window();
+            push_id(1);
+            elemUpdate();
+            pop_id();
+        }
         pop_id();
     }
-    pop_id();
 }
 
 void GUIManager::obstructing_window() {
@@ -917,7 +903,7 @@ void GUIManager::obstructing_window() {
 }
 
 void GUIManager::clay_error_handler(Clay_ErrorData errorData) {
-    std::cout << "[Clay Error] " << errorData.errorText.chars << std::endl;
+    Logger::get().log("INFO", "[Clay Error] " + std::string(errorData.errorText.chars));
 }
 
 void GUIManager::push_id(int64_t id) {

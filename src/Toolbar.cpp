@@ -360,7 +360,7 @@ void Toolbar::update() {
     start_gui();
 
     if(main.drawGui) {
-        CLAY({
+        CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(gui.windowSize.x()), .height = CLAY_SIZING_FIT(gui.windowSize.y())},
                 .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -445,7 +445,7 @@ void Toolbar::paint_popup(Vector2f popupPos) {
 }
 
 void Toolbar::top_toolbar() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io->theme->padding1 / 2)),
@@ -502,7 +502,7 @@ void Toolbar::top_toolbar() {
         if(bookMenu.popupOpen)
             bookmark_menu(bookmarkMenuPopUpJustOpen);
         if(menuPopUpOpen) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -586,7 +586,7 @@ void Toolbar::top_toolbar() {
 }
 
 void Toolbar::web_version_welcome() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -661,7 +661,7 @@ void Toolbar::update_notification_check() {
 }
 
 void Toolbar::update_notification_gui() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -693,7 +693,7 @@ void Toolbar::update_notification_gui() {
 
 void Toolbar::grid_menu(bool justOpened) {
     gui.push_id("grid menu");
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -715,7 +715,7 @@ void Toolbar::grid_menu(bool justOpened) {
             ServerClientID gridID = main.world->gridMan.sorted_grid_ids()[i];
             WorldGrid& grid = main.world->gridMan.grids[gridID];
             bool selectedEntry = gridID == gridMenu.gridSelected;
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
                     .childGap = 2,
@@ -726,7 +726,7 @@ void Toolbar::grid_menu(bool justOpened) {
             }) {
                 gui.text_label(grid.get_display_name());
                 bool miniButtonClicked = false;
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                         .childGap = 1,
@@ -787,7 +787,7 @@ void Toolbar::stop_displaying_grid_menu() {
 
 void Toolbar::bookmark_menu(bool justOpened) {
     gui.push_id("bookmark menu");
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -808,7 +808,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
         gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.sorted_names().size(), true, [&](size_t i, bool isListHovered) {
             const std::string& bookmark = main.world->bMan.sorted_names()[i];
             bool selectedEntry = bookmark == bookMenu.newName;
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
                     .childGap = 2,
@@ -819,7 +819,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
             }) {
                 gui.text_label(bookmark);
                 bool miniButtonClicked = false;
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                         .childGap = 1,
@@ -894,7 +894,7 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
 void Toolbar::chat_box() {
     constexpr float CHATBOX_WIDTH = 700;
     if(main.world->network_being_used()) {
-        CLAY({
+        CLAY_AUTO_ID({
             .layout = {
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
             },
@@ -911,7 +911,7 @@ void Toolbar::chat_box() {
             gui.pop_id();
         }
     }
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
             .childGap = 0,
@@ -924,7 +924,7 @@ void Toolbar::chat_box() {
         gui.push_id("chat box");
         if(chatBoxState == CHATBOXSTATE_JUSTOPEN || chatBoxState == CHATBOXSTATE_OPEN) {
             gui.push_id("messages");
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(0),
@@ -979,7 +979,7 @@ void Toolbar::chat_box() {
                 chatMessage.time.update_time_since();
                 if(chatMessage.time < DISPLAY_TIME) {
                     float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                             .padding = CLAY_PADDING_ALL(0),
@@ -1004,7 +1004,7 @@ void Toolbar::chat_box() {
 }
 
 void Toolbar::global_log() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(300), .height = CLAY_SIZING_FIT(0) },
             .childGap = io->theme->childGap1,
@@ -1019,7 +1019,7 @@ void Toolbar::global_log() {
             logM.time.update_time_since();
             if(logM.time < DISPLAY_TIME) {
                 float a = 1.0f - lerp_time<float>(logM.time, DISPLAY_TIME, FADE_START_TIME);
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1050,7 +1050,7 @@ void Toolbar::global_log() {
 }
 
 void Toolbar::drawing_program_gui() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
             .childGap = io->theme->childGap1,
@@ -1061,12 +1061,12 @@ void Toolbar::drawing_program_gui() {
         main.world->drawProg.toolbar_gui();
         isUpdatingColorLeft = isUpdatingColorRight = false;
         if(colorLeft) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .padding = {.top = 40, .bottom = 40}
                 }
             }) {
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1086,18 +1086,18 @@ void Toolbar::drawing_program_gui() {
                 }
             }
         }
-        CLAY({
+        CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
             }
         }) {}
         if(colorRight) {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .padding = {.top = 40, .bottom = 40}
                 }
             }) {
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1128,7 +1128,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
     constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
 
     gui.scroll_bar_area("color palette scroll area", false, [&](float, float, float &) {
-        CLAY({
+        CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                 .childGap = io->theme->childGap1,
@@ -1137,7 +1137,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
         }) {
             size_t i = 0;
             while(i < palette.size()) {
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
                         .childGap = io->theme->childGap1,
@@ -1146,7 +1146,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
                     }
                 }) {
                     while(i < palette.size()) {
-                        CLAY({
+                        CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)}
                             }
@@ -1173,7 +1173,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
     });
 
     if(paletteData.selectedPalette != 0) {
-        CLAY({
+        CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
                 .padding = {.top = 3, .bottom = 3},
@@ -1194,7 +1194,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
             }
         }
     }
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
             .padding = {.top = 3, .bottom = 3},
@@ -1232,7 +1232,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
 }
 
 void Toolbar::performance_metrics() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1260,7 +1260,7 @@ void Toolbar::performance_metrics() {
 }
 
 void Toolbar::player_list() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1276,7 +1276,7 @@ void Toolbar::player_list() {
         gui.push_id("client list");
         gui.text_label_centered("Player List");
         gui.left_to_right_line_layout([&]() {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
                 },
@@ -1289,7 +1289,7 @@ void Toolbar::player_list() {
         for(auto& [id, client] : main.world->clients) {
             gui.push_id(num++);
             gui.left_to_right_line_layout([&]() {
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
                     },
@@ -1297,7 +1297,7 @@ void Toolbar::player_list() {
                     .cornerRadius = CLAY_CORNER_RADIUS(3)
                 }) {}
                 gui.text_label(client.displayName);
-                CLAY({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
                 if(gui.text_button("teleport button", "Jump To"))
                     main.world->drawData.cam.smooth_move_to(*main.world, client.camCoords, client.windowSize);
             });
@@ -1349,7 +1349,7 @@ void Toolbar::options_menu() {
     switch(optionsMenuType) {
         case HOST_MENU:
         case CONNECT_MENU: {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(650), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1405,7 +1405,7 @@ void Toolbar::options_menu() {
             break;
         }
         case GENERAL_SETTINGS_MENU: {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(600), .height = CLAY_SIZING_FIXED(500) },
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -1416,7 +1416,7 @@ void Toolbar::options_menu() {
                 .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("gsettings");
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1426,7 +1426,7 @@ void Toolbar::options_menu() {
                     }
                 }) {
                     gui.obstructing_window();
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIT(150), .height = CLAY_SIZING_GROW(0) },
                             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1446,7 +1446,7 @@ void Toolbar::options_menu() {
                             themeData.selectedThemeIndex = std::nullopt;
                         }
                     }
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
                             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
@@ -1454,7 +1454,7 @@ void Toolbar::options_menu() {
                         }
                     }) {
                         gui.scroll_bar_area("general settings scroll area", false, [&](float, float, float) {
-                            CLAY({
+                            CLAY_AUTO_ID({
                                 .layout = {
                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
                                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1514,7 +1514,7 @@ void Toolbar::options_menu() {
                                         if(!themeData.selectedThemeIndex)
                                             reload_theme_list();
 
-                                        CLAY({.layout = { 
+                                        CLAY_AUTO_ID({.layout = { 
                                               .childGap = io->theme->childGap1,
                                               .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
                                               .layoutDirection = CLAY_LEFT_TO_RIGHT,
@@ -1597,7 +1597,7 @@ void Toolbar::options_menu() {
                                         gui.push_id("keybind entries");
                                         for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
                                             gui.push_id(i);
-                                            CLAY({
+                                            CLAY_AUTO_ID({
                                                 .layout = {
                                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                                                     .padding = CLAY_PADDING_ALL(0),
@@ -1645,7 +1645,7 @@ void Toolbar::options_menu() {
             break;
         }
         case LOBBY_INFO_MENU: {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(650), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1677,7 +1677,7 @@ void Toolbar::options_menu() {
             break;
         }
         case CANVAS_SETTINGS_MENU: {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1701,7 +1701,7 @@ void Toolbar::options_menu() {
             break;
         }
         case SET_DOWNLOAD_NAME: {
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1738,7 +1738,7 @@ void Toolbar::options_menu() {
 }
 
 void Toolbar::about_menu_gui() {
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1754,7 +1754,7 @@ void Toolbar::about_menu_gui() {
         gui.obstructing_window();
         gui.left_to_right_line_layout([&]() {
             gui.push_id("Menu Selector");
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1763,7 +1763,7 @@ void Toolbar::about_menu_gui() {
                 }
             }) {
                 gui.scroll_bar_area("About Menu Selector Scroll Area", true, [&](float, float, float) {
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
                         }
@@ -1772,7 +1772,7 @@ void Toolbar::about_menu_gui() {
                     }
                     gui.text_label_light_centered("Third Party Components");
                     for(int i = 0; i < static_cast<int>(thirdPartyLicenses.size()); i++) {
-                        CLAY({
+                        CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                                 .padding = CLAY_PADDING_ALL(1)
@@ -1821,7 +1821,7 @@ void Toolbar::reload_theme_list() {
 void Toolbar::file_picker_gui() {
     gui.push_id("filepicker");
     bool isDoneByDoubleClick = false;
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(500) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1845,7 +1845,7 @@ void Toolbar::file_picker_gui() {
             if(pathDiff != filePicker.currentSearchPath)
                 filePicker.refreshEntries = true;
         });
-        CLAY({
+        CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -1905,7 +1905,7 @@ void Toolbar::file_picker_gui() {
             gui.scroll_bar_many_entries_area("file picker entries", entryHeight, filePicker.entries.size(), true, [&](size_t i, bool isListHovered) {
                 const std::filesystem::path& entry = filePicker.entries[i];
                 bool selectedEntry = filePicker.currentSelectedPath == entry;
-                CLAY({
+                CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
                         .childGap = 1,
@@ -1914,7 +1914,7 @@ void Toolbar::file_picker_gui() {
                     },
                     .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
                 }) {
-                    CLAY({
+                    CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
                         },

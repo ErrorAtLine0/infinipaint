@@ -22,7 +22,7 @@ template <typename T> class ColorPicker : public Element {
 
             force_update_colorpicker(data);
 
-            CLAY({
+            CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) }
                 },

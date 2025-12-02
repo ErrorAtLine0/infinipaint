@@ -189,7 +189,7 @@ void DrawingProgram::clear_draw_cache() {
 void DrawingProgram::toolbar_gui() {
     Toolbar& t = world.main.toolbar;
     t.gui.push_id("Drawing Program Toolbar GUI");
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
             .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
@@ -267,7 +267,7 @@ bool DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
 void DrawingProgram::tool_options_gui() {
     Toolbar& t = world.main.toolbar;
     float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
             .padding = CLAY_PADDING_ALL(t.io->theme->padding1),

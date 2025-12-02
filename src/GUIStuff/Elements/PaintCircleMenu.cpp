@@ -11,7 +11,7 @@ constexpr double ROTATE_BAR_SNAP_DISTANCE = 0.2;
 constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
 
 void PaintCircleMenu::update(UpdateInputData& io, const Data& data, const std::function<void()>& elemUpdate) {
-    CLAY({.layout = { 
+    CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },
         .custom = { .customData = this }

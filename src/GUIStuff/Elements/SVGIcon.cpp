@@ -15,7 +15,7 @@ void SVGIcon::update(UpdateInputData& io, const std::string& newSvgPath, bool ne
 
     highlighted = newIsHighlighted;
 
-    CLAY({
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) }
         },
