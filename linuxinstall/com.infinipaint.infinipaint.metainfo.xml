@@ -66,6 +66,7 @@
                     <li>Add right click popup menu for selection and text editing</li>
                     <li>Fixed crash when pasting rich text in GUI textbox</li>
                     <li>Fixed some GUI elements not responding after a while</li>
+                    <li>Fixed other players' cursors not being shown when they're very far away</li>
                     <li>Added mouse double click and triple click text selection</li>
                     <li>Can now type tabs into textboxes</li>
                     <li>Replaced an embedded font</li>
