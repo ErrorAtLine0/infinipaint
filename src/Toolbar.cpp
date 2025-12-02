@@ -1983,17 +1983,10 @@ void Toolbar::initialize_io_before_update() {
     io->key.down = main.input.key(InputManager::KEY_TEXT_DOWN).repeat;
     io->key.leftShift = main.input.key(InputManager::KEY_TEXT_SHIFT).held;
     io->key.leftCtrl = main.input.key(InputManager::KEY_TEXT_CTRL).held;
-    io->key.home = main.input.key(InputManager::KEY_TEXT_HOME).repeat;
-    io->key.del = main.input.key(InputManager::KEY_TEXT_DELETE).repeat;
-    io->key.backspace = main.input.key(InputManager::KEY_TEXT_BACKSPACE).repeat;
     io->key.enter = main.input.key(InputManager::KEY_TEXT_ENTER).repeat;
-    io->key.selectAll = main.input.key(InputManager::KEY_TEXT_SELECTALL).repeat;
-    io->key.copy = main.input.key(InputManager::KEY_TEXT_COPY).repeat;
-    io->key.paste = main.input.get_clipboard_paste_happened();
-    io->key.cut = main.input.key(InputManager::KEY_TEXT_CUT).repeat;
     io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
     io->richTextBoxEdit = [&](std::shared_ptr<RichText::TextBox> t, std::shared_ptr<RichText::TextBox::Cursor> c) {
-        main.input.text.set_rich_text_box_input(t, c);
+        main.input.text.set_rich_text_box_input(t, c, false);
     };
 
     if(io->acceptingTextInput)

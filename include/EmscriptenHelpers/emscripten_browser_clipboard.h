@@ -32,9 +32,13 @@ EM_JS_INLINE(void, paste_js, (paste_handler callback, void *callback_data), {
   /// Register the given callback to handle paste events. Callback data pointer is passed through to the callback.
   /// Paste handler callback signature is:
   ///   void my_handler(std::string const &paste_data, void *callback_data = nullptr);
-  document.addEventListener('paste', (event) => {
-    Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [event.clipboardData.getData('text/plain'), callback, callback_data]);
-  });
+  navigator.clipboard.readText()
+    .then(text => {
+      Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [text, callback, callback_data]);
+    })
+    .catch(err => {
+      console.error('Failed to read clipboard contents: ', err);
+    });
 });
 
 EM_JS_INLINE(void, copy_js, (copy_handler callback, void *callback_data), {

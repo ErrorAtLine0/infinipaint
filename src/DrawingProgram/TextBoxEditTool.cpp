@@ -152,6 +152,37 @@ bool TextBoxEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
     return oldInputChangedTextBox;
 }
 
+bool TextBoxEditTool::right_click_popup_gui(const std::shared_ptr<DrawComponent>& comp, Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    bool shouldClose = false;
+    std::shared_ptr<DrawTextBox> a = std::static_pointer_cast<DrawTextBox>(comp);
+    t.gui.list_popup_menu("Text popup menu", popupPos, [&]() {
+        t.gui.text_label_light("Text menu");
+        InputManager& input = drawP.world.main.input;
+        if(t.gui.text_button_left_transparent("Paste", "Paste")) {
+            input.call_text_paste(true);
+            shouldClose = true;
+        }
+        if(t.gui.text_button_left_transparent("Paste without formatting", "Paste without formatting")) {
+            input.call_text_paste(false);
+            shouldClose = true;
+        }
+        if(a->cursor->selectionBeginPos != a->cursor->selectionEndPos) {
+            if(t.gui.text_button_left_transparent("Copy", "Copy")) {
+                input.set_clipboard_plain_and_richtext_pair(a->textBox->process_copy(*a->cursor));
+                shouldClose = true;
+            }
+            if(t.gui.text_button_left_transparent("Cut", "Cut")) {
+                input.text.do_textbox_operation_with_undo([&]() {
+                    input.set_clipboard_plain_and_richtext_pair(a->textBox->process_cut(*a->cursor));
+                });
+                shouldClose = true;
+            }
+        }
+    });
+    return !shouldClose;
+}
+
 void TextBoxEditTool::hold_undo_data(const std::string& undoName, const std::shared_ptr<DrawTextBox>& a) {
     auto it = undoHeldData.find(undoName);
     if(it != undoHeldData.end()) {
@@ -286,7 +317,7 @@ bool TextBoxEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
 
     bool collidesWithBox = a->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
 
-    input.text.set_rich_text_box_input(a->textBox, a->cursor, currentMods);
+    input.text.set_rich_text_box_input(a->textBox, a->cursor, true, currentMods);
     a->textBox->process_mouse_left_button(*a->cursor, a->get_mouse_pos(drawP), (drawP.controls.leftClick && collidesWithBox) ? drawP.world.main.input.mouse.leftClicks : 0, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
     return true;

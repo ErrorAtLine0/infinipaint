@@ -42,7 +42,10 @@ void EditTool::gui_toolbox() {
 }
 
 bool EditTool::right_click_popup_gui(Vector2f popupPos) {
-    return drawP.selection_action_menu(popupPos);
+    if(controls.isEditing)
+        return controls.compEditTool->right_click_popup_gui(controls.compToEdit.lock(), popupPos);
+    else
+        return drawP.selection_action_menu(popupPos);
 }
 
 void EditTool::add_point_handle(const HandleData& handle) {

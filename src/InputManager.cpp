@@ -48,26 +48,6 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
 
 
-#ifdef __EMSCRIPTEN__
-    // Without this, SDL eats the CTRL-V event that initiates the paste event
-    // https://github.com/pthom/hello_imgui/issues/3#issuecomment-1564536870
-	EM_ASM({
-		window.addEventListener('keydown', function(event) {
-			if((event.ctrlKey || event.metaKey) && (event.key == 'v' || event.code == 'KeyV')) {
-                if(Module["ccall"]('is_text_input_happening', 'number', [], []) === 1)
-				    event.stopImmediatePropagation();
-            }
-		}, true);
-	});
-
-    emscripten_browser_clipboard::paste([](std::string&& pasteData, void* callbackData){
-        InputManager* inMan = (InputManager*)callbackData;
-        inMan->clipboardPasteEventHappened = true;
-        inMan->clipboardPasteEventData["text/plain"] = pasteData;
-        inMan->process_text_paste();
-    }, this);
-#endif
-
     keyAssignments = defaultKeyAssignments;
 }
 
@@ -81,11 +61,12 @@ void InputManager::text_input_silence_everything() {
     text.newInput.clear();
 }
 
-void InputManager::Text::set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
+void InputManager::Text::set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
     set_accepting_input();
     newTextBox = nTextBox;
     newCursor = nCursor;
     newModMap = nModMap;
+    newIsRichTextBox = isRichTextBox;
 }
 
 void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
@@ -129,41 +110,11 @@ void InputManager::Text::do_textbox_operation_with_undo(const std::function<void
     }
 }
 
-bool InputManager::get_clipboard_paste_happened() {
-#ifdef __EMSCRIPTEN__
-    return clipboardPasteEventHappened;
-#else
-    return key(KEY_TEXT_PASTE).repeat;
-#endif
-}
-
-std::string InputManager::get_clipboard_str() {
-#ifdef __EMSCRIPTEN__
-    auto it = clipboardPasteEventData.find("text/plain");
-    if(it == clipboardPasteEventData.end())
-        return "";
-    return it->second;
-#else
+std::string InputManager::get_clipboard_str_SDL() {
     char* data = SDL_GetClipboardText();
     std::string toRet(data);
     SDL_free(data);
     return toRet;
-#endif
-}
-
-std::string InputManager::get_clipboard_data_for_mimetype(const std::string& mimeType) {
-#ifdef __EMSCRIPTEN__
-    auto it = clipboardPasteEventData.find(mimeType);
-    if(it == clipboardPasteEventData.end())
-        return "";
-    return it->second;
-#else
-    size_t datSize = 0;
-    void* dat = SDL_GetClipboardData(mimeType.c_str(), &datSize);
-    if(!dat)
-        return "";
-    return std::string(static_cast<char*>(dat), datSize);
-#endif
 }
 
 void InputManager::set_clipboard_str(std::string_view s) {
@@ -178,30 +129,6 @@ void InputManager::set_clipboard_str(std::string_view s) {
 void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair) {
     set_clipboard_str(plainAndRichtextPair.first);
     lastCopiedRichText = plainAndRichtextPair.second;
-}
-
-void InputManager::set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData) {
-    SDL_ClearClipboardData();
-    clipboardData = newClipboardData;
-
-    std::vector<const char*> mimeTypes;
-    for(auto& [k, v] : clipboardData)
-        mimeTypes.emplace_back(k.c_str());
-
-    SDL_SetClipboardData(
-    [](void *userdata, const char *mime_type, size_t *size) {
-        std::unordered_map<std::string, std::string>& clipboardData = *static_cast<std::unordered_map<std::string, std::string>*>(userdata);
-        std::string mimeTypeStr(mime_type);
-        auto it = clipboardData.find(mimeTypeStr);
-        std::cout << "requesting: " << mime_type << std::endl;
-        if(it == clipboardData.end())
-            return static_cast<const void*>(nullptr);
-        *size = it->second.length();
-        return static_cast<const void*>(it->second.c_str());
-    },
-    [](void *userdata) {
-    },
-    static_cast<void*>(&clipboardData), mimeTypes.data(), mimeTypes.size());
 }
 
 std::string InputManager::key_assignment_to_str(const Vector2ui32& k) {
@@ -375,7 +302,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
                 set_key_down(e, KEY_TEXT_PASTE);
             if(text.textBox && key(KEY_TEXT_PASTE).repeat)
                 text.do_textbox_operation_with_undo([&]() {
-                    process_text_paste();
+                    call_text_paste(true);
                 });
             break;
         case SDLK_A:
@@ -427,11 +354,23 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         set_key_down(e, f->second);
 }
 
-void InputManager::process_text_paste() {
+void InputManager::call_text_paste(bool isRichTextPaste) {
+    text.isNextPasteRich = isRichTextPaste;
+#ifdef __EMSCRIPTEN__
+    emscripten_browser_clipboard::paste([](std::string&& pasteData, void* callbackData){
+        InputManager* inMan = (InputManager*)callbackData;
+        std::string pData = pasteData;
+        inMan->process_text_paste(pData);
+    }, this);
+#else
+    process_text_paste(get_clipboard_str_SDL());
+#endif
+}
+
+void InputManager::process_text_paste(const std::string& plainClipboardStr) {
     if(text.textBox) {
         // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
-        std::string plainClipboardStr = get_clipboard_str();
-        if(lastCopiedRichText.has_value()) {
+        if(text.isRichTextBox && text.isNextPasteRich && lastCopiedRichText.has_value()) {
             if(lastCopiedRichText.value().get_plain_text() == plainClipboardStr)
                 text.textBox->process_rich_text_input(*text.cursor, lastCopiedRichText.value());
             else
@@ -546,8 +485,12 @@ void InputManager::frame_reset(const Vector2i& windowSize) {
     text.cursor = text.newCursor;
     text.textBox = text.newTextBox;
     text.modMap = text.newModMap;
+    text.isRichTextBox = text.newIsRichTextBox;
+
     text.newCursor = nullptr;
     text.newTextBox = nullptr;
+    text.newModMap = std::nullopt;
+    text.newIsRichTextBox = false;
 
     text.newInput.clear();
     droppedItems.clear();

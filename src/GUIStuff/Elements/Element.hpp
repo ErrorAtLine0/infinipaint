@@ -89,14 +89,7 @@ struct UpdateInputData {
         bool down = false;
         bool leftShift = false;
         bool leftCtrl = false;
-        bool home = false;
-        bool del = false;
-        bool backspace = false;
         bool enter = false;
-        bool selectAll = false;
-        bool copy = false;
-        bool paste = false;
-        bool cut = false;
         bool escape = false;
     } key;
 

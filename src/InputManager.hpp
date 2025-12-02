@@ -89,17 +89,21 @@ struct InputManager {
         void set_accepting_input();
         bool get_accepting_input();
 
-        void set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+        void set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
         void add_text_to_textbox(const std::string& inputText);
 
         void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
         void do_textbox_operation_with_undo(const std::function<void()>& func);
 
         private:
+            bool isNextPasteRich = false;
+
+            bool isRichTextBox;
             std::shared_ptr<RichText::TextBox> textBox;
             std::shared_ptr<RichText::TextBox::Cursor> cursor;
             std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
 
+            bool newIsRichTextBox;
             std::shared_ptr<RichText::TextBox> newTextBox;
             std::shared_ptr<RichText::TextBox::Cursor> newCursor;
             std::optional<RichText::TextStyleModifier::ModifierMap> newModMap;
@@ -201,22 +205,11 @@ struct InputManager {
     void backend_key_up_update(const SDL_KeyboardEvent& e);
     void backend_key_down_update(const SDL_KeyboardEvent& e);
 
-    bool get_clipboard_paste_happened();
-    std::string get_clipboard_str();
-
-    std::string get_clipboard_data_for_mimetype(const std::string& mimeType);
-
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
-    void set_clipboard_data(const std::unordered_map<std::string, std::string>& newClipboardData);
-    void process_text_paste();
-
-    std::unordered_map<std::string, std::string> clipboardData;
-
-#ifdef __EMSCRIPTEN__
-    bool clipboardPasteEventHappened = false;
-    std::unordered_map<std::string, std::string> clipboardPasteEventData;
-#endif
+    std::string get_clipboard_str_SDL();
+    void call_text_paste(bool isRichTextPaste);
+    void process_text_paste(const std::string& plainClipboardStr);
 
     std::optional<RichText::TextData> lastCopiedRichText;
 

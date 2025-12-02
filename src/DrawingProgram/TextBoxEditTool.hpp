@@ -14,6 +14,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         virtual void commit_edit_updates(const std::shared_ptr<DrawComponent>& a, std::any& prevData) override;
         virtual bool edit_update(const std::shared_ptr<DrawComponent>& a) override;
         virtual bool edit_gui(const std::shared_ptr<DrawComponent>& a) override;
+        virtual bool right_click_popup_gui(const std::shared_ptr<DrawComponent>& comp, Vector2f popupPos) override;
     private:
         struct TextBoxEditToolAllData {
             DrawTextBox::Data textboxData;
