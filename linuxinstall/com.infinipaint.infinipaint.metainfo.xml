@@ -64,6 +64,7 @@
                 <p>Minor update:</p>
                 <ul>
                     <li>Add right click popup menu for selection and text editing</li>
+                    <li>Added a brush minimum size option, and removed the change brush size with mouse speed option</li>
                     <li>Fixed crash when pasting rich text in GUI textbox</li>
                     <li>Fixed some GUI elements not responding after a while</li>
                     <li>Fixed other players' cursors not being shown when they're very far away</li>
