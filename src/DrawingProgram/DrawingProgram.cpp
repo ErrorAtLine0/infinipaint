@@ -234,7 +234,7 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
         t.gui.text_label_light("Selection menu");
         if(t.gui.text_button_left_transparent("Paste", "Paste")) {
             selection.deselect_all();
-            selection.paste_clipboard(popupPos);
+            selection.paste_clipboard(popupPos * t.final_gui_scale());
             shouldClose = true;
         }
         if(selection.is_something_selected()) {
