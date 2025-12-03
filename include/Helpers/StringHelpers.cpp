@@ -77,3 +77,8 @@ bool is_valid_http_url(const std::string& str) {
 
     return std::regex_match(str, pattern);
 }
+
+std::string remove_carriage_returns_from_str(std::string s) {
+    std::erase(s, '\r');
+    return s;
+}

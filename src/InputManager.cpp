@@ -389,7 +389,7 @@ void InputManager::process_text_paste(const std::string& plainClipboardStr) {
     if(text.textBox) {
         // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
         if(text.isRichTextBox && text.isNextPasteRich && lastCopiedRichText.has_value()) {
-            if(lastCopiedRichText.value().get_plain_text() == plainClipboardStr)
+            if(lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(plainClipboardStr))
                 text.textBox->process_rich_text_input(*text.cursor, lastCopiedRichText.value());
             else
                 text.textBox->process_text_input(*text.cursor, plainClipboardStr, text.modMap);

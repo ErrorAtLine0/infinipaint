@@ -45,8 +45,12 @@ class TextData {
         struct Paragraph {
             std::string text;
             ParagraphStyleData pStyleData;
-            template<typename Archive> void serialize(Archive& a) {
+            template<typename Archive> void save(Archive& a) const {
                 a(text, pStyleData);
+            }
+            template<typename Archive> void load(Archive& a) {
+                a(text, pStyleData);
+                std::erase(text, '\r'); // Remove \r characters from older versions
             }
         };
         std::string get_serialized() const;

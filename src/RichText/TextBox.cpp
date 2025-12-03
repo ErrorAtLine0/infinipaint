@@ -994,7 +994,8 @@ TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, co
     TextPosition oldPos = pos = move(Movement::NOWHERE, pos);
 
     for(char c : textToInsert) {
-        if(c == '\n') {
+        if(c == '\r') {}
+        else if(c == '\n') {
             if(newlinesAllowed) {
                 for(auto& [p, tStylesInPos] : tStyleMods) {
                     if(p.fParagraphIndex > pos.fParagraphIndex)
