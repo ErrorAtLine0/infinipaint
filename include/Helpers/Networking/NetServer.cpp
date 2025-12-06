@@ -93,6 +93,66 @@ void NetServer::client_connected(std::shared_ptr<rtc::PeerConnection> connection
     });
 }
 
+void NetServer::send_string_stream_to_client(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
+    if(!client)
+        return;
+
+    auto& messageQueue = client->messageQueues[channel];
+    if(channel == UNRELIABLE_COMMAND_CHANNEL) {
+        if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) // Drop unreliable messages that are too big
+            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+    }
+    else {
+        std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+        if(fragmentedMessage.empty())
+            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+        else {
+            for(auto& ss2 : fragmentedMessage)
+                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
+        }
+    }
+}
+
+void NetServer::send_string_stream_to_all_clients(const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
+    send_string_stream_to_client_if([&](const std::shared_ptr<ClientData>& c) {
+        return true;
+    }, channel, ss);
+}
+
+void NetServer::send_string_stream_to_all_clients_except(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
+    send_string_stream_to_client_if([&](const std::shared_ptr<ClientData>& c) {
+        return c != client;
+    }, channel, ss);
+}
+
+void NetServer::send_string_stream_to_client_if(std::function<bool(const std::shared_ptr<ClientData>&)> clientChecker, const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
+    if(channel == UNRELIABLE_COMMAND_CHANNEL) {
+        if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) { // Drop unreliable messages that are too big
+            for(auto& client : clients) {
+                if(client && clientChecker(client)) {
+                    auto& messageQueue = client->messageQueues[channel];
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+                }
+            }
+        }
+    }
+    else {
+        std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+
+        for(auto& client : clients) {
+            if(client && clientChecker(client)) {
+                auto& messageQueue = client->messageQueues[channel];
+                if(fragmentedMessage.empty())
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
+                else {
+                    for(auto& ss2 : fragmentedMessage)
+                        messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
+                }
+            }
+        }
+    }
+}
+
 void NetServer::ClientData::send_queued_messages(NetServer& server) {
     for(auto& [channelName, messageQueue] : messageQueues) {
         bool addMessageOrder = NetLibrary::is_ordered_channel(channelName);

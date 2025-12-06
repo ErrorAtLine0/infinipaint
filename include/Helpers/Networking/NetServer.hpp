@@ -54,74 +54,31 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
         NetServer(const std::string& serverLocalID);
         ~NetServer();
         void update();
-        template <typename... Args> void send_items_to_client(std::shared_ptr<ClientData> client, const std::string& channel, Args&&... items) {
-            if(!client)
-                return;
-
-            auto ss(std::make_shared<std::stringstream>());
-            {
-                cereal::PortableBinaryOutputArchive m(*ss);
-                (m(items), ...);
-            }
-
-            auto& messageQueue = client->messageQueues[channel];
-            if(channel == UNRELIABLE_COMMAND_CHANNEL) {
-                if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) // Drop unreliable messages that are too big
-                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
-            }
-            else {
-                std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
-                if(fragmentedMessage.empty())
-                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
-                else {
-                    for(auto& ss2 : fragmentedMessage)
-                        messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
-                }
-            }
+        template <typename... Args> void send_items_to_client(const std::shared_ptr<ClientData>& client, const std::string& channel, Args&&... items) {
+            send_string_stream_to_client(client, channel, get_string_stream_from_items(items...));
         }
         template <typename... Args> void send_items_to_all_clients(const std::string& channel, Args&&... items) {
-            send_items_to_client_if([&](std::shared_ptr<ClientData> c) {
-                return true;
-            }, channel, items...);
+            send_string_stream_to_all_clients(channel, get_string_stream_from_items(items...));
         }
-        template <typename... Args> void send_items_to_all_clients_except(std::shared_ptr<ClientData> client, const std::string& channel, Args&&... items) {
-            send_items_to_client_if([&](std::shared_ptr<ClientData> c) {
-                return c != client;
-            }, channel, items...);
+        template <typename... Args> void send_items_to_all_clients_except(const std::shared_ptr<ClientData>& client, const std::string& channel, Args&&... items) {
+            send_string_stream_to_all_clients_except(client, channel, get_string_stream_from_items(items...));
         }
-        template <typename... Args> void send_items_to_client_if(std::function<bool(std::shared_ptr<ClientData>)> clientChecker, const std::string& channel, Args&&... items) {
+        template <typename... Args> void send_items_to_client_if(std::function<bool(const std::shared_ptr<ClientData>&)> clientChecker, const std::string& channel, Args&&... items) {
+            send_string_stream_to_client_if(clientChecker, channel, get_string_stream_from_items(items...));
+        }
+        template <typename... Args> std::shared_ptr<std::stringstream> get_string_stream_from_items(Args&&... items) {
             auto ss(std::make_shared<std::stringstream>());
             {
                 cereal::PortableBinaryOutputArchive m(*ss);
                 (m(items), ...);
             }
-
-            if(channel == UNRELIABLE_COMMAND_CHANNEL) {
-                if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) { // Drop unreliable messages that are too big
-                    for(auto& client : clients) {
-                        if(client && clientChecker(client)) {
-                            auto& messageQueue = client->messageQueues[channel];
-                            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
-                        }
-                    }
-                }
-            }
-            else {
-                std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
-
-                for(auto& client : clients) {
-                    if(client && clientChecker(client)) {
-                        auto& messageQueue = client->messageQueues[channel];
-                        if(fragmentedMessage.empty())
-                            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss);
-                        else {
-                            for(auto& ss2 : fragmentedMessage)
-                                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, client->nextMessageOrderToSend), ss2);
-                        }
-                    }
-                }
-            }
+            return ss;
         }
+
+        void send_string_stream_to_client(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
+        void send_string_stream_to_all_clients(const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
+        void send_string_stream_to_all_clients_except(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
+        void send_string_stream_to_client_if(std::function<bool(const std::shared_ptr<ClientData>&)> clientChecker, const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
 
         bool is_disconnected() const;
 

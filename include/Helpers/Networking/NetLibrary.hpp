@@ -17,6 +17,7 @@ template <class T> std::weak_ptr<T> make_weak_ptr(std::shared_ptr<T> ptr) { retu
 #define MAIN_NETLIBRARY_CHANNEL "main00005" // NOTE: Change this value whenever netcode is incompatible with the previous version
 
 typedef uint8_t MessageCommandType;
+typedef uint8_t NetTypeIDType;
 
 class NetLibrary {
     public:
