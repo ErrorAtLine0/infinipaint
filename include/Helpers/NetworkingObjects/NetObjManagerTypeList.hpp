@@ -1,27 +1,59 @@
 #pragma once
 #include "../Networking/NetLibrary.hpp"
 #include <cereal/archives/portable_binary.hpp>
+#include "NetObjPtr.decl.hpp"
+#include "../Networking/NetServer.hpp"
 
 namespace NetworkingObjects {
 
 class NetObjManagerTypeList {
     public:
-        template <typename T> void register_class(NetTypeIDType netTypeID, std::function<void(T&, cereal::PortableBinaryOutputArchive&)> writeConstructorFunc, std::function<void(T&, cereal::PortableBinaryInputArchive&)> readConstructorFunc, std::function<void(T&, cereal::PortableBinaryInputArchive&)> readUpdateFunc) {
-            netTypeIDData.emplace(netTypeID, {
-                .readConstructorFunc = [readConstructorFunc](void* obj, cereal::PortableBinaryInputArchive& message) {
-                    readConstructorFunc(static_cast<T*>(obj), message);
+        template <typename ClientT, typename ServerT> struct ServerClientClassFunctions {
+            std::function<void(const NetObjPtr<ClientT>&, cereal::PortableBinaryOutputArchive&)> writeConstructorFuncClient;
+            std::function<void(const NetObjPtr<ClientT>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readConstructorFuncClient;
+            std::function<void(const NetObjPtr<ClientT>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readUpdateFuncClient;
+
+            std::function<void(const NetObjPtr<ServerT>&, cereal::PortableBinaryOutputArchive&)> writeConstructorFuncServer;
+            std::function<void(const NetObjPtr<ServerT>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readConstructorFuncServer;
+            std::function<void(const NetObjPtr<ServerT>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readUpdateFuncServer;
+        };
+        template <typename ClientPointerType, typename ServerPointerType, typename ClientActualType, typename ServerActualType> void register_class(const ServerClientClassFunctions<ClientPointerType, ServerPointerType>& funcs) {
+            netTypeIDData[nextNetTypeID] = NetTypeIDContainer {
+                .readConstructorFuncClient = [f = funcs.readConstructorFuncClient](const NetObjPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
+                    if(f)
+                        f(obj.cast<ClientPointerType>(), message, c);
                 },
-                .readUpdateFunc = [readUpdateFunc](void* obj, cereal::PortableBinaryInputArchive& message) {
-                    readUpdateFunc(static_cast<T*>(obj), message);
+                .readUpdateFuncClient = [f = funcs.readUpdateFuncClient](const NetObjPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
+                    if(f)
+                        f(obj.cast<ClientPointerType>(), message, c);
                 },
-                .allocatorFunc = []() { return std::make_shared<T>(); }
-            });
-            typeIndexData.emplace(std::type_index(typeid(T)), {
-                .netTypeID = netTypeID,
-                .writeConstructorFunc = [writeConstructorFunc](void* obj, cereal::PortableBinaryInputArchive& message) {
-                    writeConstructorFunc(static_cast<T*>(obj), message);
+                .allocatorFuncClient = []() { return std::static_pointer_cast<void>(std::make_shared<ClientActualType>()); },
+
+                .readConstructorFuncServer = [f = funcs.readConstructorFuncServer](const NetObjPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
+                    if(f)
+                        f(obj.cast<ServerPointerType>(), message, c);
                 },
-            });
+                .readUpdateFuncServer = [f = funcs.readUpdateFuncServer](const NetObjPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
+                    if(f)
+                        f(obj.cast<ServerPointerType>(), message, c);
+                },
+                .allocatorFuncServer = []() { return std::static_pointer_cast<void>(std::make_shared<ServerActualType>()); }
+            };
+            typeIndexDataClient[std::type_index(typeid(ClientActualType))] = TypeIndexContainer{
+                .netTypeID = nextNetTypeID,
+                .writeConstructorFunc = [f = funcs.writeConstructorFuncClient](const NetObjPtr<void>& obj, cereal::PortableBinaryOutputArchive& message) {
+                    if(f)
+                        f(obj.cast<ClientPointerType>(), message);
+                },
+            };
+            typeIndexDataServer[std::type_index(typeid(ServerActualType))] = TypeIndexContainer{
+                .netTypeID = nextNetTypeID,
+                .writeConstructorFunc = [f = funcs.writeConstructorFuncServer](const NetObjPtr<void>& obj, cereal::PortableBinaryOutputArchive& message) {
+                    if(f)
+                        f(obj.cast<ServerPointerType>(), message);
+                },
+            };
+            nextNetTypeID++;
         }
     private:
         friend class NetObjManager;
@@ -29,16 +61,24 @@ class NetObjManagerTypeList {
 
         struct TypeIndexContainer {
             NetTypeIDType netTypeID;
-            std::function<void(void*, cereal::PortableBinaryOutputArchive&)> writeConstructorFunc;
+            std::function<void(const NetObjPtr<void>&, cereal::PortableBinaryOutputArchive&)> writeConstructorFunc;
         };
-        std::unordered_map<std::type_index, TypeIndexContainer> typeIndexData;
+
+        std::unordered_map<std::type_index, TypeIndexContainer> typeIndexDataClient;
+        std::unordered_map<std::type_index, TypeIndexContainer> typeIndexDataServer;
 
         struct NetTypeIDContainer {
-            std::function<void(void*, cereal::PortableBinaryInputArchive&)> readConstructorFunc;
-            std::function<void(void*, cereal::PortableBinaryInputArchive&)> readUpdateFunc;
-            std::function<std::shared_ptr<void>()> allocatorFunc;
+            std::function<void(const NetObjPtr<void>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readConstructorFuncClient;
+            std::function<void(const NetObjPtr<void>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readUpdateFuncClient;
+            std::function<std::shared_ptr<void>()> allocatorFuncClient;
+
+            std::function<void(const NetObjPtr<void>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readConstructorFuncServer;
+            std::function<void(const NetObjPtr<void>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readUpdateFuncServer;
+            std::function<std::shared_ptr<void>()> allocatorFuncServer;
         };
         std::unordered_map<NetTypeIDType, NetTypeIDContainer> netTypeIDData;
+
+        NetTypeIDType nextNetTypeID = 0;
 };
 
 }

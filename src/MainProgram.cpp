@@ -1,6 +1,5 @@
 #include "MainProgram.hpp"
 #include "DrawingProgram/DrawingProgramToolBase.hpp"
-#include "Helpers/VersionNumber.hpp"
 #include "VersionConstants.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "cereal/details/helpers.hpp"
@@ -39,11 +38,23 @@
 
 #include <Helpers/Logger.hpp>
 #include <Helpers/Networking/NetLibrary.hpp>
+#include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
+#include <Helpers/NetworkingObjects/NetObjIDGenerator.hpp>
+#include <Helpers/NetworkingObjects/NetObjManager.hpp>
+
+struct Abc {
+    int a = 0;
+};
 
 MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
+    auto idGen = std::make_shared<NetworkingObjects::NetObjIDGenerator>();
+    auto typeList = std::make_shared<NetworkingObjects::NetObjManagerTypeList>();
+    NetworkingObjects::register_ordered_list_class<Abc>(*typeList);
+    auto nObjMan = std::make_shared<NetworkingObjects::NetObjManager>(idGen, typeList, false);
+
     displayName = Random::get().alphanumeric_str(10);
 
     Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {
