@@ -21,21 +21,17 @@ namespace NetworkingObjects {
             void read_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom);
             void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID);
             void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID);
+            bool is_server() const;
 
             template <typename T> NetObjPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
                 NetObjID id;
                 NetTypeIDType typeID;
                 a(id, typeID);
                 auto& netTypeIDData = typeList->netTypeIDData[typeID];
-                std::shared_ptr<void> sharedPtr = isServer ? netTypeIDData.allocatorFuncServer() : netTypeIDData.allocatorFuncClient();
-                auto [it, placed] = objectData.emplace(id, SingleObjectData{.netTypeID = typeID, .p = sharedPtr});
-                if(!placed)
-                    throw std::runtime_error("[NetObjManager::read_create_message] ID Collision on object creation");
                 if(isServer)
-                    netTypeIDData.readConstructorFuncServer(NetObjPtr<void>(this, id, sharedPtr), a, clientReceivedFrom);
+                    return netTypeIDData.readConstructorFuncServer(*this, a, clientReceivedFrom).cast<T>();
                 else
-                    netTypeIDData.readConstructorFuncClient(NetObjPtr<void>(this, id, sharedPtr), a, clientReceivedFrom);
-                return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(sharedPtr));
+                    return netTypeIDData.readConstructorFuncClient(*this, a, clientReceivedFrom).cast<T>();
             }
             template <typename T> NetObjPtr<T> read_get_obj_from_message(cereal::PortableBinaryInputArchive& a) {
                 NetObjID id;
@@ -48,14 +44,14 @@ namespace NetworkingObjects {
             template <typename T, typename... Args> NetObjPtr<T> make_obj(Args&&... items) {
                 auto sharedPtr = std::make_shared<T>(items...);
                 NetObjID newID = idGen->gen();
-                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
+                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
                     throw std::runtime_error("[NetObjManager::make_obj] ID Collision");
                 return NetObjPtr<T>(this, newID, sharedPtr);
             }
             template <typename T> NetObjPtr<T> obj_from_ptr(T* p) {
                 std::shared_ptr<T> sharedPtr(p);
                 NetObjID newID = idGen->gen();
-                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
+                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
                     throw std::runtime_error("[NetObjManager::obj_from_ptr] ID Collision");
                 return NetObjPtr<T>(this, newID, sharedPtr);
             }

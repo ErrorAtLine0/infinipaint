@@ -90,7 +90,7 @@ namespace NetworkingObjects {
     }
 
     template <typename T> void NetObjPtr<T>::write_create_message(cereal::PortableBinaryOutputArchive& a) const {
-        auto& typeIndexData = objMan->isServer ? objMan->typeList->typeIndexDataServer[std::type_index(typeid(T))] : objMan->typeList->typeIndexDataClient[std::type_index(typeid(T))];
+        auto& typeIndexData = objMan->isServer ? objMan->typeList->typeIndexDataServer[std::type_index(typeid(T*))] : objMan->typeList->typeIndexDataClient[std::type_index(typeid(T*))];
         a(id, typeIndexData.netTypeID);
         typeIndexData.writeConstructorFunc(this->cast<void>(), a);
     }

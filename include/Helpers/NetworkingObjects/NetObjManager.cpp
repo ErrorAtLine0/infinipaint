@@ -8,6 +8,9 @@ namespace NetworkingObjects {
         typeList(initTypeList),
         nextTypeID(0)
     {}
+    bool NetObjManager::is_server() const {
+        return isServer;
+    }
     void NetObjManager::read_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
         NetObjID id;
         a(id);
