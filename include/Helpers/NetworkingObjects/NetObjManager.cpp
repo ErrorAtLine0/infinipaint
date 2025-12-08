@@ -2,9 +2,8 @@
 #include "NetObjPtr.hpp"
 
 namespace NetworkingObjects {
-    NetObjManager::NetObjManager(std::shared_ptr<NetObjIDGenerator> initIDGen, std::shared_ptr<NetObjManagerTypeList> initTypeList, bool initIsServer):
+    NetObjManager::NetObjManager(std::shared_ptr<NetObjManagerTypeList> initTypeList, bool initIsServer):
         isServer(initIsServer),
-        idGen(initIDGen),
         typeList(initTypeList),
         nextTypeID(0)
     {}

@@ -39,21 +39,17 @@
 #include <Helpers/Logger.hpp>
 #include <Helpers/Networking/NetLibrary.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
-#include <Helpers/NetworkingObjects/NetObjIDGenerator.hpp>
 #include <Helpers/NetworkingObjects/NetObjManager.hpp>
-
-struct Abc {
-    int a = 0;
-};
+#include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 
 MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
-    auto idGen = std::make_shared<NetworkingObjects::NetObjIDGenerator>();
     auto typeList = std::make_shared<NetworkingObjects::NetObjManagerTypeList>();
-    NetworkingObjects::register_ordered_list_class<Abc>(*typeList);
-    auto nObjMan = std::make_shared<NetworkingObjects::NetObjManager>(idGen, typeList, false);
+    NetworkingObjects::register_generic_serialized_class<std::string>(*typeList);
+    NetworkingObjects::register_ordered_list_class<std::string>(*typeList);
+    auto nObjMan = std::make_shared<NetworkingObjects::NetObjManager>(typeList, false);
 
     displayName = Random::get().alphanumeric_str(10);
 

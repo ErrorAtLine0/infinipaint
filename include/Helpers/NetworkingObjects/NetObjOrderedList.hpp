@@ -1,6 +1,7 @@
 #pragma once
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "NetObjPtr.hpp"
+#include "NetObjID.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "NetObjManagerTypeList.hpp"
 
@@ -124,8 +125,18 @@ namespace NetworkingObjects {
                 set_positions_for_object_info_vector<T>(data, iToErase);
             }
             virtual void write_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) override {
+                a(static_cast<uint32_t>(data.size()));
+                for(size_t i = 0; i < data.size(); i++)
+                    data[i]->obj.write_create_message(a);
             }
             virtual void read_constructor_post_allocation(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
+                uint32_t constructedSize;
+                a(constructedSize);
+                data.clear();
+                for(uint32_t i = 0; i < constructedSize; i++)
+                    data.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, c), static_cast<uint32_t>(data.size()), false));
+                // Dont send the object data to all clients in the constructor, as the function that called read_create_message is also the one that will decide where to send the data of the constructed object
+                // Example: the INSERT_SINGLE command in read_update, if it was inserting another NetObjOrderedList, would first construct the list using read_create_message, then it will call insert() to send it to clients
             }
             virtual void read_update(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
                 ObjPtrOrderedListCommand_CtoS command;
@@ -164,24 +175,30 @@ namespace NetworkingObjects {
         protected:
             virtual void push_back(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& newObj) override {
                 auto& newObjInfoPtr = clientData.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(newObj, static_cast<uint32_t>(clientData.size()), true));
-                l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::INSERT_SINGLE, newObjInfoPtr->pos);
                     newObjInfoPtr->obj.write_create_message(a);
                 });
             }
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) {
+                posToInsertAt = std::min<uint32_t>(posToInsertAt, clientData.size());
+                auto& newObjInfoPtr = *clientData.insert(clientData.begin() + posToInsertAt, std::make_shared<NetObjOrderedListObjectInfo<T>>(newObj, posToInsertAt, true));
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                    a(ObjPtrOrderedListCommand_CtoS::INSERT_SINGLE, newObjInfoPtr->pos);
+                    newObjInfoPtr->obj.write_create_message(a);
+                });
             }
             virtual void erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
                 indexToErase = std::min<uint32_t>(indexToErase, clientData.size());
                 auto& newObjInfoPtr = clientData[indexToErase];
-                l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::ERASE_SINGLE, newObjInfoPtr->obj.get_net_id());
                 });
                 clientData.erase(clientData.begin() + indexToErase);
                 set_positions_for_object_info_vector<T>(clientData, indexToErase);
             }
             virtual void erase_by_ptr(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListObjectInfoPtr<T>& p) override {
-                l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&p](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&p](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::ERASE_SINGLE, p->obj.get_net_id());
                 });
                 uint32_t iToErase = p->pos;
@@ -189,8 +206,18 @@ namespace NetworkingObjects {
                 set_positions_for_object_info_vector<T>(clientData, iToErase);
             }
             virtual void write_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) override {
+                a(static_cast<uint32_t>(clientData.size()));
+                for(size_t i = 0; i < clientData.size(); i++)
+                    clientData[i]->obj.write_create_message(a);
             }
             virtual void read_constructor_post_allocation(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
+                uint32_t constructedSize;
+                a(constructedSize);
+                clientData.clear();
+                serverData.clear();
+                for(uint32_t i = 0; i < constructedSize; i++)
+                    serverData.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, nullptr), static_cast<uint32_t>(serverData.size()), false));
+                clientData = serverData;
             }
             virtual void read_update(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
                 ObjPtrOrderedListCommand_StoC c;

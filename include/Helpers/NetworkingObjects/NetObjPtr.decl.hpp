@@ -1,6 +1,7 @@
 #pragma once
-#include "NetObjIDGenerator.hpp"
+#include "NetObjID.hpp"
 #include <type_traits>
+#include <cereal/archives/portable_binary.hpp>
 
 namespace NetworkingObjects {
     class NetObjManager;
