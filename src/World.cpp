@@ -3,6 +3,7 @@
 #include "Helpers/HsvRgb.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/Networking/ByteStream.hpp"
+#include "Helpers/NetworkingObjects/NetObjManager.hpp"
 #include "Helpers/VersionNumber.hpp"
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
@@ -71,12 +72,14 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
 
     using namespace NetworkingObjects;
-    stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
-    stringListTest->emplace_back_direct(stringListTest, "Hello");
-    stringListTest->emplace_back_direct(stringListTest, "World");
-    stringListTest->emplace_back_direct(stringListTest, "Test");
-    for(const NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-        std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+    if(netObjMan.is_server()) {
+        stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
+        stringListTest->emplace_back_direct(stringListTest, "Hello");
+        stringListTest->emplace_back_direct(stringListTest, "World");
+        stringListTest->emplace_back_direct(stringListTest, "Test");
+        for(const NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+            std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+    }
 }
 
 void World::init_client_callbacks() {
@@ -96,6 +99,10 @@ void World::init_client_callbacks() {
             message(canvasScale);
             drawProg.initialize_draw_data(message);
             message(bMan, gridMan);
+            stringListTest = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<std::string>>(message, nullptr);
+            std::cout << "Client print: " << std::endl;
+            for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+                std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;

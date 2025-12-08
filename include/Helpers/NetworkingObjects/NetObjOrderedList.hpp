@@ -75,13 +75,15 @@ namespace NetworkingObjects {
             virtual void erase_by_ptr(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListObjectInfoPtr<T>& p) = 0;
             virtual void write_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) = 0;
             virtual void read_update(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
-            virtual void read_constructor_post_allocation(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
+            virtual void read_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
         private:
             template <typename S> friend void register_ordered_list_class(NetObjManagerTypeList& t);
             static void write_constructor_func(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) {
                 l->write_constructor(l, a);
             }
-            static NetObjPtr<void> read_constructor_func(NetObjManager& objMan, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c);
+            static void read_constructor_func(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
+                l->read_constructor(l, a, c);
+            }
             static void read_update_func(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
                 l->read_update(l, a, c);
             }
@@ -133,7 +135,7 @@ namespace NetworkingObjects {
                 for(size_t i = 0; i < data.size(); i++)
                     data[i]->obj.write_create_message(a);
             }
-            virtual void read_constructor_post_allocation(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
+            virtual void read_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
                 uint32_t constructedSize;
                 a(constructedSize);
                 data.clear();
@@ -215,7 +217,7 @@ namespace NetworkingObjects {
                 for(size_t i = 0; i < clientData.size(); i++)
                     clientData[i]->obj.write_create_message(a);
             }
-            virtual void read_constructor_post_allocation(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
+            virtual void read_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
                 uint32_t constructedSize;
                 a(constructedSize);
                 clientData.clear();
@@ -244,12 +246,6 @@ namespace NetworkingObjects {
             std::vector<NetObjOrderedListObjectInfoPtr<T>> serverData;
             std::vector<NetObjOrderedListObjectInfoPtr<T>> clientData;
     };
-
-    template <typename T> NetObjPtr<void> NetObjOrderedList<T>::read_constructor_func(NetObjManager& objMan, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
-        NetObjPtr<NetObjOrderedList<T>> allocatedPtr = objMan.make_obj<NetObjOrderedList<T>>();
-        allocatedPtr->read_constructor_post_allocation(allocatedPtr, a, c);
-        return allocatedPtr.template cast<void>();
-    }
 
     template <typename S> void register_ordered_list_class(NetObjManagerTypeList& t) {
         t.register_class<NetObjOrderedList<S>, NetObjOrderedList<S>, NetObjOrderedListClient<S>, NetObjOrderedListServer<S>>({

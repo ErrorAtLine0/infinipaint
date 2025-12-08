@@ -7,10 +7,8 @@ namespace NetworkingObjects {
             .writeConstructorFuncClient = [](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                 a(*o);
             },
-            .readConstructorFuncClient = [](NetObjManager& m, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
-                NetObjPtr<T> o = m.make_obj<T>();
+            .readConstructorFuncClient = [](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
                 a(*o);
-                return o.template cast<void>();
             },
             .readUpdateFuncClient = [](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
                 a(*o);
@@ -18,10 +16,8 @@ namespace NetworkingObjects {
             .writeConstructorFuncServer = [](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                 a(*o);
             },
-            .readConstructorFuncServer = [](NetObjManager& m, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
-                NetObjPtr<T> o = m.make_obj<T>();
+            .readConstructorFuncServer = [](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
                 a(*o);
-                return o.template cast<void>();
             },
             .readUpdateFuncServer = [](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
                 a(*o);

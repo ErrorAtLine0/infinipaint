@@ -69,7 +69,13 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         if(isDirectConnect)
             netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor);
         else {
-            netServer->send_items_to_client(client, RELIABLE_COMMAND_CHANNEL, CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, newClient.camCoords, newClient.windowSize, fileDisplayName, clients, data);
+            auto ss(std::make_shared<std::stringstream>());
+            {
+                cereal::PortableBinaryOutputArchive a(*ss);
+                a(CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, newClient.camCoords, newClient.windowSize, fileDisplayName, clients, data);
+                world.stringListTest.write_create_message(a);
+            }
+            netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
             for(auto& [id, rData] : data.resources) {
                 netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, id);
                 netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, rData);
