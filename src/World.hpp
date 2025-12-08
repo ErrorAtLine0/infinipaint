@@ -1,4 +1,5 @@
 #pragma once
+#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "UndoManager.hpp"
 #include "BookmarkManager.hpp"
 #include "ResourceManager.hpp"
@@ -7,6 +8,7 @@
 #include "Toolbar.hpp"
 #include "SharedTypes.hpp"
 #include "GridManager.hpp"
+#include <Helpers/NetworkingObjects/NetObjManager.hpp>
 #include <filesystem>
 
 class MainProgram;
@@ -45,6 +47,7 @@ class World {
         BookmarkManager bMan;
         ConnectionManager con;
         GridManager gridMan;
+        NetworkingObjects::NetObjManager netObjMan;
 
         std::deque<Toolbar::ChatMessage> chatMessages;
 
@@ -88,6 +91,8 @@ class World {
         std::string name;
         std::unordered_map<ServerPortionID, ClientData> clients;
 
+        NetworkingObjects::NetObjPtr<NetworkingObjects::NetObjOrderedList<std::string>> stringListTest;
+
         void set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork = true);
 
         struct CanvasTheme {
@@ -100,6 +105,7 @@ class World {
 
         uint64_t canvasScale = 0;
     private:
+
         ClientPortionID get_max_id(ServerPortionID serverID);
 
         void init_client_callbacks();

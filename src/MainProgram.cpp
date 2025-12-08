@@ -1,5 +1,6 @@
 #include "MainProgram.hpp"
 #include "DrawingProgram/DrawingProgramToolBase.hpp"
+#include "Helpers/NetworkingObjects/NetObjManagerTypeList.hpp"
 #include "VersionConstants.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include "cereal/details/helpers.hpp"
@@ -37,19 +38,16 @@
 #endif
 
 #include <Helpers/Logger.hpp>
-#include <Helpers/Networking/NetLibrary.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
-#include <Helpers/NetworkingObjects/NetObjManager.hpp>
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 
 MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
-    auto typeList = std::make_shared<NetworkingObjects::NetObjManagerTypeList>();
-    NetworkingObjects::register_generic_serialized_class<std::string>(*typeList);
-    NetworkingObjects::register_ordered_list_class<std::string>(*typeList);
-    auto nObjMan = std::make_shared<NetworkingObjects::NetObjManager>(typeList, false);
+    netObjectTypeList = std::make_shared<NetworkingObjects::NetObjManagerTypeList>();
+    NetworkingObjects::register_generic_serialized_class<std::string>(*netObjectTypeList);
+    NetworkingObjects::register_ordered_list_class<std::string>(*netObjectTypeList);
 
     displayName = Random::get().alphanumeric_str(10);
 

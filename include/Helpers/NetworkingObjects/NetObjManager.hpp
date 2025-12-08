@@ -23,7 +23,6 @@ namespace NetworkingObjects {
             void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID);
             void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID);
             bool is_server() const;
-
             template <typename T> NetObjPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
                 NetObjID id;
                 NetTypeIDType typeID;
@@ -42,7 +41,15 @@ namespace NetworkingObjects {
                     return NetObjPtr<T>();
                 return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
-            template <typename T, typename... Args> NetObjPtr<T> make_obj(Args&&... items) {
+            template <typename T> NetObjPtr<T> make_obj() {
+                auto sharedPtr = std::static_pointer_cast<T>(isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].allocatorFunc() : typeList->typeIndexDataClient[std::type_index(typeid(T*))].allocatorFunc());
+                NetObjID newID = NetObjID::random_gen();
+                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
+                    throw std::runtime_error("[NetObjManager::make_obj] ID Collision");
+                return NetObjPtr<T>(this, newID, sharedPtr);
+            }
+            // Don't use this function unless you're sure that class T isn't a base class
+            template <typename T, typename... Args> NetObjPtr<T> make_obj_direct(Args&&... items) {
                 auto sharedPtr = std::make_shared<T>(items...);
                 NetObjID newID = NetObjID::random_gen();
                 if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)

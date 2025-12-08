@@ -45,9 +45,11 @@ namespace NetworkingObjects {
 
     template <typename T> class NetObjOrderedList {
         public:
-            template <typename... Args> static NetObjPtr<T> emplace_back(const NetObjPtr<NetObjOrderedList<T>>& l, Args&&... args) {
-                NetObjPtr<T> newObj = l.get_obj_man()->template make_obj<T>(args...);
-                return push_back_and_send_create(l, newObj);
+            // Don't use this function unless you're sure that class T isn't a base class
+            template <typename ...Args> NetObjPtr<T> emplace_back_direct(const NetObjPtr<NetObjOrderedList<T>>& l, Args&&... items) {
+                NetObjPtr<T> newObj = l.get_obj_man()->template make_obj_direct<T>(items...);
+                l->push_back(l, newObj);
+                return newObj;
             }
             static NetObjPtr<T> push_back_and_send_create(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& newObj) {
                 l->push_back(l, newObj);
@@ -65,6 +67,7 @@ namespace NetworkingObjects {
             }
             virtual uint32_t size() const = 0;
             virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const = 0;
+            virtual ~NetObjOrderedList() {}
         protected:
             virtual void push_back(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& newObj) = 0;
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) = 0;
@@ -86,6 +89,7 @@ namespace NetworkingObjects {
 
     template <typename T> class NetObjOrderedListServer : public NetObjOrderedList<T> {
         public:
+            NetObjOrderedListServer() {}
             virtual uint32_t size() const override {
                 return data.size();
             }
@@ -166,6 +170,7 @@ namespace NetworkingObjects {
 
     template <typename T> class NetObjOrderedListClient : public NetObjOrderedList<T> {
         public:
+            NetObjOrderedListClient() {}
             virtual uint32_t size() const override {
                 return clientData.size();
             }
@@ -241,13 +246,13 @@ namespace NetworkingObjects {
     };
 
     template <typename T> NetObjPtr<void> NetObjOrderedList<T>::read_constructor_func(NetObjManager& objMan, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
-        NetObjPtr<NetObjOrderedList<T>> allocatedPtr = objMan.is_server() ? objMan.make_obj<NetObjOrderedListServer<T>>().template cast<NetObjOrderedList<T>>() : objMan.make_obj<NetObjOrderedListClient<T>>().template cast<NetObjOrderedList<T>>();
+        NetObjPtr<NetObjOrderedList<T>> allocatedPtr = objMan.make_obj<NetObjOrderedList<T>>();
         allocatedPtr->read_constructor_post_allocation(allocatedPtr, a, c);
         return allocatedPtr.template cast<void>();
     }
 
     template <typename S> void register_ordered_list_class(NetObjManagerTypeList& t) {
-        t.register_class<NetObjOrderedList<S>, NetObjOrderedList<S>>({
+        t.register_class<NetObjOrderedList<S>, NetObjOrderedList<S>, NetObjOrderedListClient<S>, NetObjOrderedListServer<S>>({
             .writeConstructorFuncClient = NetObjOrderedList<S>::write_constructor_func,
             .readConstructorFuncClient = NetObjOrderedList<S>::read_constructor_func,
             .readUpdateFuncClient = NetObjOrderedList<S>::read_update_func,

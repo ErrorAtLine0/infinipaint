@@ -3,7 +3,7 @@
 
 namespace NetworkingObjects {
     template <typename T> void register_generic_serialized_class(NetObjManagerTypeList& t) {
-        t.register_class<T, T>({
+        t.register_class<T, T, T, T>({
             .writeConstructorFuncClient = [](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                 a(*o);
             },

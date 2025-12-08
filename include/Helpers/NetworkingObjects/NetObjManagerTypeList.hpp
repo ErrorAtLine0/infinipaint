@@ -17,7 +17,7 @@ class NetObjManagerTypeList {
             std::function<NetObjPtr<void>(NetObjManager&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readConstructorFuncServer;
             std::function<void(const NetObjPtr<ServerT>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readUpdateFuncServer;
         };
-        template <typename ClientT, typename ServerT> void register_class(const ServerClientClassFunctions<ClientT, ServerT>& funcs) {
+        template <typename ClientT, typename ServerT, typename ClientAllocatedType, typename ServerAllocatedType> void register_class(const ServerClientClassFunctions<ClientT, ServerT>& funcs) {
             netTypeIDData[nextNetTypeID] = NetTypeIDContainer {
                 .readConstructorFuncClient = funcs.readConstructorFuncClient,
                 .readUpdateFuncClient = [f = funcs.readUpdateFuncClient](const NetObjPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
@@ -35,12 +35,14 @@ class NetObjManagerTypeList {
                 .writeConstructorFunc = [f = funcs.writeConstructorFuncClient](const NetObjPtr<void>& obj, cereal::PortableBinaryOutputArchive& message) {
                     f(obj.cast<ClientT>(), message);
                 },
+                .allocatorFunc = []() { return std::make_shared<ClientAllocatedType>(); }
             };
             typeIndexDataServer[std::type_index(typeid(ServerT*))] = TypeIndexContainer{
                 .netTypeID = nextNetTypeID,
                 .writeConstructorFunc = [f = funcs.writeConstructorFuncServer](const NetObjPtr<void>& obj, cereal::PortableBinaryOutputArchive& message) {
                     f(obj.cast<ServerT>(), message);
                 },
+                .allocatorFunc = []() { return std::make_shared<ServerAllocatedType>(); }
             };
             nextNetTypeID++;
         }
@@ -51,6 +53,7 @@ class NetObjManagerTypeList {
         struct TypeIndexContainer {
             NetTypeIDType netTypeID;
             std::function<void(const NetObjPtr<void>&, cereal::PortableBinaryOutputArchive&)> writeConstructorFunc;
+            std::function<std::shared_ptr<void>()> allocatorFunc;
         };
 
         // std::type_index in this case is the typeinfo for the POINTER of the type in question. This ensures that we get a mapping for the exact type that was registered, not for a child of the type in case of inheritance

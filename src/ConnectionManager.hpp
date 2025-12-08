@@ -18,8 +18,8 @@ class ConnectionManager {
         bool client_exists();
         std::unordered_map<ServerClientID, NetLibrary::DownloadProgress> server_get_resource_retrieval_progress();
         NetLibrary::DownloadProgress client_get_resource_retrieval_progress();
+        std::unique_ptr<MainServer> localServer;
     private:
         std::shared_ptr<NetClient> client;
-        std::unique_ptr<MainServer> localServer;
         std::chrono::steady_clock::time_point lastKeepAliveTime;
 };

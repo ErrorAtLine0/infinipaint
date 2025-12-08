@@ -30,7 +30,8 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     rMan(*this),
     drawProg(*this),
     bMan(*this),
-    gridMan(*this)
+    gridMan(*this),
+    netObjMan(initMain.netObjectTypeList, worldInfo.conType != CONNECTIONTYPE_CLIENT)
 {
     set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
@@ -68,6 +69,14 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
+
+    using namespace NetworkingObjects;
+    stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
+    stringListTest->emplace_back_direct(stringListTest, "Hello");
+    stringListTest->emplace_back_direct(stringListTest, "World");
+    stringListTest->emplace_back_direct(stringListTest, "Test");
+    for(const NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+        std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
 }
 
 void World::init_client_callbacks() {

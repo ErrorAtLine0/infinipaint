@@ -10,6 +10,11 @@ namespace NetworkingObjects {
         template <typename Archive> void serialize(Archive& a) {
             a(data[1], data[0]);
         }
+        std::string to_string() {
+            std::stringstream ss;
+            ss << "[" << data[1] << ", " << data[0] << "]";
+            return ss.str();
+        }
         NetObjID& operator=(const NetObjID&) = default;
         bool operator==(const NetObjID&) const = default;
         static NetObjID random_gen();

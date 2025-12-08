@@ -9,6 +9,7 @@
 #include "SharedTypes.hpp"
 #include <Eigen/Dense>
 #include <include/core/SkSurfaceProps.h>
+#include <Helpers/NetworkingObjects/NetObjManagerTypeList.hpp>
 #include "Toolbar.hpp"
 #include "World.hpp"
 
@@ -114,6 +115,8 @@ class MainProgram {
         std::vector<std::shared_ptr<World>> worlds;
 
         std::string displayName;
+
+        std::shared_ptr<NetworkingObjects::NetObjManagerTypeList> netObjectTypeList;
 
         ~MainProgram();
     private:
