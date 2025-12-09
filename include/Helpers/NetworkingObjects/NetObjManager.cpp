@@ -16,11 +16,7 @@ namespace NetworkingObjects {
         auto it = objectData.find(id);
         if(it == objectData.end())
             return;
-        auto& netTypeIDData = typeList->netTypeIDData[it->second.netTypeID];
-        if(isServer)
-            netTypeIDData.readUpdateFuncServer(NetObjPtr<void>(this, id, it->second.p), a, clientReceivedFrom);
-        else
-            netTypeIDData.readUpdateFuncClient(NetObjPtr<void>(this, id, it->second.p), a, clientReceivedFrom);
+        typeList->get_net_type_data(isServer, it->second.netTypeID).readUpdateFunc(NetObjPtr<void>(this, id, it->second.p), a, clientReceivedFrom);
     }
     void NetObjManager::set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID) {
         client = initClient;

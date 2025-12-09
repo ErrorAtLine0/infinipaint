@@ -2,6 +2,7 @@
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "Server/CommandList.hpp"
 #include <chrono>
+#include "World.hpp"
 
 void ConnectionManager::init_local_p2p(World& initWorld, const std::string& serverLocalID) {
     localServer = std::make_unique<MainServer>(initWorld, serverLocalID);
@@ -9,10 +10,11 @@ void ConnectionManager::init_local_p2p(World& initWorld, const std::string& serv
     lastKeepAliveTime = std::chrono::steady_clock::now();
 }
 
-void ConnectionManager::connect_p2p(const std::string& serverFullID) {
+void ConnectionManager::connect_p2p(World& initWorld, const std::string& serverFullID) {
     client = std::make_shared<NetClient>(serverFullID);
     lastKeepAliveTime = std::chrono::steady_clock::now();
     NetLibrary::register_client(client);
+    initWorld.netObjMan.set_client(client, SERVER_UPDATE_NETWORK_OBJECT);
 }
 
 void ConnectionManager::update() {

@@ -261,6 +261,8 @@ const std::vector<std::shared_ptr<NetServer::ClientData>> NetServer::get_client_
 }
 
 NetServer::~NetServer() {
-    if(directConnectClient)
+    if(directConnectClient) {
         directConnectClient->isDisconnected = true;
+        directConnectClient->directConnectServer = nullptr;
+    }
 }

@@ -36,6 +36,9 @@ class World {
 
         World(MainProgram& initMain, OpenWorldInfo& worldInfo);
 
+        // NOTE: Keep at the very beginning so that it's destroyed last
+        NetworkingObjects::NetObjManager netObjMan;
+
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
 
@@ -47,7 +50,6 @@ class World {
         BookmarkManager bMan;
         ConnectionManager con;
         GridManager gridMan;
-        NetworkingObjects::NetObjManager netObjMan;
 
         std::deque<Toolbar::ChatMessage> chatMessages;
 

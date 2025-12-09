@@ -25,14 +25,9 @@ namespace NetworkingObjects {
             bool is_server() const;
             template <typename T> NetObjPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
                 NetObjID id;
-                NetTypeIDType typeID;
-                a(id, typeID);
-                auto& netTypeIDData = typeList->netTypeIDData[typeID];
-                NetObjPtr<T> newPtr = make_obj_with_id<T>(id);
-                if(isServer)
-                    netTypeIDData.readConstructorFuncServer(newPtr.template cast<void>(), a, clientReceivedFrom);
-                else
-                    netTypeIDData.readConstructorFuncClient(newPtr.template cast<void>(), a, clientReceivedFrom);
+                a(id);
+                NetObjPtr<T> newPtr = make_obj_with_id_might_already_exist<T>(id);
+                typeList->get_type_index_data<T>(isServer).readConstructorFunc(newPtr.template cast<void>(), a, clientReceivedFrom);
                 return newPtr;
             }
             template <typename T> NetObjPtr<T> read_get_obj_from_message(cereal::PortableBinaryInputArchive& a) {
@@ -44,26 +39,14 @@ namespace NetworkingObjects {
                 return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
             template <typename T> NetObjPtr<T> make_obj() {
-                auto sharedPtr = std::static_pointer_cast<T>(isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].allocatorFunc() : typeList->typeIndexDataClient[std::type_index(typeid(T*))].allocatorFunc());
-                NetObjID newID = NetObjID::random_gen();
-                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
-                    throw std::runtime_error("[NetObjManager::make_obj] ID Collision");
-                return NetObjPtr<T>(this, newID, sharedPtr);
+                return emplace_shared_ptr<T>(NetObjID::random_gen(), std::static_pointer_cast<T>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
             }
             // Don't use this function unless you're sure that class T isn't a base class
             template <typename T, typename... Args> NetObjPtr<T> make_obj_direct(Args&&... items) {
-                auto sharedPtr = std::make_shared<T>(items...);
-                NetObjID newID = NetObjID::random_gen();
-                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
-                    throw std::runtime_error("[NetObjManager::make_obj] ID Collision");
-                return NetObjPtr<T>(this, newID, sharedPtr);
+                return emplace_shared_ptr<T>(NetObjID::random_gen(), std::make_shared<T>(items...));
             }
             template <typename T> NetObjPtr<T> obj_from_ptr(T* p) {
-                std::shared_ptr<T> sharedPtr(p);
-                NetObjID newID = NetObjID::random_gen();
-                if(!objectData.emplace(newID, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
-                    throw std::runtime_error("[NetObjManager::obj_from_ptr] ID Collision");
-                return NetObjPtr<T>(this, newID, sharedPtr);
+                return emplace_shared_ptr<T>(NetObjID::random_gen(), std::shared_ptr<T>(p));
             }
             template <typename T> NetObjPtr<T> get_obj_from_id(NetObjID id) {
                 auto it = objectData.find(id);
@@ -72,10 +55,16 @@ namespace NetworkingObjects {
                 return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
         private:
-            template <typename T> NetObjPtr<T> make_obj_with_id(NetObjID id) {
-                auto sharedPtr = std::static_pointer_cast<T>(isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].allocatorFunc() : typeList->typeIndexDataClient[std::type_index(typeid(T*))].allocatorFunc());
-                if(!objectData.emplace(id, SingleObjectData{.netTypeID = isServer ? typeList->typeIndexDataServer[std::type_index(typeid(T*))].netTypeID : typeList->typeIndexDataClient[std::type_index(typeid(T*))].netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
-                    throw std::runtime_error("[NetObjManager::make_obj] ID Collision");
+            template <typename T> NetObjPtr<T> make_obj_with_id_might_already_exist(NetObjID id) {
+                auto alreadyExistsIt = objectData.find(id);
+                if(alreadyExistsIt != objectData.end())
+                    return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(alreadyExistsIt->second.p));
+                return emplace_shared_ptr<T>(id, std::static_pointer_cast<T>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
+            }
+
+            template <typename T> NetObjPtr<T> emplace_shared_ptr(NetObjID id, const std::shared_ptr<T>& sharedPtr) {
+                if(!objectData.emplace(id, SingleObjectData{.netTypeID = typeList->get_type_index_data<T>(isServer).netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
+                    throw std::runtime_error("[NetObjManager::emplace_shared_ptr] ID Collision");
                 return NetObjPtr<T>(this, id, sharedPtr);
             }
 
@@ -85,6 +74,7 @@ namespace NetworkingObjects {
                 NetTypeIDType netTypeID;
                 std::shared_ptr<void> p;
             };
+
             bool isServer;
             std::shared_ptr<NetClient> client;
             std::shared_ptr<NetServer> server;

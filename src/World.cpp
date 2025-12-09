@@ -27,12 +27,12 @@
 #endif
 
 World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
+    netObjMan(initMain.netObjectTypeList, worldInfo.conType != CONNECTIONTYPE_CLIENT),
     main(initMain),
     rMan(*this),
     drawProg(*this),
     bMan(*this),
-    gridMan(*this),
-    netObjMan(initMain.netObjectTypeList, worldInfo.conType != CONNECTIONTYPE_CLIENT)
+    gridMan(*this)
 {
     set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
@@ -49,7 +49,7 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     switch(conType) {
         case CONNECTIONTYPE_CLIENT: {
             clientStillConnecting = true;
-            con.connect_p2p(netSource);
+            con.connect_p2p(*this, netSource);
             set_name("");
             break;
         }
@@ -75,10 +75,13 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     if(netObjMan.is_server()) {
         stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
         stringListTest->emplace_back_direct(stringListTest, "Hello");
-        stringListTest->emplace_back_direct(stringListTest, "World");
-        stringListTest->emplace_back_direct(stringListTest, "Test");
-        for(const NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-            std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+        stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
+        stringListTest->emplace_back_direct(stringListTest, "World!");
+
+        //stringListTest->emplace_back_direct(stringListTest, "World");
+        //stringListTest->emplace_back_direct(stringListTest, "Test");
+        //for(const NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+        //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
     }
 }
 
@@ -115,6 +118,14 @@ void World::init_client_callbacks() {
         clients[id].displayName = displayName;
         clients[id].cursorColor = cursorColor;
         add_chat_message(clients[id].displayName, "joined", Toolbar::ChatMessage::Type::JOIN);
+    });
+    con.client_add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
+        if(!con.host_exists()) { // Dont update a direct connected client (which is just the server)
+            netObjMan.read_update_message(message, nullptr);
+            std::cout << "Client print update: " << std::endl;
+            for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+                std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+        }
     });
     con.client_add_recv_callback(CLIENT_USER_DISCONNECT, [&](cereal::PortableBinaryInputArchive& message) {
         ServerPortionID id;
@@ -163,8 +174,18 @@ void World::init_client_callbacks() {
     });
 }
 
+size_t testTimer = 0;
+size_t strToAddNum = 0;
+
 void World::focus_update() {
     con.update();
+
+    //testTimer++;
+    //if(testTimer == 1000) {
+    //    std::cout << "added: " << strToAddNum << std::endl;
+    //    stringListTest->emplace_back_direct(stringListTest, std::to_string(strToAddNum++));
+    //    testTimer = 0;
+    //}
 
     if(con.is_host_disconnected()) {
         Logger::get().log("USERINFO", "Host connection failed");

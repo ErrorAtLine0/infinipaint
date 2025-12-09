@@ -32,6 +32,7 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
         void add_recv_callback(MessageCommandType commandID, const NetClientRecvCallback& callback);
         bool is_disconnected() const;
         NetLibrary::DownloadProgress get_progress_into_fragmented_message(const std::string& channel) const;
+        ~NetClient();
 
     private:
         std::string localID;

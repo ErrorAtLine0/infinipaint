@@ -40,6 +40,8 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
 
     netServer = std::make_shared<NetServer>(serverLocalID);
     NetLibrary::register_server(netServer);
+    
+    world.netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT);
 
     netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         bool isDirectConnect;
@@ -82,6 +84,9 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             }
         }
         clients.emplace(newClient.serverID, newClient);
+    });
+    netServer->add_recv_callback(SERVER_UPDATE_NETWORK_OBJECT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        world.netObjMan.read_update_message(message, client);
     });
     netServer->add_recv_callback(SERVER_MOVE_CAMERA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         auto& c = clients[client->customID];

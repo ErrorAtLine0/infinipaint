@@ -20,7 +20,7 @@ namespace NetworkingObjects {
     {}
     template <typename T> NetObjPtr<T>& NetObjPtr<T>::operator=(const NetObjPtr<T>& other) {
         if(this != &other) {
-            if(sharedPtr && sharedPtr.unique())
+            if(sharedPtr && sharedPtr.use_count() == 2)
                 objMan->objectData.erase(id);
             objMan = other.objMan;
             id = other.id;
@@ -29,7 +29,7 @@ namespace NetworkingObjects {
         return *this;
     }
     template <typename T> NetObjPtr<T>::~NetObjPtr() {
-        if(sharedPtr && sharedPtr.unique())
+        if(sharedPtr && sharedPtr.use_count() == 2)
             objMan->objectData.erase(id);
     }
 
@@ -90,9 +90,8 @@ namespace NetworkingObjects {
     }
 
     template <typename T> void NetObjPtr<T>::write_create_message(cereal::PortableBinaryOutputArchive& a) const {
-        auto& typeIndexData = objMan->isServer ? objMan->typeList->typeIndexDataServer[std::type_index(typeid(T*))] : objMan->typeList->typeIndexDataClient[std::type_index(typeid(T*))];
-        a(id, typeIndexData.netTypeID);
-        typeIndexData.writeConstructorFunc(this->cast<void>(), a);
+        a(id);
+        objMan->typeList->get_type_index_data<T>(objMan->isServer).writeConstructorFunc(this->cast<void>(), a);
     }
 
     template <typename T> NetObjPtr<T>::NetObjPtr(NetObjManager* initObjMan, NetObjID initID, const std::shared_ptr<T>& initPtr):

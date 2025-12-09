@@ -177,3 +177,11 @@ void NetClient::send_str_as_bytes(std::shared_ptr<rtc::DataChannel> channel, con
 void NetClient::add_recv_callback(MessageCommandType commandID, const NetClientRecvCallback& callback) {
     recvCallbacks[commandID] = callback;
 }
+
+NetClient::~NetClient() {
+    if(directConnectServer) {
+        directConnectServer->directConnectClient = nullptr;
+        std::erase(directConnectServer->clients, directConnectServer->directConnectClientData);
+        directConnectServer->directConnectClientData = nullptr;
+    }
+}
