@@ -77,11 +77,6 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
         stringListTest->emplace_back_direct(stringListTest, "Hello");
         stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
         stringListTest->emplace_back_direct(stringListTest, "World!");
-
-        //stringListTest->emplace_back_direct(stringListTest, "World");
-        //stringListTest->emplace_back_direct(stringListTest, "Test");
-        //for(const NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-        //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
     }
 }
 
@@ -103,9 +98,10 @@ void World::init_client_callbacks() {
             drawProg.initialize_draw_data(message);
             message(bMan, gridMan);
             stringListTest = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<std::string>>(message, nullptr);
-            std::cout << "Client print: " << std::endl;
-            for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-                std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+            //std::cout << "============================================" << std::endl;
+            //std::cout << "Client print: " << std::endl;
+            //for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+            //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
@@ -120,11 +116,13 @@ void World::init_client_callbacks() {
         add_chat_message(clients[id].displayName, "joined", Toolbar::ChatMessage::Type::JOIN);
     });
     con.client_add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
-        if(!con.host_exists()) { // Dont update a direct connected client (which is just the server)
+        if(!con.host_exists() && !clientStillConnecting) { // Dont update a direct connected client (which is just the server), and dont process these until the CLIENT_INITIAL_DATA message is received first
             netObjMan.read_update_message(message, nullptr);
-            std::cout << "Client print update: " << std::endl;
-            for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-                std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+            //std::cout << "============================================\n";
+            //std::cout << "Client print update: \n";
+            //for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+            //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << '\n';
+            //std::cout << std::endl;
         }
     });
     con.client_add_recv_callback(CLIENT_USER_DISCONNECT, [&](cereal::PortableBinaryInputArchive& message) {
@@ -180,13 +178,6 @@ size_t strToAddNum = 0;
 void World::focus_update() {
     con.update();
 
-    //testTimer++;
-    //if(testTimer == 1000) {
-    //    std::cout << "added: " << strToAddNum << std::endl;
-    //    stringListTest->emplace_back_direct(stringListTest, std::to_string(strToAddNum++));
-    //    testTimer = 0;
-    //}
-
     if(con.is_host_disconnected()) {
         Logger::get().log("USERINFO", "Host connection failed");
         clientStillConnecting = false;
@@ -198,11 +189,8 @@ void World::focus_update() {
 
     if(con.is_client_disconnected()) {
         Logger::get().log("USERINFO", "Client connection failed");
-        clientStillConnecting = false;
-        clients.clear();
-        netSource.clear();
-        conType = CONNECTIONTYPE_LOCAL;
-        con = ConnectionManager();
+        setToDestroy = true;
+        return;
     }
 
     if(!clientStillConnecting) {
@@ -220,6 +208,17 @@ void World::focus_update() {
         }
         con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_MOVE_SCREEN_MOUSE, main.input.mouse.pos);
         drawProg.update();
+
+        testTimer++;
+        if(testTimer == 1) {
+            std::string strToAdd = (netObjMan.is_server() ? "Server " : "Client ") + std::to_string(strToAddNum++);
+            //std::cout << "============================================\n";
+            //std::cout << "Added: " << strToAdd << std::endl;
+            stringListTest->emplace_back_direct(stringListTest, strToAdd);
+            //for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
+            //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+            testTimer = 0;
+        }
     }
 
     drawData.cam.update_main(*this);
@@ -247,6 +246,10 @@ void World::redo_with_checks() {
 
 void World::unfocus_update() {
     con.update();
+    if(con.is_client_disconnected()) {
+        Logger::get().log("USERINFO", "Client connection failed");
+        setToDestroy = true;
+    }
 }
 
 void World::set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork) {

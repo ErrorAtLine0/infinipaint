@@ -3,6 +3,7 @@
 #include "Server/CommandList.hpp"
 #include <chrono>
 #include "World.hpp"
+#include <Helpers/Logger.hpp>
 
 void ConnectionManager::init_local_p2p(World& initWorld, const std::string& serverLocalID) {
     localServer = std::make_unique<MainServer>(initWorld, serverLocalID);
@@ -18,8 +19,9 @@ void ConnectionManager::connect_p2p(World& initWorld, const std::string& serverF
 }
 
 void ConnectionManager::update() {
-    if(localServer)
+    if(localServer) {
         localServer->update();
+    }
     if(client) {
         client->update();
         if(std::chrono::steady_clock::now() - lastKeepAliveTime > std::chrono::seconds(2)) {

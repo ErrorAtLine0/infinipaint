@@ -96,6 +96,10 @@ void MainProgram::update() {
         setTabToClose.reset();
     }
 
+    std::erase_if(worlds, [&](const std::shared_ptr<World>& w) {
+        return w->setToDestroy;
+    });
+
     if(worldIndex >= worlds.size())
         worldIndex = worlds.size() - 1;
     if(worlds.size() == 0)

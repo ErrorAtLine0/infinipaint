@@ -26,8 +26,20 @@ void NetServer::update() {
             if(client->setToDisconnect)
                 disconnectCallback(client);
             else {
-                client->parse_received_messages(*this);
-                client->send_queued_messages(*this);
+                try {
+                    client->parse_received_messages(*this);
+                    client->send_queued_messages(*this);
+                }
+                catch(const std::exception& e) {
+                    Logger::get().log("INFO", "[NetServer::update] Exception thrown while parsing and sending messages for a client: " + std::string(e.what()));
+                    client->setToDisconnect = true;
+                    disconnectCallback(client);
+                }
+                catch(...) {
+                    Logger::get().log("INFO", "[NetServer::update] Unknown exception thrown while parsing and sending messages for a client.");
+                    client->setToDisconnect = true;
+                    disconnectCallback(client);
+                }
             }
         }
     }

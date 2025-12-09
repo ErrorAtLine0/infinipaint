@@ -101,19 +101,24 @@ namespace NetworkingObjects {
                 uint32_t actualPosToInsertAt = posToInsertAt = std::min<uint32_t>(posToInsertAt, data.size());
 
                 // Find duplicate. If found, erase the duplicate before inserting
+                std::shared_ptr<NetObjOrderedListObjectInfo<T>> newObjInfoPtr;
                 auto itObjAlreadyInData = idToDataMap.find(newObj.get_net_id());
                 if(itObjAlreadyInData != idToDataMap.end()) {
                     uint32_t posToErase = itObjAlreadyInData->second->pos;
+                    newObjInfoPtr = data[posToErase];
                     data.erase(data.begin() + posToErase);
-                    idToDataMap.erase(itObjAlreadyInData);
                     if(posToErase < actualPosToInsertAt) // Shift insert position if an element was erased before the insert position
                         actualPosToInsertAt--;
+                    newObjInfoPtr->pos = actualPosToInsertAt;
+                    data.insert(data.begin() + actualPosToInsertAt, newObjInfoPtr);
+                }
+                else {
+                    // Insert the new object if no duplicate found
+                    newObjInfoPtr = std::make_shared<NetObjOrderedListObjectInfo<T>>(newObj, 0, false);
+                    data.insert(data.begin() + actualPosToInsertAt, newObjInfoPtr);
+                    idToDataMap.emplace(newObjInfoPtr->obj.get_net_id(), newObjInfoPtr);
                 }
 
-                // Insert the new object
-                auto newObjInfoPtr = std::make_shared<NetObjOrderedListObjectInfo<T>>(newObj, actualPosToInsertAt, false);
-                data.insert(data.begin() + actualPosToInsertAt, newObjInfoPtr);
-                idToDataMap.emplace(newObjInfoPtr->obj.get_net_id(), newObjInfoPtr);
                 l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr, posToInsertAt](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_StoC::INSERT_SINGLE, posToInsertAt); // Dont send actual pos to insert at, since client will check for duplicates on its own and shift the index if necessary
                     newObjInfoPtr->obj.write_create_message(a);
@@ -182,20 +187,28 @@ namespace NetworkingObjects {
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) {
                 uint32_t actualPosToInsertAt = posToInsertAt = std::min<uint32_t>(posToInsertAt, clientData.size());
 
-                // Find duplicate. If found, erase the duplicate before inserting
+                NetObjOrderedListObjectInfoPtr<T> newObjInfoPtr;
                 auto itObjAlreadyInData = clientIdToDataMap.find(newObj.get_net_id());
                 if(itObjAlreadyInData != clientIdToDataMap.end()) {
                     uint32_t posToErase = itObjAlreadyInData->second->pos;
+                    newObjInfoPtr = clientData[posToErase];
                     clientData.erase(clientData.begin() + posToErase);
-                    clientIdToDataMap.erase(itObjAlreadyInData);
                     if(posToErase < actualPosToInsertAt) // Shift insert position if an element was erased before the insert position
                         actualPosToInsertAt--;
+                    clientData.insert(clientData.begin() + actualPosToInsertAt, newObjInfoPtr);
+                }
+                else {
+                    auto serverIt = serverIdToDataMap.find(newObj.get_net_id()); // No duplicate in client data, but check if it's already in server data
+                    if(serverIt != serverIdToDataMap.end())
+                        newObjInfoPtr = serverIt->second;
+                    else
+                        newObjInfoPtr = std::make_shared<NetObjOrderedListObjectInfo<T>>(newObj, 0, true);
+                    clientData.insert(clientData.begin() + actualPosToInsertAt, newObjInfoPtr);
+                    clientIdToDataMap.emplace(newObjInfoPtr->obj.get_net_id(), newObjInfoPtr);
                 }
 
-                // Insert the new object
-                auto newObjInfoPtr = std::make_shared<NetObjOrderedListObjectInfo<T>>(newObj, actualPosToInsertAt, false);
-                clientData.insert(clientData.begin() + actualPosToInsertAt, newObjInfoPtr);
-                clientIdToDataMap.emplace(newObjInfoPtr->obj.get_net_id(), newObjInfoPtr);
+                newObjInfoPtr->syncIgnore = true;
+
                 l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&newObjInfoPtr, posToInsertAt](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::INSERT_SINGLE, posToInsertAt); // Don't put actual pos to insert at, since the server will check for duplicates and might shift the index on its own
                     newObjInfoPtr->obj.write_create_message(a);
@@ -235,26 +248,43 @@ namespace NetworkingObjects {
                 a(c);
                 switch(c) {
                     case ObjPtrOrderedListCommand_StoC::INSERT_SINGLE: {
-                        uint32_t newPos;
-                        a(newPos);
-                        auto toInsert = std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, nullptr), newPos, false);
-                        auto it = serverIdToDataMap.find(toInsert->obj.get_net_id());
+                        uint32_t newServerPos;
+                        a(newServerPos);
+                        auto objToInsert = l.get_obj_man()->template read_create_message<T>(a, nullptr);
+                        auto it = serverIdToDataMap.find(objToInsert.get_net_id());
                         if(it != serverIdToDataMap.end()) {
-                            uint32_t posToErase = it->second->pos;
-                            serverData.erase(serverData.begin() + posToErase);
-                            serverIdToDataMap.erase(it);
-                            if(posToErase < newPos)
-                                newPos--; // Shift if there was a duplicate before this
+                            uint32_t serverPosErased = std::numeric_limits<uint32_t>::max();
+                            std::erase_if(serverData, [&](auto& objInfo) {
+                                if(objToInsert.get_net_id() == objInfo->obj.get_net_id()) {
+                                    serverPosErased = &objInfo - &serverData[0];
+                                    return true;
+                                }
+                                return false;
+                            });
+                            assert(serverPosErased != std::numeric_limits<uint32_t>::max());
+                            if(serverPosErased < newServerPos)
+                                newServerPos--; // Shift if there was a duplicate before this
+                            //it->second->pos = newServerPos; // NOTE: DO NOT set the pos variable here, as pos is reserved for the position in the client vector
+                            serverData.insert(serverData.begin() + newServerPos, it->second);
                         }
-                        serverIdToDataMap.emplace(toInsert->obj.get_net_id(), toInsert);
-                        serverData.insert(serverData.begin() + newPos, toInsert);
+                        else {
+                            NetObjOrderedListObjectInfoPtr<T> objInfoToInsert;
+                            auto clientIt = clientIdToDataMap.find(objToInsert.get_net_id());
+                            if(clientIt != clientIdToDataMap.end())
+                                objInfoToInsert = clientIt->second;
+                            else
+                                objInfoToInsert = std::make_shared<NetObjOrderedListObjectInfo<T>>(objToInsert, 0, false);
+                            objInfoToInsert->syncIgnore = false;
+                            serverData.insert(serverData.begin() + newServerPos, objInfoToInsert);
+                            serverIdToDataMap.emplace(objInfoToInsert->obj.get_net_id(), objInfoToInsert);
+                        }
                         break;
                     }
                     case ObjPtrOrderedListCommand_StoC::ERASE_SINGLE: {
-                        uint32_t posToErase;
-                        a(posToErase);
-                        NetObjID objID = serverData[posToErase]->obj.get_net_id();
-                        serverData.erase(serverData.begin() + posToErase);
+                        uint32_t serverPosToErase;
+                        a(serverPosToErase);
+                        NetObjID objID = serverData[serverPosToErase]->obj.get_net_id();
+                        serverData.erase(serverData.begin() + serverPosToErase);
                         serverIdToDataMap.erase(objID);
                         break;
                     }

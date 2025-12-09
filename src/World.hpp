@@ -106,6 +106,8 @@ class World {
         void scale_up_step();
 
         uint64_t canvasScale = 0;
+
+        bool setToDestroy = false;
     private:
 
         ClientPortionID get_max_id(ServerPortionID serverID);

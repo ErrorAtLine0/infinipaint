@@ -45,12 +45,22 @@ void NetClient::update() {
     if(isDisconnected)
         return;
     if(std::chrono::steady_clock::now() - lastMessageTime >= NetLibrary::TIMEOUT_DURATION) {
-        Logger::get().log("INFO", "Connection timed out");
+        Logger::get().log("INFO", "[NetClient::update] Connection timed out");
         isDisconnected = true;
         return;
     }
-    parse_received_messages();
-    send_queued_messages();
+    try {
+        parse_received_messages();
+        send_queued_messages();
+    }
+    catch(const std::exception& e) {
+        Logger::get().log("INFO", "[NetClient::update] Exception thrown while parsing and sending messages: " + std::string(e.what()));
+        isDisconnected = true;
+    }
+    catch(...) {
+        Logger::get().log("INFO", "[NetClient::update] Unknown exception thrown while parsing and sending messages.");
+        isDisconnected = true;
+    }
 }
 
 void NetClient::parse_received_messages() {
