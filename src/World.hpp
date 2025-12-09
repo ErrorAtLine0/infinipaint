@@ -93,8 +93,6 @@ class World {
         std::string name;
         std::unordered_map<ServerPortionID, ClientData> clients;
 
-        NetworkingObjects::NetObjPtr<NetworkingObjects::NetObjOrderedList<std::string>> stringListTest;
-
         void set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork = true);
 
         struct CanvasTheme {

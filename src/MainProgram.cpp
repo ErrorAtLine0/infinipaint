@@ -48,6 +48,8 @@ MainProgram::MainProgram():
     netObjectTypeList = std::make_shared<NetworkingObjects::NetObjManagerTypeList>();
     NetworkingObjects::register_generic_serialized_class<std::string>(*netObjectTypeList);
     NetworkingObjects::register_ordered_list_class<std::string>(*netObjectTypeList);
+    NetworkingObjects::register_generic_serialized_class<Bookmark>(*netObjectTypeList);
+    NetworkingObjects::register_ordered_list_class<Bookmark>(*netObjectTypeList);
 
     displayName = Random::get().alphanumeric_str(10);
 

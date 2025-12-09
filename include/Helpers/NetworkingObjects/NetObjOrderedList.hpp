@@ -67,6 +67,9 @@ namespace NetworkingObjects {
             }
             virtual uint32_t size() const = 0;
             virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const = 0;
+            virtual const NetObjOrderedListObjectInfoPtr<T>& info_at(uint32_t index) const = 0;
+            virtual const NetObjPtr<T>& at(uint32_t index) const = 0;
+            virtual bool empty() const = 0;
             virtual ~NetObjOrderedList() {}
         protected:
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) = 0;
@@ -95,6 +98,15 @@ namespace NetworkingObjects {
             }
             virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const override {
                 return data;
+            }
+            virtual const NetObjOrderedListObjectInfoPtr<T>& info_at(uint32_t index) const override {
+                return data[index];
+            }
+            virtual const NetObjPtr<T>& at(uint32_t index) const override {
+                return data[index]->obj;
+            }
+            virtual bool empty() const override {
+                return data.empty();
             }
         protected:
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) override {
@@ -182,6 +194,15 @@ namespace NetworkingObjects {
             }
             virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const override {
                 return clientData;
+            }
+            virtual const NetObjOrderedListObjectInfoPtr<T>& info_at(uint32_t index) const override {
+                return clientData[index];
+            }
+            virtual const NetObjPtr<T>& at(uint32_t index) const override {
+                return clientData[index]->obj;
+            }
+            virtual bool empty() const override {
+                return clientData.empty();
             }
         protected:
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) {

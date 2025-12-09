@@ -802,12 +802,12 @@ void Toolbar::bookmark_menu(bool justOpened) {
         gui.obstructing_window();
         float entryHeight = 25.0f;
         gui.text_label_centered("Bookmarks");
-        if(main.world->bMan.sorted_names().empty())
+        if(main.world->bMan.bookmarks->empty())
             gui.text_label_centered("No bookmarks yet...");
-        std::string toDelete;
-        gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.sorted_names().size(), true, [&](size_t i, bool isListHovered) {
-            const std::string& bookmark = main.world->bMan.sorted_names()[i];
-            bool selectedEntry = bookmark == bookMenu.newName;
+        uint32_t toDelete = std::numeric_limits<uint32_t>::max();
+        gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.bookmarks->size(), true, [&](size_t i, bool isListHovered) {
+            const Bookmark& bookmark = *main.world->bMan.bookmarks->at(i);
+            bool selectedEntry = i == bookMenu.selectedBookmark;
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
@@ -817,7 +817,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
                 },
                 .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
             }) {
-                gui.text_label(bookmark);
+                gui.text_label(bookmark.name);
                 bool miniButtonClicked = false;
                 CLAY_AUTO_ID({
                     .layout = {
@@ -829,36 +829,34 @@ void Toolbar::bookmark_menu(bool justOpened) {
                 }) {
                     if(gui.svg_icon_button_transparent("bookmark jump button", "data/icons/jump.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
-                        main.world->bMan.jump_to_bookmark(bookmark);
+                        main.world->bMan.jump_to_bookmark(i);
                     }
                     if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
                         miniButtonClicked = true;
-                        toDelete = bookmark;
+                        toDelete = i;
                     }
                 }
                 if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
-                    bookMenu.newName = bookmark;
+                    bookMenu.newName = bookmark.name;
                     if(io->mouse.leftClick >= 2)
-                        main.world->bMan.jump_to_bookmark(bookmark);
+                        main.world->bMan.jump_to_bookmark(i);
                 }
             }
         });
-        if(!toDelete.empty())
+        if(toDelete != std::numeric_limits<uint32_t>::max())
             main.world->bMan.remove_bookmark(toDelete);
-        bool bookmarkExists = std::find(main.world->bMan.sorted_names().begin(), main.world->bMan.sorted_names().end(), bookMenu.newName) != main.world->bMan.sorted_names().end();
         gui.left_to_right_line_layout([&]() {
             bool addByEnter = false;
             gui.input_text("bookmark text input", &bookMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
                 addByEnter = s.selected && io->key.enter;
             });
-            if(!bookmarkExists) {
-                if((gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || addByEnter) && !bookMenu.newName.empty())
-                    main.world->bMan.add_bookmark(bookMenu.newName);
-            }
+            if((gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || addByEnter) && !bookMenu.newName.empty())
+                main.world->bMan.add_bookmark(bookMenu.newName);
         });
         if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
             bookMenu.newName.clear();
             bookMenu.popupOpen = false;
+            bookMenu.selectedBookmark = std::numeric_limits<uint32_t>::max();
         }
     }
     gui.pop_id();

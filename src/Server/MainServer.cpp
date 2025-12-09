@@ -31,7 +31,6 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         data.idToComponentMap.emplace(data.components.back()->id, data.components.back());
     }
     data.canvasScale = world.canvasScale;
-    data.bookmarks = world.bMan.bookmark_list();
     data.grids = world.gridMan.grids;
     data.resources = world.rMan.resource_list();
     data.canvasBackColor = convert_vec3<Vector3f>(world.canvasTheme.backColor);
@@ -75,7 +74,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
             {
                 cereal::PortableBinaryOutputArchive a(*ss);
                 a(CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, newClient.camCoords, newClient.windowSize, fileDisplayName, clients, data);
-                world.stringListTest.write_create_message(a);
+                world.bMan.bookmarks.write_create_message(a);
             }
             netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
             for(auto& [id, rData] : data.resources) {
@@ -229,24 +228,6 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         std::string chatMessage;
         message(chatMessage);
         netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, client->customID, chatMessage);
-    });
-    netServer->add_recv_callback(SERVER_NEW_BOOKMARK, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::string name;
-        message(name);
-        Bookmark& b = data.bookmarks[name];
-        message(b);
-
-        auto& c = clients[client->customID];
-        if(c.canvasScale < data.canvasScale)
-            b.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
-
-        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_NEW_BOOKMARK, name, b);
-    });
-    netServer->add_recv_callback(SERVER_REMOVE_BOOKMARK, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::string name;
-        message(name);
-        data.bookmarks.erase(name);
-        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_REMOVE_BOOKMARK, name);
     });
     netServer->add_recv_callback(SERVER_SET_GRID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ServerClientID gID;

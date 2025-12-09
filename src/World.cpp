@@ -66,18 +66,9 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
 
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
-    bMan.init_client_callbacks();
     gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
-
-    using namespace NetworkingObjects;
-    if(netObjMan.is_server()) {
-        stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
-        stringListTest->emplace_back_direct(stringListTest, "Hello");
-        stringListTest = netObjMan.make_obj<NetObjOrderedList<std::string>>();
-        stringListTest->emplace_back_direct(stringListTest, "World!");
-    }
 }
 
 void World::init_client_callbacks() {
@@ -96,12 +87,8 @@ void World::init_client_callbacks() {
             set_canvas_background_color(newBackColor, false);
             message(canvasScale);
             drawProg.initialize_draw_data(message);
-            message(bMan, gridMan);
-            stringListTest = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<std::string>>(message, nullptr);
-            //std::cout << "============================================" << std::endl;
-            //std::cout << "Client print: " << std::endl;
-            //for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-            //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
+            message(gridMan);
+            bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
@@ -116,14 +103,8 @@ void World::init_client_callbacks() {
         add_chat_message(clients[id].displayName, "joined", Toolbar::ChatMessage::Type::JOIN);
     });
     con.client_add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
-        if(!con.host_exists() && !clientStillConnecting) { // Dont update a direct connected client (which is just the server), and dont process these until the CLIENT_INITIAL_DATA message is received first
+        if(!con.host_exists() && !clientStillConnecting) // Dont update a direct connected client (which is just the server), and dont process these until the CLIENT_INITIAL_DATA message is received first
             netObjMan.read_update_message(message, nullptr);
-            //std::cout << "============================================\n";
-            //std::cout << "Client print update: \n";
-            //for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-            //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << '\n';
-            //std::cout << std::endl;
-        }
     });
     con.client_add_recv_callback(CLIENT_USER_DISCONNECT, [&](cereal::PortableBinaryInputArchive& message) {
         ServerPortionID id;
@@ -172,9 +153,6 @@ void World::init_client_callbacks() {
     });
 }
 
-size_t testTimer = 0;
-size_t strToAddNum = 0;
-
 void World::focus_update() {
     con.update();
 
@@ -208,17 +186,6 @@ void World::focus_update() {
         }
         con.client_send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_MOVE_SCREEN_MOUSE, main.input.mouse.pos);
         drawProg.update();
-
-        testTimer++;
-        if(testTimer == 1) {
-            std::string strToAdd = (netObjMan.is_server() ? "Server " : "Client ") + std::to_string(strToAddNum++);
-            //std::cout << "============================================\n";
-            //std::cout << "Added: " << strToAdd << std::endl;
-            stringListTest->emplace_back_direct(stringListTest, strToAdd);
-            //for(const NetworkingObjects::NetObjOrderedListObjectInfoPtr<std::string>& o : stringListTest->get_data())
-            //    std::cout << "At position: " << o->get_pos() << " we have string: \"" << *o->get_obj() << "\" with object id " << o->get_obj().get_net_id().to_string() << std::endl;
-            testTimer = 0;
-        }
     }
 
     drawData.cam.update_main(*this);
@@ -317,7 +284,6 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     con.init_local_p2p(*this, serverLocalID);
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
-    bMan.init_client_callbacks();
     gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true, drawData.cam.c, main.window.size.cast<float>().eval());
