@@ -72,4 +72,4 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 
 ## Contribution
 
-Currently, I won't be accepting most pull requests. The program is at a stage where large parts of the code are constantly being rewritten, so unless it's something small and doesn't interfere with code I'm currently working on, I probably won't be merging it.
+Currently, I won't be accepting most pull requests. The program is at a stage where large parts of the code are constantly being rewritten, so unless it's something small and doesn't interfere with code I'm currently working on, I probably won't be merging it. Any issue reports (bug reports, feature requests, etc.) are welcome though!
