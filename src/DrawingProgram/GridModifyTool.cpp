@@ -137,7 +137,7 @@ void GridModifyTool::tool_update() {
                     selectionMode = 0;
                 break;
         }
-        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(grid);
+        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(grid, false);
     }
     else
         selectionMode = 0;
@@ -180,5 +180,5 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {
-    NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
+    drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(grid, true);
 }

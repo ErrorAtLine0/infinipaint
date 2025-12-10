@@ -1,4 +1,5 @@
 #pragma once
+#include "Helpers/Networking/NetLibrary.hpp"
 #include "NetObjWeakPtr.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <chrono>
@@ -8,7 +9,7 @@ namespace NetworkingObjects {
         public:
             template <typename T> void register_class(NetObjManagerTypeList& t) {
                 t.register_class<T, T, T, T>({
-                    .writeConstructorFuncClient = [&](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a){client_write_func<T>(o, a);},
+                    .writeConstructorFuncClient = [&](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a){client_write_func<T>(std::nullopt, o, a);},
                     .readConstructorFuncClient = [&](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&){delay_read_func<T>(o, a);},
                     .readUpdateFuncClient = [&](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&){delay_read_func<T>(o, a);},
                     .writeConstructorFuncServer = [&](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a){server_write_func<T>(o, a);},
@@ -16,17 +17,19 @@ namespace NetworkingObjects {
                     .readUpdateFuncServer = [&](const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&){server_read_update_func<T>(o, a);}
                 });
             }
-            template <typename T> void send_update_to_all(const NetworkingObjects::NetObjPtr<T>& o) {
-                o.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [&](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+            template <typename T> void send_update_to_all(const NetworkingObjects::NetObjPtr<T>& o, bool finalUpdate) {
+                o.send_update_to_all(finalUpdate ? RELIABLE_COMMAND_CHANNEL : UNRELIABLE_COMMAND_CHANNEL, [&](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                     if(o.get_obj_man()->is_server())
                         server_write_func(o, a);
                     else
-                        client_write_func(o, a);
+                        client_write_func(finalUpdate, o, a);
                 });
             }
             void update();
         private:
-            template <typename T> void client_write_func(const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+            template <typename T> void client_write_func(std::optional<bool> finalUpdate, const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+                if(finalUpdate.has_value())
+                    a(finalUpdate.value());
                 a(*o);
                 auto it = updatingObjs.find(o.get_net_id());
                 if(it == updatingObjs.end()) {
@@ -83,15 +86,16 @@ namespace NetworkingObjects {
 
             template <typename T> void server_read_update_func(const NetObjPtr<T>& o, cereal::PortableBinaryInputArchive& a) {
                 auto it = updatingObjs.find(o.get_net_id());
+                bool finalUpdate;
                 if(it == updatingObjs.end()) {
-                    a(*o);
-                    o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+                    a(finalUpdate, *o);
+                    o.send_server_update_to_all_clients(finalUpdate ? RELIABLE_COMMAND_CHANNEL : UNRELIABLE_COMMAND_CHANNEL, [](const NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                         a(*o);
                     });
                 }
                 else {
                     auto& [netID, updatingObjData] = *it;
-                    a(*std::static_pointer_cast<T>(updatingObjData.objToUpdateCurrentData));
+                    a(finalUpdate, *std::static_pointer_cast<T>(updatingObjData.objToUpdateCurrentData));
                 }
             }
 
