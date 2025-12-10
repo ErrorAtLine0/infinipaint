@@ -2,6 +2,7 @@
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
 #include "GridModifyTool.hpp"
+#include <Helpers/NetworkingObjects/NetObjPtr.hpp>
 #include "PanCanvasTool.hpp"
 #include "ZoomCanvasTool.hpp"
 #include "cereal/archives/portable_binary.hpp"
@@ -63,7 +64,7 @@ class DrawingProgram {
 
         void clear_draw_cache();
 
-        void modify_grid(ServerClientID gridToModifyID);
+        void modify_grid(const NetworkingObjects::NetObjPtr<WorldGrid>& gridToModify);
 
     private:
         std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;

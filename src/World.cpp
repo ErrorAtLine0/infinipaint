@@ -66,7 +66,6 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
 
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
-    gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
 }
@@ -87,8 +86,8 @@ void World::init_client_callbacks() {
             set_canvas_background_color(newBackColor, false);
             message(canvasScale);
             drawProg.initialize_draw_data(message);
-            message(gridMan);
             bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
+            gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
@@ -284,7 +283,6 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     con.init_local_p2p(*this, serverLocalID);
     drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
-    gridMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true, drawData.cam.c, main.window.size.cast<float>().eval());
     conType = CONNECTIONTYPE_SERVER;
@@ -374,7 +372,7 @@ void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std:
 }
 
 ClientPortionID World::get_max_id(ServerPortionID serverID) {
-    return std::max(std::max(rMan.get_max_id(serverID), drawProg.get_max_id(serverID)), gridMan.get_max_id(serverID));
+    return std::max(rMan.get_max_id(serverID), drawProg.get_max_id(serverID));
 }
 
 void World::save_file(cereal::PortableBinaryOutputArchive& a) const {

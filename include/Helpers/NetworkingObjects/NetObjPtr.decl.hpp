@@ -21,10 +21,12 @@ namespace NetworkingObjects {
             std::strong_ordering operator<=>(const NetObjPtr<T>& rhs) const;
             void send_client_update(const std::string& channel, std::function<void(const NetObjPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const;
             void send_server_update_to_all_clients(const std::string& channel, std::function<void(const NetObjPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const;
+            void send_update_to_all(const std::string& channel, std::function<void(const NetObjPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const;
             void write_create_message(cereal::PortableBinaryOutputArchive& a) const;
         private:
             friend class NetObjManager;
             template <typename S> friend class NetObjPtr;
+            template <typename S> friend class NetObjWeakPtr;
 
             NetObjPtr(NetObjManager* initObjMan, NetObjID initID, const std::shared_ptr<T>& initPtr);
             NetObjManager* objMan;

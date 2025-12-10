@@ -20,6 +20,7 @@
 #include "../World.hpp"
 #include "../MainProgram.hpp"
 #include "Helpers/FileDownloader.hpp"
+#include "Helpers/NetworkingObjects/NetObjWeakPtr.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "LassoSelectTool.hpp"
 #include <Helpers/Logger.hpp>
@@ -283,9 +284,9 @@ void DrawingProgram::tool_options_gui() {
     }
 }
 
-void DrawingProgram::modify_grid(ServerClientID gridToModifyID) {
+void DrawingProgram::modify_grid(const NetworkingObjects::NetObjPtr<WorldGrid>& gridToModify) {
     std::unique_ptr<GridModifyTool> newTool(std::make_unique<GridModifyTool>(*this));
-    newTool->set_grid_id(gridToModifyID);
+    newTool->set_grid(gridToModify);
     switch_to_tool_ptr(std::move(newTool));
 }
 

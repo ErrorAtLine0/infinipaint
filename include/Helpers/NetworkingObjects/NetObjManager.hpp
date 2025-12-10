@@ -69,6 +69,7 @@ namespace NetworkingObjects {
             }
 
             template <typename T> friend class NetObjPtr;
+            template <typename T> friend class NetObjWeakPtr;
 
             struct SingleObjectData {
                 NetTypeIDType netTypeID;

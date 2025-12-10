@@ -198,7 +198,7 @@ class Toolbar {
         struct GridMenu {
             bool popupOpen = false;
             std::string newName;
-            ServerClientID gridSelected = {0, 0};
+            uint32_t selectedGrid = std::numeric_limits<uint32_t>::max();
         } gridMenu;
 
         bool useNativeFilePicker = true;

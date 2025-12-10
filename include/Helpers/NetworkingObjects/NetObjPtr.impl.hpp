@@ -89,6 +89,13 @@ namespace NetworkingObjects {
         }
     }
 
+    template <typename T> void NetObjPtr<T>::send_update_to_all(const std::string& channel, std::function<void(const NetObjPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
+        if(objMan->is_server())
+            send_server_update_to_all_clients(channel, sendUpdateFunc);
+        else
+            send_client_update(channel, sendUpdateFunc);
+    }
+
     template <typename T> void NetObjPtr<T>::write_create_message(cereal::PortableBinaryOutputArchive& a) const {
         a(id);
         objMan->typeList->get_type_index_data<T>(objMan->isServer).writeConstructorFunc(this->cast<void>(), a);

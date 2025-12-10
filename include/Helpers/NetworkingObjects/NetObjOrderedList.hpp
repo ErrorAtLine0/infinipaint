@@ -56,6 +56,7 @@ namespace NetworkingObjects {
             static uint32_t erase(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& p) {
                 return l->erase_by_ptr(l, p);
             }
+            virtual bool contains(const NetObjPtr<T>& p) const = 0;
             virtual uint32_t size() const = 0;
             virtual const NetObjPtr<T>& at(uint32_t index) const = 0;
             virtual bool empty() const = 0;
@@ -83,6 +84,9 @@ namespace NetworkingObjects {
     template <typename T> class NetObjOrderedListServer : public NetObjOrderedList<T> {
         public:
             NetObjOrderedListServer() {}
+            virtual bool contains(const NetObjPtr<T>& p) const override {
+                return idToDataMap.contains(p.get_net_id());
+            }
             virtual uint32_t size() const override {
                 return data.size();
             }
@@ -159,8 +163,11 @@ namespace NetworkingObjects {
                 uint32_t constructedSize;
                 a(constructedSize);
                 data.clear();
-                for(uint32_t i = 0; i < constructedSize; i++)
+                idToDataMap.clear();
+                for(uint32_t i = 0; i < constructedSize; i++) {
                     data.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, c), static_cast<uint32_t>(data.size()), false));
+                    idToDataMap.emplace(data.back()->obj.get_net_id(), data.back());
+                }
                 // Dont send the object data to all clients in the constructor, as the function that called read_create_message is also the one that will decide where to send the data of the constructed object
                 // Example: the INSERT_SINGLE command in read_update, if it was inserting another NetObjOrderedList, would first construct the list using read_create_message, then it will call insert() to send it to clients
             }
@@ -190,6 +197,9 @@ namespace NetworkingObjects {
     template <typename T> class NetObjOrderedListClient : public NetObjOrderedList<T> {
         public:
             NetObjOrderedListClient() {}
+            virtual bool contains(const NetObjPtr<T>& p) const override {
+                return clientIdToDataMap.contains(p.get_net_id());
+            }
             virtual uint32_t size() const override {
                 return clientData.size();
             }
@@ -273,9 +283,14 @@ namespace NetworkingObjects {
                 a(constructedSize);
                 clientData.clear();
                 serverData.clear();
-                for(uint32_t i = 0; i < constructedSize; i++)
+                serverIdToDataMap.clear();
+                clientIdToDataMap.clear();
+                for(uint32_t i = 0; i < constructedSize; i++) {
                     serverData.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, nullptr), static_cast<uint32_t>(serverData.size()), false));
+                    serverIdToDataMap.emplace(serverData.back()->obj.get_net_id(), serverData.back());
+                }
                 clientData = serverData;
+                clientIdToDataMap = serverIdToDataMap;
             }
             virtual void read_update(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
                 ObjPtrOrderedListCommand_StoC c;

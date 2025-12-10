@@ -6,7 +6,6 @@ void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
     a((uint64_t)components.size());
     for(uint64_t i = 0; i < components.size(); i++)
         a(components[i]->get_type(), components[i]->id, components[i]->coords, *components[i]);
-    a(grids);
 }
 
 void ServerData::load(cereal::PortableBinaryInputArchive& a) {
@@ -21,12 +20,9 @@ void ServerData::load(cereal::PortableBinaryInputArchive& a) {
         components.emplace_back(newComp);
         idToComponentMap.emplace(newComp->id, newComp);
     }
-    a(grids);
 }
 
 void ServerData::scale_up(const WorldScalar& scaleUpAmount) {
-    for(auto& [n, g] : grids)
-        g.scale_up(scaleUpAmount);
     for(auto& c : components)
         c->scale_up(scaleUpAmount);
 }

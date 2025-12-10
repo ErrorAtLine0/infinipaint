@@ -1,4 +1,5 @@
 #pragma once
+#include "Helpers/NetworkingObjects/NetObjPtr.decl.hpp"
 #include "NetObjPtr.hpp"
 
 namespace NetworkingObjects {
@@ -25,6 +26,12 @@ namespace NetworkingObjects {
                     a(*o);
                 });
             },
+        });
+    }
+
+    template <typename T> void generic_serialized_class_send_update_to_all(const NetworkingObjects::NetObjPtr<T>& o) {
+        o.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [](const NetworkingObjects::NetObjPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+            a(*o);
         });
     }
 }

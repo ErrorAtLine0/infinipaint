@@ -2,18 +2,21 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
+#include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 #include <cstddef>
+
+using namespace NetworkingObjects;
 
 GridModifyTool::GridModifyTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {
 }
 
-void GridModifyTool::set_grid_id(ServerClientID newGridID) {
-    gridID = newGridID;
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
-    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
-        WorldGrid& g = gridFoundIt->second;
+void GridModifyTool::set_grid(const NetObjPtr<WorldGrid>& newGrid) {
+    grid = newGrid;
+    if(drawP.world.gridMan.grids->contains(grid)) {
+        WorldGrid& g = *grid;
         oldGrid = g;
         CoordSpaceHelper newCam;
         newCam.inverseScale = g.size / WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
@@ -31,9 +34,8 @@ void GridModifyTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Grid modify tool");
     t.gui.text_label_centered("Edit Grid");
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
-    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
-        WorldGrid& g = gridFoundIt->second;
+    if(drawP.world.gridMan.grids->contains(grid)) {
+        WorldGrid& g = *grid;
         t.gui.input_text_field("grid name", "Name", &g.name);
         t.gui.checkbox_field("Visible", "Visible", &g.visible);
         t.gui.checkbox_field("Display in Front", "Display in front of canvas", &g.displayInFront);
@@ -83,9 +85,8 @@ bool GridModifyTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 void GridModifyTool::tool_update() {
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
-    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
-        WorldGrid& g = gridFoundIt->second;
+    if(drawP.world.gridMan.grids->contains(grid)) {
+        WorldGrid& g = *grid;
         switch(selectionMode) {
             case 0:
                 if(drawP.controls.leftClick) {
@@ -145,9 +146,8 @@ bool GridModifyTool::prevent_undo_or_redo() {
 }
 
 void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    auto gridFoundIt = drawP.world.gridMan.grids.find(gridID);
-    if(gridFoundIt != drawP.world.gridMan.grids.end()) {
-        WorldGrid& g = gridFoundIt->second;
+    if(drawP.world.gridMan.grids->contains(grid)) {
+        WorldGrid& g = *grid;
         if(g.bounds.has_value()) {
             const auto& b = g.bounds.value();
             Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
@@ -178,5 +178,5 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {
-    drawP.world.gridMan.send_grid_info(oldGrid, gridID);
+    NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
 }
