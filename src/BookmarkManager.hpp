@@ -20,6 +20,7 @@ class World;
 class BookmarkManager {
     public:
         BookmarkManager(World& w);
+        void init();
         void add_bookmark(const std::string& name);
         void remove_bookmark(uint32_t bookmarkIndex);
         void jump_to_bookmark(uint32_t bookmarkIndex);

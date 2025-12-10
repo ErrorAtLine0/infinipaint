@@ -1,10 +1,13 @@
 #include "World.hpp"
 #include "DrawComponents/DrawComponent.hpp"
-#include "Helpers/HsvRgb.hpp"
-#include "Helpers/MathExtras.hpp"
-#include "Helpers/Networking/ByteStream.hpp"
-#include "Helpers/NetworkingObjects/NetObjManager.hpp"
-#include "Helpers/VersionNumber.hpp"
+#include <Helpers/HsvRgb.hpp>
+#include <Helpers/MathExtras.hpp>
+#include <Helpers/Networking/ByteStream.hpp>
+#include <Helpers/NetworkingObjects/NetObjManager.hpp>
+#include <Helpers/NetworkingObjects/NetObjManagerTypeList.hpp>
+#include <Helpers/VersionNumber.hpp>
+#include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
+#include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
@@ -27,13 +30,18 @@
 #endif
 
 World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
-    netObjMan(initMain.netObjectTypeList, worldInfo.conType != CONNECTIONTYPE_CLIENT),
+    netObjectTypeList(std::make_shared<NetworkingObjects::NetObjManagerTypeList>()),
+    netObjMan(netObjectTypeList, worldInfo.conType != CONNECTIONTYPE_CLIENT),
     main(initMain),
     rMan(*this),
     drawProg(*this),
     bMan(*this),
     gridMan(*this)
 {
+    init_net_obj_type_list();
+    gridMan.init();
+    bMan.init();
+
     set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
 
@@ -68,6 +76,13 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     rMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
+}
+
+void World::init_net_obj_type_list() {
+    NetworkingObjects::register_generic_serialized_class<Bookmark>(*netObjectTypeList);
+    NetworkingObjects::register_ordered_list_class<Bookmark>(*netObjectTypeList);
+    delayedUpdateObjectManager.register_class<WorldGrid>(*netObjectTypeList);
+    NetworkingObjects::register_ordered_list_class<WorldGrid>(*netObjectTypeList);
 }
 
 void World::init_client_callbacks() {
@@ -171,6 +186,7 @@ void World::focus_update() {
     }
 
     if(!clientStillConnecting) {
+        delayedUpdateObjectManager.update();
         constexpr float SECONDS_TO_SEND_CAMERA_DATA = 0.5f;
         timeToSendCameraData.update_time_since();
         if(timeToSendCameraData.get_time_since() > SECONDS_TO_SEND_CAMERA_DATA) {

@@ -12,12 +12,14 @@ void Bookmark::scale_up(const WorldScalar& scaleUpAmount) {
 
 BookmarkManager::BookmarkManager(World& w):
     world(w)
-{
+{}
+
+void BookmarkManager::init() {
     // NOTE: Should find a way for bookmarks added from the network to take into account the client's canvasScale
     // Have the canvasScale variable come with the ClientData object, and the grid scale commands can be part of 
     // the client data class
-    if(w.netObjMan.is_server())
-        bookmarks = w.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<Bookmark>>();
+    if(world.netObjMan.is_server())
+        bookmarks = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<Bookmark>>();
 }
 
 void BookmarkManager::add_bookmark(const std::string& name) {

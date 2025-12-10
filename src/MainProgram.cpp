@@ -45,14 +45,6 @@ MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
-    netObjectTypeList = std::make_shared<NetworkingObjects::NetObjManagerTypeList>();
-    NetworkingObjects::register_generic_serialized_class<std::string>(*netObjectTypeList);
-    NetworkingObjects::register_ordered_list_class<std::string>(*netObjectTypeList);
-    NetworkingObjects::register_generic_serialized_class<Bookmark>(*netObjectTypeList);
-    NetworkingObjects::register_ordered_list_class<Bookmark>(*netObjectTypeList);
-    NetworkingObjects::register_generic_serialized_class<WorldGrid>(*netObjectTypeList);
-    NetworkingObjects::register_ordered_list_class<WorldGrid>(*netObjectTypeList);
-
     displayName = Random::get().alphanumeric_str(10);
 
     Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {

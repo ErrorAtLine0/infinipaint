@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
+#include "Helpers/Networking/NetLibrary.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 #include <cstddef>
@@ -136,6 +137,7 @@ void GridModifyTool::tool_update() {
                     selectionMode = 0;
                 break;
         }
+        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(grid);
     }
     else
         selectionMode = 0;

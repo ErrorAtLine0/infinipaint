@@ -1,4 +1,5 @@
 #pragma once
+#include "Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "UndoManager.hpp"
 #include "BookmarkManager.hpp"
@@ -36,6 +37,7 @@ class World {
 
         World(MainProgram& initMain, OpenWorldInfo& worldInfo);
 
+        std::shared_ptr<NetworkingObjects::NetObjManagerTypeList> netObjectTypeList;
         // NOTE: Keep at the very beginning so that it's destroyed last
         NetworkingObjects::NetObjManager netObjMan;
 
@@ -106,9 +108,12 @@ class World {
         uint64_t canvasScale = 0;
 
         bool setToDestroy = false;
+        NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
     private:
+        void init_net_obj_type_list();
 
         ClientPortionID get_max_id(ServerPortionID serverID);
+
 
         void init_client_callbacks();
         void set_name(const std::string& n);

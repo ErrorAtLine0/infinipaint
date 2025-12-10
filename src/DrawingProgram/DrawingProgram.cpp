@@ -20,7 +20,6 @@
 #include "../World.hpp"
 #include "../MainProgram.hpp"
 #include "Helpers/FileDownloader.hpp"
-#include "Helpers/NetworkingObjects/NetObjWeakPtr.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "LassoSelectTool.hpp"
 #include <Helpers/Logger.hpp>

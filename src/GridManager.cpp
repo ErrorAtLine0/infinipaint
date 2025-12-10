@@ -7,9 +7,11 @@
 #include <algorithm>
 
 GridManager::GridManager(World& w):
-    world(w) {
-    if(w.netObjMan.is_server())
-        grids = w.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
+    world(w) {}
+
+void GridManager::init() {
+    if(world.netObjMan.is_server())
+        grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
 }
 
 void GridManager::add_default_grid(const std::string& newName) {

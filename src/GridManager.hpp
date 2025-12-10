@@ -8,6 +8,7 @@ class World;
 class GridManager {
     public:
         GridManager(World& w);
+        void init();
 
         void add_default_grid(const std::string& newName);
 
