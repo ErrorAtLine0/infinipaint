@@ -69,3 +69,7 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 - Other tools: Rectangle, Circle, Eye dropper/color picker, Edit/cursor
 - Can copy/paste selected objects (Ctrl-C Ctrl-V). This can also be done between different files, as long as they're open in different tabs in the same window.
 - Any file can be placed on the canvas. Using the edit tool, you can download any file/image on the canvas to your computer. This can be used as a sort of file sharing mechanism in a collaborative canvas (should probably only use this for small files...)
+
+## Contribution
+
+Currently, I won't be accepting most pull requests. The program is at a stage where large parts of the code are constantly being rewritten, so unless it's something small and doesn't interfere with code I'm currently working on, I probably won't be merging it.
