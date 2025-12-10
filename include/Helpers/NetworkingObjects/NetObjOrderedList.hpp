@@ -16,23 +16,16 @@ namespace NetworkingObjects {
         ERASE_SINGLE
     };
 
-    template <typename T> class NetObjOrderedListObjectInfo {
-        public: 
-            NetObjOrderedListObjectInfo(const NetObjPtr<T>& initObj, uint32_t initPos, bool initSyncIgnore):
-                obj(initObj),
-                pos(initPos),
-                syncIgnore(initSyncIgnore)
-            {}
-            uint32_t get_pos() const { return pos; }
-            const NetObjPtr<T>& get_obj() const { return obj; }
-        private:
-            NetObjPtr<T> obj;
-            uint32_t pos;
-            bool syncIgnore;
-            template <typename S> friend class NetObjOrderedList;
-            template <typename S> friend class NetObjOrderedListServer;
-            template <typename S> friend class NetObjOrderedListClient;
-            template <typename S> friend void set_positions_for_object_info_vector(std::vector<std::shared_ptr<NetObjOrderedListObjectInfo<S>>>& v, uint32_t i);
+    template <typename T> struct NetObjOrderedListObjectInfo {
+        NetObjOrderedListObjectInfo(const NetObjPtr<T>& iObj, uint32_t iPos, bool iSyncIgnore):
+            obj(iObj),
+            pos(iPos),
+            syncIgnore(iSyncIgnore)
+        {}
+        NetObjOrderedListObjectInfo() = delete;
+        NetObjPtr<T> obj;
+        uint32_t pos;
+        bool syncIgnore;
     };
 
     template <typename T> using NetObjOrderedListObjectInfoPtr = std::shared_ptr<NetObjOrderedListObjectInfo<T>>;
@@ -51,29 +44,26 @@ namespace NetworkingObjects {
                 l->insert(l, l->size(), newObj);
                 return newObj;
             }
-            static NetObjPtr<T> push_back_and_send_create(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& newObj) {
+            static void push_back_and_send_create(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& newObj) {
                 l->insert(l, l->size(), newObj);
-                return newObj;
             }
-            static NetObjPtr<T> insert_and_send_create(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) {
+            static void insert_and_send_create(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) {
                 l->insert(l, posToInsertAt, newObj);
-                return newObj;
             }
-            static void erase(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) {
-                l->erase_by_index(l, indexToErase);
+            static NetObjPtr<T> erase(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) {
+                return l->erase_by_index(l, indexToErase);
             }
-            static void erase(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListObjectInfoPtr<T>& p) {
-                l->erase_by_index(l, p->pos);
+            static uint32_t erase(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& p) {
+                return l->erase_by_ptr(l, p);
             }
             virtual uint32_t size() const = 0;
-            virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const = 0;
-            virtual const NetObjOrderedListObjectInfoPtr<T>& info_at(uint32_t index) const = 0;
             virtual const NetObjPtr<T>& at(uint32_t index) const = 0;
             virtual bool empty() const = 0;
             virtual ~NetObjOrderedList() {}
         protected:
             virtual void insert(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjPtr<T>& newObj) = 0;
-            virtual void erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) = 0;
+            virtual NetObjPtr<T> erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) = 0;
+            virtual uint32_t erase_by_ptr(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& p) = 0;
             virtual void write_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) = 0;
             virtual void read_update(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
             virtual void read_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
@@ -95,12 +85,6 @@ namespace NetworkingObjects {
             NetObjOrderedListServer() {}
             virtual uint32_t size() const override {
                 return data.size();
-            }
-            virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const override {
-                return data;
-            }
-            virtual const NetObjOrderedListObjectInfoPtr<T>& info_at(uint32_t index) const override {
-                return data[index];
             }
             virtual const NetObjPtr<T>& at(uint32_t index) const override {
                 return data[index]->obj;
@@ -137,17 +121,34 @@ namespace NetworkingObjects {
                 });
                 set_positions_for_object_info_vector<T>(data, actualPosToInsertAt);
             }
-            virtual void erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
+            virtual NetObjPtr<T> erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
                 if(data.empty())
-                    return;
+                    return {};
                 indexToErase = std::min<uint32_t>(indexToErase, data.size() - 1);
                 l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [indexToErase](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_StoC::ERASE_SINGLE, indexToErase);
                 });
                 NetObjID idToErase = data[indexToErase]->obj.get_net_id();
+                NetObjPtr<T> toRet = data[indexToErase]->obj;
                 data.erase(data.begin() + indexToErase);
                 idToDataMap.erase(idToErase);
                 set_positions_for_object_info_vector<T>(data, indexToErase);
+                return toRet;
+            }
+            virtual uint32_t erase_by_ptr(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& p) override {
+                if(data.empty())
+                    return std::numeric_limits<uint32_t>::max();
+                auto it = idToDataMap.find(p.get_net_id());
+                if(it == idToDataMap.end())
+                    return std::numeric_limits<uint32_t>::max();
+                uint32_t indexToErase = it->second->pos;
+                data.erase(data.begin() + indexToErase);
+                idToDataMap.erase(it);
+                l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [indexToErase](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                    a(ObjPtrOrderedListCommand_StoC::ERASE_SINGLE, indexToErase);
+                });
+                set_positions_for_object_info_vector<T>(data, indexToErase);
+                return indexToErase;
             }
             virtual void write_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) override {
                 a(static_cast<uint32_t>(data.size()));
@@ -192,12 +193,6 @@ namespace NetworkingObjects {
             virtual uint32_t size() const override {
                 return clientData.size();
             }
-            virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const override {
-                return clientData;
-            }
-            virtual const NetObjOrderedListObjectInfoPtr<T>& info_at(uint32_t index) const override {
-                return clientData[index];
-            }
             virtual const NetObjPtr<T>& at(uint32_t index) const override {
                 return clientData[index]->obj;
             }
@@ -236,11 +231,11 @@ namespace NetworkingObjects {
                 });
                 set_positions_for_object_info_vector<T>(clientData, actualPosToInsertAt);
             }
-            virtual void erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
+            virtual NetObjPtr<T> erase_by_index(const NetObjPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
                 if(clientData.empty())
-                    return;
+                    return {};
                 indexToErase = std::min<uint32_t>(indexToErase, clientData.size() - 1);
-                auto& p = clientData[indexToErase];
+                auto p = clientData[indexToErase];
                 l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&p](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::ERASE_SINGLE, p->obj.get_net_id());
                 });
@@ -249,6 +244,24 @@ namespace NetworkingObjects {
                 clientIdToDataMap.erase(p->obj.get_net_id());
                 clientData.erase(clientData.begin() + iToErase);
                 set_positions_for_object_info_vector<T>(clientData, iToErase);
+                return p->obj;
+            }
+            virtual uint32_t erase_by_ptr(const NetObjPtr<NetObjOrderedList<T>>& l, const NetObjPtr<T>& p) override {
+                if(clientData.empty())
+                    return std::numeric_limits<uint32_t>::max();
+                auto it = clientIdToDataMap.find(p.get_net_id());
+                if(it == clientIdToDataMap.end())
+                    return std::numeric_limits<uint32_t>::max();
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&p](const NetObjPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                    a(ObjPtrOrderedListCommand_CtoS::ERASE_SINGLE, p.get_net_id());
+                });
+                it->second->syncIgnore = true;
+                uint32_t iToErase = it->second->pos;
+                auto toRet = clientData[iToErase];
+                clientIdToDataMap.erase(it);
+                clientData.erase(clientData.begin() + iToErase);
+                set_positions_for_object_info_vector<T>(clientData, iToErase);
+                return iToErase;
             }
             virtual void write_constructor(const NetObjPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) override {
                 a(static_cast<uint32_t>(clientData.size()));
