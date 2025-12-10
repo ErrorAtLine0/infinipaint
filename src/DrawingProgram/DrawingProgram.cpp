@@ -388,6 +388,12 @@ void DrawingProgram::update() {
         switch_to_tool(DrawingProgramToolType::EYEDROPPER);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_SCREENSHOT).pressed)
         switch_to_tool(DrawingProgramToolType::SCREENSHOT);
+    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ZOOM).pressed)
+        switch_to_tool(DrawingProgramToolType::ZOOM);
+    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_LASSOSELECT).pressed)
+        switch_to_tool(DrawingProgramToolType::LASSOSELECT);
+    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_PAN).pressed)
+        switch_to_tool(DrawingProgramToolType::PAN);
 
     selection.update();
     drawTool->tool_update();
