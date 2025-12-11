@@ -1,7 +1,9 @@
 #pragma once
 #include "NetObjID.hpp"
 #include "NetObjManager.hpp"
-#include "NetObjPtr.decl.hpp"
+#include "NetObjOwnerPtr.decl.hpp"
+#include "NetObjTemporaryPtr.decl.hpp"
+#include <memory>
 
 namespace NetworkingObjects {
     template <typename T> class NetObjWeakPtr {
@@ -14,10 +16,22 @@ namespace NetworkingObjects {
                 objMan(other.objMan),
                 id(other.id)
             {}
-            NetObjWeakPtr(const NetObjPtr<T>& other):
+            NetObjWeakPtr(const NetObjOwnerPtr<T>& other):
                 objMan(other.objMan),
                 id(other.id)
             {}
+            NetObjWeakPtr(const NetObjTemporaryPtr<T>& other):
+                objMan(other.objMan),
+                id(other.id)
+            {}
+            NetObjWeakPtr& operator=(const NetObjOwnerPtr<T>& other) {
+                objMan = other.objMan;
+                id = other.id;
+            }
+            NetObjWeakPtr& operator=(const NetObjTemporaryPtr<T>& other) {
+                objMan = other.objMan;
+                id = other.id;
+            }
             NetObjWeakPtr& operator=(const NetObjWeakPtr& other) {
                 objMan = other.objMan;
                 id = other.id;
@@ -26,17 +40,15 @@ namespace NetworkingObjects {
                 return NetObjWeakPtr<S>(objMan, id);
             }
             bool expired() const {
-                if(!objMan)
-                    return true;
-                auto it = objMan->objectData.find(id);
-                return it == objMan->objectData.end();
+                return !objMan || objMan->objectData.contains(id);
             }
-            NetObjPtr<T> lock() const {
+            NetObjTemporaryPtr<T> lock() const {
+                if(!objMan)
+                    return NetObjTemporaryPtr<T>();
                 auto it = objMan->objectData.find(id);
                 if(it == objMan->objectData.end())
-                    return NetObjPtr<T>();
-                else
-                    return NetObjPtr<T>(objMan, id, std::static_pointer_cast<T>(it->second.p));
+                    return NetObjTemporaryPtr<T>();
+                return NetObjTemporaryPtr<T>(objMan, id, static_cast<T*>(it->second.p));
             }
             NetObjManager* get_obj_man() const {
                 return objMan;
@@ -56,7 +68,6 @@ namespace NetworkingObjects {
                 id(initID)
             {}
 
-            template <typename S> friend class NetObjPtr;
             NetObjManager* objMan;
             NetObjID id;
     };

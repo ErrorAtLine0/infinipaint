@@ -21,32 +21,13 @@ void GridManager::add_default_grid(const std::string& newName) {
         g.color = color_mul_alpha(convert_vec4<Vector4f>(world.canvasTheme.toolFrontColor), 0.4f);
         g.size = world.drawData.cam.c.inverseScale * WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
         g.offset = world.drawData.cam.c.pos + world.drawData.cam.c.dir_from_space(world.main.window.size.cast<float>() * 0.5f);
-        NetworkingObjects::NetObjPtr<WorldGrid> gridPtr = grids->emplace_back_direct(grids, g);
-
-        uint32_t pos = grids->size() - 1;
-        world.undo.push({[&grids = grids, gridPtr](){
-            grids->erase(grids, gridPtr);
-            return true;
-        },
-        [&grids = grids, gridPtr, pos]() {
-            grids->insert_and_send_create(grids, pos, gridPtr);
-            return true;
-        }});
+        grids->emplace_back_direct(grids, g);
     }
 }
 
 void GridManager::remove_grid(uint32_t indexToRemove) {
-    if(grids) {
-        NetworkingObjects::NetObjPtr<WorldGrid> gridPtr = grids->erase(grids, indexToRemove);
-        world.undo.push({[&grids = grids, gridPtr, indexToRemove]() {
-            grids->insert_and_send_create(grids, indexToRemove, gridPtr);
-            return true;
-        },
-        [&grids = grids, gridPtr](){
-            grids->erase(grids, gridPtr);
-            return true;
-        }});
-    }
+    if(grids)
+        grids->erase(grids, indexToRemove);
 }
 
 void GridManager::draw_back(SkCanvas* canvas, const DrawData& drawData) {

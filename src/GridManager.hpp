@@ -1,7 +1,7 @@
 #pragma once
-#include "Helpers/NetworkingObjects/NetObjPtr.decl.hpp"
 #include "WorldGrid.hpp"
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
+#include <Helpers/NetworkingObjects/NetObjOwnerPtr.hpp>
 
 class World;
 
@@ -33,6 +33,6 @@ class GridManager {
         void draw_coordinates(SkCanvas* canvas, const DrawData& drawData);
         void scale_up(const WorldScalar& scaleUpAmount);
 
-        NetworkingObjects::NetObjPtr<NetworkingObjects::NetObjOrderedList<WorldGrid>> grids;
+        NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<WorldGrid>> grids;
         World& world;
 };

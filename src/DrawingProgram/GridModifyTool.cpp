@@ -3,6 +3,7 @@
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
+#include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 #include <cstddef>
@@ -14,10 +15,11 @@ GridModifyTool::GridModifyTool(DrawingProgram& initDrawP):
 {
 }
 
-void GridModifyTool::set_grid(const NetObjPtr<WorldGrid>& newGrid) {
+void GridModifyTool::set_grid(const NetObjWeakPtr<WorldGrid>& newGrid) {
     grid = newGrid;
-    if(drawP.world.gridMan.grids->contains(grid)) {
-        WorldGrid& g = *grid;
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock) {
+        WorldGrid& g = *gLock;
         oldGrid = g;
         CoordSpaceHelper newCam;
         newCam.inverseScale = g.size / WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
@@ -35,8 +37,9 @@ void GridModifyTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Grid modify tool");
     t.gui.text_label_centered("Edit Grid");
-    if(drawP.world.gridMan.grids->contains(grid)) {
-        WorldGrid& g = *grid;
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock) {
+        WorldGrid& g = *gLock;
         t.gui.input_text_field("grid name", "Name", &g.name);
         t.gui.checkbox_field("Visible", "Visible", &g.visible);
         t.gui.checkbox_field("Display in Front", "Display in front of canvas", &g.displayInFront);
@@ -86,8 +89,9 @@ bool GridModifyTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 void GridModifyTool::tool_update() {
-    if(drawP.world.gridMan.grids->contains(grid)) {
-        WorldGrid& g = *grid;
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock) {
+        WorldGrid& g = *gLock;
         switch(selectionMode) {
             case 0:
                 if(drawP.controls.leftClick) {
@@ -137,7 +141,7 @@ void GridModifyTool::tool_update() {
                     selectionMode = 0;
                 break;
         }
-        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(grid, false);
+        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(gLock, false);
     }
     else
         selectionMode = 0;
@@ -148,8 +152,9 @@ bool GridModifyTool::prevent_undo_or_redo() {
 }
 
 void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(drawP.world.gridMan.grids->contains(grid)) {
-        WorldGrid& g = *grid;
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock) {
+        WorldGrid& g = *gLock;
         if(g.bounds.has_value()) {
             const auto& b = g.bounds.value();
             Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
@@ -180,5 +185,7 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {
-    drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(grid, true);
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock)
+        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(gLock, true);
 }

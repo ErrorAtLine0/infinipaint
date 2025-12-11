@@ -12,7 +12,8 @@
 #include "../Networking/NetLibrary.hpp"
 #include "Helpers/NetworkingObjects/NetObjID.hpp"
 #include "NetObjManagerTypeList.hpp"
-#include "NetObjPtr.decl.hpp"
+#include "NetObjOwnerPtr.decl.hpp"
+#include "NetObjTemporaryPtr.decl.hpp"
 #include "../Networking/NetServer.hpp"
 
 namespace NetworkingObjects {
@@ -23,14 +24,17 @@ namespace NetworkingObjects {
             void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID);
             void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID);
             bool is_server() const;
-            template <typename T> NetObjPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
+            template <typename T> NetObjOwnerPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
                 NetObjID id;
                 a(id);
-                NetObjPtr<T> newPtr = make_obj_with_id_might_already_exist<T>(id);
-                typeList->get_type_index_data<T>(isServer).readConstructorFunc(newPtr.template cast<void>(), a, clientReceivedFrom);
+                auto it = objectData.find(id);
+                if(it != objectData.end())
+                    throw std::runtime_error("[NetObjManager::read_create_message] Attempted to create an object with a used ID");
+                NetObjOwnerPtr<T> newPtr = emplace_raw_ptr(id, typeList->get_type_index_data<T>(isServer).allocatorFunc());
+                typeList->get_type_index_data<T>(isServer).readConstructorFunc(newPtr, a, clientReceivedFrom);
                 return newPtr;
             }
-            template <typename T> NetObjPtr<T> read_get_obj_from_message(cereal::PortableBinaryInputArchive& a) {
+            template <typename T> NetObjTemporaryPtr<T> read_get_obj_ref_from_message(cereal::PortableBinaryInputArchive& a) {
                 NetObjID id;
                 a(id);
                 auto it = objectData.find(id);
@@ -38,42 +42,96 @@ namespace NetworkingObjects {
                     return NetObjPtr<T>();
                 return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
-            template <typename T> NetObjPtr<T> make_obj() {
-                return emplace_shared_ptr<T>(NetObjID::random_gen(), std::static_pointer_cast<T>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
+            template <typename T> NetObjOwnerPtr<T> make_obj() {
+                return emplace_raw_ptr<T>(NetObjID::random_gen(), typeList->get_type_index_data<T>(isServer).allocatorFunc());
             }
             // Don't use this function unless you're sure that class T isn't a base class
-            template <typename T, typename... Args> NetObjPtr<T> make_obj_direct(Args&&... items) {
-                return emplace_shared_ptr<T>(NetObjID::random_gen(), std::make_shared<T>(items...));
+            template <typename T, typename... Args> NetObjOwnerPtr<T> make_obj_direct(Args&&... items) {
+                return emplace_raw_ptr<T>(NetObjID::random_gen(), new T(items...));
             }
-            template <typename T> NetObjPtr<T> obj_from_ptr(T* p) {
-                return emplace_shared_ptr<T>(NetObjID::random_gen(), std::shared_ptr<T>(p));
+            template <typename T> NetObjOwnerPtr<T> obj_from_ptr(T* p) {
+                return emplace_raw_ptr<T>(NetObjID::random_gen(), p);
             }
-            template <typename T> NetObjPtr<T> get_obj_from_id(NetObjID id) {
+            template <typename T> NetObjOwnerPtr<T> get_obj_ref_from_id(NetObjID id) {
                 auto it = objectData.find(id);
                 if(it == objectData.end())
                     throw std::runtime_error("[NetObjManager::get_obj_from_id] ID doesn't exist");
                 return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
         private:
-            template <typename T> NetObjPtr<T> make_obj_with_id_might_already_exist(NetObjID id) {
-                auto alreadyExistsIt = objectData.find(id);
-                if(alreadyExistsIt != objectData.end())
-                    return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(alreadyExistsIt->second.p));
-                return emplace_shared_ptr<T>(id, std::static_pointer_cast<T>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
+            template <typename T> NetObjOwnerPtr<T> emplace_raw_ptr(NetObjID id, T* rawPtr) {
+                if(!objectData.emplace(id, SingleObjectData{.netTypeID = typeList->get_type_index_data<T>(isServer).netTypeID, .p = rawPtr}).second)
+                    throw std::runtime_error("[NetObjManager::emplace_raw_ptr] ID Collision");
+                return NetObjOwnerPtr<T>(this, id, rawPtr);
             }
 
-            template <typename T> NetObjPtr<T> emplace_shared_ptr(NetObjID id, const std::shared_ptr<T>& sharedPtr) {
-                if(!objectData.emplace(id, SingleObjectData{.netTypeID = typeList->get_type_index_data<T>(isServer).netTypeID, .p = std::static_pointer_cast<void>(sharedPtr)}).second)
-                    throw std::runtime_error("[NetObjManager::emplace_shared_ptr] ID Collision");
-                return NetObjPtr<T>(this, id, sharedPtr);
+            template <typename T> static void send_update_to_all(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                if(ptr.get_obj_man()->isServer)
+                    NetObjManager::send_server_update_to_all_clients(ptr, channel, sendUpdateFunc);
+                else
+                    NetObjManager::send_client_update(ptr, channel, sendUpdateFunc);
             }
 
-            template <typename T> friend class NetObjPtr;
+            template <typename T> static void send_client_update(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                if(ptr.get_obj_man()->client && !ptr.get_obj_man()->client->is_disconnected()) {
+                    auto ss(std::make_shared<std::stringstream>());
+                    {
+                        cereal::PortableBinaryOutputArchive m(*ss);
+                        m(ptr.get_obj_man()->updateCommandID, ptr.get_net_id());
+                        sendUpdateFunc(ptr, m);
+                    }
+                    ptr.get_obj_man()->client->send_string_stream_to_server(channel, ss);
+                }
+            }
+
+            template <typename T> static void send_server_update_to_client(const NetObjTemporaryPtr<T>& ptr, const std::shared_ptr<NetServer::ClientData>& clientToSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                if(ptr.get_obj_man()->server && !ptr.get_obj_man()->server->is_disconnected()) {
+                    auto ss(std::make_shared<std::stringstream>());
+                    {
+                        cereal::PortableBinaryOutputArchive m(*ss);
+                        m(ptr.get_obj_man()->updateCommandID, ptr.get_net_id());
+                        sendUpdateFunc(ptr, m);
+                    }
+                    ptr.get_obj_man()->server->send_string_stream_to_client(clientToSendTo, channel, ss);
+                }
+            }
+
+            template <typename T> static void send_server_update_to_all_clients_except(const NetObjTemporaryPtr<T>& ptr, const std::shared_ptr<NetServer::ClientData>& clientToNotSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                if(ptr.get_obj_man()->server && !ptr.get_obj_man()->server->is_disconnected()) {
+                    auto ss(std::make_shared<std::stringstream>());
+                    {
+                        cereal::PortableBinaryOutputArchive m(*ss);
+                        m(ptr.get_obj_man()->updateCommandID, ptr.get_net_id());
+                        sendUpdateFunc(ptr, m);
+                    }
+                    ptr.get_obj_man()->server->send_string_stream_to_all_clients_except(clientToNotSendTo, channel, ss);
+                }
+            }
+
+            template <typename T> static void send_server_update_to_all_clients(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                if(ptr.get_obj_man()->server && !ptr.get_obj_man()->server->is_disconnected()) {
+                    auto ss(std::make_shared<std::stringstream>());
+                    {
+                        cereal::PortableBinaryOutputArchive m(*ss);
+                        m(ptr.get_obj_man()->updateCommandID, ptr.get_net_id());
+                        sendUpdateFunc(ptr, m);
+                    }
+                    ptr.get_obj_man()->server->send_string_stream_to_all_clients(channel, ss);
+                }
+            }
+
+            template <typename T> static void write_create_message(const NetObjTemporaryPtr<T>& ptr, cereal::PortableBinaryOutputArchive& a) {
+                a(ptr.get_obj_man()->id);
+                ptr.get_obj_man()->typeList->template get_type_index_data<T>(ptr.get_obj_man()->isServer).writeConstructorFunc(ptr, a);
+            }
+
+            template <typename T> friend class NetObjOwnerPtr;
+            template <typename T> friend class NetObjTemporaryPtr;
             template <typename T> friend class NetObjWeakPtr;
 
             struct SingleObjectData {
                 NetTypeIDType netTypeID;
-                std::shared_ptr<void> p;
+                void* p;
             };
 
             bool isServer;

@@ -41,7 +41,7 @@ class BookmarkManager {
             }
         }
 
-        NetworkingObjects::NetObjPtr<NetworkingObjects::NetObjOrderedList<Bookmark>> bookmarks;
+        NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<Bookmark>> bookmarks;
     private:
         World& world;
 };

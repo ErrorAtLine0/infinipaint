@@ -38,8 +38,6 @@
 #endif
 
 #include <Helpers/Logger.hpp>
-#include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
-#include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 
 MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),

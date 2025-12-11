@@ -23,32 +23,15 @@ void BookmarkManager::init() {
 }
 
 void BookmarkManager::add_bookmark(const std::string& name) {
-    NetworkingObjects::NetObjPtr<Bookmark> bookmarkPtr = bookmarks->emplace_back_direct(bookmarks, Bookmark{name, world.drawData.cam.c, world.main.window.size.cast<int32_t>()});
-    uint32_t pos = bookmarks->size() - 1;
-    world.undo.push({[&bookmarks = bookmarks, bookmarkPtr](){
-        bookmarks->erase(bookmarks, bookmarkPtr);
-        return true;
-    },
-    [&bookmarks = bookmarks, bookmarkPtr, pos]() {
-        bookmarks->insert_and_send_create(bookmarks, pos, bookmarkPtr);
-        return true;
-    }});
+    bookmarks->emplace_back_direct(bookmarks, Bookmark{name, world.drawData.cam.c, world.main.window.size.cast<int32_t>()});
 }
 
 void BookmarkManager::remove_bookmark(uint32_t bookmarkIndex) {
-    NetworkingObjects::NetObjPtr<Bookmark> bookmarkPtr = bookmarks->erase(bookmarks, bookmarkIndex);
-    world.undo.push({[&bookmarks = bookmarks, bookmarkPtr, bookmarkIndex]() {
-        bookmarks->insert_and_send_create(bookmarks, bookmarkIndex, bookmarkPtr);
-        return true;
-    },
-    [&bookmarks = bookmarks, bookmarkPtr](){
-        bookmarks->erase(bookmarks, bookmarkPtr);
-        return true;
-    }});
+    bookmarks->erase(bookmarks, bookmarkIndex);
 }
 
 void BookmarkManager::jump_to_bookmark(uint32_t bookmarkIndex) {
-    const NetworkingObjects::NetObjPtr<Bookmark>& b = bookmarks->at(bookmarkIndex);
+    auto& b = bookmarks->at(bookmarkIndex);
     world.drawData.cam.smooth_move_to(world, b->coords, b->windowSize.cast<float>());
 }
 

@@ -1,6 +1,6 @@
 #pragma once
-#include "Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp"
-#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
+#include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
+#include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include "UndoManager.hpp"
 #include "BookmarkManager.hpp"
 #include "ResourceManager.hpp"

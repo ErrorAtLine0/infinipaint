@@ -283,7 +283,7 @@ void DrawingProgram::tool_options_gui() {
     }
 }
 
-void DrawingProgram::modify_grid(const NetworkingObjects::NetObjPtr<WorldGrid>& gridToModify) {
+void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify) {
     std::unique_ptr<GridModifyTool> newTool(std::make_unique<GridModifyTool>(*this));
     newTool->set_grid(gridToModify);
     switch_to_tool_ptr(std::move(newTool));
