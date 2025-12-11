@@ -27,14 +27,17 @@ namespace NetworkingObjects {
             NetObjWeakPtr& operator=(const NetObjOwnerPtr<T>& other) {
                 objMan = other.objMan;
                 id = other.id;
+                return *this;
             }
             NetObjWeakPtr& operator=(const NetObjTemporaryPtr<T>& other) {
                 objMan = other.objMan;
                 id = other.id;
+                return *this;
             }
             NetObjWeakPtr& operator=(const NetObjWeakPtr& other) {
                 objMan = other.objMan;
                 id = other.id;
+                return *this;
             }
             template <typename S> NetObjWeakPtr<S> cast() const {
                 return NetObjWeakPtr<S>(objMan, id);

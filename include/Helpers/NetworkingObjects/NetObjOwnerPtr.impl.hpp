@@ -30,6 +30,7 @@ namespace NetworkingObjects {
         rawPtr = other.rawPtr;
         other.objMan = nullptr;
         other.rawPtr = nullptr;
+        return *this;
     }
 
     template <typename T> NetObjOwnerPtr<T>::~NetObjOwnerPtr() {
@@ -69,26 +70,26 @@ namespace NetworkingObjects {
     }
 
     template <typename T> void NetObjOwnerPtr<T>::send_client_update(const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
-        NetObjManager::send_client_update(*this, channel, sendUpdateFunc);
+        NetObjManager::send_client_update(NetObjTemporaryPtr<T>(*this), channel, sendUpdateFunc);
     }
 
     template <typename T> void NetObjOwnerPtr<T>::send_server_update_to_all_clients(const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
-        NetObjManager::send_server_update_to_all_clients(*this, channel, sendUpdateFunc);
+        NetObjManager::send_server_update_to_all_clients(NetObjTemporaryPtr<T>(*this), channel, sendUpdateFunc);
     }
 
     template <typename T> void NetObjOwnerPtr<T>::send_server_update_to_client(const std::shared_ptr<NetServer::ClientData>& clientToSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
-        NetObjManager::send_server_update_to_client(*this, clientToSendTo, channel, sendUpdateFunc);
+        NetObjManager::send_server_update_to_client(NetObjTemporaryPtr<T>(*this), clientToSendTo, channel, sendUpdateFunc);
     }
     template <typename T> void NetObjOwnerPtr<T>::send_server_update_to_all_clients_except(const std::shared_ptr<NetServer::ClientData>& clientToNotSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
-        NetObjManager::send_server_update_to_all_clients_except(*this, clientToNotSendTo, channel, sendUpdateFunc);
+        NetObjManager::send_server_update_to_all_clients_except(NetObjTemporaryPtr<T>(*this), clientToNotSendTo, channel, sendUpdateFunc);
     }
 
     template <typename T> void NetObjOwnerPtr<T>::send_update_to_all(const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
-        NetObjManager::send_update_to_all(*this, channel, sendUpdateFunc);
+        NetObjManager::send_update_to_all(NetObjTemporaryPtr<T>(*this), channel, sendUpdateFunc);
     }
 
     template <typename T> void NetObjOwnerPtr<T>::write_create_message(cereal::PortableBinaryOutputArchive& a) const {
-        NetObjManager::write_create_message(*this, a);
+        NetObjManager::write_create_message(NetObjTemporaryPtr<T>(*this), a);
     }
 
     template <typename T> NetObjOwnerPtr<T>::NetObjOwnerPtr(NetObjManager* initObjMan, NetObjID initID, T* initRawPtr):

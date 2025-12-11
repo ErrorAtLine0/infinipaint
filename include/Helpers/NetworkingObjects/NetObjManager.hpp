@@ -30,8 +30,8 @@ namespace NetworkingObjects {
                 auto it = objectData.find(id);
                 if(it != objectData.end())
                     throw std::runtime_error("[NetObjManager::read_create_message] Attempted to create an object with a used ID");
-                NetObjOwnerPtr<T> newPtr = emplace_raw_ptr(id, typeList->get_type_index_data<T>(isServer).allocatorFunc());
-                typeList->get_type_index_data<T>(isServer).readConstructorFunc(newPtr, a, clientReceivedFrom);
+                NetObjOwnerPtr<T> newPtr = emplace_raw_ptr(id, static_cast<T*>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
+                typeList->get_type_index_data<T>(isServer).readConstructorFunc(NetObjTemporaryPtr(newPtr).template cast<void>(), a, clientReceivedFrom);
                 return newPtr;
             }
             template <typename T> NetObjTemporaryPtr<T> read_get_obj_ref_from_message(cereal::PortableBinaryInputArchive& a) {
@@ -39,11 +39,11 @@ namespace NetworkingObjects {
                 a(id);
                 auto it = objectData.find(id);
                 if(it == objectData.end())
-                    return NetObjPtr<T>();
-                return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
+                    return NetObjTemporaryPtr<T>();
+                return NetObjTemporaryPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
             template <typename T> NetObjOwnerPtr<T> make_obj() {
-                return emplace_raw_ptr<T>(NetObjID::random_gen(), typeList->get_type_index_data<T>(isServer).allocatorFunc());
+                return emplace_raw_ptr<T>(NetObjID::random_gen(), static_cast<T*>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
             }
             // Don't use this function unless you're sure that class T isn't a base class
             template <typename T, typename... Args> NetObjOwnerPtr<T> make_obj_direct(Args&&... items) {
@@ -56,7 +56,7 @@ namespace NetworkingObjects {
                 auto it = objectData.find(id);
                 if(it == objectData.end())
                     throw std::runtime_error("[NetObjManager::get_obj_from_id] ID doesn't exist");
-                return NetObjPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
+                return NetObjOwnerPtr<T>(this, id, static_cast<T*>(it->second.p));
             }
         private:
             template <typename T> NetObjOwnerPtr<T> emplace_raw_ptr(NetObjID id, T* rawPtr) {
@@ -121,8 +121,8 @@ namespace NetworkingObjects {
             }
 
             template <typename T> static void write_create_message(const NetObjTemporaryPtr<T>& ptr, cereal::PortableBinaryOutputArchive& a) {
-                a(ptr.get_obj_man()->id);
-                ptr.get_obj_man()->typeList->template get_type_index_data<T>(ptr.get_obj_man()->isServer).writeConstructorFunc(ptr, a);
+                a(ptr.get_net_id());
+                ptr.get_obj_man()->typeList->template get_type_index_data<T>(ptr.get_obj_man()->isServer).writeConstructorFunc(ptr.template cast<void>(), a);
             }
 
             template <typename T> friend class NetObjOwnerPtr;

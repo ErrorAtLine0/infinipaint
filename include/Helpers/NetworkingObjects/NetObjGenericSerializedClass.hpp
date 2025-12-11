@@ -12,7 +12,7 @@ namespace NetworkingObjects {
         a(*o);
     }
 
-    template <typename T> void default_serialize_read_constructor_func(NetObjManager*, const std::shared_ptr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
+    template <typename T> void default_serialize_read_constructor_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
         a(*o);
     }
 
@@ -32,7 +32,7 @@ namespace NetworkingObjects {
         });
     }
 
-    template <typename T> void generic_serialized_class_send_update_to_all(const NetworkingObjects::NetObjTemporaryPtr<T>& o) {
+    template <typename T> void generic_serialized_class_send_update_to_all(const NetObjTemporaryPtr<T>& o) {
         o.send_update_to_all(RELIABLE_COMMAND_CHANNEL, default_serialize_write_func<T>);
     }
 }

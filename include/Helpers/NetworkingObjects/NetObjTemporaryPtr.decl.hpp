@@ -30,6 +30,7 @@ namespace NetworkingObjects {
         private:
             friend class NetObjManager;
             template <typename S> friend class NetObjWeakPtr;
+            template <typename S> friend class NetObjTemporaryPtr;
             NetObjTemporaryPtr(NetObjManager* initObjMan, NetObjID initID, T* initRawPtr);
 
             NetObjManager* objMan;

@@ -68,7 +68,7 @@ namespace NetworkingObjects {
             virtual uint32_t erase_by_ptr(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjTemporaryPtr<T>& p) = 0;
             virtual void write_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) = 0;
             virtual void read_update(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
-            virtual void read_constructor(NetObjManager* objMan, const std::shared_ptr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
+            virtual void read_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
         private:
             template <typename S> friend void register_ordered_list_class(NetObjManagerTypeList& t);
             static void write_constructor_func(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) {
@@ -144,13 +144,13 @@ namespace NetworkingObjects {
                 for(size_t i = 0; i < data.size(); i++)
                     data[i]->obj.write_create_message(a);
             }
-            virtual void read_constructor(NetObjManager* objMan, const std::shared_ptr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
+            virtual void read_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
                 uint32_t constructedSize;
                 a(constructedSize);
                 data.clear();
                 idToDataMap.clear();
                 for(uint32_t i = 0; i < constructedSize; i++) {
-                    data.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(objMan->template read_create_message<T>(a, c), static_cast<uint32_t>(data.size())));
+                    data.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, c), static_cast<uint32_t>(data.size())));
                     idToDataMap.emplace(data.back()->obj.get_net_id(), data.back());
                 }
                 // Dont send the object data to all clients in the constructor, as the function that called read_create_message is also the one that will decide where to send the data of the constructed object
@@ -239,15 +239,15 @@ namespace NetworkingObjects {
                 for(size_t i = 0; i < clientData.size(); i++)
                     clientData[i]->obj.write_create_message(a);
             }
-            virtual void read_constructor(NetObjManager* objMan, const std::shared_ptr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
+            virtual void read_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
                 uint32_t constructedSize;
                 a(constructedSize);
                 clientData.clear();
                 serverData.clear();
                 clientIdToDataMap.clear();
                 for(uint32_t i = 0; i < constructedSize; i++) {
-                    clientData.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(objMan->template read_create_message<T>(a, nullptr), static_cast<uint32_t>(serverData.size())));
-                    clientIdToDataMap.emplace_back(clientData.back()->obj.get_net_id(), serverData.back());
+                    clientData.emplace_back(std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, nullptr), static_cast<uint32_t>(serverData.size())));
+                    clientIdToDataMap.emplace(clientData.back()->obj.get_net_id(), clientData.back());
                     serverData.emplace_back(clientData.back()->obj.get_net_id());
                 }
             }
@@ -261,7 +261,7 @@ namespace NetworkingObjects {
                         a(newServerPos, newObjID);
                         serverData.insert(serverData.begin() + newServerPos, newObjID);
                         clientJustInsertedSyncIgnore.erase(newObjID);
-                        sync();
+                        sync(std::unordered_map<NetObjID, NetObjOrderedListObjectInfoPtr<T>>());
                         break;
                     }
                     case ObjPtrOrderedListCommand_StoC::INSERT_SINGLE_CONSTRUCT: {
@@ -270,7 +270,10 @@ namespace NetworkingObjects {
                         auto objInfoToInsert = std::make_shared<NetObjOrderedListObjectInfo<T>>(l.get_obj_man()->template read_create_message<T>(a, nullptr), 0);
                         serverData.insert(serverData.begin() + newServerPos, objInfoToInsert->obj.get_net_id());
                         clientJustInsertedSyncIgnore.erase(objInfoToInsert->obj.get_net_id());
-                        sync();
+
+                        std::unordered_map<NetObjID, NetObjOrderedListObjectInfoPtr<T>> serverNewObjects;
+                        serverNewObjects.emplace(objInfoToInsert->obj.get_net_id(), objInfoToInsert);
+                        sync(serverNewObjects);
                         break;
                     }
                     case ObjPtrOrderedListCommand_StoC::ERASE_SINGLE: {

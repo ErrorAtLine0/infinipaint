@@ -30,6 +30,7 @@ namespace NetworkingObjects {
             void write_create_message(cereal::PortableBinaryOutputArchive& a) const;
         private:
             friend class NetObjManager;
+            template <typename S> friend class NetObjWeakPtr;
             template <typename S> friend class NetObjTemporaryPtr;
 
             NetObjOwnerPtr(NetObjManager* initObjMan, NetObjID initID, T* initRawPtr);

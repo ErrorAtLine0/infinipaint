@@ -31,7 +31,7 @@ namespace NetworkingObjects {
         return *this;
     }
     template <typename T> template <typename S> NetObjTemporaryPtr<S> NetObjTemporaryPtr<T>::cast() const {
-        return NetObjPtr<S>(objMan, id, static_cast<S>(rawPtr));
+        return NetObjTemporaryPtr<S>(objMan, id, static_cast<S*>(rawPtr));
     }
 
     template <typename T> NetObjManager* NetObjTemporaryPtr<T>::get_obj_man() const {
