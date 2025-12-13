@@ -367,9 +367,6 @@ void BrushStrokeCanvasComponent::add_precheck_aabb_level(size_t level, const std
     }
 }
 
-void BrushStrokeCanvasComponent::update(DrawingProgram& drawP) {
-}
-
 bool BrushStrokeCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
     if(!SCollision::collide(checkAgainst, bounds))
         return false;

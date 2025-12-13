@@ -2,10 +2,7 @@
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkPathBuilder.h>
-
-#ifndef IS_SERVER
 #include "../DrawCollision.hpp"
-#endif
 
 CanvasComponent::CompType EllipseCanvasComponent::get_type() const {
     return CompType::ELLIPSE;
