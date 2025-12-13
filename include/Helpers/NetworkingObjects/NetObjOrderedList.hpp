@@ -81,7 +81,7 @@ namespace NetworkingObjects {
             typedef std::function<void(const NetObjOrderedListObjectInfoPtr<T>& objInfo)> InsertCallback;
             typedef std::function<void(const NetObjOrderedListObjectInfoPtr<T>& objInfo)> EraseCallback;
             typedef std::function<void(const NetObjOrderedListObjectInfoPtr<T>& objInfo, uint32_t oldPos)> MoveCallback;
-            typedef std::function<void()> PostCallback;
+            typedef std::function<void()> PostSyncCallback;
 
             void set_insert_callback(const InsertCallback& func) {
                 insertCallback = func;
@@ -91,6 +91,9 @@ namespace NetworkingObjects {
             }
             void set_move_callback(const MoveCallback& func) {
                 moveCallback = func;
+            }
+            void set_post_sync_callback(const PostSyncCallback& func) {
+                postSyncCallback = func;
             }
 
             virtual bool contains(const NetObjID& p) const = 0;
@@ -132,15 +135,15 @@ namespace NetworkingObjects {
             }
 
             void call_post_sync_callback() {
-                if(postCallback)
-                    postCallback();
+                if(postSyncCallback)
+                    postSyncCallback();
             }
 
         private:
             InsertCallback insertCallback;
             EraseCallback eraseCallback;
             MoveCallback moveCallback;
-            PostCallback postCallback;
+            PostSyncCallback postSyncCallback;
             template <typename S> friend void register_ordered_list_class(NetObjManager& t);
             static void write_constructor_func(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) {
                 l->write_constructor(l, a);
