@@ -6,7 +6,6 @@
 #include <type_traits>
 #include "NetObjTemporaryPtr.decl.hpp"
 #include "NetObjManager.hpp"
-#include "NetObjManagerTypeList.hpp"
 
 namespace NetworkingObjects {
     template <typename T> NetObjTemporaryPtr<T>::NetObjTemporaryPtr():

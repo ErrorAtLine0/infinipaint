@@ -37,7 +37,6 @@ class World {
 
         World(MainProgram& initMain, OpenWorldInfo& worldInfo);
 
-        std::shared_ptr<NetworkingObjects::NetObjManagerTypeList> netObjectTypeList;
         // NOTE: Keep at the very beginning so that it's destroyed last
         NetworkingObjects::NetObjManager netObjMan;
 

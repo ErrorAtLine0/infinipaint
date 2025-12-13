@@ -30,8 +30,7 @@
 #endif
 
 World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
-    netObjectTypeList(std::make_shared<NetworkingObjects::NetObjManagerTypeList>()),
-    netObjMan(netObjectTypeList, worldInfo.conType != CONNECTIONTYPE_CLIENT),
+    netObjMan(worldInfo.conType != CONNECTIONTYPE_CLIENT),
     main(initMain),
     rMan(*this),
     drawProg(*this),
@@ -79,10 +78,10 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
 }
 
 void World::init_net_obj_type_list() {
-    NetworkingObjects::register_generic_serialized_class<Bookmark>(*netObjectTypeList);
-    NetworkingObjects::register_ordered_list_class<Bookmark>(*netObjectTypeList);
-    delayedUpdateObjectManager.register_class<WorldGrid>(*netObjectTypeList);
-    NetworkingObjects::register_ordered_list_class<WorldGrid>(*netObjectTypeList);
+    NetworkingObjects::register_generic_serialized_class<Bookmark>(netObjMan);
+    NetworkingObjects::register_ordered_list_class<Bookmark>(netObjMan);
+    delayedUpdateObjectManager.register_class<WorldGrid>(netObjMan);
+    NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
 }
 
 void World::init_client_callbacks() {
@@ -395,8 +394,8 @@ void World::save_file(cereal::PortableBinaryOutputArchive& a) const {
     a(drawData.cam.c, main.window.size.cast<float>().eval());
     a(convert_vec3<Vector3f>(canvasTheme.backColor));
     drawProg.save_file(a);
-    a(bMan);
-    a(gridMan);
+    //a(bMan);
+    //a(gridMan);
     rMan.save_strip_unused_resources(a, drawProg.get_used_resources());
 }
 
@@ -419,9 +418,9 @@ void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber versi
 
     drawData.cam.smooth_move_to(*this, coordsToJumpTo, windowSizeToJumpTo, true);
     drawProg.load_file(a, version);
-    a(bMan);
-    if(version >= VersionNumber(0, 2, 0))
-        a(gridMan);
+    //a(bMan);
+    //if(version >= VersionNumber(0, 2, 0))
+    //    a(gridMan);
     a(rMan);
 }
 

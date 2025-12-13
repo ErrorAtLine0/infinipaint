@@ -39,38 +39,38 @@ namespace NetworkingObjects {
     template <typename T> class NetObjOrderedList {
         public:
             // Don't use this function unless you're sure that class T isn't a base class
-            template <typename ...Args> NetObjTemporaryPtr<T> emplace_back_direct(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, Args&&... items) {
+            template <typename ...Args> const NetObjOrderedListObjectInfoPtr<T>& emplace_back_direct(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, Args&&... items) {
                 NetObjOwnerPtr<T> newObj = l.get_obj_man()->template make_obj_direct<T>(items...);
-                NetObjTemporaryPtr<T> tempPtr(newObj);
-                l->insert(l, nullptr, l->size(), std::move(newObj));
-                return tempPtr;
+                return l->insert(l, nullptr, l->size(), std::move(newObj));
             }
-            static void push_back_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, T* newObj) {
-                l->insert(l, nullptr, l->size(), newObj);
+            static const NetObjOrderedListObjectInfoPtr<T>& push_back_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, T* newObj) {
+                NetObjOwnerPtr<T> newObjOwner = l.get_obj_man()->template make_obj<T>(newObj);
+                return l->insert(l, nullptr, l->size(), std::move(newObjOwner));
             }
-            static void insert_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, const NetObjTemporaryPtr<T>& newObj) {
-                l->insert(l, nullptr, posToInsertAt, newObj);
+            static const NetObjOrderedListObjectInfoPtr<T>& insert_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, T* newObj) {
+                NetObjOwnerPtr<T> newObjOwner = l.get_obj_man()->template make_obj<T>(newObj);
+                return l->insert(l, nullptr, posToInsertAt, std::move(newObjOwner));
             }
             static void erase(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) {
-                return l->erase_by_index(l, indexToErase);
+                l->erase_by_index(l, indexToErase);
             }
             static uint32_t erase(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjTemporaryPtr<T>& p) {
                 return l->erase_by_ptr(l, p);
             }
             virtual bool contains(const NetObjTemporaryPtr<T>& p) const = 0;
             virtual uint32_t size() const = 0;
-            virtual const NetObjOwnerPtr<T>& at(uint32_t index) const = 0;
+            virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const = 0;
             virtual bool empty() const = 0;
             virtual ~NetObjOrderedList() {}
         protected:
-            virtual void insert(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, uint32_t posToInsertAt, NetObjOwnerPtr<T> newObj) = 0;
+            virtual const NetObjOrderedListObjectInfoPtr<T>& insert(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, uint32_t posToInsertAt, NetObjOwnerPtr<T> newObj) = 0;
             virtual void erase_by_index(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) = 0;
             virtual uint32_t erase_by_ptr(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjTemporaryPtr<T>& p) = 0;
             virtual void write_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) = 0;
             virtual void read_update(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
             virtual void read_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
         private:
-            template <typename S> friend void register_ordered_list_class(NetObjManagerTypeList& t);
+            template <typename S> friend void register_ordered_list_class(NetObjManager& t);
             static void write_constructor_func(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) {
                 l->write_constructor(l, a);
             }
@@ -91,14 +91,14 @@ namespace NetworkingObjects {
             virtual uint32_t size() const override {
                 return data.size();
             }
-            virtual const NetObjOwnerPtr<T>& at(uint32_t index) const override {
-                return data[index]->obj;
+            virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const override {
+                return data[index];
             }
             virtual bool empty() const override {
                 return data.empty();
             }
         protected:
-            virtual void insert(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, uint32_t posToInsertAt, NetObjOwnerPtr<T> newObj) override {
+            virtual const NetObjOrderedListObjectInfoPtr<T>& insert(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, uint32_t posToInsertAt, NetObjOwnerPtr<T> newObj) override {
                 posToInsertAt = std::min<uint32_t>(posToInsertAt, data.size());
                 auto newObjInfoPtr = std::make_shared<NetObjOrderedListObjectInfo<T>>(std::move(newObj), 0);
                 data.insert(data.begin() + posToInsertAt, newObjInfoPtr);
@@ -111,6 +111,7 @@ namespace NetworkingObjects {
                     a(ObjPtrOrderedListCommand_StoC::INSERT_SINGLE_REFERENCE, posToInsertAt, newObjInfoPtr->obj.get_net_id());
                 });
                 set_positions_for_object_info_vector<T>(data, posToInsertAt);
+                return data[posToInsertAt];
             }
             virtual void erase_by_index(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
                 if(data.empty())
@@ -188,14 +189,14 @@ namespace NetworkingObjects {
             virtual uint32_t size() const override {
                 return clientData.size();
             }
-            virtual const NetObjOwnerPtr<T>& at(uint32_t index) const override {
-                return clientData[index]->obj;
+            virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const override {
+                return clientData[index];
             }
             virtual bool empty() const override {
                 return clientData.empty();
             }
         protected:
-            virtual void insert(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>&, uint32_t posToInsertAt, NetObjOwnerPtr<T> newObj) {
+            virtual const NetObjOrderedListObjectInfoPtr<T>& insert(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>&, uint32_t posToInsertAt, NetObjOwnerPtr<T> newObj) {
                 posToInsertAt = std::min<uint32_t>(posToInsertAt, clientData.size());
                 auto newObjInfoPtr = std::make_shared<NetObjOrderedListObjectInfo<T>>(std::move(newObj), 0);
                 clientData.insert(clientData.begin() + posToInsertAt, newObjInfoPtr);
@@ -206,6 +207,7 @@ namespace NetworkingObjects {
                     newObjInfoPtr->obj.write_create_message(a);
                 });
                 set_positions_for_object_info_vector<T>(clientData, posToInsertAt);
+                return clientData[posToInsertAt];
             }
             virtual void erase_by_index(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t indexToErase) override {
                 if(clientData.empty())
@@ -329,8 +331,8 @@ namespace NetworkingObjects {
             std::unordered_map<NetObjID, NetObjOrderedListObjectInfoPtr<T>> clientJustInsertedSyncIgnore;
     };
 
-    template <typename S> void register_ordered_list_class(NetObjManagerTypeList& t) {
-        t.register_class<NetObjOrderedList<S>, NetObjOrderedList<S>, NetObjOrderedListClient<S>, NetObjOrderedListServer<S>>({
+    template <typename S> void register_ordered_list_class(NetObjManager& objMan) {
+        objMan.register_class<NetObjOrderedList<S>, NetObjOrderedList<S>, NetObjOrderedListClient<S>, NetObjOrderedListServer<S>>({
             .writeConstructorFuncClient = NetObjOrderedList<S>::write_constructor_func,
             .readConstructorFuncClient = NetObjOrderedList<S>::read_constructor_func,
             .readUpdateFuncClient = NetObjOrderedList<S>::read_update_func,

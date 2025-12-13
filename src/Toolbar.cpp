@@ -713,7 +713,7 @@ void Toolbar::grid_menu(bool justOpened) {
             gui.text_label_centered("No grids yet...");
         uint32_t toDelete = std::numeric_limits<uint32_t>::max();
         gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.grids->size(), true, [&](size_t i, bool isListHovered) {
-            auto& grid = main.world->gridMan.grids->at(i);
+            auto& grid = main.world->gridMan.grids->at(i)->obj;
             bool selectedEntry = gridMenu.selectedGrid == i;
             CLAY_AUTO_ID({
                 .layout = {
@@ -767,7 +767,7 @@ void Toolbar::grid_menu(bool justOpened) {
             });
             if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
                 main.world->gridMan.add_default_grid(gridMenu.newName);
-                main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1));
+                main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
                 stop_displaying_grid_menu();
             }
         });
@@ -806,7 +806,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
             gui.text_label_centered("No bookmarks yet...");
         uint32_t toDelete = std::numeric_limits<uint32_t>::max();
         gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.bookmarks->size(), true, [&](size_t i, bool isListHovered) {
-            const Bookmark& bookmark = *main.world->bMan.bookmarks->at(i);
+            const Bookmark& bookmark = *main.world->bMan.bookmarks->at(i)->obj;
             bool selectedEntry = i == bookMenu.selectedBookmark;
             CLAY_AUTO_ID({
                 .layout = {
@@ -838,6 +838,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
                 }
                 if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
                     bookMenu.newName = bookmark.name;
+                    bookMenu.selectedBookmark = i;
                     if(io->mouse.leftClick >= 2)
                         main.world->bMan.jump_to_bookmark(i);
                 }

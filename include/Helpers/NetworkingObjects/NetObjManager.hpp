@@ -19,7 +19,7 @@
 namespace NetworkingObjects {
     class NetObjManager {
         public:
-            NetObjManager(std::shared_ptr<NetObjManagerTypeList> initTypeList, bool initIsServer);
+            NetObjManager(bool initIsServer);
             void read_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom);
             void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID);
             void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID);
@@ -30,8 +30,8 @@ namespace NetworkingObjects {
                 auto it = objectData.find(id);
                 if(it != objectData.end())
                     throw std::runtime_error("[NetObjManager::read_create_message] Attempted to create an object with a used ID");
-                NetObjOwnerPtr<T> newPtr = emplace_raw_ptr(id, static_cast<T*>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
-                typeList->get_type_index_data<T>(isServer).readConstructorFunc(NetObjTemporaryPtr(newPtr).template cast<void>(), a, clientReceivedFrom);
+                NetObjOwnerPtr<T> newPtr = emplace_raw_ptr(id, static_cast<T*>(typeList.get_type_index_data<T>(isServer).allocatorFunc()));
+                typeList.get_type_index_data<T>(isServer).readConstructorFunc(NetObjTemporaryPtr(newPtr).template cast<void>(), a, clientReceivedFrom);
                 return newPtr;
             }
             template <typename T> NetObjTemporaryPtr<T> read_get_obj_ref_from_message(cereal::PortableBinaryInputArchive& a) {
@@ -43,7 +43,7 @@ namespace NetworkingObjects {
                 return NetObjTemporaryPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
             template <typename T> NetObjOwnerPtr<T> make_obj() {
-                return emplace_raw_ptr<T>(NetObjID::random_gen(), static_cast<T*>(typeList->get_type_index_data<T>(isServer).allocatorFunc()));
+                return emplace_raw_ptr<T>(NetObjID::random_gen(), static_cast<T*>(typeList.get_type_index_data<T>(isServer).allocatorFunc()));
             }
             // Don't use this function unless you're sure that class T isn't a base class
             template <typename T, typename... Args> NetObjOwnerPtr<T> make_obj_direct(Args&&... items) {
@@ -58,9 +58,12 @@ namespace NetworkingObjects {
                     throw std::runtime_error("[NetObjManager::get_obj_from_id] ID doesn't exist");
                 return NetObjOwnerPtr<T>(this, id, static_cast<T*>(it->second.p));
             }
+            template <typename ClientT, typename ServerT, typename ClientAllocatedType, typename ServerAllocatedType> void register_class(const NetObjManagerTypeList::ServerClientClassFunctions<ClientT, ServerT>& funcs) {
+                typeList.register_class<ClientT, ServerT, ClientAllocatedType, ServerAllocatedType>(funcs);
+            }
         private:
             template <typename T> NetObjOwnerPtr<T> emplace_raw_ptr(NetObjID id, T* rawPtr) {
-                if(!objectData.emplace(id, SingleObjectData{.netTypeID = typeList->get_type_index_data<T>(isServer).netTypeID, .p = rawPtr}).second)
+                if(!objectData.emplace(id, SingleObjectData{.netTypeID = typeList.get_type_index_data<T>(isServer).netTypeID, .p = rawPtr}).second)
                     throw std::runtime_error("[NetObjManager::emplace_raw_ptr] ID Collision");
                 return NetObjOwnerPtr<T>(this, id, rawPtr);
             }
@@ -122,7 +125,7 @@ namespace NetworkingObjects {
 
             template <typename T> static void write_create_message(const NetObjTemporaryPtr<T>& ptr, cereal::PortableBinaryOutputArchive& a) {
                 a(ptr.get_net_id());
-                ptr.get_obj_man()->typeList->template get_type_index_data<T>(ptr.get_obj_man()->isServer).writeConstructorFunc(ptr.template cast<void>(), a);
+                ptr.get_obj_man()->typeList.template get_type_index_data<T>(ptr.get_obj_man()->isServer).writeConstructorFunc(ptr.template cast<void>(), a);
             }
 
             template <typename T> friend class NetObjOwnerPtr;
@@ -139,7 +142,7 @@ namespace NetworkingObjects {
             std::shared_ptr<NetServer> server;
             MessageCommandType updateCommandID;
             std::unordered_map<NetObjID, SingleObjectData> objectData;
-            std::shared_ptr<NetObjManagerTypeList> typeList;
+            NetObjManagerTypeList typeList;
             NetTypeIDType nextTypeID;
     };
 }

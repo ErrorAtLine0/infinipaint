@@ -20,8 +20,7 @@ class NetObjManagerTypeList {
         template <typename ClientT, typename ServerT, typename ClientAllocatedType, typename ServerAllocatedType> void register_class(const ServerClientClassFunctions<ClientT, ServerT>& funcs) {
             typeIndexFunctionsClient[std::type_index(typeid(ClientT*))] = TypeIndexFunctions {
                 .readConstructorFunc = [f = funcs.readConstructorFuncClient](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
-                    if(f)
-                        f(obj.cast<ClientT>(), message, c);
+                    f(obj.cast<ClientT>(), message, c);
                 },
                 .writeConstructorFunc = [f = funcs.writeConstructorFuncClient](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryOutputArchive& message) {
                     f(obj.cast<ClientT>(), message);
@@ -32,8 +31,7 @@ class NetObjManagerTypeList {
 
             typeIndexFunctionsServer[std::type_index(typeid(ServerT*))] = TypeIndexFunctions {
                 .readConstructorFunc = [f = funcs.readConstructorFuncServer](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
-                    if(f)
-                        f(obj.cast<ServerT>(), message, c);
+                    f(obj.cast<ServerT>(), message, c);
                 },
                 .writeConstructorFunc = [f = funcs.writeConstructorFuncServer](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryOutputArchive& message) {
                     f(obj.cast<ServerT>(), message);
@@ -44,15 +42,13 @@ class NetObjManagerTypeList {
 
             netTypeIDFunctionsClient[netTypeID] = NetTypeIDFunctions {
                 .readUpdateFunc = [f = funcs.readUpdateFuncClient](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
-                    if(f)
-                        f(obj.cast<ClientT>(), message, c);
+                    f(obj.cast<ClientT>(), message, c);
                 }
             };
 
             netTypeIDFunctionsServer[netTypeID] = NetTypeIDFunctions {
                 .readUpdateFunc = [f = funcs.readUpdateFuncServer](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
-                    if(f)
-                        f(obj.cast<ServerT>(), message, c);
+                    f(obj.cast<ServerT>(), message, c);
                 }
             };
 

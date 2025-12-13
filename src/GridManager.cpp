@@ -33,8 +33,9 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
 void GridManager::draw_back(SkCanvas* canvas, const DrawData& drawData) {
     if(grids) {
         for(uint32_t i = 0; i < grids->size(); i++) {
-            if(!grids->at(i)->displayInFront)
-                grids->at(i)->draw(*this, canvas, drawData);
+            auto& g = grids->at(i)->obj;
+            if(!g->displayInFront)
+                g->draw(*this, canvas, drawData);
         }
     }
 }
@@ -42,8 +43,9 @@ void GridManager::draw_back(SkCanvas* canvas, const DrawData& drawData) {
 void GridManager::draw_front(SkCanvas* canvas, const DrawData& drawData) {
     if(grids) {
         for(uint32_t i = 0; i < grids->size(); i++) {
-            if(grids->at(i)->displayInFront)
-                grids->at(i)->draw(*this, canvas, drawData);
+            auto& g = grids->at(i)->obj;
+            if(g->displayInFront)
+                g->draw(*this, canvas, drawData);
         }
     }
 }
@@ -52,14 +54,14 @@ void GridManager::draw_coordinates(SkCanvas* canvas, const DrawData& drawData) {
     if(grids) {
         Vector2f axisOffset{0.0f, 0.0f};
         for(uint32_t i = 0; i < grids->size(); i++) {
-            auto& g = grids->at(i);
+            auto& g = grids->at(i)->obj;
             if(g->coordinatesWillBeDrawn && g->coordinatesAxisOnBounds) {
                 g->draw_coordinates(canvas, drawData, axisOffset);
                 g->coordinatesWillBeDrawn = false;
             }
         }
         for(uint32_t i = 0; i < grids->size(); i++) {
-            auto& g = grids->at(i);
+            auto& g = grids->at(i)->obj;
             if(g->coordinatesWillBeDrawn && !g->coordinatesAxisOnBounds)
                 g->draw_coordinates(canvas, drawData, axisOffset);
             g->coordinatesWillBeDrawn = false;
@@ -69,8 +71,7 @@ void GridManager::draw_coordinates(SkCanvas* canvas, const DrawData& drawData) {
 
 void GridManager::scale_up(const WorldScalar& scaleUpAmount) {
     if(grids) {
-        for(uint32_t i = 0; i < grids->size(); i++) {
-            grids->at(i)->scale_up(scaleUpAmount);
-        }
+        for(uint32_t i = 0; i < grids->size(); i++)
+            grids->at(i)->obj->scale_up(scaleUpAmount);
     }
 }

@@ -16,8 +16,8 @@ namespace NetworkingObjects {
         a(*o);
     }
 
-    template <typename T> void register_generic_serialized_class(NetObjManagerTypeList& t) {
-        t.register_class<T, T, T, T>({
+    template <typename T> void register_generic_serialized_class(NetObjManager& objMan) {
+        objMan.register_class<T, T, T, T>({
             .writeConstructorFuncClient = default_serialize_write_func<T>,
             .readConstructorFuncClient = default_serialize_read_constructor_func<T>,
             .readUpdateFuncClient = default_serialize_read_func_client<T>,

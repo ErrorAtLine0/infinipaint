@@ -32,10 +32,10 @@ void BookmarkManager::remove_bookmark(uint32_t bookmarkIndex) {
 
 void BookmarkManager::jump_to_bookmark(uint32_t bookmarkIndex) {
     auto& b = bookmarks->at(bookmarkIndex);
-    world.drawData.cam.smooth_move_to(world, b->coords, b->windowSize.cast<float>());
+    world.drawData.cam.smooth_move_to(world, b->obj->coords, b->obj->windowSize.cast<float>());
 }
 
 void BookmarkManager::scale_up(const WorldScalar& scaleUpAmount) {
     for(uint32_t i = 0; i < bookmarks->size(); i++)
-        bookmarks->at(i)->scale_up(scaleUpAmount);
+        bookmarks->at(i)->obj->scale_up(scaleUpAmount);
 }

@@ -7,7 +7,6 @@
 #include "NetObjOwnerPtr.decl.hpp"
 #include "NetObjTemporaryPtr.hpp"
 #include "NetObjManager.hpp"
-#include "NetObjManagerTypeList.hpp"
 
 namespace NetworkingObjects {
     template <typename T> NetObjOwnerPtr<T>::NetObjOwnerPtr():
