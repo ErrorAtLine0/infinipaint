@@ -1,4 +1,6 @@
 #include "CanvasComponentAllocator.hpp"
+#include "CanvasComponentContainer.hpp"
+#include "../DrawingProgram/DrawingProgram.hpp"
 
 CanvasComponentAllocator::CanvasComponentAllocator() {}
 
@@ -6,25 +8,35 @@ CanvasComponentAllocator::CanvasComponentAllocator(CanvasComponent::CompType typ
     comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
 }
 
-void CanvasComponentAllocator::register_class(NetworkingObjects::NetObjManager& objMan) {
-    objMan.register_class<CanvasComponentAllocator, CanvasComponentAllocator, CanvasComponentAllocator, CanvasComponentAllocator>({
-        .writeConstructorFuncClient = write_constructor_func,
-        .readConstructorFuncClient = read_constructor_func,
-        .readUpdateFuncClient = nullptr,
-        .writeConstructorFuncServer = write_constructor_func,
-        .readConstructorFuncServer = read_constructor_func,
-        .readUpdateFuncServer = nullptr,
+void CanvasComponentAllocator::register_class(DrawingProgram& drawP, NetworkingObjects::DelayUpdateSerializedClassManager& delayUpdateMan, NetworkingObjects::NetObjManager& objMan) {
+    delayUpdateMan.register_class<CanvasComponentAllocator>(objMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<CanvasComponentAllocator>{
+        .writeConstructor = [](const CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
+            a(o.comp->get_type());
+            a(*o.comp);
+        },
+        .readConstructor = [](CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
+            CanvasComponent::CompType typeToAllocate;
+            a(typeToAllocate);
+            o.comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
+            a(*o.comp);
+        },
+        .writeUpdate = [](const CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
+            a(*o.comp);
+        },
+        .readUpdate = [](CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
+            a(*o.comp);
+        },
+        .allocateCopy = [](const CanvasComponentAllocator& o) {
+            auto theCopy = std::make_shared<CanvasComponentAllocator>();
+            theCopy->comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(o.comp->get_type()));
+            // Maybe do an assignment here
+            return theCopy;
+        },
+        .assignmentFunc = [](CanvasComponentAllocator& o, const CanvasComponentAllocator& o2) {
+            // Assignment still needs to be implemented
+        },
+        .postUpdateFunc = [&drawP](CanvasComponentAllocator& o) {
+            o.comp->compContainer->commit_update(drawP);
+        }
     });
-}
-
-void CanvasComponentAllocator::write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentAllocator>& o, cereal::PortableBinaryOutputArchive& a) {
-    a(o->comp->get_type());
-    a(*o->comp);
-}
-
-void CanvasComponentAllocator::read_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentAllocator>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
-    CanvasComponent::CompType typeToAllocate;
-    a(typeToAllocate);
-    o->comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
-    a(*o->comp);
 }

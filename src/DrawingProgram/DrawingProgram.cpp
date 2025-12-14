@@ -3,7 +3,6 @@
 #include <include/core/SkPaint.h>
 #include <include/core/SkVertices.h>
 #include "../DrawCamera.hpp"
-#include "../DrawComponents/DrawComponent.hpp"
 #include "EllipseDrawTool.hpp"
 #include "EyeDropperTool.hpp"
 #include "GridModifyTool.hpp"
@@ -14,13 +13,13 @@
 #include <optional>
 #include <Helpers/ConvertVec.hpp>
 #include <cereal/types/vector.hpp>
-#include "../DrawComponents/DrawImage.hpp"
 #include <include/core/SkImage.h>
 #include <include/core/SkSurface.h>
 #include "../World.hpp"
 #include "../MainProgram.hpp"
-#include "Helpers/FileDownloader.hpp"
-#include "Helpers/StringHelpers.hpp"
+#include <Helpers/FileDownloader.hpp>
+#include <Helpers/NetworkingObjects/NetObjID.hpp>
+#include <Helpers/StringHelpers.hpp>
 #include "LassoSelectTool.hpp"
 #include <Helpers/Logger.hpp>
 #include <Helpers/Parallel.hpp>
@@ -34,151 +33,64 @@
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     compCache(*this),
-    components([&](){ return world.get_new_id(); }),
     selection(*this)
 {
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
+}
 
-    components.clientInsertCallback = [&](const CollabListType::ObjectInfoPtr& c) {
-        if(addToCompCacheOnInsert)
-            compCache.add_component(c);
-        DrawComponentType t = c->obj->get_type();
-        if(t == DRAWCOMPONENT_IMAGE)
-            updateableComponents.emplace(c->obj);
-    };
-    components.clientEraseCallback = [&](const CollabListType::ObjectInfoPtr& c) {
+void DrawingProgram::init() {
+    if(world.netObjMan.is_server()) {
+        components = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>>();
+        set_component_list_callbacks();
+    }
+}
+
+void DrawingProgram::set_component_list_callbacks() {
+    components->set_insert_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
+        c->obj->set_owner_obj_info(c);
+        c->obj->commit_update(*this); // Run commit update on insert so that world bounds are calculated
+        compCache.add_component(c);
+        if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
+            EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
+            eraserTool->erasedComponents.erase(c);
+        }
+    });
+    components->set_erase_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
         compCache.erase_component(c);
         selection.erase_component(c);
-        delayedUpdateComponents.erase(c->obj);
-        updateableComponents.erase(c->obj);
-    };
-    components.clientInsertOrderedVectorCallback = [&](const std::vector<CollabListType::ObjectInfoPtr>& comps) {
-        for(auto& c : comps)
-            components.clientInsertCallback(c);
-    };
-    components.clientServerFirstPosShiftCallback = [&](uint64_t firstShiftPos) {
+    });
+    components->set_post_sync_callback([&]() {
         clear_draw_cache();
-    };
+    });
 }
 
 void DrawingProgram::init_client_callbacks() {
-    world.con.client_add_recv_callback(CLIENT_UPDATE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        ServerClientID id;
-        bool isFinal; // Not actually used, but sent for debugging purposes
-        message(isFinal, id);
-        auto objPtr = components.get_item_by_id(id);
-        if(!objPtr)
-            return;
-        std::shared_ptr<DrawComponent>& comp = objPtr->obj;
-        if((std::chrono::steady_clock::now() - comp->lastUpdateTime) > CLIENT_DRAWCOMP_DELAY_TIMER_DURATION) {
-            delayedUpdateComponents.erase(comp);
-            message(*comp);
-            comp->commit_update(*this);
-        }
-        else {
-            auto delayedUpdatePtr = DrawComponent::allocate_comp_type(comp->get_type());
-            message(*delayedUpdatePtr);
-            delayedUpdateComponents[comp] = delayedUpdatePtr;
-        }
-    });
-    world.con.client_add_recv_callback(CLIENT_TRANSFORM_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
-        std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transforms;
-        message(transforms);
-        if(transforms.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD) {
-            std::atomic<size_t> objsActuallyTransformed = 0;
-            parallel_loop_container(transforms, [&](auto& p) {
-                auto& [id, coords] = p;
-                auto objPtr = components.get_item_by_id(id);
-                if(!objPtr || selection.is_selected(objPtr)) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
-                    return;
-                std::shared_ptr<DrawComponent>& comp = objPtr->obj;
-                if(comp->coords == coords)
-                    return;
-                comp->coords = coords;
-                objsActuallyTransformed++;
-                comp->commit_transform(*this, false);
-            });
-            if(objsActuallyTransformed != 0)
-                force_rebuild_cache();
-        }
-        else {
-            for(auto& [id, coords] : transforms) {
-                auto objPtr = components.get_item_by_id(id);
-                if(!objPtr || selection.is_selected(objPtr)) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
-                    continue;
-                std::shared_ptr<DrawComponent>& comp = objPtr->obj;
-                if(comp->coords == coords)
-                    return;
-                comp->coords = coords;
-                comp->commit_transform(*this);
-            }
-        }
-    });
-    world.con.client_add_recv_callback(CLIENT_PLACE_SINGLE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        uint64_t insertPosition;
-        DrawComponentType type;
-        message(insertPosition, type);
-        auto newObj = DrawComponent::allocate_comp_type(type);
-        message(newObj->id, newObj->coords, *newObj);
-        bool didntExistPreviously = components.server_insert(insertPosition, newObj);
-        if(didntExistPreviously)
-            newObj->commit_update(*this);
-    });
-    world.con.client_add_recv_callback(CLIENT_PLACE_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
-        std::vector<CollabListType::ObjectInfoPtr> sortedPlacedComponents;
-
-        SendOrderedComponentVectorOp a{&sortedPlacedComponents};
-        message(a);
-
-        std::vector<bool> didntExistPreviously = components.server_insert_ordered_vector(sortedPlacedComponents);
-        bool isSingleThread = sortedPlacedComponents.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
-        parallel_loop_container(sortedPlacedComponents, [&](const auto& c){
-            c->obj->commit_update(*this, isSingleThread);
-        }, isSingleThread);
-        if(!isSingleThread)
-            force_rebuild_cache();
-    });
-    world.con.client_add_recv_callback(CLIENT_ERASE_SINGLE_COMPONENT, [&](cereal::PortableBinaryInputArchive& message) {
-        ServerClientID idToErase;
-        message(idToErase);
-        components.server_erase(idToErase);
-    });
-    world.con.client_add_recv_callback(CLIENT_ERASE_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
-        std::unordered_set<ServerClientID> idsToErase;
-        message(idsToErase);
-        components.server_erase_set(idsToErase);
-    });
 }
 
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
-    for(auto& c : components.client_list())
-        c->obj->scale_up(scaleUpAmount);
-    selection.deselect_all();
-    force_rebuild_cache();
-    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
+    //for(auto& c : components->get_data())
+    //    c->obj->scale_up(scaleUpAmount);
+    //selection.deselect_all();
+    //force_rebuild_cache();
+    //switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
 }
 
-void DrawingProgram::check_delayed_update_timers() {
-    std::erase_if(delayedUpdateComponents, [&](auto& p) {
-        auto& [comp, delayedUpdatePtr] = p;
-        return comp->check_timers(*this, delayedUpdatePtr);
-    });
-}
-
-void DrawingProgram::check_updateable_components() {
-    for(auto& comp : updateableComponents)
-        comp->update(*this);
-}
-
-void DrawingProgram::parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func) {
-    parallel_loop_container(components.client_list(), func);
+void DrawingProgram::parallel_loop_all_components(std::function<void(const CanvasComponentContainer::ObjInfoSharedPtr&)> func) {
+    parallel_loop_container(components->get_data(), func);
 }
 
 std::unordered_set<ServerClientID> DrawingProgram::get_used_resources() const {
     std::unordered_set<ServerClientID> toRet;
-    for(auto& c : components.client_list())
-        c->obj->get_used_resources(toRet);
+    //for(auto& c : components->get_data())
+    //    c->obj->get_used_resources(toRet);
     return toRet;
+}
+
+void DrawingProgram::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase) {
+    std::unordered_set<NetworkingObjects::NetObjID> idsToErase;
+    for(auto& c : compsToErase)
+        idsToErase.emplace(c->obj.get_net_id());
+    components->erase_unordered_set(components, idsToErase);
 }
 
 void DrawingProgram::clear_draw_cache() {
@@ -365,13 +277,6 @@ void DrawingProgram::update() {
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;
     controls.currentMouseWorldPos = world.get_mouse_world_pos();
 
-    if(addFileInNextFrame) {
-        add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);
-        addFileInNextFrame = false;
-    }
-
-    drag_drop_update();
-
     if(world.main.input.key(InputManager::KEY_DRAW_TOOL_BRUSH).pressed)
         switch_to_tool(DrawingProgramToolType::BRUSH);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ERASER).pressed)
@@ -406,18 +311,14 @@ void DrawingProgram::update() {
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;
 
-    check_delayed_update_timers();
-    check_updateable_components();
-    update_downloading_dropped_files();
-
     if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
-        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
+        compCache.test_rebuild_dont_include_set_dont_include_nodes(components->get_data(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
     }
     else if(is_selection_allowing_tool(drawTool->get_type()))
-        compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set());
+        compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set());
     else
-        compCache.test_rebuild(components.client_list());
+        compCache.test_rebuild(components->get_data());
 }
 
 bool DrawingProgram::is_actual_selection_tool(DrawingProgramToolType typeToCheck) {
@@ -463,285 +364,26 @@ SkPaint DrawingProgram::select_tool_line_paint() {
 void DrawingProgram::force_rebuild_cache() {
     if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
-        compCache.test_rebuild_dont_include_set_dont_include_nodes(components.client_list(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
+        compCache.test_rebuild_dont_include_set_dont_include_nodes(components->get_data(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
     }
     else if(is_selection_allowing_tool(drawTool->get_type()))
-        compCache.test_rebuild_dont_include_set(components.client_list(), selection.get_selected_set(), true);
+        compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set(), true);
     else
-        compCache.test_rebuild(components.client_list(), true);
+        compCache.test_rebuild(components->get_data(), true);
 }
 
-void DrawingProgram::drag_drop_update() {
-    if(controls.cursorHoveringOverCanvas) {
-        for(auto& droppedItem : world.main.input.droppedItems) {
-            if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
-#ifdef __EMSCRIPTEN_
-                add_file_to_canvas_by_path(droppedItem.dataPath.value(), world.main.input.mouse.pos, true);
-#else
-                add_file_to_canvas_by_path(droppedItem.dataPath.value(), droppedItem.pos, true);
-#endif
-            }
-            else if(droppedItem.dataText.has_value() && is_valid_http_url(droppedItem.dataText.value())) {
-                auto img(std::make_shared<DrawImage>());
-                img->coords = world.drawData.cam.c;
-                Vector2f imDim = Vector2f{100.0f, 100.0f};
-                img->d.p1 = droppedItem.pos - imDim;
-                img->d.p2 = droppedItem.pos + imDim;
-                img->d.imageID = {0, 0};
-                img->commit_update(*this);
-                uint64_t placement = components.client_list().size();
-                auto objAdd = components.client_insert(placement, img);
-                img->client_send_place(*this);
-                add_undo_place_component(objAdd);
-                droppedDownloadingFiles.emplace_back(objAdd, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.dataText.value()));
-            }
-        }
-    }
-}
-
-void DrawingProgram::update_downloading_dropped_files() {
-    std::erase_if(droppedDownloadingFiles, [&](auto& downFile) {
-        switch(downFile.downData->status) {
-            case FileDownloader::DownloadData::Status::SUCCESS: {
-                std::shared_ptr<DrawImage> img = std::static_pointer_cast<DrawImage>(downFile.comp->obj);
-                Vector2f dropPos = (img->d.p1 + img->d.p2) * 0.5f;
-
-                ResourceData newResource;
-                newResource.data = std::make_shared<std::string>(downFile.downData->str);
-                newResource.name = downFile.downData->fileName;
-                ServerClientID imageID = world.rMan.add_resource(newResource);
-                ResourceDisplay* display = world.rMan.get_display_data(imageID);
-                if(display->get_type() == ResourceDisplay::Type::FILE) {
-                    Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
-                    client_erase_set({downFile.comp});
-                }
-                else {
-                    Vector2f imTrueDim = display->get_dimensions();
-
-                    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-                    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-                    Vector2f imDim = Vector2f{downFile.windowSizeWhenDropped.x() * imWidth, downFile.windowSizeWhenDropped.x() * imHeight} * display->get_dimension_scale();
-                    img->d.p1 = dropPos - imDim;
-                    img->d.p2 = dropPos + imDim;
-                    img->d.imageID = imageID;
-                    img->commit_update(*this);
-                    img->client_send_update(*this, true);
-                }
-                return true;
-            }
-            case FileDownloader::DownloadData::Status::FAILURE:
-                Logger::get().log("WORLDFATAL", "Failed to download data from URL");
-                client_erase_set({downFile.comp});
-                return true;
-            case FileDownloader::DownloadData::Status::IN_PROGRESS:
-                return false;
-        }
-        return false;
-    });
-}
-
-void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread) {
-    if(addInSameThread)
-        add_file_to_canvas_by_path_execute(filePath, dropPos);
-    else if(!addFileInNextFrame) {
-        addFileInfo = {filePath, dropPos};
-        addFileInNextFrame = true;
-    }
-}
-
-void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos) {
-    ServerClientID imageID = world.rMan.add_resource_file(filePath);
-    if(imageID != ServerClientID{0, 0}) {
-        ResourceDisplay* display = world.rMan.get_display_data(imageID);
-        Vector2f imTrueDim = display->get_dimensions();
-        auto img(std::make_shared<DrawImage>());
-        img->coords = world.drawData.cam.c;
-        float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-        float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-        Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
-        img->d.p1 = dropPos - imDim;
-        img->d.p2 = dropPos + imDim;
-        img->d.imageID = imageID;
-        img->commit_update(*this);
-        uint64_t placement = components.client_list().size();
-        auto objAdd = components.client_insert(placement, img);
-        img->client_send_place(*this);
-        add_undo_place_component(objAdd);
-    }
-}
-
-void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
-    ResourceData newResource;
-    newResource.data = std::make_shared<std::string>(fileBuffer);
-    newResource.name = fileName;
-    ServerClientID imageID = world.rMan.add_resource(newResource);
-
-    ResourceDisplay* display = world.rMan.get_display_data(imageID);
-    Vector2f imTrueDim = display->get_dimensions();
-    auto img(std::make_shared<DrawImage>());
-    img->coords = world.drawData.cam.c;
-    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-    Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
-    img->d.p1 = dropPos - imDim;
-    img->d.p2 = dropPos + imDim;
-    img->d.imageID = imageID;
-    img->commit_update(*this);
-    uint64_t placement = components.client_list().size();
-    auto objAdd = components.client_insert(placement, img);
-    img->client_send_place(*this);
-    add_undo_place_component(objAdd);
-}
-
-void DrawingProgram::initialize_draw_data(cereal::PortableBinaryInputArchive& a) {
-    uint64_t compCount;
-    a(compCount);
-    for(uint64_t i = 0; i < compCount; i++) {
-        DrawComponentType t;
-        a(t);
-        auto newComp = DrawComponent::allocate_comp_type(t);
-        a(newComp->id, newComp->coords, *newComp);
-        components.init_emplace_back(newComp);
-    }
-    parallel_loop_all_components([&](const auto& c){
-        c->obj->commit_update(*this, false);
-    });
-    compCache.test_rebuild(components.client_list(), true);
-}
-
-void DrawingProgram::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    uint64_t compCount;
-    a(compCount);
-    for(uint64_t i = 0; i < compCount; i++) {
-        DrawComponentType t;
-        a(t);
-        auto newComp = DrawComponent::allocate_comp_type(t);
-        a(newComp->id, newComp->coords);
-        newComp->load_file(a, version);
-        components.init_emplace_back(newComp);
-    }
-    parallel_loop_all_components([&](const auto& c){
-        c->obj->commit_update(*this, false);
-    });
-    compCache.test_rebuild(components.client_list(), true);
-}
-
-void DrawingProgram::client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents) {
-    std::unordered_set<ServerClientID> idsToErase;
-    for(auto& c : erasedComponents)
-        idsToErase.emplace(c->obj->id);
-    DrawComponent::client_send_erase_set(*this, idsToErase);
-    components.client_erase_set(erasedComponents);
-    add_undo_erase_components(erasedComponents);
-}
-
-void DrawingProgram::add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo) {
-    world.undo.push(UndoManager::UndoRedoPair{
-        [&, objToUndo]() {
-            objToUndo->obj->client_send_erase(*this);
-            components.client_erase(objToUndo);
-            return true;
-        },
-        [&, objToUndo]() {
-            if(objToUndo->obj->collabListInfo.lock())
-                return false;
-            components.client_insert(objToUndo, false);
-            objToUndo->obj->client_send_place(*this);
-            return true;
-        }
-    });
-}
-
-void DrawingProgram::invalidate_cache_at_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+void DrawingProgram::invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
     if(selection.is_selected(objToCheck))
-        selection.invalidate_cache_at_optional_aabb_before_pos(objToCheck->obj->worldAABB, objToCheck->pos);
+        selection.invalidate_cache_at_aabb_before_pos(objToCheck->obj->get_world_bounds(), objToCheck->pos);
     else
-        compCache.invalidate_cache_at_optional_aabb_before_pos(objToCheck->obj->worldAABB, objToCheck->pos);
+        compCache.invalidate_cache_at_aabb_before_pos(objToCheck->obj->get_world_bounds(), objToCheck->pos);
 }
 
-void DrawingProgram::preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+void DrawingProgram::preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
     if(selection.is_selected(objToCheck))
         selection.preupdate_component(objToCheck);
     else
         compCache.preupdate_component(objToCheck);
-}
-
-void DrawingProgram::add_undo_place_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo) {
-    world.undo.push(UndoManager::UndoRedoPair{
-        [&, objSetToUndo = objSetToUndo]() {
-            for(auto& comp : objSetToUndo)
-                if(!comp->obj->collabListInfo.lock())
-                    return false;
-
-            std::unordered_set<ServerClientID> idsToErase;
-            for(auto& c : objSetToUndo)
-                idsToErase.emplace(c->obj->id);
-
-            DrawComponent::client_send_erase_set(*this, idsToErase);
-            components.client_erase_set(objSetToUndo);
-
-            return true;
-        },
-        [&, objSetToUndo = objSetToUndo]() {
-            std::vector<CollabListType::ObjectInfoPtr> sortedObjects(objSetToUndo.begin(), objSetToUndo.end());
-            std::sort(sortedObjects.begin(), sortedObjects.end(), [](auto& a, auto& b) {
-                return a->pos < b->pos;
-            });
-
-            for(auto& comp : sortedObjects)
-                if(comp->obj->collabListInfo.lock())
-                    return false;
-
-            components.client_insert_ordered_vector(sortedObjects, false);
-            DrawComponent::client_send_place_many(*this, sortedObjects);
-
-            return true;
-        }
-    });
-}
-
-void DrawingProgram::add_undo_erase_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo) {
-    world.undo.push(UndoManager::UndoRedoPair{
-        [&, objSetToUndo = objSetToUndo]() {
-            std::vector<CollabListType::ObjectInfoPtr> sortedObjects(objSetToUndo.begin(), objSetToUndo.end());
-            std::sort(sortedObjects.begin(), sortedObjects.end(), [](auto& a, auto& b) {
-                return a->pos < b->pos;
-            });
-
-            for(auto& comp : sortedObjects)
-                if(comp->obj->collabListInfo.lock())
-                    return false;
-
-            components.client_insert_ordered_vector(sortedObjects, false);
-            DrawComponent::client_send_place_many(*this, sortedObjects);
-
-            return true;
-        },
-        [&, objSetToUndo = objSetToUndo]() {
-            for(auto& comp : objSetToUndo)
-                if(!comp->obj->collabListInfo.lock())
-                    return false;
-
-            std::unordered_set<ServerClientID> idsToErase;
-            for(auto& c : objSetToUndo)
-                idsToErase.emplace(c->obj->id);
-
-            DrawComponent::client_send_erase_set(*this, idsToErase);
-            components.client_erase_set(objSetToUndo);
-
-            return true;
-        }
-    });
-}
-
-ClientPortionID DrawingProgram::get_max_id(ServerPortionID serverID) {
-    ClientPortionID maxClientID = 0;
-    auto& cList = components.client_list();
-    for(auto& comp : cList) {
-        if(comp->obj->id.first == serverID)
-            maxClientID = std::max(maxClientID, comp->obj->id.second);
-    }
-    return maxClientID;
 }
 
 float DrawingProgram::drag_point_radius() {
@@ -758,24 +400,36 @@ void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, co
     canvas->drawCircle(sPos.x(), sPos.y(), constantRadius, paintOutline);
 }
 
+void DrawingProgram::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    //uint64_t compCount;
+    //a(compCount);
+    //for(uint64_t i = 0; i < compCount; i++) {
+    //    DrawComponentType t;
+    //    a(t);
+    //    auto newComp = DrawComponent::allocate_comp_type(t);
+    //    a(newComp->id, newComp->coords);
+    //    newComp->load_file(a, version);
+    //    components.init_emplace_back(newComp);
+    //}
+    //parallel_loop_all_components([&](const auto& c){
+    //    c->obj->commit_update(*this, false);
+    //});
+    //compCache.test_rebuild(components.client_list(), true);
+}
+
 void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
-    auto& cList = components.client_list();
-    a((uint64_t)cList.size());
-    for(size_t i = 0; i < cList.size(); i++) {
-        a(cList[i]->obj->get_type(), cList[i]->obj->id, cList[i]->obj->coords);
-        cList[i]->obj->save_file(a);
-    }
+    //auto& cList = components->get_data();
+    //a((uint64_t)cList.size());
+    //for(size_t i = 0; i < cList.size(); i++) {
+    //    a(cList[i]->obj->get_type(), cList[i]->obj->id, cList[i]->obj->coords);
+    //    cList[i]->obj->save_file(a);
+    //}
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(drawData.dontUseDrawProgCache) {
-        parallel_loop_all_components([&](auto& c) {
-            c->obj->calculate_draw_transform(drawData);
-        });
-        for(auto& c : components.client_list()) {
+        for(auto& c : components->get_data())
             c->obj->draw(canvas, drawData);
-            c->obj->drawSetupData.shouldDraw = false;
-        }
     }
     else {
         canvas->saveLayer(nullptr, nullptr);
@@ -786,22 +440,6 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
                 selection.draw_components(canvas, drawData);
             canvas->restore();
         canvas->restore();
-
-        if(!drawData.main->takingScreenshot) {
-            for(auto& droppedDownFile : droppedDownloadingFiles) {
-                if(droppedDownFile.comp->obj->collabListInfo.lock())
-                    std::static_pointer_cast<DrawImage>(droppedDownFile.comp->obj)->draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
-            }
-
-            for(auto& c : updateableComponents) {
-                if(c->get_type() == DRAWCOMPONENT_IMAGE) {
-                    auto img = std::static_pointer_cast<DrawImage>(c);
-                    float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img->d.imageID);
-                    img->draw_download_progress_bar(canvas, drawData, progress);
-                }
-            }
-        }
-
         selection.draw_gui(canvas, drawData);
     }
 

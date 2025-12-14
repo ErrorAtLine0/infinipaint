@@ -3,7 +3,7 @@
 #include "../MainProgram.hpp"
 #include "../DrawData.hpp"
 #include "DrawingProgramToolBase.hpp"
-#include <cereal/types/vector.hpp>
+#include "../CanvasComponents/RectangleCanvasComponent.hpp"
 
 RectDrawTool::RectDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -17,11 +17,11 @@ void RectDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("rect draw tool");
     t.gui.text_label_centered("Draw Rectangle");
-    t.gui.slider_scalar_field("relradiuswidth", "Corner Radius", &controls.relativeRadiusWidth, 0.0f, 40.0f);
-    if(t.gui.radio_button_field("fillonly", "Fill only", controls.fillStrokeMode == 0)) controls.fillStrokeMode = 0;
-    if(t.gui.radio_button_field("outlineonly", "Outline only", controls.fillStrokeMode == 1)) controls.fillStrokeMode = 1;
-    if(t.gui.radio_button_field("filloutline", "Fill and Outline", controls.fillStrokeMode == 2)) controls.fillStrokeMode = 2;
-    if(controls.fillStrokeMode == 1 || controls.fillStrokeMode == 2)
+    t.gui.slider_scalar_field("relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
+    if(t.gui.radio_button_field("fillonly", "Fill only", fillStrokeMode == 0)) fillStrokeMode = 0;
+    if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
+    if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
+    if(fillStrokeMode == 1 || fillStrokeMode == 2)
         t.gui.slider_scalar_field("relstrokewidth", "Outline Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
     t.gui.pop_id();
 }
@@ -34,51 +34,49 @@ bool RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
 
 void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
     commit_rectangle();
-    controls.drawStage = 0;
+    drawStage = 0;
 }
 
 void RectDrawTool::tool_update() {
-    switch(controls.drawStage) {
+    switch(drawStage) {
         case 0: {
             if(drawP.controls.leftClick) {
-                controls.startAt = drawP.world.main.input.mouse.pos;
-                controls.intermediateItem = std::make_shared<DrawRectangle>();
-                controls.intermediateItem->d.strokeColor = drawP.controls.foregroundColor;
-                controls.intermediateItem->d.fillColor = drawP.controls.backgroundColor;
-                controls.intermediateItem->d.cornerRadius = controls.relativeRadiusWidth;
-                controls.intermediateItem->d.strokeWidth = drawP.controls.relativeWidth;
-                controls.intermediateItem->d.p1 = controls.startAt;
-                controls.intermediateItem->d.p2 = controls.startAt;
-                controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                controls.intermediateItem->d.fillStrokeMode = static_cast<uint8_t>(controls.fillStrokeMode);
-                controls.intermediateItem->coords = drawP.world.drawData.cam.c;
-                controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
-                uint64_t placement = drawP.components.client_list().size();
-                auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
-                controls.intermediateItem->commit_update(drawP);
-                controls.intermediateItem->client_send_place(drawP);
-                drawP.add_undo_place_component(objAdd);
-                controls.drawStage = 1;
+                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponent::CompType::RECTANGLE);
+                RectangleCanvasComponent& newRectangle = static_cast<RectangleCanvasComponent&>(newContainer->get_comp());
+
+                startAt = drawP.world.main.input.mouse.pos;
+                newRectangle.d.strokeColor = drawP.controls.foregroundColor;
+                newRectangle.d.fillColor = drawP.controls.backgroundColor;
+                newRectangle.d.cornerRadius = relativeRadiusWidth;
+                newRectangle.d.strokeWidth = drawP.controls.relativeWidth;
+                newRectangle.d.p1 = startAt;
+                newRectangle.d.p2 = startAt;
+                newRectangle.d.p2 = ensure_points_have_distance(newRectangle.d.p1, newRectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+                newRectangle.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
+                newContainer->coords = drawP.world.drawData.cam.c;
+                intermediateContainer = drawP.components->push_back_and_send_create(drawP.components, newContainer)->obj;
+                drawStage = 1;
             }
             break;
         }
         case 1: {
-            if(drawP.controls.leftClickHeld) {
-                controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
-                Vector2f newPos = controls.intermediateItem->coords.get_mouse_pos(drawP.world);
+            NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> containerPtr = intermediateContainer.lock();
+            if(drawP.controls.leftClickHeld && containerPtr) {
+                Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
                 if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
-                    float height = std::fabs(controls.startAt.y() - newPos.y());
-                    newPos.x() = controls.startAt.x() + (((newPos.x() - controls.startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
+                    float height = std::fabs(startAt.y() - newPos.y());
+                    newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
                 }
-                controls.intermediateItem->d.p1 = cwise_vec_min(controls.startAt, newPos);
-                controls.intermediateItem->d.p2 = cwise_vec_max(controls.startAt, newPos);
-                controls.intermediateItem->d.p2 = ensure_points_have_distance(controls.intermediateItem->d.p1, controls.intermediateItem->d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                controls.intermediateItem->client_send_update(drawP, false);
-                controls.intermediateItem->commit_update(drawP);
+                RectangleCanvasComponent& rectangle = static_cast<RectangleCanvasComponent&>(containerPtr->get_comp());
+                rectangle.d.p1 = cwise_vec_min(startAt, newPos);
+                rectangle.d.p2 = cwise_vec_max(startAt, newPos);
+                rectangle.d.p2 = ensure_points_have_distance(rectangle.d.p1, rectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+                containerPtr->send_comp_update(drawP, true);
+                containerPtr->commit_update(drawP);
             }
             else {
                 commit_rectangle();
-                controls.drawStage = 0;
+                drawStage = 0;
             }
             break;
         }
@@ -86,15 +84,16 @@ void RectDrawTool::tool_update() {
 }
 
 bool RectDrawTool::prevent_undo_or_redo() {
-    return controls.intermediateItem != nullptr;
+    return (drawStage == 1);
 }
 
 void RectDrawTool::commit_rectangle() {
-    if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
-        controls.intermediateItem->client_send_update(drawP, true);
-        controls.intermediateItem->commit_update(drawP);
+    NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> lockedPtr = intermediateContainer.lock();
+    if(lockedPtr) {
+        lockedPtr->commit_update(drawP);
+        drawP.world.delayedUpdateObjectManager.send_update_to_all<CanvasComponentContainer>(lockedPtr, true);
     }
-    controls.intermediateItem = nullptr; 
+    intermediateContainer.reset();
 }
 
 void RectDrawTool::draw(SkCanvas* canvas, const DrawData& drawData) {

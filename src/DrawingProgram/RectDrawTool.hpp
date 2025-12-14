@@ -1,8 +1,7 @@
 #pragma once
 #include "DrawingProgramToolBase.hpp"
-#include "../DrawComponents/DrawRectangle.hpp"
 #include <Helpers/SCollision.hpp>
-#include <any>
+#include "../CanvasComponents/CanvasComponentContainer.hpp"
 
 class DrawingProgram;
 
@@ -19,11 +18,9 @@ class RectDrawTool : public DrawingProgramToolBase {
     private:
         void commit_rectangle();
 
-        struct RectDrawControls {
-            Vector2f startAt;
-            float relativeRadiusWidth = 10.0f;
-            int fillStrokeMode = 1;
-            int drawStage = 0;
-            std::shared_ptr<DrawRectangle> intermediateItem;
-        } controls;
+        Vector2f startAt;
+        float relativeRadiusWidth = 10.0f;
+        int fillStrokeMode = 1;
+        int drawStage = 0;
+        NetworkingObjects::NetObjWeakPtr<CanvasComponentContainer> intermediateContainer;
 };

@@ -97,6 +97,7 @@ namespace NetworkingObjects {
             }
 
             virtual bool contains(const NetObjID& p) const = 0;
+            virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const = 0;
             virtual uint32_t size() const = 0;
             virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const = 0;
             virtual bool empty() const = 0;
@@ -161,6 +162,9 @@ namespace NetworkingObjects {
             NetObjOrderedListServer() {}
             virtual bool contains(const NetObjID& id) const override {
                 return idToDataMap.contains(id);
+            }
+            virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const override {
+                return data;
             }
             virtual uint32_t size() const override {
                 return data.size();
@@ -329,6 +333,9 @@ namespace NetworkingObjects {
             NetObjOrderedListClient() {}
             virtual bool contains(const NetObjID& id) const override {
                 return clientIdToDataMap.contains(id);
+            }
+            virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const override {
+                return clientData;
             }
             virtual uint32_t size() const override {
                 return clientData.size();

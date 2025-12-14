@@ -84,7 +84,7 @@ void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) co
 }
 
 Vector2f TextBoxCanvasComponent::get_mouse_pos(DrawingProgram& drawP) const {
-    return compContainer->get_coords().get_mouse_pos(drawP.world) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
+    return compContainer->coords.get_mouse_pos(drawP.world) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
 }
 
 void TextBoxCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {

@@ -2,6 +2,8 @@
 #include "CanvasComponentAllocator.hpp"
 #include "../DrawData.hpp"
 #include "../DrawingProgram/DrawingProgram.hpp"
+#include "../World.hpp"
+#include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 
 using namespace NetworkingObjects;
 
@@ -20,6 +22,10 @@ void CanvasComponentContainer::register_class(NetObjManager& objMan) {
         .readConstructorFuncServer = read_constructor_func,
         .readUpdateFuncServer = nullptr,
     });
+}
+
+void CanvasComponentContainer::send_comp_update(DrawingProgram& drawP, bool finalUpdate) {
+    drawP.world.delayedUpdateObjectManager.send_update_to_all<CanvasComponentAllocator>(compAllocator, finalUpdate);
 }
 
 void CanvasComponentContainer::write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a) {
@@ -53,23 +59,33 @@ void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) 
     canvas->restore();
 }
 
+void CanvasComponentContainer::set_owner_obj_info(const ObjInfoSharedPtr& ownerObjInfo) {
+    objInfo = ownerObjInfo;
+}
+
 void CanvasComponentContainer::commit_update(DrawingProgram& drawP) {
-    //if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
-    //    drawP.preupdate_component(objInfo);
+    auto lockedObjInfo = objInfo.lock();
+    if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
+        drawP.preupdate_component(lockedObjInfo);
     get_comp().initialize_draw_data(drawP);
     calculate_world_bounds();
-    //drawP.preupdate_component(objInfo);
+    drawP.preupdate_component(lockedObjInfo);
 }
 
 void CanvasComponentContainer::commit_transform(DrawingProgram& drawP) {
-    //if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
-    //    drawP.preupdate_component(objInfo);
+    auto lockedObjInfo = objInfo.lock();
+    if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
+        drawP.preupdate_component(lockedObjInfo);
     calculate_world_bounds();
-    //drawP.preupdate_component(objInfo);
+    drawP.preupdate_component(lockedObjInfo);
 }
 
 void CanvasComponentContainer::commit_update_dont_invalidate_cache(DrawingProgram& drawP) {
     get_comp().initialize_draw_data(drawP);
+    calculate_world_bounds();
+}
+
+void CanvasComponentContainer::commit_transform_dont_invalidate_cache(DrawingProgram& drawP) {
     calculate_world_bounds();
 }
 
@@ -130,14 +146,10 @@ void CanvasComponentContainer::calculate_world_bounds() {
     worldAABB = coords.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(get_comp().get_obj_coord_bounds());
 }
 
-std::optional<SCollision::AABB<WorldScalar>> CanvasComponentContainer::get_world_bounds() const {
-    return worldAABB;
+SCollision::AABB<WorldScalar> CanvasComponentContainer::get_world_bounds() const {
+    return worldAABB.value();
 }
 
 CanvasComponent& CanvasComponentContainer::get_comp() const {
     return *compAllocator->comp;
-}
-
-const CoordSpaceHelper& CanvasComponentContainer::get_coords() const {
-    return coords;
 }

@@ -1,17 +1,17 @@
 #pragma once
-#include "../SharedTypes.hpp"
 #include "DrawingProgramToolBase.hpp"
 #include <Helpers/Hashes.hpp>
 #include <include/core/SkPath.h>
 #include <include/core/SkVertices.h>
 #include <Helpers/SCollision.hpp>
 #include <deque>
-#include <any>
 #include <include/core/SkCanvas.h>
+#include "../CanvasComponents/CanvasComponentContainer.hpp"
+#include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
 
 class DrawingProgram;
-class DrawBrushStroke;
 struct DrawData;
+class BrushStrokeCanvasComponent;
 
 class BrushTool : public DrawingProgramToolBase {
     public:
@@ -24,24 +24,22 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
     private:
+        bool extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
+        bool extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
         void commit_stroke();
-        bool extensive_point_checking_back(const Vector2f& newPoint);
-        bool extensive_point_checking(const Vector2f& newPoint);
 
-        struct BrushToolControls {
-            float penWidth = 1.0f;
-            bool addedTemporaryPoint = false;
-            struct SmoothingPoint {
-                float val;
-                std::chrono::steady_clock::time_point t;
-            };
-            std::deque<SmoothingPoint> penSmoothingData;
+        float penWidth = 1.0f;
+        bool addedTemporaryPoint = false;
+        struct SmoothingPoint {
+            float val;
+            std::chrono::steady_clock::time_point t;
+        };
+        std::deque<SmoothingPoint> penSmoothingData;
 
-            std::shared_ptr<DrawBrushStroke> intermediateItem;
-            bool isDrawing = false;
-            bool hasRoundCaps = true;
-            bool drawingMinimumRelativeToSize = true;
-            bool midwayInterpolation = true;
-            Vector2f prevPointUnaltered = {0, 0};
-        } controls;
+        NetworkingObjects::NetObjWeakPtr<CanvasComponentContainer> intermediateContainer;
+        bool isDrawing = false;
+        bool hasRoundCaps = true;
+        bool drawingMinimumRelativeToSize = true;
+        bool midwayInterpolation = true;
+        Vector2f prevPointUnaltered = {0, 0};
 };

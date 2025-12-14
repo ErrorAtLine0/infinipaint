@@ -53,6 +53,10 @@ namespace NetworkingObjects {
                     return NetObjTemporaryPtr<T>();
                 return NetObjTemporaryPtr<T>(objMan, id, static_cast<T*>(it->second.p));
             }
+            void reset() {
+                objMan = nullptr;
+                id = NetObjID({0, 0});
+            }
             NetObjManager* get_obj_man() const {
                 return objMan;
             }

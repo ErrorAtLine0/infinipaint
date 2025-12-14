@@ -8,8 +8,6 @@ class DrawComponent;
 
 class ServerData {
     public:
-        std::vector<std::shared_ptr<DrawComponent>> components;
-        std::unordered_map<ServerClientID, std::shared_ptr<DrawComponent>> idToComponentMap;
         std::unordered_map<ServerClientID, ResourceData> resources;
         uint64_t canvasScale = 0;
         Vector3f canvasBackColor;

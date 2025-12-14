@@ -1,10 +1,12 @@
 #include "BrushTool.hpp"
 #include <Helpers/ConvertVec.hpp>
-#include "../DrawComponents/DrawBrushStroke.hpp"
 #include "../GUIStuff/GUIManager.hpp"
 #include "DrawingProgram.hpp"
 #include "../MainProgram.hpp"
 #include "DrawingProgramToolBase.hpp"
+#include "../CanvasComponents/BrushStrokeCanvasComponent.hpp"
+#include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
+#include "Helpers/NetworkingObjects/NetObjWeakPtr.hpp"
 #include <chrono>
 
 #define VEL_SMOOTH_MIN 0.6
@@ -23,8 +25,8 @@ void BrushTool::switch_tool(DrawingProgramToolType newTool) {
     commit_stroke();
 }
 
-bool BrushTool::extensive_point_checking(const Vector2f& newPoint) {
-    auto& points = controls.intermediateItem->d->points;
+bool BrushTool::extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
+    auto& points = brushStroke.d->points;
     if(points.size() >= 1 && (newPoint - points[points.size() - 1].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
         return false;
     if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
@@ -34,8 +36,8 @@ bool BrushTool::extensive_point_checking(const Vector2f& newPoint) {
     return true;
 }
 
-bool BrushTool::extensive_point_checking_back(const Vector2f& newPoint) {
-    auto& points = controls.intermediateItem->d->points;
+bool BrushTool::extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
+    auto& points = brushStroke.d->points;
     if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
         return false;
     if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
@@ -49,107 +51,117 @@ void BrushTool::tool_update() {
     if(drawP.controls.cursorHoveringOverCanvas)
         drawP.world.main.input.hideCursor = true;
 
-    if(!controls.isDrawing)
-        controls.penSmoothingData.clear();
+    if(!isDrawing)
+        penSmoothingData.clear();
 
     if(drawP.world.main.input.pen.isDown && drawP.controls.leftClickHeld && drawP.world.main.toolbar.tabletOptions.pressureAffectsBrushWidth) {
-        while(!controls.penSmoothingData.empty() && (std::chrono::steady_clock::now() - controls.penSmoothingData.front().t) > std::chrono::milliseconds(static_cast<int>(drawP.world.main.toolbar.tabletOptions.smoothingSamplingTime * 1000.0f)))
-            controls.penSmoothingData.pop_front();
-        controls.penSmoothingData.emplace_back(
+        while(!penSmoothingData.empty() && (std::chrono::steady_clock::now() - penSmoothingData.front().t) > std::chrono::milliseconds(static_cast<int>(drawP.world.main.toolbar.tabletOptions.smoothingSamplingTime * 1000.0f)))
+            penSmoothingData.pop_front();
+        penSmoothingData.emplace_back(
             drawP.world.main.input.pen.pressure,
             std::chrono::steady_clock::now()
         );
         float averagePressure = 0.0f;
-        for(auto& [width, t] : controls.penSmoothingData)
+        for(auto& [width, t] : penSmoothingData)
             averagePressure += width;
-        averagePressure /= controls.penSmoothingData.size();
-        controls.penWidth = averagePressure;
-        if(controls.penWidth != 0.0f) {
+        averagePressure /= penSmoothingData.size();
+        penWidth = averagePressure;
+        if(penWidth != 0.0f) {
             float brushMinSize = drawP.world.main.toolbar.tabletOptions.brushMinimumSize;
-            controls.penWidth = brushMinSize + controls.penWidth * (1.0f - brushMinSize);
+            penWidth = brushMinSize + penWidth * (1.0f - brushMinSize);
         }
     }
     else
-        controls.penWidth = 1.0f;
+        penWidth = 1.0f;
 
     bool isPenDown = false;
     if(drawP.world.main.input.pen.isDown && drawP.controls.leftClickHeld)
-        isPenDown = controls.penWidth != 0.0;
+        isPenDown = penWidth != 0.0;
     else if(drawP.controls.leftClickHeld)
         isPenDown = true;
 
     if(isPenDown) {
-        if(!controls.isDrawing) {
-            controls.isDrawing = true;
-            controls.intermediateItem = std::make_shared<DrawBrushStroke>();
-            DrawBrushStrokePoint p;
+        if(!isDrawing) {
+            isDrawing = true;
+            CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponent::CompType::BRUSHSTROKE);
+            BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
+
+            BrushStrokeCanvasComponentPoint p;
             p.pos = drawP.world.main.input.mouse.pos;
-            p.width = drawP.controls.relativeWidth * controls.penWidth;
-            controls.prevPointUnaltered = p.pos;
-            controls.intermediateItem->d->points.emplace_back(p);
-            controls.intermediateItem->d->color = drawP.controls.foregroundColor;
-            controls.intermediateItem->d->hasRoundCaps = controls.hasRoundCaps;
-            controls.intermediateItem->coords = drawP.world.drawData.cam.c;
-            controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
-            uint64_t placement = drawP.components.client_list().size();
-            auto objAdd = drawP.components.client_insert(placement, controls.intermediateItem);
-            controls.intermediateItem->commit_update(drawP);
-            controls.intermediateItem->client_send_place(drawP);
-            // NOTE: The data isnt finallized at this point, so a BVH isn't generated for an object that you undo while youre drawing (this isnt just for brush strokes)
-            // The fix for now is to generate a BVH for an object when you redo it
-            drawP.add_undo_place_component(objAdd);
-            controls.addedTemporaryPoint = false;
+            p.width = drawP.controls.relativeWidth * penWidth;
+            prevPointUnaltered = p.pos;
+            newBrushStroke.d->points.emplace_back(p);
+            newBrushStroke.d->color = drawP.controls.foregroundColor;
+            newBrushStroke.d->hasRoundCaps = hasRoundCaps;
+            newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
+            intermediateContainer = drawP.components->push_back_and_send_create(drawP.components, newBrushStrokeContainer)->obj;
+            addedTemporaryPoint = false;
         }
         else {
-            controls.intermediateItem->lastUpdateTime = std::chrono::steady_clock::now();
+            NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> containerPtr = intermediateContainer.lock();
+            if(!containerPtr) {
+                isDrawing = false;
+                intermediateContainer.reset();
+                return;
+            }
+            BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
 
-            DrawBrushStrokePoint p;
-            p.pos = controls.intermediateItem->coords.get_mouse_pos(drawP.world);
-            p.width = drawP.controls.relativeWidth * controls.penWidth;
+            BrushStrokeCanvasComponentPoint p;
+            p.pos = containerPtr->coords.get_mouse_pos(drawP.world);
+            p.width = drawP.controls.relativeWidth * penWidth;
 
-            if(!controls.addedTemporaryPoint) {
-                if(extensive_point_checking(p.pos)) {
-                    controls.intermediateItem->d->points.emplace_back(p);
-                    controls.addedTemporaryPoint = true;
+            if(!addedTemporaryPoint) {
+                if(extensive_point_checking(brushStroke, p.pos)) {
+                    brushStroke.d->points.emplace_back(p);
+                    addedTemporaryPoint = true;
                 }
                 else
-                    controls.intermediateItem->d->points.back().width = std::max(controls.intermediateItem->d->points.back().width, p.width);
+                    brushStroke.d->points.back().width = std::max(brushStroke.d->points.back().width, p.width);
             }
 
-            if(controls.addedTemporaryPoint) {
-                const DrawBrushStrokePoint& prevP = controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2];
+            if(addedTemporaryPoint) {
+                const BrushStrokeCanvasComponentPoint& prevP = brushStroke.d->points[brushStroke.d->points.size() - 2];
                 float distToPrev = (p.pos - prevP.pos).norm();
-                if(extensive_point_checking_back(p.pos)) {
-                    controls.intermediateItem->d->points.back().pos = p.pos;
-                    controls.intermediateItem->d->points.back().width = std::max(controls.intermediateItem->d->points.back().width, p.width);
-                    controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2].width = std::max(controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2].width, p.width);
+                if(extensive_point_checking_back(brushStroke, p.pos)) {
+                    brushStroke.d->points.back().pos = p.pos;
+                    brushStroke.d->points.back().width = std::max(brushStroke.d->points.back().width, p.width);
+                    brushStroke.d->points[brushStroke.d->points.size() - 2].width = std::max(brushStroke.d->points[brushStroke.d->points.size() - 2].width, p.width);
                 }
-                if((!controls.drawingMinimumRelativeToSize && distToPrev >= 10.0) || (controls.drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * DRAW_MINIMUM_LIMIT)) {
-                    controls.intermediateItem->d->points.back() = p;
-                    controls.addedTemporaryPoint = false;
-                    controls.intermediateItem->client_send_update(drawP, false);
+                if((!drawingMinimumRelativeToSize && distToPrev >= 10.0) || (drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * BrushStrokeCanvasComponent::DRAW_MINIMUM_LIMIT)) {
+                    brushStroke.d->points.back() = p;
+                    addedTemporaryPoint = false;
+                    containerPtr->send_comp_update(drawP, true);
 
-                    if(controls.midwayInterpolation) {
-                        if(controls.intermediateItem->d->points.size() != 2) // Don't interpolate the first point
-                            controls.intermediateItem->d->points[controls.intermediateItem->d->points.size() - 2].pos = (controls.prevPointUnaltered + p.pos) * 0.5;
-                        controls.prevPointUnaltered = p.pos;
+                    if(midwayInterpolation) {
+                        if(brushStroke.d->points.size() != 2) // Don't interpolate the first point
+                            brushStroke.d->points[brushStroke.d->points.size() - 2].pos = (prevPointUnaltered + p.pos) * 0.5;
+                        prevPointUnaltered = p.pos;
                     }
                 }
-                controls.intermediateItem->commit_update(drawP);
+                containerPtr->commit_update(drawP);
             }
         }
     }
-    else if(controls.isDrawing) {
-        controls.isDrawing = false;
+    else if(isDrawing) {
+        isDrawing = false;
         commit_stroke();
     }
+}
+
+void BrushTool::commit_stroke() {
+    NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> lockedPtr = intermediateContainer.lock();
+    if(lockedPtr) {
+        lockedPtr->commit_update(drawP);
+        lockedPtr->send_comp_update(drawP, true);
+    }
+    intermediateContainer.reset();
 }
 
 void BrushTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("brush tool");
     t.gui.text_label_centered("Brush");
-    t.gui.checkbox_field("hasroundcaps", "Round Caps", &controls.hasRoundCaps);
+    t.gui.checkbox_field("hasroundcaps", "Round Caps", &hasRoundCaps);
     t.gui.slider_scalar_field("relwidth", "Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
     t.gui.pop_id();
 }
@@ -161,17 +173,7 @@ bool BrushTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 bool BrushTool::prevent_undo_or_redo() {
-    return controls.intermediateItem != nullptr;
-}
-
-void BrushTool::commit_stroke() {
-    if(controls.intermediateItem && controls.intermediateItem->collabListInfo.lock()) {
-        if(!controls.intermediateItem->d->points.empty()) {
-            controls.intermediateItem->client_send_update(drawP, true);
-            controls.intermediateItem->commit_update(drawP);
-        }
-    }
-    controls.intermediateItem = nullptr; 
+    return isDrawing;
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
@@ -181,8 +183,8 @@ void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         linePaint.setStroke(true);
         linePaint.setStrokeWidth(0.0f);
         float width;
-        if(controls.isDrawing)
-            width = drawP.controls.relativeWidth * controls.penWidth * 0.5f;
+        if(isDrawing)
+            width = drawP.controls.relativeWidth * penWidth * 0.5f;
         else
             width = drawP.controls.relativeWidth * 0.5f;
         Vector2f pos = drawData.main->input.mouse.pos;

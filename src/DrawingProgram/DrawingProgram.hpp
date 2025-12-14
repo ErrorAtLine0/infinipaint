@@ -11,19 +11,20 @@
 #include <include/core/SkVertices.h>
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Hashes.hpp>
-#include <list>
 #include <Helpers/Random.hpp>
 #include "DrawingProgramSelection.hpp"
-#include "../CollabList.hpp"
 #include "DrawingProgramToolBase.hpp"
 #include <Helpers/FileDownloader.hpp>
+#include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 
 class World;
 
 class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
+        void init();
         void init_client_callbacks();
+        void set_component_list_callbacks();
         void toolbar_gui();
         void tool_options_gui();
         bool right_click_popup_gui(Vector2f popupPos);
@@ -31,39 +32,26 @@ class DrawingProgram {
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
 
-        void initialize_draw_data(cereal::PortableBinaryInputArchive& a);
-        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
-
         std::unordered_set<ServerClientID> get_used_resources() const;
-        ClientPortionID get_max_id(ServerPortionID serverID);
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         World& world;
 
         bool prevent_undo_or_redo();
-
-        void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread);
-        void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
-
-        void parallel_loop_all_components(std::function<void(const std::shared_ptr<CollabList<std::shared_ptr<DrawComponent>, ServerClientID>::ObjectInfo>&)> func);
+        void parallel_loop_all_components(std::function<void(const CanvasComponentContainer::ObjInfoSharedPtr&)> func);
 
         // This function, unlike preupdate_component, does not take the object out of the BVH. Use for a draw update that doesn't change the object's bounding box
-        void invalidate_cache_at_component(const CollabListType::ObjectInfoPtr& objToCheck);
-        void preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck);
+        void invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        void preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
 
         DrawingProgramCache compCache;
 
-        CollabListType components;
-
-        std::unordered_set<std::shared_ptr<DrawComponent>> updateableComponents;
-        std::unordered_map<std::shared_ptr<DrawComponent>, std::shared_ptr<DrawComponent>> delayedUpdateComponents;
+        CanvasComponentContainer::NetListOwnerPtr components;
 
         Vector4f* get_foreground_color_ptr();
-
         void switch_to_tool(DrawingProgramToolType newToolType, bool force = false);
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
-
         void clear_draw_cache();
-
         void modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify);
 
     private:
@@ -71,31 +59,17 @@ class DrawingProgram {
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
 
         bool selection_action_menu(Vector2f popupPos);
-
-        void client_erase_set(std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents); // The set might be modified while this is being called, so dont pass by reference
-
-        void check_delayed_update_timers();
-        void check_updateable_components();
-
         void force_rebuild_cache();
-
-        bool addToCompCacheOnInsert = true;
 
         std::atomic<bool> addFileInNextFrame = false;
         std::pair<std::filesystem::path, Vector2f> addFileInfo;
 
-        void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
-
-        void drag_drop_update();
-
         float drag_point_radius();
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
-
-        void add_undo_place_component(const CollabListType::ObjectInfoPtr& objToUndo);
-        void add_undo_place_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
-        void add_undo_erase_components(const std::unordered_set<CollabListType::ObjectInfoPtr>& objSetToUndo);
-
         SkPaint select_tool_line_paint();
+        bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
+        bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
+        void erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase);
 
         DrawingProgramSelection selection;
 
@@ -104,9 +78,6 @@ class DrawingProgram {
         bool temporaryEraser = false;
         bool temporaryPan = false;
         DrawingProgramToolType toolTypeAfterTempPan;
-
-        bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
-        bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
 
         struct GlobalControls {
             float relativeWidth = 15.0f;
@@ -130,15 +101,6 @@ class DrawingProgram {
 
         uint32_t nextID = 0;
 
-        struct DroppedDownloadingFile {
-            CollabListType::ObjectInfoPtr comp;
-            Vector2f windowSizeWhenDropped;
-            std::shared_ptr<FileDownloader::DownloadData> downData;
-        };
-        std::vector<DroppedDownloadingFile> droppedDownloadingFiles;
-
-        void update_downloading_dropped_files();
-        
         friend class EyeDropperTool;
         friend class RectDrawTool;
         friend class EllipseDrawTool;

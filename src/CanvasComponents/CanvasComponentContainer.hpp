@@ -3,14 +3,17 @@
 #include "CanvasComponent.hpp"
 #include <Helpers/NetworkingObjects/NetObjManagerTypeList.hpp>
 #include "../VersionConstants.hpp"
-#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
+#include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/NetworkingObjects/NetObjOwnerPtr.hpp>
 
 class DrawingProgram;
 class CanvasComponentAllocator;
+class DrawingProgramCacheBVHNode;
 
 class CanvasComponentContainer {
     public:
+        typedef NetworkingObjects::NetObjOrderedList<CanvasComponentContainer> NetList;
+        typedef NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>> NetListOwnerPtr;
         typedef NetworkingObjects::NetObjOrderedListObjectInfo<CanvasComponentContainer> ObjInfo;
         typedef std::shared_ptr<ObjInfo> ObjInfoSharedPtr;
         typedef std::weak_ptr<ObjInfo> ObjInfoWeakPtr;
@@ -29,16 +32,21 @@ class CanvasComponentContainer {
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         CanvasComponent& get_comp() const;
-        const CoordSpaceHelper& get_coords() const;
-        std::optional<SCollision::AABB<WorldScalar>> get_world_bounds() const;
+        SCollision::AABB<WorldScalar> get_world_bounds() const;
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void commit_update(DrawingProgram& drawP);
+        void commit_transform_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         void commit_transform(DrawingProgram& drawP);
         void commit_update_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         bool should_draw(const DrawData& drawData) const;
         bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) const;
         bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
         bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
+        void set_owner_obj_info(const ObjInfoSharedPtr& ownerObjInfo);
+        void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
+
+        std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
+        CoordSpaceHelper coords;
     private:
         friend class BrushStrokeCanvasComponent;
         friend class ImageCanvasComponent;
@@ -58,9 +66,7 @@ class CanvasComponentContainer {
         TransformDrawData calculate_draw_transform(const DrawData& drawData) const;
         void calculate_world_bounds();
 
-        ObjInfo* objInfo = nullptr;
-
+        ObjInfoWeakPtr objInfo;
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentAllocator> compAllocator;
-        CoordSpaceHelper coords;
 };

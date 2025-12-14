@@ -1,8 +1,8 @@
 #pragma once
 #include <include/core/SkCanvas.h>
 #include "../DrawData.hpp"
-#include "../DrawComponents/DrawComponent.hpp"
 #include "DrawingProgramToolBase.hpp"
+#include "DrawingProgramCache.hpp"
 
 class DrawingProgram;
 
@@ -17,6 +17,6 @@ class EraserTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
 
-        std::unordered_set<CollabListType::ObjectInfoPtr> erasedComponents;
+        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> erasedComponents; // Pointers will be erased from this set if theyre erased in the main list (done by callback)
         std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>> erasedBVHNodes;
 };

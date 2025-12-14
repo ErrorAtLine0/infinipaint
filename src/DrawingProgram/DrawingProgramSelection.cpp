@@ -27,18 +27,18 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
-const std::unordered_set<CollabListType::ObjectInfoPtr>& DrawingProgramSelection::get_selected_set() {
+const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& DrawingProgramSelection::get_selected_set() {
     return selectedSet;
 }
 
-void DrawingProgramSelection::erase_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+void DrawingProgramSelection::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
     if(is_selected(objToCheck)) {
         cache.erase_component(objToCheck);
         selectedSet.erase(objToCheck);
     }
 }
 
-void DrawingProgramSelection::fully_collided_erase_select_objects_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
+void DrawingProgramSelection::fully_collided_erase_select_objects_func(std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
     if(bvhNode) {
         for(auto& c : bvhNode->components)
             selectedComponents.emplace(c);
@@ -47,7 +47,7 @@ void DrawingProgramSelection::fully_collided_erase_select_objects_func(std::unor
     }
 }
 
-std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld) {
+std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CanvasComponentContainer::ObjInfoSharedPtr>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld) {
     auto toRet = [&](const auto& bvhNode, auto& comps) {
         if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
@@ -61,7 +61,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vect
         std::erase_if(comps, [&](auto& c) {
             if(c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                 selectedComponents.emplace(c);
-                drawP.compCache.invalidate_cache_at_aabb_before_pos(c->obj->worldAABB.value(), c->obj->collabListInfo.lock()->pos);
+                drawP.compCache.invalidate_cache_at_aabb_before_pos(c->obj->get_world_bounds(), c->pos);
                 return true;
             }
             return false;
@@ -73,9 +73,9 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vect
 }
 
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, bool frontObjectOnly) {
-    std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
+    std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> selectedComponents;
     if(frontObjectOnly) {
-        CollabListType::ObjectInfoPtr a = drawP.compCache.get_front_object_colliding_with(cC);
+        CanvasComponentContainer::ObjInfoSharedPtr a = drawP.compCache.get_front_object_colliding_with(cC);
         if(a) {
             selectedComponents.emplace(a);
             drawP.compCache.erase_component(a);
@@ -90,9 +90,9 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
 
 void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, bool frontObjectOnly) {
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
-    std::unordered_set<CollabListType::ObjectInfoPtr> selectedComponents;
+    std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> selectedComponents;
     if(frontObjectOnly) {
-        CollabListType::ObjectInfoPtr a = cache.get_front_object_colliding_with(cC);
+        CanvasComponentContainer::ObjInfoSharedPtr a = cache.get_front_object_colliding_with(cC);
         if(a) {
             selectedComponents.emplace(a);
             cache.erase_component(a);
@@ -117,7 +117,7 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
     }
 }
 
-void DrawingProgramSelection::add_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection) {
+void DrawingProgramSelection::add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection) {
     selectedSet.insert(newSelection.begin(), newSelection.end());
     for(auto& obj : newSelection)
         cache.add_component(obj);
@@ -125,7 +125,7 @@ void DrawingProgramSelection::add_to_selection(const std::unordered_set<CollabLi
     calculate_initial_rotate_center_location();
 }
 
-void DrawingProgramSelection::set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection) {
+void DrawingProgramSelection::set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection) {
     selectedSet = newSelection;
     for(auto& obj : selectedSet)
         cache.add_component(obj);
@@ -139,9 +139,9 @@ bool DrawingProgramSelection::is_something_selected() {
 
 void DrawingProgramSelection::calculate_aabb() {
     if(is_something_selected()) {
-        initialSelectionAABB = (*selectedSet.begin())->obj->worldAABB.value();
+        initialSelectionAABB = (*selectedSet.begin())->obj->get_world_bounds();
         for(auto& c : selectedSet)
-            initialSelectionAABB.include_aabb_in_bounds(c->obj->worldAABB.value());
+            initialSelectionAABB.include_aabb_in_bounds(c->obj->get_world_bounds());
     }
 }
 
@@ -149,7 +149,7 @@ void DrawingProgramSelection::deselect_all() {
     if(is_something_selected()) {
         bool cacheWillRebuildAnyway = selectedSet.size() >= DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
         if(cacheWillRebuildAnyway)
-            drawP.compCache.test_rebuild(drawP.components.client_list(), true);
+            drawP.compCache.test_rebuild(drawP.components->get_data(), true);
         else {
             for(auto& obj : selectedSet)
                 drawP.compCache.add_component(obj);
@@ -162,99 +162,51 @@ void DrawingProgramSelection::deselect_all() {
 void DrawingProgramSelection::commit_transform_selection() {
     auto selectedSetTemp = selectedSet;
 
-    std::vector<CollabListType::ObjectInfoPtr> a(selectedSet.begin(), selectedSet.end());
-    std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsFrom;
+    std::vector<CanvasComponentContainer::ObjInfoSharedPtr> a(selectedSet.begin(), selectedSet.end());
+    std::vector<std::pair<CanvasComponentContainer::ObjInfoSharedPtr, CoordSpaceHelper>> transformsFrom;
     for(auto& transformedObj : a)
         transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
     bool isSingleThread = a.size() < DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
     parallel_loop_container(a, [&](auto& obj) {
         obj->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(obj->obj->coords);
-        obj->obj->commit_transform(drawP, false);
+        obj->obj->commit_transform_dont_invalidate_cache(drawP);
     }, isSingleThread);
-    std::vector<std::pair<CollabListType::ObjectInfoPtr, CoordSpaceHelper>> transformsTo;
-    std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
+    std::vector<std::pair<CanvasComponentContainer::ObjInfoSharedPtr, CoordSpaceHelper>> transformsTo;
+    std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transformsToSend;
     for(auto& transformedObj : a) {
-        transformsToSend.emplace_back(transformedObj->obj->id, transformedObj->obj->coords);
+        transformsToSend.emplace_back(transformedObj->obj.get_net_id(), transformedObj->obj->coords);
         transformsTo.emplace_back(transformedObj, transformedObj->obj->coords);
     }
-    DrawComponent::client_send_transform_many(drawP, transformsToSend);
-    drawP.world.undo.push(UndoManager::UndoRedoPair{
-        [isSingleThread, &drawP = drawP, transformsFrom = transformsFrom]() {
-            std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
-            for(auto& [comp, coords] : transformsFrom) {
-                auto lockObjInfo = comp->obj->collabListInfo.lock();
-                if(lockObjInfo)
-                    transformsToSend.emplace_back(lockObjInfo->obj->id, coords);
-                else
-                    return false;
-            }
-
-            parallel_loop_container(transformsFrom, [&](auto& p) {
-                auto& [comp, coords] = p;
-                comp->obj->coords = coords;
-                comp->obj->commit_transform(drawP, isSingleThread);
-            }, isSingleThread);
-
-            DrawComponent::client_send_transform_many(drawP, transformsToSend);
-
-            if(!isSingleThread)
-                drawP.force_rebuild_cache();
-
-            return true;
-        },
-        [isSingleThread, &drawP = drawP, transformsTo = transformsTo]() {
-            std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
-            for(auto& [comp, coords] : transformsTo) {
-                auto lockObjInfo = comp->obj->collabListInfo.lock();
-                if(lockObjInfo)
-                    transformsToSend.emplace_back(lockObjInfo->obj->id, coords);
-                else
-                    return false;
-            }
-
-            parallel_loop_container(transformsTo, [&](auto& p) {
-                auto& [comp, coords] = p;
-                comp->obj->coords = coords;
-                comp->obj->commit_transform(drawP, isSingleThread);
-            }, isSingleThread);
-
-            DrawComponent::client_send_transform_many(drawP, transformsToSend);
-
-            if(!isSingleThread)
-                drawP.force_rebuild_cache();
-
-            return true;
-        }
-    });
+    //DrawComponent::client_send_transform_many(drawP, transformsToSend);
 
     reset_selection_data();
     reset_transform_data();
     set_to_selection(selectedSetTemp);
 }
 
-CollabListType::ObjectInfoPtr DrawingProgramSelection::get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC) {
+CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramSelection::get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC) {
     return cache.get_front_object_colliding_with(cC);
 }
 
-void DrawingProgramSelection::invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt) {
-    cache.invalidate_cache_at_optional_aabb_before_pos(aabb, placementToInvalidateAt);
+void DrawingProgramSelection::invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt) {
+    cache.invalidate_cache_at_aabb_before_pos(aabb, placementToInvalidateAt);
 }
 
 void DrawingProgramSelection::clear_own_cached_surfaces() {
     cache.clear_own_cached_surfaces();
 }
 
-void DrawingProgramSelection::preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck) {
+void DrawingProgramSelection::preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
     cache.preupdate_component(objToCheck);
 }
 
-bool DrawingProgramSelection::is_selected(const CollabListType::ObjectInfoPtr& objToCheck) {
+bool DrawingProgramSelection::is_selected(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
     return selectedSet.contains(objToCheck);
 }
 
 void DrawingProgramSelection::delete_all() {
     if(is_something_selected()) {
-        drawP.client_erase_set(selectedSet);
+        //drawP.client_erase_set(selectedSet);
         reset_selection_data();
         reset_transform_data();
     }
@@ -262,26 +214,26 @@ void DrawingProgramSelection::delete_all() {
 
 // NOTE: Only run this if no transformations happened
 void DrawingProgramSelection::selection_to_clipboard() {
-    auto& clipboard = drawP.world.main.clipboard;
-    std::unordered_set<ServerClientID> resourceSet;
-    for(auto& c : selectedSet)
-        c->obj->get_used_resources(resourceSet);
-    std::vector<CollabListType::ObjectInfoPtr> compVecSort(selectedSet.begin(), selectedSet.end());
-    std::sort(compVecSort.begin(), compVecSort.end(), [&](auto& a, auto& b) {
-        return a->pos < b->pos;
-    });
-    clipboard.components.clear();
-    for(auto& c : compVecSort)
-        clipboard.components.emplace_back(c->obj->deep_copy(drawP));
-    clipboard.pos = initialSelectionAABB.center();
-    clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
-    drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
+    //auto& clipboard = drawP.world.main.clipboard;
+    //std::unordered_set<ServerClientID> resourceSet;
+    //for(auto& c : selectedSet)
+    //    c->obj->get_used_resources(resourceSet);
+    //std::vector<CanvasComponentContainer::ObjInfoSharedPtr> compVecSort(selectedSet.begin(), selectedSet.end());
+    //std::sort(compVecSort.begin(), compVecSort.end(), [&](auto& a, auto& b) {
+    //    return a->pos < b->pos;
+    //});
+    //clipboard.components.clear();
+    //for(auto& c : compVecSort)
+    //    clipboard.components.emplace_back(c->obj->deep_copy(drawP));
+    //clipboard.pos = initialSelectionAABB.center();
+    //clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
+    //drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
 }
 
 void DrawingProgramSelection::update() {
     if(is_something_selected()) {
         if(cache.check_if_rebuild_should_occur())
-            cache.test_rebuild(std::vector<CollabListType::ObjectInfoPtr>(selectedSet.begin(), selectedSet.end()), true);
+            cache.test_rebuild(std::vector<CanvasComponentContainer::ObjInfoSharedPtr>(selectedSet.begin(), selectedSet.end()), true);
 
         selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
         selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
@@ -397,45 +349,42 @@ bool DrawingProgramSelection::is_being_transformed() {
 }
 
 void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
-    auto& clipboard = drawP.world.main.clipboard;
+    //auto& clipboard = drawP.world.main.clipboard;
 
-    if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
-        drawP.switch_to_tool(DrawingProgramToolType::EDIT);
+    //if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
+    //    drawP.switch_to_tool(DrawingProgramToolType::EDIT);
 
-    uint64_t allPlacement = drawP.components.client_list().size();
-    std::vector<std::shared_ptr<DrawComponent>> placedComponents;
-    WorldVec mousePos = drawP.world.drawData.cam.c.from_space(pasteScreenPos);
-    WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
-    WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
-    WorldScalar scaleLimit(0.001);
-    for(auto& c : drawP.world.main.clipboard.components) {
-        if((c->coords.inverseScale / scaleMultiplier) < scaleLimit) {
-            Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
-            return;
-        }
-    }
+    //uint32_t allPlacement = drawP.components->size();
+    //std::vector<std::shared_ptr<DrawComponent>> placedComponents;
+    //WorldVec mousePos = drawP.world.drawData.cam.c.from_space(pasteScreenPos);
+    //WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
+    //WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
+    //WorldScalar scaleLimit(0.001);
+    //for(auto& c : drawP.world.main.clipboard.components) {
+    //    if((c->coords.inverseScale / scaleMultiplier) < scaleLimit) {
+    //        Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
+    //        return;
+    //    }
+    //}
 
-    std::unordered_map<ServerClientID, ServerClientID> resourceRemapIDs;
-    for(auto& r : clipboard.resources)
-        resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
-    for(auto& c : clipboard.components)
-        placedComponents.emplace_back(c->deep_copy(drawP));
-    drawP.addToCompCacheOnInsert = false;
-    auto compListInserted = drawP.components.client_insert_ordered_vector_items(allPlacement, placedComponents);
-    parallel_loop_container(compListInserted, [&](auto& c) {
-        c->obj->remap_resource_ids(resourceRemapIDs);
-        c->obj->coords.translate(-moveVec);
-        c->obj->coords.scale_about(mousePos, scaleMultiplier);
-        //std::cout << c->obj->coords.inverseScale << std::endl;
-        //if(c->obj->coords.inverseScale == WorldScalar(0))
-        //    throw std::runtime_error("DONE");
-        c->obj->commit_transform(drawP, false);
-    });
-    DrawComponent::client_send_place_many(drawP, compListInserted);
-    drawP.addToCompCacheOnInsert = true;
-    std::unordered_set<CollabListType::ObjectInfoPtr> compSetInserted(compListInserted.begin(), compListInserted.end());
-    set_to_selection(compSetInserted);
-    drawP.add_undo_place_components(compSetInserted);
+    //std::unordered_map<ServerClientID, ServerClientID> resourceRemapIDs;
+    //for(auto& r : clipboard.resources)
+    //    resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
+    //for(auto& c : clipboard.components)
+    //    placedComponents.emplace_back(c->deep_copy(drawP));
+    //drawP.addToCompCacheOnInsert = false;
+    //auto compListInserted = drawP.components.client_insert_ordered_vector_items(allPlacement, placedComponents);
+    //parallel_loop_container(compListInserted, [&](auto& c) {
+    //    c->obj->remap_resource_ids(resourceRemapIDs);
+    //    c->obj->get_coords().translate(-moveVec);
+    //    c->obj->get_coords().scale_about(mousePos, scaleMultiplier);
+    //    c->obj->commit_transform(drawP, false);
+    //});
+    //DrawComponent::client_send_place_many(drawP, compListInserted);
+    //drawP.addToCompCacheOnInsert = true;
+    //std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> compSetInserted(compListInserted.begin(), compListInserted.end());
+    //set_to_selection(compSetInserted);
+    //drawP.add_undo_place_components(compSetInserted);
 }
 
 void DrawingProgramSelection::rebuild_cam_space() {

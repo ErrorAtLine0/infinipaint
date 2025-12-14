@@ -3,9 +3,6 @@
 #include "Helpers/HsvRgb.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "ServerData.hpp"
-#include "../DrawComponents/DrawBrushStroke.hpp"
-#include "../DrawComponents/DrawRectangle.hpp"
-#include "../DrawComponents/DrawEllipse.hpp"
 #include "../SharedTypes.hpp"
 #include "../CoordSpaceHelper.hpp"
 #include <cereal/archives/portable_binary.hpp>
@@ -19,17 +16,11 @@
 #include <chrono>
 #include <limits>
 #include <fstream>
-#include "../DrawComponents/DrawComponent.hpp"
 #include "../World.hpp"
 
 MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     world(initWorld)
 {
-    for(auto& c : world.drawProg.components.client_list()) {
-        data.components.emplace_back(c->obj->copy(world.drawProg));
-        data.components.back()->id = c->obj->id;
-        data.idToComponentMap.emplace(data.components.back()->id, data.components.back());
-    }
     data.canvasScale = world.canvasScale;
     data.resources = world.rMan.resource_list();
     data.canvasBackColor = convert_vec3<Vector3f>(world.canvasTheme.backColor);
@@ -96,116 +87,6 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         auto& c = clients[client->customID];
         message(c.cursorPos);
         netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_SCREEN_MOUSE, c.serverID, c.cursorPos);
-    });
-    netServer->add_recv_callback(SERVER_PLACE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        uint64_t placement;
-        DrawComponentType type;
-        message(placement, type);
-        auto newComp = DrawComponent::allocate_comp_type(type);
-        message(newComp->id, newComp->coords, *newComp);
-        placement = std::min<uint64_t>(placement, data.components.size());
-        data.components.insert(data.components.begin() + placement, newComp);
-        data.idToComponentMap.emplace(newComp->id, newComp);
-
-        auto& c = clients[client->customID];
-        if(c.canvasScale < data.canvasScale)
-            newComp->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
-
-        newComp->server_send_place(*this, placement);
-    });
-    netServer->add_recv_callback(SERVER_PLACE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::vector<CollabListType::ObjectInfoPtr> objOrderedVector;
-        SendOrderedComponentVectorOp a{&objOrderedVector};
-        message(a);
-
-        std::vector<std::shared_ptr<DrawComponent>> objOrderedComponentPairs;
-        for(auto& o : objOrderedVector)
-            objOrderedComponentPairs.emplace_back(o->obj);
-
-        uint64_t startPoint = 0;
-
-        if(objOrderedVector.empty())
-            return;
-
-        data.idToComponentMap.emplace(objOrderedVector.front()->obj->id, objOrderedVector.front()->obj);
-
-        for(uint64_t i = 1; i < static_cast<uint64_t>(objOrderedVector.size()); i++) {
-            auto& obj = objOrderedVector[i];
-            data.idToComponentMap.emplace(obj->obj->id, obj->obj);
-            if(obj->pos - objOrderedVector[startPoint]->pos != (i - startPoint)) {
-                uint64_t insertPosition = std::min<uint64_t>(data.components.size(), objOrderedVector[startPoint]->pos);
-                data.components.insert(data.components.begin() + insertPosition, objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.begin() + i);
-                startPoint = i;
-            }
-        }
-
-        data.components.insert(data.components.begin() + std::min<uint64_t>(data.components.size(), objOrderedVector[startPoint]->pos), objOrderedComponentPairs.begin() + startPoint, objOrderedComponentPairs.end());
-
-        startPoint = 0;
-
-        for(uint64_t i = 0; i < data.components.size(); i++) {
-            if(startPoint >= objOrderedVector.size())
-                break;
-            auto& c = data.components[i];
-            auto& o = objOrderedVector[startPoint];
-            if(c == o->obj) {
-                o->pos = i;
-                startPoint++;
-            }
-        }
-
-        auto& c = clients[client->customID];
-        if(c.canvasScale < data.canvasScale) {
-            for(auto& o : objOrderedVector)
-                o->obj->scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale));
-        }
-
-        DrawComponent::server_send_place_many(*this, objOrderedVector);
-    });
-    netServer->add_recv_callback(SERVER_ERASE_SINGLE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        ServerClientID compToRemove;
-        message(compToRemove);
-        DrawComponent::server_send_erase(*this, compToRemove);
-        data.idToComponentMap.erase(compToRemove);
-        std::erase_if(data.components, [&](auto& p) {
-            return p->id == compToRemove;
-        });
-    });
-    netServer->add_recv_callback(SERVER_ERASE_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::unordered_set<ServerClientID> idsToRemove;
-        message(idsToRemove);
-        DrawComponent::server_send_erase_set(*this, idsToRemove);
-        for(auto& id : idsToRemove)
-            data.idToComponentMap.erase(id);
-        std::erase_if(data.components, [&](auto& p) {
-            return idsToRemove.contains(p->id);
-        });
-    });
-    netServer->add_recv_callback(SERVER_TRANSFORM_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::vector<std::pair<ServerClientID, CoordSpaceHelper>> transformsToSend;
-        message(transformsToSend);
-        for(auto& t : transformsToSend) {
-            auto it = data.idToComponentMap.find(t.first);
-            if(it != data.idToComponentMap.end())
-                it->second->coords = t.second;
-        }
-        auto& c = clients[client->customID];
-        if(c.canvasScale < data.canvasScale) {
-            for(auto& [id, coord] : transformsToSend)
-                coord.scale_about(WorldVec{0, 0}, FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, data.canvasScale - c.canvasScale), true);
-        }
-        DrawComponent::server_send_transform_many(*this, transformsToSend);
-    });
-    netServer->add_recv_callback(SERVER_UPDATE_COMPONENT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        bool isFinalUpdate;
-        ServerClientID idToUpdate;
-        message(isFinalUpdate, idToUpdate);
-        auto it = data.idToComponentMap.find(idToUpdate);
-        if(it != data.idToComponentMap.end()) {
-            std::shared_ptr<DrawComponent>& comp = it->second;
-            message(*comp);
-            comp->server_send_update(*this, isFinalUpdate);
-        }
     });
     netServer->add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         auto& c = clients[client->customID];

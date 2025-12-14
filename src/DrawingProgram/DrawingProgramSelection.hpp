@@ -10,7 +10,7 @@ class DrawingProgramSelection {
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, bool frontObjectOnly = false);
         void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, bool frontObjectOnly = false);
 
-        CollabListType::ObjectInfoPtr get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC);
+        CanvasComponentContainer::ObjInfoSharedPtr get_front_object_colliding_with(const SCollision::ColliderCollection<float>& cC);
         
         void deselect_all();
         void update();
@@ -18,31 +18,31 @@ class DrawingProgramSelection {
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
         bool is_something_selected();
         bool mouse_collided_with_selection();
-        void erase_component(const CollabListType::ObjectInfoPtr& objToCheck);
-        bool is_selected(const CollabListType::ObjectInfoPtr& objToCheck);
-        const std::unordered_set<CollabListType::ObjectInfoPtr>& get_selected_set();
+        void erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        bool is_selected(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& get_selected_set();
 
         bool is_being_transformed();
 
-        void invalidate_cache_at_optional_aabb_before_pos(const std::optional<SCollision::AABB<WorldScalar>>& aabb, uint64_t placementToInvalidateAt);
+        void invalidate_cache_at_aabb_before_pos(const SCollision::AABB<WorldScalar>& aabb, uint64_t placementToInvalidateAt);
         void clear_own_cached_surfaces();
-        void preupdate_component(const CollabListType::ObjectInfoPtr& objToCheck);
+        void preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
 
         void selection_to_clipboard();
         void paste_clipboard(Vector2f pasteScreenPos);
         void delete_all();
     private:
-        std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CollabListType::ObjectInfoPtr>&)> erase_select_objects_in_bvh_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld);
-        void fully_collided_erase_select_objects_func(std::unordered_set<CollabListType::ObjectInfoPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
+        std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&, std::vector<CanvasComponentContainer::ObjInfoSharedPtr>&)> erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld);
+        void fully_collided_erase_select_objects_func(std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& selectedComponents, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
 
         bool mouse_collided_with_selection_aabb();
         bool mouse_collided_with_scale_point();
         bool mouse_collided_with_rotate_center_handle_point();
         bool mouse_collided_with_rotate_handle_point();
 
-        void set_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection);
-        void add_to_selection(const std::unordered_set<CollabListType::ObjectInfoPtr>& newSelection);
-        void add_erased_objects_back_to_cache(const std::unordered_set<CollabListType::ObjectInfoPtr>& erasedObjects);
+        void set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection);
+        void add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection);
+        void add_erased_objects_back_to_cache(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& erasedObjects);
 
         void commit_transform_selection();
 
@@ -59,7 +59,7 @@ class DrawingProgramSelection {
 
         CoordSpaceHelperTransform selectionTransformCoords;
 
-        std::unordered_set<CollabListType::ObjectInfoPtr> selectedSet;
+        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> selectedSet;
         DrawingProgramCache cache;
         DrawingProgram& drawP;
 

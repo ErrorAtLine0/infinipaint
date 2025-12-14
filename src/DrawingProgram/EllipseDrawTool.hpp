@@ -1,8 +1,8 @@
 #pragma once
 #include "DrawingProgramToolBase.hpp"
-#include "../DrawComponents/DrawEllipse.hpp"
-#include <any>
 #include <Helpers/SCollision.hpp>
+#include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
+#include "../CanvasComponents/CanvasComponentContainer.hpp"
 
 class DrawingProgram;
 
@@ -19,10 +19,8 @@ class EllipseDrawTool : public DrawingProgramToolBase {
     private:
         void commit();
 
-        struct EllipseDrawControls {
-            Vector2f startAt;
-            int fillStrokeMode = 1;
-            int drawStage = 0;
-            std::shared_ptr<DrawEllipse> intermediateItem;
-        } controls;
+        Vector2f startAt;
+        int fillStrokeMode = 1;
+        int drawStage = 0;
+        NetworkingObjects::NetObjWeakPtr<CanvasComponentContainer> intermediateContainer;
 };

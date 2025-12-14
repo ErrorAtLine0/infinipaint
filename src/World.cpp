@@ -1,5 +1,4 @@
 #include "World.hpp"
-#include "DrawComponents/DrawComponent.hpp"
 #include <Helpers/HsvRgb.hpp>
 #include <Helpers/MathExtras.hpp>
 #include <Helpers/Networking/ByteStream.hpp>
@@ -14,7 +13,7 @@
 #include "Toolbar.hpp"
 #include "VersionConstants.hpp"
 #include "WorldGrid.hpp"
-#include "cereal/archives/portable_binary.hpp"
+#include <cereal/archives/portable_binary.hpp>
 #include <fstream>
 #include "FileHelpers.hpp"
 #include "FontData.hpp"
@@ -24,6 +23,8 @@
 #include <cereal/types/vector.hpp>
 #include <Helpers/Networking/NetLibrary.hpp>
 #include <zstd.h>
+#include "CanvasComponents/CanvasComponentContainer.hpp"
+#include "CanvasComponents/CanvasComponentAllocator.hpp"
 
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
@@ -40,6 +41,7 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     init_net_obj_type_list();
     gridMan.init();
     bMan.init();
+    drawProg.init();
 
     set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
@@ -82,6 +84,8 @@ void World::init_net_obj_type_list() {
     NetworkingObjects::register_ordered_list_class<Bookmark>(netObjMan);
     delayedUpdateObjectManager.register_class<WorldGrid>(netObjMan);
     NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
+    CanvasComponentAllocator::register_class(delayedUpdateObjectManager, netObjMan);
+    CanvasComponentContainer::register_class(netObjMan);
 }
 
 void World::init_client_callbacks() {
@@ -99,7 +103,7 @@ void World::init_client_callbacks() {
             message(newBackColor);
             set_canvas_background_color(newBackColor, false);
             message(canvasScale);
-            drawProg.initialize_draw_data(message);
+            //drawProg.initialize_draw_data(message);
             bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
             gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
         }
@@ -302,7 +306,6 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true, drawData.cam.c, main.window.size.cast<float>().eval());
     conType = CONNECTIONTYPE_SERVER;
     netSource = initNetSource;
-    drawProg.components.set_server_from_client_list();
     clientStillConnecting = true;
 }
 
@@ -387,7 +390,7 @@ void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std:
 }
 
 ClientPortionID World::get_max_id(ServerPortionID serverID) {
-    return std::max(rMan.get_max_id(serverID), drawProg.get_max_id(serverID));
+    return rMan.get_max_id(serverID);
 }
 
 void World::save_file(cereal::PortableBinaryOutputArchive& a) const {

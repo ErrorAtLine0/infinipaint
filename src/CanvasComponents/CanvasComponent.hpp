@@ -28,6 +28,7 @@ class CanvasComponent {
 
     protected:
         friend class CanvasComponentContainer;
+        friend class CanvasComponentAllocator;
 
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) const = 0;
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
