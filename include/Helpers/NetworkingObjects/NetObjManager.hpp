@@ -76,6 +76,7 @@ namespace NetworkingObjects {
             }
 
             template <typename T> static void send_client_update(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                assert(!isServer);
                 if(ptr.get_obj_man()->client && !ptr.get_obj_man()->client->is_disconnected()) {
                     auto ss(std::make_shared<std::stringstream>());
                     {
@@ -88,6 +89,7 @@ namespace NetworkingObjects {
             }
 
             template <typename T> static void send_server_update_to_client(const NetObjTemporaryPtr<T>& ptr, const std::shared_ptr<NetServer::ClientData>& clientToSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                assert(isServer);
                 if(ptr.get_obj_man()->server && !ptr.get_obj_man()->server->is_disconnected()) {
                     auto ss(std::make_shared<std::stringstream>());
                     {
@@ -100,6 +102,7 @@ namespace NetworkingObjects {
             }
 
             template <typename T> static void send_server_update_to_all_clients_except(const NetObjTemporaryPtr<T>& ptr, const std::shared_ptr<NetServer::ClientData>& clientToNotSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                assert(isServer);
                 if(ptr.get_obj_man()->server && !ptr.get_obj_man()->server->is_disconnected()) {
                     auto ss(std::make_shared<std::stringstream>());
                     {
@@ -112,6 +115,7 @@ namespace NetworkingObjects {
             }
 
             template <typename T> static void send_server_update_to_all_clients(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+                assert(isServer);
                 if(ptr.get_obj_man()->server && !ptr.get_obj_man()->server->is_disconnected()) {
                     auto ss(std::make_shared<std::stringstream>());
                     {

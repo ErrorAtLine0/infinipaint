@@ -433,7 +433,7 @@ namespace NetworkingObjects {
                     this->call_erase_callback(clientData[indexToErase]);
                     clientData.erase(clientData.begin() + indexToErase);
                 }
-                l.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&ids](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&ids](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::ERASE_MANY, ids);
                 });
                 set_positions_for_object_info_vector<T>(clientData, indicesToErase.front());
