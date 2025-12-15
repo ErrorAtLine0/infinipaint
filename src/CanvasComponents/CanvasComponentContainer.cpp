@@ -56,10 +56,12 @@ void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, 
 }
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {
-    canvas->save();
-    canvas_do_transform(canvas, calculate_draw_transform(drawData));
-    get_comp().draw(canvas, drawData);
-    canvas->restore();
+    if(should_draw(drawData)) {
+        canvas->save();
+        canvas_do_transform(canvas, calculate_draw_transform(drawData));
+        get_comp().draw(canvas, drawData);
+        canvas->restore();
+    }
 }
 
 void CanvasComponentContainer::set_owner_obj_info(const ObjInfoSharedPtr& ownerObjInfo) {

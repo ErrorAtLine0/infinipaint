@@ -43,7 +43,6 @@ void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData
         canvas->drawPath(*brushPath, paint);
     else
         canvas->drawPath(*brushPathLOD[mipmapLevel - 1], paint);
-    canvas->restore();
 }
 
 void BrushStrokeCanvasComponent::set_data_from(const CanvasComponent& other) {
