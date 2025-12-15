@@ -12,6 +12,7 @@ CanvasComponentContainer::CanvasComponentContainer() { }
 
 CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type) {
     compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>(type);
+    compAllocator->comp->compContainer = this;
 }
 
 void CanvasComponentContainer::register_class(NetObjManager& objMan) {
@@ -37,6 +38,7 @@ void CanvasComponentContainer::write_constructor_func(const NetworkingObjects::N
 void CanvasComponentContainer::read_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
     a(o->coords);
     o->compAllocator = o.get_obj_man()->read_create_message<CanvasComponentAllocator>(a, c);
+    o->compAllocator->comp->compContainer = o.get();
 }
 
 void CanvasComponentContainer::delay_post_assignment_update(DrawingProgram& drawP, CanvasComponent& comp) {

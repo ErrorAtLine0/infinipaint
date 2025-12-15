@@ -66,6 +66,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
                 a(CLIENT_INITIAL_DATA, isDirectConnect, newClient.serverID, newClient.cursorColor, newClient.displayName, newClient.camCoords, newClient.windowSize, fileDisplayName, clients, data);
                 world.bMan.bookmarks.write_create_message(a);
                 world.gridMan.grids.write_create_message(a);
+                world.drawProg.write_components_server(a);
             }
             netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
             for(auto& [id, rData] : data.resources) {

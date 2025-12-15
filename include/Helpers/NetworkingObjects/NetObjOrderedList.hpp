@@ -594,6 +594,7 @@ namespace NetworkingObjects {
                 //}
 
                 // Code that calls post_sync_callback
+                set_positions_for_object_info_vector<T>(clientData);
                 for(auto& [id, objInfo] : newServerObjects)
                     this->call_insert_callback(objInfo);
                 this->call_post_sync_callback();

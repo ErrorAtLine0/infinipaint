@@ -95,6 +95,19 @@ void DrawingProgram::clear_draw_cache() {
     selection.clear_own_cached_surfaces();
 }
 
+void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive& a) {
+    components.write_create_message(a);
+}
+
+void DrawingProgram::read_components_client(cereal::PortableBinaryInputArchive& a) {
+    components = world.netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>>(a, nullptr);
+    parallel_loop_all_components([&](const auto& c){
+        c->obj->commit_update_dont_invalidate_cache(*this);
+    });
+    compCache.test_rebuild(components->get_data(), true);
+    set_component_list_callbacks();
+}
+
 void DrawingProgram::toolbar_gui() {
     Toolbar& t = world.main.toolbar;
     t.gui.push_id("Drawing Program Toolbar GUI");

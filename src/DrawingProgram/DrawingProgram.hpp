@@ -31,6 +31,8 @@ class DrawingProgram {
         void update();
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
+        void write_components_server(cereal::PortableBinaryOutputArchive& a);
+        void read_components_client(cereal::PortableBinaryInputArchive& a);
 
         std::unordered_set<ServerClientID> get_used_resources() const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);

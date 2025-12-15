@@ -1246,7 +1246,8 @@ void Toolbar::performance_metrics() {
         std::stringstream a;
         a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
         gui.text_label(a.str());
-        gui.text_label("Item Count: " + std::to_string(main.world->drawProg.components->size()));
+        if(main.world->drawProg.components)
+            gui.text_label("Item Count: " + std::to_string(main.world->drawProg.components->size()));
         std::stringstream b;
         b << "Coord: " << main.world->drawData.cam.c.pos.x().display_int_str(5) << ", " << main.world->drawData.cam.c.pos.y().display_int_str(5);
         gui.text_label(b.str());

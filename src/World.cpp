@@ -23,6 +23,7 @@
 #include <cereal/types/vector.hpp>
 #include <Helpers/Networking/NetLibrary.hpp>
 #include <zstd.h>
+#include "CanvasComponents/CanvasComponent.hpp"
 #include "CanvasComponents/CanvasComponentContainer.hpp"
 #include "CanvasComponents/CanvasComponentAllocator.hpp"
 
@@ -86,6 +87,7 @@ void World::init_net_obj_type_list() {
     NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
     CanvasComponentAllocator::register_class(*this, netObjMan);
     CanvasComponentContainer::register_class(netObjMan);
+    NetworkingObjects::register_ordered_list_class<CanvasComponentContainer>(netObjMan);
 }
 
 void World::init_client_callbacks() {
@@ -103,9 +105,9 @@ void World::init_client_callbacks() {
             message(newBackColor);
             set_canvas_background_color(newBackColor, false);
             message(canvasScale);
-            //drawProg.initialize_draw_data(message);
             bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
             gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
+            drawProg.read_components_client(message);
         }
         nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
