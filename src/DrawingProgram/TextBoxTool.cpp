@@ -96,10 +96,12 @@ bool TextBoxTool::prevent_undo_or_redo() {
 }
 
 void TextBoxTool::commit() {
-    NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-    containerPtr->commit_update(drawP);
-    containerPtr->send_comp_update(drawP, true);
-    objInfoBeingEdited = nullptr;
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, true);
+        objInfoBeingEdited = nullptr;
+    }
 }
 
 void TextBoxTool::draw(SkCanvas* canvas, const DrawData& drawData) {

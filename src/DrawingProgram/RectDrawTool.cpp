@@ -96,10 +96,12 @@ bool RectDrawTool::prevent_undo_or_redo() {
 }
 
 void RectDrawTool::commit() {
-    NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-    containerPtr->commit_update(drawP);
-    containerPtr->send_comp_update(drawP, true);
-    objInfoBeingEdited = nullptr;
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, true);
+        objInfoBeingEdited = nullptr;
+    }
 }
 
 void RectDrawTool::draw(SkCanvas* canvas, const DrawData& drawData) {

@@ -57,8 +57,8 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
         compEditTool->commit_edit_updates(objInfoBeingEdited, prevData);
         objInfoBeingEdited->obj->commit_update(drawP);
         objInfoBeingEdited->obj->send_comp_update(drawP, true);
+        objInfoBeingEdited = nullptr;
     }
-    objInfoBeingEdited = nullptr;
     pointHandles.clear();
     pointDragging = nullptr;
     isEditing = false;
