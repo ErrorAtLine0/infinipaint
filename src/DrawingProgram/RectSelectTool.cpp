@@ -20,6 +20,9 @@ void RectSelectTool::gui_toolbox() {
     drawP.world.main.toolbar.gui.text_label_centered("Rectangle Select");
 }
 
+void RectSelectTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 bool RectSelectTool::right_click_popup_gui(Vector2f popupPos) {
     return drawP.selection_action_menu(popupPos);
 }

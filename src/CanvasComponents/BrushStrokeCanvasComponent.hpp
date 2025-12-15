@@ -17,7 +17,7 @@ class BrushStrokeCanvasComponent : public CanvasComponent {
     public:
         constexpr static float DRAW_MINIMUM_LIMIT = 0.3;
 
-        virtual CompType get_type() const override;
+        virtual CanvasComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
@@ -30,6 +30,7 @@ class BrushStrokeCanvasComponent : public CanvasComponent {
         };
         std::shared_ptr<Data> d = std::make_shared<Data>(); // It's a pointer here since brush strokes cant be edited
 
+        virtual void set_data_from(const CanvasComponent& other) override;
     private:
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;

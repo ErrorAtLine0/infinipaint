@@ -1,5 +1,5 @@
 #pragma once
-#include "../DrawComponents/DrawTextBox.hpp"
+#include "../CanvasComponents/TextBoxCanvasComponent.hpp"
 #include "DrawingProgramEditToolBase.hpp"
 #include <Helpers/SCollision.hpp>
 #include <any>
@@ -10,14 +10,14 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
     public:
         TextBoxEditTool(DrawingProgram& initDrawP);
 
-        virtual void edit_start(EditTool& editTool, const std::shared_ptr<DrawComponent>& a, std::any& prevData) override;
-        virtual void commit_edit_updates(const std::shared_ptr<DrawComponent>& a, std::any& prevData) override;
-        virtual bool edit_update(const std::shared_ptr<DrawComponent>& a) override;
-        virtual bool edit_gui(const std::shared_ptr<DrawComponent>& a) override;
-        virtual bool right_click_popup_gui(const std::shared_ptr<DrawComponent>& comp, Vector2f popupPos) override;
+        virtual void edit_start(EditTool& editTool,const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) override;
+        virtual void commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) override;
+        virtual bool edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) override;
+        virtual bool edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) override;
+        virtual bool right_click_popup_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp, Vector2f popupPos) override;
     private:
         struct TextBoxEditToolAllData {
-            DrawTextBox::Data textboxData;
+            TextBoxCanvasComponent::Data textboxData;
             RichText::TextData richText;
         };
 
@@ -33,11 +33,11 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         RichText::ParagraphStyleData currentPStyle;
 
         uint8_t get_new_decoration_value();
-        void set_styles_at_selection(const std::shared_ptr<DrawTextBox>& a);
-        void add_undo_if_selecting_area(const std::shared_ptr<DrawTextBox>& a, const std::function<void()>& func);
+        void set_styles_at_selection(TextBoxCanvasComponent& a);
+        void add_undo_if_selecting_area(TextBoxCanvasComponent& a, const std::function<void()>& func);
         void add_undo(const std::function<void()>& func);
 
-        void hold_undo_data(const std::string& undoName, const std::shared_ptr<DrawTextBox>& a);
+        void hold_undo_data(const std::string& undoName, TextBoxCanvasComponent& a);
         void release_undo_data(const std::string& undoName);
 
         std::unordered_map<std::string, std::pair<RichText::TextBox::Cursor, RichText::TextData>> undoHeldData;
@@ -46,5 +46,5 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         std::vector<std::string> sortedFontList;
 
-        TextBoxEditToolAllData get_all_data(const std::shared_ptr<DrawTextBox>& a);
+        TextBoxEditToolAllData get_all_data(const TextBoxCanvasComponent& a);
 };

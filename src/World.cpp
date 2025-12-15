@@ -84,7 +84,7 @@ void World::init_net_obj_type_list() {
     NetworkingObjects::register_ordered_list_class<Bookmark>(netObjMan);
     delayedUpdateObjectManager.register_class<WorldGrid>(netObjMan);
     NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
-    CanvasComponentAllocator::register_class(delayedUpdateObjectManager, netObjMan);
+    CanvasComponentAllocator::register_class(*this, netObjMan);
     CanvasComponentContainer::register_class(netObjMan);
 }
 

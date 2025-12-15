@@ -24,15 +24,10 @@ DrawingProgramToolType EditTool::get_type() {
 
 void EditTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
-    if(controls.isEditing) {
-        std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();
-        if(a) {
-            bool editHappened = controls.compEditTool->edit_gui(a);
-            if(editHappened) {
-                a->commit_update(drawP);
-                a->client_send_update(drawP, true);
-            }
-        }
+    if(isEditing) {
+        bool editHappened = compEditTool->edit_gui(objInfoBeingEdited);
+        if(editHappened)
+            objInfoBeingEdited->obj->commit_update(drawP);
     }
     else {
         t.gui.push_id("edit tool");
@@ -41,70 +36,73 @@ void EditTool::gui_toolbox() {
     }
 }
 
+void EditTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+    if(erasedComp == objInfoBeingEdited)
+        switch_tool(get_type());
+}
+
 bool EditTool::right_click_popup_gui(Vector2f popupPos) {
-    if(controls.isEditing)
-        return controls.compEditTool->right_click_popup_gui(controls.compToEdit.lock(), popupPos);
+    if(isEditing)
+        return compEditTool->right_click_popup_gui(objInfoBeingEdited, popupPos);
     else
         return drawP.selection_action_menu(popupPos);
 }
 
 void EditTool::add_point_handle(const HandleData& handle) {
-    controls.pointHandles.emplace_back(handle);
+    pointHandles.emplace_back(handle);
 }
 
 void EditTool::switch_tool(DrawingProgramToolType newTool) {
-    auto a = controls.compToEdit.lock();
-    if(a && a->collabListInfo.lock()) {
-        controls.compEditTool->commit_edit_updates(a, controls.prevData);
-        a->commit_update(drawP);
-        a->client_send_update(drawP, true);
+    if(objInfoBeingEdited) {
+        compEditTool->commit_edit_updates(objInfoBeingEdited, prevData);
+        objInfoBeingEdited->obj->commit_update(drawP);
+        objInfoBeingEdited->obj->send_comp_update(drawP, true);
     }
-    controls.compToEdit.reset();
-    controls.pointHandles.clear();
-    controls.pointDragging = nullptr;
-    controls.isEditing = false;
+    objInfoBeingEdited = nullptr;
+    pointHandles.clear();
+    pointDragging = nullptr;
+    isEditing = false;
 
     if(!drawP.is_selection_allowing_tool(newTool))
         drawP.selection.deselect_all();
 }
 
-void EditTool::edit_start(const std::shared_ptr<DrawComponent>& comp) {
-    controls.isEditing = true;
-    switch(comp->get_type()) {
-        case DRAWCOMPONENT_TEXTBOX: {
-            controls.compEditTool = std::make_unique<TextBoxEditTool>(drawP);
+void EditTool::edit_start(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+    isEditing = true;
+    switch(comp->obj->get_comp().get_type()) {
+        case CanvasComponentType::TEXTBOX: {
+            compEditTool = std::make_unique<TextBoxEditTool>(drawP);
             break;
         }
-        case DRAWCOMPONENT_ELLIPSE: {
-            controls.compEditTool = std::make_unique<EllipseDrawEditTool>(drawP);
+        case CanvasComponentType::ELLIPSE: {
+            compEditTool = std::make_unique<EllipseDrawEditTool>(drawP);
             break;
         }
-        case DRAWCOMPONENT_RECTANGLE: {
-            controls.compEditTool = std::make_unique<RectDrawEditTool>(drawP);
+        case CanvasComponentType::RECTANGLE: {
+            compEditTool = std::make_unique<RectDrawEditTool>(drawP);
             break;
         }
-        case DRAWCOMPONENT_IMAGE: {
-            controls.compEditTool = std::make_unique<ImageEditTool>(drawP);
+        case CanvasComponentType::IMAGE: {
+            compEditTool = std::make_unique<ImageEditTool>(drawP);
             break;
         }
         default: {
-            controls.isEditing = false;
+            isEditing = false;
             break;
         }
     }
-    if(controls.isEditing) {
-        controls.compToEdit = comp;
-        controls.compEditTool->edit_start(*this, comp, controls.prevData);
-        comp->lastUpdateTime = std::chrono::steady_clock::now();
+    if(isEditing) {
+        objInfoBeingEdited = comp;
+        compEditTool->edit_start(*this, objInfoBeingEdited, prevData);
     }
 }
 
-bool EditTool::is_editable(const std::shared_ptr<DrawComponent>& comp) {
-    return comp->get_type() != DRAWCOMPONENT_BRUSHSTROKE;
+bool EditTool::is_editable(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+    return comp->obj->get_comp().get_type() != CanvasComponentType::BRUSHSTROKE;
 }
 
 void EditTool::tool_update() {
-    if(!controls.isEditing) {
+    if(!isEditing) {
         SCollision::AABB<WorldScalar> mouseAABB{drawP.world.get_mouse_world_pos() - WorldVec{0.5f, 0.5f}, drawP.world.get_mouse_world_pos() + WorldVec{0.5f, 0.5f}};
         SCollision::ColliderCollection<WorldScalar> cMouseAABB;
         cMouseAABB.aabb.emplace_back(mouseAABB);
@@ -118,11 +116,11 @@ void EditTool::tool_update() {
         if(drawP.controls.leftClick) {
             bool modifySelection = !drawP.selection.is_being_transformed();
             if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                CollabListType::ObjectInfoPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with(camCMouseAABB);
+                CanvasComponentContainer::ObjInfoSharedPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with(camCMouseAABB);
 
-                if(selectedObjectToEdit && is_editable(selectedObjectToEdit->obj)) {
+                if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
                     drawP.selection.deselect_all();
-                    edit_start(selectedObjectToEdit->obj);
+                    edit_start(selectedObjectToEdit);
                     modifySelection = false;
                 }
             }
@@ -144,60 +142,53 @@ void EditTool::tool_update() {
         cMouseCircle.circle.emplace_back(mouseCircle);
         cMouseCircle.recalculate_bounds();
 
-        std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();
-        if(a) {
-            bool isMovingPoint = false;
-            bool clickedAway = false;
-            if(!controls.pointDragging && drawP.controls.leftClick) {
-                for(HandleData& h : controls.pointHandles) {
-                    if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(a->coords.from_space(*h.p)), drawP.drag_point_radius()))) {
-                        controls.pointDragging = &h;
-                        isMovingPoint = true;
-                        break;
-                    }
-                }
-                if(!isMovingPoint && !a->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
-                    clickedAway = true;
-            }
-            else if(controls.pointDragging) {
-                if(drawP.controls.leftClickHeld) {
-                    Vector2f newPos = a->coords.get_mouse_pos(drawP.world);
-                    if(newPos != *controls.pointDragging->p) {
-                        if(controls.pointDragging->min)
-                            newPos = cwise_vec_max((*controls.pointDragging->min + Vector2f{controls.pointDragging->minimumDistanceBetweenBoundsAndPoint, controls.pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
-                        if(controls.pointDragging->max)
-                            newPos = cwise_vec_min((*controls.pointDragging->max - Vector2f{controls.pointDragging->minimumDistanceBetweenBoundsAndPoint, controls.pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
-                        *controls.pointDragging->p = newPos;
-                        a->commit_update(drawP);
-                        a->client_send_update(drawP, false);
-                    }
+        bool isMovingPoint = false;
+        bool clickedAway = false;
+        if(!pointDragging && drawP.controls.leftClick) {
+            for(HandleData& h : pointHandles) {
+                if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(*h.p)), drawP.drag_point_radius()))) {
+                    pointDragging = &h;
                     isMovingPoint = true;
+                    break;
                 }
-                else
-                    controls.pointDragging = nullptr;
             }
-
-            a->lastUpdateTime = std::chrono::steady_clock::now();
-
-            bool shouldNotReset = controls.compEditTool->edit_update(a);
-            if(!shouldNotReset || clickedAway)
-                switch_tool(get_type());
+            if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
+                clickedAway = true;
         }
-        else
+        else if(pointDragging) {
+            if(drawP.controls.leftClickHeld) {
+                Vector2f newPos = objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
+                if(newPos != *pointDragging->p) {
+                    if(pointDragging->min)
+                        newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
+                    if(pointDragging->max)
+                        newPos = cwise_vec_min((*pointDragging->max - Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
+                    *pointDragging->p = newPos;
+                    objInfoBeingEdited->obj->commit_update(drawP);
+                }
+                isMovingPoint = true;
+            }
+            else
+                pointDragging = nullptr;
+        }
+
+        objInfoBeingEdited->obj->send_comp_update(drawP, false);
+
+        bool shouldNotReset = compEditTool->edit_update(objInfoBeingEdited);
+        if(!shouldNotReset || clickedAway)
             switch_tool(get_type());
     }
 }
 
 bool EditTool::prevent_undo_or_redo() {
-    return controls.isEditing;
+    return isEditing;
 }
 
 void EditTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(controls.isEditing) {
-        std::shared_ptr<DrawComponent> a = controls.compToEdit.lock();
-        if(a) {
-            for(HandleData& h : controls.pointHandles)
-                drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((a->coords.from_space(*h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
+    if(isEditing) {
+        if(objInfoBeingEdited) {
+            for(HandleData& h : pointHandles)
+                drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((objInfoBeingEdited->obj->coords.from_space(*h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
         }
     }
 }

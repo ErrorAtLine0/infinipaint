@@ -5,11 +5,12 @@
 
 class EllipseCanvasComponent : public CanvasComponent {
     public:
-        virtual CompType get_type() const override;
+        virtual CanvasComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
+        virtual void set_data_from(const CanvasComponent& other) override;
 
         // User input data
         struct Data {

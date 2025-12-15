@@ -46,6 +46,9 @@ bool LassoSelectTool::right_click_popup_gui(Vector2f popupPos) {
     return drawP.selection_action_menu(popupPos);
 }
 
+void LassoSelectTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 void LassoSelectTool::switch_tool(DrawingProgramToolType newTool) {
     if(!drawP.is_selection_allowing_tool(newTool))
         drawP.selection.deselect_all();

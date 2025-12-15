@@ -8,17 +8,17 @@
 void CanvasComponent::update(DrawingProgram& drawP) {
 }
 
-CanvasComponent* CanvasComponent::allocate_comp(CanvasComponent::CompType type) {
+CanvasComponent* CanvasComponent::allocate_comp(CanvasComponentType type) {
     switch(type) {
-        case CanvasComponent::CompType::BRUSHSTROKE:
+        case CanvasComponentType::BRUSHSTROKE:
             return new BrushStrokeCanvasComponent;
-        case CanvasComponent::CompType::RECTANGLE:
+        case CanvasComponentType::RECTANGLE:
             return new RectangleCanvasComponent;
-        case CanvasComponent::CompType::ELLIPSE:
+        case CanvasComponentType::ELLIPSE:
             return new EllipseCanvasComponent;
-        case CanvasComponent::CompType::TEXTBOX:
+        case CanvasComponentType::TEXTBOX:
             return new TextBoxCanvasComponent;
-        case CanvasComponent::CompType::IMAGE:
+        case CanvasComponentType::IMAGE:
             return new ImageCanvasComponent;
     }
     return nullptr;

@@ -7,8 +7,8 @@
 #include "../SharedTypes.hpp"
 #include "../DrawCollision.hpp"
 
-CanvasComponent::CompType RectangleCanvasComponent::get_type() const {
-    return CompType::RECTANGLE;
+CanvasComponentType RectangleCanvasComponent::get_type() const {
+    return CanvasComponentType::RECTANGLE;
 }
 
 void RectangleCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -43,6 +43,11 @@ void RectangleCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) 
         p.setStrokeWidth(d.strokeWidth);
         canvas->drawPath(rectPath, p);
     }
+}
+
+void RectangleCanvasComponent::set_data_from(const CanvasComponent& other) {
+    auto& otherRect = static_cast<const RectangleCanvasComponent&>(other);
+    d = otherRect.d;
 }
 
 void RectangleCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {

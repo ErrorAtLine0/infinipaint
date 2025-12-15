@@ -2,7 +2,6 @@
 #include "DrawingProgramToolBase.hpp"
 #include <Helpers/SCollision.hpp>
 #include "../CoordSpaceHelper.hpp"
-#include "../DrawComponents/DrawComponent.hpp"
 
 class DrawingProgram;
 
@@ -11,6 +10,7 @@ class RectSelectTool : public DrawingProgramToolBase {
         RectSelectTool(DrawingProgram& initDrawP);
         virtual DrawingProgramToolType get_type() override;
         virtual void gui_toolbox() override;
+        virtual void erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) override;
         virtual bool right_click_popup_gui(Vector2f popupPos) override;
         virtual void tool_update() override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;

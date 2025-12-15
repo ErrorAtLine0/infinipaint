@@ -1,11 +1,12 @@
 #include "EllipseCanvasComponent.hpp"
+#include "CanvasComponent.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkPathBuilder.h>
 #include "../DrawCollision.hpp"
 
-CanvasComponent::CompType EllipseCanvasComponent::get_type() const {
-    return CompType::ELLIPSE;
+CanvasComponentType EllipseCanvasComponent::get_type() const {
+    return CanvasComponentType::ELLIPSE;
 }
 
 void EllipseCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -49,6 +50,11 @@ void EllipseCanvasComponent::create_draw_data() {
 void EllipseCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
     create_collider();
+}
+
+void EllipseCanvasComponent::set_data_from(const CanvasComponent& other) {
+    auto& otherEllipse = static_cast<const EllipseCanvasComponent&>(other);
+    d = otherEllipse.d;
 }
 
 bool EllipseCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {

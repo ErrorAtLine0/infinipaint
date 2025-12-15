@@ -1,21 +1,24 @@
 #include "CanvasComponentAllocator.hpp"
 #include "CanvasComponentContainer.hpp"
 #include "../DrawingProgram/DrawingProgram.hpp"
+#include "../World.hpp"
+#include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
+#include "CanvasComponent.hpp"
 
 CanvasComponentAllocator::CanvasComponentAllocator() {}
 
-CanvasComponentAllocator::CanvasComponentAllocator(CanvasComponent::CompType typeToAllocate) {
+CanvasComponentAllocator::CanvasComponentAllocator(CanvasComponentType typeToAllocate) {
     comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
 }
 
-void CanvasComponentAllocator::register_class(DrawingProgram& drawP, NetworkingObjects::DelayUpdateSerializedClassManager& delayUpdateMan, NetworkingObjects::NetObjManager& objMan) {
-    delayUpdateMan.register_class<CanvasComponentAllocator>(objMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<CanvasComponentAllocator>{
+void CanvasComponentAllocator::register_class(World& world, NetworkingObjects::NetObjManager& objMan) {
+    world.delayedUpdateObjectManager.register_class<CanvasComponentAllocator>(objMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<CanvasComponentAllocator>{
         .writeConstructor = [](const CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
             a(o.comp->get_type());
             a(*o.comp);
         },
-        .readConstructor = [](CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
-            CanvasComponent::CompType typeToAllocate;
+        .readConstructor = [](CanvasComponentAllocator& o, cereal::PortableBinaryInputArchive& a) {
+            CanvasComponentType typeToAllocate;
             a(typeToAllocate);
             o.comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
             a(*o.comp);
@@ -23,7 +26,7 @@ void CanvasComponentAllocator::register_class(DrawingProgram& drawP, NetworkingO
         .writeUpdate = [](const CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
             a(*o.comp);
         },
-        .readUpdate = [](CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
+        .readUpdate = [](CanvasComponentAllocator& o, cereal::PortableBinaryInputArchive& a) {
             a(*o.comp);
         },
         .allocateCopy = [](const CanvasComponentAllocator& o) {
@@ -33,9 +36,9 @@ void CanvasComponentAllocator::register_class(DrawingProgram& drawP, NetworkingO
             return theCopy;
         },
         .assignmentFunc = [](CanvasComponentAllocator& o, const CanvasComponentAllocator& o2) {
-            // Assignment still needs to be implemented
+            o.comp->set_data_from(*o2.comp);
         },
-        .postUpdateFunc = [&drawP](CanvasComponentAllocator& o) {
+        .postUpdateFunc = [&drawP = world.drawProg](CanvasComponentAllocator& o) {
             o.comp->compContainer->commit_update(drawP);
         }
     });

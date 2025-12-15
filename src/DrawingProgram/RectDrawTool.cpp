@@ -4,6 +4,7 @@
 #include "../DrawData.hpp"
 #include "DrawingProgramToolBase.hpp"
 #include "../CanvasComponents/RectangleCanvasComponent.hpp"
+#include "../CanvasComponents/CanvasComponentContainer.hpp"
 
 RectDrawTool::RectDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -26,6 +27,13 @@ void RectDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+void RectDrawTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+    if(objInfoBeingEdited == erasedComp) {
+        objInfoBeingEdited = nullptr;
+        drawStage = 0;
+    }
+}
+
 bool RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
@@ -33,7 +41,7 @@ bool RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
-    commit_rectangle();
+    commit();
     drawStage = 0;
 }
 
@@ -41,7 +49,7 @@ void RectDrawTool::tool_update() {
     switch(drawStage) {
         case 0: {
             if(drawP.controls.leftClick) {
-                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponent::CompType::RECTANGLE);
+                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::RECTANGLE);
                 RectangleCanvasComponent& newRectangle = static_cast<RectangleCanvasComponent&>(newContainer->get_comp());
 
                 startAt = drawP.world.main.input.mouse.pos;
@@ -54,14 +62,14 @@ void RectDrawTool::tool_update() {
                 newRectangle.d.p2 = ensure_points_have_distance(newRectangle.d.p1, newRectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
                 newRectangle.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
                 newContainer->coords = drawP.world.drawData.cam.c;
-                intermediateContainer = drawP.components->push_back_and_send_create(drawP.components, newContainer)->obj;
+                objInfoBeingEdited = drawP.components->push_back_and_send_create(drawP.components, newContainer);
                 drawStage = 1;
             }
             break;
         }
         case 1: {
-            NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> containerPtr = intermediateContainer.lock();
-            if(drawP.controls.leftClickHeld && containerPtr) {
+            NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+            if(drawP.controls.leftClickHeld) {
                 Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
                 if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
                     float height = std::fabs(startAt.y() - newPos.y());
@@ -71,11 +79,11 @@ void RectDrawTool::tool_update() {
                 rectangle.d.p1 = cwise_vec_min(startAt, newPos);
                 rectangle.d.p2 = cwise_vec_max(startAt, newPos);
                 rectangle.d.p2 = ensure_points_have_distance(rectangle.d.p1, rectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                containerPtr->send_comp_update(drawP, true);
+                containerPtr->send_comp_update(drawP, false);
                 containerPtr->commit_update(drawP);
             }
             else {
-                commit_rectangle();
+                commit();
                 drawStage = 0;
             }
             break;
@@ -87,13 +95,11 @@ bool RectDrawTool::prevent_undo_or_redo() {
     return (drawStage == 1);
 }
 
-void RectDrawTool::commit_rectangle() {
-    NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> lockedPtr = intermediateContainer.lock();
-    if(lockedPtr) {
-        lockedPtr->commit_update(drawP);
-        drawP.world.delayedUpdateObjectManager.send_update_to_all<CanvasComponentContainer>(lockedPtr, true);
-    }
-    intermediateContainer.reset();
+void RectDrawTool::commit() {
+    NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+    containerPtr->commit_update(drawP);
+    containerPtr->send_comp_update(drawP, true);
+    objInfoBeingEdited = nullptr;
 }
 
 void RectDrawTool::draw(SkCanvas* canvas, const DrawData& drawData) {

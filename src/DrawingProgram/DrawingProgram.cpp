@@ -50,14 +50,11 @@ void DrawingProgram::set_component_list_callbacks() {
         c->obj->set_owner_obj_info(c);
         c->obj->commit_update(*this); // Run commit update on insert so that world bounds are calculated
         compCache.add_component(c);
-        if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
-            EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
-            eraserTool->erasedComponents.erase(c);
-        }
     });
     components->set_erase_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
         compCache.erase_component(c);
         selection.erase_component(c);
+        drawTool->erase_component(c);
     });
     components->set_post_sync_callback([&]() {
         clear_draw_cache();
@@ -303,6 +300,7 @@ void DrawingProgram::update() {
     selection.update();
     drawTool->tool_update();
 
+    // Switch tools after the tool update, not before, so that we dont have to call erase_component on the toolToSwitchToAfterUpdate as well (components will not be erased in this time period)
     if(toolToSwitchToAfterUpdate) {
         switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
         toolToSwitchToAfterUpdate = nullptr;

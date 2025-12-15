@@ -1,6 +1,6 @@
 #include "ImageEditTool.hpp"
 #include "DrawingProgram.hpp"
-#include "../DrawComponents/DrawImage.hpp"
+#include "../CanvasComponents/ImageCanvasComponent.hpp"
 #include "../World.hpp"
 #include "../Toolbar.hpp"
 #include "../MainProgram.hpp"
@@ -16,23 +16,22 @@ ImageEditTool::ImageEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-void ImageEditTool::edit_start(EditTool& editTool, const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
+void ImageEditTool::edit_start(EditTool& editTool, const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
 }
 
-void ImageEditTool::commit_edit_updates(const std::shared_ptr<DrawComponent>& comp, std::any& prevData) {
+void ImageEditTool::commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
 }
 
-bool ImageEditTool::edit_update(const std::shared_ptr<DrawComponent>& comp) {
+bool ImageEditTool::edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
     return true;
 }
 
-bool ImageEditTool::edit_gui(const std::shared_ptr<DrawComponent>& comp) {
-    std::shared_ptr<DrawImage> a = std::static_pointer_cast<DrawImage>(comp);
+bool ImageEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+    ImageCanvasComponent& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool image");
     t.gui.text_label_centered("File Properties");
-    std::optional<ResourceData> resourceData = drawP.world.rMan.get_resource(a->d.imageID);
-
+    std::optional<ResourceData> resourceData = drawP.world.rMan.get_resource(a.d.imageID);
 
     if(resourceData) {
         t.gui.text_label("Name: " + resourceData->name);

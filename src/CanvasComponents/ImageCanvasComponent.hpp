@@ -10,7 +10,8 @@ class ImageCanvasComponent : public CanvasComponent {
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
-        virtual CompType get_type() const override;
+        virtual CanvasComponentType get_type() const override;
+        virtual void set_data_from(const CanvasComponent& other) override;
 
         void draw_download_progress_bar(SkCanvas* canvas, const DrawData& drawData, float progress) const;
 

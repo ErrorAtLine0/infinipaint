@@ -25,6 +25,9 @@ bool PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {
     return drawP.selection_action_menu(popupPos);
 }
 
+void PanCanvasTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 void PanCanvasTool::tool_update() {
 }
 

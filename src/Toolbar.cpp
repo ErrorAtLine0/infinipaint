@@ -540,8 +540,9 @@ void Toolbar::top_toolbar() {
                     #else
                         open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
                             auto wLock = w.lock();
-                            if(wLock)
-                                wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
+                            // NOTE: Implement again later
+                            //if(wLock)
+                            //    wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
                         });
                     #endif
                 }
@@ -1245,7 +1246,7 @@ void Toolbar::performance_metrics() {
         std::stringstream a;
         a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
         gui.text_label(a.str());
-        gui.text_label("Item Count: " + std::to_string(main.world->drawProg.components.client_list().size()));
+        gui.text_label("Item Count: " + std::to_string(main.world->drawProg.components->size()));
         std::stringstream b;
         b << "Coord: " << main.world->drawData.cam.c.pos.x().display_int_str(5) << ", " << main.world->drawData.cam.c.pos.y().display_int_str(5);
         gui.text_label(b.str());

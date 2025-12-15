@@ -21,8 +21,8 @@ TextBoxCanvasComponent::TextBoxCanvasComponent():
     textBox->set_initial_text_style_modifier(std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{"Roboto"}}));
 }
 
-CanvasComponent::CompType TextBoxCanvasComponent::get_type() const {
-    return CompType::TEXTBOX;
+CanvasComponentType TextBoxCanvasComponent::get_type() const {
+    return CanvasComponentType::TEXTBOX;
 }
 
 void TextBoxCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -56,6 +56,13 @@ void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
         a(d.p1, d.p2, richText);
         textBox->set_rich_text_data(richText);
     }
+}
+
+void TextBoxCanvasComponent::set_data_from(const CanvasComponent& other) {
+    auto& otherTextBox = static_cast<const TextBoxCanvasComponent&>(other);
+    d = otherTextBox.d;
+    *cursor = *otherTextBox.cursor;
+    textBox->set_rich_text_data(otherTextBox.textBox->get_rich_text_data());
 }
 
 void TextBoxCanvasComponent::init_text_box(DrawingProgram& drawP) {

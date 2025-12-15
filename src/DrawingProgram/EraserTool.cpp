@@ -26,6 +26,10 @@ bool EraserTool::right_click_popup_gui(Vector2f popupPos) {
     return true;
 }
 
+void EraserTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+    erasedComponents.erase(erasedComp);
+}
+
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
     if(!erasedComponents.empty()) {

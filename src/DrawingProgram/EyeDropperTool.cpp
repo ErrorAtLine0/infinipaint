@@ -45,6 +45,9 @@ bool EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
     return true;
 }
 
+void EyeDropperTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 void EyeDropperTool::tool_update() {
     if(drawP.controls.leftClick) {
         SkSurfaceProps props;

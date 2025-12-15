@@ -4,28 +4,22 @@
 #include <Helpers/VersionNumber.hpp>
 #include <include/core/SkCanvas.h>
 #include <Helpers/SCollision.hpp>
+#include "CanvasComponentType.hpp"
+#include "CanvasComponentContainer.hpp"
 
 class DrawingProgram;
-class DrawData;
-class CanvasComponentContainer;
 
 class CanvasComponent {
     public:
-        enum class CompType : uint8_t {
-            BRUSHSTROKE = 0,
-            RECTANGLE,
-            ELLIPSE,
-            TEXTBOX,
-            IMAGE
-        };
-        virtual CompType get_type() const = 0;
+        virtual CanvasComponentType get_type() const = 0;
         virtual ~CanvasComponent();
-        static CanvasComponent* allocate_comp(CanvasComponent::CompType type);
+        static CanvasComponent* allocate_comp(CanvasComponentType type);
         virtual void save(cereal::PortableBinaryOutputArchive& a) const = 0;
         virtual void load(cereal::PortableBinaryInputArchive& a) = 0;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const = 0;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) = 0;
 
+        virtual void set_data_from(const CanvasComponent& other) = 0;
     protected:
         friend class CanvasComponentContainer;
         friend class CanvasComponentAllocator;

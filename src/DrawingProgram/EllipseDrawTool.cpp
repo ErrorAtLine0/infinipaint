@@ -7,6 +7,7 @@
 #include "../InputManager.hpp"
 #include <cereal/types/vector.hpp>
 #include "../CanvasComponents/EllipseCanvasComponent.hpp"
+#include "../CanvasComponents/CanvasComponentContainer.hpp"
 
 EllipseDrawTool::EllipseDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -28,6 +29,13 @@ void EllipseDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
+void EllipseDrawTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+    if(objInfoBeingEdited == erasedComp) {
+        objInfoBeingEdited = nullptr;
+        drawStage = 0;
+    }
+}
+
 bool EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
@@ -42,7 +50,7 @@ void EllipseDrawTool::tool_update() {
     switch(drawStage) {
         case 0: {
             if(drawP.controls.leftClick) {
-                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponent::CompType::ELLIPSE);
+                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
                 EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());
 
                 startAt = drawP.world.main.input.mouse.pos;
@@ -55,14 +63,14 @@ void EllipseDrawTool::tool_update() {
                 newEllipse.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
                 newContainer->coords = drawP.world.drawData.cam.c;
 
-                intermediateContainer = drawP.components->push_back_and_send_create(drawP.components, newContainer)->obj;
+                objInfoBeingEdited = drawP.components->push_back_and_send_create(drawP.components, newContainer);
                 drawStage = 1;
             }
             break;
         }
         case 1: {
-            NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> containerPtr = intermediateContainer.lock();
-            if(drawP.controls.leftClickHeld && containerPtr) {
+            if(drawP.controls.leftClickHeld) {
+                NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
                 Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
                 if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
                     float height = std::fabs(startAt.y() - newPos.y());
@@ -72,7 +80,7 @@ void EllipseDrawTool::tool_update() {
                 ellipse.d.p1 = cwise_vec_min(startAt, newPos);
                 ellipse.d.p2 = cwise_vec_max(startAt, newPos);
                 ellipse.d.p2 = ensure_points_have_distance(ellipse.d.p1, ellipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                containerPtr->send_comp_update(drawP, true);
+                containerPtr->send_comp_update(drawP, false);
                 containerPtr->commit_update(drawP);
             }
             else {
@@ -89,12 +97,10 @@ bool EllipseDrawTool::prevent_undo_or_redo() {
 }
 
 void EllipseDrawTool::commit() {
-    NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> lockedPtr = intermediateContainer.lock();
-    if(lockedPtr) {
-        lockedPtr->commit_update(drawP);
-        drawP.world.delayedUpdateObjectManager.send_update_to_all<CanvasComponentContainer>(lockedPtr, true);
-    }
-    intermediateContainer.reset();
+    NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+    containerPtr->commit_update(drawP);
+    containerPtr->send_comp_update(drawP, true);
+    objInfoBeingEdited = nullptr;
 }
 
 void EllipseDrawTool::draw(SkCanvas* canvas, const DrawData& drawData) {

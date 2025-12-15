@@ -11,13 +11,13 @@ namespace NetworkingObjects {
                 std::function<void(const T& o, cereal::PortableBinaryOutputArchive& a)> writeConstructor = [](const T& o, cereal::PortableBinaryOutputArchive& a) {
                     a(o);
                 };
-                std::function<void(T& o, cereal::PortableBinaryOutputArchive& a)> readConstructor = [](T& o, cereal::PortableBinaryOutputArchive& a) {
+                std::function<void(T& o, cereal::PortableBinaryInputArchive& a)> readConstructor = [](T& o, cereal::PortableBinaryInputArchive& a) {
                     a(o);
                 };
                 std::function<void(const T& o, cereal::PortableBinaryOutputArchive& a)> writeUpdate = [](const T& o, cereal::PortableBinaryOutputArchive& a) {
                     a(o);
                 };
-                std::function<void(T& o, cereal::PortableBinaryOutputArchive& a)> readUpdate = [](T& o, cereal::PortableBinaryOutputArchive& a) {
+                std::function<void(T& o, cereal::PortableBinaryInputArchive& a)> readUpdate = [](T& o, cereal::PortableBinaryInputArchive& a) {
                     a(o);
                 };
                 std::function<std::shared_ptr<T>(const T& o)> allocateCopy = [](const T& o) {
@@ -34,11 +34,11 @@ namespace NetworkingObjects {
             };
             template <typename T> void register_class(NetObjManager& objMan, const CustomConstructors<T>& t = CustomConstructors<T>()) {
                 objMan.register_class<T, T, T, T>({
-                    .writeConstructorFuncClient = t.writeConstructor,
-                    .readConstructorFuncClient =  t.readConstructor,
+                    .writeConstructorFuncClient = [writeConstructor = t.writeConstructor](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {writeConstructor(*o, a);},
+                    .readConstructorFuncClient =  [readConstructor = t.readConstructor](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {readConstructor(*o, a);},
                     .readUpdateFuncClient =       [&, readUpdate = t.readUpdate](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&){client_read_update_func<T>(o, a, readUpdate);},
-                    .writeConstructorFuncServer = t.writeConstructor,
-                    .readConstructorFuncServer =  t.readConstructor,
+                    .writeConstructorFuncServer = [writeConstructor = t.writeConstructor](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {writeConstructor(*o, a);},
+                    .readConstructorFuncServer =  [readConstructor = t.readConstructor](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {readConstructor(*o, a);},
                     .readUpdateFuncServer =       [&, readUpdate = t.readUpdate](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&){server_read_update_func<T>(o, a, readUpdate);}
                 });
                 typeIndexFuncs[std::type_index(typeid(T))] = {
@@ -57,6 +57,7 @@ namespace NetworkingObjects {
                 };
             }
             template <typename T> void send_update_to_all(const NetworkingObjects::NetObjTemporaryPtr<T>& o, bool finalUpdate) {
+                // TODO: When finalUpdate = false, maybe add a small delay between updates instead of sending them every frame?
                 o.send_update_to_all(finalUpdate ? RELIABLE_COMMAND_CHANNEL : UNRELIABLE_COMMAND_CHANNEL, [&](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                     if(o.get_obj_man()->is_server())
                         server_write_func(o, a);
@@ -91,7 +92,7 @@ namespace NetworkingObjects {
                 }
             }
 
-            template <typename T> void client_read_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::function<void(T&, cereal::PortableBinaryOutputArchive&)>& readUpdate) {
+            template <typename T> void client_read_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::function<void(T&, cereal::PortableBinaryInputArchive&)>& readUpdate) {
                 auto it = updatingObjs.find(o.get_net_id());
                 if(it == updatingObjs.end()) {
                     readUpdate(*o, a);
@@ -104,7 +105,7 @@ namespace NetworkingObjects {
                 }
             }
 
-            template <typename T> void server_write_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a, const std::function<void(T&)>& postAssignmentFunc) {
+            template <typename T> void server_write_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                 typeIndexFuncs[std::type_index(typeid(T))].writeUpdateFunc(static_cast<const void*>(o.get()), a);
                 auto it = updatingObjs.find(o.get_net_id());
 
@@ -113,7 +114,7 @@ namespace NetworkingObjects {
                     toAdd.objToUpdateCurrentData = typeIndexFuncs[std::type_index(typeid(T))].allocateCopyFunc(static_cast<const void*>(o.get()));
                     toAdd.lastUpdateTimePoint = std::chrono::steady_clock::now();
                     toAdd.doLastAssignment = std::make_shared<bool>(false);
-                    toAdd.setDataAfterTimeout = [&typeIndexFuncs = typeIndexFuncs, postAssignmentFunc, oWeak = NetObjWeakPtr<T>(o), currentData = toAdd.objToUpdateCurrentData, doLastAssignment = toAdd.doLastAssignment]() {
+                    toAdd.setDataAfterTimeout = [&typeIndexFuncs = typeIndexFuncs, oWeak = NetObjWeakPtr<T>(o), currentData = toAdd.objToUpdateCurrentData, doLastAssignment = toAdd.doLastAssignment]() {
                         NetObjTemporaryPtr<T> oLock = oWeak.lock();
                         if(oLock && *doLastAssignment) {
                             typeIndexFuncs[std::type_index(typeid(T))].assignmentFunc(static_cast<void*>(oLock.get()), static_cast<const void*>(currentData.get()));
@@ -133,7 +134,7 @@ namespace NetworkingObjects {
                 }
             }
 
-            template <typename T> void server_read_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::function<void(T&, cereal::PortableBinaryOutputArchive&)>& readUpdate) {
+            template <typename T> void server_read_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::function<void(T&, cereal::PortableBinaryInputArchive&)>& readUpdate) {
                 auto it = updatingObjs.find(o.get_net_id());
                 bool finalUpdate;
                 if(it == updatingObjs.end()) {

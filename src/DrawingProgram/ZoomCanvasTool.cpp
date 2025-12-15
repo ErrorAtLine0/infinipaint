@@ -25,6 +25,9 @@ bool ZoomCanvasTool::right_click_popup_gui(Vector2f popupPos) {
     return drawP.selection_action_menu(popupPos);
 }
 
+void ZoomCanvasTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 void ZoomCanvasTool::tool_update() {
 }
 

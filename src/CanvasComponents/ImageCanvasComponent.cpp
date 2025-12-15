@@ -9,8 +9,8 @@
 #include "../DrawCollision.hpp"
 #include "CanvasComponentContainer.hpp"
 
-CanvasComponent::CompType ImageCanvasComponent::get_type() const {
-    return CompType::IMAGE;
+CanvasComponentType ImageCanvasComponent::get_type() const {
+    return CanvasComponentType::IMAGE;
 }
 
 void ImageCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
@@ -46,6 +46,11 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
         canvas->drawArc(SkRect::MakeLTRB(center.x() - DOWNLOAD_ARC_RADIUS, center.y() - DOWNLOAD_ARC_RADIUS, center.x() + DOWNLOAD_ARC_RADIUS, center.y() + DOWNLOAD_ARC_RADIUS), 0.0f, progress * 360.0f, false, p);
         canvas->restore();
     }
+}
+
+void ImageCanvasComponent::set_data_from(const CanvasComponent& other) {
+    auto& otherImage = static_cast<const ImageCanvasComponent&>(other);
+    d = otherImage.d;
 }
 
 void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {

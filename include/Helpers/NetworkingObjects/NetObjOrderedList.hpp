@@ -53,11 +53,11 @@ namespace NetworkingObjects {
                 return l->insert(l, nullptr, l->size(), std::move(newObj));
             }
             static NetObjOrderedListObjectInfoPtr<T> push_back_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, T* newObj) {
-                NetObjOwnerPtr<T> newObjOwner = l.get_obj_man()->template make_obj<T>(newObj);
+                NetObjOwnerPtr<T> newObjOwner = l.get_obj_man()->template make_obj_from_ptr<T>(newObj);
                 return l->insert(l, nullptr, l->size(), std::move(newObjOwner));
             }
             static NetObjOrderedListObjectInfoPtr<T> insert_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, uint32_t posToInsertAt, T* newObj) {
-                NetObjOwnerPtr<T> newObjOwner = l.get_obj_man()->template make_obj<T>(newObj);
+                NetObjOwnerPtr<T> newObjOwner = l.get_obj_man()->template make_obj_from_ptr<T>(newObj);
                 return l->insert(l, nullptr, posToInsertAt, std::move(newObjOwner));
             }
             static std::vector<NetObjOrderedListObjectInfoPtr<T>> insert_ordered_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<std::pair<uint32_t, T*>>& newObjs) {
@@ -65,7 +65,7 @@ namespace NetworkingObjects {
                     return {};
                 std::vector<std::pair<uint32_t, NetObjOwnerPtr<T>>> ownerPtrOrderedList;
                 for(uint32_t i = 0; i < static_cast<uint32_t>(newObjs.size()); i++)
-                    ownerPtrOrderedList.emplace_back(newObjs[i].first, std::move(l.get_obj_man()->template make_obj<T>(newObjs[i].second)));
+                    ownerPtrOrderedList.emplace_back(newObjs[i].first, std::move(l.get_obj_man()->template make_obj_from_ptr<T>(newObjs[i].second)));
                 return l->insert_ordered_list(l, nullptr, ownerPtrOrderedList);
             }
             static void erase_unordered_set(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::unordered_set<NetObjID>& ids) {

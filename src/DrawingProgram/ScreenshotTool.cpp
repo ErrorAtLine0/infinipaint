@@ -117,6 +117,9 @@ bool ScreenshotTool::right_click_popup_gui(Vector2f popupPos) {
     return true;
 }
 
+void ScreenshotTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
     if(controls.imageSize.x() <= 0 || controls.imageSize.y() <= 0) {
         std::cout << "[ScreenshotTool::take_screenshot] Image size is 0 or negative" << std::endl;

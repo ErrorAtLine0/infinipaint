@@ -49,7 +49,7 @@ namespace NetworkingObjects {
             template <typename T, typename... Args> NetObjOwnerPtr<T> make_obj_direct(Args&&... items) {
                 return emplace_raw_ptr<T>(NetObjID::random_gen(), new T(items...));
             }
-            template <typename T> NetObjOwnerPtr<T> obj_from_ptr(T* p) {
+            template <typename T> NetObjOwnerPtr<T> make_obj_from_ptr(T* p) {
                 return emplace_raw_ptr<T>(NetObjID::random_gen(), p);
             }
             template <typename T> NetObjOwnerPtr<T> get_obj_ref_from_id(NetObjID id) {

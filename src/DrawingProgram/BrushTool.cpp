@@ -7,6 +7,7 @@
 #include "../CanvasComponents/BrushStrokeCanvasComponent.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "Helpers/NetworkingObjects/NetObjWeakPtr.hpp"
+#include "../CanvasComponents/CanvasComponentContainer.hpp"
 #include <chrono>
 
 #define VEL_SMOOTH_MIN 0.6
@@ -23,6 +24,13 @@ DrawingProgramToolType BrushTool::get_type() {
 
 void BrushTool::switch_tool(DrawingProgramToolType newTool) {
     commit_stroke();
+}
+
+void BrushTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+    if(objInfoBeingEdited == erasedComp) {
+        isDrawing = false;
+        objInfoBeingEdited = nullptr;
+    }
 }
 
 bool BrushTool::extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
@@ -83,7 +91,7 @@ void BrushTool::tool_update() {
     if(isPenDown) {
         if(!isDrawing) {
             isDrawing = true;
-            CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponent::CompType::BRUSHSTROKE);
+            CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
             BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
 
             BrushStrokeCanvasComponentPoint p;
@@ -94,16 +102,11 @@ void BrushTool::tool_update() {
             newBrushStroke.d->color = drawP.controls.foregroundColor;
             newBrushStroke.d->hasRoundCaps = hasRoundCaps;
             newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
-            intermediateContainer = drawP.components->push_back_and_send_create(drawP.components, newBrushStrokeContainer)->obj;
+            objInfoBeingEdited = drawP.components->push_back_and_send_create(drawP.components, newBrushStrokeContainer);
             addedTemporaryPoint = false;
         }
         else {
-            NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> containerPtr = intermediateContainer.lock();
-            if(!containerPtr) {
-                isDrawing = false;
-                intermediateContainer.reset();
-                return;
-            }
+            NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
             BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
 
             BrushStrokeCanvasComponentPoint p;
@@ -130,7 +133,6 @@ void BrushTool::tool_update() {
                 if((!drawingMinimumRelativeToSize && distToPrev >= 10.0) || (drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * BrushStrokeCanvasComponent::DRAW_MINIMUM_LIMIT)) {
                     brushStroke.d->points.back() = p;
                     addedTemporaryPoint = false;
-                    containerPtr->send_comp_update(drawP, true);
 
                     if(midwayInterpolation) {
                         if(brushStroke.d->points.size() != 2) // Don't interpolate the first point
@@ -138,8 +140,10 @@ void BrushTool::tool_update() {
                         prevPointUnaltered = p.pos;
                     }
                 }
-                containerPtr->commit_update(drawP);
             }
+
+            containerPtr->send_comp_update(drawP, false);
+            containerPtr->commit_update(drawP);
         }
     }
     else if(isDrawing) {
@@ -149,12 +153,10 @@ void BrushTool::tool_update() {
 }
 
 void BrushTool::commit_stroke() {
-    NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer> lockedPtr = intermediateContainer.lock();
-    if(lockedPtr) {
-        lockedPtr->commit_update(drawP);
-        lockedPtr->send_comp_update(drawP, true);
-    }
-    intermediateContainer.reset();
+    NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+    containerPtr->commit_update(drawP);
+    containerPtr->send_comp_update(drawP, true);
+    objInfoBeingEdited = nullptr;
 }
 
 void BrushTool::gui_toolbox() {

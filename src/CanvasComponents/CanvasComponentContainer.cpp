@@ -3,13 +3,14 @@
 #include "../DrawData.hpp"
 #include "../DrawingProgram/DrawingProgram.hpp"
 #include "../World.hpp"
+#include "CanvasComponent.hpp"
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 
 using namespace NetworkingObjects;
 
 CanvasComponentContainer::CanvasComponentContainer() { }
 
-CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponent::CompType type) {
+CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type) {
     compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>(type);
 }
 

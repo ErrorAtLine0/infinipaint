@@ -20,6 +20,7 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void gui_toolbox() override;
         virtual void tool_update() override;
         virtual bool right_click_popup_gui(Vector2f popupPos) override;
+        virtual void erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
@@ -36,7 +37,7 @@ class BrushTool : public DrawingProgramToolBase {
         };
         std::deque<SmoothingPoint> penSmoothingData;
 
-        NetworkingObjects::NetObjWeakPtr<CanvasComponentContainer> intermediateContainer;
+        CanvasComponentContainer::ObjInfoSharedPtr objInfoBeingEdited;
         bool isDrawing = false;
         bool hasRoundCaps = true;
         bool drawingMinimumRelativeToSize = true;

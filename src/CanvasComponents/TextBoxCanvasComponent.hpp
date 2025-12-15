@@ -10,11 +10,12 @@ class TextBoxCanvasComponent : public CanvasComponent {
         constexpr static float TEXTBOX_PADDING = 5.0f;
 
         TextBoxCanvasComponent();
-        virtual CompType get_type() const override;
+        virtual CanvasComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
+        virtual void set_data_from(const CanvasComponent& other) override;
 
         // User input data
         struct Data {
@@ -26,6 +27,8 @@ class TextBoxCanvasComponent : public CanvasComponent {
         } d;
 
     private:
+        friend class TextBoxEditTool;
+
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;

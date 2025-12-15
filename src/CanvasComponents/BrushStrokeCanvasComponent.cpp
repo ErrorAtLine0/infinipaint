@@ -29,8 +29,8 @@ void BrushStrokeCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a
     a(d->points, d->color, d->hasRoundCaps);
 }
 
-CanvasComponent::CompType BrushStrokeCanvasComponent::get_type() const {
-    return CompType::BRUSHSTROKE;
+CanvasComponentType BrushStrokeCanvasComponent::get_type() const {
+    return CanvasComponentType::BRUSHSTROKE;
 }
 
 void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
@@ -44,6 +44,11 @@ void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData
     else
         canvas->drawPath(*brushPathLOD[mipmapLevel - 1], paint);
     canvas->restore();
+}
+
+void BrushStrokeCanvasComponent::set_data_from(const CanvasComponent& other) {
+    auto& otherStroke = static_cast<const BrushStrokeCanvasComponent&>(other);
+    d = otherStroke.d;
 }
 
 void BrushStrokeCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {

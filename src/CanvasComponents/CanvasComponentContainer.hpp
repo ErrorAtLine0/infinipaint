@@ -1,13 +1,13 @@
 #pragma once
 #include "../CoordSpaceHelper.hpp"
-#include "CanvasComponent.hpp"
 #include <Helpers/NetworkingObjects/NetObjManagerTypeList.hpp>
+#include "CanvasComponentType.hpp"
 #include "../VersionConstants.hpp"
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/NetworkingObjects/NetObjOwnerPtr.hpp>
+#include "CanvasComponentAllocator.hpp"
 
 class DrawingProgram;
-class CanvasComponentAllocator;
 class DrawingProgramCacheBVHNode;
 
 class CanvasComponentContainer {
@@ -26,7 +26,7 @@ class CanvasComponentContainer {
         constexpr static int COMP_MIPMAP_LEVEL_TWO = 5;
         
         CanvasComponentContainer();
-        CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponent::CompType type);
+        CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type);
         static void register_class(NetworkingObjects::NetObjManager& t);
         static void delay_post_assignment_update(DrawingProgram& drawP, CanvasComponent& comp);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
@@ -61,7 +61,7 @@ class CanvasComponentContainer {
         };
 
         unsigned get_mipmap_level(const DrawData& drawData) const;
-        CanvasComponent* allocate_comp(CanvasComponent::CompType type);
+        CanvasComponent* allocate_comp(CanvasComponentType type);
         void canvas_do_transform(SkCanvas* canvas, const TransformDrawData& transformData) const;
         TransformDrawData calculate_draw_transform(const DrawData& drawData) const;
         void calculate_world_bounds();

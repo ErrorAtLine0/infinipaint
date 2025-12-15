@@ -33,6 +33,9 @@ DrawingProgramToolType GridModifyTool::get_type() {
     return DrawingProgramToolType::GRIDMODIFY;
 }
 
+void GridModifyTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+}
+
 void GridModifyTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Grid modify tool");
