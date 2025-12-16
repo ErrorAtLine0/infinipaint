@@ -183,7 +183,7 @@ bool BrushTool::prevent_undo_or_redo() {
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawData.main->toolbar.io->hoverObstructed) {
         SkPaint linePaint;
-        linePaint.setColor4f(drawP.world.canvasTheme.toolFrontColor);
+        linePaint.setColor4f(drawP.world.canvasTheme.get_tool_front_color());
         linePaint.setStroke(true);
         linePaint.setStrokeWidth(0.0f);
         float width;

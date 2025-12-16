@@ -32,7 +32,7 @@ void FileResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const
         svgDom = findSVGData->second;
 
     SkPaint blendingPaint;
-    blendingPaint.setColorFilter(SkColorFilters::Blend(drawData.main->world->canvasTheme.toolFrontColor, SkColorSpace::MakeSRGB(), SkBlendMode::kSrcIn));
+    blendingPaint.setColorFilter(SkColorFilters::Blend(drawData.main->world->canvasTheme.get_tool_front_color(), SkColorSpace::MakeSRGB(), SkBlendMode::kSrcIn));
     canvas->saveLayer(imRect, &blendingPaint);
     canvas->translate(imRect.x(), imRect.y());
     canvas->scale(imRect.width() / svgDom->containerSize().width(), imRect.height() / svgDom->containerSize().height());

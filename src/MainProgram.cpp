@@ -282,7 +282,7 @@ float MainProgram::get_scale_and_density_factor_gui() {
 }
 
 void MainProgram::draw(SkCanvas* canvas) {
-    canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.backColor);
+    canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.get_back_color());
     world->draw(canvas);
     toolbar.draw(canvas);
 }

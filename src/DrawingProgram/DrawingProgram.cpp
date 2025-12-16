@@ -385,7 +385,7 @@ SkPaint DrawingProgram::select_tool_line_paint() {
     SkPaint selectLinePaint;
     selectLinePaint.setStyle(SkPaint::kStroke_Style);
     selectLinePaint.setStrokeWidth(3);
-    selectLinePaint.setColor4f(world.canvasTheme.toolFrontColor);
+    selectLinePaint.setColor4f(world.canvasTheme.get_tool_front_color());
     selectLinePaint.setPathEffect(lassoLineDashEffect);
 
     return selectLinePaint;

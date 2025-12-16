@@ -9,14 +9,9 @@ enum ServerCommands : MessageCommandType {
     SERVER_UPDATE_NETWORK_OBJECT,
     SERVER_MOVE_CAMERA,
     SERVER_MOVE_SCREEN_MOUSE,
-    SERVER_PLACE_SINGLE_COMPONENT,
-    SERVER_PLACE_MANY_COMPONENTS,
-    SERVER_TRANSFORM_MANY_COMPONENTS,
     SERVER_NEW_RESOURCE_ID,
     SERVER_NEW_RESOURCE_DATA,
-    SERVER_CHAT_MESSAGE,
-    SERVER_CANVAS_COLOR,
-    SERVER_CANVAS_SCALE
+    SERVER_CHAT_MESSAGE
 };
 
 enum ClientCommands : MessageCommandType {
@@ -26,14 +21,11 @@ enum ClientCommands : MessageCommandType {
     CLIENT_UPDATE_NETWORK_OBJECT,
     CLIENT_USER_CONNECT,
     CLIENT_USER_DISCONNECT,
-    CLIENT_TRANSFORM_MANY_COMPONENTS,
     CLIENT_MOVE_CAMERA,
     CLIENT_MOVE_SCREEN_MOUSE,
     CLIENT_NEW_RESOURCE_ID,
     CLIENT_NEW_RESOURCE_DATA,
-    CLIENT_CHAT_MESSAGE,
-    CLIENT_CANVAS_COLOR,
-    CLIENT_CANVAS_SCALE
+    CLIENT_CHAT_MESSAGE
 };
 
 // Arbitrary value. Higher scale up values lead to less scale up events (which can cause stuttering), but leads to larger numbers overall, which can cause a tiny bit of lag and increased memory usage

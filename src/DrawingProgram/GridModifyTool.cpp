@@ -163,7 +163,7 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
             Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
             SkPaint rectBoundsPaint;
-            rectBoundsPaint.setColor4f(drawP.world.canvasTheme.toolFrontColor);
+            rectBoundsPaint.setColor4f(drawP.world.canvasTheme.get_tool_front_color());
             rectBoundsPaint.setStroke(true);
             rectBoundsPaint.setStrokeWidth(0.0f);
             canvas->drawRect(SkRect::MakeLTRB(bMin.x(), bMin.y(), bMax.x(), bMax.y()), rectBoundsPaint);

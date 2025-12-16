@@ -308,15 +308,15 @@ class GUIManager {
             bool clicked;
             CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE) } } }) {
                 clicked = color_button("0", val, isOpen, elemUpdate);
-            }
-            if(clicked)
-                isOpen = true;
-            if(isOpen) {
-                top_to_bottom_window_popup_layout(CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&]() {
-                    isUpdating = color_picker_items("c", val, selectAlpha);
-                    if(io->mouse.leftClick && !Clay_Hovered() && !clicked)
-                        isOpen = false;
-                });
+                if(clicked)
+                    isOpen = true;
+                if(isOpen) {
+                    top_to_bottom_window_popup_layout(CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&]() {
+                        isUpdating = color_picker_items("c", val, selectAlpha);
+                        if(io->mouse.leftClick && !Clay_Hovered() && !clicked)
+                            isOpen = false;
+                    });
+                }
             }
             pop_id();
             return isUpdating;

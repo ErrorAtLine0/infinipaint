@@ -22,7 +22,6 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
     world(initWorld)
 {
     data.canvasScale = world.canvasScale;
-    data.canvasBackColor = convert_vec3<Vector3f>(world.canvasTheme.backColor);
 
     lastKeepAliveSent = std::chrono::steady_clock::now();
 
@@ -66,6 +65,7 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
                 world.bMan.bookmarks.write_create_message(a);
                 world.gridMan.grids.write_create_message(a);
                 world.drawProg.write_components_server(a);
+                world.canvasTheme.write_create_message(a);
             }
             netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
             for(auto& r : world.rMan.resource_list()) {
@@ -87,24 +87,6 @@ MainServer::MainServer(World& initWorld, const std::string& serverLocalID):
         auto& c = clients[client->customID];
         message(c.cursorPos);
         netServer->send_items_to_all_clients_except(client, UNRELIABLE_COMMAND_CHANNEL, CLIENT_MOVE_SCREEN_MOUSE, c.serverID, c.cursorPos);
-    });
-    netServer->add_recv_callback(SERVER_CHAT_MESSAGE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::string chatMessage;
-        message(chatMessage);
-        netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, client->customID, chatMessage);
-    });
-    netServer->add_recv_callback(SERVER_CANVAS_COLOR, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        message(data.canvasBackColor);
-        netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_CANVAS_COLOR, data.canvasBackColor);
-    });
-    netServer->add_recv_callback(SERVER_CANVAS_SCALE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        auto& c = clients[client->customID];
-        message(c.canvasScale);
-        if(c.canvasScale > data.canvasScale) {
-            data.scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, c.canvasScale - data.canvasScale));
-            data.canvasScale = c.canvasScale;
-            netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_CANVAS_SCALE, data.canvasScale);
-        }
     });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });

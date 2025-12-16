@@ -38,14 +38,15 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     rMan(*this),
     drawProg(*this),
     bMan(*this),
-    gridMan(*this)
+    gridMan(*this),
+    canvasTheme(*this)
 {
     init_net_obj_type_list();
     gridMan.init();
     bMan.init();
     drawProg.init();
+    canvasTheme.init();
 
-    set_canvas_background_color(main.defaultCanvasBackgroundColor);
     displayName = main.displayName;
 
     netSource = worldInfo.netSource;
@@ -88,6 +89,16 @@ void World::init_net_obj_type_list() {
     CanvasComponentAllocator::register_class(*this, netObjMan);
     CanvasComponentContainer::register_class(netObjMan);
     NetworkingObjects::register_ordered_list_class<CanvasComponentContainer>(netObjMan);
+    canvasTheme.register_class();
+}
+
+void World::init_server_callbacks() {
+    con.localServer->netServer->add_recv_callback(SERVER_CHAT_MESSAGE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        std::string chatMessage;
+        message(chatMessage);
+        add_chat_message(clients[client->customID].displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
+        con.localServer->netServer->send_items_to_all_clients_except(client, RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, client->customID, chatMessage);
+    });
 }
 
 void World::init_client_callbacks() {
@@ -105,13 +116,11 @@ void World::init_client_callbacks() {
             message(clients);
             set_name(fileDisplayName);
             drawData.cam.smooth_move_to(*main.world, camCoordsToMoveTo, windowSizeToMoveTo, true);
-            Vector3f newBackColor;
-            message(newBackColor);
-            set_canvas_background_color(newBackColor, false);
             message(canvasScale);
             bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
             gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
             drawProg.read_components_client(message);
+            canvasTheme.read_create_message(message);
         }
         clientStillConnecting = false;
     });
@@ -150,25 +159,13 @@ void World::init_client_callbacks() {
         message(c.cursorPos);
     });
     con.client_add_recv_callback(CLIENT_CHAT_MESSAGE, [&](cereal::PortableBinaryInputArchive& message) {
-        ServerPortionID senderID;
-        std::string chatMessage;
-        message(senderID, chatMessage);
-        auto it = clients.find(senderID);
-        if(it != clients.end())
-            add_chat_message(clients[senderID].displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
-    });
-    con.client_add_recv_callback(CLIENT_CANVAS_COLOR, [&](cereal::PortableBinaryInputArchive& message) {
-        Vector3f newBackColor;
-        message(newBackColor);
-        set_canvas_background_color(newBackColor, false);
-    });
-    con.client_add_recv_callback(CLIENT_CANVAS_SCALE, [&](cereal::PortableBinaryInputArchive& message) {
-        uint64_t newCanvasScale;
-        message(newCanvasScale);
-        if(newCanvasScale > canvasScale) {
-            con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, newCanvasScale);
-            scale_up(FixedPoint::pow_int(CANVAS_SCALE_UP_STEP, newCanvasScale - canvasScale));
-            canvasScale = newCanvasScale;
+        if(!con.host_exists() && !clientStillConnecting) { // Dont update a direct connected client (which is just the server), and dont process these until the CLIENT_INITIAL_DATA message is received first
+            ServerPortionID senderID;
+            std::string chatMessage;
+            message(senderID, chatMessage);
+            auto it = clients.find(senderID);
+            if(it != clients.end())
+                add_chat_message(clients[senderID].displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
         }
     });
     con.client_add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
@@ -242,25 +239,12 @@ void World::unfocus_update() {
     }
 }
 
-void World::set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork) {
-    if(newBackColor != convert_vec3<Vector3f>(canvasTheme.backColor)) {
-        canvasTheme.backColor = SkColor4f{newBackColor.x(), newBackColor.y(), newBackColor.z(), 1.0f};
-        Vector3f newHSV = rgb_to_hsv<Vector3f>(newBackColor);
-        SkColor4f oldToolFrontColor = canvasTheme.toolFrontColor;
-        if(newHSV.z() >= 0.6f)
-            canvasTheme.toolFrontColor = SkColor4f{0.0f, 0.0f, 0.0f, 1.0f};
-        else
-            canvasTheme.toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
-        if(oldToolFrontColor != canvasTheme.toolFrontColor)
-            drawProg.clear_draw_cache();
-        if(sendChangeOverNetwork)
-            con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_COLOR, newBackColor);
-    }
-}
-
 void World::send_chat_message(const std::string& message) {
     if(!clientStillConnecting) {
-        con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CHAT_MESSAGE, message);
+        if(con.localServer)
+            con.localServer->netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_CHAT_MESSAGE, ownID, message);
+        else
+            con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CHAT_MESSAGE, message);
         add_chat_message(displayName, message, Toolbar::ChatMessage::Type::NORMAL);
     }
 }
@@ -390,7 +374,7 @@ void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std:
 
 void World::save_file(cereal::PortableBinaryOutputArchive& a) const {
     a(drawData.cam.c, main.window.size.cast<float>().eval());
-    a(convert_vec3<Vector3f>(canvasTheme.backColor));
+    //a(convert_vec3<Vector3f>(canvasTheme.backColor));
     drawProg.save_file(a);
 }
 
@@ -399,17 +383,17 @@ void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber versi
     Vector2f windowSizeToJumpTo;
     a(coordsToJumpTo, windowSizeToJumpTo);
 
-    if(version < VersionNumber(0, 1, 0))
-        set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
-    else {
-        Vector3f canvasBackColor;
-        a(canvasBackColor);
-        const Vector3f OLD_DEFAULT_CANVAS_BACKGROUND_COLOR{0.12f, 0.12f, 0.12f};
-        if(version < VersionNumber(0, 3, 0) && canvasBackColor == OLD_DEFAULT_CANVAS_BACKGROUND_COLOR)
-            set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
-        else
-            set_canvas_background_color(canvasBackColor);
-    }
+    //if(version < VersionNumber(0, 1, 0))
+    //    set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+    //else {
+    //    Vector3f canvasBackColor;
+    //    a(canvasBackColor);
+    //    const Vector3f OLD_DEFAULT_CANVAS_BACKGROUND_COLOR{0.12f, 0.12f, 0.12f};
+    //    if(version < VersionNumber(0, 3, 0) && canvasBackColor == OLD_DEFAULT_CANVAS_BACKGROUND_COLOR)
+    //        set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+    //    else
+    //        set_canvas_background_color(canvasBackColor);
+    //}
 
     drawData.cam.smooth_move_to(*this, coordsToJumpTo, windowSizeToJumpTo, true);
     drawProg.load_file(a, version);
@@ -458,9 +442,9 @@ void World::draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData
 }
 
 void World::scale_up_step() {
-    canvasScale++;
-    con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, canvasScale);
-    scale_up(WorldScalar(CANVAS_SCALE_UP_STEP));
+    //canvasScale++;
+    //con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, canvasScale);
+    //scale_up(WorldScalar(CANVAS_SCALE_UP_STEP));
 }
 
 void World::scale_up(const WorldScalar& scaleUpAmount) {

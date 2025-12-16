@@ -8,6 +8,7 @@
 #include "DrawingProgram/DrawingProgram.hpp"
 #include "Toolbar.hpp"
 #include "SharedTypes.hpp"
+#include "CanvasTheme.hpp"
 #include "GridManager.hpp"
 #include <Helpers/NetworkingObjects/NetObjManager.hpp>
 #include <filesystem>
@@ -92,12 +93,7 @@ class World {
         std::string name;
         std::unordered_map<ServerPortionID, ClientData> clients;
 
-        void set_canvas_background_color(const Vector3f& newBackColor, bool sendChangeOverNetwork = true);
-
-        struct CanvasTheme {
-            SkColor4f backColor = {0.0f, 0.0f, 0.0f, 1.0f};
-            SkColor4f toolFrontColor = {1.0f, 1.0f, 1.0f, 1.0f};
-        } canvasTheme;
+        CanvasTheme canvasTheme;
 
         void scale_up(const WorldScalar& scaleUpAmount);
         void scale_up_step();
@@ -111,6 +107,7 @@ class World {
 
 
         void init_client_callbacks();
+        void init_server_callbacks();
         void set_name(const std::string& n);
 
         void draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData);

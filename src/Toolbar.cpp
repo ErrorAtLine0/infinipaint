@@ -1691,9 +1691,9 @@ void Toolbar::options_menu() {
             }) {
                 gui.push_id("canvas settings menu");
                 gui.obstructing_window();
-                SkColor4f newColorToSet = main.world->canvasTheme.backColor;
+                SkColor4f newColorToSet = main.world->canvasTheme.get_back_color();
                 gui.color_picker_button_field("canvasColor", "Canvas Color", &newColorToSet, false);
-                main.world->set_canvas_background_color(convert_vec3<Vector3f>(newColorToSet));
+                main.world->canvasTheme.set_back_color(convert_vec3<Vector3f>(newColorToSet));
                 if(gui.text_button_wide("done", "Done"))
                     optionsMenuOpen = false;
                 gui.pop_id();

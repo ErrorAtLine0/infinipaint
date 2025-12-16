@@ -18,7 +18,7 @@ void GridManager::add_default_grid(const std::string& newName) {
     if(grids) {
         WorldGrid g;
         g.name = newName;
-        g.color = color_mul_alpha(convert_vec4<Vector4f>(world.canvasTheme.toolFrontColor), 0.4f);
+        g.color = color_mul_alpha(convert_vec4<Vector4f>(world.canvasTheme.get_tool_front_color()), 0.4f);
         g.size = world.drawData.cam.c.inverseScale * WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
         g.offset = world.drawData.cam.c.pos + world.drawData.cam.c.dir_from_space(world.main.window.size.cast<float>() * 0.5f);
         grids->emplace_back_direct(grids, g);

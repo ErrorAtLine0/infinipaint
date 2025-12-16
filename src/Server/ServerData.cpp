@@ -1,11 +1,11 @@
 #include "ServerData.hpp"
 
 void ServerData::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(canvasBackColor, canvasScale);
+    a(canvasScale);
 }
 
 void ServerData::load(cereal::PortableBinaryInputArchive& a) {
-    a(canvasBackColor, canvasScale);
+    a(canvasScale);
 }
 
 void ServerData::scale_up(const WorldScalar& scaleUpAmount) {

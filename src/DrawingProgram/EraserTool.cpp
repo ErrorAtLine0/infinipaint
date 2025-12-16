@@ -84,7 +84,7 @@ bool EraserTool::prevent_undo_or_redo() {
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawData.main->toolbar.io->hoverObstructed) {
-        SkColor4f c = drawP.world.canvasTheme.toolFrontColor;
+        SkColor4f c = drawP.world.canvasTheme.get_tool_front_color();
         c.fA = 0.5f;
 
         SkPaint linePaint;

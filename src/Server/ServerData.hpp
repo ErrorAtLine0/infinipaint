@@ -9,7 +9,6 @@ class DrawComponent;
 class ServerData {
     public:
         uint64_t canvasScale = 0;
-        Vector3f canvasBackColor;
 
         void save(cereal::PortableBinaryOutputArchive& a) const;
         void load(cereal::PortableBinaryInputArchive& a);
