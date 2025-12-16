@@ -75,7 +75,6 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
         }
     }
 
-    drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, false);
@@ -301,8 +300,8 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
         return;
     main.init_net_library();
     con.init_local_p2p(*this, serverLocalID);
-    drawProg.init_client_callbacks();
     rMan.init_client_callbacks();
+    rMan.init_server_callbacks();
     init_client_callbacks();
     con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, displayName, true, drawData.cam.c, main.window.size.cast<float>().eval());
     conType = CONNECTIONTYPE_SERVER;

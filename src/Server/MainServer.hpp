@@ -12,7 +12,6 @@ class MainServer {
         ~MainServer();
         std::shared_ptr<NetServer> netServer;
         std::unordered_map<ServerPortionID, ClientData> clients;
-        std::unordered_map<ServerClientID, NetLibrary::DownloadProgress> resource_download_progress();
     private:
         World& world;
         void ensure_display_name_unique(std::string& displayName);

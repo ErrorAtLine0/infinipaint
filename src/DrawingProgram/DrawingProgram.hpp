@@ -23,7 +23,6 @@ class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
         void init();
-        void init_client_callbacks();
         void set_component_list_callbacks();
         void toolbar_gui();
         void tool_options_gui();

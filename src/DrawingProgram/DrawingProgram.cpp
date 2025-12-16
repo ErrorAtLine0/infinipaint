@@ -68,9 +68,6 @@ void DrawingProgram::set_component_list_callbacks() {
     });
 }
 
-void DrawingProgram::init_client_callbacks() {
-}
-
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
     //for(auto& c : components->get_data())
     //    c->obj->scale_up(scaleUpAmount);

@@ -19,15 +19,21 @@ ResourceManager::ResourceManager(World& initWorld):
 
 void ResourceManager::init_client_callbacks() {
     world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
-        NetworkingObjects::NetObjID idBeingRetrieved;
-        message(idBeingRetrieved);
-        resourcesBeingRetrieved.emplace(idBeingRetrieved, 0);
+        if(!world.con.host_exists()) {
+            NetworkingObjects::NetObjID idBeingRetrieved;
+            message(idBeingRetrieved);
+            // There is a scenario where the resource id and data messages can be sent twice for the same resource (a resource can be sent early before CLIENT_INITIAL_DATA is sent, and then resent with CLIENT_INITIAL_DATA), so check if resource already exists, and only keep track of the ID if the resource doesn't exist yet
+            if(!world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(idBeingRetrieved))
+                resourcesBeingRetrieved.emplace(idBeingRetrieved, 0);
+        }
     });
     world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
-        ResourceData newResource;
-        message(newResource);
-        resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(resourcesBeingRetrieved.begin()->first, newResource));
-        resourcesBeingRetrieved.clear();
+        if(!world.con.host_exists() && !resourcesBeingRetrieved.empty()) { // If the resource was sent for the second time, this will be empty, so we can ignore the message
+            ResourceData newResource;
+            message(newResource);
+            resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(resourcesBeingRetrieved.begin()->first, newResource));
+            resourcesBeingRetrieved.clear();
+        }
     });
 }
 
