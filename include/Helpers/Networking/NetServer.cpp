@@ -268,7 +268,7 @@ void NetServer::add_disconnect_callback(const NetServerDisconnectCallback& callb
     disconnectCallback = callback;
 }
 
-const std::vector<std::shared_ptr<NetServer::ClientData>> NetServer::get_client_list() const {
+const std::vector<std::shared_ptr<NetServer::ClientData>>& NetServer::get_client_list() const {
     return clients;
 }
 

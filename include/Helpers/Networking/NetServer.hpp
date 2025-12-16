@@ -85,7 +85,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
         void add_recv_callback(MessageCommandType commandID, const NetServerRecvCallback& callback);
         void add_disconnect_callback(const NetServerDisconnectCallback& callback);
 
-        const std::vector<std::shared_ptr<ClientData>> get_client_list() const;
+        const std::vector<std::shared_ptr<ClientData>>& get_client_list() const;
 
     private:
         void parse_received_messages();

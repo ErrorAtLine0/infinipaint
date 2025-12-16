@@ -42,6 +42,15 @@ namespace NetworkingObjects {
                     return NetObjTemporaryPtr<T>();
                 return NetObjTemporaryPtr<T>(this, id, std::static_pointer_cast<T>(it->second.p));
             }
+
+            // NOTE: DO NOT USE THESE FUNCTIONS UNLESS SITUATION ISN'T NORMAL, EVERY OBJECT SHOULD HAVE A UNIQUE ID AND IDS SHOULDNT BE REUSED UNDER ANY CIRCUMSTANCES
+            template <typename T> NetObjOwnerPtr<T> make_obj_with_specific_id(const NetObjID& id) {
+                return emplace_raw_ptr<T>(id, static_cast<T*>(typeList.get_type_index_data<T>(isServer).allocatorFunc()));
+            }
+            template <typename T, typename... Args> NetObjOwnerPtr<T> make_obj_direct_with_specific_id(const NetObjID& id, Args&&... items) {
+                return emplace_raw_ptr<T>(id, new T(items...));
+            }
+
             template <typename T> NetObjOwnerPtr<T> make_obj() {
                 return emplace_raw_ptr<T>(NetObjID::random_gen(), static_cast<T*>(typeList.get_type_index_data<T>(isServer).allocatorFunc()));
             }
@@ -52,11 +61,17 @@ namespace NetworkingObjects {
             template <typename T> NetObjOwnerPtr<T> make_obj_from_ptr(T* p) {
                 return emplace_raw_ptr<T>(NetObjID::random_gen(), p);
             }
-            template <typename T> NetObjOwnerPtr<T> get_obj_ref_from_id(NetObjID id) {
+            template <typename T> NetObjOwnerPtr<T> get_obj_from_id(NetObjID id) {
                 auto it = objectData.find(id);
                 if(it == objectData.end())
                     throw std::runtime_error("[NetObjManager::get_obj_from_id] ID doesn't exist");
                 return NetObjOwnerPtr<T>(this, id, static_cast<T*>(it->second.p));
+            }
+            template <typename T> NetObjTemporaryPtr<T> get_obj_temporary_ref_from_id(NetObjID id) {
+                auto it = objectData.find(id);
+                if(it == objectData.end())
+                    return NetObjTemporaryPtr<T>();
+                return NetObjTemporaryPtr<T>(this, id, static_cast<T*>(it->second.p));
             }
             template <typename ClientT, typename ServerT, typename ClientAllocatedType, typename ServerAllocatedType> void register_class(const NetObjManagerTypeList::ServerClientClassFunctions<ClientT, ServerT>& funcs) {
                 typeList.register_class<ClientT, ServerT, ClientAllocatedType, ServerAllocatedType>(funcs);

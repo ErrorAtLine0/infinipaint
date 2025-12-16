@@ -31,7 +31,7 @@ bool ImageEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& c
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool image");
     t.gui.text_label_centered("File Properties");
-    std::optional<ResourceData> resourceData = drawP.world.rMan.get_resource(a.d.imageID);
+    auto resourceData = drawP.world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(a.d.imageID);
 
     if(resourceData) {
         t.gui.text_label("Name: " + resourceData->name);

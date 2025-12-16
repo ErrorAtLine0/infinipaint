@@ -1,71 +1,90 @@
 #include "ResourceManager.hpp"
-#include "Helpers/Networking/NetLibrary.hpp"
+#include <Helpers/Networking/NetLibrary.hpp>
 #include <include/core/SkImage.h>
+#include <Helpers/NetworkingObjects/NetObjID.hpp>
 #include "ResourceDisplay/SvgResourceDisplay.hpp"
 #include "Server/CommandList.hpp"
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "ResourceDisplay/FileResourceDisplay.hpp"
 #include <cereal/types/string.hpp>
 #include <Helpers/Logger.hpp>
-#include <optional>
-#include <sstream>
 #include <fstream>
 #include "World.hpp"
 #include "ResourceDisplay/FileResourceDisplay.hpp"
+#include <cereal/archives/portable_binary.hpp>
 
 ResourceManager::ResourceManager(World& initWorld):
     world(initWorld) 
 {}
 
 void ResourceManager::init_client_callbacks() {
-    world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
-        message(resourceBeingRetrievedClient);
+    world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
+        NetworkingObjects::NetObjID idBeingRetrieved;
+        message(idBeingRetrieved);
+        resourcesBeingRetrieved.emplace(idBeingRetrieved, 0);
     });
-    world.con.client_add_recv_callback(CLIENT_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
-        message(resources[resourceBeingRetrievedClient]);
-        Logger::get().log("INFO", "Received new resource with id: " + std::to_string(resourceBeingRetrievedClient.first) + " " + std::to_string(resourceBeingRetrievedClient.second) + " of size " + std::to_string(resources[resourceBeingRetrievedClient].data->size()));
-        resourceBeingRetrievedClient = {0, 0};
+    world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
+        ResourceData newResource;
+        message(newResource);
+        resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(resourcesBeingRetrieved.begin()->first, newResource));
+        resourcesBeingRetrieved.clear();
     });
 }
 
-float ResourceManager::get_resource_retrieval_progress(const ServerClientID& id) {
-    if(id == ServerClientID{0, 0})
+void ResourceManager::init_server_callbacks() {
+    world.con.localServer->netServer->add_recv_callback(CLIENT_NEW_RESOURCE_ID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        NetworkingObjects::NetObjID idBeingRetrieved;
+        message(idBeingRetrieved);
+        resourcesBeingRetrieved.emplace(idBeingRetrieved, client->customID);
+    });
+    world.con.localServer->netServer->add_recv_callback(CLIENT_NEW_RESOURCE_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        ResourceData newResource;
+        message(newResource);
+        auto it = std::find_if(resourcesBeingRetrieved.begin(), resourcesBeingRetrieved.end(), [&client](auto& p) {
+            return p.second == client->customID;
+        });
+        resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(it->first, newResource));
+        world.con.localServer->netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceList.back().get_net_id());
+        world.con.localServer->netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, newResource);
+        resourcesBeingRetrieved.erase(resourceList.back().get_net_id());
+    });
+}
+
+float ResourceManager::get_resource_retrieval_progress(const NetworkingObjects::NetObjID& id) {
+    auto resourceClientID = resourcesBeingRetrieved.find(id);
+    if(resourceClientID == resourcesBeingRetrieved.end())
         return 0.0f;
-    if(world.con.host_exists() && !world.con.is_host_disconnected()) {
-        auto it = serverDownloadProgress.find(id);
-        if(it == serverDownloadProgress.end())
+    if(world.con.localServer) {
+        uint64_t clientIDToLookFor = resourceClientID->second;
+
+        const std::vector<std::shared_ptr<NetServer::ClientData>>& clientListInNetServer = world.con.localServer->netServer->get_client_list();
+        auto netClientIt = std::find_if(clientListInNetServer.begin(), clientListInNetServer.end(), [&clientIDToLookFor](auto& nC) {
+            return nC->customID == clientIDToLookFor;
+        });
+        if(netClientIt == clientListInNetServer.end()) {
+            resourcesBeingRetrieved.erase(resourceClientID); // Client disconnected, remove it from the list
             return 0.0f;
-        else {
-            auto& progressBytes = it->second;
-            if(progressBytes.totalBytes == 0)
-                return 0.0f;
-            return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
         }
+        auto progressBytes = (*netClientIt)->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
+        if(progressBytes.totalBytes == 0)
+            return 0.0f;
+        return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
     }
     else if(world.con.client_exists() && !world.con.is_client_disconnected()) {
-        if(id != resourceBeingRetrievedClient)
+        NetLibrary::DownloadProgress progressBytes = world.con.client_get_resource_retrieval_progress();
+        if(progressBytes.totalBytes == 0)
             return 0.0f;
-        else {
-            NetLibrary::DownloadProgress progressBytes = world.con.client_get_resource_retrieval_progress();
-            if(progressBytes.totalBytes == 0)
-                return 0.0f;
-            return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
-        }
+        return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
     }
     return 0.0f;
 }
 
 void ResourceManager::update() {
-    if(!world.con.host_exists() || world.con.is_host_disconnected())
-        serverDownloadProgress.clear();
-    else
-        serverDownloadProgress = world.con.server_get_resource_retrieval_progress();
-
     for(auto& [k, v] : displays)
         v->update(world);
 }
 
-ServerClientID ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
+NetworkingObjects::NetObjID ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
     // https://nullptr.org/cpp-read-file-into-string/
     std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
     if(!file.is_open()) {
@@ -102,72 +121,53 @@ ServerClientID ResourceManager::add_resource_file(const std::filesystem::path& f
     return add_resource(resource);
 }
 
-ServerClientID ResourceManager::add_resource(const ResourceData& resource) {
-    auto it = std::find_if(resources.begin(), resources.end(), [&](const auto& p) {
-        return p.second.data == resource.data || (*p.second.data) == (*resource.data);
+NetworkingObjects::NetObjID ResourceManager::add_resource(const ResourceData& resource) {
+    auto it = std::find_if(resourceList.begin(), resourceList.end(), [&](const auto& p) {
+        return p->data == resource.data || (*p->data) == (*resource.data);
     });
-    if(it != resources.end()) {
+    if(it != resourceList.end()) {
         Logger::get().log("INFO", "[ResourceManager::add_resource] File " + std::string(resource.name) + " is a duplicate");
-        return it->first;
+        return it->get_net_id();
     }
-    ServerClientID newID = world.get_new_id();
-    resources[newID] = resource;
-    world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, newID);
-    world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
-    return newID;
-}
-
-void ResourceManager::copy_resource_set_to_map(const std::unordered_set<ServerClientID>& resourceSet, std::unordered_map<ServerClientID, ResourceData>& resourceMap) const {
-    resourceMap.clear();
-    for(auto& [k, v] : resources) {
-        if(resourceSet.contains(k))
-            resourceMap[k] = v;
+    auto& resourceInsert = resourceList.emplace_back(world.netObjMan.make_obj_direct<ResourceData>(resource));
+    if(world.con.localServer) {
+        world.con.localServer->netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
+        world.con.localServer->netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     }
-}
-
-ClientPortionID ResourceManager::get_max_id(ServerPortionID serverID) const {
-    ClientPortionID maxClientID = 0;
-    for(auto& p : resources) {
-        if(p.first.first == serverID)
-            maxClientID = std::max(maxClientID, p.first.second);
+    else {
+        world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
+        world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     }
-    return maxClientID;
+    return resourceInsert.get_net_id();
 }
 
-std::optional<ResourceData> ResourceManager::get_resource(const ServerClientID& id) const {
-    auto it = resources.find(id);
-    if(it == resources.end())
-        return std::nullopt;
-    return it->second;
-}
-
-ResourceDisplay* ResourceManager::get_display_data(const ServerClientID& fileID) {
+ResourceDisplay* ResourceManager::get_display_data(const NetworkingObjects::NetObjID& fileID) {
     auto loadedDisplayIt = displays.find(fileID);
     if(loadedDisplayIt != displays.end())
         return loadedDisplayIt->second.get();
 
-    auto resourceIt = resources.find(fileID);
-    if(resourceIt == resources.end())
+    NetworkingObjects::NetObjTemporaryPtr<ResourceData> resourceData = world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(fileID);
+    if(resourceData == NetworkingObjects::NetObjTemporaryPtr<ResourceData>())
         return nullptr;
 
     auto imgResource(std::make_unique<ImageResourceDisplay>());
-    if(imgResource->load(*this, resourceIt->second.name, *resourceIt->second.data)) {
+    if(imgResource->load(*this, resourceData->name, *resourceData->data)) {
         displays.emplace(fileID, std::move(imgResource));
         return displays[fileID].get();
     }
 
     auto svgResource(std::make_unique<SvgResourceDisplay>());
-    if(svgResource->load(*this, resourceIt->second.name, *resourceIt->second.data)) {
+    if(svgResource->load(*this, resourceData->name, *resourceData->data)) {
         displays.emplace(fileID, std::move(svgResource));
         return displays[fileID].get();
     }
 
     auto fileResource(std::make_unique<FileResourceDisplay>());
-    fileResource->load(*this, resourceIt->second.name, *resourceIt->second.data);
+    fileResource->load(*this, resourceData->name, *resourceData->data);
     displays.emplace(fileID, std::move(fileResource));
     return displays[fileID].get();
 }
 
-const std::unordered_map<ServerClientID, ResourceData>& ResourceManager::resource_list() {
-    return resources;
+const std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>>& ResourceManager::resource_list() {
+    return resourceList;
 }

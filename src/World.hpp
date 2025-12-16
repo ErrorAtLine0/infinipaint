@@ -68,8 +68,6 @@ class World {
 
         WorldScalar calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize);
 
-        ServerClientID get_new_id();
-
         void focus_update();
         void unfocus_update();
 
@@ -111,8 +109,6 @@ class World {
     private:
         void init_net_obj_type_list();
 
-        ClientPortionID get_max_id(ServerPortionID serverID);
-
 
         void init_client_callbacks();
         void set_name(const std::string& n);
@@ -126,7 +122,6 @@ class World {
         };
         std::optional<SentCameraData> sentCameraData;
 
-        ClientPortionID nextClientID = 0;
         WorldVec mousePreviousWorldVec = {0, 0};
         WorldVec mouseWorldMove = {0, 0};
 };

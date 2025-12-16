@@ -6,8 +6,6 @@
 #include <Helpers/Networking/NetServer.hpp>
 #include <chrono>
 
-class MainServer;
-
 class ClientData {
     public:
         CoordSpaceHelper camCoords;
@@ -19,8 +17,6 @@ class ClientData {
         ServerPortionID serverID = 0;
 
         uint64_t canvasScale = 0;
-
-        ServerClientID pendingResourceID = {0, 0};
 
         template <typename Archive> void serialize(Archive& a) {
             a(camCoords, windowSize, cursorPos, cursorColor, displayName);

@@ -20,7 +20,7 @@ class ImageCanvasComponent : public CanvasComponent {
             Vector2f p1;
             Vector2f p2;
 
-            ServerClientID imageID;
+            NetworkingObjects::NetObjID imageID;
         } d;
 
     private:

@@ -8,7 +8,6 @@ class DrawComponent;
 
 class ServerData {
     public:
-        std::unordered_map<ServerClientID, ResourceData> resources;
         uint64_t canvasScale = 0;
         Vector3f canvasBackColor;
 

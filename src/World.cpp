@@ -7,6 +7,7 @@
 #include <Helpers/VersionNumber.hpp>
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include "Server/CommandList.hpp"
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
@@ -98,7 +99,11 @@ void World::init_client_callbacks() {
             std::string fileDisplayName;
             CoordSpaceHelper camCoordsToMoveTo;
             Vector2f windowSizeToMoveTo;
-            message(displayName, camCoordsToMoveTo, windowSizeToMoveTo, fileDisplayName, clients);
+            message(displayName);
+            message(camCoordsToMoveTo);
+            message(windowSizeToMoveTo);
+            message(fileDisplayName);
+            message(clients);
             set_name(fileDisplayName);
             drawData.cam.smooth_move_to(*main.world, camCoordsToMoveTo, windowSizeToMoveTo, true);
             Vector3f newBackColor;
@@ -109,7 +114,6 @@ void World::init_client_callbacks() {
             gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
             drawProg.read_components_client(message);
         }
-        nextClientID = get_max_id(ownID);
         clientStillConnecting = false;
     });
     con.client_add_recv_callback(CLIENT_USER_CONNECT, [&](cereal::PortableBinaryInputArchive& message) {
@@ -269,11 +273,6 @@ void World::add_chat_message(const std::string& name, const std::string& message
         chatMessages.pop_back();
 }
 
-ServerClientID World::get_new_id() {
-    nextClientID++;
-    return {ownID, nextClientID};
-}
-
 WorldVec World::get_mouse_world_pos() {
     return mousePreviousWorldVec;
 }
@@ -385,23 +384,15 @@ void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std:
 
     cereal::PortableBinaryInputArchive a(f);
     load_file(a, fileVersion);
-    nextClientID = get_max_id(ownID);
 
     Logger::get().log("USERINFO", "File loaded");
     set_name(filePath.stem().string());
-}
-
-ClientPortionID World::get_max_id(ServerPortionID serverID) {
-    return rMan.get_max_id(serverID);
 }
 
 void World::save_file(cereal::PortableBinaryOutputArchive& a) const {
     a(drawData.cam.c, main.window.size.cast<float>().eval());
     a(convert_vec3<Vector3f>(canvasTheme.backColor));
     drawProg.save_file(a);
-    //a(bMan);
-    //a(gridMan);
-    rMan.save_strip_unused_resources(a, drawProg.get_used_resources());
 }
 
 void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
@@ -426,7 +417,6 @@ void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber versi
     //a(bMan);
     //if(version >= VersionNumber(0, 2, 0))
     //    a(gridMan);
-    a(rMan);
 }
 
 WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize) {

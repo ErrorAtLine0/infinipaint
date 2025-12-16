@@ -52,10 +52,6 @@ bool ConnectionManager::client_exists() {
     return client != nullptr;
 }
 
-std::unordered_map<ServerClientID, NetLibrary::DownloadProgress> ConnectionManager::server_get_resource_retrieval_progress() {
-    return localServer->resource_download_progress();
-}
-
 NetLibrary::DownloadProgress ConnectionManager::client_get_resource_retrieval_progress() {
     return client->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
 }
