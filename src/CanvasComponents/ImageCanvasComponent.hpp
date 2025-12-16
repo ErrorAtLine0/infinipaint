@@ -23,10 +23,11 @@ class ImageCanvasComponent : public CanvasComponent {
             NetworkingObjects::NetObjID imageID;
         } d;
 
+        virtual void update(DrawingProgram& drawP) override;
+
     private:
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
-        virtual void update(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
         void create_draw_data();
         void create_collider();

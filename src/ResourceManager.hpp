@@ -26,8 +26,8 @@ class ResourceManager {
         void update();
         void init_client_callbacks();
         void init_server_callbacks();
-        NetworkingObjects::NetObjID add_resource_file(const std::filesystem::path& filePath);
-        NetworkingObjects::NetObjID add_resource(const ResourceData& resource);
+        NetworkingObjects::NetObjTemporaryPtr<ResourceData> add_resource_file(const std::filesystem::path& filePath);
+        const NetworkingObjects::NetObjOwnerPtr<ResourceData>& add_resource(const ResourceData& resource);
         ResourceDisplay* get_display_data(const NetworkingObjects::NetObjID& fileID);
         const std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>>& resource_list();
         float get_resource_retrieval_progress(const NetworkingObjects::NetObjID& id);

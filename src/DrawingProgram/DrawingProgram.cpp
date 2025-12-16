@@ -27,6 +27,7 @@
 #include <include/core/SkPathEffect.h>
 #include <include/effects/SkDashPathEffect.h>
 #include <chrono>
+#include "../CanvasComponents/ImageCanvasComponent.hpp"
 
 #include "EraserTool.hpp"
 
@@ -50,11 +51,17 @@ void DrawingProgram::set_component_list_callbacks() {
         c->obj->set_owner_obj_info(c);
         c->obj->commit_update(*this); // Run commit update on insert so that world bounds are calculated
         compCache.add_component(c);
+        if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE)
+            updateableComponents.emplace(c);
     });
     components->set_erase_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
         compCache.erase_component(c);
         selection.erase_component(c);
         drawTool->erase_component(c);
+        std::erase_if(droppedDownloadingFiles, [&c](auto& downloadingFile) {
+            return downloadingFile.comp == c;
+        });
+        updateableComponents.erase(c);
     });
     components->set_post_sync_callback([&]() {
         clear_draw_cache();
@@ -287,6 +294,13 @@ void DrawingProgram::update() {
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;
     controls.currentMouseWorldPos = world.get_mouse_world_pos();
 
+    if(addFileInNextFrame) {
+        add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);
+        addFileInNextFrame = false;
+    }
+
+    drag_drop_update();
+
     if(world.main.input.key(InputManager::KEY_DRAW_TOOL_BRUSH).pressed)
         switch_to_tool(DrawingProgramToolType::BRUSH);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_ERASER).pressed)
@@ -322,6 +336,9 @@ void DrawingProgram::update() {
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;
 
+    update_downloading_dropped_files();
+    check_updateable_components();
+
     if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         compCache.test_rebuild_dont_include_set_dont_include_nodes(components->get_data(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
@@ -330,6 +347,11 @@ void DrawingProgram::update() {
         compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set());
     else
         compCache.test_rebuild(components->get_data());
+}
+
+void DrawingProgram::check_updateable_components() {
+    for(auto& comp : updateableComponents)
+        comp->obj->get_comp().update(*this);
 }
 
 bool DrawingProgram::is_actual_selection_tool(DrawingProgramToolType typeToCheck) {
@@ -381,6 +403,119 @@ void DrawingProgram::force_rebuild_cache() {
         compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set(), true);
     else
         compCache.test_rebuild(components->get_data(), true);
+}
+
+void DrawingProgram::drag_drop_update() {
+    if(controls.cursorHoveringOverCanvas) {
+        for(auto& droppedItem : world.main.input.droppedItems) {
+            if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
+#ifdef __EMSCRIPTEN_
+                add_file_to_canvas_by_path(droppedItem.dataPath.value(), world.main.input.mouse.pos, true);
+#else
+                add_file_to_canvas_by_path(droppedItem.dataPath.value(), droppedItem.pos, true);
+#endif
+            }
+            else if(droppedItem.dataText.has_value() && is_valid_http_url(droppedItem.dataText.value())) {
+                CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
+                ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
+                newContainer->coords = world.drawData.cam.c;
+                Vector2f imDim = Vector2f{100.0f, 100.0f};
+                img.d.p1 = droppedItem.pos - imDim;
+                img.d.p2 = droppedItem.pos + imDim;
+                img.d.imageID = {0, 0};
+                auto newObjInfo = components->push_back_and_send_create(components, newContainer);
+                droppedDownloadingFiles.emplace_back(newObjInfo, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.dataText.value()));
+            }
+        }
+    }
+}
+
+void DrawingProgram::update_downloading_dropped_files() {
+    std::erase_if(droppedDownloadingFiles, [&](auto& downFile) {
+        switch(downFile.downData->status) {
+            case FileDownloader::DownloadData::Status::SUCCESS: {
+                ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(downFile.comp->obj->get_comp());
+                Vector2f dropPos = (img.d.p1 + img.d.p2) * 0.5f;
+
+                ResourceData newResource;
+                newResource.data = std::make_shared<std::string>(downFile.downData->str);
+                newResource.name = downFile.downData->fileName;
+                NetworkingObjects::NetObjID imageID = world.rMan.add_resource(newResource).get_net_id();
+                ResourceDisplay* display = world.rMan.get_display_data(imageID);
+                if(display->get_type() == ResourceDisplay::Type::FILE) {
+                    Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
+                    components->erase(components, downFile.comp->obj.get_net_id());
+                }
+                else {
+                    Vector2f imTrueDim = display->get_dimensions();
+
+                    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+                    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+                    Vector2f imDim = Vector2f{downFile.windowSizeWhenDropped.x() * imWidth, downFile.windowSizeWhenDropped.x() * imHeight} * display->get_dimension_scale();
+                    img.d.p1 = dropPos - imDim;
+                    img.d.p2 = dropPos + imDim;
+                    img.d.imageID = imageID;
+                    downFile.comp->obj->send_comp_update(*this, true);
+                    downFile.comp->obj->commit_update(*this);
+                }
+                return true;
+            }
+            case FileDownloader::DownloadData::Status::FAILURE:
+                Logger::get().log("WORLDFATAL", "Failed to download data from URL");
+                components->erase(components, downFile.comp->obj.get_net_id());
+                return true;
+            case FileDownloader::DownloadData::Status::IN_PROGRESS:
+                return false;
+        }
+        return false;
+    });
+}
+
+void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread) {
+    if(addInSameThread)
+        add_file_to_canvas_by_path_execute(filePath, dropPos);
+    else if(!addFileInNextFrame) {
+        addFileInfo = {filePath, dropPos};
+        addFileInNextFrame = true;
+    }
+}
+
+void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos) {
+    NetworkingObjects::NetObjTemporaryPtr<ResourceData> imageTempPtr = world.rMan.add_resource_file(filePath);
+    if(imageTempPtr) {
+        NetworkingObjects::NetObjID imageID = imageTempPtr.get_net_id();
+        ResourceDisplay* display = world.rMan.get_display_data(imageID);
+        Vector2f imTrueDim = display->get_dimensions();
+        CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
+        ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
+        newContainer->coords = world.drawData.cam.c;
+        float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+        float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+        Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
+        img.d.p1 = dropPos - imDim;
+        img.d.p2 = dropPos + imDim;
+        img.d.imageID = imageID;
+        components->push_back_and_send_create(components, newContainer);
+    }
+}
+
+void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
+    ResourceData newResource;
+    newResource.data = std::make_shared<std::string>(fileBuffer);
+    newResource.name = fileName;
+    NetworkingObjects::NetObjID imageID = world.rMan.add_resource(newResource).get_net_id();
+    ResourceDisplay* display = world.rMan.get_display_data(imageID);
+    Vector2f imTrueDim = display->get_dimensions();
+    CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
+    ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
+    newContainer->coords = world.drawData.cam.c;
+    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+    Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
+    img.d.p1 = dropPos - imDim;
+    img.d.p2 = dropPos + imDim;
+    img.d.imageID = imageID;
+    components->push_back_and_send_create(components, newContainer);
 }
 
 void DrawingProgram::invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
@@ -451,6 +586,20 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
                 selection.draw_components(canvas, drawData);
             canvas->restore();
         canvas->restore();
+
+        if(!drawData.main->takingScreenshot) {
+            for(auto& droppedDownFile : droppedDownloadingFiles)
+                static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
+
+            for(auto& c : updateableComponents) {
+                if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
+                    auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
+                    float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
+                    img.draw_download_progress_bar(canvas, drawData, progress);
+                }
+            }
+        }
+
         selection.draw_gui(canvas, drawData);
     }
 

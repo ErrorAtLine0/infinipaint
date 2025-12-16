@@ -84,12 +84,12 @@ void ResourceManager::update() {
         v->update(world);
 }
 
-NetworkingObjects::NetObjID ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
+NetworkingObjects::NetObjTemporaryPtr<ResourceData> ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
     // https://nullptr.org/cpp-read-file-into-string/
     std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
     if(!file.is_open()) {
         Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + filePath.string());
-        return {0, 0};
+        return {};
     }
 
     size_t resourcesize;
@@ -98,7 +98,7 @@ NetworkingObjects::NetObjID ResourceManager::add_resource_file(const std::filesy
 
     if(tellgResult == -1) {
         Logger::get().log("INFO", "[ResourceManager::add_resource_file] tellg failed for file " + filePath.string());
-        return {0, 0};
+        return {};
     }
 
     resourcesize = static_cast<size_t>(tellgResult);
@@ -121,13 +121,13 @@ NetworkingObjects::NetObjID ResourceManager::add_resource_file(const std::filesy
     return add_resource(resource);
 }
 
-NetworkingObjects::NetObjID ResourceManager::add_resource(const ResourceData& resource) {
+const NetworkingObjects::NetObjOwnerPtr<ResourceData>& ResourceManager::add_resource(const ResourceData& resource) {
     auto it = std::find_if(resourceList.begin(), resourceList.end(), [&](const auto& p) {
         return p->data == resource.data || (*p->data) == (*resource.data);
     });
     if(it != resourceList.end()) {
         Logger::get().log("INFO", "[ResourceManager::add_resource] File " + std::string(resource.name) + " is a duplicate");
-        return it->get_net_id();
+        return *it;
     }
     auto& resourceInsert = resourceList.emplace_back(world.netObjMan.make_obj_direct<ResourceData>(resource));
     if(world.con.localServer) {
@@ -138,7 +138,7 @@ NetworkingObjects::NetObjID ResourceManager::add_resource(const ResourceData& re
         world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
         world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     }
-    return resourceInsert.get_net_id();
+    return resourceInsert;
 }
 
 ResourceDisplay* ResourceManager::get_display_data(const NetworkingObjects::NetObjID& fileID) {

@@ -34,6 +34,9 @@ class DrawingProgram {
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
 
+        void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread);
+        void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
+
         std::unordered_set<ServerClientID> get_used_resources() const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
@@ -57,6 +60,11 @@ class DrawingProgram {
         void modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify);
 
     private:
+        void drag_drop_update();
+        void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
+        void check_updateable_components();
+        void update_downloading_dropped_files();
+
         std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
 
@@ -76,6 +84,7 @@ class DrawingProgram {
         DrawingProgramSelection selection;
 
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
+        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> updateableComponents;
 
         bool temporaryEraser = false;
         bool temporaryPan = false;
@@ -98,6 +107,13 @@ class DrawingProgram {
 
             int colorEditing = 0;
         } controls;
+
+        struct DroppedDownloadingFile {
+            CanvasComponentContainer::ObjInfoSharedPtr comp;
+            Vector2f windowSizeWhenDropped;
+            std::shared_ptr<FileDownloader::DownloadData> downData;
+        };
+        std::vector<DroppedDownloadingFile> droppedDownloadingFiles;
 
         std::unique_ptr<DrawingProgramToolBase> drawTool;
 

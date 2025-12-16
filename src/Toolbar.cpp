@@ -540,9 +540,8 @@ void Toolbar::top_toolbar() {
                     #else
                         open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
                             auto wLock = w.lock();
-                            // NOTE: Implement again later
-                            //if(wLock)
-                            //    wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
+                            if(wLock)
+                                wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
                         });
                     #endif
                 }
