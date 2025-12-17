@@ -25,4 +25,8 @@ namespace NetworkingObjects {
         server = initServer;
         updateCommandID = initUpdateCommandID;
     }
+    void NetObjManager::disconnect() {
+        server = nullptr;
+        client = nullptr;
+    }
 }

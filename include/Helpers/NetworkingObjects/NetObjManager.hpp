@@ -23,6 +23,7 @@ namespace NetworkingObjects {
             void read_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom);
             void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID);
             void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID);
+            void disconnect();
             bool is_server() const;
             template <typename T> NetObjOwnerPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
                 NetObjID id;

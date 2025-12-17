@@ -125,7 +125,6 @@ void World::init_net_obj_type_list() {
 void World::init_server_callbacks() {
     rMan.init_server_callbacks();
     netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        std::cout << "Received server init data" << std::endl;
         ClientData::InitStruct newClientData;
         newClientData.cursorColor = get_random_cursor_color();
         message(newClientData.displayName);
@@ -167,7 +166,6 @@ void World::init_server_callbacks() {
 void World::init_client_callbacks() {
     rMan.init_client_callbacks();
     con.client_add_recv_callback(CLIENT_INITIAL_DATA, [&](cereal::PortableBinaryInputArchive& message) {
-        std::cout << "Received client init data" << std::endl;
         std::string fileDisplayName;
         NetworkingObjects::NetObjID clientDataObjID;
         message(fileDisplayName, clientDataObjID);
@@ -176,10 +174,9 @@ void World::init_client_callbacks() {
         gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
         drawProg.read_components_client(message);
         canvasTheme.read_create_message(message);
-
         clients = netObjMan.read_create_message<NetworkingObjects::NetObjUnorderedSet<ClientData>>(message, nullptr);
         init_client_data_list_callbacks();
-        ownClientData = netObjMan.get_obj_from_id<ClientData>(clientDataObjID);
+        ownClientData = netObjMan.get_obj_temporary_ref_from_id<ClientData>(clientDataObjID);
         drawData.cam.smooth_move_to(*main.world, ownClientData->get_cam_coords(), ownClientData->get_window_size(), true);
 
         clientStillConnecting = false;
@@ -194,17 +191,28 @@ void World::init_client_callbacks() {
 void World::focus_update() {
     con.update();
 
-    if(netServer && netServer->is_disconnected()) {
-        Logger::get().log("USERINFO", "Host connection failed");
-        netSource.clear();
-        netServer = nullptr;
-        conType = CONNECTIONTYPE_LOCAL;
-        con = ConnectionManager();
+    if(netServer) {
+        if(netServer->is_disconnected()) {
+            Logger::get().log("USERINFO", "Host connection failed");
+            netSource.clear();
+            netServer = nullptr;
+            conType = CONNECTIONTYPE_LOCAL;
+            con = ConnectionManager();
+            netObjMan.disconnect();
+        }
+        else {
+            netServer->update();
+            if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
+                netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_KEEP_ALIVE);
+                lastKeepAliveSent = std::chrono::steady_clock::now();
+            }
+        }
     }
 
     if(con.is_client_disconnected()) {
         Logger::get().log("USERINFO", "Client connection failed");
         setToDestroy = true;
+        netObjMan.disconnect();
         return;
     }
 

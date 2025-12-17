@@ -80,7 +80,7 @@ void ClientData::register_class(World& world) {
                     std::string chatMessage;
                     a(chatMessage);
                     world.add_chat_message(o->displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
-                    o.send_server_update_to_all_clients_except(c, RELIABLE_COMMAND_CHANNEL, [&chatMessage](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
+                    o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&chatMessage](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
                         a(ClientDataCommand::SEND_CHAT_MESSAGE, chatMessage);
                     });
                     break;
@@ -116,7 +116,8 @@ void ClientData::set_camera_coords(const NetworkingObjects::NetObjTemporaryPtr<C
 }
 
 void ClientData::send_chat_message(const NetworkingObjects::NetObjTemporaryPtr<ClientData>& o, World& world, const std::string& chatMessage) {
-    world.add_chat_message(o->displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
+    if(o.get_obj_man()->is_server()) // Clients will receive the message when it returns from the server to ensure correct order
+        world.add_chat_message(o->displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
     o.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [&chatMessage](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
         a(ClientDataCommand::SEND_CHAT_MESSAGE, chatMessage);
     });

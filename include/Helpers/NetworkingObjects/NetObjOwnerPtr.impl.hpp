@@ -64,8 +64,20 @@ namespace NetworkingObjects {
         return rawPtr;
     }
 
-    template <typename T> std::strong_ordering NetObjOwnerPtr<T>::operator<=>(const NetObjOwnerPtr<T>& rhs) const {
-        return rawPtr <=> rhs.rawPtr;
+    template <typename T> bool NetObjOwnerPtr<T>::operator!=(const NetObjOwnerPtr<T>& rhs) const {
+        return rawPtr != rhs.rawPtr;
+    }
+
+    template <typename T> bool NetObjOwnerPtr<T>::operator==(const NetObjOwnerPtr<T>& rhs) const {
+        return rawPtr == rhs.rawPtr;
+    }
+
+    template <typename T> bool NetObjOwnerPtr<T>::operator!=(const NetObjTemporaryPtr<T>& rhs) const {
+        return rawPtr != rhs.get();
+    }
+
+    template <typename T> bool NetObjOwnerPtr<T>::operator==(const NetObjTemporaryPtr<T>& rhs) const {
+        return rawPtr == rhs.get();
     }
 
     template <typename T> void NetObjOwnerPtr<T>::send_client_update(const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) const {
