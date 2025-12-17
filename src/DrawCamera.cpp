@@ -1,12 +1,9 @@
 #include "DrawCamera.hpp"
 #include "DrawingProgram/DrawingProgramToolBase.hpp"
 #include "Helpers/FixedPoint.hpp"
-#include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
-#include "Server/CommandList.hpp"
 #include "World.hpp"
 #include "InputManager.hpp"
-#include <iostream>
 
 DrawCamera::DrawCamera():
     c({0, 0}, WorldScalar(1000000), 0.0)

@@ -8,7 +8,6 @@
 #include "GridModifyTool.hpp"
 #include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
-#include "../Server/CommandList.hpp"
 #include <memory>
 #include <optional>
 #include <Helpers/ConvertVec.hpp>
@@ -78,13 +77,6 @@ void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
 
 void DrawingProgram::parallel_loop_all_components(std::function<void(const CanvasComponentContainer::ObjInfoSharedPtr&)> func) {
     parallel_loop_container(components->get_data(), func);
-}
-
-std::unordered_set<ServerClientID> DrawingProgram::get_used_resources() const {
-    std::unordered_set<ServerClientID> toRet;
-    //for(auto& c : components->get_data())
-    //    c->obj->get_used_resources(toRet);
-    return toRet;
 }
 
 void DrawingProgram::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase) {

@@ -16,7 +16,6 @@
 #include <include/core/SkData.h>
 #include <include/core/SkSurfaceProps.h>
 #include "InputManager.hpp"
-#include "Server/CommandList.hpp"
 #include <cereal/types/vector.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <Eigen/Core>
@@ -137,7 +136,7 @@ void MainProgram::update() {
 void MainProgram::update_display_names() {
     for(auto& w : worlds) {
         if(!w->network_being_used())
-            w->displayName = displayName;
+            w->ownClientData->set_display_name(displayName);
     }
 }
 

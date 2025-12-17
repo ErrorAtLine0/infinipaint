@@ -47,7 +47,7 @@ namespace NetworkingObjects {
             }
 
             bool contains(const NetObjID& p) const {
-                return std::find_if(data.begin(), data.end(), [&p](const NetObjOwnerPtr<T>& o){ o.get_net_id() == p; }) != data.end();
+                return std::find_if(data.begin(), data.end(), [&p](const NetObjOwnerPtr<T>& o){ return o.get_net_id() == p; }) != data.end();
             }
             const std::vector<NetObjOwnerPtr<T>>& get_data() const {
                 return data;
@@ -68,7 +68,7 @@ namespace NetworkingObjects {
             }
 
             bool erase_by_id(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const NetObjID& id) {
-                auto it = std::find_if(this->data.begin(), this->data.end(), [&id](const NetObjOwnerPtr<T>& o){ o.get_net_id() == id; });
+                auto it = std::find_if(this->data.begin(), this->data.end(), [&id](const NetObjOwnerPtr<T>& o){ return o.get_net_id() == id; });
                 if(it == this->data.end())
                     return false;
                 call_erase_callback(*it);
@@ -77,14 +77,14 @@ namespace NetworkingObjects {
                 return true;
             }
 
-            virtual void insert_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, NetObjOwnerPtr<T> newObj) const = 0;
+            virtual void insert_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, const NetObjOwnerPtr<T>& newObj) const = 0;
             virtual void erase_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const NetObjID& id) const = 0;
             virtual void read_update(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) = 0;
 
             void write_constructor(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, cereal::PortableBinaryOutputArchive& a) {
                 a(static_cast<uint32_t>(data.size()));
                 for(size_t i = 0; i < data.size(); i++)
-                    data[i]->obj.write_create_message(a);
+                    data[i].write_create_message(a);
 
             }
             void read_constructor(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
@@ -128,7 +128,7 @@ namespace NetworkingObjects {
         public:
             NetObjUnorderedSetServer() {}
         protected:
-            virtual void insert_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, NetObjOwnerPtr<T> newObj) const override {
+            virtual void insert_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, const NetObjOwnerPtr<T>& newObj) const override {
                 l.send_server_update_to_all_clients_except(clientInserting, RELIABLE_COMMAND_CHANNEL, [&newObj](const NetObjTemporaryPtr<NetObjUnorderedSet<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrUnorderedSetCommand_StoC::INSERT_SINGLE_CONSTRUCT);
                     newObj.write_create_message(a);
@@ -144,13 +144,13 @@ namespace NetworkingObjects {
                 a(command);
                 switch(command) {
                     case ObjPtrUnorderedSetCommand_CtoS::INSERT_SINGLE: {
-                        insert(l, c, l.get_obj_man()->template read_create_message<T>(a, c));
+                        NetObjUnorderedSet<T>::insert(l, c, l.get_obj_man()->template read_create_message<T>(a, c));
                         break;
                     }
                     case ObjPtrUnorderedSetCommand_CtoS::ERASE_SINGLE: {
                         NetObjID idToErase;
                         a(idToErase);
-                        erase_by_id(l, idToErase);
+                        NetObjUnorderedSet<T>::erase_by_id(l, idToErase);
                         break;
                     }
                 }
@@ -161,7 +161,7 @@ namespace NetworkingObjects {
         public:
             NetObjUnorderedSetClient() {}
         protected:
-            virtual void insert_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const std::shared_ptr<NetServer::ClientData>&, NetObjOwnerPtr<T> newObj) const override {
+            virtual void insert_network(const NetObjTemporaryPtr<NetObjUnorderedSet<T>>& l, const std::shared_ptr<NetServer::ClientData>&, const NetObjOwnerPtr<T>& newObj) const override {
                 l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&newObj](const NetObjTemporaryPtr<NetObjUnorderedSet<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrUnorderedSetCommand_CtoS::INSERT_SINGLE);
                     newObj.write_create_message(a);
@@ -183,7 +183,7 @@ namespace NetworkingObjects {
                     case ObjPtrUnorderedSetCommand_StoC::ERASE_SINGLE: {
                         NetObjID id;
                         a(id);
-                        auto it = std::find_if(this->data.begin(), this->data.end(), [&id](const NetObjOwnerPtr<T>& o){ o.get_net_id() == id; });
+                        auto it = std::find_if(this->data.begin(), this->data.end(), [&id](const NetObjOwnerPtr<T>& o){ return o.get_net_id() == id; });
                         if(it != this->data.end())
                             this->data.erase(it);
                         break;

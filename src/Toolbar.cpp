@@ -1275,33 +1275,37 @@ void Toolbar::player_list() {
         gui.obstructing_window();
         gui.push_id("client list");
         gui.text_label_centered("Player List");
-        gui.left_to_right_line_layout([&]() {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{main.world->userColor.x(), main.world->userColor.y(), main.world->userColor.z(), 1.0f}),
-                .cornerRadius = CLAY_CORNER_RADIUS(3)
-            }) {}
-            gui.text_label(main.world->displayName);
-        });
-        size_t num = 0;
-        for(auto& [id, client] : main.world->clients) {
-            gui.push_id(num++);
+        if(!main.world->clientStillConnecting) {
             gui.left_to_right_line_layout([&]() {
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
                     },
-                    .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{client.cursorColor.x(), client.cursorColor.y(), client.cursorColor.z(), 1.0f}),
+                    .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{main.world->ownClientData->get_cursor_color().x(), main.world->ownClientData->get_cursor_color().y(), main.world->ownClientData->get_cursor_color().z(), 1.0f}),
                     .cornerRadius = CLAY_CORNER_RADIUS(3)
                 }) {}
-                gui.text_label(client.displayName);
-                CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                if(gui.text_button("teleport button", "Jump To"))
-                    main.world->drawData.cam.smooth_move_to(*main.world, client.camCoords, client.windowSize);
+                gui.text_label(main.world->ownClientData->get_display_name());
             });
-            gui.pop_id();
+            size_t num = 0;
+            for(auto& client : main.world->clients->get_data()) {
+                if(client != main.world->ownClientData) {
+                    gui.push_id(num++);
+                    gui.left_to_right_line_layout([&]() {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
+                            },
+                            .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{client->get_cursor_color().x(), client->get_cursor_color().y(), client->get_cursor_color().z(), 1.0f}),
+                            .cornerRadius = CLAY_CORNER_RADIUS(3)
+                        }) {}
+                        gui.text_label(client->get_display_name());
+                        CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                        if(gui.text_button("teleport button", "Jump To"))
+                            main.world->drawData.cam.smooth_move_to(*main.world, client->get_cam_coords(), client->get_window_size());
+                    });
+                    gui.pop_id();
+                }
+            }
         }
         if(gui.text_button_wide("close list", "Done"))
             playerMenuOpen = false;

@@ -36,7 +36,7 @@ class ResourceManager {
     private:
         std::unordered_map<NetworkingObjects::NetObjID, std::unique_ptr<ResourceDisplay>> displays;
 
-        std::unordered_map<NetworkingObjects::NetObjID, uint64_t> resourcesBeingRetrieved;
+        std::unordered_map<NetworkingObjects::NetObjID, std::weak_ptr<NetServer::ClientData>> resourcesBeingRetrieved;
         std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>> resourceList;
 
         static std::array<const SkCodecs::Decoder, 5> decoders;

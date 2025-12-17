@@ -3,7 +3,7 @@
 #include <include/core/SkImage.h>
 #include <Helpers/NetworkingObjects/NetObjID.hpp>
 #include "ResourceDisplay/SvgResourceDisplay.hpp"
-#include "Server/CommandList.hpp"
+#include "CommandList.hpp"
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "ResourceDisplay/FileResourceDisplay.hpp"
 #include <cereal/types/string.hpp>
@@ -19,16 +19,14 @@ ResourceManager::ResourceManager(World& initWorld):
 
 void ResourceManager::init_client_callbacks() {
     world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
-        if(!world.con.host_exists()) {
-            NetworkingObjects::NetObjID idBeingRetrieved;
-            message(idBeingRetrieved);
-            // There is a scenario where the resource id and data messages can be sent twice for the same resource (a resource can be sent early before CLIENT_INITIAL_DATA is sent, and then resent with CLIENT_INITIAL_DATA), so check if resource already exists, and only keep track of the ID if the resource doesn't exist yet
-            if(!world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(idBeingRetrieved))
-                resourcesBeingRetrieved.emplace(idBeingRetrieved, 0);
-        }
+        NetworkingObjects::NetObjID idBeingRetrieved;
+        message(idBeingRetrieved);
+        // There is a scenario where the resource id and data messages can be sent twice for the same resource (a resource can be sent early before CLIENT_INITIAL_DATA is sent, and then resent with CLIENT_INITIAL_DATA), so check if resource already exists, and only keep track of the ID if the resource doesn't exist yet
+        if(!world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(idBeingRetrieved))
+            resourcesBeingRetrieved.emplace(idBeingRetrieved, std::weak_ptr<NetServer::ClientData>());
     });
     world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
-        if(!world.con.host_exists() && !resourcesBeingRetrieved.empty()) { // If the resource was sent for the second time, this will be empty, so we can ignore the message
+        if(!resourcesBeingRetrieved.empty()) { // If the resource was sent for the second time, this will be empty, so we can ignore the message
             ResourceData newResource;
             message(newResource);
             resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(resourcesBeingRetrieved.begin()->first, newResource));
@@ -38,21 +36,21 @@ void ResourceManager::init_client_callbacks() {
 }
 
 void ResourceManager::init_server_callbacks() {
-    world.con.localServer->netServer->add_recv_callback(CLIENT_NEW_RESOURCE_ID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    world.netServer->add_recv_callback(CLIENT_NEW_RESOURCE_ID, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         NetworkingObjects::NetObjID idBeingRetrieved;
         message(idBeingRetrieved);
-        resourcesBeingRetrieved.emplace(idBeingRetrieved, client->customID);
+        resourcesBeingRetrieved.emplace(idBeingRetrieved, client);
     });
-    world.con.localServer->netServer->add_recv_callback(CLIENT_NEW_RESOURCE_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    world.netServer->add_recv_callback(CLIENT_NEW_RESOURCE_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ResourceData newResource;
         message(newResource);
         auto it = std::find_if(resourcesBeingRetrieved.begin(), resourcesBeingRetrieved.end(), [&client](auto& p) {
-            return p.second == client->customID;
+            return (!p.second.expired() && p.second.lock() == client);
         });
         resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(it->first, newResource));
-        world.con.localServer->netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceList.back().get_net_id());
-        world.con.localServer->netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, newResource);
-        resourcesBeingRetrieved.erase(resourceList.back().get_net_id());
+        world.netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceList.back().get_net_id());
+        world.netServer->send_items_to_all_clients_except(client, RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, newResource);
+        resourcesBeingRetrieved.erase(it);
     });
 }
 
@@ -60,18 +58,13 @@ float ResourceManager::get_resource_retrieval_progress(const NetworkingObjects::
     auto resourceClientID = resourcesBeingRetrieved.find(id);
     if(resourceClientID == resourcesBeingRetrieved.end())
         return 0.0f;
-    if(world.con.localServer) {
-        uint64_t clientIDToLookFor = resourceClientID->second;
-
-        const std::vector<std::shared_ptr<NetServer::ClientData>>& clientListInNetServer = world.con.localServer->netServer->get_client_list();
-        auto netClientIt = std::find_if(clientListInNetServer.begin(), clientListInNetServer.end(), [&clientIDToLookFor](auto& nC) {
-            return nC->customID == clientIDToLookFor;
-        });
-        if(netClientIt == clientListInNetServer.end()) {
-            resourcesBeingRetrieved.erase(resourceClientID); // Client disconnected, remove it from the list
+    if(world.netServer) {
+        std::weak_ptr<NetServer::ClientData> clientIDToLookFor = resourceClientID->second;
+        if(clientIDToLookFor.expired()) {
+            resourcesBeingRetrieved.erase(resourceClientID);
             return 0.0f;
         }
-        auto progressBytes = (*netClientIt)->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
+        auto progressBytes = clientIDToLookFor.lock()->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
         if(progressBytes.totalBytes == 0)
             return 0.0f;
         return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
@@ -136,9 +129,9 @@ const NetworkingObjects::NetObjOwnerPtr<ResourceData>& ResourceManager::add_reso
         return *it;
     }
     auto& resourceInsert = resourceList.emplace_back(world.netObjMan.make_obj_direct<ResourceData>(resource));
-    if(world.con.localServer) {
-        world.con.localServer->netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
-        world.con.localServer->netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
+    if(world.netServer) {
+        world.netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
+        world.netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     }
     else {
         world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());

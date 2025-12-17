@@ -5,8 +5,6 @@
 
 #include <optional>
 
-#include "Server/CommandList.hpp"
-
 #ifdef __EMSCRIPTEN__
 #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
 

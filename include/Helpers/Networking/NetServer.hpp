@@ -37,7 +37,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             };
             std::unordered_map<std::string, std::queue<OutgoingMessage>> messageQueues;
 
-            uint64_t customID;
+            std::array<uint64_t, 2> customID;
 
             void send_queued_messages(NetServer& server);
             void parse_received_messages(NetServer& server);

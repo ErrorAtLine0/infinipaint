@@ -1,10 +1,6 @@
 #include "GridManager.hpp"
-#include "Helpers/Networking/NetLibrary.hpp"
-#include "Server/CommandList.hpp"
-#include "SharedTypes.hpp"
 #include "World.hpp"
 #include "MainProgram.hpp"
-#include <algorithm>
 
 GridManager::GridManager(World& w):
     world(w) {}

@@ -1,15 +1,9 @@
 #include "ConnectionManager.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
-#include "Server/CommandList.hpp"
+#include "CommandList.hpp"
 #include <chrono>
 #include "World.hpp"
 #include <Helpers/Logger.hpp>
-
-void ConnectionManager::init_local_p2p(World& initWorld, const std::string& serverLocalID) {
-    localServer = std::make_unique<MainServer>(initWorld, serverLocalID);
-    client = std::make_shared<NetClient>(*localServer->netServer);
-    lastKeepAliveTime = std::chrono::steady_clock::now();
-}
 
 void ConnectionManager::connect_p2p(World& initWorld, const std::string& serverFullID) {
     client = std::make_shared<NetClient>(serverFullID);
@@ -19,9 +13,6 @@ void ConnectionManager::connect_p2p(World& initWorld, const std::string& serverF
 }
 
 void ConnectionManager::update() {
-    if(localServer) {
-        localServer->update();
-    }
     if(client) {
         client->update();
         if(std::chrono::steady_clock::now() - lastKeepAliveTime > std::chrono::seconds(2)) {
@@ -38,14 +29,6 @@ void ConnectionManager::client_add_recv_callback(uint32_t commandID, const NetCl
 
 bool ConnectionManager::is_client_disconnected() {
     return client && client->is_disconnected();
-}
-
-bool ConnectionManager::is_host_disconnected() {
-    return localServer && localServer->netServer->is_disconnected();
-}
-
-bool ConnectionManager::host_exists() {
-    return localServer != nullptr;
 }
 
 bool ConnectionManager::client_exists() {

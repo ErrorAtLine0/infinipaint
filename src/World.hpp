@@ -1,6 +1,7 @@
 #pragma once
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
+#include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
 #include "UndoManager.hpp"
 #include "BookmarkManager.hpp"
 #include "ResourceManager.hpp"
@@ -12,6 +13,7 @@
 #include "GridManager.hpp"
 #include <Helpers/NetworkingObjects/NetObjManager.hpp>
 #include <filesystem>
+#include "ClientData.hpp"
 
 class MainProgram;
 
@@ -56,8 +58,6 @@ class World {
         std::deque<Toolbar::ChatMessage> chatMessages;
 
         std::string netSource;
-        
-        std::string displayName;
 
         void start_hosting(const std::string& initNetSource, const std::string& serverLocalID);
 
@@ -86,39 +86,37 @@ class World {
         void undo_with_checks();
         void redo_with_checks();
 
-        ServerPortionID ownID = 0;
-
         std::filesystem::path filePath;
-        Vector3f userColor = {0.0f, 0.0f, 0.0f};
         std::string name;
-        std::unordered_map<ServerPortionID, ClientData> clients;
+
+        NetworkingObjects::NetObjTemporaryPtr<ClientData> ownClientData;
+        NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjUnorderedSet<ClientData>> clients;
 
         CanvasTheme canvasTheme;
 
         void scale_up(const WorldScalar& scaleUpAmount);
         void scale_up_step();
 
-        uint64_t canvasScale = 0;
-
         bool setToDestroy = false;
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
-    private:
-        void init_net_obj_type_list();
 
+        std::shared_ptr<NetServer> netServer;
+    private:
+        Vector3f get_random_cursor_color();
+        void init_client_data_list();
+        void init_client_data_list_callbacks();
+        void init_net_obj_type_list();
 
         void init_client_callbacks();
         void init_server_callbacks();
         void set_name(const std::string& n);
 
         void draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData);
+        void ensure_display_name_unique(std::string& displayName);
 
         TimePoint timeToSendCameraData;
-        struct SentCameraData {
-            CoordSpaceHelper camTransform;
-            Vector2f windowSize;
-        };
-        std::optional<SentCameraData> sentCameraData;
-
         WorldVec mousePreviousWorldVec = {0, 0};
         WorldVec mouseWorldMove = {0, 0};
+
+        std::chrono::steady_clock::time_point lastKeepAliveSent;
 };

@@ -62,13 +62,6 @@ class MainProgram {
             SDL_Window* sdlWindow;
         } window;
 
-        struct Clipboard {
-            std::vector<std::shared_ptr<DrawComponent>> components;
-            std::unordered_map<ServerClientID, ResourceData> resources;
-            WorldVec pos;
-            WorldScalar inverseScale;
-        } clipboard;
-
         std::shared_ptr<FontData> fonts;
         TimePoint deltaTime;
         Toolbar toolbar;
