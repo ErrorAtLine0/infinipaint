@@ -217,7 +217,7 @@ void World::focus_update() {
     }
 
     if(!clientStillConnecting) {
-        delayedUpdateObjectManager.update();
+        delayedUpdateObjectManager.update(netObjMan);
         constexpr float SECONDS_TO_SEND_CAMERA_DATA = 0.5f;
         timeToSendCameraData.update_time_since();
         if(timeToSendCameraData.get_time_since() > SECONDS_TO_SEND_CAMERA_DATA) {

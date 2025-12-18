@@ -32,7 +32,7 @@ const SkColor4f& CanvasTheme::get_tool_front_color() const {
 void CanvasTheme::set_back_color(const Vector3f& newBackColor) {
     if(backColor && newBackColor != backColor->c) {
         backColor->c = newBackColor;
-        world.delayedUpdateObjectManager.send_update_to_all<BackColor>(backColor, true);
+        world.delayedUpdateObjectManager.send_update_to_all<BackColor>(backColor, false);
         set_tool_front_color(world.drawProg);
     }
 }

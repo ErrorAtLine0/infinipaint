@@ -60,12 +60,12 @@ namespace NetworkingObjects {
                 // TODO: When finalUpdate = false, maybe add a small delay between updates instead of sending them every frame?
                 o.send_update_to_all(finalUpdate ? RELIABLE_COMMAND_CHANNEL : UNRELIABLE_COMMAND_CHANNEL, [&](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
                     if(o.get_obj_man()->is_server())
-                        server_write_func(o, a);
+                        server_write_func(o, a, finalUpdate);
                     else
                         client_write_update_func(o, a, finalUpdate);
                 });
             }
-            void update();
+            void update(NetworkingObjects::NetObjManager& netObjMan);
         private:
             template <typename T> void client_write_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a, bool finalUpdate) {
                 a(finalUpdate);
@@ -84,11 +84,22 @@ namespace NetworkingObjects {
                             typeIndexFuncs[std::type_index(typeid(T))].postUpdateFunc(static_cast<void*>(oLock.get()));
                         }
                     };
+                    toAdd.sendFinalUpdate = [&typeIndexFuncs = typeIndexFuncs, oWeak = NetObjWeakPtr<T>(o)]() {
+                        NetObjTemporaryPtr<T> oLock = oWeak.lock();
+                        if(oLock) {
+                            oLock.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [&typeIndexFuncs = typeIndexFuncs](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+                                a(true); // It's the final update (sent over reliable channel)
+                                typeIndexFuncs[std::type_index(typeid(T))].writeUpdateFunc(static_cast<const void*>(o.get()), a);
+                            });
+                        }
+                    };
+                    toAdd.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
                     updatingObjs.emplace(o.get_net_id(), toAdd);
                 }
                 else {
                     auto& [netID, updatingObjData] = *it;
                     updatingObjData.lastUpdateTimePoint = std::chrono::steady_clock::now();
+                    updatingObjData.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
                 }
             }
 
@@ -105,7 +116,7 @@ namespace NetworkingObjects {
                 }
             }
 
-            template <typename T> void server_write_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+            template <typename T> void server_write_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a, bool finalUpdate) {
                 typeIndexFuncs[std::type_index(typeid(T))].writeUpdateFunc(static_cast<const void*>(o.get()), a);
                 auto it = updatingObjs.find(o.get_net_id());
 
@@ -124,11 +135,21 @@ namespace NetworkingObjects {
                             });
                         }
                     };
+                    toAdd.sendFinalUpdate = [&typeIndexFuncs = typeIndexFuncs, oWeak = NetObjWeakPtr<T>(o)]() {
+                        NetObjTemporaryPtr<T> oLock = oWeak.lock();
+                        if(oLock) {
+                            oLock.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [&typeIndexFuncs = typeIndexFuncs](const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a) {
+                                typeIndexFuncs[std::type_index(typeid(T))].writeUpdateFunc(static_cast<const void*>(o.get()), a);
+                            });
+                        }
+                    };
+                    toAdd.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
                     updatingObjs.emplace(o.get_net_id(), toAdd);
                 }
                 else {
                     auto& [netID, updatingObjData] = *it;
                     updatingObjData.lastUpdateTimePoint = std::chrono::steady_clock::now();
+                    updatingObjData.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
                     typeIndexFuncs[std::type_index(typeid(T))].assignmentFunc(static_cast<void*>(updatingObjs[o.get_net_id()].objToUpdateCurrentData.get()), static_cast<const void*>(o.get()));
                     *updatingObjData.doLastAssignment = false;
                 }
@@ -158,6 +179,8 @@ namespace NetworkingObjects {
                 std::shared_ptr<bool> doLastAssignment;
                 std::chrono::steady_clock::time_point lastUpdateTimePoint;
                 std::function<void()> setDataAfterTimeout;
+                std::optional<std::chrono::steady_clock::time_point> lastTemporaryUpdateTimePoint;
+                std::function<void()> sendFinalUpdate;
             };
             std::unordered_map<NetObjID, UpdatingObject> updatingObjs;
             
