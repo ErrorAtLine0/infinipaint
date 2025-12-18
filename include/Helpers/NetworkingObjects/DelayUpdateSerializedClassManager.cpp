@@ -6,7 +6,6 @@ namespace NetworkingObjects {
         for(auto& [objID, updatingObj] : updatingObjs) {
             if(updatingObj.lastTemporaryUpdateTimePoint.has_value() && (std::chrono::steady_clock::now() - updatingObj.lastTemporaryUpdateTimePoint.value()) >= std::chrono::milliseconds(300)) {
                 updatingObj.sendFinalUpdate();
-                std::cout << "yay!" << std::endl;
                 updatingObj.lastTemporaryUpdateTimePoint = std::nullopt;
             }
         }
