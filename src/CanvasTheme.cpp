@@ -20,7 +20,7 @@ void CanvasTheme::init() {
 
 SkColor4f CanvasTheme::get_back_color() const {
     if(!backColor)
-        return SkColor4f{DEFAULT_CANVAS_BACKGROUND_COLOR.x(), DEFAULT_CANVAS_BACKGROUND_COLOR.y(), DEFAULT_CANVAS_BACKGROUND_COLOR.z(), 1.0f};
+        return SkColor4f{world.main.defaultCanvasBackgroundColor.x(), world.main.defaultCanvasBackgroundColor.y(), world.main.defaultCanvasBackgroundColor.z(), 1.0f};
     else
         return SkColor4f{backColor->c.x(), backColor->c.y(), backColor->c.z(), 1.0f};
 }
