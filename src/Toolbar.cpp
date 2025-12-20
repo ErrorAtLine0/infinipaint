@@ -800,65 +800,10 @@ void Toolbar::bookmark_menu(bool justOpened) {
         .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
-        float entryHeight = 25.0f;
         gui.text_label_centered("Bookmarks");
-        if(main.world->bMan.bookmarks->empty())
-            gui.text_label_centered("No bookmarks yet...");
-        uint32_t toDelete = std::numeric_limits<uint32_t>::max();
-        gui.scroll_bar_many_entries_area("bookmark menu entries", entryHeight, main.world->bMan.bookmarks->size(), true, [&](size_t i, bool isListHovered) {
-            const Bookmark& bookmark = *main.world->bMan.bookmarks->at(i)->obj;
-            bool selectedEntry = i == bookMenu.selectedBookmark;
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
-                    .childGap = 2,
-                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT 
-                },
-                .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
-            }) {
-                gui.text_label(bookmark.name);
-                bool miniButtonClicked = false;
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                        .childGap = 1,
-                        .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT
-                    }
-                }) {
-                    if(gui.svg_icon_button_transparent("bookmark jump button", "data/icons/jump.svg", false, entryHeight, false)) {
-                        miniButtonClicked = true;
-                        main.world->bMan.jump_to_bookmark(i);
-                    }
-                    if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
-                        miniButtonClicked = true;
-                        toDelete = i;
-                    }
-                }
-                if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
-                    bookMenu.newName = bookmark.name;
-                    bookMenu.selectedBookmark = i;
-                    if(io->mouse.leftClick >= 2)
-                        main.world->bMan.jump_to_bookmark(i);
-                }
-            }
-        });
-        if(toDelete != std::numeric_limits<uint32_t>::max())
-            main.world->bMan.remove_bookmark(toDelete);
-        gui.left_to_right_line_layout([&]() {
-            bool addByEnter = false;
-            gui.input_text("bookmark text input", &bookMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
-                addByEnter = s.selected && io->key.enter;
-            });
-            if((gui.svg_icon_button("bookmark add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || addByEnter) && !bookMenu.newName.empty())
-                main.world->bMan.add_bookmark(bookMenu.newName);
-        });
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
-            bookMenu.newName.clear();
+        gui.tree_listing("bookmark listing", main.world->bMan.bookmarkListRoot->get_folder_list());
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened)
             bookMenu.popupOpen = false;
-            bookMenu.selectedBookmark = std::numeric_limits<uint32_t>::max();
-        }
     }
     gui.pop_id();
 }

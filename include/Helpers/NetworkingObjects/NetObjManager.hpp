@@ -35,7 +35,7 @@ namespace NetworkingObjects {
                 typeList.get_type_index_data<T>(isServer).readConstructorFunc(NetObjTemporaryPtr(newPtr).template cast<void>(), a, clientReceivedFrom);
                 return newPtr;
             }
-            template <typename T> NetObjTemporaryPtr<T> read_get_obj_ref_from_message(cereal::PortableBinaryInputArchive& a) {
+            template <typename T> NetObjTemporaryPtr<T> read_get_obj_temporary_ref_from_message(cereal::PortableBinaryInputArchive& a) {
                 NetObjID id;
                 a(id);
                 auto it = objectData.find(id);
@@ -61,12 +61,6 @@ namespace NetworkingObjects {
             }
             template <typename T> NetObjOwnerPtr<T> make_obj_from_ptr(T* p) {
                 return emplace_raw_ptr<T>(NetObjID::random_gen(), p);
-            }
-            template <typename T> NetObjOwnerPtr<T> get_obj_from_id(NetObjID id) {
-                auto it = objectData.find(id);
-                if(it == objectData.end())
-                    throw std::runtime_error("[NetObjManager::get_obj_from_id] ID doesn't exist");
-                return NetObjOwnerPtr<T>(this, id, static_cast<T*>(it->second.p));
             }
             template <typename T> NetObjTemporaryPtr<T> get_obj_temporary_ref_from_id(NetObjID id) {
                 auto it = objectData.find(id);

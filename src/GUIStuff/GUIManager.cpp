@@ -897,6 +897,12 @@ void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const
     }
 }
 
+void GUIManager::tree_listing(const std::string& id, const NetworkingObjects::NetObjTemporaryPtr<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>& bookmarkList) {
+    push_id(id);
+    insert_element<TreeListing>()->update(*io, *this, bookmarkList);
+    pop_id();
+}
+
 void GUIManager::obstructing_window() {
     if(Clay_Hovered())
         io->hoverObstructed = true;

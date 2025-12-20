@@ -1,7 +1,6 @@
 #include "CheckBox.hpp"
 #include <include/core/SkPath.h>
 #include <include/core/SkPathBuilder.h>
-#include <iostream>
 
 namespace GUIStuff {
 

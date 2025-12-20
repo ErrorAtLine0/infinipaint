@@ -1,20 +1,27 @@
 #include "BookmarkListItem.hpp"
 #include <cereal/types/string.hpp>
+#include "../World.hpp"
 
 using namespace NetworkingObjects;
+
+void BookmarkData::jump_to(World& world) {
+    world.drawData.cam.smooth_move_to(world, coords, windowSize.cast<float>());
+}
 
 BookmarkListItem::BookmarkListItem() {}
 
 BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData) {
     name = initName;
-    if(isFolder)
-        folderList = netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
+    if(isFolder) {
+        folderData = std::make_unique<BookmarkFolderData>();
+        folderData->folderList = netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
+    }
     else
         bookmarkData = std::make_unique<BookmarkData>(initBookmarkData);
 }
 
 bool BookmarkListItem::is_folder() const {
-    return folderList;
+    return folderData != nullptr;
 }
 
 const BookmarkData& BookmarkListItem::get_bookmark_data() const {
@@ -22,11 +29,19 @@ const BookmarkData& BookmarkListItem::get_bookmark_data() const {
 }
 
 const NetObjOwnerPtr<NetObjOrderedList<BookmarkListItem>>& BookmarkListItem::get_folder_list() const {
-    return folderList;
+    return folderData->folderList;
 }
 
 const std::string& BookmarkListItem::get_name() const {
     return name;
+}
+
+bool BookmarkListItem::is_folder_open() const {
+    return folderData->isFolderOpen;
+}
+
+void BookmarkListItem::set_folder_open(bool newIsFolderOpen) {
+    folderData->isFolderOpen = newIsFolderOpen;
 }
 
 void BookmarkListItem::set_name(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, const std::string& newName) {
@@ -57,7 +72,7 @@ void BookmarkListItem::register_class(NetObjManager& netObjMan) {
 void BookmarkListItem::write_constructor_data(const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a) {
     a(o->name, o->is_folder());
     if(o->is_folder())
-        o->folderList.write_create_message(a);
+        o->folderData->folderList.write_create_message(a);
     else
         a(*o->bookmarkData);
 }
@@ -66,8 +81,10 @@ void BookmarkListItem::read_constructor_data(const NetworkingObjects::NetObjTemp
     a(o->name);
     bool isFolder;
     a(isFolder);
-    if(isFolder)
-        o->folderList = o.get_obj_man()->read_create_message<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>(a, c);
+    if(isFolder) {
+        o->folderData = std::make_unique<BookmarkFolderData>();
+        o->folderData->folderList = o.get_obj_man()->read_create_message<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>(a, c);
+    }
     else {
         o->bookmarkData = std::make_unique<BookmarkData>();
         a(*o->bookmarkData);

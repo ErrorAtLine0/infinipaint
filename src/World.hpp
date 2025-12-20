@@ -3,7 +3,7 @@
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
 #include "UndoManager.hpp"
-#include "BookmarkManager.hpp"
+#include "Bookmarks/BookmarkManager.hpp"
 #include "ResourceManager.hpp"
 #include "ConnectionManager.hpp"
 #include "DrawingProgram/DrawingProgram.hpp"

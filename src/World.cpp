@@ -110,8 +110,8 @@ void World::init_client_data_list_callbacks() {
 }
 
 void World::init_net_obj_type_list() {
-    NetworkingObjects::register_generic_serialized_class<Bookmark>(netObjMan);
-    NetworkingObjects::register_ordered_list_class<Bookmark>(netObjMan);
+    BookmarkListItem::register_class(netObjMan);
+    NetworkingObjects::register_ordered_list_class<BookmarkListItem>(netObjMan);
     delayedUpdateObjectManager.register_class<WorldGrid>(netObjMan);
     NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
     CanvasComponentAllocator::register_class(*this, netObjMan);
@@ -139,7 +139,7 @@ void World::init_server_callbacks() {
         {
             cereal::PortableBinaryOutputArchive a(*ss);
             a(CLIENT_INITIAL_DATA, name, clientDataObjPtr.get_net_id());
-            bMan.bookmarks.write_create_message(a);
+            //bMan.bookmarks.write_create_message(a);
             gridMan.grids.write_create_message(a);
             drawProg.write_components_server(a);
             canvasTheme.write_create_message(a);
@@ -170,7 +170,7 @@ void World::init_client_callbacks() {
         NetworkingObjects::NetObjID clientDataObjID;
         message(fileDisplayName, clientDataObjID);
         set_name(fileDisplayName);
-        bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
+        //bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
         gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
         drawProg.read_components_client(message);
         canvasTheme.read_create_message(message);

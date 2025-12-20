@@ -190,8 +190,6 @@ class Toolbar {
 
         struct BookmarkMenu {
             bool popupOpen = false;
-            std::string newName;
-            uint32_t selectedBookmark = std::numeric_limits<uint32_t>::max();
         } bookMenu;
 
         struct GridMenu {
