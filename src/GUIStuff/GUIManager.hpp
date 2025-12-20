@@ -102,7 +102,7 @@ class GUIManager {
         void paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
         void list_popup_menu(const std::string& id, Vector2f popupPos, const std::function<void()>& elemUpdate);
 
-        void tree_listing(const std::string& id, const NetworkingObjects::NetObjTemporaryPtr<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>& bookmarkList);
+        void tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData);
 
         void obstructing_window();
 

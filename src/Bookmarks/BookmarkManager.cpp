@@ -1,6 +1,8 @@
 #include "BookmarkManager.hpp"
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
+#include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 
 BookmarkManager::BookmarkManager(World& w):
     world(w)
@@ -48,6 +50,60 @@ void BookmarkManager::init() {
         bookmarkListRoot->get_folder_list()->push_back_and_send_create(bookmarkListRoot->get_folder_list(), new BookmarkListItem(world.netObjMan, "Bookmark 18", false, {}));
         bookmarkListRoot->get_folder_list()->push_back_and_send_create(bookmarkListRoot->get_folder_list(), new BookmarkListItem(world.netObjMan, "Bookmark 19", false, {}));
         bookmarkListRoot->get_folder_list()->push_back_and_send_create(bookmarkListRoot->get_folder_list(), new BookmarkListItem(world.netObjMan, "Bookmark 20", false, {}));
+    }
+}
+
+void BookmarkManager::setup_list_gui(const std::string& id) {
+    using namespace NetworkingObjects;
+    if(bookmarkListRoot) {
+        std::optional<NetworkingObjects::NetObjID> toDeleteParent;
+        std::optional<NetworkingObjects::NetObjID> toDeleteObject;
+        auto& gui = world.main.toolbar.gui;
+        gui.tree_listing(id, bookmarkListRoot.get_net_id(), GUIStuff::TreeListing::DisplayData{
+            .getObjInListAtIndex = [&](NetObjID parentId, size_t index) -> std::optional<GUIStuff::TreeListing::DisplayData::ObjInList> {
+                NetObjOrderedList<BookmarkListItem>& bookmarkParentFolder = *world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(parentId)->get_folder_list();
+                if(bookmarkParentFolder.size() <= index)
+                    return std::nullopt;
+                return GUIStuff::TreeListing::DisplayData::ObjInList{
+                    .id = bookmarkParentFolder.at(index)->obj.get_net_id(),
+                    .isDirectory = bookmarkParentFolder.at(index)->obj->is_folder(),
+                    .isDirectoryOpen = bookmarkParentFolder.at(index)->obj->is_folder() ? bookmarkParentFolder.at(index)->obj->is_folder_open() : false
+                };
+            },
+            .setDirectoryOpen = [&](NetObjID netID, bool newDirectoryOpen) {
+                world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(netID)->set_folder_open(newDirectoryOpen);
+            },
+            .drawNonDirectoryObjIconGUI = [&](NetObjID netID) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                        .padding = CLAY_PADDING_ALL(2),
+                    },
+                }) {
+                    gui.svg_icon("bookmark ico", "data/icons/bookmark.svg");
+                }
+                return false;
+            },
+            .drawObjGUI = [&](NetObjID parentNetID, NetObjID netID) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                        .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
+                    },
+                }) {
+                    gui.text_label(world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(netID)->get_name());
+                }
+                if(gui.svg_icon_button_transparent("delete button", "data/icons/trash.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
+                    toDeleteParent = parentNetID;
+                    toDeleteObject = netID;
+                }
+                return false;
+            }
+        });
+        if(toDeleteObject.has_value()) {
+            auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toDeleteParent.value())->get_folder_list();
+            folderList->erase(folderList, toDeleteObject.value());
+        }
     }
 }
 

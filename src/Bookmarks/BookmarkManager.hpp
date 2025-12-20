@@ -11,6 +11,7 @@ class BookmarkManager {
         BookmarkManager(World& w);
         void init();
         void scale_up(const WorldScalar& scaleUpAmount);
+        void setup_list_gui(const std::string& id);
 
         template <typename Archive> void save(Archive& a) const {
         }

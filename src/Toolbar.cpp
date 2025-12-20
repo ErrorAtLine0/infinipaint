@@ -801,7 +801,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
     }) {
         gui.obstructing_window();
         gui.text_label_centered("Bookmarks");
-        gui.tree_listing("bookmark listing", main.world->bMan.bookmarkListRoot->get_folder_list());
+        main.world->bMan.setup_list_gui("bookmark menu list");
         if(io->mouse.leftClick && !Clay_Hovered() && !justOpened)
             bookMenu.popupOpen = false;
     }

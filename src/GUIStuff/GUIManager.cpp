@@ -897,9 +897,9 @@ void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const
     }
 }
 
-void GUIManager::tree_listing(const std::string& id, const NetworkingObjects::NetObjTemporaryPtr<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>& bookmarkList) {
+void GUIManager::tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData) {
     push_id(id);
-    insert_element<TreeListing>()->update(*io, *this, bookmarkList);
+    insert_element<TreeListing>()->update(*io, *this, rootObjID, displayData);
     pop_id();
 }
 
