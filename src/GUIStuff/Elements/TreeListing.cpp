@@ -217,7 +217,7 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
                 unselect_object(objInList.id);
             itemCount++;
             if(objInList.isDirectoryOpen)
-                recursive_gui(io, gui, displayData, objInList.id, itemCount, itemCountToStartAt, itemCountToEndAt, listDepth + 1, hoveredObject, parentIDStack, selfJustSelected);
+                recursive_gui(io, gui, displayData, objInList.id, itemCount, itemCountToStartAt, itemCountToEndAt, listDepth + 1, hoveredObject, parentIDStack, selfJustSelected | parentJustSelected);
         }
     }
     parentIDStack.pop_back();
