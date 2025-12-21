@@ -70,6 +70,9 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                     .isDirectoryOpen = bookmarkParentFolder.at(index)->obj->is_folder() ? bookmarkParentFolder.at(index)->obj->is_folder_open() : false
                 };
             },
+            .getIndexOfObjInList = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
+                return world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(idPair.parent)->get_folder_list()->get(idPair.object)->pos;
+            },
             .setDirectoryOpen = [&](NetObjID netID, bool newDirectoryOpen) {
                 world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(netID)->set_folder_open(newDirectoryOpen);
             },
@@ -84,20 +87,24 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                 }
                 return false;
             },
-            .drawObjGUI = [&](NetObjID parentNetID, NetObjID netID) {
+            .drawObjGUI = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                         .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
                     },
                 }) {
-                    gui.text_label(world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(netID)->get_name());
+                    gui.text_label(world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(idPair.object)->get_name());
                 }
                 if(gui.svg_icon_button_transparent("delete button", "data/icons/trash.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
-                    toDeleteParent = parentNetID;
-                    toDeleteObject = netID;
+                    toDeleteParent = idPair.parent;
+                    toDeleteObject = idPair.object;
                 }
                 return false;
+            },
+            .moveObjectsToListAtIndex = [](NetworkingObjects::NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
+                static int i = 0;
+                std::cout << "Move happened! " << i++ << std::endl;
             }
         });
         if(toDeleteObject.has_value()) {

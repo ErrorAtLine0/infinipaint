@@ -100,6 +100,7 @@ namespace NetworkingObjects {
             virtual const std::vector<NetObjOrderedListObjectInfoPtr<T>>& get_data() const = 0;
             virtual uint32_t size() const = 0;
             virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const = 0;
+            virtual NetObjOrderedListObjectInfoPtr<T> get(const NetObjID& id) const = 0;
             virtual bool empty() const = 0;
             virtual ~NetObjOrderedList() {}
         protected:
@@ -171,6 +172,12 @@ namespace NetworkingObjects {
             }
             virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const override {
                 return data[index];
+            }
+            virtual NetObjOrderedListObjectInfoPtr<T> get(const NetObjID& id) const override {
+                auto it = idToDataMap.find(id);
+                if(it == idToDataMap.end())
+                    return nullptr;
+                return it->second;
             }
             virtual bool empty() const override {
                 return data.empty();
@@ -342,6 +349,12 @@ namespace NetworkingObjects {
             }
             virtual const NetObjOrderedListObjectInfoPtr<T>& at(uint32_t index) const override {
                 return clientData[index];
+            }
+            virtual NetObjOrderedListObjectInfoPtr<T> get(const NetObjID& id) const override {
+                auto it = clientIdToDataMap.find(id);
+                if(it == clientIdToDataMap.end())
+                    return nullptr;
+                return it->second;
             }
             virtual bool empty() const override {
                 return clientData.empty();

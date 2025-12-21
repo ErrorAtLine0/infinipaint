@@ -9,6 +9,18 @@ class GUIManager;
 class TreeListing : public Element {
     public:
         static constexpr float ENTRY_HEIGHT = 25.0f;
+
+        struct ParentObjectIDPair {
+            NetworkingObjects::NetObjID parent;
+            NetworkingObjects::NetObjID object;
+            bool operator==(const ParentObjectIDPair&) const = default;
+        };
+
+        struct ParentObjectIDStack {
+            std::vector<NetworkingObjects::NetObjID> parents;
+            NetworkingObjects::NetObjID object;
+        };
+
         struct DisplayData {
             struct ObjInList {
                 NetworkingObjects::NetObjID id;
@@ -16,15 +28,30 @@ class TreeListing : public Element {
                 bool isDirectoryOpen = false;
             };
             std::function<std::optional<ObjInList>(NetworkingObjects::NetObjID, size_t)> getObjInListAtIndex;
+            std::function<size_t(const ParentObjectIDPair&)> getIndexOfObjInList;
             std::function<void(NetworkingObjects::NetObjID, bool)> setDirectoryOpen;
             std::function<bool(NetworkingObjects::NetObjID)> drawNonDirectoryObjIconGUI;
-            std::function<bool(NetworkingObjects::NetObjID, NetworkingObjects::NetObjID)> drawObjGUI;
+            std::function<bool(const ParentObjectIDPair&)> drawObjGUI;
+            std::function<void(NetworkingObjects::NetObjID, size_t, const std::vector<ParentObjectIDPair>&)> moveObjectsToListAtIndex;
         };
         void update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
     private:
-        void recursive_gui(UpdateInputData& io, GUIManager& gui, const DisplayData& displayData, NetworkingObjects::NetObjID objID, size_t& itemCount, size_t itemCountToStartAt, size_t itemCountToEndAt, size_t listDepth);
-        std::optional<NetworkingObjects::NetObjID> objSelected;
+        bool dragHoldSelected = false;
+
+        void set_single_selected_object();
+
+        void recursive_gui(UpdateInputData& io, GUIManager& gui, const DisplayData& displayData, NetworkingObjects::NetObjID objID, size_t& itemCount, size_t itemCountToStartAt, size_t itemCountToEndAt, size_t listDepth, std::optional<ParentObjectIDStack>& hoveredObject, std::vector<NetworkingObjects::NetObjID>& parentIDStack, bool parentJustSelected);
+        std::vector<ParentObjectIDPair> orderedObjsSelected;
+        std::unordered_set<NetworkingObjects::NetObjID> objsSelected;
+
+        void select_and_unselect_parents(const std::vector<NetworkingObjects::NetObjID>& parentIDStack, NetworkingObjects::NetObjID newSelectedObj);
+
+        void unselect_object(NetworkingObjects::NetObjID id);
+
+        bool topHalfOfHovered = false;
+        std::optional<ParentObjectIDPair> objDragged;
+        std::optional<ParentObjectIDStack> oldHoveredObject;
 };
 
 }
