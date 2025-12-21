@@ -715,7 +715,7 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
             float sAreaDim = scrollData.scrollContainerDimensions.height;
             float contDim = scrollData.contentDimensions.height;
             float scrollerSize = (sAreaDim / contDim) * sAreaDim;
-            float scrollPosMax = (contDim - sAreaDim) + 3.0f; // NOTE: Adding + 3.0f to prevent bug with scroller that pushes everything under it when its at the bottom of the scroll area
+            float scrollPosMax = (contDim - sAreaDim);// + 3.0f;  NOTE: Adding + 3.0f to prevent bug with scroller that pushes everything under it when its at the bottom of the scroll area (I think the bug that caused this is fixed now)
             float scrollerPos = std::fabs(scrollData.scrollPosition->y / scrollPosMax);
             float areaAboveScrollerSize = scrollerPos * (sAreaDim - scrollerSize);
 
