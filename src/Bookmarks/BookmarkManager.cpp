@@ -110,7 +110,7 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
 
                 for(size_t i = 0; i < objsToInsert.size(); i++) {
                     toEraseMap[objsToInsert[i].parent].emplace(objsToInsert[i].object);
-                    if(objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
+                    if(newIndex != 0 && objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
                         newIndex--;
                 }
 

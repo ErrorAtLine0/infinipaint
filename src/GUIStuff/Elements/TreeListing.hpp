@@ -52,6 +52,7 @@ class TreeListing : public Element {
         bool topHalfOfHovered = false;
         std::optional<ParentObjectIDPair> objDragged;
         std::optional<ParentObjectIDStack> oldHoveredObject;
+        std::chrono::steady_clock::time_point timeStartedHoveringOverObject;
 };
 
 }

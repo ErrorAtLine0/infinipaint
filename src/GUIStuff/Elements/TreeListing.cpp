@@ -1,6 +1,10 @@
 #include "TreeListing.hpp"
 #include "../GUIManager.hpp"
 #include "Helpers/ConvertVec.hpp"
+#include <chrono>
+#include "../../TimePoint.hpp"
+
+#define TIME_TO_HOVER_TO_OPEN_DIRECTORY std::chrono::milliseconds(700)
 
 namespace GUIStuff {
 
@@ -54,6 +58,14 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
         objsSelected.emplace(object);
 
     if(objDragged.has_value()) {
+        if(hoveredObject.has_value() && !objsSelected.contains(hoveredObject.value().object) && (std::chrono::steady_clock::now() - timeStartedHoveringOverObject) >= TIME_TO_HOVER_TO_OPEN_DIRECTORY) {
+            ParentObjectIDStack& hoveredObjVal = hoveredObject.value();
+            size_t hoveredObjIndex = displayData.getIndexOfObjInList({hoveredObjVal.parents.back(), hoveredObjVal.object});
+            std::optional<DisplayData::ObjInList> objHoveringOver = displayData.getObjInListAtIndex(hoveredObjVal.parents.back(), hoveredObjIndex);
+            if(objHoveringOver.value().isDirectory && !objHoveringOver.value().isDirectoryOpen)
+                displayData.setDirectoryOpen(hoveredObjVal.object, true);
+        }
+
         ParentObjectIDPair& objDraggedVal = objDragged.value();
         if(!objsSelected.contains(objDraggedVal.object))
             objDragged = std::nullopt;
@@ -64,8 +76,8 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
                 ParentObjectIDStack hoveredObjValToUse = hoveredObject.value(); // By value since it'll be edited
                 size_t indexToMoveFrom = displayData.getIndexOfObjInList(objDraggedVal);
                 size_t indexToMoveTo = displayData.getIndexOfObjInList({hoveredObjValToUse.parents.back(), hoveredObjValToUse.object});
-                std::optional<DisplayData::ObjInList> objInList = displayData.getObjInListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo);
-                if(objInList.value().isDirectoryOpen && !topHalfOfHovered) { // Move to front of the list object if it's open
+                std::optional<DisplayData::ObjInList> objHoveringOver = displayData.getObjInListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo);
+                if(objHoveringOver.value().isDirectoryOpen && !topHalfOfHovered) { // Move to front of the directory object
                     hoveredObjValToUse.parents.emplace_back(hoveredObjValToUse.object);
                     indexToMoveTo = 0;
                 }
@@ -82,10 +94,13 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
                             break;
                         }
                     }
-                    if(!wrongMovement)
+                    if(!wrongMovement) {
                         displayData.moveObjectsToListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo, orderedObjsSelected);
-                    objsSelected.clear();
-                    orderedObjsSelected.clear();
+                        objsSelected.clear();
+                        orderedObjsSelected.clear();
+                    }
+                    else
+                        set_single_selected_object();
                 }
             }
             objDragged = std::nullopt;
@@ -116,6 +131,16 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
                 bool buttonClicked = false;
                 uint16_t topOutlineWidth = 0;
                 uint16_t bottomOutlineWidth = 0;
+
+                bool isOldHoveredObject = oldHoveredObject.has_value() && oldHoveredObject.value().object == objInList.id;
+                SkColor4f backgroundColor;
+                if(objsSelected.contains(objInList.id))
+                    backgroundColor = io.theme->backColor1;
+                else if(isOldHoveredObject && objInList.isDirectory && !objInList.isDirectoryOpen && objDragged.has_value())
+                    backgroundColor = lerp_vec(io.theme->backColor2, io.theme->fillColor1, std::clamp(std::chrono::duration<float, std::chrono::milliseconds::period>(std::chrono::steady_clock::now() - timeStartedHoveringOverObject) / TIME_TO_HOVER_TO_OPEN_DIRECTORY, 0.0f, 1.0f));
+                else
+                    backgroundColor = io.theme->backColor2;
+
                 if(oldHoveredObject.has_value() && oldHoveredObject.value().object == objInList.id) {
                     if(objDragged.has_value()) {
                         ParentObjectIDPair& objDraggedVal = objDragged.value();
@@ -132,7 +157,7 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ENTRY_HEIGHT)},
                         .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
                     },
-                    .backgroundColor = convert_vec4<Clay_Color>((objsSelected.contains(objInList.id)) ? io.theme->backColor1 : io.theme->backColor2)
+                    .backgroundColor = convert_vec4<Clay_Color>(backgroundColor)
                 }) {
                     if(listDepth != 0) {
                         CLAY_AUTO_ID({
@@ -184,6 +209,8 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
                 
                     if(Clay_Hovered()) {
                         hoveredObject = {parentIDStack, objInList.id};
+                        if(!isOldHoveredObject)
+                            timeStartedHoveringOverObject = std::chrono::steady_clock::now();
                         if(io.mouse.leftClick && !buttonClicked && !parentJustSelected) {
                             if(io.key.leftShift)
                                 dragHoldSelected = true;
