@@ -61,24 +61,29 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
             if(!hoveredObject.has_value())
                 set_single_selected_object();
             else {
-                ParentObjectIDStack& hoveredObjVal = hoveredObject.value();
+                ParentObjectIDStack hoveredObjValToUse = hoveredObject.value(); // By value since it'll be edited
                 size_t indexToMoveFrom = displayData.getIndexOfObjInList(objDraggedVal);
-                size_t indexToMoveTo = displayData.getIndexOfObjInList({hoveredObjVal.parents.back(), hoveredObjVal.object});
-                if(!topHalfOfHovered)
+                size_t indexToMoveTo = displayData.getIndexOfObjInList({hoveredObjValToUse.parents.back(), hoveredObjValToUse.object});
+                std::optional<DisplayData::ObjInList> objInList = displayData.getObjInListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo);
+                if(objInList.value().isDirectoryOpen && !topHalfOfHovered) { // Move to front of the list object if it's open
+                    hoveredObjValToUse.parents.emplace_back(hoveredObjValToUse.object);
+                    indexToMoveTo = 0;
+                }
+                else if(!topHalfOfHovered)
                     indexToMoveTo++;
-                if((indexToMoveFrom == indexToMoveTo || (indexToMoveFrom + 1) == indexToMoveTo) && objDraggedVal.parent == hoveredObjVal.parents.back())
+                if((indexToMoveFrom == indexToMoveTo || (indexToMoveFrom + 1) == indexToMoveTo) && objDraggedVal.parent == hoveredObjValToUse.parents.back())
                     set_single_selected_object();
                 else {
                     bool wrongMovement = false;
                     // Check if object is about to move into itself
-                    for(const NetworkingObjects::NetObjID& parent : hoveredObjVal.parents) {
+                    for(const NetworkingObjects::NetObjID& parent : hoveredObjValToUse.parents) {
                         if(objsSelected.contains(parent)) {
                             wrongMovement = true;
                             break;
                         }
                     }
                     if(!wrongMovement)
-                        displayData.moveObjectsToListAtIndex(hoveredObjVal.parents.back(), indexToMoveTo, orderedObjsSelected);
+                        displayData.moveObjectsToListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo, orderedObjsSelected);
                     objsSelected.clear();
                     orderedObjsSelected.clear();
                 }
