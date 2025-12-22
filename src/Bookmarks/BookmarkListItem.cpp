@@ -20,6 +20,11 @@ BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, 
         bookmarkData = std::make_unique<BookmarkData>(initBookmarkData);
 }
 
+void BookmarkListItem::reassign_netobj_ids_call() {
+    if(folderData)
+        folderData->folderList.reassign_ids();
+}
+
 bool BookmarkListItem::is_folder() const {
     return folderData != nullptr;
 }

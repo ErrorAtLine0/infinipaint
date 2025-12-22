@@ -25,6 +25,7 @@ class BookmarkListItem {
         const std::string& get_name() const;
         static void register_class(NetworkingObjects::NetObjManager& netObjMan);
         static void set_name(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, const std::string& newName); // Set once after editing is finished
+        void reassign_netobj_ids_call();
     private:
         struct BookmarkFolderData {
             NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<BookmarkListItem>> folderList;

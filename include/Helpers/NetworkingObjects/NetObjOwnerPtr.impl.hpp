@@ -40,6 +40,22 @@ namespace NetworkingObjects {
         }
     }
 
+    template <typename T> void NetObjOwnerPtr<T>::reassign_ids() {
+        if(objMan && rawPtr) {
+            constexpr bool hasReassignNetObjIds = requires(T& t) {
+                t.reassign_netobj_ids_call();
+            };
+            auto it = objMan->objectData.find(id);
+            NetObjManager::SingleObjectData objData = it->second;
+            objData.p = rawPtr;
+            objMan->objectData.erase(it);
+            id = NetObjID::random_gen();
+            objMan->objectData.emplace(id, objData);
+            if constexpr(hasReassignNetObjIds)
+                rawPtr->reassign_netobj_ids_call();
+        }
+    }
+
     template <typename T> NetObjManager* NetObjOwnerPtr<T>::get_obj_man() const {
         return objMan;
     }

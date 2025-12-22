@@ -18,6 +18,7 @@ namespace NetworkingObjects {
             NetObjManager* get_obj_man() const;
             NetObjID get_net_id() const;
             T* get() const;
+            void reassign_ids();
             std::add_lvalue_reference_t<T> operator*() const requires(!std::is_void_v<T>);
             T* operator->() const;
             operator bool() const;

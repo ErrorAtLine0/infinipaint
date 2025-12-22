@@ -56,8 +56,8 @@ void BookmarkManager::init() {
 void BookmarkManager::setup_list_gui(const std::string& id) {
     using namespace NetworkingObjects;
     if(bookmarkListRoot) {
-        std::optional<NetworkingObjects::NetObjID> toDeleteParent;
-        std::optional<NetworkingObjects::NetObjID> toDeleteObject;
+        std::optional<NetObjID> toDeleteParent;
+        std::optional<NetObjID> toDeleteObject;
         auto& gui = world.main.toolbar.gui;
         gui.tree_listing(id, bookmarkListRoot.get_net_id(), GUIStuff::TreeListing::DisplayData{
             .getObjInListAtIndex = [&](NetObjID parentId, size_t index) -> std::optional<GUIStuff::TreeListing::DisplayData::ObjInList> {
@@ -102,9 +102,32 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                 }
                 return false;
             },
-            .moveObjectsToListAtIndex = [](NetworkingObjects::NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
-                static int i = 0;
-                std::cout << "Move happened! " << i++ << std::endl;
+            .moveObjectsToListAtIndex = [&](NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
+                std::unordered_map<NetObjID, std::unordered_set<NetObjID>> toEraseMap;
+                uint32_t newIndex = index;
+                std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
+                auto& listPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listObj)->get_folder_list();
+
+                for(size_t i = 0; i < objsToInsert.size(); i++) {
+                    toEraseMap[objsToInsert[i].parent].emplace(objsToInsert[i].object);
+                    if(objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
+                        newIndex--;
+                }
+
+                for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
+                    auto& listToEraseFromPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listToEraseFrom)->get_folder_list();
+                    listToEraseFromPtr->erase_unordered_set(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
+                }
+
+                std::vector<std::pair<uint32_t, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
+                for(uint32_t i = 0; i < objsToInsert.size(); i++) {
+                    auto it = std::find_if(toInsertObjPtrs.begin(), toInsertObjPtrs.end(), [id = objsToInsert[i].object](NetObjOwnerPtr<BookmarkListItem>& objPtr) {
+                        return objPtr.get_net_id() == id;
+                    });
+                    toInsert.emplace_back(newIndex + i, std::move(*it));
+                    toInsert.back().second.reassign_ids();
+                }
+                listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
             }
         });
         if(toDeleteObject.has_value()) {
