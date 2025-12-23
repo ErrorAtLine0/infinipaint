@@ -139,7 +139,7 @@ void World::init_server_callbacks() {
         {
             cereal::PortableBinaryOutputArchive a(*ss);
             a(CLIENT_INITIAL_DATA, name, clientDataObjPtr.get_net_id());
-            //bMan.bookmarks.write_create_message(a);
+            bMan.bookmarkListRoot.write_create_message(a);
             gridMan.grids.write_create_message(a);
             drawProg.write_components_server(a);
             canvasTheme.write_create_message(a);
@@ -170,7 +170,7 @@ void World::init_client_callbacks() {
         NetworkingObjects::NetObjID clientDataObjID;
         message(fileDisplayName, clientDataObjID);
         set_name(fileDisplayName);
-        //bMan.bookmarks = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<Bookmark>>(message, nullptr);
+        bMan.bookmarkListRoot = netObjMan.read_create_message<BookmarkListItem>(message, nullptr);
         gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
         drawProg.read_components_client(message);
         canvasTheme.read_create_message(message);
