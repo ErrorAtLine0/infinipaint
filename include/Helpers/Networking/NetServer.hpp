@@ -67,7 +67,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
             send_string_stream_to_client_if(clientChecker, channel, get_string_stream_from_items(items...));
         }
         template <typename... Args> std::shared_ptr<std::stringstream> get_string_stream_from_items(Args&&... items) {
-            auto ss(std::make_shared<std::stringstream>());
+            auto ss(std::make_shared<std::stringstream>(std::ios::binary | std::ios::out));
             {
                 cereal::PortableBinaryOutputArchive m(*ss);
                 (m(items), ...);

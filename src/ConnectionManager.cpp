@@ -9,7 +9,7 @@ void ConnectionManager::connect_p2p(World& initWorld, const std::string& serverF
     client = std::make_shared<NetClient>(serverFullID);
     lastKeepAliveTime = std::chrono::steady_clock::now();
     NetLibrary::register_client(client);
-    initWorld.netObjMan.set_client(client, SERVER_UPDATE_NETWORK_OBJECT);
+    initWorld.netObjMan.set_client(client, SERVER_UPDATE_NETWORK_OBJECT, SERVER_UPDATE_MANY_NETWORK_OBJECTS);
 }
 
 void ConnectionManager::update() {

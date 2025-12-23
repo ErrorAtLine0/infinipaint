@@ -154,6 +154,9 @@ void World::init_server_callbacks() {
     netServer->add_recv_callback(SERVER_UPDATE_NETWORK_OBJECT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, client);
     });
+    netServer->add_recv_callback(SERVER_UPDATE_MANY_NETWORK_OBJECTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        netObjMan.read_many_update_message(message, client);
+    });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });
     netServer->add_disconnect_callback([&](std::shared_ptr<NetServer::ClientData> client) {
@@ -183,6 +186,9 @@ void World::init_client_callbacks() {
     });
     con.client_add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
+    });
+    con.client_add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
+        netObjMan.read_many_update_message(message, nullptr);
     });
     con.client_add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
@@ -347,7 +353,7 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     main.init_net_library();
     netServer = std::make_shared<NetServer>(serverLocalID);
     NetLibrary::register_server(netServer);
-    netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT);
+    netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT, CLIENT_UPDATE_MANY_NETWORK_OBJECTS);
     conType = CONNECTIONTYPE_SERVER;
     netSource = initNetSource;
     init_server_callbacks();

@@ -20,7 +20,7 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
         template <typename... Args> void send_items_to_server(const std::string& channel, Args&&... items) {
             if(isDisconnected)
                 return;
-            auto ss(std::make_shared<std::stringstream>());
+            auto ss(std::make_shared<std::stringstream>(std::ios::binary | std::ios::out));
             {
                 cereal::PortableBinaryOutputArchive m(*ss);
                 (m(items), ...);
