@@ -486,11 +486,11 @@ void Toolbar::top_toolbar() {
                 gridMenuPopUpJustOpen = true;
             }
         }
-        if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookMenu.popupOpen)) {
-            if(bookMenu.popupOpen)
-                bookMenu.popupOpen = false;
+        if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen)) {
+            if(bookmarkMenuPopupOpen)
+                bookmarkMenuPopupOpen = false;
             else {
-                bookMenu.popupOpen = true;
+                bookmarkMenuPopupOpen = true;
                 bookmarkMenuPopUpJustOpen = true;
             }
         }
@@ -500,7 +500,7 @@ void Toolbar::top_toolbar() {
             main.set_tab_to_close(closedTab.value());
         if(gridMenu.popupOpen)
             grid_menu(gridMenuPopUpJustOpen);
-        if(bookMenu.popupOpen)
+        if(bookmarkMenuPopupOpen)
             bookmark_menu(bookmarkMenuPopUpJustOpen);
         if(menuPopUpOpen) {
             CLAY_AUTO_ID({
@@ -765,7 +765,7 @@ void Toolbar::grid_menu(bool justOpened) {
             gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
                 addByEnter = s.selected && io->key.enter;
             });
-            if(gui.svg_icon_button("grid add button", "data/icons/plus.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
+            if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
                 main.world->gridMan.add_default_grid(gridMenu.newName);
                 main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
                 stop_displaying_grid_menu();
@@ -802,8 +802,10 @@ void Toolbar::bookmark_menu(bool justOpened) {
         gui.obstructing_window();
         gui.text_label_centered("Bookmarks");
         main.world->bMan.setup_list_gui("bookmark menu list");
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened)
-            bookMenu.popupOpen = false;
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
+            bookmarkMenuPopupOpen = false;
+            main.world->bMan.refresh_gui_data();
+        }
     }
     gui.pop_id();
 }

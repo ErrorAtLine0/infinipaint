@@ -4,7 +4,7 @@
 
 using namespace NetworkingObjects;
 
-void BookmarkData::jump_to(World& world) {
+void BookmarkData::jump_to(World& world) const {
     world.drawData.cam.smooth_move_to(world, coords, windowSize.cast<float>());
 }
 

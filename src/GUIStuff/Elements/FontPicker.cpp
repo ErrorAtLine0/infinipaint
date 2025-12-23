@@ -73,7 +73,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
         else
             val = it - sortedFontList.begin();
 
-        if(gui->svg_icon_button("Open font dropdown", "data/icons/droparrow.svg", dropdownOpen, GUIManager::SMALL_BUTTON_SIZE)) {
+        if(gui->svg_icon_button("Open font dropdown", "data/icons/droparrowbold.svg", dropdownOpen, GUIManager::SMALL_BUTTON_SIZE)) {
             dropdownOpen = !dropdownOpen;
             clickedOut = false;
         }

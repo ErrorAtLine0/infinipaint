@@ -34,20 +34,24 @@ class TreeListing : public Element {
             std::function<bool(const ParentObjectIDPair&)> drawObjGUI;
             std::function<void(NetworkingObjects::NetObjID, size_t, const std::vector<ParentObjectIDPair>&)> moveObjectsToListAtIndex;
         };
-        void update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData);
+
+        struct SelectionData {
+            std::vector<ParentObjectIDPair> orderedObjsSelected;
+            std::unordered_set<NetworkingObjects::NetObjID> objsSelected;
+        };
+
+        void update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
     private:
         bool dragHoldSelected = false;
 
-        void set_single_selected_object();
+        void set_single_selected_object(SelectionData& selectionData);
 
-        void recursive_gui(UpdateInputData& io, GUIManager& gui, const DisplayData& displayData, NetworkingObjects::NetObjID objID, size_t& itemCount, size_t itemCountToStartAt, size_t itemCountToEndAt, size_t listDepth, std::optional<ParentObjectIDStack>& hoveredObject, std::vector<NetworkingObjects::NetObjID>& parentIDStack, bool parentJustSelected);
-        std::vector<ParentObjectIDPair> orderedObjsSelected;
-        std::unordered_set<NetworkingObjects::NetObjID> objsSelected;
+        void recursive_gui(UpdateInputData& io, GUIManager& gui, const DisplayData& displayData, SelectionData& selectionData, NetworkingObjects::NetObjID objID, size_t& itemCount, size_t itemCountToStartAt, size_t itemCountToEndAt, size_t listDepth, std::optional<ParentObjectIDStack>& hoveredObject, std::vector<NetworkingObjects::NetObjID>& parentIDStack, bool parentJustSelected);
 
-        void select_and_unselect_parents(const std::vector<NetworkingObjects::NetObjID>& parentIDStack, NetworkingObjects::NetObjID newSelectedObj);
+        void select_and_unselect_parents(const std::vector<NetworkingObjects::NetObjID>& parentIDStack, NetworkingObjects::NetObjID newSelectedObj, SelectionData& selectionData);
 
-        void unselect_object(NetworkingObjects::NetObjID id);
+        void unselect_object(NetworkingObjects::NetObjID id, SelectionData& selectionData);
 
         bool topHalfOfHovered = false;
         std::optional<ParentObjectIDPair> objDragged;

@@ -346,11 +346,13 @@ void GUIManager::checkbox(const std::string& id, bool* val, const std::function<
     pop_id();
 }
 
-void GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+    bool toRet = false;
     left_to_right_line_layout([&]() {
         text_label(name);
-        input_text(id, val, updateEveryEdit, elemUpdate);
+        toRet = input_text(id, val, updateEveryEdit, elemUpdate);
     });
+    return toRet;
 }
 
 void GUIManager::input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
@@ -897,9 +899,9 @@ void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const
     }
 }
 
-void GUIManager::tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData) {
+void GUIManager::tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData) {
     push_id(id);
-    insert_element<TreeListing>()->update(*io, *this, rootObjID, displayData);
+    insert_element<TreeListing>()->update(*io, *this, rootObjID, displayData, selectionData);
     pop_id();
 }
 

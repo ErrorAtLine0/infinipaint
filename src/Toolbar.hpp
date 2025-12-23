@@ -188,9 +188,7 @@ class Toolbar {
             GSETTINGS_DEBUG
         } generalSettingsOptions = GSETTINGS_GENERAL;
 
-        struct BookmarkMenu {
-            bool popupOpen = false;
-        } bookMenu;
+        bool bookmarkMenuPopupOpen = false;
 
         struct GridMenu {
             bool popupOpen = false;

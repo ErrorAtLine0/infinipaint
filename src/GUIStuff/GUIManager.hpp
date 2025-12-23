@@ -48,7 +48,7 @@ class GUIManager {
         Vector2f screen_pos_to_window_pos(const Vector2f& screenPos);
         Vector2f get_mouse_pos();
 
-        void input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        bool input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
         void text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate = nullptr);
         void text_label_color(const std::string& val, const SkColor4f& color);
@@ -102,7 +102,7 @@ class GUIManager {
         void paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
         void list_popup_menu(const std::string& id, Vector2f popupPos, const std::function<void()>& elemUpdate);
 
-        void tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData);
+        void tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData);
 
         void obstructing_window();
 

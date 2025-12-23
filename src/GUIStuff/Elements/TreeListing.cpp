@@ -8,11 +8,11 @@
 
 namespace GUIStuff {
 
-void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData) {
+void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData) {
     if(!io.mouse.leftHeld)
         dragHoldSelected = false;
 
-    orderedObjsSelected.clear();
+    selectionData.orderedObjsSelected.clear();
     std::optional<ParentObjectIDStack> hoveredObject;
 
     CLAY_AUTO_ID({
@@ -20,11 +20,13 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
     }) {
         Clay_ElementId localID = CLAY_ID_LOCAL("scroll area");
         float setScrollAmount;
+        float setScrollContentHeight;
         CLAY(localID, {
             .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
         }) {
             gui.scroll_bar_area("scroll area", true, [&](float scrollContentHeight, float containerHeight, float& scrollAmount) {
                 setScrollAmount = scrollAmount;
+                setScrollContentHeight = scrollContentHeight;
                 size_t itemCount = 0;
                 size_t itemCountToStartAt = -scrollAmount / ENTRY_HEIGHT;
                 size_t itemCountToEndAt = (containerHeight - scrollAmount) / ENTRY_HEIGHT;
@@ -35,7 +37,7 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ENTRY_HEIGHT * itemCountToStartAt)}
                     }
                 }) {}
-                recursive_gui(io, gui, displayData, rootObjID, itemCount, itemCountToStartAt, itemCountToEndAt, 0, hoveredObject, parentIDStack, false);
+                recursive_gui(io, gui, displayData, selectionData, rootObjID, itemCount, itemCountToStartAt, itemCountToEndAt, 0, hoveredObject, parentIDStack, false);
                 if(itemCount > itemCountToEndAt) {
                     CLAY_AUTO_ID({
                         .layout = {
@@ -47,18 +49,19 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
         }
         Clay_ElementData scrollAreaBB = Clay_GetElementData(localID);
         if(scrollAreaBB.found) {
-            float mouseRelativeYPos = std::fabs(io.mouse.pos.y() - scrollAreaBB.boundingBox.y - setScrollAmount);
+            // Clamp by fabs(scrollcontentheight - 3), small offset is added to account for error (when youre at the very edge it might assume youre at the top of an element)
+            float mouseRelativeYPos = std::clamp(std::fabs(io.mouse.pos.y() - scrollAreaBB.boundingBox.y - setScrollAmount), 0.0f, std::fabs(setScrollContentHeight - 3.0f));
             topHalfOfHovered = std::fmod(mouseRelativeYPos, ENTRY_HEIGHT) < (ENTRY_HEIGHT / 2.0f);
         }
     }
 
     // Any objects that were part of a collapsed directory will be unselected
-    objsSelected.clear();
-    for(auto& [parent, object] : orderedObjsSelected)
-        objsSelected.emplace(object);
+    selectionData.objsSelected.clear();
+    for(auto& [parent, object] : selectionData.orderedObjsSelected)
+        selectionData.objsSelected.emplace(object);
 
     if(objDragged.has_value()) {
-        if(hoveredObject.has_value() && !objsSelected.contains(hoveredObject.value().object) && (std::chrono::steady_clock::now() - timeStartedHoveringOverObject) >= TIME_TO_HOVER_TO_OPEN_DIRECTORY) {
+        if(hoveredObject.has_value() && !selectionData.objsSelected.contains(hoveredObject.value().object) && (std::chrono::steady_clock::now() - timeStartedHoveringOverObject) >= TIME_TO_HOVER_TO_OPEN_DIRECTORY) {
             ParentObjectIDStack& hoveredObjVal = hoveredObject.value();
             size_t hoveredObjIndex = displayData.getIndexOfObjInList({hoveredObjVal.parents.back(), hoveredObjVal.object});
             std::optional<DisplayData::ObjInList> objHoveringOver = displayData.getObjInListAtIndex(hoveredObjVal.parents.back(), hoveredObjIndex);
@@ -67,11 +70,11 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
         }
 
         ParentObjectIDPair& objDraggedVal = objDragged.value();
-        if(!objsSelected.contains(objDraggedVal.object))
+        if(!selectionData.objsSelected.contains(objDraggedVal.object))
             objDragged = std::nullopt;
         else if(!io.mouse.leftHeld) {
             if(!hoveredObject.has_value())
-                set_single_selected_object();
+                set_single_selected_object(selectionData);
             else {
                 ParentObjectIDStack hoveredObjValToUse = hoveredObject.value(); // By value since it'll be edited
                 size_t indexToMoveFrom = displayData.getIndexOfObjInList(objDraggedVal);
@@ -84,23 +87,23 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
                 else if(!topHalfOfHovered)
                     indexToMoveTo++;
                 if((indexToMoveFrom == indexToMoveTo || (indexToMoveFrom + 1) == indexToMoveTo) && objDraggedVal.parent == hoveredObjValToUse.parents.back())
-                    set_single_selected_object();
+                    set_single_selected_object(selectionData);
                 else {
                     bool wrongMovement = false;
                     // Check if object is about to move into itself
                     for(const NetworkingObjects::NetObjID& parent : hoveredObjValToUse.parents) {
-                        if(objsSelected.contains(parent)) {
+                        if(selectionData.objsSelected.contains(parent)) {
                             wrongMovement = true;
                             break;
                         }
                     }
                     if(!wrongMovement) {
-                        displayData.moveObjectsToListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo, orderedObjsSelected);
-                        objsSelected.clear();
-                        orderedObjsSelected.clear();
+                        displayData.moveObjectsToListAtIndex(hoveredObjValToUse.parents.back(), indexToMoveTo, selectionData.orderedObjsSelected);
+                        selectionData.objsSelected.clear();
+                        selectionData.orderedObjsSelected.clear();
                     }
                     else
-                        set_single_selected_object();
+                        set_single_selected_object(selectionData);
                 }
             }
             objDragged = std::nullopt;
@@ -110,14 +113,14 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
     oldHoveredObject = hoveredObject;
 }
 
-void TreeListing::set_single_selected_object() {
-    objsSelected.clear();
-    orderedObjsSelected.clear();
-    objsSelected.emplace(objDragged.value().object);
-    orderedObjsSelected.emplace_back(objDragged.value());
+void TreeListing::set_single_selected_object(SelectionData& selectionData) {
+    selectionData.objsSelected.clear();
+    selectionData.orderedObjsSelected.clear();
+    selectionData.objsSelected.emplace(objDragged.value().object);
+    selectionData.orderedObjsSelected.emplace_back(objDragged.value());
 }
 
-void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const DisplayData& displayData, NetworkingObjects::NetObjID objID, size_t& itemCount, size_t itemCountToStartAt, size_t itemCountToEndAt, size_t listDepth, std::optional<ParentObjectIDStack>& hoveredObject, std::vector<NetworkingObjects::NetObjID>& parentIDStack, bool parentJustSelected) {
+void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const DisplayData& displayData, SelectionData& selectionData, NetworkingObjects::NetObjID objID, size_t& itemCount, size_t itemCountToStartAt, size_t itemCountToEndAt, size_t listDepth, std::optional<ParentObjectIDStack>& hoveredObject, std::vector<NetworkingObjects::NetObjID>& parentIDStack, bool parentJustSelected) {
     parentIDStack.emplace_back(objID);
     for(size_t i = 0;; i++) {
         std::optional<DisplayData::ObjInList> objInListOptional = displayData.getObjInListAtIndex(objID, i);
@@ -134,7 +137,7 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
 
                 bool isOldHoveredObject = oldHoveredObject.has_value() && oldHoveredObject.value().object == objInList.id;
                 SkColor4f backgroundColor;
-                if(objsSelected.contains(objInList.id))
+                if(selectionData.objsSelected.contains(objInList.id))
                     backgroundColor = io.theme->backColor1;
                 else if(isOldHoveredObject && objInList.isDirectory && !objInList.isDirectoryOpen && objDragged.has_value())
                     backgroundColor = lerp_vec(io.theme->backColor2, io.theme->fillColor1, std::clamp(std::chrono::duration<float, std::chrono::milliseconds::period>(std::chrono::steady_clock::now() - timeStartedHoveringOverObject) / TIME_TO_HOVER_TO_OPEN_DIRECTORY, 0.0f, 1.0f));
@@ -215,26 +218,26 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
                             if(io.key.leftShift)
                                 dragHoldSelected = true;
                             else if(io.key.leftCtrl) {
-                                bool alreadySelected = objsSelected.contains(objInList.id);
+                                bool alreadySelected = selectionData.objsSelected.contains(objInList.id);
                                 if(alreadySelected)
-                                    objsSelected.erase(objInList.id);
+                                    selectionData.objsSelected.erase(objInList.id);
                                 else {
-                                    select_and_unselect_parents(parentIDStack, objInList.id);
+                                    select_and_unselect_parents(parentIDStack, objInList.id, selectionData);
                                     selfJustSelected = true;
                                 }
                             }
                             else {
-                                if(!objsSelected.contains(objInList.id)) {
-                                    objsSelected.clear();
-                                    orderedObjsSelected.clear();
-                                    objsSelected.emplace(objInList.id);
+                                if(!selectionData.objsSelected.contains(objInList.id)) {
+                                    selectionData.objsSelected.clear();
+                                    selectionData.orderedObjsSelected.clear();
+                                    selectionData.objsSelected.emplace(objInList.id);
                                     selfJustSelected = true;
                                 }
                                 objDragged = {objID, objInList.id};
                             }
                         }
                         if(io.key.leftShift && dragHoldSelected && !parentJustSelected) {
-                            select_and_unselect_parents(parentIDStack, objInList.id);
+                            select_and_unselect_parents(parentIDStack, objInList.id, selectionData);
                             selfJustSelected = true;
                         }
                     }
@@ -242,34 +245,34 @@ void TreeListing::recursive_gui(UpdateInputData& io, GUIManager& gui, const Disp
                 gui.pop_id();
             }
             if(!parentJustSelected) {
-                if(objsSelected.contains(objInList.id))
-                    orderedObjsSelected.emplace_back(objID, objInList.id);
+                if(selectionData.objsSelected.contains(objInList.id))
+                    selectionData.orderedObjsSelected.emplace_back(objID, objInList.id);
             }
             else
-                unselect_object(objInList.id);
+                unselect_object(objInList.id, selectionData);
             itemCount++;
             if(objInList.isDirectoryOpen)
-                recursive_gui(io, gui, displayData, objInList.id, itemCount, itemCountToStartAt, itemCountToEndAt, listDepth + 1, hoveredObject, parentIDStack, selfJustSelected | parentJustSelected);
+                recursive_gui(io, gui, displayData, selectionData, objInList.id, itemCount, itemCountToStartAt, itemCountToEndAt, listDepth + 1, hoveredObject, parentIDStack, selfJustSelected | parentJustSelected);
         }
     }
     parentIDStack.pop_back();
 }
 
-void TreeListing::unselect_object(NetworkingObjects::NetObjID id) {
-    objsSelected.erase(id);
-    std::erase_if(orderedObjsSelected, [&id](const auto& p) {
+void TreeListing::unselect_object(NetworkingObjects::NetObjID id, SelectionData& selectionData) {
+    selectionData.objsSelected.erase(id);
+    std::erase_if(selectionData.orderedObjsSelected, [&id](const auto& p) {
         return p.object == id;
     });
 }
 
-void TreeListing::select_and_unselect_parents(const std::vector<NetworkingObjects::NetObjID>& parentIDStack, NetworkingObjects::NetObjID newSelectedObj) {
+void TreeListing::select_and_unselect_parents(const std::vector<NetworkingObjects::NetObjID>& parentIDStack, NetworkingObjects::NetObjID newSelectedObj, SelectionData& selectionData) {
     for(const NetworkingObjects::NetObjID& parent : parentIDStack) {
-        if(objsSelected.contains(parent)) {
-            unselect_object(parent);
+        if(selectionData.objsSelected.contains(parent)) {
+            unselect_object(parent, selectionData);
             break;
         }
     }
-    objsSelected.emplace(newSelectedObj);
+    selectionData.objsSelected.emplace(newSelectedObj);
 }
 
 void TreeListing::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {

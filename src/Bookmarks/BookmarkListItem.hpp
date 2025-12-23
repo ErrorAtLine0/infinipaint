@@ -10,7 +10,7 @@ struct BookmarkData {
     template <class Archive> void serialize(Archive& a) {
         a(coords, windowSize);
     }
-    void jump_to(World& world);
+    void jump_to(World& world) const;
 };
 
 class BookmarkListItem {
