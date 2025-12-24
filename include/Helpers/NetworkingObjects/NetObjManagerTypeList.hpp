@@ -18,6 +18,8 @@ class NetObjManagerTypeList {
             std::function<void(const NetObjTemporaryPtr<ServerT>&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)> readUpdateFuncServer;
         };
         template <typename ClientT, typename ServerT, typename ClientAllocatedType, typename ServerAllocatedType> void register_class(const ServerClientClassFunctions<ClientT, ServerT>& funcs) {
+            if((netTypeID + 1) == 0) // Unsigned type wraps around, so check if we're already at class count limit (if we are, we have to increase the size of NetTypeIDType)
+                throw std::runtime_error("[NetObjManagerTypeList::register_class] Reached limit of number of classes that can be registered. Increase the size of NetTypeIDType to continue");
             typeIndexFunctionsClient[std::type_index(typeid(ClientT*))] = TypeIndexFunctions {
                 .readConstructorFunc = [f = funcs.readConstructorFuncClient](const NetObjTemporaryPtr<void>& obj, cereal::PortableBinaryInputArchive& message, const std::shared_ptr<NetServer::ClientData>& c) {
                     f(obj.cast<ClientT>(), message, c);

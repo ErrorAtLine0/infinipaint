@@ -12,5 +12,5 @@ class CanvasComponentAllocator {
         CanvasComponentAllocator();
         CanvasComponentAllocator(CanvasComponentType typeToAllocate);
         std::unique_ptr<CanvasComponent> comp;
-        static void register_class(World& world, NetworkingObjects::NetObjManager& objMan);
+        static void register_class(World& world);
 };

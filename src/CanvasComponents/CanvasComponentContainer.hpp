@@ -13,7 +13,7 @@ class DrawingProgramCacheBVHNode;
 class CanvasComponentContainer {
     public:
         typedef NetworkingObjects::NetObjOrderedList<CanvasComponentContainer> NetList;
-        typedef NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>> NetListOwnerPtr;
+        typedef NetworkingObjects::NetObjOwnerPtr<NetList> NetListOwnerPtr;
         typedef NetworkingObjects::NetObjOrderedListObjectInfo<CanvasComponentContainer> ObjInfo;
         typedef std::shared_ptr<ObjInfo> ObjInfoSharedPtr;
         typedef std::weak_ptr<ObjInfo> ObjInfoWeakPtr;
@@ -28,7 +28,6 @@ class CanvasComponentContainer {
         CanvasComponentContainer();
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type);
         static void register_class(NetworkingObjects::NetObjManager& t);
-        static void delay_post_assignment_update(DrawingProgram& drawP, CanvasComponent& comp);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         CanvasComponent& get_comp() const;

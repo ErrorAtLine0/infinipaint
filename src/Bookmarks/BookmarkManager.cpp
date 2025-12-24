@@ -27,109 +27,118 @@ void BookmarkManager::refresh_gui_data() {
 void BookmarkManager::setup_list_gui(const std::string& id) {
     using namespace NetworkingObjects;
     if(bookmarkListRoot) {
-        std::optional<NetObjID> toDeleteParent;
-        std::optional<NetObjID> toDeleteObject;
         auto& gui = world.main.toolbar.gui;
         gui.push_id(id);
-        gui.tree_listing("list", bookmarkListRoot.get_net_id(), GUIStuff::TreeListing::DisplayData{
-            .getObjInListAtIndex = [&](NetObjID parentId, size_t index) -> std::optional<GUIStuff::TreeListing::DisplayData::ObjInList> {
-                NetObjOrderedList<BookmarkListItem>& bookmarkParentFolder = *world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(parentId)->get_folder_list();
-                if(bookmarkParentFolder.size() <= index)
-                    return std::nullopt;
-                return GUIStuff::TreeListing::DisplayData::ObjInList{
-                    .id = bookmarkParentFolder.at(index)->obj.get_net_id(),
-                    .isDirectory = bookmarkParentFolder.at(index)->obj->is_folder(),
-                    .isDirectoryOpen = bookmarkParentFolder.at(index)->obj->is_folder() ? bookmarkParentFolder.at(index)->obj->is_folder_open() : false
-                };
-            },
-            .getIndexOfObjInList = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
-                return world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(idPair.parent)->get_folder_list()->get(idPair.object)->pos;
-            },
-            .setDirectoryOpen = [&](NetObjID netID, bool newDirectoryOpen) {
-                world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(netID)->set_folder_open(newDirectoryOpen);
-            },
-            .drawNonDirectoryObjIconGUI = [&](NetObjID netID) {
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                        .padding = CLAY_PADDING_ALL(2),
-                    },
-                }) {
-                    gui.svg_icon("bookmark ico", "data/icons/bookmark.svg");
-                }
-                return false;
-            },
-            .drawObjGUI = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
-                auto tempPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(idPair.object);
-                if(Clay_Hovered() && gui.io->mouse.leftClick >= 2 && !tempPtr->is_folder())
-                    tempPtr->get_bookmark_data().jump_to(world);
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                        .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
-                    },
-                }) {
-                    gui.text_label(tempPtr->get_name());
-                }
-                if(!tempPtr->is_folder() && gui.svg_icon_button_transparent("jump button", "data/icons/jump.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
-                    tempPtr->get_bookmark_data().jump_to(world);
-                    return true;
-                }
-                if(gui.svg_icon_button_transparent("delete button", "data/icons/trash.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
-                    toDeleteParent = idPair.parent;
-                    toDeleteObject = idPair.object;
-                    return true;
-                }
-                return false;
-            },
-            .moveObjectsToListAtIndex = [&](NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
-                world.netObjMan.send_multi_update_messsage([&]() {
-                    std::unordered_map<NetObjID, std::unordered_set<NetObjID>> toEraseMap;
-                    uint32_t newIndex = index;
-                    std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
-                    auto& listPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listObj)->get_folder_list();
-
-                    for(size_t i = 0; i < objsToInsert.size(); i++) {
-                        toEraseMap[objsToInsert[i].parent].emplace(objsToInsert[i].object);
-                        if(newIndex != 0 && objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
-                            newIndex--;
-                    }
-
-                    for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
-                        auto& listToEraseFromPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listToEraseFrom)->get_folder_list();
-                        listToEraseFromPtr->erase_unordered_set(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
-                    }
-
-                    std::vector<std::pair<uint32_t, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
-                    for(uint32_t i = 0; i < objsToInsert.size(); i++) {
-                        auto it = std::find_if(toInsertObjPtrs.begin(), toInsertObjPtrs.end(), [id = objsToInsert[i].object](NetObjOwnerPtr<BookmarkListItem>& objPtr) {
-                            return objPtr.get_net_id() == id;
-                        });
-                        toInsert.emplace_back(newIndex + i, std::move(*it));
-                        toInsert.back().second.reassign_ids();
-                    }
-                    listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
-                }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
-            }
-        }, selectionData);
-
-        if(selectionData.objsSelected != oldSelection) {
-            oldSelection = selectionData.objsSelected;
-            if(selectionData.objsSelected.size() == 1) {
-                NetObjTemporaryPtr<BookmarkListItem> tempPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(*selectionData.objsSelected.begin());
-                if(tempPtr)
-                    nameToEdit = tempPtr->get_name();
-                else {
-                    nameToEdit.clear();
-                }
-            }
-            else
-                nameToEdit.clear();
+        if(bookmarkListRoot->get_folder_list()->empty()) {
+            gui.text_label_centered("No bookmarks yet...");
+            selectionData = GUIStuff::TreeListing::SelectionData();
+            oldSelection.clear();
+            nameToEdit.clear();
         }
+        else {
+            std::optional<NetObjID> toDeleteParent;
+            std::optional<NetObjID> toDeleteObject;
+            gui.tree_listing("list", bookmarkListRoot.get_net_id(), GUIStuff::TreeListing::DisplayData{
+                .getObjInListAtIndex = [&](NetObjID parentId, size_t index) -> std::optional<GUIStuff::TreeListing::DisplayData::ObjInList> {
+                    NetObjOrderedList<BookmarkListItem>& bookmarkParentFolder = *world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(parentId)->get_folder_list();
+                    if(bookmarkParentFolder.size() <= index)
+                        return std::nullopt;
+                    return GUIStuff::TreeListing::DisplayData::ObjInList{
+                        .id = bookmarkParentFolder.at(index)->obj.get_net_id(),
+                        .isDirectory = bookmarkParentFolder.at(index)->obj->is_folder(),
+                        .isDirectoryOpen = bookmarkParentFolder.at(index)->obj->is_folder() ? bookmarkParentFolder.at(index)->obj->is_folder_open() : false
+                    };
+                },
+                .getIndexOfObjInList = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
+                    return world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(idPair.parent)->get_folder_list()->get(idPair.object)->pos;
+                },
+                .setDirectoryOpen = [&](NetObjID netID, bool newDirectoryOpen) {
+                    world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(netID)->set_folder_open(newDirectoryOpen);
+                },
+                .drawNonDirectoryObjIconGUI = [&](NetObjID netID) {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                            .padding = CLAY_PADDING_ALL(2),
+                        },
+                    }) {
+                        gui.svg_icon("bookmark ico", "data/icons/bookmark.svg");
+                    }
+                    return false;
+                },
+                .drawObjGUI = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
+                    auto tempPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(idPair.object);
+                    if(Clay_Hovered() && gui.io->mouse.leftClick >= 2 && !tempPtr->is_folder() && selectionData.objsSelected.contains(idPair.object) && !gui.io->key.leftCtrl && !gui.io->key.leftShift)
+                        tempPtr->get_bookmark_data().jump_to(world);
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
+                        },
+                    }) {
+                        gui.text_label(tempPtr->get_name());
+                    }
+                    if(!tempPtr->is_folder() && gui.svg_icon_button_transparent("jump button", "data/icons/jump.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
+                        tempPtr->get_bookmark_data().jump_to(world);
+                        return true;
+                    }
+                    if(gui.svg_icon_button_transparent("delete button", "data/icons/trash.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
+                        toDeleteParent = idPair.parent;
+                        toDeleteObject = idPair.object;
+                        return true;
+                    }
+                    return false;
+                },
+                .moveObjectsToListAtIndex = [&](NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
+                    world.netObjMan.send_multi_update_messsage([&]() {
+                        std::unordered_map<NetObjID, std::unordered_set<NetObjID>> toEraseMap;
+                        uint32_t newIndex = index;
+                        std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
+                        auto& listPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listObj)->get_folder_list();
 
-        if(toDeleteObject.has_value()) {
-            auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toDeleteParent.value())->get_folder_list();
-            folderList->erase(folderList, toDeleteObject.value());
+                        for(size_t i = 0; i < objsToInsert.size(); i++) {
+                            toEraseMap[objsToInsert[i].parent].emplace(objsToInsert[i].object);
+                            if(newIndex != 0 && objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
+                                newIndex--;
+                        }
+
+                        for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
+                            auto& listToEraseFromPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listToEraseFrom)->get_folder_list();
+                            listToEraseFromPtr->erase_unordered_set(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
+                        }
+
+                        std::vector<std::pair<uint32_t, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
+                        for(uint32_t i = 0; i < objsToInsert.size(); i++) {
+                            auto it = std::find_if(toInsertObjPtrs.begin(), toInsertObjPtrs.end(), [id = objsToInsert[i].object](NetObjOwnerPtr<BookmarkListItem>& objPtr) {
+                                return objPtr.get_net_id() == id;
+                            });
+                            toInsert.emplace_back(newIndex + i, std::move(*it));
+                            toInsert.back().second.reassign_ids();
+                        }
+                        listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
+                    }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                }
+            }, selectionData);
+
+
+            if(selectionData.objsSelected != oldSelection) {
+                oldSelection = selectionData.objsSelected;
+                if(selectionData.objsSelected.size() == 1) {
+                    NetObjTemporaryPtr<BookmarkListItem> tempPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(*selectionData.objsSelected.begin());
+                    if(tempPtr)
+                        nameToEdit = tempPtr->get_name();
+                    else {
+                        nameToEdit.clear();
+                    }
+                }
+                else
+                    nameToEdit.clear();
+            }
+
+            if(toDeleteObject.has_value()) {
+                auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toDeleteParent.value())->get_folder_list();
+                folderList->erase(folderList, toDeleteObject.value());
+            }
         }
 
         gui.left_to_right_line_layout([&]() {
@@ -151,8 +160,7 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
             if(tempPtr) {
                 gui.text_label_centered(tempPtr->is_folder() ? "Edit Bookmark Folder" : "Edit Bookmark");
                 gui.input_text_field("input edit name", "Name", &nameToEdit);
-                if(nameToEdit != tempPtr->get_name())
-                    tempPtr->set_name(tempPtr, nameToEdit);
+                tempPtr->set_name(world.delayedUpdateObjectManager, nameToEdit);
             }
         }
 

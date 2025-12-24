@@ -11,8 +11,8 @@ CanvasComponentAllocator::CanvasComponentAllocator(CanvasComponentType typeToAll
     comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
 }
 
-void CanvasComponentAllocator::register_class(World& world, NetworkingObjects::NetObjManager& objMan) {
-    world.delayedUpdateObjectManager.register_class<CanvasComponentAllocator>(objMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<CanvasComponentAllocator>{
+void CanvasComponentAllocator::register_class(World& world) {
+    world.delayedUpdateObjectManager.register_class<CanvasComponentAllocator>(world.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<CanvasComponentAllocator>{
         .writeConstructor = [](const CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
             a(o.comp->get_type());
             a(*o.comp);

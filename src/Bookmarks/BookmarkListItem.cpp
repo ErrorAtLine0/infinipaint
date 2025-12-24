@@ -11,18 +11,20 @@ void BookmarkData::jump_to(World& world) const {
 BookmarkListItem::BookmarkListItem() {}
 
 BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData) {
-    name = initName;
     if(isFolder) {
         folderData = std::make_unique<BookmarkFolderData>();
         folderData->folderList = netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
     }
     else
         bookmarkData = std::make_unique<BookmarkData>(initBookmarkData);
+    nameData = netObjMan.make_obj<NameData>();
+    nameData->name = initName;
 }
 
 void BookmarkListItem::reassign_netobj_ids_call() {
     if(folderData)
         folderData->folderList.reassign_ids();
+    nameData.reassign_ids();
 }
 
 bool BookmarkListItem::is_folder() const {
@@ -37,8 +39,15 @@ const NetObjOwnerPtr<NetObjOrderedList<BookmarkListItem>>& BookmarkListItem::get
     return folderData->folderList;
 }
 
+void BookmarkListItem::set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) {
+    if(nameData && nameData->name != newName) {
+        nameData->name = newName;
+        delayedNetObjMan.send_update_to_all<NameData>(nameData, false);
+    }
+}
+
 const std::string& BookmarkListItem::get_name() const {
-    return name;
+    return nameData->name;
 }
 
 bool BookmarkListItem::is_folder_open() const {
@@ -49,41 +58,29 @@ void BookmarkListItem::set_folder_open(bool newIsFolderOpen) {
     folderData->isFolderOpen = newIsFolderOpen;
 }
 
-void BookmarkListItem::set_name(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, const std::string& newName) {
-    o->name = newName;
-    o.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a) {
-        a(o->name);
-    });
-}
-
-void BookmarkListItem::register_class(NetObjManager& netObjMan) {
-    netObjMan.register_class<BookmarkListItem, BookmarkListItem, BookmarkListItem, BookmarkListItem>({
+void BookmarkListItem::register_class(World& w) {
+    w.netObjMan.register_class<BookmarkListItem, BookmarkListItem, BookmarkListItem, BookmarkListItem>({
         .writeConstructorFuncClient = write_constructor_data,
         .readConstructorFuncClient = read_constructor_data,
-        .readUpdateFuncClient = [](const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
-            a(o->name);
-        },
+        .readUpdateFuncClient = nullptr,
         .writeConstructorFuncServer = write_constructor_data,
         .readConstructorFuncServer = read_constructor_data,
-        .readUpdateFuncServer = [](const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) {
-            a(o->name);
-            o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a) {
-                a(o->name);
-            });
-        },
+        .readUpdateFuncServer = nullptr
     });
+    NetworkingObjects::register_ordered_list_class<BookmarkListItem>(w.netObjMan);
+    w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan);
 }
 
 void BookmarkListItem::write_constructor_data(const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a) {
-    a(o->name, o->is_folder());
+    a(o->is_folder());
     if(o->is_folder())
         o->folderData->folderList.write_create_message(a);
     else
         a(*o->bookmarkData);
+    o->nameData.write_create_message(a);
 }
 
 void BookmarkListItem::read_constructor_data(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
-    a(o->name);
     bool isFolder;
     a(isFolder);
     if(isFolder) {
@@ -94,4 +91,5 @@ void BookmarkListItem::read_constructor_data(const NetworkingObjects::NetObjTemp
         o->bookmarkData = std::make_unique<BookmarkData>();
         a(*o->bookmarkData);
     }
+    o->nameData = o.get_obj_man()->read_create_message<NameData>(a, c);
 }

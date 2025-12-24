@@ -110,11 +110,10 @@ void World::init_client_data_list_callbacks() {
 }
 
 void World::init_net_obj_type_list() {
-    BookmarkListItem::register_class(netObjMan);
-    NetworkingObjects::register_ordered_list_class<BookmarkListItem>(netObjMan);
+    BookmarkListItem::register_class(*this);
     delayedUpdateObjectManager.register_class<WorldGrid>(netObjMan);
     NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
-    CanvasComponentAllocator::register_class(*this, netObjMan);
+    CanvasComponentAllocator::register_class(*this);
     CanvasComponentContainer::register_class(netObjMan);
     NetworkingObjects::register_ordered_list_class<CanvasComponentContainer>(netObjMan);
     canvasTheme.register_class();

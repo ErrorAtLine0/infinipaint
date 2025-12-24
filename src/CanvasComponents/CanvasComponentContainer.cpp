@@ -41,10 +41,6 @@ void CanvasComponentContainer::read_constructor_func(const NetworkingObjects::Ne
     o->compAllocator->comp->compContainer = o.get();
 }
 
-void CanvasComponentContainer::delay_post_assignment_update(DrawingProgram& drawP, CanvasComponent& comp) {
-    comp.compContainer->commit_update(drawP);
-}
-
 void CanvasComponentContainer::save_file(cereal::PortableBinaryOutputArchive& a) const {
     a(coords);
     get_comp().save_file(a);

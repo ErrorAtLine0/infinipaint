@@ -1,6 +1,7 @@
 #pragma once
 #include <Helpers/NetworkingObjects/NetObjOwnerPtr.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
+#include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <string>
 #include "../CoordSpaceHelper.hpp"
 
@@ -23,17 +24,24 @@ class BookmarkListItem {
         bool is_folder_open() const;
         void set_folder_open(bool newIsFolderOpen);
         const std::string& get_name() const;
-        static void register_class(NetworkingObjects::NetObjManager& netObjMan);
-        static void set_name(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, const std::string& newName); // Set once after editing is finished
+        static void register_class(World& w);
         void reassign_netobj_ids_call();
+
+        void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName);
     private:
         struct BookmarkFolderData {
             NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<BookmarkListItem>> folderList;
             bool isFolderOpen = false;
         };
+        struct NameData {
+            std::string name;
+            template <typename Archive> void serialize(Archive& a) {
+                a(name);
+            }
+        };
         static void write_constructor_data(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a);
         static void read_constructor_data(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c);
         std::unique_ptr<BookmarkFolderData> folderData;
         std::unique_ptr<BookmarkData> bookmarkData;
-        std::string name;
+        NetworkingObjects::NetObjOwnerPtr<NameData> nameData;
 };
