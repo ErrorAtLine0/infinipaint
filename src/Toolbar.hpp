@@ -103,6 +103,7 @@ class Toolbar {
         void grid_menu(bool justOpened);
         void stop_displaying_grid_menu();
         void bookmark_menu(bool justOpened);
+        void layer_menu(bool justOpened);
         void drawing_program_gui();
         void options_menu();
         void file_picker_gui();
@@ -189,6 +190,7 @@ class Toolbar {
         } generalSettingsOptions = GSETTINGS_GENERAL;
 
         bool bookmarkMenuPopupOpen = false;
+        bool layerMenuPopupOpen = false;
 
         struct GridMenu {
             bool popupOpen = false;

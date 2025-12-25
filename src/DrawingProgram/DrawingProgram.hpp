@@ -16,6 +16,7 @@
 #include "DrawingProgramToolBase.hpp"
 #include <Helpers/FileDownloader.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
+#include "Layers/DrawingProgramLayerManager.hpp"
 
 class World;
 
@@ -49,6 +50,7 @@ class DrawingProgram {
 
         DrawingProgramCache compCache;
 
+        DrawingProgramLayerManager layerMan;
         CanvasComponentContainer::NetListOwnerPtr components;
 
         Vector4f* get_foreground_color_ptr();

@@ -43,6 +43,17 @@ DrawingProgramLayer& DrawingProgramLayerListItem::get_layer() const {
     return *layerData;
 }
 
+void DrawingProgramLayerListItem::draw(SkCanvas* canvas, const DrawData& drawData) const {
+    if(displayData->visible) {
+        canvas->saveLayerAlphaf(nullptr, displayData->alpha);
+        if(folderData)
+            folderData->draw(canvas, drawData);
+        else
+            layerData->draw(canvas, drawData);
+        canvas->restore();
+    }
+}
+
 void DrawingProgramLayerListItem::set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) const {
     if(nameData && nameData->name != newName) {
         nameData->name = newName;

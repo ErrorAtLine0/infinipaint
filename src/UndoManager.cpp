@@ -1,6 +1,8 @@
 #include "UndoManager.hpp"
 #include <iostream>
 
+// NOTE: It might be possible to track net objects through their raw pointer values instead of NetObjIDs, as the NetObjID is just reassigned when moved, and it isn't reallocated.
+
 bool UndoManager::can_undo() {
     return !undoQueue.empty();
 }

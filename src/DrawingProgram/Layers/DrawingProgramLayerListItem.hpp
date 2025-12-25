@@ -18,6 +18,7 @@ class DrawingProgramLayerListItem {
         DrawingProgramLayer& get_layer() const;
         static void register_class(World& w);
         void reassign_netobj_ids_call();
+        void draw(SkCanvas* canvas, const DrawData& drawData) const;
 
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) const;
         const std::string& get_name() const;

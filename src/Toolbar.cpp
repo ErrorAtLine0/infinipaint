@@ -463,6 +463,7 @@ void Toolbar::top_toolbar() {
         bool menuPopUpJustOpen = false;
         bool bookmarkMenuPopUpJustOpen = false;
         bool gridMenuPopUpJustOpen = false;
+        bool layerMenuPopUpJustOpen = false;
         if(gui.svg_icon_button_transparent("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen)) {
             menuPopUpOpen = true;
             menuPopUpJustOpen = true;
@@ -486,6 +487,14 @@ void Toolbar::top_toolbar() {
                 gridMenuPopUpJustOpen = true;
             }
         }
+        if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen)) {
+            if(layerMenuPopupOpen)
+                layerMenuPopupOpen = false;
+            else {
+                layerMenuPopupOpen = true;
+                layerMenuPopUpJustOpen = true;
+            }
+        }
         if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen)) {
             if(bookmarkMenuPopupOpen)
                 bookmarkMenuPopupOpen = false;
@@ -502,6 +511,8 @@ void Toolbar::top_toolbar() {
             grid_menu(gridMenuPopUpJustOpen);
         if(bookmarkMenuPopupOpen)
             bookmark_menu(bookmarkMenuPopUpJustOpen);
+        if(layerMenuPopupOpen)
+            layer_menu(layerMenuPopUpJustOpen);
         if(menuPopUpOpen) {
             CLAY_AUTO_ID({
                 .layout = {
@@ -805,6 +816,31 @@ void Toolbar::bookmark_menu(bool justOpened) {
         if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
             bookmarkMenuPopupOpen = false;
             main.world->bMan.refresh_gui_data();
+        }
+    }
+    gui.pop_id();
+}
+
+void Toolbar::layer_menu(bool justOpened) {
+    gui.push_id("layer menu");
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = io->theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    }) {
+        gui.obstructing_window();
+        gui.text_label_centered("Layers");
+        main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list");
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
+            layerMenuPopupOpen = false;
+            main.world->drawProg.layerMan.listGUI.refresh_gui_data();
         }
     }
     gui.pop_id();

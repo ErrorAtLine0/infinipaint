@@ -6,5 +6,7 @@ class DrawingProgramLayerListItem;
 
 class DrawingProgramLayer {
     public:
+        void draw(SkCanvas* canvas, const DrawData& drawData);
+
         CanvasComponentContainer::NetListOwnerPtr components;
 };

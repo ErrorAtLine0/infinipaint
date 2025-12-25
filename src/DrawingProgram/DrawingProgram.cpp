@@ -33,6 +33,7 @@
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     compCache(*this),
+    layerMan(*this),
     selection(*this)
 {
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
@@ -43,6 +44,7 @@ void DrawingProgram::init() {
         components = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>>();
         set_component_list_callbacks();
     }
+    layerMan.init();
 }
 
 void DrawingProgram::set_component_list_callbacks() {
@@ -93,6 +95,7 @@ void DrawingProgram::clear_draw_cache() {
 
 void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive& a) {
     components.write_create_message(a);
+    layerMan.write_components_server(a);
 }
 
 void DrawingProgram::read_components_client(cereal::PortableBinaryInputArchive& a) {
@@ -102,6 +105,7 @@ void DrawingProgram::read_components_client(cereal::PortableBinaryInputArchive& 
     });
     compCache.test_rebuild(components->get_data(), true);
     set_component_list_callbacks();
+    layerMan.read_components_client(a);
 }
 
 void DrawingProgram::toolbar_gui() {

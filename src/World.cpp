@@ -8,6 +8,7 @@
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include "DrawingProgram/Layers/DrawingProgramLayerListItem.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
 #include "CommandList.hpp"
@@ -116,6 +117,8 @@ void World::init_net_obj_type_list() {
     CanvasComponentAllocator::register_class(*this);
     CanvasComponentContainer::register_class(netObjMan);
     NetworkingObjects::register_ordered_list_class<CanvasComponentContainer>(netObjMan);
+    DrawingProgramLayerListItem::register_class(*this);
+    NetworkingObjects::register_ordered_list_class<DrawingProgramLayerListItem>(netObjMan);
     canvasTheme.register_class();
     ClientData::register_class(*this);
     NetworkingObjects::register_unordered_set_class<ClientData>(netObjMan);
