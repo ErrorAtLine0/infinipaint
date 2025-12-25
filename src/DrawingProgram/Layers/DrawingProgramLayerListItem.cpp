@@ -3,6 +3,7 @@
 #include <cereal/types/string.hpp>
 #include "DrawingProgramLayer.hpp"
 #include "../../World.hpp"
+#include "SerializedBlendMode.hpp"
 
 using namespace NetworkingObjects;
 
@@ -45,7 +46,10 @@ DrawingProgramLayer& DrawingProgramLayerListItem::get_layer() const {
 
 void DrawingProgramLayerListItem::draw(SkCanvas* canvas, const DrawData& drawData) const {
     if(displayData->visible) {
-        canvas->saveLayerAlphaf(nullptr, displayData->alpha);
+        SkPaint layerPaint;
+        layerPaint.setAlphaf(displayData->alpha);
+        layerPaint.setBlendMode(serialized_blend_mode_to_sk_blend_mode(displayData->blendMode));
+        canvas->saveLayer(nullptr, &layerPaint);
         if(folderData)
             folderData->draw(canvas, drawData);
         else
@@ -85,6 +89,17 @@ void DrawingProgramLayerListItem::set_visible(NetworkingObjects::DelayUpdateSeri
 
 bool DrawingProgramLayerListItem::get_visible() const {
     return displayData->visible;
+}
+
+void DrawingProgramLayerListItem::set_blend_mode(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, SerializedBlendMode newBlendMode) const {
+    if(displayData && displayData->blendMode != newBlendMode) {
+        displayData->blendMode = newBlendMode;
+        delayedNetObjMan.send_update_to_all<DisplayData>(displayData, false);
+    }
+}
+
+SerializedBlendMode DrawingProgramLayerListItem::get_blend_mode() const {
+    return displayData->blendMode;
 }
 
 void DrawingProgramLayerListItem::register_class(World& w) {

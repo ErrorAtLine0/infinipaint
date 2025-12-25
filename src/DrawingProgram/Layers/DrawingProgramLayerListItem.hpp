@@ -4,6 +4,7 @@
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include "DrawingProgramLayerFolder.hpp"
 #include "DrawingProgramLayer.hpp"
+#include "SerializedBlendMode.hpp"
 
 class DrawingProgramLayerFolder;
 class DrawingProgramLayer;
@@ -28,6 +29,9 @@ class DrawingProgramLayerListItem {
 
         void set_visible(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, bool newVisible) const;
         bool get_visible() const;
+
+        void set_blend_mode(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, SerializedBlendMode newBlendMode) const;
+        SerializedBlendMode get_blend_mode() const;
     private:
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>& o, cereal::PortableBinaryOutputArchive& a);
         static void read_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c);
@@ -42,8 +46,9 @@ class DrawingProgramLayerListItem {
         struct DisplayData {
             float alpha = 1.0f;
             bool visible = true;
+            SerializedBlendMode blendMode = SerializedBlendMode::SRC_OVER;
             template <typename Archive> void serialize(Archive& a) {
-                a(alpha, visible);
+                a(alpha, visible, blendMode);
             }
         };
         NetworkingObjects::NetObjOwnerPtr<NameData> nameData;

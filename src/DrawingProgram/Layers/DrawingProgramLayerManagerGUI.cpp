@@ -3,6 +3,8 @@
 #include "../DrawingProgram.hpp"
 #include "../../World.hpp"
 #include "../../MainProgram.hpp"
+#include "Helpers/ConvertVec.hpp"
+#include "SerializedBlendMode.hpp"
 
 DrawingProgramLayerManagerGUI::DrawingProgramLayerManagerGUI(DrawingProgramLayerManager& drawLayerMan):
     layerMan(drawLayerMan)
@@ -14,9 +16,10 @@ void DrawingProgramLayerManagerGUI::refresh_gui_data() {
     nameToEdit.clear();
     nameForNew.clear();
     alphaValToEdit = 0.0f;
+    blendModeValToEdit = 0;
 }
 
-void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id) {
+void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& hoveringOverDropdown) {
     using namespace NetworkingObjects;
     auto& world = layerMan.drawP.world;
     if(layerMan.layerTreeRoot) {
@@ -122,15 +125,18 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id) {
                     if(tempPtr) {
                         nameToEdit = tempPtr->get_name();
                         alphaValToEdit = tempPtr->get_alpha();
+                        blendModeValToEdit = static_cast<size_t>(tempPtr->get_blend_mode());
                     }
                     else {
                         nameToEdit.clear();
                         alphaValToEdit = 0.0f;
+                        blendModeValToEdit = 0;
                     }
                 }
                 else {
                     nameToEdit.clear();
                     alphaValToEdit = 0.0f;
+                    blendModeValToEdit = 0;
                 }
             }
 
@@ -162,6 +168,14 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id) {
                 tempPtr->set_name(world.delayedUpdateObjectManager, nameToEdit);
                 gui.slider_scalar_field("input alpha slider", "Alpha", &alphaValToEdit, 0.0f, 1.0f, 2);
                 tempPtr->set_alpha(world.delayedUpdateObjectManager, alphaValToEdit);
+                gui.left_to_right_line_layout([&]() {
+                    gui.text_label("Blend Mode");
+                    gui.dropdown_select("input blend mode", &blendModeValToEdit, get_blend_mode_name_list(), 200.0f, [&hoveringOverDropdown]() {
+                        if(Clay_Hovered())
+                            hoveringOverDropdown = true;
+                    });
+                });
+                tempPtr->set_blend_mode(world.delayedUpdateObjectManager, static_cast<SerializedBlendMode>(blendModeValToEdit));
             }
         }
 

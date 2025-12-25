@@ -837,8 +837,9 @@ void Toolbar::layer_menu(bool justOpened) {
     }) {
         gui.obstructing_window();
         gui.text_label_centered("Layers");
-        main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list");
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
+        bool hoveringOverDropdown = false;
+        main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list", hoveringOverDropdown);
+        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !hoveringOverDropdown) {
             layerMenuPopupOpen = false;
             main.world->drawProg.layerMan.listGUI.refresh_gui_data();
         }
