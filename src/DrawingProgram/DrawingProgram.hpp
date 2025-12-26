@@ -1,10 +1,10 @@
 #pragma once
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
-#include "GridModifyTool.hpp"
+#include "Tools/GridModifyTool.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
-#include "PanCanvasTool.hpp"
-#include "ZoomCanvasTool.hpp"
+#include "Tools/PanCanvasTool.hpp"
+#include "Tools/ZoomCanvasTool.hpp"
 #include "cereal/archives/portable_binary.hpp"
 #include <include/core/SkCanvas.h>
 #include <include/core/SkPath.h>
@@ -13,7 +13,7 @@
 #include <Helpers/Hashes.hpp>
 #include <Helpers/Random.hpp>
 #include "DrawingProgramSelection.hpp"
-#include "DrawingProgramToolBase.hpp"
+#include "Tools/DrawingProgramToolBase.hpp"
 #include <Helpers/FileDownloader.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include "Layers/DrawingProgramLayerManager.hpp"

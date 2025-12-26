@@ -1,11 +1,11 @@
 #include "DrawingProgram.hpp"
-#include "DrawingProgramToolBase.hpp"
+#include "Tools/DrawingProgramToolBase.hpp"
 #include <include/core/SkPaint.h>
 #include <include/core/SkVertices.h>
 #include "../DrawCamera.hpp"
-#include "EllipseDrawTool.hpp"
-#include "EyeDropperTool.hpp"
-#include "GridModifyTool.hpp"
+#include "Tools/EllipseDrawTool.hpp"
+#include "Tools/EyeDropperTool.hpp"
+#include "Tools/GridModifyTool.hpp"
 #include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
 #include <memory>
@@ -19,7 +19,7 @@
 #include <Helpers/FileDownloader.hpp>
 #include <Helpers/NetworkingObjects/NetObjID.hpp>
 #include <Helpers/StringHelpers.hpp>
-#include "LassoSelectTool.hpp"
+#include "Tools/LassoSelectTool.hpp"
 #include <Helpers/Logger.hpp>
 #include <Helpers/Parallel.hpp>
 #include <cereal/types/unordered_set.hpp>
@@ -28,7 +28,7 @@
 #include <chrono>
 #include "../CanvasComponents/ImageCanvasComponent.hpp"
 
-#include "EraserTool.hpp"
+#include "Tools/EraserTool.hpp"
 
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
