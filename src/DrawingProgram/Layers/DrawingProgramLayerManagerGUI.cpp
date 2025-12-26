@@ -66,7 +66,16 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                     auto tempPtr = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(idPair.object);
                     bool isButtonClicked = false;
                     if(Clay_Hovered() && gui.io->mouse.leftClick >= 2 && !tempPtr->is_folder() && selectionData.objsSelected.contains(idPair.object) && !gui.io->key.leftCtrl && !gui.io->key.leftShift)
-                        std::cout << "Double clicked layer!" << std::endl;
+                        layerMan.editingLayer = tempPtr;
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT), .height = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT)},
+                            .padding = CLAY_PADDING_ALL(2),
+                        },
+                    }) {
+                        if(tempPtr.get_net_id() == layerMan.editingLayer.get_net_id())
+                            gui.svg_icon("edit ico", "data/icons/pencil.svg");
+                    }
                     CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -152,8 +161,10 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                 addByEnter = s.selected && gui.io->key.enter;
             });
             
-            if(gui.svg_icon_button("create new layer", "data/icons/plusbold.svg", false, gui.SMALL_BUTTON_SIZE) || addByEnter)
-                create_in_proper_position(new DrawingProgramLayerListItem(world.netObjMan, nameForNew, false));
+            if(gui.svg_icon_button("create new layer", "data/icons/plusbold.svg", false, gui.SMALL_BUTTON_SIZE) || addByEnter) {
+                auto newLayerObjInfo = create_in_proper_position(new DrawingProgramLayerListItem(world.netObjMan, nameForNew, false));
+                layerMan.editingLayer = newLayerObjInfo->obj;
+            }
             else if(gui.svg_icon_button("create new folder", "data/icons/folderbold.svg", false, gui.SMALL_BUTTON_SIZE)) { 
                 auto newFolderObjInfo = create_in_proper_position(new DrawingProgramLayerListItem(world.netObjMan, nameForNew, true));
                 newFolderObjInfo->obj->get_folder().isFolderOpen = true;
@@ -197,15 +208,15 @@ NetworkingObjects::NetObjOrderedListObjectInfoPtr<DrawingProgramLayerListItem> D
         return nullptr;
     if(objectPtr->is_folder()) {
         objectPtr->get_folder().isFolderOpen = true;
-        return objectPtr->get_folder().folderList->push_back_and_send_create(objectPtr->get_folder().folderList, newItem);
+        return objectPtr->get_folder().folderList->insert_and_send_create(objectPtr->get_folder().folderList, 0, newItem);
     }
     uint32_t insertPos = parentPtr->get_folder().folderList->get(objectPtr.get_net_id())->pos;
-    return parentPtr->get_folder().folderList->insert_and_send_create(parentPtr->get_folder().folderList, insertPos + 1, newItem);
+    return parentPtr->get_folder().folderList->insert_and_send_create(parentPtr->get_folder().folderList, insertPos, newItem);
 }
 
 NetworkingObjects::NetObjOrderedListObjectInfoPtr<DrawingProgramLayerListItem> DrawingProgramLayerManagerGUI::create_in_proper_position(DrawingProgramLayerListItem* newItem) {
     auto toRet = try_to_create_in_proper_position(newItem);
     if(!toRet)
-        return layerMan.layerTreeRoot->get_folder().folderList->push_back_and_send_create(layerMan.layerTreeRoot->get_folder().folderList, newItem);
+        return layerMan.layerTreeRoot->get_folder().folderList->insert_and_send_create(layerMan.layerTreeRoot->get_folder().folderList, 0, newItem);
     return toRet;
 }

@@ -566,35 +566,36 @@ void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(drawData.dontUseDrawProgCache) {
-        for(auto& c : components->get_data())
-            c->obj->draw(canvas, drawData);
-    }
-    else {
-        canvas->saveLayer(nullptr, nullptr);
-            canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
-            compCache.refresh_all_draw_cache(drawData);
-            compCache.draw_components_to_canvas(canvas, drawData, {});
-            canvas->saveLayer(nullptr, nullptr);
-                selection.draw_components(canvas, drawData);
-            canvas->restore();
-        canvas->restore();
+    layerMan.draw(canvas, drawData);
+    //if(drawData.dontUseDrawProgCache) {
+    //    for(auto& c : components->get_data())
+    //        c->obj->draw(canvas, drawData);
+    //}
+    //else {
+    //    canvas->saveLayer(nullptr, nullptr);
+    //        canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
+    //        compCache.refresh_all_draw_cache(drawData);
+    //        compCache.draw_components_to_canvas(canvas, drawData, {});
+    //        canvas->saveLayer(nullptr, nullptr);
+    //            selection.draw_components(canvas, drawData);
+    //        canvas->restore();
+    //    canvas->restore();
 
-        if(!drawData.main->takingScreenshot) {
-            for(auto& droppedDownFile : droppedDownloadingFiles)
-                static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
+    //    if(!drawData.main->takingScreenshot) {
+    //        for(auto& droppedDownFile : droppedDownloadingFiles)
+    //            static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
 
-            for(auto& c : updateableComponents) {
-                if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
-                    auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
-                    float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
-                    img.draw_download_progress_bar(canvas, drawData, progress);
-                }
-            }
-        }
+    //        for(auto& c : updateableComponents) {
+    //            if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
+    //                auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
+    //                float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
+    //                img.draw_download_progress_bar(canvas, drawData, progress);
+    //            }
+    //        }
+    //    }
 
-        selection.draw_gui(canvas, drawData);
-    }
+    //    selection.draw_gui(canvas, drawData);
+    //}
 
     drawTool->draw(canvas, drawData);
 }

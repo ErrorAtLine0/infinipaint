@@ -43,7 +43,7 @@ namespace NetworkingObjects {
                 return NetObjWeakPtr<S>(objMan, id);
             }
             bool expired() const {
-                return !objMan || objMan->objectData.contains(id);
+                return (!objMan) || (!objMan->objectData.contains(id));
             }
             NetObjTemporaryPtr<T> lock() const {
                 if(!objMan)

@@ -32,6 +32,20 @@ void DrawingProgramLayerListItem::reassign_netobj_ids_call() {
     displayData.reassign_ids();
 }
 
+void DrawingProgramLayerListItem::set_component_list_callbacks(DrawingProgramLayerManager &layerMan) {
+    if(folderData)
+        folderData->set_component_list_callbacks(layerMan);
+    else
+        layerData->set_component_list_callbacks(layerMan);
+}
+
+void DrawingProgramLayerListItem::commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) {
+    if(folderData)
+        folderData->commit_update_dont_invalidate_cache(layerMan);
+    else
+        layerData->commit_update_dont_invalidate_cache(layerMan);
+}
+
 bool DrawingProgramLayerListItem::is_folder() const {
     return folderData != nullptr;
 }

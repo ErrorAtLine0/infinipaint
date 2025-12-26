@@ -9,6 +9,7 @@
 class DrawingProgramLayerFolder;
 class DrawingProgramLayer;
 class World;
+class DrawingProgramLayerManager;
 
 class DrawingProgramLayerListItem {
     public:
@@ -19,6 +20,8 @@ class DrawingProgramLayerListItem {
         DrawingProgramLayer& get_layer() const;
         static void register_class(World& w);
         void reassign_netobj_ids_call();
+        void set_component_list_callbacks(DrawingProgramLayerManager &layerMan);
+        void commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan);
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
 
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) const;

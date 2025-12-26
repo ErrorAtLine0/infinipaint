@@ -65,20 +65,20 @@ void CanvasComponentContainer::set_owner_obj_info(const ObjInfoSharedPtr& ownerO
 }
 
 void CanvasComponentContainer::commit_update(DrawingProgram& drawP) {
-    auto lockedObjInfo = objInfo.lock();
-    if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
-        drawP.preupdate_component(lockedObjInfo);
+    //auto lockedObjInfo = objInfo.lock();
+    //if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
+    //    drawP.preupdate_component(lockedObjInfo);
     get_comp().initialize_draw_data(drawP);
     calculate_world_bounds();
-    drawP.preupdate_component(lockedObjInfo);
+    //drawP.preupdate_component(lockedObjInfo);
 }
 
 void CanvasComponentContainer::commit_transform(DrawingProgram& drawP) {
-    auto lockedObjInfo = objInfo.lock();
-    if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
-        drawP.preupdate_component(lockedObjInfo);
+    //auto lockedObjInfo = objInfo.lock();
+    //if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
+    //    drawP.preupdate_component(lockedObjInfo);
     calculate_world_bounds();
-    drawP.preupdate_component(lockedObjInfo);
+    //drawP.preupdate_component(lockedObjInfo);
 }
 
 void CanvasComponentContainer::commit_update_dont_invalidate_cache(DrawingProgram& drawP) {

@@ -90,20 +90,22 @@ void BrushTool::tool_update() {
 
     if(isPenDown) {
         if(!isDrawing) {
-            isDrawing = true;
-            CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
-            BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
+            if(drawP.layerMan.is_a_layer_being_edited()) {
+                isDrawing = true;
+                CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
+                BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
 
-            BrushStrokeCanvasComponentPoint p;
-            p.pos = drawP.world.main.input.mouse.pos;
-            p.width = drawP.controls.relativeWidth * penWidth;
-            prevPointUnaltered = p.pos;
-            newBrushStroke.d->points.emplace_back(p);
-            newBrushStroke.d->color = drawP.controls.foregroundColor;
-            newBrushStroke.d->hasRoundCaps = hasRoundCaps;
-            newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
-            objInfoBeingEdited = drawP.components->push_back_and_send_create(drawP.components, newBrushStrokeContainer);
-            addedTemporaryPoint = false;
+                BrushStrokeCanvasComponentPoint p;
+                p.pos = drawP.world.main.input.mouse.pos;
+                p.width = drawP.controls.relativeWidth * penWidth;
+                prevPointUnaltered = p.pos;
+                newBrushStroke.d->points.emplace_back(p);
+                newBrushStroke.d->color = drawP.controls.foregroundColor;
+                newBrushStroke.d->hasRoundCaps = hasRoundCaps;
+                newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
+                objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
+                addedTemporaryPoint = false;
+            }
         }
         else {
             NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
