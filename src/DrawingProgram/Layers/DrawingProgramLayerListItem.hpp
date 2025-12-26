@@ -5,6 +5,7 @@
 #include "DrawingProgramLayerFolder.hpp"
 #include "DrawingProgramLayer.hpp"
 #include "SerializedBlendMode.hpp"
+#include "../../CanvasComponents/CanvasComponentContainer.hpp"
 
 class DrawingProgramLayerFolder;
 class DrawingProgramLayer;
@@ -23,9 +24,9 @@ class DrawingProgramLayerListItem {
         void set_component_list_callbacks(DrawingProgramLayerManager &layerMan);
         void commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan);
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
-
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) const;
         const std::string& get_name() const;
+        void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfoSharedPtr>& objList) const;
 
         void set_alpha(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, float newAlpha) const;
         float get_alpha() const;

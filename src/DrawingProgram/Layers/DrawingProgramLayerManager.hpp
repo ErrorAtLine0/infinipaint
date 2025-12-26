@@ -25,5 +25,6 @@ class DrawingProgramLayerManager {
                 return nullptr;
             return editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj);
         }
+        std::vector<CanvasComponentContainer::ObjInfoSharedPtr> get_flattened_component_list() const;
         DrawingProgramLayerManagerGUI listGUI;
 };

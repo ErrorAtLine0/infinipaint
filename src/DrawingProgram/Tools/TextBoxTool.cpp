@@ -47,7 +47,7 @@ void TextBoxTool::switch_tool(DrawingProgramToolType newTool) {
 void TextBoxTool::tool_update() {
     switch(drawStage) {
         case 0: {
-            if(drawP.controls.leftClick) {
+            if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
                 startAt = drawP.world.main.input.mouse.pos;
                 endAt = startAt;
 
@@ -58,7 +58,7 @@ void TextBoxTool::tool_update() {
                 newTextBox.d.p2 = ensure_points_have_distance(newTextBox.d.p1, newTextBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
                 newTextBox.d.editing = true;
                 newContainer->coords = drawP.world.drawData.cam.c;
-                objInfoBeingEdited = drawP.components->push_back_and_send_create(drawP.components, newContainer);
+                objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
                 drawStage = 1;
             }
             break;

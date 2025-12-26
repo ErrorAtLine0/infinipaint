@@ -46,6 +46,13 @@ void DrawingProgramLayerListItem::commit_update_dont_invalidate_cache(DrawingPro
         layerData->commit_update_dont_invalidate_cache(layerMan);
 }
 
+void DrawingProgramLayerListItem::get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfoSharedPtr>& objList) const {
+    if(folderData)
+        folderData->get_flattened_component_list(objList);
+    else
+        layerData->get_flattened_component_list(objList);
+}
+
 bool DrawingProgramLayerListItem::is_folder() const {
     return folderData != nullptr;
 }

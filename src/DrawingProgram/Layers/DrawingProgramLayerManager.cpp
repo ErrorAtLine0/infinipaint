@@ -32,3 +32,9 @@ void DrawingProgramLayerManager::draw(SkCanvas* canvas, const DrawData& drawData
     if(layerTreeRoot)
         layerTreeRoot->draw(canvas, drawData);
 }
+
+std::vector<CanvasComponentContainer::ObjInfoSharedPtr> DrawingProgramLayerManager::get_flattened_component_list() const {
+    std::vector<CanvasComponentContainer::ObjInfoSharedPtr> toRet;
+    layerTreeRoot->get_flattened_component_list(toRet);
+    return toRet;
+}

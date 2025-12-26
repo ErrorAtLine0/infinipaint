@@ -49,7 +49,7 @@ void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
 void EllipseDrawTool::tool_update() {
     switch(drawStage) {
         case 0: {
-            if(drawP.controls.leftClick) {
+            if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
                 CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
                 EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());
 
@@ -63,7 +63,7 @@ void EllipseDrawTool::tool_update() {
                 newEllipse.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
                 newContainer->coords = drawP.world.drawData.cam.c;
 
-                objInfoBeingEdited = drawP.components->push_back_and_send_create(drawP.components, newContainer);
+                objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
                 drawStage = 1;
             }
             break;
