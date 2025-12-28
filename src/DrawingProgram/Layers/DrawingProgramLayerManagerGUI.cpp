@@ -85,7 +85,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                         gui.text_label(tempPtr->get_name());
                     }
                     if(gui.svg_icon_button_transparent("visible button", tempPtr->get_visible() ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
-                        tempPtr->set_visible(world.delayedUpdateObjectManager, !tempPtr->get_visible());
+                        tempPtr->set_visible(layerMan, !tempPtr->get_visible());
                         isButtonClicked = true;
                     }
                     if(gui.svg_icon_button_transparent("delete button", "data/icons/trash.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
@@ -178,7 +178,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                 gui.input_text_field("input edit name", "Name", &nameToEdit);
                 tempPtr->set_name(world.delayedUpdateObjectManager, nameToEdit);
                 gui.slider_scalar_field("input alpha slider", "Alpha", &alphaValToEdit, 0.0f, 1.0f, 2);
-                tempPtr->set_alpha(world.delayedUpdateObjectManager, alphaValToEdit);
+                tempPtr->set_alpha(layerMan, alphaValToEdit);
                 gui.left_to_right_line_layout([&]() {
                     gui.text_label("Blend Mode");
                     gui.dropdown_select("input blend mode", &blendModeValToEdit, get_blend_mode_name_list(), 200.0f, [&hoveringOverDropdown]() {
@@ -186,7 +186,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                             hoveringOverDropdown = true;
                     });
                 });
-                tempPtr->set_blend_mode(world.delayedUpdateObjectManager, static_cast<SerializedBlendMode>(blendModeValToEdit));
+                tempPtr->set_blend_mode(layerMan, static_cast<SerializedBlendMode>(blendModeValToEdit));
             }
         }
 

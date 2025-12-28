@@ -12,6 +12,10 @@ class DrawingProgramLayerManager {
         NetworkingObjects::NetObjOwnerPtr<DrawingProgramLayerListItem> layerTreeRoot;
         NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> editingLayer;
     public:
+        enum class LayerSelector {
+            ALL_VISIBLE_LAYERS,
+            LAYER_BEING_EDITED
+        };
 
         DrawingProgramLayerManager(DrawingProgram& drawProg);
         void init();
@@ -19,6 +23,12 @@ class DrawingProgramLayerManager {
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
         bool is_a_layer_being_edited();
+        void erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase);
+        bool component_passes_layer_selector(const CanvasComponentContainer::ObjInfoSharedPtr& c, LayerSelector layerSelector);
+
+        bool layer_tree_root_exists();
+        const DrawingProgramLayerListItem& get_layer_root();
+
         template <typename T> CanvasComponentContainer::ObjInfoSharedPtr add_component_to_layer_being_edited(T* newObj) {
             auto editLayerPtr = editingLayer.lock();
             if(!editLayerPtr)

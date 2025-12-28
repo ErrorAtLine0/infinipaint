@@ -17,6 +17,11 @@ void EraserTool::gui_toolbox() {
     t.gui.push_id("eraser tool");
     t.gui.text_label_centered("Eraser");
     t.gui.slider_scalar_field("relwidth", "Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
+    t.gui.text_label("Erase from:");
+    if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
+        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
+    if(t.gui.radio_button_field("all visible", "All visible layers", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS))
+        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS;
     t.gui.pop_id();
 }
 
@@ -31,16 +36,7 @@ void EraserTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPt
 }
 
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
-    DrawingProgramCache::move_components_from_bvh_nodes_to_set(erasedComponents, erasedBVHNodes);
-    if(!erasedComponents.empty()) {
-        drawP.erase_component_set(erasedComponents);
-        // NOTE: Ideally, you would just recalculate the lastDrawnPos of every cache instead of invalidating and redrawing the caches
-        // However, the eraser might have other visual glitches during drawing that i am unaware of, so for now, just refresh the
-        // cache after a draw
-        drawP.compCache.clear_own_cached_surfaces();
-    }
-    erasedComponents.clear();
-    erasedBVHNodes.clear();
+    drawP.layerMan.erase_component_set(erasedComponents);
 }
 
 void EraserTool::tool_update() {
@@ -53,20 +49,20 @@ void EraserTool::tool_update() {
         SCollision::generate_wide_line(cC, prevMousePos, drawP.world.main.input.mouse.pos, drawP.controls.relativeWidth * 2.0f, true);
         auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
-        drawP.compCache.traverse_bvh_erase_function(cCWorld.bounds, [&](const auto& bvhNode, auto& comps) {
+        drawP.drawCache.traverse_bvh_erase_function(cCWorld.bounds, [&](const auto& bvhNode, auto& comps) {
             if(bvhNode &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max)) &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right())) &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left()))) {
-                erasedBVHNodes.emplace(bvhNode);
-                drawP.compCache.invalidate_cache_at_aabb_before_pos(bvhNode->bounds, 0);
+                drawP.drawCache.invalidate_cache_at_aabb(bvhNode->bounds);
+                drawP.drawCache.move_components_from_bvh_node_to_set(erasedComponents, bvhNode);
                 return true;
             }
             std::erase_if(comps, [&](auto& c) {
-                if(c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
+                if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                     erasedComponents.emplace(c);
-                    drawP.compCache.invalidate_cache_at_aabb_before_pos(c->obj->get_world_bounds(), c->pos);
+                    drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
                     return true;
                 }
                 return false;

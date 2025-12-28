@@ -28,13 +28,13 @@ class DrawingProgramLayerListItem {
         const std::string& get_name() const;
         void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfoSharedPtr>& objList) const;
 
-        void set_alpha(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, float newAlpha) const;
+        void set_alpha(DrawingProgramLayerManager& layerMan, float newAlpha) const;
         float get_alpha() const;
 
-        void set_visible(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, bool newVisible) const;
+        void set_visible(DrawingProgramLayerManager& layerMan, bool newVisible) const;
         bool get_visible() const;
 
-        void set_blend_mode(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, SerializedBlendMode newBlendMode) const;
+        void set_blend_mode(DrawingProgramLayerManager& layerMan, SerializedBlendMode newBlendMode) const;
         SerializedBlendMode get_blend_mode() const;
     private:
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>& o, cereal::PortableBinaryOutputArchive& a);

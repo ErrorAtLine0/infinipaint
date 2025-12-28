@@ -63,8 +63,8 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
     pointDragging = nullptr;
     isEditing = false;
 
-    if(!drawP.is_selection_allowing_tool(newTool))
-        drawP.selection.deselect_all();
+    //if(!drawP.is_selection_allowing_tool(newTool))
+    //    drawP.selection.deselect_all();
 }
 
 void EditTool::edit_start(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
@@ -114,26 +114,26 @@ void EditTool::tool_update() {
         camCMouseAABB.recalculate_bounds();
 
         if(drawP.controls.leftClick) {
-            bool modifySelection = !drawP.selection.is_being_transformed();
-            if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                CanvasComponentContainer::ObjInfoSharedPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with(camCMouseAABB);
+            //bool modifySelection = !drawP.selection.is_being_transformed();
+            //if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
+            //    CanvasComponentContainer::ObjInfoSharedPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with(camCMouseAABB);
 
-                if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
-                    drawP.selection.deselect_all();
-                    edit_start(selectedObjectToEdit);
-                    modifySelection = false;
-                }
-            }
-            if(modifySelection) {
-                if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
-                    drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
-                else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                    drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, true);
-                else {
-                    drawP.selection.deselect_all();
-                    drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
-                }
-            }
+            //    if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
+            //        drawP.selection.deselect_all();
+            //        edit_start(selectedObjectToEdit);
+            //        modifySelection = false;
+            //    }
+            //}
+            //if(modifySelection) {
+            //    if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+            //        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+            //    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+            //        drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+            //    else {
+            //        drawP.selection.deselect_all();
+            //        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, true);
+            //    }
+            //}
         }
     }
     else {

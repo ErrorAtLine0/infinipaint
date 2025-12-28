@@ -12,7 +12,6 @@
 #include <Helpers/SCollision.hpp>
 #include <Helpers/Hashes.hpp>
 #include <Helpers/Random.hpp>
-#include "DrawingProgramSelection.hpp"
 #include "Tools/DrawingProgramToolBase.hpp"
 #include <Helpers/FileDownloader.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
@@ -24,7 +23,6 @@ class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
         void init();
-        void set_component_list_callbacks();
         void toolbar_gui();
         void tool_options_gui();
         bool right_click_popup_gui(Vector2f popupPos);
@@ -42,21 +40,13 @@ class DrawingProgram {
         World& world;
 
         bool prevent_undo_or_redo();
-        void parallel_loop_all_components(std::function<void(const CanvasComponentContainer::ObjInfoSharedPtr&)> func);
 
-        // This function, unlike preupdate_component, does not take the object out of the BVH. Use for a draw update that doesn't change the object's bounding box
-        void invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
-        void preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
-
-        DrawingProgramCache compCache;
-
+        DrawingProgramCache drawCache;
         DrawingProgramLayerManager layerMan;
-        CanvasComponentContainer::NetListOwnerPtr components;
 
         Vector4f* get_foreground_color_ptr();
         void switch_to_tool(DrawingProgramToolType newToolType, bool force = false);
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
-        void clear_draw_cache();
         void modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify);
 
     private:
@@ -69,7 +59,7 @@ class DrawingProgram {
         std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
 
         bool selection_action_menu(Vector2f popupPos);
-        void force_rebuild_cache();
+        void rebuild_cache();
 
         std::atomic<bool> addFileInNextFrame = false;
         std::pair<std::filesystem::path, Vector2f> addFileInfo;
@@ -79,9 +69,8 @@ class DrawingProgram {
         SkPaint select_tool_line_paint();
         bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
         bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
-        void erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase);
 
-        DrawingProgramSelection selection;
+        //DrawingProgramSelection selection;
 
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
         std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> updateableComponents;
@@ -104,6 +93,8 @@ class DrawingProgram {
             bool middleClickHeld = false;
             bool middleClickReleased = false;
             bool cursorHoveringOverCanvas = false;
+
+            DrawingProgramLayerManager::LayerSelector layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
 
             int colorEditing = 0;
         } controls;
@@ -140,4 +131,7 @@ class DrawingProgram {
         friend class ZoomCanvasTool;
         friend class PanCanvasTool;
         friend class DrawCamera;
+        friend class DrawingProgramLayerManager;
+        friend class DrawingProgramLayer;
+        friend class DrawingProgramLayerFolder;
 };

@@ -87,7 +87,6 @@ namespace NetworkingObjects {
             typedef std::function<void(const NetObjOrderedListObjectInfoPtr<T>& objInfo)> InsertCallback;
             typedef std::function<void(const NetObjOrderedListObjectInfoPtr<T>& objInfo)> EraseCallback;
             typedef std::function<void(const NetObjOrderedListObjectInfoPtr<T>& objInfo, uint32_t oldPos)> MoveCallback;
-            typedef std::function<void()> PostSyncCallback;
 
             void set_insert_callback(const InsertCallback& func) {
                 insertCallback = func;
@@ -97,9 +96,6 @@ namespace NetworkingObjects {
             }
             void set_move_callback(const MoveCallback& func) {
                 moveCallback = func;
-            }
-            void set_post_sync_callback(const PostSyncCallback& func) {
-                postSyncCallback = func;
             }
 
             virtual bool contains(const NetObjID& p) const = 0;
@@ -142,16 +138,10 @@ namespace NetworkingObjects {
                     moveCallback(objInfo, oldPos);
             }
 
-            void call_post_sync_callback() {
-                if(postSyncCallback)
-                    postSyncCallback();
-            }
-
         private:
             InsertCallback insertCallback;
             EraseCallback eraseCallback;
             MoveCallback moveCallback;
-            PostSyncCallback postSyncCallback;
             template <typename S> friend void register_ordered_list_class(NetObjManager& t);
             static void write_constructor_func(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) {
                 l->write_constructor(l, a);
@@ -622,27 +612,17 @@ namespace NetworkingObjects {
                         clientData.insert(clientData.begin() + pos, objInfoPtr);
                 }
 
-                // Code that tries to not call post_sync_callback, which refreshes the entire cache.
-                //uint32_t bumpFromServerInsert = 0;
-                //for(uint32_t i = 0; i < clientData.size(); i++) {
-                //    if(clientData[i]->pos == std::numeric_limits<uint32_t>::max()) {
-                //        clientData[i]->pos = i;
-                //        this->call_insert_callback(clientData[i]);
-                //        bumpFromServerInsert++;
-                //    }
-                //    else if(clientData[i]->pos != (i + bumpFromServerInsert)) {
-                //        uint32_t oldPos = clientData[i]->pos;
-                //        clientData[i]->pos = i;
-                //        this->call_move_callback(clientData[i], oldPos);
-                //    }
-                //    clientData[i]->pos = i;
-                //}
-
-                // Code that calls post_sync_callback
-                set_positions_for_object_info_vector<T>(clientData);
-                for(auto& [id, objInfo] : newServerObjects)
-                    this->call_insert_callback(objInfo);
-                this->call_post_sync_callback();
+                uint32_t bumpFromServerInsert = 0;
+                for(uint32_t i = 0; i < clientData.size(); i++) {
+                    uint32_t oldPos = clientData[i]->pos;
+                    clientData[i]->pos = i;
+                    if(oldPos == std::numeric_limits<uint32_t>::max()) {
+                        this->call_insert_callback(clientData[i]);
+                        bumpFromServerInsert++;
+                    }
+                    else if(oldPos != (i + bumpFromServerInsert))
+                        this->call_move_callback(clientData[i], oldPos);
+                }
             }
 
             std::vector<NetObjID> serverData;

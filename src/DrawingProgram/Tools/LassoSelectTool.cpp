@@ -50,19 +50,19 @@ void LassoSelectTool::erase_component(const CanvasComponentContainer::ObjInfoSha
 }
 
 void LassoSelectTool::switch_tool(DrawingProgramToolType newTool) {
-    if(!drawP.is_selection_allowing_tool(newTool))
-        drawP.selection.deselect_all();
+    //if(!drawP.is_selection_allowing_tool(newTool))
+    //    drawP.selection.deselect_all();
 }
 
 void LassoSelectTool::tool_update() {
     switch(controls.selectionMode) {
         case 0: {
-            if(drawP.controls.leftClick && !drawP.selection.is_being_transformed()) {
-                controls = LassoSelectControls();
-                controls.coords = drawP.world.drawData.cam.c;
-                controls.lassoPoints.emplace_back(controls.coords.get_mouse_pos(drawP.world));
-                controls.selectionMode = 1;
-            }
+            //if(drawP.controls.leftClick && !drawP.selection.is_being_transformed()) {
+            //    controls = LassoSelectControls();
+            //    controls.coords = drawP.world.drawData.cam.c;
+            //    controls.lassoPoints.emplace_back(controls.coords.get_mouse_pos(drawP.world));
+            //    controls.selectionMode = 1;
+            //}
             break;
         }
         case 1: {
@@ -92,17 +92,18 @@ void LassoSelectTool::tool_update() {
 
                     cC.recalculate_bounds();
 
-                    if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
-                        drawP.selection.add_from_cam_coord_collider_to_selection(cC);
-                    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                        drawP.selection.remove_from_cam_coord_collider_to_selection(cC);
-                    else {
-                        drawP.selection.deselect_all();
-                        drawP.selection.add_from_cam_coord_collider_to_selection(cC);
-                    }
+                    //if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+                    //    drawP.selection.add_from_cam_coord_collider_to_selection(cC);
+                    //else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                    //    drawP.selection.remove_from_cam_coord_collider_to_selection(cC);
+                    //else {
+                    //    drawP.selection.deselect_all();
+                    //    drawP.selection.add_from_cam_coord_collider_to_selection(cC);
+                    //}
                 }
-                else if(!drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                    drawP.selection.deselect_all();
+                else if(!drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
+                    //drawP.selection.deselect_all();
+                }
                 controls.selectionMode = 0;
             }
             break;
@@ -111,7 +112,7 @@ void LassoSelectTool::tool_update() {
 }
 
 bool LassoSelectTool::prevent_undo_or_redo() {
-    return drawP.selection.is_something_selected() || controls.selectionMode == 1;
+    return true;//drawP.selection.is_something_selected() || controls.selectionMode == 1;
 }
 
 void LassoSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {

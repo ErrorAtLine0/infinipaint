@@ -38,3 +38,31 @@ std::vector<CanvasComponentContainer::ObjInfoSharedPtr> DrawingProgramLayerManag
     layerTreeRoot->get_flattened_component_list(toRet);
     return toRet;
 }
+
+bool DrawingProgramLayerManager::layer_tree_root_exists() {
+    return layerTreeRoot;
+}
+
+const DrawingProgramLayerListItem& DrawingProgramLayerManager::get_layer_root() {
+    return *layerTreeRoot;
+}
+
+void DrawingProgramLayerManager::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase) {
+    std::unordered_map<DrawingProgramLayerListItem*, std::unordered_set<NetworkingObjects::NetObjID>> idsToEraseInSpecificLayers;
+    for(auto& c : compsToErase)
+        idsToEraseInSpecificLayers[c->obj->parentLayer].emplace(c->obj.get_net_id());
+    for(auto& [layerListItem, netObjSetToErase] : idsToEraseInSpecificLayers) {
+        auto& layerComponentList = layerListItem->get_layer().components;
+        layerComponentList->erase_unordered_set(layerComponentList, netObjSetToErase);
+    }
+}
+
+bool DrawingProgramLayerManager::component_passes_layer_selector(const CanvasComponentContainer::ObjInfoSharedPtr& c, LayerSelector layerSelector) {
+    switch(layerSelector) {
+        case LayerSelector::ALL_VISIBLE_LAYERS:
+            return c->obj->parentLayer->get_visible();
+        case LayerSelector::LAYER_BEING_EDITED:
+            return is_a_layer_being_edited() && c->obj->parentLayer == editingLayer.lock().get();
+    }
+    return false;
+}

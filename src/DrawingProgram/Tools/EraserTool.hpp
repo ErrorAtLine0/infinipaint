@@ -19,5 +19,4 @@ class EraserTool : public DrawingProgramToolBase {
         virtual bool prevent_undo_or_redo() override;
 
         std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> erasedComponents; // Pointers will be erased from this set if theyre erased in the main list (done by callback)
-        std::unordered_set<std::shared_ptr<DrawingProgramCacheBVHNode>> erasedBVHNodes;
 };

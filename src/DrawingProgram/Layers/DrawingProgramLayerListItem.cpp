@@ -36,7 +36,7 @@ void DrawingProgramLayerListItem::set_component_list_callbacks(DrawingProgramLay
     if(folderData)
         folderData->set_component_list_callbacks(layerMan);
     else
-        layerData->set_component_list_callbacks(layerMan);
+        layerData->set_component_list_callbacks(*this, layerMan);
 }
 
 void DrawingProgramLayerListItem::commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) {
@@ -90,10 +90,11 @@ const std::string& DrawingProgramLayerListItem::get_name() const {
     return nameData->name;
 }
 
-void DrawingProgramLayerListItem::set_alpha(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, float newAlpha) const {
+void DrawingProgramLayerListItem::set_alpha(DrawingProgramLayerManager& layerMan, float newAlpha) const {
     if(displayData && displayData->alpha != newAlpha) {
         displayData->alpha = newAlpha;
-        delayedNetObjMan.send_update_to_all<DisplayData>(displayData, false);
+        // MUST CLEAR CACHE
+        layerMan.drawP.world.delayedUpdateObjectManager.send_update_to_all<DisplayData>(displayData, false);
     }
 }
 
@@ -101,10 +102,11 @@ float DrawingProgramLayerListItem::get_alpha() const {
     return displayData->alpha;
 }
 
-void DrawingProgramLayerListItem::set_visible(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, bool newVisible) const {
+void DrawingProgramLayerListItem::set_visible(DrawingProgramLayerManager& layerMan, bool newVisible) const {
     if(displayData && displayData->visible != newVisible) {
         displayData->visible = newVisible;
-        delayedNetObjMan.send_update_to_all<DisplayData>(displayData, false);
+        // MUST CLEAR CACHE
+        layerMan.drawP.world.delayedUpdateObjectManager.send_update_to_all<DisplayData>(displayData, false);
     }
 }
 
@@ -112,10 +114,11 @@ bool DrawingProgramLayerListItem::get_visible() const {
     return displayData->visible;
 }
 
-void DrawingProgramLayerListItem::set_blend_mode(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, SerializedBlendMode newBlendMode) const {
+void DrawingProgramLayerListItem::set_blend_mode(DrawingProgramLayerManager& layerMan, SerializedBlendMode newBlendMode) const {
     if(displayData && displayData->blendMode != newBlendMode) {
         displayData->blendMode = newBlendMode;
-        delayedNetObjMan.send_update_to_all<DisplayData>(displayData, false);
+        // MUST CLEAR CACHE
+        layerMan.drawP.world.delayedUpdateObjectManager.send_update_to_all<DisplayData>(displayData, false);
     }
 }
 
@@ -133,7 +136,11 @@ void DrawingProgramLayerListItem::register_class(World& w) {
         .readUpdateFuncServer = nullptr,
     });
     w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan);
-    w.delayedUpdateObjectManager.register_class<DisplayData>(w.netObjMan);
+    w.delayedUpdateObjectManager.register_class<DisplayData>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<DisplayData>{
+        .postUpdateFunc = [&](DisplayData& o) {
+            // MUST CLEAR CACHE
+        }
+    });
 }
 
 void DrawingProgramLayerListItem::write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>& o, cereal::PortableBinaryOutputArchive& a) {

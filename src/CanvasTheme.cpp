@@ -45,7 +45,7 @@ void CanvasTheme::set_tool_front_color(DrawingProgram& drawP) {
     else
         toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
     if(oldToolFrontColor != toolFrontColor)
-        drawP.clear_draw_cache();
+        drawP.drawCache.clear_own_cached_surfaces();
 }
 
 void CanvasTheme::register_class() {

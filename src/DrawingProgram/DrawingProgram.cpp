@@ -27,46 +27,21 @@
 #include <include/effects/SkDashPathEffect.h>
 #include <chrono>
 #include "../CanvasComponents/ImageCanvasComponent.hpp"
+#include "Layers/DrawingProgramLayer.hpp"
+#include "Layers/DrawingProgramLayerListItem.hpp"
 
 #include "Tools/EraserTool.hpp"
 
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
-    compCache(*this),
-    layerMan(*this),
-    selection(*this)
+    drawCache(*this),
+    layerMan(*this)
 {
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
 }
 
 void DrawingProgram::init() {
-    if(world.netObjMan.is_server()) {
-        components = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>>();
-        set_component_list_callbacks();
-    }
     layerMan.init();
-}
-
-void DrawingProgram::set_component_list_callbacks() {
-    components->set_insert_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
-        c->obj->set_owner_obj_info(c);
-        c->obj->commit_update(*this); // Run commit update on insert so that world bounds are calculated
-        compCache.add_component(c);
-        if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE)
-            updateableComponents.emplace(c);
-    });
-    components->set_erase_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
-        compCache.erase_component(c);
-        selection.erase_component(c);
-        drawTool->erase_component(c);
-        std::erase_if(droppedDownloadingFiles, [&c](auto& downloadingFile) {
-            return downloadingFile.comp == c;
-        });
-        updateableComponents.erase(c);
-    });
-    components->set_post_sync_callback([&]() {
-        clear_draw_cache();
-    });
 }
 
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
@@ -77,35 +52,13 @@ void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
     //switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
 }
 
-void DrawingProgram::parallel_loop_all_components(std::function<void(const CanvasComponentContainer::ObjInfoSharedPtr&)> func) {
-    parallel_loop_container(components->get_data(), func);
-}
-
-void DrawingProgram::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase) {
-    std::unordered_set<NetworkingObjects::NetObjID> idsToErase;
-    for(auto& c : compsToErase)
-        idsToErase.emplace(c->obj.get_net_id());
-    components->erase_unordered_set(components, idsToErase);
-}
-
-void DrawingProgram::clear_draw_cache() {
-    compCache.clear_own_cached_surfaces();
-    selection.clear_own_cached_surfaces();
-}
-
 void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive& a) {
-    components.write_create_message(a);
     layerMan.write_components_server(a);
 }
 
 void DrawingProgram::read_components_client(cereal::PortableBinaryInputArchive& a) {
-    components = world.netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<CanvasComponentContainer>>(a, nullptr);
-    parallel_loop_all_components([&](const auto& c){
-        c->obj->commit_update_dont_invalidate_cache(*this);
-    });
-    compCache.test_rebuild(components->get_data(), true);
-    set_component_list_callbacks();
     layerMan.read_components_client(a);
+    drawCache.build({});
 }
 
 void DrawingProgram::toolbar_gui() {
@@ -154,26 +107,26 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
     bool shouldClose = false;
     t.gui.list_popup_menu("Selection popup menu", popupPos, [&]() {
         t.gui.text_label_light("Selection menu");
-        if(t.gui.text_button_left_transparent("Paste", "Paste")) {
-            selection.deselect_all();
-            selection.paste_clipboard(popupPos * t.final_gui_scale());
-            shouldClose = true;
-        }
-        if(selection.is_something_selected()) {
-            if(t.gui.text_button_left_transparent("Copy", "Copy")) {
-                selection.selection_to_clipboard();
-                shouldClose = true;
-            }
-            if(t.gui.text_button_left_transparent("Cut", "Cut")) {
-                selection.selection_to_clipboard();
-                selection.delete_all();
-                shouldClose = true;
-            }
-            if(t.gui.text_button_left_transparent("Delete", "Delete")) {
-                selection.delete_all();
-                shouldClose = true;
-            }
-        }
+        //if(t.gui.text_button_left_transparent("Paste", "Paste")) {
+        //    selection.deselect_all();
+        //    selection.paste_clipboard(popupPos * t.final_gui_scale());
+        //    shouldClose = true;
+        //}
+        //if(selection.is_something_selected()) {
+        //    if(t.gui.text_button_left_transparent("Copy", "Copy")) {
+        //        selection.selection_to_clipboard();
+        //        shouldClose = true;
+        //    }
+        //    if(t.gui.text_button_left_transparent("Cut", "Cut")) {
+        //        selection.selection_to_clipboard();
+        //        selection.delete_all();
+        //        shouldClose = true;
+        //    }
+        //    if(t.gui.text_button_left_transparent("Delete", "Delete")) {
+        //        selection.delete_all();
+        //        shouldClose = true;
+        //    }
+        //}
     });
     return !shouldClose;
 }
@@ -216,7 +169,7 @@ void DrawingProgram::update() {
         if(!badFrametimeTimePoint)
             badFrametimeTimePoint = std::chrono::steady_clock::now();
         else if(unorderedObjectsExistTimePoint && std::chrono::steady_clock::now() - badFrametimeTimePoint.value() >= std::chrono::seconds(5) && std::chrono::steady_clock::now() - unorderedObjectsExistTimePoint.value() >= std::chrono::seconds(5)) {
-            force_rebuild_cache();
+            rebuild_cache();
             unorderedObjectsExistTimePoint = std::nullopt;
             badFrametimeTimePoint = std::nullopt;
         }
@@ -224,12 +177,10 @@ void DrawingProgram::update() {
     else
         badFrametimeTimePoint = std::nullopt;
 
-    if(compCache.get_unsorted_component_list().empty()) {
+    if(!drawCache.unsorted_components_exist())
         unorderedObjectsExistTimePoint = std::nullopt;
-    }
-    else if(!unorderedObjectsExistTimePoint) {
+    else if(!unorderedObjectsExistTimePoint)
         unorderedObjectsExistTimePoint = std::chrono::steady_clock::now();
-    }
 
     if(world.main.input.pen.isEraser && !temporaryEraser) {
         if(drawTool->get_type() == DrawingProgramToolType::BRUSH)
@@ -317,7 +268,7 @@ void DrawingProgram::update() {
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_PAN).pressed)
         switch_to_tool(DrawingProgramToolType::PAN);
 
-    selection.update();
+    //selection.update();
     drawTool->tool_update();
 
     // Switch tools after the tool update, not before, so that we dont have to call erase_component on the toolToSwitchToAfterUpdate as well (components will not be erased in this time period)
@@ -332,14 +283,8 @@ void DrawingProgram::update() {
     update_downloading_dropped_files();
     check_updateable_components();
 
-    if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
-        EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
-        compCache.test_rebuild_dont_include_set_dont_include_nodes(components->get_data(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes);
-    }
-    else if(is_selection_allowing_tool(drawTool->get_type()))
-        compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set());
-    else
-        compCache.test_rebuild(components->get_data());
+    if(drawCache.should_rebuild())
+        rebuild_cache();
 }
 
 void DrawingProgram::check_updateable_components() {
@@ -387,19 +332,20 @@ SkPaint DrawingProgram::select_tool_line_paint() {
     return selectLinePaint;
 }
 
-void DrawingProgram::force_rebuild_cache() {
+void DrawingProgram::rebuild_cache() {
     if(drawTool->get_type() == DrawingProgramToolType::ERASER) {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
-        compCache.test_rebuild_dont_include_set_dont_include_nodes(components->get_data(), eraserTool->erasedComponents, eraserTool->erasedBVHNodes, true);
+        drawCache.build(eraserTool->erasedComponents);
     }
-    else if(is_selection_allowing_tool(drawTool->get_type()))
-        compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set(), true);
+    else if(is_selection_allowing_tool(drawTool->get_type())) {
+        //compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set(), true);
+    }
     else
-        compCache.test_rebuild(components->get_data(), true);
+        drawCache.build({});
 }
 
 void DrawingProgram::drag_drop_update() {
-    if(controls.cursorHoveringOverCanvas) {
+    if(controls.cursorHoveringOverCanvas && layerMan.is_a_layer_being_edited()) {
         for(auto& droppedItem : world.main.input.droppedItems) {
             if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
 #ifdef __EMSCRIPTEN_
@@ -416,7 +362,7 @@ void DrawingProgram::drag_drop_update() {
                 img.d.p1 = droppedItem.pos - imDim;
                 img.d.p2 = droppedItem.pos + imDim;
                 img.d.imageID = {0, 0};
-                auto newObjInfo = components->push_back_and_send_create(components, newContainer);
+                auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
                 droppedDownloadingFiles.emplace_back(newObjInfo, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.dataText.value()));
             }
         }
@@ -437,7 +383,8 @@ void DrawingProgram::update_downloading_dropped_files() {
                 ResourceDisplay* display = world.rMan.get_display_data(imageID);
                 if(display->get_type() == ResourceDisplay::Type::FILE) {
                     Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
-                    components->erase(components, downFile.comp->obj.get_net_id());
+                    auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
+                    parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj.get_net_id());
                 }
                 else {
                     Vector2f imTrueDim = display->get_dimensions();
@@ -453,10 +400,12 @@ void DrawingProgram::update_downloading_dropped_files() {
                 }
                 return true;
             }
-            case FileDownloader::DownloadData::Status::FAILURE:
+            case FileDownloader::DownloadData::Status::FAILURE: {
                 Logger::get().log("WORLDFATAL", "Failed to download data from URL");
-                components->erase(components, downFile.comp->obj.get_net_id());
+                auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
+                parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj.get_net_id());
                 return true;
+            }
             case FileDownloader::DownloadData::Status::IN_PROGRESS:
                 return false;
         }
@@ -488,7 +437,7 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::p
         img.d.p1 = dropPos - imDim;
         img.d.p2 = dropPos + imDim;
         img.d.imageID = imageID;
-        components->push_back_and_send_create(components, newContainer);
+        layerMan.add_component_to_layer_being_edited(newContainer);
     }
 }
 
@@ -508,21 +457,7 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
     img.d.p1 = dropPos - imDim;
     img.d.p2 = dropPos + imDim;
     img.d.imageID = imageID;
-    components->push_back_and_send_create(components, newContainer);
-}
-
-void DrawingProgram::invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
-    if(selection.is_selected(objToCheck))
-        selection.invalidate_cache_at_aabb_before_pos(objToCheck->obj->get_world_bounds(), objToCheck->pos);
-    else
-        compCache.invalidate_cache_at_aabb_before_pos(objToCheck->obj->get_world_bounds(), objToCheck->pos);
-}
-
-void DrawingProgram::preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
-    if(selection.is_selected(objToCheck))
-        selection.preupdate_component(objToCheck);
-    else
-        compCache.preupdate_component(objToCheck);
+    layerMan.add_component_to_layer_being_edited(newContainer);
 }
 
 float DrawingProgram::drag_point_radius() {
@@ -566,36 +501,33 @@ void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
-    layerMan.draw(canvas, drawData);
-    //if(drawData.dontUseDrawProgCache) {
-    //    for(auto& c : components->get_data())
-    //        c->obj->draw(canvas, drawData);
-    //}
-    //else {
-    //    canvas->saveLayer(nullptr, nullptr);
-    //        canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
-    //        compCache.refresh_all_draw_cache(drawData);
-    //        compCache.draw_components_to_canvas(canvas, drawData, {});
-    //        canvas->saveLayer(nullptr, nullptr);
-    //            selection.draw_components(canvas, drawData);
-    //        canvas->restore();
-    //    canvas->restore();
+    if(drawData.dontUseDrawProgCache)
+        layerMan.draw(canvas, drawData);
+    else {
+        canvas->saveLayer(nullptr, nullptr);
+            canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
+            drawCache.refresh_all_draw_cache(drawData);
+            drawCache.draw_components_to_canvas(canvas, drawData, {});
+            //canvas->saveLayer(nullptr, nullptr);
+            //    selection.draw_components(canvas, drawData);
+            //canvas->restore();
+        canvas->restore();
 
-    //    if(!drawData.main->takingScreenshot) {
-    //        for(auto& droppedDownFile : droppedDownloadingFiles)
-    //            static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
+        if(!drawData.main->takingScreenshot) {
+            for(auto& droppedDownFile : droppedDownloadingFiles)
+                static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
 
-    //        for(auto& c : updateableComponents) {
-    //            if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
-    //                auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
-    //                float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
-    //                img.draw_download_progress_bar(canvas, drawData, progress);
-    //            }
-    //        }
-    //    }
+            for(auto& c : updateableComponents) {
+                if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
+                    auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
+                    float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
+                    img.draw_download_progress_bar(canvas, drawData, progress);
+                }
+            }
+        }
 
-    //    selection.draw_gui(canvas, drawData);
-    //}
+        //selection.draw_gui(canvas, drawData);
+    }
 
     drawTool->draw(canvas, drawData);
 }

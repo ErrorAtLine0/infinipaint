@@ -39,6 +39,6 @@ void PanCanvasTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void PanCanvasTool::switch_tool(DrawingProgramToolType newTool) {
-    if(!drawP.is_selection_allowing_tool(newTool))
-        drawP.selection.deselect_all();
+    //if(!drawP.is_selection_allowing_tool(newTool))
+    //    drawP.selection.deselect_all();
 }

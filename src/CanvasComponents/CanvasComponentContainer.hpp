@@ -9,6 +9,7 @@
 
 class DrawingProgram;
 class DrawingProgramCacheBVHNode;
+class DrawingProgramLayerListItem;
 
 class CanvasComponentContainer {
     public:
@@ -44,7 +45,8 @@ class CanvasComponentContainer {
         void set_owner_obj_info(const ObjInfoSharedPtr& ownerObjInfo);
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
 
-        std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode;
+        std::weak_ptr<DrawingProgramCacheBVHNode> parentBvhNode; // Should be removed later, the new cache uses an unordered_map to map objects to their cache node
+        DrawingProgramLayerListItem* parentLayer = nullptr;
         CoordSpaceHelper coords;
     private:
         friend class BrushStrokeCanvasComponent;
