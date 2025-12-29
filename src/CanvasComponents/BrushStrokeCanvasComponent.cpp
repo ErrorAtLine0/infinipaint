@@ -29,6 +29,12 @@ void BrushStrokeCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a
     a(d->points, d->color, d->hasRoundCaps);
 }
 
+std::unique_ptr<CanvasComponent> BrushStrokeCanvasComponent::get_data_copy() const {
+    auto toRet = std::make_unique<BrushStrokeCanvasComponent>();
+    toRet->d = d;
+    return toRet;
+}
+
 CanvasComponentType BrushStrokeCanvasComponent::get_type() const {
     return CanvasComponentType::BRUSHSTROKE;
 }

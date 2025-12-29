@@ -58,6 +58,12 @@ void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
     }
 }
 
+std::unique_ptr<CanvasComponent> TextBoxCanvasComponent::get_data_copy() const {
+    auto toRet = std::make_unique<TextBoxCanvasComponent>();
+    toRet->d = d;
+    return toRet;
+}
+
 void TextBoxCanvasComponent::set_data_from(const CanvasComponent& other) {
     auto& otherTextBox = static_cast<const TextBoxCanvasComponent&>(other);
     d = otherTextBox.d;

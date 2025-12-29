@@ -10,6 +10,7 @@ class EllipseCanvasComponent : public CanvasComponent {
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
+        virtual std::unique_ptr<CanvasComponent> get_data_copy() const override;
         virtual void set_data_from(const CanvasComponent& other) override;
 
         // User input data

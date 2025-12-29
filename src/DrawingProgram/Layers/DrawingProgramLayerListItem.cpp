@@ -53,6 +53,15 @@ void DrawingProgramLayerListItem::get_flattened_component_list(std::vector<Canva
         layerData->get_flattened_component_list(objList);
 }
 
+void DrawingProgramLayerListItem::get_flattened_layer_list(std::vector<DrawingProgramLayerListItem*>& objList) {
+    if(folderData) {
+        for(auto& c : folderData->folderList->get_data())
+            c->obj->get_flattened_layer_list(objList);
+    }
+    else
+        objList.emplace_back(this);
+}
+
 bool DrawingProgramLayerListItem::is_folder() const {
     return folderData != nullptr;
 }

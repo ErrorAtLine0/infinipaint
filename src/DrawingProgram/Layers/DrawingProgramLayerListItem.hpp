@@ -27,6 +27,7 @@ class DrawingProgramLayerListItem {
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) const;
         const std::string& get_name() const;
         void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfoSharedPtr>& objList) const;
+        void get_flattened_layer_list(std::vector<DrawingProgramLayerListItem*>& objList);
 
         void set_alpha(DrawingProgramLayerManager& layerMan, float newAlpha) const;
         float get_alpha() const;

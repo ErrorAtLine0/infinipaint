@@ -25,10 +25,18 @@ class CanvasComponentContainer {
         constexpr static int COMP_COLLIDE_MIN_SHIFT_TINY = 9;
         constexpr static int COMP_MIPMAP_LEVEL_ONE = 2;
         constexpr static int COMP_MIPMAP_LEVEL_TWO = 5;
+
+        struct CopyData {
+            CoordSpaceHelper coords;
+            std::unique_ptr<CanvasComponent> obj;
+        };
         
         CanvasComponentContainer();
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type);
+        CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, const CopyData& copyData);
+
         static void register_class(NetworkingObjects::NetObjManager& t);
+        std::shared_ptr<CopyData> get_data_copy() const;
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         CanvasComponent& get_comp() const;

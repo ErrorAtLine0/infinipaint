@@ -167,6 +167,16 @@ ResourceDisplay* ResourceManager::get_display_data(const NetworkingObjects::NetO
     return displays[fileID].get();
 }
 
+std::unordered_map<NetworkingObjects::NetObjID, ResourceData> ResourceManager::copy_resource_set_to_map(const std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
+    std::unordered_map<NetworkingObjects::NetObjID, ResourceData> toRet;
+    for(auto& netID : resourceSet) {
+        auto tempPtr = world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(netID);
+        if(tempPtr)
+            toRet.emplace(netID, *tempPtr);
+    }
+    return toRet;
+}
+
 const std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>>& ResourceManager::resource_list() {
     return resourceList;
 }

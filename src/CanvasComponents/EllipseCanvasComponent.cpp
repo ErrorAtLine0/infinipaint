@@ -52,6 +52,12 @@ void EllipseCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     create_collider();
 }
 
+std::unique_ptr<CanvasComponent> EllipseCanvasComponent::get_data_copy() const {
+    auto toRet = std::make_unique<EllipseCanvasComponent>();
+    toRet->d = d;
+    return toRet;
+}
+
 void EllipseCanvasComponent::set_data_from(const CanvasComponent& other) {
     auto& otherEllipse = static_cast<const EllipseCanvasComponent&>(other);
     d = otherEllipse.d;

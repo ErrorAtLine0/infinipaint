@@ -29,6 +29,12 @@ void ImageCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Vers
     a(d.p1, d.p2, d.imageID);
 }
 
+std::unique_ptr<CanvasComponent> ImageCanvasComponent::get_data_copy() const {
+    auto toRet = std::make_unique<ImageCanvasComponent>();
+    toRet->d = d;
+    return toRet;
+}
+
 void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const DrawData& drawData, float progress) const {
     if(progress == 0.0f)
         return;
@@ -51,6 +57,14 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
 void ImageCanvasComponent::set_data_from(const CanvasComponent& other) {
     auto& otherImage = static_cast<const ImageCanvasComponent&>(other);
     d = otherImage.d;
+}
+
+void ImageCanvasComponent::remap_resource_ids(const std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID>& resourceOldToNewMap) {
+    d.imageID = resourceOldToNewMap.at(d.imageID);
+}
+
+void ImageCanvasComponent::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
+    resourceSet.emplace(d.imageID);
 }
 
 void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {

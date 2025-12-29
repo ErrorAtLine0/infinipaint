@@ -8,6 +8,12 @@
 void CanvasComponent::update(DrawingProgram& drawP) {
 }
 
+void CanvasComponent::remap_resource_ids(const std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID>& resourceOldToNewMap) {
+}
+
+void CanvasComponent::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
+}
+
 CanvasComponent* CanvasComponent::allocate_comp(CanvasComponentType type) {
     switch(type) {
         case CanvasComponentType::BRUSHSTROKE:

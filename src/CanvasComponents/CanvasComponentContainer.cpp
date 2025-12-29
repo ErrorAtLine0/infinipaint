@@ -15,6 +15,13 @@ CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjMana
     compAllocator->comp->compContainer = this;
 }
 
+CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, const CopyData& copyData) {
+    compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>(copyData.obj->get_type());
+    compAllocator->comp->compContainer = this;
+    compAllocator->comp->set_data_from(*copyData.obj);
+    coords = copyData.coords;
+}
+
 void CanvasComponentContainer::register_class(NetObjManager& objMan) {
     objMan.register_class<CanvasComponentContainer, CanvasComponentContainer, CanvasComponentContainer, CanvasComponentContainer>({
         .writeConstructorFuncClient = write_constructor_func,
@@ -24,6 +31,13 @@ void CanvasComponentContainer::register_class(NetObjManager& objMan) {
         .readConstructorFuncServer = read_constructor_func,
         .readUpdateFuncServer = nullptr,
     });
+}
+
+std::shared_ptr<CanvasComponentContainer::CopyData> CanvasComponentContainer::get_data_copy() const {
+    auto toRet = std::make_shared<CopyData>();
+    toRet->coords = coords;
+    toRet->obj = compAllocator->comp->get_data_copy();
+    return toRet;
 }
 
 void CanvasComponentContainer::send_comp_update(DrawingProgram& drawP, bool finalUpdate) {

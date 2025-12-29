@@ -4,6 +4,7 @@
 #include "../MainProgram.hpp"
 #include "../InputManager.hpp"
 #include <Helpers/Parallel.hpp>
+#include <Helpers/Logger.hpp>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include <include/gpu/graphite/Surface.h>
@@ -314,59 +315,60 @@ CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramSelection::get_front_ob
 }
 
 void DrawingProgramSelection::selection_to_clipboard() {
-    //auto& clipboard = drawP.world.main.clipboard;
-    //std::unordered_set<ServerClientID> resourceSet;
-    //for(auto& c : selectedSet)
-    //    c->obj->get_used_resources(resourceSet);
-    //std::vector<CanvasComponentContainer::ObjInfoSharedPtr> compVecSort(selectedSet.begin(), selectedSet.end());
-    //std::sort(compVecSort.begin(), compVecSort.end(), [&](auto& a, auto& b) {
-    //    return a->pos < b->pos;
-    //});
-    //clipboard.components.clear();
-    //for(auto& c : compVecSort)
-    //    clipboard.components.emplace_back(c->obj->deep_copy(drawP));
-    //clipboard.pos = initialSelectionAABB.center();
-    //clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
-    //drawP.world.rMan.copy_resource_set_to_map(resourceSet, clipboard.resources);
+    auto& clipboard = drawP.world.main.clipboard;
+    std::unordered_set<NetworkingObjects::NetObjID> resourceSet;
+    for(auto& c : selectedSet)
+        c->obj->get_comp().get_used_resources(resourceSet);
+    std::vector<CanvasComponentContainer::ObjInfoSharedPtr> compVecSort(selectedSet.begin(), selectedSet.end());
+    std::vector<DrawingProgramLayerListItem*> flattenedLayerList = drawP.layerMan.get_flattened_layer_list();
+    std::unordered_map<DrawingProgramLayerListItem*, size_t> flattenedLayerListOrder;
+    for(size_t i = 0; i < flattenedLayerList.size(); i++)
+        flattenedLayerListOrder[flattenedLayerList[i]] = i;
+    std::sort(compVecSort.begin(), compVecSort.end(), [&](auto& a, auto& b) {
+        return (flattenedLayerListOrder[a->obj->parentLayer] < flattenedLayerListOrder[b->obj->parentLayer]) || (a->obj->parentLayer == b->obj->parentLayer && a->pos < b->pos);
+    });
+    clipboard.components.clear();
+    for(auto& c : compVecSort)
+        clipboard.components.emplace_back(c->obj->get_data_copy());
+    clipboard.pos = initialSelectionAABB.center();
+    clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
+    clipboard.resources = drawP.world.rMan.copy_resource_set_to_map(resourceSet);
 }
 
 void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
-    //auto& clipboard = drawP.world.main.clipboard;
+    if(drawP.layerMan.is_a_layer_being_edited()) {
+        auto& clipboard = drawP.world.main.clipboard;
 
-    //if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
-    //    drawP.switch_to_tool(DrawingProgramToolType::EDIT);
+        if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
+            drawP.switch_to_tool(DrawingProgramToolType::EDIT);
 
-    //uint32_t allPlacement = drawP.components->size();
-    //std::vector<std::shared_ptr<DrawComponent>> placedComponents;
-    //WorldVec mousePos = drawP.world.drawData.cam.c.from_space(pasteScreenPos);
-    //WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
-    //WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
-    //WorldScalar scaleLimit(0.001);
-    //for(auto& c : drawP.world.main.clipboard.components) {
-    //    if((c->coords.inverseScale / scaleMultiplier) < scaleLimit) {
-    //        Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
-    //        return;
-    //    }
-    //}
+        std::vector<std::pair<uint32_t, CanvasComponentContainer*>> placedComponents;
+        WorldVec mousePos = drawP.world.drawData.cam.c.from_space(pasteScreenPos);
+        WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
+        WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
+        WorldScalar scaleLimit(0.001);
+        for(auto& c : drawP.world.main.clipboard.components) {
+            if((c->coords.inverseScale / scaleMultiplier) < scaleLimit) {
+                Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
+                return;
+            }
+        }
 
-    //std::unordered_map<ServerClientID, ServerClientID> resourceRemapIDs;
-    //for(auto& r : clipboard.resources)
-    //    resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second);
-    //for(auto& c : clipboard.components)
-    //    placedComponents.emplace_back(c->deep_copy(drawP));
-    //drawP.addToCompCacheOnInsert = false;
-    //auto compListInserted = drawP.components.client_insert_ordered_vector_items(allPlacement, placedComponents);
-    //parallel_loop_container(compListInserted, [&](auto& c) {
-    //    c->obj->remap_resource_ids(resourceRemapIDs);
-    //    c->obj->get_coords().translate(-moveVec);
-    //    c->obj->get_coords().scale_about(mousePos, scaleMultiplier);
-    //    c->obj->commit_transform(drawP, false);
-    //});
-    //DrawComponent::client_send_place_many(drawP, compListInserted);
-    //drawP.addToCompCacheOnInsert = true;
-    //std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> compSetInserted(compListInserted.begin(), compListInserted.end());
-    //set_to_selection(compSetInserted);
-    //drawP.add_undo_place_components(compSetInserted);
+        std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID> resourceRemapIDs;
+        for(auto& r : clipboard.resources)
+            resourceRemapIDs[r.first] = drawP.world.rMan.add_resource(r.second).get_net_id();
+        for(auto& c : clipboard.components) {
+            CanvasComponentContainer* newComponentContainer = new CanvasComponentContainer(drawP.world.netObjMan, *c);
+            newComponentContainer->get_comp().remap_resource_ids(resourceRemapIDs);
+            c->coords.translate(-moveVec);
+            c->coords.scale_about(mousePos, scaleMultiplier);
+            placedComponents.emplace_back(drawP.layerMan.edited_layer_component_count() + placedComponents.size(), newComponentContainer);
+        }
+        auto newlyInsertedObjects = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);
+        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> compSetInserted(newlyInsertedObjects.begin(), newlyInsertedObjects.end());
+        set_to_selection(compSetInserted);
+        //drawP.add_undo_place_components(compSetInserted);
+    }
 }
 
 bool DrawingProgramSelection::is_being_transformed() {

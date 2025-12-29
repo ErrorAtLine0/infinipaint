@@ -27,6 +27,12 @@ void RectangleCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, 
     a(d.strokeColor, d.fillColor, d.cornerRadius, d.strokeWidth, d.p1, d.p2, d.fillStrokeMode);
 }
 
+std::unique_ptr<CanvasComponent> RectangleCanvasComponent::get_data_copy() const {
+    auto toRet = std::make_unique<RectangleCanvasComponent>();
+    toRet->d = d;
+    return toRet;
+}
+
 void RectangleCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
     if(d.fillStrokeMode == 0 || d.fillStrokeMode == 2) {
         SkPaint p;

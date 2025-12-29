@@ -28,6 +28,10 @@ bool DrawingProgramLayerManager::is_a_layer_being_edited() {
     return !editingLayer.expired();
 }
 
+uint32_t DrawingProgramLayerManager::edited_layer_component_count() {
+    return editingLayer.lock()->get_layer().components->size();
+}
+
 void DrawingProgramLayerManager::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(layerTreeRoot)
         layerTreeRoot->draw(canvas, drawData);
@@ -36,6 +40,12 @@ void DrawingProgramLayerManager::draw(SkCanvas* canvas, const DrawData& drawData
 std::vector<CanvasComponentContainer::ObjInfoSharedPtr> DrawingProgramLayerManager::get_flattened_component_list() const {
     std::vector<CanvasComponentContainer::ObjInfoSharedPtr> toRet;
     layerTreeRoot->get_flattened_component_list(toRet);
+    return toRet;
+}
+
+std::vector<DrawingProgramLayerListItem*> DrawingProgramLayerManager::get_flattened_layer_list() {
+    std::vector<DrawingProgramLayerListItem*> toRet;
+    layerTreeRoot->get_flattened_layer_list(toRet);
     return toRet;
 }
 
@@ -65,4 +75,18 @@ bool DrawingProgramLayerManager::component_passes_layer_selector(const CanvasCom
             return is_a_layer_being_edited() && c->obj->parentLayer == editingLayer.lock().get();
     }
     return false;
+}
+
+std::vector<CanvasComponentContainer::ObjInfoSharedPtr> DrawingProgramLayerManager::add_many_components_to_layer_being_edited(const std::vector<std::pair<uint32_t, CanvasComponentContainer*>>& newObjs) {
+    auto editLayerPtr = editingLayer.lock();
+    if(!editLayerPtr)
+        return {};
+    return editLayerPtr->get_layer().components->insert_ordered_list_and_send_create(editLayerPtr->get_layer().components, newObjs);
+}
+
+CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramLayerManager::add_component_to_layer_being_edited(CanvasComponentContainer* newObj) {
+    auto editLayerPtr = editingLayer.lock();
+    if(!editLayerPtr)
+        return nullptr;
+    return editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj);
 }

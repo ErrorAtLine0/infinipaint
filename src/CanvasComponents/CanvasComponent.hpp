@@ -19,8 +19,11 @@ class CanvasComponent {
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const = 0;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) = 0;
         virtual void update(DrawingProgram& drawP);
+        virtual void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
+        virtual void remap_resource_ids(const std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID>& resourceOldToNewMap);
 
         virtual void set_data_from(const CanvasComponent& other) = 0;
+        virtual std::unique_ptr<CanvasComponent> get_data_copy() const = 0;
     protected:
         friend class CanvasComponentContainer;
         friend class CanvasComponentAllocator;

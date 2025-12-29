@@ -31,6 +31,7 @@ class ResourceManager {
         ResourceDisplay* get_display_data(const NetworkingObjects::NetObjID& fileID);
         const std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>>& resource_list();
         float get_resource_retrieval_progress(const NetworkingObjects::NetObjID& id);
+        std::unordered_map<NetworkingObjects::NetObjID, ResourceData> copy_resource_set_to_map(const std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
 
         World& world;
     private:

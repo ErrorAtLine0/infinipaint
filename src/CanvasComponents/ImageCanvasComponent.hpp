@@ -11,7 +11,10 @@ class ImageCanvasComponent : public CanvasComponent {
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
         virtual CanvasComponentType get_type() const override;
+        std::unique_ptr<CanvasComponent> get_data_copy() const override;
         virtual void set_data_from(const CanvasComponent& other) override;
+        virtual void remap_resource_ids(const std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID>& resourceOldToNewMap) override;
+        virtual void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const override;
 
         void draw_download_progress_bar(SkCanvas* canvas, const DrawData& drawData, float progress) const;
 
