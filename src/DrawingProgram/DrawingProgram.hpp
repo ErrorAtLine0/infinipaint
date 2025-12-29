@@ -16,6 +16,7 @@
 #include <Helpers/FileDownloader.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include "Layers/DrawingProgramLayerManager.hpp"
+#include "DrawingProgramSelection.hpp"
 
 class World;
 
@@ -49,6 +50,8 @@ class DrawingProgram {
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
         void modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify);
 
+        void invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        void preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
     private:
         void drag_drop_update();
         void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
@@ -70,7 +73,7 @@ class DrawingProgram {
         bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
         bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
 
-        //DrawingProgramSelection selection;
+        DrawingProgramSelection selection;
 
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
         std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> updateableComponents;

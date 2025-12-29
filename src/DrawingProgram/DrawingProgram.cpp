@@ -35,7 +35,8 @@
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     drawCache(*this),
-    layerMan(*this)
+    layerMan(*this),
+    selection(*this)
 {
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
 }
@@ -107,26 +108,26 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
     bool shouldClose = false;
     t.gui.list_popup_menu("Selection popup menu", popupPos, [&]() {
         t.gui.text_label_light("Selection menu");
-        //if(t.gui.text_button_left_transparent("Paste", "Paste")) {
-        //    selection.deselect_all();
-        //    selection.paste_clipboard(popupPos * t.final_gui_scale());
-        //    shouldClose = true;
-        //}
-        //if(selection.is_something_selected()) {
-        //    if(t.gui.text_button_left_transparent("Copy", "Copy")) {
-        //        selection.selection_to_clipboard();
-        //        shouldClose = true;
-        //    }
-        //    if(t.gui.text_button_left_transparent("Cut", "Cut")) {
-        //        selection.selection_to_clipboard();
-        //        selection.delete_all();
-        //        shouldClose = true;
-        //    }
-        //    if(t.gui.text_button_left_transparent("Delete", "Delete")) {
-        //        selection.delete_all();
-        //        shouldClose = true;
-        //    }
-        //}
+        if(t.gui.text_button_left_transparent("Paste", "Paste")) {
+            selection.deselect_all();
+            selection.paste_clipboard(popupPos * t.final_gui_scale());
+            shouldClose = true;
+        }
+        if(selection.is_something_selected()) {
+            if(t.gui.text_button_left_transparent("Copy", "Copy")) {
+                selection.selection_to_clipboard();
+                shouldClose = true;
+            }
+            if(t.gui.text_button_left_transparent("Cut", "Cut")) {
+                selection.selection_to_clipboard();
+                selection.delete_all();
+                shouldClose = true;
+            }
+            if(t.gui.text_button_left_transparent("Delete", "Delete")) {
+                selection.delete_all();
+                shouldClose = true;
+            }
+        }
     });
     return !shouldClose;
 }
@@ -268,7 +269,7 @@ void DrawingProgram::update() {
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_PAN).pressed)
         switch_to_tool(DrawingProgramToolType::PAN);
 
-    //selection.update();
+    selection.update();
     drawTool->tool_update();
 
     // Switch tools after the tool update, not before, so that we dont have to call erase_component on the toolToSwitchToAfterUpdate as well (components will not be erased in this time period)
@@ -285,6 +286,16 @@ void DrawingProgram::update() {
 
     if(drawCache.should_rebuild())
         rebuild_cache();
+}
+
+void DrawingProgram::invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
+    if(!selection.is_selected(objToCheck))
+        drawCache.invalidate_cache_at_aabb(objToCheck->obj->get_world_bounds());
+}
+
+void DrawingProgram::preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
+    if(!selection.is_selected(objToCheck))
+        drawCache.preupdate_component(objToCheck);
 }
 
 void DrawingProgram::check_updateable_components() {
@@ -338,7 +349,7 @@ void DrawingProgram::rebuild_cache() {
         drawCache.build(eraserTool->erasedComponents);
     }
     else if(is_selection_allowing_tool(drawTool->get_type())) {
-        //compCache.test_rebuild_dont_include_set(components->get_data(), selection.get_selected_set(), true);
+        drawCache.build(selection.get_selected_set());
     }
     else
         drawCache.build({});
@@ -508,9 +519,9 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
             drawCache.refresh_all_draw_cache(drawData);
             drawCache.draw_components_to_canvas(canvas, drawData, {});
-            //canvas->saveLayer(nullptr, nullptr);
-            //    selection.draw_components(canvas, drawData);
-            //canvas->restore();
+            canvas->saveLayer(nullptr, nullptr);
+                selection.draw_components(canvas, drawData);
+            canvas->restore();
         canvas->restore();
 
         if(!drawData.main->takingScreenshot) {
@@ -526,7 +537,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             }
         }
 
-        //selection.draw_gui(canvas, drawData);
+        selection.draw_gui(canvas, drawData);
     }
 
     drawTool->draw(canvas, drawData);

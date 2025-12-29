@@ -18,6 +18,7 @@ void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListIt
             layerMan.drawP.updateableComponents.emplace(c);
     });
     components->set_erase_callback([&](const CanvasComponentContainer::ObjInfoSharedPtr& c) {
+        layerMan.drawP.selection.erase_component(c);
         layerMan.drawP.drawCache.erase_component(c);
         layerMan.drawP.drawTool->erase_component(c);
         std::erase_if(layerMan.drawP.droppedDownloadingFiles, [&c](auto& downloadingFile) {

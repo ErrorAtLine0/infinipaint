@@ -65,7 +65,7 @@ void ImageCanvasComponent::update(DrawingProgram& drawP) {
     ResourceDisplay* display = drawP.world.drawData.rMan->get_display_data(d.imageID);
     if(display) {
         if(display->update_draw())
-            drawP.drawCache.invalidate_cache_at_aabb(compContainer->get_world_bounds());
+            drawP.invalidate_cache_at_component(compContainer->objInfo.lock());
     }
 }
 

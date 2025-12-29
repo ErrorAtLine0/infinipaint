@@ -93,7 +93,7 @@ const std::string& DrawingProgramLayerListItem::get_name() const {
 void DrawingProgramLayerListItem::set_alpha(DrawingProgramLayerManager& layerMan, float newAlpha) const {
     if(displayData && displayData->alpha != newAlpha) {
         displayData->alpha = newAlpha;
-        // MUST CLEAR CACHE
+        layerMan.drawP.drawCache.clear_own_cached_surfaces();
         layerMan.drawP.world.delayedUpdateObjectManager.send_update_to_all<DisplayData>(displayData, false);
     }
 }
@@ -105,7 +105,7 @@ float DrawingProgramLayerListItem::get_alpha() const {
 void DrawingProgramLayerListItem::set_visible(DrawingProgramLayerManager& layerMan, bool newVisible) const {
     if(displayData && displayData->visible != newVisible) {
         displayData->visible = newVisible;
-        // MUST CLEAR CACHE
+        layerMan.drawP.drawCache.clear_own_cached_surfaces();
         layerMan.drawP.world.delayedUpdateObjectManager.send_update_to_all<DisplayData>(displayData, false);
     }
 }
@@ -117,7 +117,7 @@ bool DrawingProgramLayerListItem::get_visible() const {
 void DrawingProgramLayerListItem::set_blend_mode(DrawingProgramLayerManager& layerMan, SerializedBlendMode newBlendMode) const {
     if(displayData && displayData->blendMode != newBlendMode) {
         displayData->blendMode = newBlendMode;
-        // MUST CLEAR CACHE
+        layerMan.drawP.drawCache.clear_own_cached_surfaces();
         layerMan.drawP.world.delayedUpdateObjectManager.send_update_to_all<DisplayData>(displayData, false);
     }
 }
@@ -138,7 +138,7 @@ void DrawingProgramLayerListItem::register_class(World& w) {
     w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan);
     w.delayedUpdateObjectManager.register_class<DisplayData>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<DisplayData>{
         .postUpdateFunc = [&](DisplayData& o) {
-            // MUST CLEAR CACHE
+            w.drawProg.drawCache.clear_own_cached_surfaces();
         }
     });
 }

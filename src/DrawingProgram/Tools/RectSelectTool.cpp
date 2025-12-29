@@ -17,7 +17,15 @@ DrawingProgramToolType RectSelectTool::get_type() {
 }
 
 void RectSelectTool::gui_toolbox() {
-    drawP.world.main.toolbar.gui.text_label_centered("Rectangle Select");
+    auto& t = drawP.world.main.toolbar;
+    t.gui.push_id("rectangle select tool");
+    t.gui.text_label_centered("Rectangle Select");
+    t.gui.text_label("Select from:");
+    if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
+        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
+    if(t.gui.radio_button_field("all visible", "All visible layers", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS))
+        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS;
+    t.gui.pop_id();
 }
 
 void RectSelectTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
@@ -28,19 +36,19 @@ bool RectSelectTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 void RectSelectTool::switch_tool(DrawingProgramToolType newTool) {
-    //if(!drawP.is_selection_allowing_tool(newTool))
-    //    drawP.selection.deselect_all();
+    if(!drawP.is_selection_allowing_tool(newTool))
+        drawP.selection.deselect_all();
 }
 
 void RectSelectTool::tool_update() {
     switch(controls.selectionMode) {
         case 0: {
-            //if(drawP.controls.leftClick && !drawP.selection.is_being_transformed()) {
-            //    controls = RectSelectControls();
-            //    controls.coords = drawP.world.drawData.cam.c;
-            //    controls.selectStartAt = controls.coords.get_mouse_pos(drawP.world);
-            //    controls.selectionMode = 1;
-            //}
+            if(drawP.controls.leftClick && !drawP.selection.is_being_transformed()) {
+                controls = RectSelectControls();
+                controls.coords = drawP.world.drawData.cam.c;
+                controls.selectStartAt = controls.coords.get_mouse_pos(drawP.world);
+                controls.selectionMode = 1;
+            }
             break;
         }
         case 1: {
@@ -55,14 +63,14 @@ void RectSelectTool::tool_update() {
                 cC.triangle.emplace_back(controls.newT[2], controls.newT[3], controls.newT[0]);
                 cC.recalculate_bounds();
 
-                //if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
-                //    drawP.selection.add_from_cam_coord_collider_to_selection(cC);
-                //else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                //    drawP.selection.remove_from_cam_coord_collider_to_selection(cC);
-                //else {
-                //    drawP.selection.deselect_all();
-                //    drawP.selection.add_from_cam_coord_collider_to_selection(cC);
-                //}
+                if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+                    drawP.selection.add_from_cam_coord_collider_to_selection(cC, drawP.controls.layerSelector, false);
+                else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                    drawP.selection.remove_from_cam_coord_collider_to_selection(cC, drawP.controls.layerSelector, false);
+                else {
+                    drawP.selection.deselect_all();
+                    drawP.selection.add_from_cam_coord_collider_to_selection(cC, drawP.controls.layerSelector, false);
+                }
 
                 controls.selectionMode = 0;
             }
@@ -72,8 +80,7 @@ void RectSelectTool::tool_update() {
 }
 
 bool RectSelectTool::prevent_undo_or_redo() {
-    //return drawP.selection.is_something_selected() || controls.selectionMode == 1;
-    return true;
+    return drawP.selection.is_something_selected() || controls.selectionMode == 1;
 }
 
 void RectSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {

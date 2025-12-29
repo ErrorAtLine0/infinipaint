@@ -49,17 +49,26 @@ void EraserTool::tool_update() {
         SCollision::generate_wide_line(cC, prevMousePos, drawP.world.main.input.mouse.pos, drawP.controls.relativeWidth * 2.0f, true);
         auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
-        drawP.drawCache.traverse_bvh_erase_function(cCWorld.bounds, [&](const auto& bvhNode, auto& comps) {
+        drawP.drawCache.traverse_bvh_run_function(cCWorld.bounds, [&](const auto& bvhNode) {
             if(bvhNode &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max)) &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right())) &&
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left()))) {
                 drawP.drawCache.invalidate_cache_at_aabb(bvhNode->bounds);
-                drawP.drawCache.move_components_from_bvh_node_to_set(erasedComponents, bvhNode);
-                return true;
+                drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
+                    drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto& c) {
+                        if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
+                            erasedComponents.emplace(c);
+                            return true;
+                        }
+                        return false;
+                    });
+                    return true;
+                });
+                return false;
             }
-            std::erase_if(comps, [&](auto& c) {
+            drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto& c) {
                 if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                     erasedComponents.emplace(c);
                     drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
@@ -67,7 +76,7 @@ void EraserTool::tool_update() {
                 }
                 return false;
             });
-            return false;
+            return true;
         });
     }
     else
