@@ -61,6 +61,8 @@ void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
 std::unique_ptr<CanvasComponent> TextBoxCanvasComponent::get_data_copy() const {
     auto toRet = std::make_unique<TextBoxCanvasComponent>();
     toRet->d = d;
+    *toRet->cursor = *cursor;
+    toRet->textBox->set_rich_text_data(textBox->get_rich_text_data());
     return toRet;
 }
 
