@@ -360,8 +360,8 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
         for(auto& c : clipboard.components) {
             CanvasComponentContainer* newComponentContainer = new CanvasComponentContainer(drawP.world.netObjMan, *c);
             newComponentContainer->get_comp().remap_resource_ids(resourceRemapIDs);
-            c->coords.translate(-moveVec);
-            c->coords.scale_about(mousePos, scaleMultiplier);
+            newComponentContainer->coords.translate(-moveVec);
+            newComponentContainer->coords.scale_about(mousePos, scaleMultiplier);
             placedComponents.emplace_back(drawP.layerMan.edited_layer_component_count() + placedComponents.size(), newComponentContainer);
         }
         auto newlyInsertedObjects = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);

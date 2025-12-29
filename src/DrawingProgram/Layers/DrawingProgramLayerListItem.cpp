@@ -62,6 +62,17 @@ void DrawingProgramLayerListItem::get_flattened_layer_list(std::vector<DrawingPr
         objList.emplace_back(this);
 }
 
+uint32_t DrawingProgramLayerListItem::get_component_count() const {
+    if(folderData) {
+        uint32_t toRet = 0;
+        for(auto& c : folderData->folderList->get_data())
+            toRet += c->obj->get_component_count();
+        return toRet;
+    }
+    else
+        return layerData->components->size();
+}
+
 bool DrawingProgramLayerListItem::is_folder() const {
     return folderData != nullptr;
 }
