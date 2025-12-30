@@ -32,6 +32,13 @@ void DrawingProgramLayerListItem::reassign_netobj_ids_call() {
     displayData.reassign_ids();
 }
 
+void DrawingProgramLayerListItem::set_to_erase() {
+    if(folderData)
+        folderData->set_to_erase();
+    else
+        layerData->set_to_erase();
+}
+
 void DrawingProgramLayerListItem::set_component_list_callbacks(DrawingProgramLayerManager &layerMan) {
     if(folderData)
         folderData->set_component_list_callbacks(layerMan);

@@ -8,16 +8,16 @@ void DrawingProgramLayer::draw(SkCanvas* canvas, const DrawData& drawData) const
         p.obj->draw(canvas, drawData);
 }
 
-void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListItem& layerListItem, DrawingProgramLayerManager& layerMan) const {
-    components->set_insert_callback([&](const CanvasComponentContainer::ObjInfoIterator& c) {
+void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListItem& layerListItem, DrawingProgramLayerManager& layerMan) {
+    auto insertCallback = [&](const CanvasComponentContainer::ObjInfoIterator& c) {
         c->obj->objInfo = c;
         c->obj->parentLayer = &layerListItem;
         c->obj->commit_update(layerMan.drawP); // Run commit update on insert so that world bounds are calculated
         layerMan.drawP.drawCache.add_component(&(*c));
         if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE)
             layerMan.drawP.updateableComponents.emplace(&(*c));
-    });
-    components->set_erase_callback([&](const CanvasComponentContainer::ObjInfoIterator& c) {
+    };
+    eraseCallback = [&](const CanvasComponentContainer::ObjInfoIterator& c) {
         layerMan.drawP.selection.erase_component(&(*c));
         layerMan.drawP.drawCache.erase_component(&(*c));
         layerMan.drawP.drawTool->erase_component(&(*c));
@@ -25,10 +25,20 @@ void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListIt
             return downloadingFile.comp == &(*c);
         });
         layerMan.drawP.updateableComponents.erase(&(*c));
-    });
+    };
+    components->set_insert_callback(insertCallback);
+    components->set_erase_callback(eraseCallback);
     components->set_move_callback([&](const CanvasComponentContainer::ObjInfoIterator& c, uint32_t oldPos) {
         layerMan.drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
     });
+    // Make sure the insert callback is called on existing objects
+    for(auto it = components->begin(); it != components->end(); ++it)
+        insertCallback(it);
+}
+
+void DrawingProgramLayer::set_to_erase() {
+    for(auto it = components->begin(); it != components->end(); ++it)
+        eraseCallback(it);
 }
 
 void DrawingProgramLayer::commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) const {

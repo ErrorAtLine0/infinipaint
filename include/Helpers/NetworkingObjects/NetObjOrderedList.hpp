@@ -515,18 +515,18 @@ namespace NetworkingObjects {
                             serverIdToDataMap.emplace(newObjs[i].second.get_net_id(), serverIt);
                         }
 
+                        std::vector<NetObjOrderedListIterator<T>> insertedIterators;
                         auto firstInsertedIt = clientData.end();
                         for(uint32_t i = 0; i < newObjs.size(); i++) {
                             auto& [itToInsertAt, newObj] = newObjs[i];
                             auto newObjIt = clientData.emplace(itToInsertAt, std::move(newObj), itToInsertAt == clientData.end() ? clientData.size() : itToInsertAt->pos); // All position values will be wrong except the first one, which is all that matters
                             clientIdToDataMap.emplace(newObjIt->obj.get_net_id(), newObjIt);
+                            insertedIterators.emplace_back(newObjIt);
                             if(i == 0)
                                 firstInsertedIt = newObjIt;
                         }
                         set_position_obj_info_list<T>(firstInsertedIt, clientData.end());
-
-                        for(auto& newObj : newObjs)
-                            this->call_insert_callback(newObj.first);
+                        this->call_insert_callback_list(insertedIterators);
 
                         break;
                     }

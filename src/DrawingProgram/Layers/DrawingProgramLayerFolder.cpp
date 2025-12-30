@@ -8,12 +8,20 @@ void DrawingProgramLayerFolder::draw(SkCanvas* canvas, const DrawData& drawData)
         p.obj->draw(canvas, drawData);
 }
 
-void DrawingProgramLayerFolder::set_component_list_callbacks(DrawingProgramLayerManager& layerMan) const {
+void DrawingProgramLayerFolder::set_component_list_callbacks(DrawingProgramLayerManager& layerMan) {
     folderList->set_insert_callback([&](auto& c) {
         c->obj->set_component_list_callbacks(layerMan);
     });
+    folderList->set_erase_callback([&](auto& c) {
+        c->obj->set_to_erase();
+    });
     for(auto& listItem : *folderList)
         listItem.obj->set_component_list_callbacks(layerMan);
+}
+
+void DrawingProgramLayerFolder::set_to_erase() {
+    for(auto& listItem : *folderList)
+        listItem.obj->set_to_erase();
 }
 
 void DrawingProgramLayerFolder::commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) const {
