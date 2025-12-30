@@ -26,11 +26,9 @@ void TextBoxTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void TextBoxTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
-    if(objInfoBeingEdited == erasedComp) {
+void TextBoxTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
+    if(objInfoBeingEdited == erasedComp)
         objInfoBeingEdited = nullptr;
-        drawStage = 0;
-    }
 }
 
 bool TextBoxTool::right_click_popup_gui(Vector2f popupPos) {
@@ -41,58 +39,52 @@ bool TextBoxTool::right_click_popup_gui(Vector2f popupPos) {
 
 void TextBoxTool::switch_tool(DrawingProgramToolType newTool) {
     commit();
-    drawStage = 0;
 }
 
 void TextBoxTool::tool_update() {
-    switch(drawStage) {
-        case 0: {
-            if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
-                startAt = drawP.world.main.input.mouse.pos;
-                endAt = startAt;
+    if(objInfoBeingEdited) {
+        if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
+            startAt = drawP.world.main.input.mouse.pos;
+            endAt = startAt;
 
-                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::TEXTBOX);
-                TextBoxCanvasComponent& newTextBox = static_cast<TextBoxCanvasComponent&>(newContainer->get_comp());
+            CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::TEXTBOX);
+            TextBoxCanvasComponent& newTextBox = static_cast<TextBoxCanvasComponent&>(newContainer->get_comp());
 
-                newTextBox.d.p1 = newTextBox.d.p2 = startAt;
-                newTextBox.d.p2 = ensure_points_have_distance(newTextBox.d.p1, newTextBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                newTextBox.d.editing = true;
-                newContainer->coords = drawP.world.drawData.cam.c;
-                objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
-                drawStage = 1;
-            }
-            break;
+            newTextBox.d.p1 = newTextBox.d.p2 = startAt;
+            newTextBox.d.p2 = ensure_points_have_distance(newTextBox.d.p1, newTextBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+            newTextBox.d.editing = true;
+            newContainer->coords = drawP.world.drawData.cam.c;
+            objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
         }
-        case 1: {
-            NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-            TextBoxCanvasComponent& textBox = static_cast<TextBoxCanvasComponent&>(containerPtr->get_comp());
+    }
+    else {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        TextBoxCanvasComponent& textBox = static_cast<TextBoxCanvasComponent&>(containerPtr->get_comp());
 
-            Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
-            if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
-                float height = std::fabs(startAt.y() - newPos.y());
-                newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
-            }
-            endAt = newPos;
-            textBox.d.p1 = cwise_vec_min(endAt, startAt);
-            textBox.d.p2 = cwise_vec_max(endAt, startAt);
-            textBox.d.p2 = ensure_points_have_distance(textBox.d.p1, textBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-            if(!drawP.controls.leftClickHeld) {
-                auto editTool = std::make_unique<EditTool>(drawP);
-                editTool->edit_start(objInfoBeingEdited);
-                drawP.toolToSwitchToAfterUpdate = std::move(editTool);
-                return;
-            }
-            else {
-                containerPtr->send_comp_update(drawP, false);
-                containerPtr->commit_update(drawP);
-            }
-            break;
+        Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+        if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
+            float height = std::fabs(startAt.y() - newPos.y());
+            newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
+        }
+        endAt = newPos;
+        textBox.d.p1 = cwise_vec_min(endAt, startAt);
+        textBox.d.p2 = cwise_vec_max(endAt, startAt);
+        textBox.d.p2 = ensure_points_have_distance(textBox.d.p1, textBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+        if(!drawP.controls.leftClickHeld) {
+            auto editTool = std::make_unique<EditTool>(drawP);
+            editTool->edit_start(objInfoBeingEdited);
+            drawP.toolToSwitchToAfterUpdate = std::move(editTool);
+            return;
+        }
+        else {
+            containerPtr->send_comp_update(drawP, false);
+            containerPtr->commit_update(drawP);
         }
     }
 }
 
 bool TextBoxTool::prevent_undo_or_redo() {
-    return (drawStage == 1);
+    return objInfoBeingEdited;
 }
 
 void TextBoxTool::commit() {

@@ -11,7 +11,7 @@ EllipseDrawEditTool::EllipseDrawEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-bool EllipseDrawEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
 
     Toolbar& t = drawP.world.main.toolbar;
@@ -42,7 +42,7 @@ bool EllipseDrawEditTool::edit_gui(const CanvasComponentContainer::ObjInfoShared
     return editHappened;   
 }
 
-void EllipseDrawEditTool::edit_start(EditTool& editTool, const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void EllipseDrawEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
 
     prevData = a.d;
@@ -50,9 +50,9 @@ void EllipseDrawEditTool::edit_start(EditTool& editTool, const CanvasComponentCo
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 }
 
-void EllipseDrawEditTool::commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void EllipseDrawEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
 }
 
-bool EllipseDrawEditTool::edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool EllipseDrawEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
     return true;
 }

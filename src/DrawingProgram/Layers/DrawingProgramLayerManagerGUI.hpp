@@ -13,8 +13,8 @@ class DrawingProgramLayerManagerGUI {
         void refresh_gui_data();
         void setup_list_gui(const std::string& id, bool& hoveringOverDropdown);
     private:
-        NetworkingObjects::NetObjOrderedListObjectInfoPtr<DrawingProgramLayerListItem> try_to_create_in_proper_position(DrawingProgramLayerListItem* newItem);
-        NetworkingObjects::NetObjOrderedListObjectInfoPtr<DrawingProgramLayerListItem> create_in_proper_position(DrawingProgramLayerListItem* newItem);
+        std::optional<NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem>> try_to_create_in_proper_position(DrawingProgramLayerListItem* newItem);
+        NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem> create_in_proper_position(DrawingProgramLayerListItem* newItem);
 
         GUIStuff::TreeListing::SelectionData selectionData;
         std::unordered_set<NetworkingObjects::NetObjID> oldSelection;

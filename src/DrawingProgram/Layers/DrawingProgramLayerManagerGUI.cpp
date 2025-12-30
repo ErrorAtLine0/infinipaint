@@ -1,9 +1,11 @@
 #include "DrawingProgramLayerManagerGUI.hpp"
+#include "DrawingProgramLayerListItem.hpp"
 #include "DrawingProgramLayerManager.hpp"
 #include "../DrawingProgram.hpp"
 #include "../../World.hpp"
 #include "../../MainProgram.hpp"
 #include "Helpers/ConvertVec.hpp"
+#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "SerializedBlendMode.hpp"
 
 DrawingProgramLayerManagerGUI::DrawingProgramLayerManagerGUI(DrawingProgramLayerManager& drawLayerMan):
@@ -97,28 +99,29 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                 },
                 .moveObjectsToListAtIndex = [&](NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
                     world.netObjMan.send_multi_update_messsage([&]() {
-                        std::unordered_map<NetObjID, std::unordered_set<NetObjID>> toEraseMap;
+                        std::unordered_map<NetObjID, std::vector<NetObjOrderedListIterator<DrawingProgramLayerListItem>>> toEraseMap;
                         uint32_t newIndex = index;
                         std::vector<NetObjOwnerPtr<DrawingProgramLayerListItem>> toInsertObjPtrs;
                         auto& listPtr = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(listObj)->get_folder().folderList;
 
                         for(size_t i = 0; i < objsToInsert.size(); i++) {
-                            toEraseMap[objsToInsert[i].parent].emplace(objsToInsert[i].object);
+                            toEraseMap[objsToInsert[i].parent].emplace_back(listPtr->get(objsToInsert[i].object));
                             if(newIndex != 0 && objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
                                 newIndex--;
                         }
 
                         for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
                             auto& listToEraseFromPtr = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(listToEraseFrom)->get_folder().folderList;
-                            listToEraseFromPtr->erase_unordered_set(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
+                            listToEraseFromPtr->erase_list(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
                         }
 
-                        std::vector<std::pair<uint32_t, NetObjOwnerPtr<DrawingProgramLayerListItem>>> toInsert;
+                        std::vector<std::pair<NetObjOrderedListIterator<DrawingProgramLayerListItem>, NetObjOwnerPtr<DrawingProgramLayerListItem>>> toInsert;
+                        auto insertIt = listPtr->at(newIndex);
                         for(uint32_t i = 0; i < objsToInsert.size(); i++) {
                             auto it = std::find_if(toInsertObjPtrs.begin(), toInsertObjPtrs.end(), [id = objsToInsert[i].object](NetObjOwnerPtr<DrawingProgramLayerListItem>& objPtr) {
                                 return objPtr.get_net_id() == id;
                             });
-                            toInsert.emplace_back(newIndex + i, std::move(*it));
+                            toInsert.emplace_back(insertIt, std::move(*it));
                             toInsert.back().second.reassign_ids();
                         }
                         listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
@@ -151,7 +154,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
 
             if(toDeleteObject.has_value()) {
                 auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toDeleteParent.value())->get_folder().folderList;
-                folderList->erase(folderList, toDeleteObject.value());
+                folderList->erase(folderList, folderList->get(toDeleteObject.value()));
             }
         }
 
@@ -194,29 +197,28 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
     }
 }
 
-NetworkingObjects::NetObjOrderedListObjectInfoPtr<DrawingProgramLayerListItem> DrawingProgramLayerManagerGUI::try_to_create_in_proper_position(DrawingProgramLayerListItem* newItem) {
+std::optional<NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem>> DrawingProgramLayerManagerGUI::try_to_create_in_proper_position(DrawingProgramLayerListItem* newItem) {
     using namespace NetworkingObjects;
     auto& world = layerMan.drawP.world;
     if(selectionData.orderedObjsSelected.empty())
-        return nullptr;
+        return std::nullopt;
     auto& backObjParentObjectPair = selectionData.orderedObjsSelected.back();
     NetObjTemporaryPtr<DrawingProgramLayerListItem> parentPtr = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(backObjParentObjectPair.parent);
     if(!parentPtr)
-        return nullptr;
+        return std::nullopt;
     NetObjTemporaryPtr<DrawingProgramLayerListItem> objectPtr = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(backObjParentObjectPair.object);
     if(!objectPtr)
-        return nullptr;
+        return std::nullopt;
     if(objectPtr->is_folder()) {
         objectPtr->get_folder().isFolderOpen = true;
-        return objectPtr->get_folder().folderList->insert_and_send_create(objectPtr->get_folder().folderList, 0, newItem);
+        return objectPtr->get_folder().folderList->insert_and_send_create(objectPtr->get_folder().folderList, objectPtr->get_folder().folderList->begin(), newItem);
     }
-    uint32_t insertPos = parentPtr->get_folder().folderList->get(objectPtr.get_net_id())->pos;
-    return parentPtr->get_folder().folderList->insert_and_send_create(parentPtr->get_folder().folderList, insertPos, newItem);
+    return parentPtr->get_folder().folderList->insert_and_send_create(parentPtr->get_folder().folderList, parentPtr->get_folder().folderList->get(objectPtr.get_net_id()), newItem);
 }
 
-NetworkingObjects::NetObjOrderedListObjectInfoPtr<DrawingProgramLayerListItem> DrawingProgramLayerManagerGUI::create_in_proper_position(DrawingProgramLayerListItem* newItem) {
+NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem> DrawingProgramLayerManagerGUI::create_in_proper_position(DrawingProgramLayerListItem* newItem) {
     auto toRet = try_to_create_in_proper_position(newItem);
     if(!toRet)
-        return layerMan.layerTreeRoot->get_folder().folderList->insert_and_send_create(layerMan.layerTreeRoot->get_folder().folderList, 0, newItem);
-    return toRet;
+        return layerMan.layerTreeRoot->get_folder().folderList->insert_and_send_create(layerMan.layerTreeRoot->get_folder().folderList, layerMan.layerTreeRoot->get_folder().folderList->begin(), newItem);
+    return toRet.value();
 }

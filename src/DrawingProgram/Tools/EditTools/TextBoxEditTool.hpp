@@ -10,11 +10,11 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
     public:
         TextBoxEditTool(DrawingProgram& initDrawP);
 
-        virtual void edit_start(EditTool& editTool,const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) override;
-        virtual void commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) override;
-        virtual bool edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) override;
-        virtual bool edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) override;
-        virtual bool right_click_popup_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp, Vector2f popupPos) override;
+        virtual void edit_start(EditTool& editTool,CanvasComponentContainer::ObjInfo* comp, std::any& prevData) override;
+        virtual void commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) override;
+        virtual bool edit_update(CanvasComponentContainer::ObjInfo* comp) override;
+        virtual bool edit_gui(CanvasComponentContainer::ObjInfo* comp) override;
+        virtual bool right_click_popup_gui(CanvasComponentContainer::ObjInfo* comp, Vector2f popupPos) override;
     private:
         struct TextBoxEditToolAllData {
             TextBoxCanvasComponent::Data textboxData;

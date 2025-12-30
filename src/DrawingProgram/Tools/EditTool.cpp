@@ -24,7 +24,7 @@ DrawingProgramToolType EditTool::get_type() {
 
 void EditTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
-    if(isEditing) {
+    if(objInfoBeingEdited) {
         bool editHappened = compEditTool->edit_gui(objInfoBeingEdited);
         if(editHappened)
             objInfoBeingEdited->obj->commit_update(drawP);
@@ -36,13 +36,13 @@ void EditTool::gui_toolbox() {
     }
 }
 
-void EditTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     if(erasedComp == objInfoBeingEdited)
         switch_tool(get_type());
 }
 
 bool EditTool::right_click_popup_gui(Vector2f popupPos) {
-    if(isEditing)
+    if(objInfoBeingEdited)
         return compEditTool->right_click_popup_gui(objInfoBeingEdited, popupPos);
     else
         return drawP.selection_action_menu(popupPos);
@@ -61,14 +61,13 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
     }
     pointHandles.clear();
     pointDragging = nullptr;
-    isEditing = false;
 
     if(!drawP.is_selection_allowing_tool(newTool))
         drawP.selection.deselect_all();
 }
 
-void EditTool::edit_start(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
-    isEditing = true;
+void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp) {
+    bool isEditing = true;
     switch(comp->obj->get_comp().get_type()) {
         case CanvasComponentType::TEXTBOX: {
             compEditTool = std::make_unique<TextBoxEditTool>(drawP);
@@ -97,12 +96,12 @@ void EditTool::edit_start(const CanvasComponentContainer::ObjInfoSharedPtr& comp
     }
 }
 
-bool EditTool::is_editable(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool EditTool::is_editable(CanvasComponentContainer::ObjInfo* comp) {
     return comp->obj->get_comp().get_type() != CanvasComponentType::BRUSHSTROKE;
 }
 
 void EditTool::tool_update() {
-    if(!isEditing) {
+    if(!objInfoBeingEdited) {
         SCollision::AABB<WorldScalar> mouseAABB{drawP.world.get_mouse_world_pos() - WorldVec{0.5f, 0.5f}, drawP.world.get_mouse_world_pos() + WorldVec{0.5f, 0.5f}};
         SCollision::ColliderCollection<WorldScalar> cMouseAABB;
         cMouseAABB.aabb.emplace_back(mouseAABB);
@@ -116,7 +115,7 @@ void EditTool::tool_update() {
         if(drawP.controls.leftClick) {
             bool modifySelection = !drawP.selection.is_being_transformed();
             if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                CanvasComponentContainer::ObjInfoSharedPtr selectedObjectToEdit = drawP.selection.get_front_object_colliding_with_in_editing_layer(camCMouseAABB);
+                CanvasComponentContainer::ObjInfo* selectedObjectToEdit = drawP.selection.get_front_object_colliding_with_in_editing_layer(camCMouseAABB);
 
                 if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
                     drawP.selection.deselect_all();
@@ -181,14 +180,12 @@ void EditTool::tool_update() {
 }
 
 bool EditTool::prevent_undo_or_redo() {
-    return isEditing;
+    return objInfoBeingEdited;
 }
 
 void EditTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(isEditing) {
-        if(objInfoBeingEdited) {
-            for(HandleData& h : pointHandles)
-                drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((objInfoBeingEdited->obj->coords.from_space(*h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
-        }
+    if(objInfoBeingEdited) {
+        for(HandleData& h : pointHandles)
+            drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((objInfoBeingEdited->obj->coords.from_space(*h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
     }
 }

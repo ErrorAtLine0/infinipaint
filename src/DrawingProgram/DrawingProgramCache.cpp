@@ -17,12 +17,12 @@ DrawingProgramCache::DrawingProgramCache(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
-void DrawingProgramCache::add_component(const CanvasComponentContainer::ObjInfoSharedPtr& c) {
+void DrawingProgramCache::add_component(CanvasComponentContainer::ObjInfo* c) {
     unsortedComponents.emplace_back(c);
     invalidate_cache_at_aabb(c->obj->get_world_bounds());
 }
 
-void DrawingProgramCache::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& c) {
+void DrawingProgramCache::erase_component(CanvasComponentContainer::ObjInfo* c) {
     auto cacheParentBvhNodeLock = c->obj->cacheParentBvhNode.lock();
     if(cacheParentBvhNodeLock) {
         std::erase(cacheParentBvhNodeLock->components, c);
@@ -54,11 +54,11 @@ bool DrawingProgramCache::unsorted_components_exist() const {
     return !unsortedComponents.empty();
 }
 
-void DrawingProgramCache::build(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& objsToExclude) {
+void DrawingProgramCache::build(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& objsToExclude) {
     internal_build(drawP.layerMan.get_flattened_component_list(), objsToExclude);
 }
 
-void DrawingProgramCache::internal_build(std::vector<CanvasComponentContainer::ObjInfoSharedPtr> componentsToBuild, const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& objsToNotInclude) {
+void DrawingProgramCache::internal_build(std::vector<CanvasComponentContainer::ObjInfo*> componentsToBuild, const std::unordered_set<CanvasComponentContainer::ObjInfo*>& objsToNotInclude) {
     std::erase_if(componentsToBuild, [&objsToNotInclude](auto& c) {
         return objsToNotInclude.contains(c);
     });
@@ -74,9 +74,9 @@ void DrawingProgramCache::clear_own_cached_surfaces() {
     });
 }
 
-CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramCache::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
+CanvasComponentContainer::ObjInfo* DrawingProgramCache::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
-    CanvasComponentContainer::ObjInfoSharedPtr p;
+    CanvasComponentContainer::ObjInfo* p = nullptr;
     traverse_bvh_run_function(cCWorld.bounds, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
         node_loop_components(bvhNode, [&](const auto& c) {
             if(drawP.layerMan.component_passes_layer_selector(c, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED) && (!p || c->pos >= p->pos) && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cCWorld))
@@ -87,7 +87,7 @@ CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramCache::get_front_object
     return p;
 }
 
-void DrawingProgramCache::node_loop_erase_if_components(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::function<bool(const CanvasComponentContainer::ObjInfoSharedPtr& comp)> f) {
+void DrawingProgramCache::node_loop_erase_if_components(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::function<bool(CanvasComponentContainer::ObjInfo* comp)> f) {
     if(bvhNode) {
         std::erase_if(bvhNode->components, [&f](const auto& comp) {
             if(f(comp)) {
@@ -101,14 +101,14 @@ void DrawingProgramCache::node_loop_erase_if_components(const std::shared_ptr<Dr
         std::erase_if(unsortedComponents, f);
 }
 
-void DrawingProgramCache::node_loop_components(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::function<void(const CanvasComponentContainer::ObjInfoSharedPtr& comp)> f) {
+void DrawingProgramCache::node_loop_components(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::function<void(CanvasComponentContainer::ObjInfo* comp)> f) {
     if(bvhNode)
         std::for_each(bvhNode->components.begin(), bvhNode->components.end(), f);
     else
         std::for_each(unsortedComponents.begin(), unsortedComponents.end(), f);
 }
 
-void DrawingProgramCache::preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& c) {
+void DrawingProgramCache::preupdate_component(CanvasComponentContainer::ObjInfo* c) {
     // Can be called even if object isn't in cache yet. In that case, it'll just invalidate the cache at the object's AABB
     auto cacheParentBvhNodeLock = c->obj->cacheParentBvhNode.lock();
     if(cacheParentBvhNodeLock) {
@@ -119,7 +119,7 @@ void DrawingProgramCache::preupdate_component(const CanvasComponentContainer::Ob
     invalidate_cache_at_aabb(c->obj->get_world_bounds());
 }
 
-void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CanvasComponentContainer::ObjInfoSharedPtr>& components) {
+void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CanvasComponentContainer::ObjInfo*>& components) {
     if(components.empty())
         return;
 
@@ -138,7 +138,7 @@ void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCac
 
     WorldVec boundsCenter = bvhNode->bounds.center();
 
-    std::array<std::vector<CanvasComponentContainer::ObjInfoSharedPtr>, 4> parts;
+    std::array<std::vector<CanvasComponentContainer::ObjInfo*>, 4> parts;
 
     for(auto& c : components) {
         const auto& cAABB = c->obj->get_world_bounds();
@@ -338,11 +338,11 @@ void DrawingProgramCache::recursive_draw_layer_item_to_canvas(const DrawingProgr
         layerPaint.setBlendMode(serialized_blend_mode_to_sk_blend_mode(layerListItem.get_blend_mode()));
         canvas->saveLayer(nullptr, &layerPaint);
         if(layerListItem.is_folder()) {
-            for(auto& p : layerListItem.get_folder().folderList->get_data() | std::views::reverse)
-                recursive_draw_layer_item_to_canvas(*p->obj, canvas, drawData, drawBounds, nodesToDraw);
+            for(auto& p : *layerListItem.get_folder().folderList | std::views::reverse)
+                recursive_draw_layer_item_to_canvas(*p.obj, canvas, drawData, drawBounds, nodesToDraw);
         }
         else {
-            std::vector<CanvasComponentContainer::ObjInfoSharedPtr> compsToDraw;
+            std::vector<CanvasComponentContainer::ObjInfo*> compsToDraw;
             for(auto& c : unsortedComponents) {
                 if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())))
                     compsToDraw.emplace_back(c);

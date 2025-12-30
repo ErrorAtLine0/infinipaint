@@ -1,6 +1,7 @@
 #pragma once
 #include "DrawingProgramLayerListItem.hpp"
 #include "DrawingProgramLayerManagerGUI.hpp"
+#include <unordered_set>
 
 class DrawingProgramLayerManager {
     private:
@@ -23,16 +24,17 @@ class DrawingProgramLayerManager {
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
         bool is_a_layer_being_edited();
-        void erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase);
+        void erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& compsToErase);
         uint32_t edited_layer_component_count();
-        bool component_passes_layer_selector(const CanvasComponentContainer::ObjInfoSharedPtr& c, LayerSelector layerSelector);
+        CanvasComponentContainer::ObjInfoIterator get_edited_layer_end_iterator();
+        bool component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector);
 
         bool layer_tree_root_exists();
         const DrawingProgramLayerListItem& get_layer_root();
 
-        CanvasComponentContainer::ObjInfoSharedPtr add_component_to_layer_being_edited(CanvasComponentContainer* newObj);
-        std::vector<CanvasComponentContainer::ObjInfoSharedPtr> add_many_components_to_layer_being_edited(const std::vector<std::pair<uint32_t, CanvasComponentContainer*>>& newObjs);
-        std::vector<CanvasComponentContainer::ObjInfoSharedPtr> get_flattened_component_list() const;
+        CanvasComponentContainer::ObjInfo* add_component_to_layer_being_edited(CanvasComponentContainer* newObj);
+        std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer_being_edited(const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs);
+        std::vector<CanvasComponentContainer::ObjInfo*> get_flattened_component_list() const;
         std::vector<DrawingProgramLayerListItem*> get_flattened_layer_list();
         DrawingProgramLayerManagerGUI listGUI;
 };

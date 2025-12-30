@@ -1,5 +1,6 @@
 #include "DrawingProgramLayerManager.hpp"
 #include "../../World.hpp"
+#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 
 DrawingProgramLayerManager::DrawingProgramLayerManager(DrawingProgram& drawProg):
     drawP(drawProg), // initialize drawP first for next objects to be initialized properly
@@ -32,13 +33,17 @@ uint32_t DrawingProgramLayerManager::edited_layer_component_count() {
     return editingLayer.lock()->get_layer().components->size();
 }
 
+CanvasComponentContainer::ObjInfoIterator DrawingProgramLayerManager::get_edited_layer_end_iterator() {
+    return editingLayer.lock()->get_layer().components->end();
+}
+
 void DrawingProgramLayerManager::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(layerTreeRoot)
         layerTreeRoot->draw(canvas, drawData);
 }
 
-std::vector<CanvasComponentContainer::ObjInfoSharedPtr> DrawingProgramLayerManager::get_flattened_component_list() const {
-    std::vector<CanvasComponentContainer::ObjInfoSharedPtr> toRet;
+std::vector<CanvasComponentContainer::ObjInfo*> DrawingProgramLayerManager::get_flattened_component_list() const {
+    std::vector<CanvasComponentContainer::ObjInfo*> toRet;
     layerTreeRoot->get_flattened_component_list(toRet);
     return toRet;
 }
@@ -57,17 +62,17 @@ const DrawingProgramLayerListItem& DrawingProgramLayerManager::get_layer_root() 
     return *layerTreeRoot;
 }
 
-void DrawingProgramLayerManager::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& compsToErase) {
-    std::unordered_map<DrawingProgramLayerListItem*, std::unordered_set<NetworkingObjects::NetObjID>> idsToEraseInSpecificLayers;
+void DrawingProgramLayerManager::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& compsToErase) {
+    std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>> idsToEraseInSpecificLayers;
     for(auto& c : compsToErase)
-        idsToEraseInSpecificLayers[c->obj->parentLayer].emplace(c->obj.get_net_id());
+        idsToEraseInSpecificLayers[c->obj->parentLayer].emplace_back(c->obj->objInfo);
     for(auto& [layerListItem, netObjSetToErase] : idsToEraseInSpecificLayers) {
         auto& layerComponentList = layerListItem->get_layer().components;
-        layerComponentList->erase_unordered_set(layerComponentList, netObjSetToErase);
+        layerComponentList->erase_list(layerComponentList, netObjSetToErase);
     }
 }
 
-bool DrawingProgramLayerManager::component_passes_layer_selector(const CanvasComponentContainer::ObjInfoSharedPtr& c, LayerSelector layerSelector) {
+bool DrawingProgramLayerManager::component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector) {
     switch(layerSelector) {
         case LayerSelector::ALL_VISIBLE_LAYERS:
             return c->obj->parentLayer->get_visible();
@@ -77,16 +82,16 @@ bool DrawingProgramLayerManager::component_passes_layer_selector(const CanvasCom
     return false;
 }
 
-std::vector<CanvasComponentContainer::ObjInfoSharedPtr> DrawingProgramLayerManager::add_many_components_to_layer_being_edited(const std::vector<std::pair<uint32_t, CanvasComponentContainer*>>& newObjs) {
+std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManager::add_many_components_to_layer_being_edited(const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs) {
     auto editLayerPtr = editingLayer.lock();
     if(!editLayerPtr)
         return {};
     return editLayerPtr->get_layer().components->insert_ordered_list_and_send_create(editLayerPtr->get_layer().components, newObjs);
 }
 
-CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramLayerManager::add_component_to_layer_being_edited(CanvasComponentContainer* newObj) {
+CanvasComponentContainer::ObjInfo* DrawingProgramLayerManager::add_component_to_layer_being_edited(CanvasComponentContainer* newObj) {
     auto editLayerPtr = editingLayer.lock();
     if(!editLayerPtr)
         return nullptr;
-    return editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj);
+    return &(*editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj));
 }

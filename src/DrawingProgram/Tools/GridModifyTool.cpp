@@ -33,7 +33,7 @@ DrawingProgramToolType GridModifyTool::get_type() {
     return DrawingProgramToolType::GRIDMODIFY;
 }
 
-void GridModifyTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+void GridModifyTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
 void GridModifyTool::gui_toolbox() {

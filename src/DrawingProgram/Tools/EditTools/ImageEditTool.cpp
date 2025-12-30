@@ -16,17 +16,17 @@ ImageEditTool::ImageEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-void ImageEditTool::edit_start(EditTool& editTool, const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void ImageEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
 }
 
-void ImageEditTool::commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void ImageEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
 }
 
-bool ImageEditTool::edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool ImageEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
     return true;
 }
 
-bool ImageEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool ImageEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     ImageCanvasComponent& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool image");

@@ -43,10 +43,11 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                     NetObjOrderedList<BookmarkListItem>& bookmarkParentFolder = *world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(parentId)->get_folder_list();
                     if(bookmarkParentFolder.size() <= index)
                         return std::nullopt;
+                    auto itemAtIndex = bookmarkParentFolder.at(index);
                     return GUIStuff::TreeListing::DisplayData::ObjInList{
-                        .id = bookmarkParentFolder.at(index)->obj.get_net_id(),
-                        .isDirectory = bookmarkParentFolder.at(index)->obj->is_folder(),
-                        .isDirectoryOpen = bookmarkParentFolder.at(index)->obj->is_folder() ? bookmarkParentFolder.at(index)->obj->is_folder_open() : false
+                        .id = itemAtIndex->obj.get_net_id(),
+                        .isDirectory = itemAtIndex->obj->is_folder(),
+                        .isDirectoryOpen = itemAtIndex->obj->is_folder() ? itemAtIndex->obj->is_folder_open() : false
                     };
                 },
                 .getIndexOfObjInList = [&](const GUIStuff::TreeListing::ParentObjectIDPair& idPair) {
@@ -92,28 +93,30 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                 },
                 .moveObjectsToListAtIndex = [&](NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
                     world.netObjMan.send_multi_update_messsage([&]() {
-                        std::unordered_map<NetObjID, std::unordered_set<NetObjID>> toEraseMap;
+                        std::unordered_map<NetObjID, std::vector<NetObjOrderedListIterator<BookmarkListItem>>> toEraseMap;
                         uint32_t newIndex = index;
                         std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
                         auto& listPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listObj)->get_folder_list();
 
                         for(size_t i = 0; i < objsToInsert.size(); i++) {
-                            toEraseMap[objsToInsert[i].parent].emplace(objsToInsert[i].object);
+                            auto& parentListPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(objsToInsert[i].parent)->get_folder_list();
+                            toEraseMap[objsToInsert[i].parent].emplace_back(parentListPtr->get(objsToInsert[i].object));
                             if(newIndex != 0 && objsToInsert[i].parent == listObj && listPtr->get(objsToInsert[i].object)->pos <= index)
                                 newIndex--;
                         }
 
                         for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
                             auto& listToEraseFromPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listToEraseFrom)->get_folder_list();
-                            listToEraseFromPtr->erase_unordered_set(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
+                            listToEraseFromPtr->erase_list(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
                         }
 
-                        std::vector<std::pair<uint32_t, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
+                        std::vector<std::pair<NetObjOrderedListIterator<BookmarkListItem>, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
+                        auto insertIt = listPtr->at(newIndex);
                         for(uint32_t i = 0; i < objsToInsert.size(); i++) {
                             auto it = std::find_if(toInsertObjPtrs.begin(), toInsertObjPtrs.end(), [id = objsToInsert[i].object](NetObjOwnerPtr<BookmarkListItem>& objPtr) {
                                 return objPtr.get_net_id() == id;
                             });
-                            toInsert.emplace_back(newIndex + i, std::move(*it));
+                            toInsert.emplace_back(insertIt, std::move(*it));
                             toInsert.back().second.reassign_ids();
                         }
                         listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
@@ -138,7 +141,7 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
 
             if(toDeleteObject.has_value()) {
                 auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toDeleteParent.value())->get_folder_list();
-                folderList->erase(folderList, toDeleteObject.value());
+                folderList->erase(folderList, folderList->get(toDeleteObject.value()));
             }
         }
 
@@ -169,30 +172,29 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
     }
 }
 
-NetworkingObjects::NetObjOrderedListObjectInfoPtr<BookmarkListItem> BookmarkManager::try_to_create_in_proper_position(BookmarkListItem* newItem) {
+std::optional<NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem>> BookmarkManager::try_to_create_in_proper_position(BookmarkListItem* newItem) {
     using namespace NetworkingObjects;
     if(selectionData.orderedObjsSelected.empty())
-        return nullptr;
+        return std::nullopt;
     auto& backObjParentObjectPair = selectionData.orderedObjsSelected.back();
     NetObjTemporaryPtr<BookmarkListItem> parentPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(backObjParentObjectPair.parent);
     if(!parentPtr)
-        return nullptr;
+        return std::nullopt;
     NetObjTemporaryPtr<BookmarkListItem> objectPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(backObjParentObjectPair.object);
     if(!objectPtr)
-        return nullptr;
+        return std::nullopt;
     if(objectPtr->is_folder()) {
         objectPtr->set_folder_open(true);
         return objectPtr->get_folder_list()->push_back_and_send_create(objectPtr->get_folder_list(), newItem);
     }
-    uint32_t insertPos = parentPtr->get_folder_list()->get(objectPtr.get_net_id())->pos;
-    return parentPtr->get_folder_list()->insert_and_send_create(parentPtr->get_folder_list(), insertPos + 1, newItem);
+    return parentPtr->get_folder_list()->insert_and_send_create(parentPtr->get_folder_list(), std::next(parentPtr->get_folder_list()->get(objectPtr.get_net_id())), newItem);
 }
 
-NetworkingObjects::NetObjOrderedListObjectInfoPtr<BookmarkListItem> BookmarkManager::create_in_proper_position(BookmarkListItem* newItem) {
+NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::create_in_proper_position(BookmarkListItem* newItem) {
     auto toRet = try_to_create_in_proper_position(newItem);
     if(!toRet)
         return bookmarkListRoot->get_folder_list()->push_back_and_send_create(bookmarkListRoot->get_folder_list(), newItem);
-    return toRet;
+    return toRet.value();
 }
 
 void BookmarkManager::scale_up(const WorldScalar& scaleUpAmount) {

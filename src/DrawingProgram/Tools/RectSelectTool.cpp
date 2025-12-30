@@ -28,7 +28,7 @@ void RectSelectTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void RectSelectTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+void RectSelectTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
 bool RectSelectTool::right_click_popup_gui(Vector2f popupPos) {

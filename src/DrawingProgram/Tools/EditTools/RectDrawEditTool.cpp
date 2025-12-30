@@ -9,7 +9,7 @@ RectDrawEditTool::RectDrawEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-bool RectDrawEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool RectDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool rectangle");
@@ -40,16 +40,16 @@ bool RectDrawEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr
     return editHappened;
 }
 
-void RectDrawEditTool::edit_start(EditTool& editTool, const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void RectDrawEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     prevData = a.d;
     editTool.add_point_handle({&a.d.p1, nullptr, &a.d.p2});
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 }
 
-void RectDrawEditTool::commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void RectDrawEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
 }
 
-bool RectDrawEditTool::edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool RectDrawEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
     return true;
 }

@@ -46,7 +46,7 @@ void DrawingProgramLayerListItem::commit_update_dont_invalidate_cache(DrawingPro
         layerData->commit_update_dont_invalidate_cache(layerMan);
 }
 
-void DrawingProgramLayerListItem::get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfoSharedPtr>& objList) const {
+void DrawingProgramLayerListItem::get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const {
     if(folderData)
         folderData->get_flattened_component_list(objList);
     else
@@ -55,8 +55,8 @@ void DrawingProgramLayerListItem::get_flattened_component_list(std::vector<Canva
 
 void DrawingProgramLayerListItem::get_flattened_layer_list(std::vector<DrawingProgramLayerListItem*>& objList) {
     if(folderData) {
-        for(auto& c : folderData->folderList->get_data())
-            c->obj->get_flattened_layer_list(objList);
+        for(auto& c : *folderData->folderList)
+            c.obj->get_flattened_layer_list(objList);
     }
     else
         objList.emplace_back(this);
@@ -65,8 +65,8 @@ void DrawingProgramLayerListItem::get_flattened_layer_list(std::vector<DrawingPr
 uint32_t DrawingProgramLayerListItem::get_component_count() const {
     if(folderData) {
         uint32_t toRet = 0;
-        for(auto& c : folderData->folderList->get_data())
-            toRet += c->obj->get_component_count();
+        for(auto& c : *folderData->folderList)
+            toRet += c.obj->get_component_count();
         return toRet;
     }
     else

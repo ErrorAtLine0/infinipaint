@@ -10,19 +10,19 @@ class DrawingProgramSelection {
         DrawingProgramSelection(DrawingProgram& initDrawP);
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
-        void erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        void erase_component(CanvasComponentContainer::ObjInfo* objToCheck);
         bool is_something_selected();
-        bool is_selected(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        bool is_selected(CanvasComponentContainer::ObjInfo* objToCheck);
         void draw_components(SkCanvas* canvas, const DrawData& drawData);
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
         bool is_being_transformed();
         void update();
         void deselect_all();
         void paste_clipboard(Vector2f pasteScreenPos);
-        const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& get_selected_set();
+        const std::unordered_set<CanvasComponentContainer::ObjInfo*>& get_selected_set();
         void delete_all();
         void selection_to_clipboard();
-        CanvasComponentContainer::ObjInfoSharedPtr get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
+        CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
     private:
         void draw_components_recursive(const DrawingProgramLayerListItem& layerItem, SkCanvas* canvas, const DrawData& drawData);
         bool mouse_collided_with_selection_aabb();
@@ -34,16 +34,16 @@ class DrawingProgramSelection {
         void rebuild_cam_space();
         Vector2f get_rotation_point_pos_from_angle(double angle);
 
-        void set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection);
-        void add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection);
+        void set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& newSelection);
+        void add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& newSelection);
         void calculate_aabb();
         void reset_all();
-        std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector);
+        std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector);
 
         SCollision::ColliderCollection<float> camSpaceSelection;
         std::array<WorldVec, 4> selectionRectPoints;
         CoordSpaceHelperTransform selectionTransformCoords;
-        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> selectedSet;
+        std::unordered_set<CanvasComponentContainer::ObjInfo*> selectedSet;
         SCollision::AABB<WorldScalar> initialSelectionAABB;
         DrawingProgram& drawP;
 

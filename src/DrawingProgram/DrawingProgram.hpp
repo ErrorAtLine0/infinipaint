@@ -50,8 +50,8 @@ class DrawingProgram {
         void switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool);
         void modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify);
 
-        void invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
-        void preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck);
+        void invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck);
+        void preupdate_component(CanvasComponentContainer::ObjInfo* objToCheck);
     private:
         void drag_drop_update();
         void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
@@ -76,7 +76,7 @@ class DrawingProgram {
         DrawingProgramSelection selection;
 
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
-        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> updateableComponents;
+        std::unordered_set<CanvasComponentContainer::ObjInfo*> updateableComponents;
 
         bool temporaryEraser = false;
         bool temporaryPan = false;
@@ -103,7 +103,7 @@ class DrawingProgram {
         } controls;
 
         struct DroppedDownloadingFile {
-            CanvasComponentContainer::ObjInfoSharedPtr comp;
+            CanvasComponentContainer::ObjInfo* comp;
             Vector2f windowSizeWhenDropped;
             std::shared_ptr<FileDownloader::DownloadData> downData;
         };

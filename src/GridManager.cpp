@@ -23,7 +23,7 @@ void GridManager::add_default_grid(const std::string& newName) {
 
 void GridManager::remove_grid(uint32_t indexToRemove) {
     if(grids)
-        grids->erase(grids, indexToRemove);
+        grids->erase(grids, grids->at(indexToRemove));
 }
 
 void GridManager::draw_back(SkCanvas* canvas, const DrawData& drawData) {

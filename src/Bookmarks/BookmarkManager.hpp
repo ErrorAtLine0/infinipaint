@@ -23,8 +23,8 @@ class BookmarkManager {
 
         NetworkingObjects::NetObjOwnerPtr<BookmarkListItem> bookmarkListRoot;
     private:
-        NetworkingObjects::NetObjOrderedListObjectInfoPtr<BookmarkListItem> create_in_proper_position(BookmarkListItem* newItem);
-        NetworkingObjects::NetObjOrderedListObjectInfoPtr<BookmarkListItem> try_to_create_in_proper_position(BookmarkListItem* newItem);
+        NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> create_in_proper_position(BookmarkListItem* newItem);
+        std::optional<NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem>> try_to_create_in_proper_position(BookmarkListItem* newItem);
         GUIStuff::TreeListing::SelectionData selectionData;
         std::unordered_set<NetworkingObjects::NetObjID> oldSelection;
         std::string nameToEdit;

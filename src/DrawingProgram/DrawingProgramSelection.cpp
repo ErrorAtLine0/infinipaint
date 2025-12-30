@@ -23,9 +23,9 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
 {}
 
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
-    std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> selectedComponents;
+    std::unordered_set<CanvasComponentContainer::ObjInfo*> selectedComponents;
     if(frontObjectOnly) {
-        CanvasComponentContainer::ObjInfoSharedPtr a = drawP.drawCache.get_front_object_colliding_with_in_editing_layer(cC);
+        CanvasComponentContainer::ObjInfo* a = drawP.drawCache.get_front_object_colliding_with_in_editing_layer(cC);
         if(a) {
             selectedComponents.emplace(a);
             drawP.drawCache.erase_component(a);
@@ -40,7 +40,7 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
 
 void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
     if(frontObjectOnly) {
-        CanvasComponentContainer::ObjInfoSharedPtr p = get_front_object_colliding_with_in_editing_layer(cC);
+        CanvasComponentContainer::ObjInfo* p = get_front_object_colliding_with_in_editing_layer(cC);
         if(p) {
             drawP.drawCache.add_component(p);
             selectedSet.erase(p);
@@ -60,7 +60,7 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
     calculate_aabb();
 }
 
-std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector) {
+std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector) {
     auto toRet = [&](const auto& bvhNode) {
         if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
@@ -69,7 +69,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left()))) {
             drawP.drawCache.invalidate_cache_at_aabb(bvhNode->bounds);
             drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
-                drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto& c) {
+                drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto c) {
                     if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
                         selectedComponents.emplace(c);
                         return true;
@@ -80,7 +80,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
             });
             return false;
         }
-        drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto& c) {
+        drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
             if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                 selectedComponents.emplace(c);
                 drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
@@ -94,12 +94,12 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
     return toRet;
 }
 
-void DrawingProgramSelection::add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection) {
+void DrawingProgramSelection::add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& newSelection) {
     selectedSet.insert(newSelection.begin(), newSelection.end());
     calculate_aabb();
 }
 
-void DrawingProgramSelection::set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& newSelection) {
+void DrawingProgramSelection::set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& newSelection) {
     selectedSet = newSelection;
     calculate_aabb();
 }
@@ -117,7 +117,7 @@ bool DrawingProgramSelection::is_something_selected() {
     return !selectedSet.empty();
 }
 
-bool DrawingProgramSelection::is_selected(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
+bool DrawingProgramSelection::is_selected(CanvasComponentContainer::ObjInfo* objToCheck) {
     return selectedSet.contains(objToCheck);
 }
 
@@ -149,15 +149,15 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 void DrawingProgramSelection::commit_transform_selection() {
     auto selectedSetTemp = selectedSet;
 
-    std::vector<CanvasComponentContainer::ObjInfoSharedPtr> a(selectedSet.begin(), selectedSet.end());
-    std::vector<std::pair<CanvasComponentContainer::ObjInfoSharedPtr, CoordSpaceHelper>> transformsFrom;
+    std::vector<CanvasComponentContainer::ObjInfo*> a(selectedSet.begin(), selectedSet.end());
+    std::vector<std::pair<CanvasComponentContainer::ObjInfo*, CoordSpaceHelper>> transformsFrom;
     for(auto& transformedObj : a)
         transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
     for(auto& comp : a) {
         comp->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(comp->obj->coords);
         comp->obj->commit_transform(drawP);
     }
-    std::vector<std::pair<CanvasComponentContainer::ObjInfoSharedPtr, CoordSpaceHelper>> transformsTo;
+    std::vector<std::pair<CanvasComponentContainer::ObjInfo*, CoordSpaceHelper>> transformsTo;
     std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transformsToSend;
     for(auto& transformedObj : a) {
         transformsToSend.emplace_back(transformedObj->obj.get_net_id(), transformedObj->obj->coords);
@@ -296,7 +296,7 @@ void DrawingProgramSelection::delete_all() {
     }
 }
 
-void DrawingProgramSelection::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
+void DrawingProgramSelection::erase_component(CanvasComponentContainer::ObjInfo* objToCheck) {
     if(is_selected(objToCheck)) {
         selectedSet.erase(objToCheck);
         if(selectedSet.empty())
@@ -304,9 +304,9 @@ void DrawingProgramSelection::erase_component(const CanvasComponentContainer::Ob
     }
 }
 
-CanvasComponentContainer::ObjInfoSharedPtr DrawingProgramSelection::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
+CanvasComponentContainer::ObjInfo* DrawingProgramSelection::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
     auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
-    CanvasComponentContainer::ObjInfoSharedPtr p;
+    CanvasComponentContainer::ObjInfo* p = nullptr;
     for(auto& c : selectedSet) {
         if(drawP.layerMan.component_passes_layer_selector(c, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED) && (!p || c->pos >= p->pos) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC))
             p = c;
@@ -319,7 +319,7 @@ void DrawingProgramSelection::selection_to_clipboard() {
     std::unordered_set<NetworkingObjects::NetObjID> resourceSet;
     for(auto& c : selectedSet)
         c->obj->get_comp().get_used_resources(resourceSet);
-    std::vector<CanvasComponentContainer::ObjInfoSharedPtr> compVecSort(selectedSet.begin(), selectedSet.end());
+    std::vector<CanvasComponentContainer::ObjInfo*> compVecSort(selectedSet.begin(), selectedSet.end());
     std::vector<DrawingProgramLayerListItem*> flattenedLayerList = drawP.layerMan.get_flattened_layer_list();
     std::unordered_map<DrawingProgramLayerListItem*, size_t> flattenedLayerListOrder;
     for(size_t i = 0; i < flattenedLayerList.size(); i++)
@@ -342,7 +342,7 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
         if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
             drawP.switch_to_tool(DrawingProgramToolType::EDIT);
 
-        std::vector<std::pair<uint32_t, CanvasComponentContainer*>> placedComponents;
+        std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>> placedComponents;
         WorldVec mousePos = drawP.world.drawData.cam.c.from_space(pasteScreenPos);
         WorldVec moveVec = drawP.world.main.clipboard.pos - mousePos;
         WorldMultiplier scaleMultiplier = WorldMultiplier(drawP.world.main.clipboard.inverseScale) / WorldMultiplier(drawP.world.drawData.cam.c.inverseScale);
@@ -362,10 +362,12 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
             newComponentContainer->get_comp().remap_resource_ids(resourceRemapIDs);
             newComponentContainer->coords.translate(-moveVec);
             newComponentContainer->coords.scale_about(mousePos, scaleMultiplier);
-            placedComponents.emplace_back(drawP.layerMan.edited_layer_component_count() + placedComponents.size(), newComponentContainer);
+            placedComponents.emplace_back(drawP.layerMan.get_edited_layer_end_iterator(), newComponentContainer);
         }
-        auto newlyInsertedObjects = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);
-        std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr> compSetInserted(newlyInsertedObjects.begin(), newlyInsertedObjects.end());
+        auto newlyInsertedObjectIts = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);
+        std::unordered_set<CanvasComponentContainer::ObjInfo*> compSetInserted;
+        for(auto& it : newlyInsertedObjectIts)
+            compSetInserted.emplace(&(*it));
         set_to_selection(compSetInserted);
         //drawP.add_undo_place_components(compSetInserted);
     }
@@ -375,7 +377,7 @@ bool DrawingProgramSelection::is_being_transformed() {
     return transformOpHappening != TransformOperation::NONE;
 }
 
-const std::unordered_set<CanvasComponentContainer::ObjInfoSharedPtr>& DrawingProgramSelection::get_selected_set() {
+const std::unordered_set<CanvasComponentContainer::ObjInfo*>& DrawingProgramSelection::get_selected_set() {
     return selectedSet;
 }
 
@@ -459,8 +461,8 @@ void DrawingProgramSelection::draw_components_recursive(const DrawingProgramLaye
         //layerPaint.setBlendMode(serialized_blend_mode_to_sk_blend_mode(displayData->blendMode)); // For selection, everything should just be in default blend mode (SrcOver)
         canvas->saveLayer(nullptr, &layerPaint);
         if(layerItem.is_folder()) {
-            for(auto& p : layerItem.get_folder().folderList->get_data() | std::views::reverse)
-                draw_components_recursive(*p->obj, canvas, drawData);
+            for(auto& p : *layerItem.get_folder().folderList | std::views::reverse)
+                draw_components_recursive(*p.obj, canvas, drawData);
         }
         else {
             for(auto& c : selectedSet) { // Loop on selected set and not layer component list, since i'm assuming selected set will be small

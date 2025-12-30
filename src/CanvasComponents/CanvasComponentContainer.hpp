@@ -16,8 +16,7 @@ class CanvasComponentContainer {
         typedef NetworkingObjects::NetObjOrderedList<CanvasComponentContainer> NetList;
         typedef NetworkingObjects::NetObjOwnerPtr<NetList> NetListOwnerPtr;
         typedef NetworkingObjects::NetObjOrderedListObjectInfo<CanvasComponentContainer> ObjInfo;
-        typedef std::shared_ptr<ObjInfo> ObjInfoSharedPtr;
-        typedef std::weak_ptr<ObjInfo> ObjInfoWeakPtr;
+        typedef NetworkingObjects::NetObjOrderedListIterator<CanvasComponentContainer> ObjInfoIterator;
 
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS = 14;
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_SCALING = 14;
@@ -50,12 +49,12 @@ class CanvasComponentContainer {
         bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) const;
         bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
         bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
-        void set_owner_obj_info(const ObjInfoSharedPtr& ownerObjInfo);
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
 
         std::weak_ptr<DrawingProgramCacheBVHNode> cacheParentBvhNode;
         DrawingProgramLayerListItem* parentLayer = nullptr;
         CoordSpaceHelper coords;
+        ObjInfoIterator objInfo;
     private:
         friend class BrushStrokeCanvasComponent;
         friend class ImageCanvasComponent;
@@ -75,7 +74,6 @@ class CanvasComponentContainer {
         TransformDrawData calculate_draw_transform(const DrawData& drawData) const;
         void calculate_world_bounds();
 
-        ObjInfoWeakPtr objInfo;
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentAllocator> compAllocator;
 };

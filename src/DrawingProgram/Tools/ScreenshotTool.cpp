@@ -116,7 +116,7 @@ bool ScreenshotTool::right_click_popup_gui(Vector2f popupPos) {
     return true;
 }
 
-void ScreenshotTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+void ScreenshotTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
 void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {

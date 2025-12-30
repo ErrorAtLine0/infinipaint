@@ -31,7 +31,7 @@ bool EraserTool::right_click_popup_gui(Vector2f popupPos) {
     return true;
 }
 
-void EraserTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
+void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     erasedComponents.erase(erasedComp);
 }
 
@@ -57,7 +57,7 @@ void EraserTool::tool_update() {
                SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left()))) {
                 drawP.drawCache.invalidate_cache_at_aabb(bvhNode->bounds);
                 drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
-                    drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto& c) {
+                    drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto c) {
                         if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
                             erasedComponents.emplace(c);
                             return true;
@@ -68,7 +68,7 @@ void EraserTool::tool_update() {
                 });
                 return false;
             }
-            drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto& c) {
+            drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
                 if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                     erasedComponents.emplace(c);
                     drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());

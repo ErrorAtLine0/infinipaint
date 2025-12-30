@@ -26,11 +26,9 @@ void BrushTool::switch_tool(DrawingProgramToolType newTool) {
     commit_stroke();
 }
 
-void BrushTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
-    if(objInfoBeingEdited == erasedComp) {
-        isDrawing = false;
+void BrushTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
+    if(objInfoBeingEdited == erasedComp)
         objInfoBeingEdited = nullptr;
-    }
 }
 
 bool BrushTool::extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
@@ -59,7 +57,7 @@ void BrushTool::tool_update() {
     if(drawP.controls.cursorHoveringOverCanvas)
         drawP.world.main.input.hideCursor = true;
 
-    if(!isDrawing)
+    if(!objInfoBeingEdited)
         penSmoothingData.clear();
 
     if(drawP.world.main.input.pen.isDown && drawP.controls.leftClickHeld && drawP.world.main.toolbar.tabletOptions.pressureAffectsBrushWidth) {
@@ -89,9 +87,8 @@ void BrushTool::tool_update() {
         isPenDown = true;
 
     if(isPenDown) {
-        if(!isDrawing) {
+        if(!objInfoBeingEdited) {
             if(drawP.layerMan.is_a_layer_being_edited()) {
-                isDrawing = true;
                 CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
                 BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
 
@@ -148,10 +145,8 @@ void BrushTool::tool_update() {
             containerPtr->commit_update(drawP);
         }
     }
-    else if(isDrawing) {
-        isDrawing = false;
+    else if(objInfoBeingEdited)
         commit_stroke();
-    }
 }
 
 void BrushTool::commit_stroke() {
@@ -179,7 +174,7 @@ bool BrushTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 bool BrushTool::prevent_undo_or_redo() {
-    return isDrawing;
+    return objInfoBeingEdited;
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
@@ -189,7 +184,7 @@ void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         linePaint.setStroke(true);
         linePaint.setStrokeWidth(0.0f);
         float width;
-        if(isDrawing)
+        if(objInfoBeingEdited)
             width = drawP.controls.relativeWidth * penWidth * 0.5f;
         else
             width = drawP.controls.relativeWidth * 0.5f;

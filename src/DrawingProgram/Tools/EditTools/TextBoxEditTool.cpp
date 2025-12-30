@@ -20,7 +20,7 @@ TextBoxEditTool::TextBoxEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-bool TextBoxEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
 
@@ -152,7 +152,7 @@ bool TextBoxEditTool::edit_gui(const CanvasComponentContainer::ObjInfoSharedPtr&
     return oldInputChangedTextBox;
 }
 
-bool TextBoxEditTool::right_click_popup_gui(const CanvasComponentContainer::ObjInfoSharedPtr& comp, Vector2f popupPos) {
+bool TextBoxEditTool::right_click_popup_gui(CanvasComponentContainer::ObjInfo* comp, Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     bool shouldClose = false;
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
@@ -250,7 +250,7 @@ void TextBoxEditTool::set_styles_at_selection(TextBoxCanvasComponent& a) {
     currentPStyle = a.textBox->get_paragraph_style_data_at(start.fParagraphIndex);
 }
 
-void TextBoxEditTool::commit_edit_updates(const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void TextBoxEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     a.d.editing = false;
     comp->obj->commit_update(drawP);
@@ -263,7 +263,7 @@ TextBoxEditTool::TextBoxEditToolAllData TextBoxEditTool::get_all_data(const Text
     };
 }
 
-void TextBoxEditTool::edit_start(EditTool& editTool, const CanvasComponentContainer::ObjInfoSharedPtr& comp, std::any& prevData) {
+void TextBoxEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     auto& cur = a.cursor;
     auto& textbox = a.textBox;
@@ -280,7 +280,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, const CanvasComponentContai
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 }
 
-bool TextBoxEditTool::edit_update(const CanvasComponentContainer::ObjInfoSharedPtr& comp) {
+bool TextBoxEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
 
     SCollision::ColliderCollection<float> mousePointCollection;

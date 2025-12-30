@@ -29,11 +29,9 @@ void EllipseDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void EllipseDrawTool::erase_component(const CanvasComponentContainer::ObjInfoSharedPtr& erasedComp) {
-    if(objInfoBeingEdited == erasedComp) {
+void EllipseDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
+    if(objInfoBeingEdited == erasedComp)
         objInfoBeingEdited = nullptr;
-        drawStage = 0;
-    }
 }
 
 bool EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
@@ -47,53 +45,46 @@ void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void EllipseDrawTool::tool_update() {
-    switch(drawStage) {
-        case 0: {
-            if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
-                CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
-                EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());
+    if(objInfoBeingEdited) {
+        if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
+            CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
+            EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());
 
-                startAt = drawP.world.main.input.mouse.pos;
-                newEllipse.d.strokeColor = drawP.controls.foregroundColor;
-                newEllipse.d.fillColor = drawP.controls.backgroundColor;
-                newEllipse.d.strokeWidth = drawP.controls.relativeWidth;
-                newEllipse.d.p1 = startAt;
-                newEllipse.d.p2 = startAt;
-                newEllipse.d.p2 = ensure_points_have_distance(newEllipse.d.p1, newEllipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                newEllipse.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
-                newContainer->coords = drawP.world.drawData.cam.c;
+            startAt = drawP.world.main.input.mouse.pos;
+            newEllipse.d.strokeColor = drawP.controls.foregroundColor;
+            newEllipse.d.fillColor = drawP.controls.backgroundColor;
+            newEllipse.d.strokeWidth = drawP.controls.relativeWidth;
+            newEllipse.d.p1 = startAt;
+            newEllipse.d.p2 = startAt;
+            newEllipse.d.p2 = ensure_points_have_distance(newEllipse.d.p1, newEllipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+            newEllipse.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
+            newContainer->coords = drawP.world.drawData.cam.c;
 
-                objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
-                drawStage = 1;
-            }
-            break;
+            objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
         }
-        case 1: {
-            if(drawP.controls.leftClickHeld) {
-                NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-                Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
-                if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
-                    float height = std::fabs(startAt.y() - newPos.y());
-                    newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
-                }
-                EllipseCanvasComponent& ellipse = static_cast<EllipseCanvasComponent&>(containerPtr->get_comp());
-                ellipse.d.p1 = cwise_vec_min(startAt, newPos);
-                ellipse.d.p2 = cwise_vec_max(startAt, newPos);
-                ellipse.d.p2 = ensure_points_have_distance(ellipse.d.p1, ellipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-                containerPtr->send_comp_update(drawP, false);
-                containerPtr->commit_update(drawP);
+    }
+    else {
+        if(drawP.controls.leftClickHeld) {
+            NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+            Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+            if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
+                float height = std::fabs(startAt.y() - newPos.y());
+                newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
             }
-            else {
-                commit();
-                drawStage = 0;
-            }
-            break;
+            EllipseCanvasComponent& ellipse = static_cast<EllipseCanvasComponent&>(containerPtr->get_comp());
+            ellipse.d.p1 = cwise_vec_min(startAt, newPos);
+            ellipse.d.p2 = cwise_vec_max(startAt, newPos);
+            ellipse.d.p2 = ensure_points_have_distance(ellipse.d.p1, ellipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+            containerPtr->send_comp_update(drawP, false);
+            containerPtr->commit_update(drawP);
         }
+        else
+            commit();
     }
 }
 
 bool EllipseDrawTool::prevent_undo_or_redo() {
-    return (drawStage == 1);
+    return objInfoBeingEdited;
 }
 
 void EllipseDrawTool::commit() {

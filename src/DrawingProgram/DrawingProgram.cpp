@@ -288,12 +288,12 @@ void DrawingProgram::update() {
         rebuild_cache();
 }
 
-void DrawingProgram::invalidate_cache_at_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
+void DrawingProgram::invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck) {
     if(!selection.is_selected(objToCheck))
         drawCache.invalidate_cache_at_aabb(objToCheck->obj->get_world_bounds());
 }
 
-void DrawingProgram::preupdate_component(const CanvasComponentContainer::ObjInfoSharedPtr& objToCheck) {
+void DrawingProgram::preupdate_component(CanvasComponentContainer::ObjInfo* objToCheck) {
     if(!selection.is_selected(objToCheck))
         drawCache.preupdate_component(objToCheck);
 }
@@ -395,7 +395,7 @@ void DrawingProgram::update_downloading_dropped_files() {
                 if(display->get_type() == ResourceDisplay::Type::FILE) {
                     Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
                     auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
-                    parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj.get_net_id());
+                    parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo);
                 }
                 else {
                     Vector2f imTrueDim = display->get_dimensions();
@@ -414,7 +414,7 @@ void DrawingProgram::update_downloading_dropped_files() {
             case FileDownloader::DownloadData::Status::FAILURE: {
                 Logger::get().log("WORLDFATAL", "Failed to download data from URL");
                 auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
-                parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj.get_net_id());
+                parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo);
                 return true;
             }
             case FileDownloader::DownloadData::Status::IN_PROGRESS:
