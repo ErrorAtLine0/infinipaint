@@ -45,7 +45,7 @@ void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void EllipseDrawTool::tool_update() {
-    if(objInfoBeingEdited) {
+    if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
             EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());

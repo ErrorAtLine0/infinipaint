@@ -22,5 +22,5 @@ class EllipseDrawTool : public DrawingProgramToolBase {
 
         Vector2f startAt;
         int fillStrokeMode = 1;
-        CanvasComponentContainer::ObjInfo* objInfoBeingEdited;
+        CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

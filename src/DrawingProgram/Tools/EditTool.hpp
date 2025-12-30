@@ -31,7 +31,7 @@ class EditTool : public DrawingProgramToolBase {
 
         std::unique_ptr<DrawingProgramEditToolBase> compEditTool;
         std::vector<HandleData> pointHandles;
-        CanvasComponentContainer::ObjInfo* objInfoBeingEdited;
+        CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
         HandleData* pointDragging = nullptr;
         std::any prevData;
 };

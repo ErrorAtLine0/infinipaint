@@ -43,7 +43,7 @@ void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void RectDrawTool::tool_update() {
-    if(objInfoBeingEdited) {
+    if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::RECTANGLE);
             RectangleCanvasComponent& newRectangle = static_cast<RectangleCanvasComponent&>(newContainer->get_comp());

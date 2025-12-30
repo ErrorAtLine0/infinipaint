@@ -42,7 +42,7 @@ void TextBoxTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void TextBoxTool::tool_update() {
-    if(objInfoBeingEdited) {
+    if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             startAt = drawP.world.main.input.mouse.pos;
             endAt = startAt;
