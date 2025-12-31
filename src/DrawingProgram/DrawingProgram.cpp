@@ -348,9 +348,8 @@ void DrawingProgram::rebuild_cache() {
         EraserTool* eraserTool = static_cast<EraserTool*>(drawTool.get());
         drawCache.build(eraserTool->erasedComponents);
     }
-    else if(is_selection_allowing_tool(drawTool->get_type())) {
-        drawCache.build(selection.get_selected_set());
-    }
+    else if(is_selection_allowing_tool(drawTool->get_type()))
+        drawCache.build(selection.get_selection_as_set());
     else
         drawCache.build({});
 }

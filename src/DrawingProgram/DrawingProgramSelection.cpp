@@ -23,11 +23,11 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
 {}
 
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
-    std::unordered_set<CanvasComponentContainer::ObjInfo*> selectedComponents;
+    std::vector<CanvasComponentContainer::ObjInfo*> selectedComponents;
     if(frontObjectOnly) {
         CanvasComponentContainer::ObjInfo* a = drawP.drawCache.get_front_object_colliding_with_in_editing_layer(cC);
         if(a) {
-            selectedComponents.emplace(a);
+            selectedComponents.emplace_back(a);
             drawP.drawCache.erase_component(a);
         }
     }
@@ -43,7 +43,7 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
         CanvasComponentContainer::ObjInfo* p = get_front_object_colliding_with_in_editing_layer(cC);
         if(p) {
             drawP.drawCache.add_component(p);
-            selectedSet.erase(p);
+            std::erase(selectedSet, p);
         }
     }
     else {
@@ -60,7 +60,7 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
     calculate_aabb();
 }
 
-std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::unordered_set<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector) {
+std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::vector<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector) {
     auto toRet = [&](const auto& bvhNode) {
         if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
            SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
@@ -71,7 +71,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
             drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
                 drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto c) {
                     if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
-                        selectedComponents.emplace(c);
+                        selectedComponents.emplace_back(c);
                         return true;
                     }
                     return false;
@@ -82,7 +82,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
         }
         drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
             if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
-                selectedComponents.emplace(c);
+                selectedComponents.emplace_back(c);
                 drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
                 return true;
             }
@@ -94,14 +94,26 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
     return toRet;
 }
 
-void DrawingProgramSelection::add_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& newSelection) {
-    selectedSet.insert(newSelection.begin(), newSelection.end());
+void DrawingProgramSelection::add_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection) {
+    selectedSet.insert(selectedSet.end(), newSelection.begin(), newSelection.end());
+    sort_selection();
     calculate_aabb();
 }
 
-void DrawingProgramSelection::set_to_selection(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& newSelection) {
+void DrawingProgramSelection::set_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection) {
     selectedSet = newSelection;
+    sort_selection();
     calculate_aabb();
+}
+
+void DrawingProgramSelection::sort_selection() {
+    std::vector<DrawingProgramLayerListItem*> flattenedLayerList = drawP.layerMan.get_flattened_layer_list();
+    std::unordered_map<DrawingProgramLayerListItem*, size_t> flattenedLayerListOrder;
+    for(size_t i = 0; i < flattenedLayerList.size(); i++)
+        flattenedLayerListOrder[flattenedLayerList[i]] = i;
+    std::sort(selectedSet.begin(), selectedSet.end(), [&](auto& a, auto& b) {
+        return (flattenedLayerListOrder[a->obj->parentLayer] < flattenedLayerListOrder[b->obj->parentLayer]) || (a->obj->parentLayer == b->obj->parentLayer && a->pos < b->pos);
+    });
 }
 
 void DrawingProgramSelection::calculate_aabb() {
@@ -118,7 +130,7 @@ bool DrawingProgramSelection::is_something_selected() {
 }
 
 bool DrawingProgramSelection::is_selected(CanvasComponentContainer::ObjInfo* objToCheck) {
-    return selectedSet.contains(objToCheck);
+    return std::find(selectedSet.begin(), selectedSet.end(), objToCheck) != selectedSet.end();
 }
 
 void DrawingProgramSelection::reset_all() {
@@ -292,13 +304,13 @@ void DrawingProgramSelection::delete_all() {
     if(is_something_selected()) {
         auto selectedSetTemp = selectedSet;
         reset_all(); // Clear set before erasing, since calling erase_component_set will run a check to see if each object is selected and erase them one by one, which is slower
-        drawP.layerMan.erase_component_set(selectedSetTemp);
+        drawP.layerMan.erase_component_container(selectedSetTemp);
     }
 }
 
 void DrawingProgramSelection::erase_component(CanvasComponentContainer::ObjInfo* objToCheck) {
     if(is_selected(objToCheck)) {
-        selectedSet.erase(objToCheck);
+        std::erase(selectedSet, objToCheck);
         if(selectedSet.empty())
             reset_all();
     }
@@ -319,16 +331,8 @@ void DrawingProgramSelection::selection_to_clipboard() {
     std::unordered_set<NetworkingObjects::NetObjID> resourceSet;
     for(auto& c : selectedSet)
         c->obj->get_comp().get_used_resources(resourceSet);
-    std::vector<CanvasComponentContainer::ObjInfo*> compVecSort(selectedSet.begin(), selectedSet.end());
-    std::vector<DrawingProgramLayerListItem*> flattenedLayerList = drawP.layerMan.get_flattened_layer_list();
-    std::unordered_map<DrawingProgramLayerListItem*, size_t> flattenedLayerListOrder;
-    for(size_t i = 0; i < flattenedLayerList.size(); i++)
-        flattenedLayerListOrder[flattenedLayerList[i]] = i;
-    std::sort(compVecSort.begin(), compVecSort.end(), [&](auto& a, auto& b) {
-        return (flattenedLayerListOrder[a->obj->parentLayer] < flattenedLayerListOrder[b->obj->parentLayer]) || (a->obj->parentLayer == b->obj->parentLayer && a->pos < b->pos);
-    });
     clipboard.components.clear();
-    for(auto& c : compVecSort)
+    for(auto& c : selectedSet)
         clipboard.components.emplace_back(c->obj->get_data_copy());
     clipboard.pos = initialSelectionAABB.center();
     clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
@@ -365,9 +369,11 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
             placedComponents.emplace_back(drawP.layerMan.get_edited_layer_end_iterator(), newComponentContainer);
         }
         auto newlyInsertedObjectIts = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);
-        std::unordered_set<CanvasComponentContainer::ObjInfo*> compSetInserted;
-        for(auto& it : newlyInsertedObjectIts)
-            compSetInserted.emplace(&(*it));
+        std::vector<CanvasComponentContainer::ObjInfo*> compSetInserted;
+        for(auto& it : newlyInsertedObjectIts) {
+            drawP.drawCache.erase_component(&(*it));
+            compSetInserted.emplace_back(&(*it));
+        }
         set_to_selection(compSetInserted);
         //drawP.add_undo_place_components(compSetInserted);
     }
@@ -377,8 +383,8 @@ bool DrawingProgramSelection::is_being_transformed() {
     return transformOpHappening != TransformOperation::NONE;
 }
 
-const std::unordered_set<CanvasComponentContainer::ObjInfo*>& DrawingProgramSelection::get_selected_set() {
-    return selectedSet;
+std::unordered_set<CanvasComponentContainer::ObjInfo*> DrawingProgramSelection::get_selection_as_set() {
+    return std::unordered_set<CanvasComponentContainer::ObjInfo*>(selectedSet.begin(), selectedSet.end());
 }
 
 void DrawingProgramSelection::rebuild_cam_space() {
@@ -422,7 +428,8 @@ void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& 
         if(!surface)
             throw std::runtime_error("[DrawingProgramSelection::draw_components] Could not make temporary surface");
 
-        draw_components_recursive(drawP.layerMan.get_layer_root(), surface->getCanvas(), selectionDrawData);
+        for(auto& c : selectedSet)
+            c->obj->draw(canvas, selectionDrawData);
 
         SkPaint glowBlurP;
         glowBlurP.setImageFilter(SkImageFilters::Blur(5, 5, nullptr));
@@ -451,25 +458,5 @@ void DrawingProgramSelection::draw_gui(SkCanvas* canvas, const DrawData& drawDat
             if(transformOpHappening == TransformOperation::NONE || transformOpHappening == TransformOperation::SCALE)
                 drawP.draw_drag_circle(canvas, scaleData.handlePoint, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
         }
-    }
-}
-
-void DrawingProgramSelection::draw_components_recursive(const DrawingProgramLayerListItem& layerItem, SkCanvas* canvas, const DrawData& drawData) {
-    if(layerItem.get_visible()) {
-        SkPaint layerPaint;
-        layerPaint.setAlphaf(layerItem.get_alpha());
-        //layerPaint.setBlendMode(serialized_blend_mode_to_sk_blend_mode(displayData->blendMode)); // For selection, everything should just be in default blend mode (SrcOver)
-        canvas->saveLayer(nullptr, &layerPaint);
-        if(layerItem.is_folder()) {
-            for(auto& p : *layerItem.get_folder().folderList | std::views::reverse)
-                draw_components_recursive(*p.obj, canvas, drawData);
-        }
-        else {
-            for(auto& c : selectedSet) { // Loop on selected set and not layer component list, since i'm assuming selected set will be small
-                if(c->obj->parentLayer == &layerItem)
-                    c->obj->draw(canvas, drawData);
-            }
-        }
-        canvas->restore();
     }
 }

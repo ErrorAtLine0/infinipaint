@@ -24,7 +24,15 @@ class DrawingProgramLayerManager {
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
         bool is_a_layer_being_edited();
-        void erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& compsToErase);
+        template <typename List> void erase_component_container(const List& compsToErase) {
+            std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>> idsToEraseInSpecificLayers;
+            for(auto& c : compsToErase)
+                idsToEraseInSpecificLayers[c->obj->parentLayer].emplace_back(c->obj->objInfo);
+            for(auto& [layerListItem, netObjSetToErase] : idsToEraseInSpecificLayers) {
+                auto& layerComponentList = layerListItem->get_layer().components;
+                layerComponentList->erase_list(layerComponentList, netObjSetToErase);
+            }
+        }
         uint32_t edited_layer_component_count();
         CanvasComponentContainer::ObjInfoIterator get_edited_layer_end_iterator();
         bool component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector);

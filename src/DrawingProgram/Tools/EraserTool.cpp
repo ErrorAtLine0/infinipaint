@@ -36,7 +36,7 @@ void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) 
 }
 
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
-    drawP.layerMan.erase_component_set(erasedComponents);
+    drawP.layerMan.erase_component_container(erasedComponents);
 }
 
 void EraserTool::tool_update() {

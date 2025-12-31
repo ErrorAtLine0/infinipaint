@@ -62,16 +62,6 @@ const DrawingProgramLayerListItem& DrawingProgramLayerManager::get_layer_root() 
     return *layerTreeRoot;
 }
 
-void DrawingProgramLayerManager::erase_component_set(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& compsToErase) {
-    std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>> idsToEraseInSpecificLayers;
-    for(auto& c : compsToErase)
-        idsToEraseInSpecificLayers[c->obj->parentLayer].emplace_back(c->obj->objInfo);
-    for(auto& [layerListItem, netObjSetToErase] : idsToEraseInSpecificLayers) {
-        auto& layerComponentList = layerListItem->get_layer().components;
-        layerComponentList->erase_list(layerComponentList, netObjSetToErase);
-    }
-}
-
 bool DrawingProgramLayerManager::component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector) {
     switch(layerSelector) {
         case LayerSelector::ALL_VISIBLE_LAYERS:
