@@ -110,7 +110,7 @@ void DrawingProgramSelection::sort_selection() {
     std::vector<DrawingProgramLayerListItem*> flattenedLayerList = drawP.layerMan.get_flattened_layer_list();
     std::unordered_map<DrawingProgramLayerListItem*, size_t> flattenedLayerListOrder;
     for(size_t i = 0; i < flattenedLayerList.size(); i++)
-        flattenedLayerListOrder[flattenedLayerList[i]] = i;
+        flattenedLayerListOrder[flattenedLayerList[i]] = flattenedLayerList.size() - 1 - i;
     std::sort(selectedSet.begin(), selectedSet.end(), [&](auto& a, auto& b) {
         return (flattenedLayerListOrder[a->obj->parentLayer] < flattenedLayerListOrder[b->obj->parentLayer]) || (a->obj->parentLayer == b->obj->parentLayer && a->pos < b->pos);
     });
