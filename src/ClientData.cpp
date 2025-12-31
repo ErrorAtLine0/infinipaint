@@ -59,7 +59,7 @@ void ClientData::register_class(World& world) {
                     uint32_t oldGridSize = o->gridSize;
                     a(o->gridSize);
                     if(oldGridSize < o->gridSize)
-                        world.scale_up(WorldScalar(o->gridSize - oldGridSize) * CANVAS_SCALE_UP_STEP);
+                        world.scale_up(get_canvas_scale_up_amount(o->gridSize, oldGridSize));
                     break;
                 }
             }
@@ -101,7 +101,7 @@ void ClientData::register_class(World& world) {
                     uint32_t oldGridSize = o->gridSize;
                     a(o->gridSize);
                     if(oldGridSize < o->gridSize)
-                        world.scale_up(WorldScalar(o->gridSize - oldGridSize) * CANVAS_SCALE_UP_STEP);
+                        world.scale_up(get_canvas_scale_up_amount(o->gridSize, oldGridSize));
                     o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
                         a(ClientDataCommand::SET_GRID_SIZE, o->gridSize);
                     });

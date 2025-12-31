@@ -34,7 +34,7 @@ void BookmarkListItem::scale_up(const WorldScalar& scaleUpAmount) {
             i.obj->scale_up(scaleUpAmount);
     }
     else
-        bookmarkData->coords.inverseScale *= scaleUpAmount;
+        bookmarkData->coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
 }
 
 bool BookmarkListItem::is_folder() const {

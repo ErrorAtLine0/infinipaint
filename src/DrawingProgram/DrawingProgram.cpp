@@ -74,7 +74,7 @@ void DrawingProgram::init_server_callbacks() {
         if(clientData->get_grid_size() < world.ownClientData->get_grid_size()) {
             WorldScalar scaleUpAmount = get_canvas_scale_up_amount(world.ownClientData->get_grid_size(), clientData->get_grid_size());
             for(auto& [netID, coord] : transforms)
-                coord.inverseScale *= scaleUpAmount;
+                coord.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
         }
         
         process_transform_message(transforms);

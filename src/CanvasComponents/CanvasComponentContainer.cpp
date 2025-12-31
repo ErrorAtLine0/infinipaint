@@ -144,7 +144,7 @@ CanvasComponentContainer::TransformDrawData CanvasComponentContainer::calculate_
 }
 
 void CanvasComponentContainer::scale_up(const WorldScalar& scaleUpAmount) {
-    coords.inverseScale *= scaleUpAmount;
+    coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
     calculate_world_bounds();
 }
 
