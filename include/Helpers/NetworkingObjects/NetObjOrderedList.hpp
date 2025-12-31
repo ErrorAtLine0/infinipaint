@@ -313,25 +313,30 @@ namespace NetworkingObjects {
                 switch(command) {
                     case ObjPtrOrderedListCommand_CtoS::INSERT_LIST: {
                         std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> newObjs;
+                        std::vector<uint32_t> insertIndices;
 
                         uint32_t newObjsSize;
                         a(newObjsSize);
                         for(uint32_t i = 0; i < newObjsSize; i++) {
-                            NetworkingObjects::NetObjID idBeforeElement;
-                            a(idBeforeElement);
-                            NetObjOrderedListIterator<T> itToInsertAt;
-                            if(idBeforeElement == NetworkingObjects::NetObjID{0, 0})
-                                itToInsertAt = data.begin();
-                            else {
-                                auto idToDataMapIt = idToDataMap.find(idBeforeElement);
-                                if(idToDataMapIt == idToDataMap.end())
-                                    itToInsertAt = data.end();
-                                else
-                                    itToInsertAt = std::next(idToDataMapIt->second);
-                            }
-
-                            newObjs.emplace_back(itToInsertAt, l.get_obj_man()->template read_create_message<T>(a, c));
+                            uint32_t& insertIndex = insertIndices.emplace_back();
+                            a(insertIndex);
+                            insertIndex -= i;
+                            insertIndex = std::min<uint32_t>(insertIndex, data.size());
+                            newObjs.emplace_back(NetObjOrderedListIterator<T>(), l.get_obj_man()->template read_create_message<T>(a, c));
                         }
+
+                        uint32_t currentIndex = data.size();
+                        NetObjOrderedListIterator<T> currentIt = data.end();
+                        for(std::pair<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>&, uint32_t&> elem : (std::views::zip(newObjs, insertIndices) | std::views::reverse)) {
+                            uint32_t index = elem.second;
+                            auto& it = elem.first.first;
+                            while(currentIndex != index) {
+                                --currentIndex;
+                                --currentIt;
+                            }
+                            it = currentIt;
+                        }
+
                         insert_ordered_list(l, c, newObjs);
                         break;
                     }
@@ -416,14 +421,6 @@ namespace NetworkingObjects {
                 if(newObjs.empty())
                     return {};
 
-                std::vector<NetworkingObjects::NetObjID> idPositionList;
-                for(auto& [itToInsertAt, newObj] : newObjs) {
-                    if(itToInsertAt == clientData.begin())
-                        idPositionList.emplace_back(NetworkingObjects::NetObjID{0, 0});
-                    else
-                        idPositionList.emplace_back(std::prev(itToInsertAt)->obj.get_net_id());
-                }
-
                 std::vector<NetObjOrderedListIterator<T>> toRet;
                 for(auto& [itToInsertAt, newObj] : newObjs) {
                     auto newObjIt = clientData.emplace(itToInsertAt, std::move(newObj), itToInsertAt == clientData.end() ? clientData.size() : itToInsertAt->pos); // All position values will be wrong except the first one, which is all that matters
@@ -431,10 +428,10 @@ namespace NetworkingObjects {
                     toRet.emplace_back(newObjIt);
                 }
                 set_position_obj_info_list<T>(toRet[0], clientData.end());
-                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&toRet, &idPositionList](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                l.send_client_update(RELIABLE_COMMAND_CHANNEL, [&toRet](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
                     a(ObjPtrOrderedListCommand_CtoS::INSERT_LIST, static_cast<uint32_t>(toRet.size()));
-                    for(auto [newObjIt, idPosition] : std::views::zip(toRet, idPositionList)) {
-                        a(idPosition);
+                    for(auto newObjIt : toRet) {
+                        a(newObjIt->pos);
                         newObjIt->obj.write_create_message(a);
                     }
                 });
