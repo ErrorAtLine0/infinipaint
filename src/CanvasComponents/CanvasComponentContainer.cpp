@@ -5,6 +5,7 @@
 #include "../World.hpp"
 #include "CanvasComponent.hpp"
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
+#include "../ScaleUpCanvas.hpp"
 
 using namespace NetworkingObjects;
 
@@ -22,13 +23,19 @@ CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjMana
     coords = copyData.coords;
 }
 
-void CanvasComponentContainer::register_class(NetObjManager& objMan) {
-    objMan.register_class<CanvasComponentContainer, CanvasComponentContainer, CanvasComponentContainer, CanvasComponentContainer>({
+void CanvasComponentContainer::register_class(World& w) {
+    auto readConstructorFunc = [&w](const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
+        a(o->coords);
+        o->compAllocator = o.get_obj_man()->read_create_message<CanvasComponentAllocator>(a, c);
+        o->compAllocator->comp->compContainer = o.get();
+        canvas_scale_up_check(*o, w, c);
+    };
+    w.netObjMan.register_class<CanvasComponentContainer, CanvasComponentContainer, CanvasComponentContainer, CanvasComponentContainer>({
         .writeConstructorFuncClient = write_constructor_func,
-        .readConstructorFuncClient = read_constructor_func,
+        .readConstructorFuncClient = readConstructorFunc,
         .readUpdateFuncClient = nullptr,
         .writeConstructorFuncServer = write_constructor_func,
-        .readConstructorFuncServer = read_constructor_func,
+        .readConstructorFuncServer = readConstructorFunc,
         .readUpdateFuncServer = nullptr,
     });
 }
@@ -47,12 +54,6 @@ void CanvasComponentContainer::send_comp_update(DrawingProgram& drawP, bool fina
 void CanvasComponentContainer::write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a) {
     a(o->coords);
     o->compAllocator.write_create_message(a);
-}
-
-void CanvasComponentContainer::read_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
-    a(o->coords);
-    o->compAllocator = o.get_obj_man()->read_create_message<CanvasComponentAllocator>(a, c);
-    o->compAllocator->comp->compContainer = o.get();
 }
 
 void CanvasComponentContainer::save_file(cereal::PortableBinaryOutputArchive& a) const {
@@ -94,7 +95,7 @@ void CanvasComponentContainer::commit_update_dont_invalidate_cache(DrawingProgra
     calculate_world_bounds();
 }
 
-void CanvasComponentContainer::commit_transform_dont_invalidate_cache(DrawingProgram& drawP) {
+void CanvasComponentContainer::commit_transform_dont_invalidate_cache() {
     calculate_world_bounds();
 }
 
@@ -140,6 +141,11 @@ CanvasComponentContainer::TransformDrawData CanvasComponentContainer::calculate_
     toRet.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
     toRet.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), static_cast<float>(1 << COMP_MAX_SHIFT_BEFORE_STOP_SCALING));
     return toRet;
+}
+
+void CanvasComponentContainer::scale_up(const WorldScalar& scaleUpAmount) {
+    coords.inverseScale *= scaleUpAmount;
+    calculate_world_bounds();
 }
 
 unsigned CanvasComponentContainer::get_mipmap_level(const DrawData& drawData) const {

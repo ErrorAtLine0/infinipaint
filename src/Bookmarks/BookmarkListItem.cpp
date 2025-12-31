@@ -1,6 +1,7 @@
 #include "BookmarkListItem.hpp"
 #include <cereal/types/string.hpp>
 #include "../World.hpp"
+#include "../ScaleUpCanvas.hpp"
 
 using namespace NetworkingObjects;
 
@@ -25,6 +26,15 @@ void BookmarkListItem::reassign_netobj_ids_call() {
     if(folderData)
         folderData->folderList.reassign_ids();
     nameData.reassign_ids();
+}
+
+void BookmarkListItem::scale_up(const WorldScalar& scaleUpAmount) {
+    if(folderData) {
+        for(auto& i : *folderData->folderList)
+            i.obj->scale_up(scaleUpAmount);
+    }
+    else
+        bookmarkData->coords.inverseScale *= scaleUpAmount;
 }
 
 bool BookmarkListItem::is_folder() const {
@@ -59,12 +69,27 @@ void BookmarkListItem::set_folder_open(bool newIsFolderOpen) {
 }
 
 void BookmarkListItem::register_class(World& w) {
+    auto readConstructorData = [&w](const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
+        bool isFolder;
+        a(isFolder);
+        if(isFolder) {
+            o->folderData = std::make_unique<BookmarkFolderData>();
+            o->folderData->folderList = o.get_obj_man()->read_create_message<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>(a, c);
+        }
+        else {
+            o->bookmarkData = std::make_unique<BookmarkData>();
+            a(*o->bookmarkData);
+        }
+        o->nameData = o.get_obj_man()->read_create_message<NameData>(a, c);
+
+        canvas_scale_up_check(*o, w, c);
+    };
     w.netObjMan.register_class<BookmarkListItem, BookmarkListItem, BookmarkListItem, BookmarkListItem>({
         .writeConstructorFuncClient = write_constructor_data,
-        .readConstructorFuncClient = read_constructor_data,
+        .readConstructorFuncClient = readConstructorData,
         .readUpdateFuncClient = nullptr,
         .writeConstructorFuncServer = write_constructor_data,
-        .readConstructorFuncServer = read_constructor_data,
+        .readConstructorFuncServer = readConstructorData,
         .readUpdateFuncServer = nullptr
     });
     NetworkingObjects::register_ordered_list_class<BookmarkListItem>(w.netObjMan);
@@ -78,18 +103,4 @@ void BookmarkListItem::write_constructor_data(const NetObjTemporaryPtr<BookmarkL
     else
         a(*o->bookmarkData);
     o->nameData.write_create_message(a);
-}
-
-void BookmarkListItem::read_constructor_data(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
-    bool isFolder;
-    a(isFolder);
-    if(isFolder) {
-        o->folderData = std::make_unique<BookmarkFolderData>();
-        o->folderData->folderList = o.get_obj_man()->read_create_message<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>(a, c);
-    }
-    else {
-        o->bookmarkData = std::make_unique<BookmarkData>();
-        a(*o->bookmarkData);
-    }
-    o->nameData = o.get_obj_man()->read_create_message<NameData>(a, c);
 }

@@ -13,6 +13,7 @@ class DrawingProgramLayer {
         void commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) const;
         void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const;
         void set_to_erase();
+        void scale_up(const WorldScalar& scaleUpAmount);
 
         CanvasComponentContainer::NetListOwnerPtr components;
     private:

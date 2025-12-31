@@ -181,6 +181,8 @@ namespace NetworkingObjects {
                 return data.end();
             }
             virtual NetObjOrderedListIterator<T> at(uint32_t index) override {
+                if(index >= data.size())
+                    return data.end();
                 return std::next(data.begin(), index);
             }
             virtual NetObjOrderedListIterator<T> get(const NetObjID& id) override {
@@ -196,6 +198,8 @@ namespace NetworkingObjects {
                 return data.end();
             }
             virtual NetObjOrderedListConstIterator<T> at(uint32_t index) const override {
+                if(index >= data.size())
+                    return data.end();
                 return std::next(data.begin(), index);
             }
             virtual NetObjOrderedListConstIterator<T> get(const NetObjID& id) const override {
@@ -366,6 +370,8 @@ namespace NetworkingObjects {
                 return clientData.end();
             }
             virtual NetObjOrderedListIterator<T> at(uint32_t index) override {
+                if(index >= clientData.size())
+                    return clientData.end();
                 return std::next(clientData.begin(), index);
             }
             virtual NetObjOrderedListIterator<T> get(const NetObjID& id) override {
@@ -381,6 +387,8 @@ namespace NetworkingObjects {
                 return clientData.end();
             }
             virtual NetObjOrderedListConstIterator<T> at(uint32_t index) const override {
+                if(index >= clientData.size())
+                    return clientData.end();
                 return std::next(clientData.begin(), index);
             }
             virtual NetObjOrderedListConstIterator<T> get(const NetObjID& id) const override {

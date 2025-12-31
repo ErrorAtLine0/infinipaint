@@ -15,6 +15,10 @@ void DrawingProgramLayerManager::init() {
     }
 }
 
+void DrawingProgramLayerManager::scale_up(const WorldScalar& scaleUpAmount) {
+    layerTreeRoot->scale_up(scaleUpAmount);
+}
+
 void DrawingProgramLayerManager::write_components_server(cereal::PortableBinaryOutputArchive& a) {
     layerTreeRoot.write_create_message(a);
 }
@@ -92,3 +96,4 @@ CanvasComponentContainer::ObjInfo* DrawingProgramLayerManager::add_component_to_
         return nullptr;
     return &(*editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj));
 }
+

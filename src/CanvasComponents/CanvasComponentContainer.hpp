@@ -34,7 +34,7 @@ class CanvasComponentContainer {
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type);
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, const CopyData& copyData);
 
-        static void register_class(NetworkingObjects::NetObjManager& t);
+        static void register_class(World& w);
         std::shared_ptr<CopyData> get_data_copy() const;
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
@@ -42,7 +42,7 @@ class CanvasComponentContainer {
         SCollision::AABB<WorldScalar> get_world_bounds() const;
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void commit_update(DrawingProgram& drawP);
-        void commit_transform_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
+        void commit_transform_dont_invalidate_cache(); // Must be thread safe
         void commit_transform(DrawingProgram& drawP);
         void commit_update_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         bool should_draw(const DrawData& drawData) const;
@@ -50,6 +50,7 @@ class CanvasComponentContainer {
         bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
         bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
+        void scale_up(const WorldScalar& scaleUpAmount);
 
         std::weak_ptr<DrawingProgramCacheBVHNode> cacheParentBvhNode;
         DrawingProgramLayerListItem* parentLayer = nullptr;
@@ -60,7 +61,6 @@ class CanvasComponentContainer {
         friend class ImageCanvasComponent;
 
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a);
-        static void read_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c);
 
         struct TransformDrawData {
             Vector2f translation;

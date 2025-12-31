@@ -198,4 +198,5 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
 }
 
 void BookmarkManager::scale_up(const WorldScalar& scaleUpAmount) {
+    bookmarkListRoot->scale_up(scaleUpAmount);
 }

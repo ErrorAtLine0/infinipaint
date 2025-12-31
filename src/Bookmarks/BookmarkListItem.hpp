@@ -26,6 +26,7 @@ class BookmarkListItem {
         const std::string& get_name() const;
         static void register_class(World& w);
         void reassign_netobj_ids_call();
+        void scale_up(const WorldScalar& scaleUpAmount);
 
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName);
     private:
@@ -40,7 +41,6 @@ class BookmarkListItem {
             }
         };
         static void write_constructor_data(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a);
-        static void read_constructor_data(const NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c);
         std::unique_ptr<BookmarkFolderData> folderData;
         std::unique_ptr<BookmarkData> bookmarkData;
         NetworkingObjects::NetObjOwnerPtr<NameData> nameData;

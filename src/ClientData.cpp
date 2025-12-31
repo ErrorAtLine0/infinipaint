@@ -1,7 +1,9 @@
 #include "ClientData.hpp"
+#include "CommandList.hpp"
 #include "World.hpp"
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
 #include "MainProgram.hpp"
+#include "ScaleUpCanvas.hpp"
 
 using namespace NetworkingObjects;
 
@@ -9,7 +11,8 @@ enum class ClientDataCommand : uint8_t {
     SET_CURSOR_POS = 0,
     SET_WINDOW_SIZE,
     SET_CAM_COORDS,
-    SEND_CHAT_MESSAGE
+    SEND_CHAT_MESSAGE,
+    SET_GRID_SIZE
 };
 
 ClientData::ClientData() {
@@ -26,6 +29,7 @@ void ClientData::set_from_init_struct(const InitStruct& initStruct) {
     cursorPos = initStruct.cursorPos;
     cursorColor = initStruct.cursorColor;
     displayName = initStruct.displayName;
+    gridSize = initStruct.gridSize;
 }
 
 void ClientData::register_class(World& world) {
@@ -49,6 +53,14 @@ void ClientData::register_class(World& world) {
                     std::string chatMessage;
                     a(chatMessage);
                     world.add_chat_message(o->displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
+                    break;
+                }
+                case ClientDataCommand::SET_GRID_SIZE: {
+                    uint32_t oldGridSize = o->gridSize;
+                    a(o->gridSize);
+                    if(oldGridSize < o->gridSize)
+                        world.scale_up(WorldScalar(o->gridSize - oldGridSize) * CANVAS_SCALE_UP_STEP);
+                    break;
                 }
             }
         },
@@ -82,6 +94,16 @@ void ClientData::register_class(World& world) {
                     world.add_chat_message(o->displayName, chatMessage, Toolbar::ChatMessage::Type::NORMAL);
                     o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [&chatMessage](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
                         a(ClientDataCommand::SEND_CHAT_MESSAGE, chatMessage);
+                    });
+                    break;
+                }
+                case ClientDataCommand::SET_GRID_SIZE: {
+                    uint32_t oldGridSize = o->gridSize;
+                    a(o->gridSize);
+                    if(oldGridSize < o->gridSize)
+                        world.scale_up(WorldScalar(o->gridSize - oldGridSize) * CANVAS_SCALE_UP_STEP);
+                    o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
+                        a(ClientDataCommand::SET_GRID_SIZE, o->gridSize);
                     });
                     break;
                 }
@@ -123,6 +145,14 @@ void ClientData::send_chat_message(const NetworkingObjects::NetObjTemporaryPtr<C
     });
 }
 
+void ClientData::scale_up_step(const NetworkingObjects::NetObjTemporaryPtr<ClientData>& o, World& world) {
+    o->gridSize++;
+    world.scale_up(CANVAS_SCALE_UP_STEP);
+    o.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
+        a(ClientDataCommand::SET_GRID_SIZE, o->gridSize);
+    });
+}
+
 void ClientData::set_display_name(const std::string& newDisplayName) {
     displayName = newDisplayName;
 }
@@ -141,6 +171,10 @@ const Vector2f& ClientData::get_window_size() const {
 
 const Vector2f& ClientData::get_cursor_pos() const {
     return cursorPos;
+}
+
+uint32_t ClientData::get_grid_size() const {
+    return gridSize;
 }
 
 const std::string& ClientData::get_display_name() const {

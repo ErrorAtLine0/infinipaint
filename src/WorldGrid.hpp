@@ -12,6 +12,7 @@ class WorldGrid {
             a(name, gridType, size, visible, offset, bounds, color, removeDivisionsOutwards, subdivisions, showCoordinates, displayInFront);
         }
 
+        static void register_class(World& w);
         void draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData);
         void draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vector2f& axisOffset);
 
@@ -37,7 +38,7 @@ class WorldGrid {
         void set_subdivisions(uint32_t v);
         void scale_up(const WorldScalar& scaleUpAmount);
 
-        static unsigned GRID_UNIT_PIXEL_SIZE;
+        static constexpr unsigned GRID_UNIT_PIXEL_SIZE = 25;
 
         WorldScalar coordinatesDivWorldSize;
         WorldScalar coordinatesGridCoordDivSize;

@@ -80,6 +80,13 @@ uint32_t DrawingProgramLayerListItem::get_component_count() const {
         return layerData->components->size();
 }
 
+void DrawingProgramLayerListItem::scale_up(const WorldScalar& scaleUpAmount) {
+    if(folderData)
+        folderData->scale_up(scaleUpAmount);
+    else
+        layerData->scale_up(scaleUpAmount);
+}
+
 bool DrawingProgramLayerListItem::is_folder() const {
     return folderData != nullptr;
 }

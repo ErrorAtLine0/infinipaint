@@ -112,10 +112,10 @@ void World::init_client_data_list_callbacks() {
 
 void World::init_net_obj_type_list() {
     BookmarkListItem::register_class(*this);
-    delayedUpdateObjectManager.register_class<WorldGrid>(netObjMan);
+    WorldGrid::register_class(*this);
     NetworkingObjects::register_ordered_list_class<WorldGrid>(netObjMan);
     CanvasComponentAllocator::register_class(*this);
-    CanvasComponentContainer::register_class(netObjMan);
+    CanvasComponentContainer::register_class(*this);
     NetworkingObjects::register_ordered_list_class<CanvasComponentContainer>(netObjMan);
     DrawingProgramLayerListItem::register_class(*this);
     NetworkingObjects::register_ordered_list_class<DrawingProgramLayerListItem>(netObjMan);
@@ -135,6 +135,7 @@ void World::init_server_callbacks() {
 
         newClientData.camCoords = ownClientData->get_cam_coords();
         newClientData.windowSize = ownClientData->get_window_size();
+        newClientData.gridSize = ownClientData->get_grid_size();
 
         NetworkingObjects::NetObjTemporaryPtr<ClientData> clientDataObjPtr = clients->emplace_direct(clients, newClientData);
         client->customID = clientDataObjPtr.get_net_id().data;
@@ -488,9 +489,8 @@ void World::draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData
 }
 
 void World::scale_up_step() {
-    //canvasScale++;
-    //con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_CANVAS_SCALE, canvasScale);
-    //scale_up(WorldScalar(CANVAS_SCALE_UP_STEP));
+    if(ownClientData)
+        ownClientData->scale_up_step(ownClientData, *this);
 }
 
 void World::scale_up(const WorldScalar& scaleUpAmount) {

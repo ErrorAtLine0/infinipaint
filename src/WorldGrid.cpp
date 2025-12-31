@@ -2,6 +2,7 @@
 #include "GridManager.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
+#include "ScaleUpCanvas.hpp"
 #include <include/core/SkFontMetrics.h>
 #include <include/core/SkPathBuilder.h>
 
@@ -10,7 +11,6 @@ sk_sp<SkRuntimeEffect> WorldGrid::squarePointEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::squareLinesEffect;
 sk_sp<SkRuntimeEffect> WorldGrid::horizontalLinesEffect;
 Vector2f WorldGrid::oldWindowSize = Vector2f{0.0f, 0.0f};
-unsigned WorldGrid::GRID_UNIT_PIXEL_SIZE = 25;
 
 // NOTE: Skia shaders return premultiplied alpha colors
 
@@ -173,6 +173,17 @@ sk_sp<SkShader> WorldGrid::get_shader(GridType gType, const ShaderData& shaderDa
     }
     sk_sp<SkShader> s = builder.makeShader();
     return s;
+}
+
+void WorldGrid::register_class(World& w) {
+    auto readWorldGrid = [&](WorldGrid& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
+        a(o);
+        canvas_scale_up_check(o, w, c);
+    };
+    w.delayedUpdateObjectManager.register_class<WorldGrid>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<WorldGrid>{
+        .readConstructor = readWorldGrid,
+        .readUpdate = readWorldGrid
+    });
 }
 
 Vector2f WorldGrid::get_closest_grid_point(const WorldVec& gridOffset, const WorldScalar& gridSize, const DrawData& drawData) {

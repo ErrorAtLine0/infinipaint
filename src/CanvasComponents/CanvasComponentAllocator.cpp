@@ -17,7 +17,7 @@ void CanvasComponentAllocator::register_class(World& world) {
             a(o.comp->get_type());
             a(*o.comp);
         },
-        .readConstructor = [](CanvasComponentAllocator& o, cereal::PortableBinaryInputArchive& a) {
+        .readConstructor = [](CanvasComponentAllocator& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
             CanvasComponentType typeToAllocate;
             a(typeToAllocate);
             o.comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(typeToAllocate));
@@ -26,7 +26,7 @@ void CanvasComponentAllocator::register_class(World& world) {
         .writeUpdate = [](const CanvasComponentAllocator& o, cereal::PortableBinaryOutputArchive& a) {
             a(*o.comp);
         },
-        .readUpdate = [](CanvasComponentAllocator& o, cereal::PortableBinaryInputArchive& a) {
+        .readUpdate = [](CanvasComponentAllocator& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
             a(*o.comp);
         },
         .allocateCopy = [](const CanvasComponentAllocator& o) {

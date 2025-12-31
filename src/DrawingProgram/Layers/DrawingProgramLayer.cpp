@@ -51,3 +51,8 @@ void DrawingProgramLayer::get_flattened_component_list(std::vector<CanvasCompone
     for(auto& p : *components)
         objList.emplace_back(&p);
 }
+
+void DrawingProgramLayer::scale_up(const WorldScalar& scaleUpAmount) {
+    for(auto& p : *components)
+        p.obj->scale_up(scaleUpAmount);
+}

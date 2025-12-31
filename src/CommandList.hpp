@@ -23,6 +23,3 @@ enum ClientCommands : MessageCommandType {
     CLIENT_NEW_RESOURCE_DATA,
     CLIENT_TRANSFORM_MANY_COMPONENTS
 };
-
-// Arbitrary value. Higher scale up values lead to less scale up events (which can cause stuttering), but leads to larger numbers overall, which can cause a tiny bit of lag and increased memory usage
-#define CANVAS_SCALE_UP_STEP WorldScalar("100000000000000000000000000000000000000000000000000")

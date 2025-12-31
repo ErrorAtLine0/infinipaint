@@ -49,3 +49,8 @@ NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> DrawingProgramLaye
     }
     return {};
 }
+
+void DrawingProgramLayerFolder::scale_up(const WorldScalar& scaleUpAmount) {
+    for(auto& p : *folderList)
+        p.obj->scale_up(scaleUpAmount);
+}

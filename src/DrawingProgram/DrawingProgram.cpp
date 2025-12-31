@@ -32,6 +32,7 @@
 #include "Layers/DrawingProgramLayer.hpp"
 #include "Layers/DrawingProgramLayerListItem.hpp"
 #include <Helpers/Parallel.hpp>
+#include "../ScaleUpCanvas.hpp"
 
 #include "Tools/EraserTool.hpp"
 
@@ -49,11 +50,10 @@ void DrawingProgram::init() {
 }
 
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
-    //for(auto& c : components->get_data())
-    //    c->obj->scale_up(scaleUpAmount);
-    //selection.deselect_all();
-    //force_rebuild_cache();
-    //switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
+    selection.deselect_all();
+    layerMan.scale_up(scaleUpAmount);
+    rebuild_cache();
+    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
 }
 
 void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive& a) {
@@ -69,6 +69,14 @@ void DrawingProgram::init_server_callbacks() {
     world.netServer->add_recv_callback(SERVER_TRANSFORM_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transforms;
         message(transforms);
+
+        auto clientData = world.netObjMan.get_obj_temporary_ref_from_id<ClientData>(NetworkingObjects::NetObjID(client->customID));
+        if(clientData->get_grid_size() < world.ownClientData->get_grid_size()) {
+            WorldScalar scaleUpAmount = get_canvas_scale_up_amount(world.ownClientData->get_grid_size(), clientData->get_grid_size());
+            for(auto& [netID, coord] : transforms)
+                coord.inverseScale *= scaleUpAmount;
+        }
+        
         process_transform_message(transforms);
         world.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
     });

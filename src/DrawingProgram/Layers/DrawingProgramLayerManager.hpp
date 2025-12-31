@@ -25,6 +25,7 @@ class DrawingProgramLayerManager {
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
         bool is_a_layer_being_edited();
+        void scale_up(const WorldScalar& scaleUpAmount);
         template <typename List> void erase_component_container(const List& compsToErase) {
             std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>> idsToEraseInSpecificLayers;
             for(auto& c : compsToErase)

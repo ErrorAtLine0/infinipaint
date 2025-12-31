@@ -15,6 +15,7 @@ class DrawingProgramLayerFolder {
         void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const;
         void set_to_erase();
         NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> get_initial_editing_layer() const;
+        void scale_up(const WorldScalar& scaleUpAmount);
 
         NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<DrawingProgramLayerListItem>> folderList;
         bool isFolderOpen = false;
