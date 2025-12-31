@@ -33,3 +33,19 @@ void DrawingProgramLayerFolder::get_flattened_component_list(std::vector<CanvasC
     for(auto& listItem : (*folderList) | std::views::reverse)
         listItem.obj->get_flattened_component_list(objList);
 }
+
+NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> DrawingProgramLayerFolder::get_initial_editing_layer() const {
+    // BFS, select a layer that's closest to root as possible
+    for(auto& c : *folderList) {
+        if(!c.obj->is_folder())
+            return c.obj;
+    }
+    for(auto& c : *folderList) {
+        if(c.obj->is_folder()) {
+            NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> toRet = c.obj->get_folder().get_initial_editing_layer();
+            if(!toRet.expired())
+                return toRet;
+        }
+    }
+    return {};
+}

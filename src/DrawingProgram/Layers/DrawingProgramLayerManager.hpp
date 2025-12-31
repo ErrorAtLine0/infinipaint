@@ -12,6 +12,7 @@ class DrawingProgramLayerManager {
         friend class DrawingProgramLayerFolder;
         NetworkingObjects::NetObjOwnerPtr<DrawingProgramLayerListItem> layerTreeRoot;
         NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> editingLayer;
+        void set_initial_editing_layer();
     public:
         enum class LayerSelector {
             ALL_VISIBLE_LAYERS,

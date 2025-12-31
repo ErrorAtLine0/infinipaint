@@ -23,6 +23,7 @@ void DrawingProgramLayerManager::read_components_client(cereal::PortableBinaryIn
     layerTreeRoot = drawP.world.netObjMan.read_create_message<DrawingProgramLayerListItem>(a, nullptr);
     layerTreeRoot->commit_update_dont_invalidate_cache(*this);
     layerTreeRoot->set_component_list_callbacks(*this);
+    editingLayer = layerTreeRoot->get_folder().get_initial_editing_layer();
 }
 
 bool DrawingProgramLayerManager::is_a_layer_being_edited() {

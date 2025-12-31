@@ -703,90 +703,92 @@ void Toolbar::update_notification_gui() {
 #endif
 
 void Toolbar::grid_menu(bool justOpened) {
-    gui.push_id("grid menu");
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.obstructing_window();
-        gui.text_label_centered("Grids");
-        float entryHeight = 25.0f;
-        if(main.world->gridMan.grids->empty())
-            gui.text_label_centered("No grids yet...");
-        uint32_t toDelete = std::numeric_limits<uint32_t>::max();
-        gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.grids->size(), true, [&](size_t i, bool isListHovered) {
-            auto& grid = main.world->gridMan.grids->at(i)->obj;
-            bool selectedEntry = gridMenu.selectedGrid == i;
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
-                    .childGap = 2,
-                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT 
-                },
-                .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
-            }) {
-                gui.text_label(grid->get_display_name());
-                bool miniButtonClicked = false;
+    if(main.world->gridMan.grids) {
+        gui.push_id("grid menu");
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childGap = io->theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+            .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        }) {
+            gui.obstructing_window();
+            gui.text_label_centered("Grids");
+            float entryHeight = 25.0f;
+            if(main.world->gridMan.grids->empty())
+                gui.text_label_centered("No grids yet...");
+            uint32_t toDelete = std::numeric_limits<uint32_t>::max();
+            gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.grids->size(), true, [&](size_t i, bool isListHovered) {
+                auto& grid = main.world->gridMan.grids->at(i)->obj;
+                bool selectedEntry = gridMenu.selectedGrid == i;
                 CLAY_AUTO_ID({
                     .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                        .childGap = 1,
-                        .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT
-                    }
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
+                        .childGap = 2,
+                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                    },
+                    .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
                 }) {
-                    if(gui.svg_icon_button_transparent("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
-                        miniButtonClicked = true;
-                        grid->visible = !grid->visible;
-                        NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
+                    gui.text_label(grid->get_display_name());
+                    bool miniButtonClicked = false;
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                            .childGap = 1,
+                            .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                        }
+                    }) {
+                        if(gui.svg_icon_button_transparent("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
+                            miniButtonClicked = true;
+                            grid->visible = !grid->visible;
+                            NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
+                        }
+                        if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
+                            miniButtonClicked = true;
+                            main.world->drawProg.modify_grid(grid);
+                            stop_displaying_grid_menu();
+                        }
+                        if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
+                            miniButtonClicked = true;
+                            toDelete = i;
+                        }
                     }
-                    if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
-                        miniButtonClicked = true;
-                        main.world->drawProg.modify_grid(grid);
-                        stop_displaying_grid_menu();
-                    }
-                    if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
-                        miniButtonClicked = true;
-                        toDelete = i;
+                    if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
+                        gridMenu.selectedGrid = i;
+                        if(io->mouse.leftClick >= 2) {
+                            main.world->drawProg.modify_grid(grid);
+                            stop_displaying_grid_menu();
+                        }
                     }
                 }
-                if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
-                    gridMenu.selectedGrid = i;
-                    if(io->mouse.leftClick >= 2) {
-                        main.world->drawProg.modify_grid(grid);
-                        stop_displaying_grid_menu();
-                    }
-                }
-            }
-        });
-        if(toDelete != std::numeric_limits<uint32_t>::max())
-            main.world->gridMan.remove_grid(toDelete);
-        gui.left_to_right_line_layout([&]() {
-            bool addByEnter = false;
-            gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
-                addByEnter = s.selected && io->key.enter;
             });
-            if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
-                main.world->gridMan.add_default_grid(gridMenu.newName);
-                main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
-                stop_displaying_grid_menu();
-            }
-        });
+            if(toDelete != std::numeric_limits<uint32_t>::max())
+                main.world->gridMan.remove_grid(toDelete);
+            gui.left_to_right_line_layout([&]() {
+                bool addByEnter = false;
+                gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
+                    addByEnter = s.selected && io->key.enter;
+                });
+                if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
+                    main.world->gridMan.add_default_grid(gridMenu.newName);
+                    main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
+                    stop_displaying_grid_menu();
+                }
+            });
 
-        bool dropdownHover = false;
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
-            stop_displaying_grid_menu();
+            bool dropdownHover = false;
+            if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
+                stop_displaying_grid_menu();
+        }
+        gui.pop_id();
     }
-    gui.pop_id();
 }
 
 void Toolbar::stop_displaying_grid_menu() {
