@@ -1,4 +1,5 @@
 #include "DrawingProgram.hpp"
+#include "Helpers/Networking/NetLibrary.hpp"
 #include "Tools/DrawingProgramToolBase.hpp"
 #include <include/core/SkPaint.h>
 #include <include/core/SkVertices.h>
@@ -8,6 +9,7 @@
 #include "Tools/GridModifyTool.hpp"
 #include "../InputManager.hpp"
 #include "../SharedTypes.hpp"
+#include "../CommandList.hpp"
 #include <memory>
 #include <optional>
 #include <Helpers/ConvertVec.hpp>
@@ -29,6 +31,7 @@
 #include "../CanvasComponents/ImageCanvasComponent.hpp"
 #include "Layers/DrawingProgramLayer.hpp"
 #include "Layers/DrawingProgramLayerListItem.hpp"
+#include <Helpers/Parallel.hpp>
 
 #include "Tools/EraserTool.hpp"
 
@@ -60,6 +63,47 @@ void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive
 void DrawingProgram::read_components_client(cereal::PortableBinaryInputArchive& a) {
     layerMan.read_components_client(a);
     drawCache.build({});
+}
+
+void DrawingProgram::init_server_callbacks() {
+    world.netServer->add_recv_callback(SERVER_TRANSFORM_MANY_COMPONENTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transforms;
+        message(transforms);
+        process_transform_message(transforms);
+        world.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
+    });
+}
+
+void DrawingProgram::init_client_callbacks() {
+    world.con.client_add_recv_callback(CLIENT_TRANSFORM_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
+        std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transforms;
+        message(transforms);
+        process_transform_message(transforms);
+    });
+}
+
+void DrawingProgram::process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms) {
+    for(auto& [id, coords] : transforms) {
+        auto objPtr = world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(id);
+        if(!objPtr || selection.is_selected(&(*objPtr->objInfo))) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
+            return;
+        if(objPtr->coords == coords)
+            return;
+        objPtr->coords = coords;
+        objPtr->commit_transform(*this);
+    }
+}
+
+void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor) {
+    if(world.netObjMan.is_connected()) {
+        std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transforms;
+        for(auto& obj : objsToSendTransformsFor)
+            transforms.emplace_back(obj->obj.get_net_id(), obj->obj->coords);
+        if(world.netObjMan.is_server())
+            world.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
+        else
+            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
+    }
 }
 
 void DrawingProgram::toolbar_gui() {

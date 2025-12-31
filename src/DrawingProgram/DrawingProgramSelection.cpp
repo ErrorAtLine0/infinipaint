@@ -161,21 +161,11 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 void DrawingProgramSelection::commit_transform_selection() {
     auto selectedSetTemp = selectedSet;
 
-    std::vector<CanvasComponentContainer::ObjInfo*> a(selectedSet.begin(), selectedSet.end());
-    std::vector<std::pair<CanvasComponentContainer::ObjInfo*, CoordSpaceHelper>> transformsFrom;
-    for(auto& transformedObj : a)
-        transformsFrom.emplace_back(transformedObj, transformedObj->obj->coords);
-    for(auto& comp : a) {
+    for(auto& comp : selectedSet) {
         comp->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(comp->obj->coords);
         comp->obj->commit_transform(drawP);
     }
-    std::vector<std::pair<CanvasComponentContainer::ObjInfo*, CoordSpaceHelper>> transformsTo;
-    std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transformsToSend;
-    for(auto& transformedObj : a) {
-        transformsToSend.emplace_back(transformedObj->obj.get_net_id(), transformedObj->obj->coords);
-        transformsTo.emplace_back(transformedObj, transformedObj->obj->coords);
-    }
-    //DrawComponent::client_send_transform_many(drawP, transformsToSend);
+    drawP.send_transforms_for(selectedSet);
 
     reset_all();
     set_to_selection(selectedSetTemp);

@@ -9,7 +9,8 @@ enum ServerCommands : MessageCommandType {
     SERVER_UPDATE_NETWORK_OBJECT,
     SERVER_UPDATE_MANY_NETWORK_OBJECTS,
     SERVER_NEW_RESOURCE_ID,
-    SERVER_NEW_RESOURCE_DATA
+    SERVER_NEW_RESOURCE_DATA,
+    SERVER_TRANSFORM_MANY_COMPONENTS
 };
 
 enum ClientCommands : MessageCommandType {
@@ -19,7 +20,8 @@ enum ClientCommands : MessageCommandType {
     CLIENT_UPDATE_NETWORK_OBJECT,
     CLIENT_UPDATE_MANY_NETWORK_OBJECTS,
     CLIENT_NEW_RESOURCE_ID,
-    CLIENT_NEW_RESOURCE_DATA
+    CLIENT_NEW_RESOURCE_DATA,
+    CLIENT_TRANSFORM_MANY_COMPONENTS
 };
 
 // Arbitrary value. Higher scale up values lead to less scale up events (which can cause stuttering), but leads to larger numbers overall, which can cause a tiny bit of lag and increased memory usage

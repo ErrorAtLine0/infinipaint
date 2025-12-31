@@ -39,6 +39,7 @@ class DrawingProgramLayerManager {
 
         bool layer_tree_root_exists();
         const DrawingProgramLayerListItem& get_layer_root();
+        uint32_t total_component_count();
 
         CanvasComponentContainer::ObjInfo* add_component_to_layer_being_edited(CanvasComponentContainer* newObj);
         std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer_being_edited(const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs);

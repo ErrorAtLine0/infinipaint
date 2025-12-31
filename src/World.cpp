@@ -126,6 +126,7 @@ void World::init_net_obj_type_list() {
 
 void World::init_server_callbacks() {
     rMan.init_server_callbacks();
+    drawProg.init_server_callbacks();
     netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         ClientData::InitStruct newClientData;
         newClientData.cursorColor = get_random_cursor_color();
@@ -170,6 +171,7 @@ void World::init_server_callbacks() {
 
 void World::init_client_callbacks() {
     rMan.init_client_callbacks();
+    drawProg.init_client_callbacks();
     con.client_add_recv_callback(CLIENT_INITIAL_DATA, [&](cereal::PortableBinaryInputArchive& message) {
         std::string fileDisplayName;
         NetworkingObjects::NetObjID clientDataObjID;

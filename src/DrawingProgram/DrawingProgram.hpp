@@ -32,7 +32,8 @@ class DrawingProgram {
         void draw(SkCanvas* canvas, const DrawData& drawData);
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
-
+        void init_server_callbacks();
+        void init_client_callbacks();
         void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread);
         void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
 
@@ -52,7 +53,10 @@ class DrawingProgram {
 
         void invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck);
         void preupdate_component(CanvasComponentContainer::ObjInfo* objToCheck);
+        void send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor);
     private:
+        void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
+
         void drag_drop_update();
         void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
         void check_updateable_components();
