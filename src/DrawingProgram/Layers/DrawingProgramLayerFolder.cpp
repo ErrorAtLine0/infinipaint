@@ -2,6 +2,9 @@
 #include "DrawingProgramLayerListItem.hpp"
 #include "DrawingProgramLayer.hpp"
 #include <Helpers/Parallel.hpp>
+#include "DrawingProgramLayerManager.hpp"
+#include "../DrawingProgram.hpp"
+#include "../../World.hpp"
 
 void DrawingProgramLayerFolder::draw(SkCanvas* canvas, const DrawData& drawData) const {
     for(auto& p : (*folderList) | std::views::reverse)
@@ -22,11 +25,6 @@ void DrawingProgramLayerFolder::set_component_list_callbacks(DrawingProgramLayer
 void DrawingProgramLayerFolder::set_to_erase() {
     for(auto& listItem : *folderList)
         listItem.obj->set_to_erase();
-}
-
-void DrawingProgramLayerFolder::commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) const {
-    for(auto& listItem : *folderList)
-        listItem.obj->commit_update_dont_invalidate_cache(layerMan);
 }
 
 void DrawingProgramLayerFolder::get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const {
@@ -53,4 +51,21 @@ NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> DrawingProgramLaye
 void DrawingProgramLayerFolder::scale_up(const WorldScalar& scaleUpAmount) {
     for(auto& p : *folderList)
         p.obj->scale_up(scaleUpAmount);
+}
+
+void DrawingProgramLayerFolder::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, DrawingProgramLayerManager& layerMan) {
+    folderList = layerMan.drawP.world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<DrawingProgramLayerListItem>>();
+    uint32_t folderListSize;
+    a(folderListSize);
+    for(uint32_t i = 0; i < folderListSize; i++) {
+        DrawingProgramLayerListItem* item = new DrawingProgramLayerListItem();
+        item->load_file(a, version, layerMan);
+        folderList->push_back_and_send_create(folderList, item);
+    }
+}
+
+void DrawingProgramLayerFolder::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(folderList->size());
+    for(auto& listItem : *folderList)
+        listItem.obj->save_file(a);
 }

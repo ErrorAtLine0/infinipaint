@@ -23,7 +23,6 @@ class DrawingProgramLayerListItem {
         void reassign_netobj_ids_call();
         void set_to_erase();
         void set_component_list_callbacks(DrawingProgramLayerManager &layerMan);
-        void commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan);
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName) const;
         const std::string& get_name() const;
@@ -33,6 +32,9 @@ class DrawingProgramLayerListItem {
 
         void set_alpha(DrawingProgramLayerManager& layerMan, float newAlpha) const;
         float get_alpha() const;
+
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, DrawingProgramLayerManager& layerMan);
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
 
         void set_visible(DrawingProgramLayerManager& layerMan, bool newVisible) const;
         bool get_visible() const;

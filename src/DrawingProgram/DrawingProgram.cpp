@@ -45,8 +45,8 @@ DrawingProgram::DrawingProgram(World& initWorld):
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
 }
 
-void DrawingProgram::init() {
-    layerMan.init();
+void DrawingProgram::server_init_no_file() {
+    layerMan.server_init_no_file();
 }
 
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
@@ -83,7 +83,7 @@ void DrawingProgram::init_server_callbacks() {
 }
 
 void DrawingProgram::init_client_callbacks() {
-    world.con.client_add_recv_callback(CLIENT_TRANSFORM_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
+    world.netClient->add_recv_callback(CLIENT_TRANSFORM_MANY_COMPONENTS, [&](cereal::PortableBinaryInputArchive& message) {
         std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>> transforms;
         message(transforms);
         process_transform_message(transforms);
@@ -111,7 +111,7 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
         if(world.netObjMan.is_server())
             world.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
         else
-            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_MANY_COMPONENTS, transforms);
+            world.netClient->send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_MANY_COMPONENTS, transforms);
     }
 }
 
@@ -538,29 +538,11 @@ void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, co
 }
 
 void DrawingProgram::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    //uint64_t compCount;
-    //a(compCount);
-    //for(uint64_t i = 0; i < compCount; i++) {
-    //    DrawComponentType t;
-    //    a(t);
-    //    auto newComp = DrawComponent::allocate_comp_type(t);
-    //    a(newComp->id, newComp->coords);
-    //    newComp->load_file(a, version);
-    //    components.init_emplace_back(newComp);
-    //}
-    //parallel_loop_all_components([&](const auto& c){
-    //    c->obj->commit_update(*this, false);
-    //});
-    //compCache.test_rebuild(components.client_list(), true);
+    layerMan.load_file(a, version);
 }
 
 void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
-    //auto& cList = components->get_data();
-    //a((uint64_t)cList.size());
-    //for(size_t i = 0; i < cList.size(); i++) {
-    //    a(cList[i]->obj->get_type(), cList[i]->obj->id, cList[i]->obj->coords);
-    //    cList[i]->obj->save_file(a);
-    //}
+    layerMan.save_file(a);
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {

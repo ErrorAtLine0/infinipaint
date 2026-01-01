@@ -37,7 +37,7 @@ class CanvasComponentContainer {
         static void register_class(World& w);
         std::shared_ptr<CopyData> get_data_copy() const;
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
-        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, NetworkingObjects::NetObjManager& objMan);
         CanvasComponent& get_comp() const;
         SCollision::AABB<WorldScalar> get_world_bounds() const;
         void draw(SkCanvas* canvas, const DrawData& drawData) const;

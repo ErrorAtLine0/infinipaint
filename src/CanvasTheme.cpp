@@ -11,11 +11,9 @@ CanvasTheme::CanvasTheme(World& w):
     world(w)
 {}
 
-void CanvasTheme::init() {
-    if(world.netObjMan.is_server()) {
-        backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.defaultCanvasBackgroundColor);
-        set_tool_front_color(world.drawProg);
-    }
+void CanvasTheme::server_init_no_file() {
+    backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.defaultCanvasBackgroundColor);
+    set_tool_front_color(world.drawProg);
 }
 
 SkColor4f CanvasTheme::get_back_color() const {
@@ -62,4 +60,25 @@ void CanvasTheme::read_create_message(cereal::PortableBinaryInputArchive& a) {
 
 void CanvasTheme::write_create_message(cereal::PortableBinaryOutputArchive& a) const {
     backColor.write_create_message(a);
+}
+
+void CanvasTheme::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(convert_vec3<Vector3f>(get_back_color()));
+}
+
+void CanvasTheme::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.defaultCanvasBackgroundColor);
+    set_tool_front_color(world.drawProg);
+
+    if(version < VersionNumber(0, 1, 0))
+        set_back_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+    else {
+        Vector3f canvasBackColor;
+        a(canvasBackColor);
+        const Vector3f OLD_DEFAULT_CANVAS_BACKGROUND_COLOR{0.12f, 0.12f, 0.12f};
+        if(version < VersionNumber(0, 3, 0) && canvasBackColor == OLD_DEFAULT_CANVAS_BACKGROUND_COLOR)
+            set_back_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
+        else
+            set_back_color(canvasBackColor);
+    }
 }

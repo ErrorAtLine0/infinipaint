@@ -13,6 +13,7 @@ class DrawingProgramLayerManager {
         NetworkingObjects::NetObjOwnerPtr<DrawingProgramLayerListItem> layerTreeRoot;
         NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> editingLayer;
         void set_initial_editing_layer();
+        bool commitUpdateOnComponentInsert = true;
     public:
         enum class LayerSelector {
             ALL_VISIBLE_LAYERS,
@@ -20,7 +21,7 @@ class DrawingProgramLayerManager {
         };
 
         DrawingProgramLayerManager(DrawingProgram& drawProg);
-        void init();
+        void server_init_no_file();
         void draw(SkCanvas* canvas, const DrawData& drawData);
         void write_components_server(cereal::PortableBinaryOutputArchive& a);
         void read_components_client(cereal::PortableBinaryInputArchive& a);
@@ -38,6 +39,9 @@ class DrawingProgramLayerManager {
         uint32_t edited_layer_component_count();
         CanvasComponentContainer::ObjInfoIterator get_edited_layer_end_iterator();
         bool component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector);
+
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
 
         bool layer_tree_root_exists();
         const DrawingProgramLayerListItem& get_layer_root();

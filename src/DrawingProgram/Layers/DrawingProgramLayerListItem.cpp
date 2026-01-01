@@ -46,13 +46,6 @@ void DrawingProgramLayerListItem::set_component_list_callbacks(DrawingProgramLay
         layerData->set_component_list_callbacks(*this, layerMan);
 }
 
-void DrawingProgramLayerListItem::commit_update_dont_invalidate_cache(DrawingProgramLayerManager& layerMan) {
-    if(folderData)
-        folderData->commit_update_dont_invalidate_cache(layerMan);
-    else
-        layerData->commit_update_dont_invalidate_cache(layerMan);
-}
-
 void DrawingProgramLayerListItem::get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const {
     if(folderData)
         folderData->get_flattened_component_list(objList);
@@ -97,6 +90,35 @@ DrawingProgramLayerFolder& DrawingProgramLayerListItem::get_folder() const {
 
 DrawingProgramLayer& DrawingProgramLayerListItem::get_layer() const {
     return *layerData;
+}
+
+void DrawingProgramLayerListItem::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, DrawingProgramLayerManager& layerMan) {
+    nameData = layerMan.drawP.world.netObjMan.make_obj<NameData>();
+    a(*nameData);
+
+    displayData = layerMan.drawP.world.netObjMan.make_obj<DisplayData>();
+    a(*displayData);
+
+    bool isFolder;
+    a(isFolder);
+    if(isFolder) {
+        folderData = std::make_unique<DrawingProgramLayerFolder>();
+        folderData->load_file(a, version, layerMan);
+    }
+    else {
+        layerData = std::make_unique<DrawingProgramLayer>();
+        layerData->load_file(a, version, layerMan);
+    }
+}
+
+void DrawingProgramLayerListItem::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(*nameData);
+    a(*displayData);
+    a(static_cast<bool>(folderData));
+    if(folderData)
+        folderData->save_file(a);
+    else
+        layerData->save_file(a);
 }
 
 void DrawingProgramLayerListItem::draw(SkCanvas* canvas, const DrawData& drawData) const {

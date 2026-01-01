@@ -4,6 +4,9 @@
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <string>
 #include "../CoordSpaceHelper.hpp"
+#include <Helpers/VersionNumber.hpp>
+
+class BookmarkManager;
 
 struct BookmarkData {
     CoordSpaceHelper coords;
@@ -27,7 +30,9 @@ class BookmarkListItem {
         static void register_class(World& w);
         void reassign_netobj_ids_call();
         void scale_up(const WorldScalar& scaleUpAmount);
-
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, BookmarkManager& bMan);
+        
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName);
     private:
         struct BookmarkFolderData {

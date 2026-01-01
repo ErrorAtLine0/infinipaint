@@ -5,9 +5,8 @@
 GridManager::GridManager(World& w):
     world(w) {}
 
-void GridManager::init() {
-    if(world.netObjMan.is_server())
-        grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
+void GridManager::server_init_no_file() {
+    grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
 }
 
 void GridManager::add_default_grid(const std::string& newName) {
@@ -69,5 +68,23 @@ void GridManager::scale_up(const WorldScalar& scaleUpAmount) {
     if(grids) {
         for(uint32_t i = 0; i < grids->size(); i++)
             grids->at(i)->obj->scale_up(scaleUpAmount);
+    }
+}
+
+void GridManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(grids->size());
+    for(auto& item : *grids)
+        a(*item.obj);
+}
+
+void GridManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
+
+    uint32_t gridSize;
+    a(gridSize);
+    for(uint32_t i = 0; i < gridSize; i++) {
+        WorldGrid* g = new WorldGrid;
+        a(*g);
+        grids->push_back_and_send_create(grids, g);
     }
 }

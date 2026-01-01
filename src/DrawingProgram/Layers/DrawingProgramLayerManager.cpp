@@ -1,18 +1,17 @@
 #include "DrawingProgramLayerManager.hpp"
 #include "../../World.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
+#include "Helpers/Parallel.hpp"
 
 DrawingProgramLayerManager::DrawingProgramLayerManager(DrawingProgram& drawProg):
     drawP(drawProg), // initialize drawP first for next objects to be initialized properly
     listGUI(*this)
 {}
 
-void DrawingProgramLayerManager::init() {
-    if(drawP.world.netObjMan.is_server()) {
-        layerTreeRoot = drawP.world.netObjMan.make_obj_from_ptr<DrawingProgramLayerListItem>(new DrawingProgramLayerListItem(drawP.world.netObjMan, "ROOT", true));
-        layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
-        editingLayer = layerTreeRoot->get_folder().folderList->emplace_back_direct(layerTreeRoot->get_folder().folderList, drawP.world.netObjMan, "First Layer", false)->obj;
-    }
+void DrawingProgramLayerManager::server_init_no_file() {
+    layerTreeRoot = drawP.world.netObjMan.make_obj_from_ptr<DrawingProgramLayerListItem>(new DrawingProgramLayerListItem(drawP.world.netObjMan, "ROOT", true));
+    layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
+    editingLayer = layerTreeRoot->get_folder().folderList->emplace_back_direct(layerTreeRoot->get_folder().folderList, drawP.world.netObjMan, "First Layer", false)->obj;
 }
 
 void DrawingProgramLayerManager::scale_up(const WorldScalar& scaleUpAmount) {
@@ -25,8 +24,14 @@ void DrawingProgramLayerManager::write_components_server(cereal::PortableBinaryO
 
 void DrawingProgramLayerManager::read_components_client(cereal::PortableBinaryInputArchive& a) {
     layerTreeRoot = drawP.world.netObjMan.read_create_message<DrawingProgramLayerListItem>(a, nullptr);
-    layerTreeRoot->commit_update_dont_invalidate_cache(*this);
+    commitUpdateOnComponentInsert = false;
     layerTreeRoot->set_component_list_callbacks(*this);
+    commitUpdateOnComponentInsert = true;
+    auto flattenedCompList = get_flattened_component_list();
+    parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
+        comp->obj->commit_update_dont_invalidate_cache(drawP);
+    });
+    drawP.rebuild_cache();
     editingLayer = layerTreeRoot->get_folder().get_initial_editing_layer();
 }
 
@@ -97,3 +102,21 @@ CanvasComponentContainer::ObjInfo* DrawingProgramLayerManager::add_component_to_
     return &(*editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj));
 }
 
+
+void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    layerTreeRoot = drawP.world.netObjMan.make_obj_from_ptr<DrawingProgramLayerListItem>(new DrawingProgramLayerListItem());
+    layerTreeRoot->load_file(a, version, *this);
+    commitUpdateOnComponentInsert = false;
+    layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
+    commitUpdateOnComponentInsert = true;
+    auto flattenedCompList = get_flattened_component_list();
+    parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
+        comp->obj->commit_update_dont_invalidate_cache(drawP);
+    });
+    drawP.rebuild_cache();
+    editingLayer = layerTreeRoot->get_folder().get_initial_editing_layer();
+}
+
+void DrawingProgramLayerManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    layerTreeRoot->save_file(a);
+}

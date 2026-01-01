@@ -469,10 +469,10 @@ void Toolbar::top_toolbar() {
         }
         std::vector<std::pair<std::string, std::string>> tabNames;
         for(size_t i = 0; i < main.worlds.size(); i++)
-            tabNames.emplace_back(main.worlds[i]->network_being_used() ? "data/icons/network.svg" : "", main.worlds[i]->name);
+            tabNames.emplace_back(main.worlds[i]->netObjMan.is_connected() ? "data/icons/network.svg" : "", main.worlds[i]->name);
         std::optional<size_t> closedTab;
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
-        if(main.world->network_being_used() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
+        if(main.world->netObjMan.is_connected() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
             playerMenuOpen = !playerMenuOpen;
         if(gui.svg_icon_button_transparent("Menu Undo Button", "data/icons/undo.svg"))
             main.world->undo_with_checks();
@@ -528,7 +528,7 @@ void Toolbar::top_toolbar() {
                 gui.obstructing_window();
                 if(gui.text_button_left_transparent("new file local", "New File")) {
                     main.new_tab({
-                        .conType = World::CONNECTIONTYPE_LOCAL
+                        .isClient = false
                     }, true);
                 }
                 if(gui.text_button_left_transparent("save file", "Save"))
@@ -536,7 +536,7 @@ void Toolbar::top_toolbar() {
                 if(gui.text_button_left_transparent("save as file", "Save As"))
                     save_as_func();
                 if(gui.text_button_left_transparent("open file", "Open"))
-                    open_world_file(World::CONNECTIONTYPE_LOCAL, "", "");
+                    open_world_file(false, "", "");
                 if(gui.text_button_left_transparent("screenshot", "Take Screenshot"))
                     main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
                 if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
@@ -555,7 +555,7 @@ void Toolbar::top_toolbar() {
                         });
                     #endif
                 }
-                if(main.world->network_being_used()) {
+                if(main.world->netObjMan.is_connected()) {
                     if(gui.text_button_left_transparent("lobby info", "Lobby Info")) {
                         optionsMenuOpen = true;
                         optionsMenuType = LOBBY_INFO_MENU;
@@ -877,7 +877,7 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
 
 void Toolbar::chat_box() {
     constexpr float CHATBOX_WIDTH = 700;
-    if(main.world->network_being_used()) {
+    if(main.world->netObjMan.is_connected()) {
         CLAY_AUTO_ID({
             .layout = {
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
@@ -1297,15 +1297,15 @@ void Toolbar::player_list() {
     }
 }
 
-void Toolbar::open_world_file(int conType, const std::string& netSource, const std::string& serverLocalID2) {
+void Toolbar::open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID2) {
 #ifdef __EMSCRIPTEN__
     static struct UploadData {
-        int cT;
+        bool iC;
         std::string nS;
         std::string sLID;
         MainProgram* main;
     } uploadData;
-    uploadData.cT = conType;
+    uploadData.iC = isClient;
     uploadData.nS = netSource;
     uploadData.sLID = serverLocalID2;
     uploadData.main = &main;
@@ -1313,7 +1313,7 @@ void Toolbar::open_world_file(int conType, const std::string& netSource, const s
         if(!buffer.empty()) {
             UploadData* uD = (UploadData*)callbackData;
             uD->main->new_tab({
-                .conType = (World::ConnectionType)uD->cT,
+                .isClient = uD->iC,
                 .filePathSource = std::filesystem::path(fileName),
                 .netSource = uD->nS,
                 .serverLocalID = uD->sLID,
@@ -1322,9 +1322,9 @@ void Toolbar::open_world_file(int conType, const std::string& netSource, const s
         }
     }, &uploadData);
 #else
-    open_file_selector("Open", {{"Any File", "*"}, {"InfiniPaint Canvas", World::FILE_EXTENSION}}, [&, conType = conType, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
+    open_file_selector("Open", {{"Any File", "*"}, {"InfiniPaint Canvas", World::FILE_EXTENSION}}, [&, isClient = isClient, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
         main.new_tab({
-            .conType = (World::ConnectionType)conType,
+            .isClient = isClient,
             .filePathSource = p,
             .netSource = netSource,
             .serverLocalID = serverLocalID2
@@ -1378,7 +1378,7 @@ void Toolbar::options_menu() {
                                 Logger::get().log("USERINFO", "Connect issue: Can't connect to your own address");
                             else {
                                 main.new_tab({
-                                    .conType = World::CONNECTIONTYPE_CLIENT,
+                                    .isClient = true,
                                     .netSource = serverToConnectTo
                                 }, true);
                                 optionsMenuOpen = false;
@@ -1647,7 +1647,7 @@ void Toolbar::options_menu() {
             }) {
                 gui.push_id("lobby info menu");
                 gui.obstructing_window();
-                if(!main.world || !main.world->network_being_used())
+                if(!main.world || !main.world->netObjMan.is_connected())
                     optionsMenuOpen = false;
                 else {
                     std::string oldS = main.world->netSource;

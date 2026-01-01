@@ -9,12 +9,8 @@ BookmarkManager::BookmarkManager(World& w):
     world(w)
 {}
 
-void BookmarkManager::init() {
-    // NOTE: Should find a way for bookmarks added from the network to take into account the client's canvasScale
-    // Have the canvasScale variable come with the ClientData object, and the grid scale commands can be part of 
-    // the client data class
-    if(world.netObjMan.is_server())
-        bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem(world.netObjMan, "ROOT", true, {}));
+void BookmarkManager::server_init_no_file() {
+    bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem(world.netObjMan, "ROOT", true, {}));
 }
 
 void BookmarkManager::refresh_gui_data() {
@@ -199,4 +195,14 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
 
 void BookmarkManager::scale_up(const WorldScalar& scaleUpAmount) {
     bookmarkListRoot->scale_up(scaleUpAmount);
+}
+
+void BookmarkManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    bookmarkListRoot->save_file(a);
+}
+
+void BookmarkManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem());
+
+    bookmarkListRoot->load_file(a, version, *this);
 }

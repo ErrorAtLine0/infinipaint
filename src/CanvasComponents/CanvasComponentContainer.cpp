@@ -6,6 +6,7 @@
 #include "CanvasComponent.hpp"
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include "../ScaleUpCanvas.hpp"
+#include "Helpers/NetworkingObjects/NetObjManager.hpp"
 
 using namespace NetworkingObjects;
 
@@ -58,12 +59,14 @@ void CanvasComponentContainer::write_constructor_func(const NetworkingObjects::N
 
 void CanvasComponentContainer::save_file(cereal::PortableBinaryOutputArchive& a) const {
     a(coords);
-    get_comp().save_file(a);
+    compAllocator->save_file(a);
 }
 
-void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, NetObjManager& objMan) {
     a(coords);
-    get_comp().load_file(a, version);
+    compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>();
+    compAllocator->load_file(a, version);
+    compAllocator->comp->compContainer = this;
 }
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {

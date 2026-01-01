@@ -71,7 +71,7 @@ void MainProgram::update() {
             const std::filesystem::path& droppedFilePath = droppedItem.dataPath.value();
             if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
                 new_tab({
-                    .conType = World::CONNECTIONTYPE_LOCAL,
+                    .isClient = false,
                     .filePathSource = droppedFilePath
                 }, true);
                 return true;
@@ -93,7 +93,7 @@ void MainProgram::update() {
         worldIndex = worlds.size() - 1;
     if(worlds.size() == 0)
         new_tab({
-            .conType = World::CONNECTIONTYPE_LOCAL
+            .isClient = false
         }, true);
 
     std::shared_ptr<World> oldWorld = world;
@@ -131,7 +131,7 @@ void MainProgram::update() {
 
 void MainProgram::update_display_names() {
     for(auto& w : worlds) {
-        if(!w->network_being_used())
+        if(!w->netObjMan.is_connected())
             w->ownClientData->set_display_name(displayName);
     }
 }
@@ -284,7 +284,7 @@ void MainProgram::draw(SkCanvas* canvas) {
 
 bool MainProgram::network_being_used() {
     for(auto& w : worlds) {
-        if(w->network_being_used())
+        if(w->netObjMan.is_connected())
             return true;
     }
     return false;
@@ -292,7 +292,7 @@ bool MainProgram::network_being_used() {
 
 bool MainProgram::net_server_hosted() {
     for(auto& w : worlds) {
-        if(w->conType == World::CONNECTIONTYPE_SERVER)
+        if(w->netServer)
             return true;
     }
     return false;

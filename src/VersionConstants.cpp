@@ -10,6 +10,7 @@ VersionNumber header_to_version_number(const std::string& header) {
         m["INFPNT000002"] = VersionNumber(0, 1, 0);
         m["INFPNT000003"] = VersionNumber(0, 2, 0);
         m["INFPNT000004"] = VersionNumber(0, 3, 0);
+        m["INFPNT000005"] = VersionNumber(0, 4, 0);
     }
     auto it = m.find(header);
     if(it == m.end())

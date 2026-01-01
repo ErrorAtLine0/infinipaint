@@ -43,3 +43,15 @@ void CanvasComponentAllocator::register_class(World& world) {
         }
     });
 }
+
+void CanvasComponentAllocator::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(comp->get_type());
+    comp->save_file(a);
+}
+
+void CanvasComponentAllocator::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    CanvasComponentType t;
+    a(t);
+    comp = std::unique_ptr<CanvasComponent>(CanvasComponent::allocate_comp(t));
+    comp->load_file(a, version);
+}

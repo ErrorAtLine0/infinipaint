@@ -169,3 +169,14 @@ void DrawCamera::update_main(World& w) {
     if(c.inverseScale < WorldScalar(1))
         w.scale_up_step();
 }
+
+void DrawCamera::save_file(cereal::PortableBinaryOutputArchive& a, const World& w) const {
+    a(c, w.main.window.size.cast<float>().eval());
+}
+
+void DrawCamera::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, World& w) {
+    CoordSpaceHelper coordsToJumpTo;
+    Vector2f windowSizeToJumpTo;
+    a(coordsToJumpTo, windowSizeToJumpTo);
+    smooth_move_to(w, coordsToJumpTo, windowSizeToJumpTo, true);
+}

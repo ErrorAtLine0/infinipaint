@@ -526,13 +526,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
         if(listOfFilesToOpenFromCommand.empty()) {
             mS.m->new_tab({
-                .conType = World::CONNECTIONTYPE_LOCAL
+                .isClient = false
             }, true);
         }
         else {
             for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
                 mS.m->new_tab({
-                    .conType = World::CONNECTIONTYPE_LOCAL,
+                    .isClient = false,
                     .filePathSource = f
                 }, true);
             }

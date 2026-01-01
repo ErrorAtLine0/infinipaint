@@ -2,6 +2,8 @@
 #include <cereal/types/string.hpp>
 #include "../World.hpp"
 #include "../ScaleUpCanvas.hpp"
+#include "BookmarkManager.hpp"
+#include "../World.hpp"
 
 using namespace NetworkingObjects;
 
@@ -103,4 +105,39 @@ void BookmarkListItem::write_constructor_data(const NetObjTemporaryPtr<BookmarkL
     else
         a(*o->bookmarkData);
     o->nameData.write_create_message(a);
+}
+
+void BookmarkListItem::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(*nameData);
+    a(static_cast<bool>(folderData));
+    if(folderData) {
+        a(folderData->folderList->size());
+        for(auto& item : *folderData->folderList)
+            item.obj->save_file(a);
+    }
+    else
+        a(*bookmarkData);
+}
+
+void BookmarkListItem::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, BookmarkManager& bMan) {
+    nameData = bMan.world.netObjMan.make_obj<NameData>();
+    a(*nameData);
+
+    bool isFolder;
+    a(isFolder);
+    if(isFolder) {
+        folderData = std::make_unique<BookmarkFolderData>();
+        folderData->folderList = bMan.world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
+        uint32_t folderSize;
+        a(folderSize);
+        for(uint32_t i = 0; i < folderSize; i++) {
+            BookmarkListItem* item = new BookmarkListItem;
+            item->load_file(a, version, bMan);
+            folderData->folderList->push_back_and_send_create(folderData->folderList, item);
+        }
+    }
+    else {
+        bookmarkData = std::make_unique<BookmarkData>();
+        a(*bookmarkData);
+    }
 }

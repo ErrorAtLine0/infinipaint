@@ -23,7 +23,7 @@ class World;
 class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
-        void init();
+        void server_init_no_file();
         void toolbar_gui();
         void tool_options_gui();
         bool right_click_popup_gui(Vector2f popupPos);

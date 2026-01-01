@@ -36,7 +36,7 @@
 #endif
 
 World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
-    netObjMan(worldInfo.conType != CONNECTIONTYPE_CLIENT),
+    netObjMan(!worldInfo.isClient),
     main(initMain),
     rMan(*this),
     drawProg(*this),
@@ -45,52 +45,31 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     canvasTheme(*this)
 {
     init_net_obj_type_list();
-    init_client_data_list();
-    gridMan.init();
-    bMan.init();
-    drawProg.init();
-    canvasTheme.init();
 
     netSource = worldInfo.netSource;
 
-    if(worldInfo.conType == CONNECTIONTYPE_CLIENT || worldInfo.conType == CONNECTIONTYPE_SERVER)
-        main.init_net_library();
-
     drawData.rMan = &rMan;
     drawData.main = &main;
-    conType = worldInfo.conType;
 
-    switch(conType) {
-        case CONNECTIONTYPE_CLIENT: {
-            clientStillConnecting = true;
-            con.connect_p2p(*this, netSource);
-            set_name("");
-            break;
-        }
-        case CONNECTIONTYPE_LOCAL: {
-            if(worldInfo.filePathSource.has_value())
-                load_from_file(worldInfo.filePathSource.value(), worldInfo.fileDataBuffer);
-            set_name(name);
-            break;
-        }
-        case CONNECTIONTYPE_SERVER: {
-            break;
-        }
+    if(worldInfo.isClient)
+        init_client(worldInfo.netSource);
+    else {
+        init_client_data_list();
+        if(worldInfo.filePathSource.has_value())
+            load_from_file(worldInfo.filePathSource.value(), worldInfo.fileDataBuffer);
+        else
+            load_empty_canvas();
+        set_name(name);
     }
-
-    init_client_callbacks();
-    con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, main.displayName);
 }
 
 void World::init_client_data_list() {
-    if(netObjMan.is_server()) {
-        clients = netObjMan.make_obj<NetworkingObjects::NetObjUnorderedSet<ClientData>>();
-        ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{
-            .cursorColor = get_random_cursor_color(),
-            .displayName = main.displayName
-        });
-        init_client_data_list_callbacks();
-    }
+    clients = netObjMan.make_obj<NetworkingObjects::NetObjUnorderedSet<ClientData>>();
+    ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{
+        .cursorColor = get_random_cursor_color(),
+        .displayName = main.displayName
+    });
+    init_client_data_list_callbacks();
 }
 
 Vector3f World::get_random_cursor_color() {
@@ -124,56 +103,18 @@ void World::init_net_obj_type_list() {
     NetworkingObjects::register_unordered_set_class<ClientData>(netObjMan);
 }
 
-void World::init_server_callbacks() {
-    rMan.init_server_callbacks();
-    drawProg.init_server_callbacks();
-    netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        ClientData::InitStruct newClientData;
-        newClientData.cursorColor = get_random_cursor_color();
-        message(newClientData.displayName);
-        ensure_display_name_unique(newClientData.displayName);
+void World::init_client(const std::string& serverFullID) {
+    main.init_net_library();
+    clientStillConnecting = true;
+    netClient = std::make_shared<NetClient>(serverFullID);
+    lastKeepAliveSent = std::chrono::steady_clock::now();
+    NetLibrary::register_client(netClient);
+    netObjMan.set_client(netClient, SERVER_UPDATE_NETWORK_OBJECT, SERVER_UPDATE_MANY_NETWORK_OBJECTS);
+    set_name("");
 
-        newClientData.camCoords = ownClientData->get_cam_coords();
-        newClientData.windowSize = ownClientData->get_window_size();
-        newClientData.gridSize = ownClientData->get_grid_size();
-
-        NetworkingObjects::NetObjTemporaryPtr<ClientData> clientDataObjPtr = clients->emplace_direct(clients, newClientData);
-        client->customID = clientDataObjPtr.get_net_id().data;
-        auto ss(std::make_shared<std::stringstream>());
-        {
-            cereal::PortableBinaryOutputArchive a(*ss);
-            a(CLIENT_INITIAL_DATA, name, clientDataObjPtr.get_net_id());
-            bMan.bookmarkListRoot.write_create_message(a);
-            gridMan.grids.write_create_message(a);
-            drawProg.write_components_server(a);
-            canvasTheme.write_create_message(a);
-            clients.write_create_message(a);
-        }
-        netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
-        for(auto& r : rMan.resource_list()) {
-            netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, r.get_net_id());
-            netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, *r);
-        }
-    });
-    netServer->add_recv_callback(SERVER_UPDATE_NETWORK_OBJECT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        netObjMan.read_update_message(message, client);
-    });
-    netServer->add_recv_callback(SERVER_UPDATE_MANY_NETWORK_OBJECTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        netObjMan.read_many_update_message(message, client);
-    });
-    netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-    });
-    netServer->add_disconnect_callback([&](std::shared_ptr<NetServer::ClientData> client) {
-        NetworkingObjects::NetObjID idToErase;
-        idToErase.data = client->customID;
-        clients->erase(clients, idToErase);
-    });
-}
-
-void World::init_client_callbacks() {
     rMan.init_client_callbacks();
     drawProg.init_client_callbacks();
-    con.client_add_recv_callback(CLIENT_INITIAL_DATA, [&](cereal::PortableBinaryInputArchive& message) {
+    netClient->add_recv_callback(CLIENT_INITIAL_DATA, [&](cereal::PortableBinaryInputArchive& message) {
         std::string fileDisplayName;
         NetworkingObjects::NetObjID clientDataObjID;
         message(fileDisplayName, clientDataObjID);
@@ -189,43 +130,22 @@ void World::init_client_callbacks() {
 
         clientStillConnecting = false;
     });
-    con.client_add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
+    netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
     });
-    con.client_add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
+    netClient->add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_many_update_message(message, nullptr);
     });
-    con.client_add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
+    netClient->add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
+
+    netClient->send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, main.displayName);
 }
 
 void World::focus_update() {
-    con.update();
-
-    if(netServer) {
-        if(netServer->is_disconnected()) {
-            Logger::get().log("USERINFO", "Host connection failed");
-            netSource.clear();
-            netServer = nullptr;
-            conType = CONNECTIONTYPE_LOCAL;
-            con = ConnectionManager();
-            netObjMan.disconnect();
-        }
-        else {
-            netServer->update();
-            if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
-                netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_KEEP_ALIVE);
-                lastKeepAliveSent = std::chrono::steady_clock::now();
-            }
-        }
-    }
-
-    if(con.is_client_disconnected()) {
-        Logger::get().log("USERINFO", "Client connection failed");
-        setToDestroy = true;
-        netObjMan.disconnect();
+    connection_update();
+    if(setToDestroy)
         return;
-    }
 
     if(!clientStillConnecting) {
         delayedUpdateObjectManager.update(netObjMan);
@@ -253,6 +173,36 @@ void World::focus_update() {
         redo_with_checks();
 }
 
+void World::connection_update() {
+    if(netServer) {
+        if(netServer->is_disconnected()) {
+            Logger::get().log("USERINFO", "Host connection failed");
+            netSource.clear();
+            netServer = nullptr;
+            netObjMan.disconnect();
+        }
+        else {
+            netServer->update();
+            if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
+                netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_KEEP_ALIVE);
+                lastKeepAliveSent = std::chrono::steady_clock::now();
+            }
+        }
+    }
+    else if(netClient) {
+        if(netClient->is_disconnected()) {
+            Logger::get().log("USERINFO", "Client connection failed");
+            setToDestroy = true;
+            netObjMan.disconnect();
+        }
+        netClient->update();
+        if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
+            netClient->send_items_to_server(UNRELIABLE_COMMAND_CHANNEL, SERVER_KEEP_ALIVE);
+            lastKeepAliveSent = std::chrono::steady_clock::now();
+        }
+    }
+}
+
 void World::undo_with_checks() {
     if(!clientStillConnecting && !drawProg.prevent_undo_or_redo())
         undo.undo();
@@ -264,18 +214,9 @@ void World::redo_with_checks() {
 }
 
 void World::unfocus_update() {
-    con.update();
-    if(con.is_client_disconnected()) {
-        Logger::get().log("USERINFO", "Client connection failed");
-        setToDestroy = true;
-    }
-    if(netServer) {
-        netServer->update();
-        if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
-            netServer->send_items_to_all_clients(UNRELIABLE_COMMAND_CHANNEL, CLIENT_KEEP_ALIVE);
-            lastKeepAliveSent = std::chrono::steady_clock::now();
-        }
-    }
+    connection_update();
+    if(setToDestroy)
+        return;
 }
 
 void World::send_chat_message(const std::string& message) {
@@ -300,10 +241,6 @@ WorldVec World::get_mouse_world_move() {
 
 void World::early_destroy() {
     //con.early_destroy();
-}
-
-bool World::network_being_used() {
-    return conType != CONNECTIONTYPE_LOCAL;
 }
 
 void World::set_name(const std::string& n) {
@@ -353,15 +290,55 @@ void World::ensure_display_name_unique(std::string& displayName) {
 }
 
 void World::start_hosting(const std::string& initNetSource, const std::string& serverLocalID) {
-    if(conType != CONNECTIONTYPE_LOCAL)
-        return;
     main.init_net_library();
     netServer = std::make_shared<NetServer>(serverLocalID);
+    lastKeepAliveSent = std::chrono::steady_clock::now();
     NetLibrary::register_server(netServer);
     netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT, CLIENT_UPDATE_MANY_NETWORK_OBJECTS);
-    conType = CONNECTIONTYPE_SERVER;
     netSource = initNetSource;
-    init_server_callbacks();
+    rMan.init_server_callbacks();
+    drawProg.init_server_callbacks();
+    netServer->add_recv_callback(SERVER_INITIAL_DATA, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        ClientData::InitStruct newClientData;
+        newClientData.cursorColor = get_random_cursor_color();
+        message(newClientData.displayName);
+        ensure_display_name_unique(newClientData.displayName);
+
+        newClientData.camCoords = ownClientData->get_cam_coords();
+        newClientData.windowSize = ownClientData->get_window_size();
+        newClientData.gridSize = ownClientData->get_grid_size();
+
+        NetworkingObjects::NetObjTemporaryPtr<ClientData> clientDataObjPtr = clients->emplace_direct(clients, newClientData);
+        client->customID = clientDataObjPtr.get_net_id().data;
+        auto ss(std::make_shared<std::stringstream>());
+        {
+            cereal::PortableBinaryOutputArchive a(*ss);
+            a(CLIENT_INITIAL_DATA, name, clientDataObjPtr.get_net_id());
+            bMan.bookmarkListRoot.write_create_message(a);
+            gridMan.grids.write_create_message(a);
+            drawProg.write_components_server(a);
+            canvasTheme.write_create_message(a);
+            clients.write_create_message(a);
+        }
+        netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
+        for(auto& r : rMan.resource_list()) {
+            netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_ID, r.get_net_id());
+            netServer->send_items_to_client(client, RESOURCE_COMMAND_CHANNEL, CLIENT_NEW_RESOURCE_DATA, *r);
+        }
+    });
+    netServer->add_recv_callback(SERVER_UPDATE_NETWORK_OBJECT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        netObjMan.read_update_message(message, client);
+    });
+    netServer->add_recv_callback(SERVER_UPDATE_MANY_NETWORK_OBJECTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+        netObjMan.read_many_update_message(message, client);
+    });
+    netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
+    });
+    netServer->add_disconnect_callback([&](std::shared_ptr<NetServer::ClientData> client) {
+        NetworkingObjects::NetObjID idToErase;
+        idToErase.data = client->customID;
+        clients->erase(clients, idToErase);
+    });
 }
 
 void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
@@ -406,6 +383,13 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
     }
 }
 
+void World::load_empty_canvas() {
+    gridMan.server_init_no_file();
+    bMan.server_init_no_file();
+    drawProg.server_init_no_file();
+    canvasTheme.server_init_no_file();
+}
+
 void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer) {
     filePath = force_extension_on_path(filePathToLoadFrom, FILE_EXTENSION);
 
@@ -444,33 +428,19 @@ void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std:
 }
 
 void World::save_file(cereal::PortableBinaryOutputArchive& a) const {
-    a(drawData.cam.c, main.window.size.cast<float>().eval());
-    //a(convert_vec3<Vector3f>(canvasTheme.backColor));
+    drawData.cam.save_file(a, *this);
+    canvasTheme.save_file(a);
     drawProg.save_file(a);
+    bMan.save_file(a);
+    gridMan.save_file(a);
 }
 
 void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    CoordSpaceHelper coordsToJumpTo;
-    Vector2f windowSizeToJumpTo;
-    a(coordsToJumpTo, windowSizeToJumpTo);
-
-    //if(version < VersionNumber(0, 1, 0))
-    //    set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
-    //else {
-    //    Vector3f canvasBackColor;
-    //    a(canvasBackColor);
-    //    const Vector3f OLD_DEFAULT_CANVAS_BACKGROUND_COLOR{0.12f, 0.12f, 0.12f};
-    //    if(version < VersionNumber(0, 3, 0) && canvasBackColor == OLD_DEFAULT_CANVAS_BACKGROUND_COLOR)
-    //        set_canvas_background_color(DEFAULT_CANVAS_BACKGROUND_COLOR);
-    //    else
-    //        set_canvas_background_color(canvasBackColor);
-    //}
-
-    drawData.cam.smooth_move_to(*this, coordsToJumpTo, windowSizeToJumpTo, true);
+    drawData.cam.load_file(a, version, *this);
+    canvasTheme.load_file(a, version);
     drawProg.load_file(a, version);
-    //a(bMan);
-    //if(version >= VersionNumber(0, 2, 0))
-    //    a(gridMan);
+    bMan.load_file(a, version);
+    gridMan.load_file(a, version);
 }
 
 WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize) {

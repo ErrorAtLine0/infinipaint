@@ -4,22 +4,19 @@
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include "../GUIStuff/Elements/TreeListing.hpp"
 #include "BookmarkListItem.hpp"
+#include <Helpers/VersionNumber.hpp>
 
 class World;
 
 class BookmarkManager {
     public:
         BookmarkManager(World& w);
-        void init();
+        void server_init_no_file();
         void scale_up(const WorldScalar& scaleUpAmount);
         void setup_list_gui(const std::string& id);
         void refresh_gui_data();
-
-        template <typename Archive> void save(Archive& a) const {
-        }
-
-        template <typename Archive> void load(Archive& a) {
-        }
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
 
         NetworkingObjects::NetObjOwnerPtr<BookmarkListItem> bookmarkListRoot;
     private:
@@ -29,6 +26,8 @@ class BookmarkManager {
         std::unordered_set<NetworkingObjects::NetObjID> oldSelection;
         std::string nameToEdit;
         std::string nameForNew;
+
+        friend class BookmarkListItem;
 
         World& world;
 };

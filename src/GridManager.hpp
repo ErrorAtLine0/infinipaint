@@ -8,7 +8,7 @@ class World;
 class GridManager {
     public:
         GridManager(World& w);
-        void init();
+        void server_init_no_file();
 
         void add_default_grid(const std::string& newName);
 
@@ -32,6 +32,8 @@ class GridManager {
         void draw_front(SkCanvas* canvas, const DrawData& drawData);
         void draw_coordinates(SkCanvas* canvas, const DrawData& drawData);
         void scale_up(const WorldScalar& scaleUpAmount);
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
 
         NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<WorldGrid>> grids;
         World& world;

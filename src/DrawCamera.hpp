@@ -4,8 +4,7 @@
 #include "SharedTypes.hpp"
 #include <Helpers/SCollision.hpp>
 #include "CoordSpaceHelper.hpp"
-
-#include "include/core/SkMatrix.h"
+#include <Helpers/VersionNumber.hpp>
 
 using namespace Eigen;
 
@@ -26,6 +25,9 @@ class DrawCamera {
         void update_main(World& main);
 
         void scale_up(World& w, const WorldScalar& scaleUpAmount);
+
+        void save_file(cereal::PortableBinaryOutputArchive& a, const World& w) const;
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, World& w);
     private:
         struct SmoothMove {
             CoordSpaceHelper start;

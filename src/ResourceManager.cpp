@@ -18,14 +18,14 @@ ResourceManager::ResourceManager(World& initWorld):
 {}
 
 void ResourceManager::init_client_callbacks() {
-    world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
+    world.netClient->add_recv_callback(SERVER_NEW_RESOURCE_ID, [&](cereal::PortableBinaryInputArchive& message) {
         NetworkingObjects::NetObjID idBeingRetrieved;
         message(idBeingRetrieved);
         // There is a scenario where the resource id and data messages can be sent twice for the same resource (a resource can be sent early before CLIENT_INITIAL_DATA is sent, and then resent with CLIENT_INITIAL_DATA), so check if resource already exists, and only keep track of the ID if the resource doesn't exist yet
         if(!world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(idBeingRetrieved))
             resourcesBeingRetrieved.emplace(idBeingRetrieved, std::weak_ptr<NetServer::ClientData>());
     });
-    world.con.client_add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
+    world.netClient->add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
         if(!resourcesBeingRetrieved.empty()) { // If the resource was sent for the second time, this will be empty, so we can ignore the message
             ResourceData newResource;
             message(newResource);
@@ -69,8 +69,8 @@ float ResourceManager::get_resource_retrieval_progress(const NetworkingObjects::
             return 0.0f;
         return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
     }
-    else if(world.con.client_exists() && !world.con.is_client_disconnected()) {
-        NetLibrary::DownloadProgress progressBytes = world.con.client_get_resource_retrieval_progress();
+    else if(world.netClient) {
+        NetLibrary::DownloadProgress progressBytes = world.netClient->get_progress_into_fragmented_message(RESOURCE_COMMAND_CHANNEL);
         if(progressBytes.totalBytes == 0)
             return 0.0f;
         return static_cast<float>(progressBytes.downloadedBytes) / static_cast<float>(progressBytes.totalBytes);
@@ -133,9 +133,9 @@ const NetworkingObjects::NetObjOwnerPtr<ResourceData>& ResourceManager::add_reso
         world.netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
         world.netServer->send_items_to_all_clients(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     }
-    else {
-        world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
-        world.con.client_send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
+    else if(world.netClient) {
+        world.netClient->send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_ID, resourceInsert.get_net_id());
+        world.netClient->send_items_to_server(RESOURCE_COMMAND_CHANNEL, SERVER_NEW_RESOURCE_DATA, resource);
     }
     return resourceInsert;
 }

@@ -5,13 +5,13 @@
 #include "UndoManager.hpp"
 #include "Bookmarks/BookmarkManager.hpp"
 #include "ResourceManager.hpp"
-#include "ConnectionManager.hpp"
 #include "DrawingProgram/DrawingProgram.hpp"
 #include "Toolbar.hpp"
 #include "SharedTypes.hpp"
 #include "CanvasTheme.hpp"
 #include "GridManager.hpp"
 #include <Helpers/NetworkingObjects/NetObjManager.hpp>
+#include <chrono>
 #include <filesystem>
 #include "ClientData.hpp"
 
@@ -24,14 +24,8 @@ class World {
         static constexpr std::string FILE_EXTENSION = "infpnt";
         static constexpr size_t CHAT_SIZE = 10;
 
-        enum ConnectionType : int {
-            CONNECTIONTYPE_CLIENT,
-            CONNECTIONTYPE_SERVER,
-            CONNECTIONTYPE_LOCAL
-        };
-
         struct OpenWorldInfo {
-            ConnectionType conType;
+            bool isClient;
             std::optional<std::filesystem::path> filePathSource;
             std::string netSource;
             std::string serverLocalID;
@@ -52,7 +46,6 @@ class World {
         ResourceManager rMan;
         DrawingProgram drawProg;
         BookmarkManager bMan;
-        ConnectionManager con;
         GridManager gridMan;
 
         std::deque<Toolbar::ChatMessage> chatMessages;
@@ -75,9 +68,6 @@ class World {
         void draw(SkCanvas* canvas);
         void early_destroy();
 
-        bool network_being_used();
-
-        ConnectionType conType;
         bool clientStillConnecting = false;
 
         void save_to_file(const std::filesystem::path& filePathToSaveAt);
@@ -101,18 +91,22 @@ class World {
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
 
         std::shared_ptr<NetServer> netServer;
+        std::shared_ptr<NetClient> netClient;
     private:
+        void load_empty_canvas();
+
         Vector3f get_random_cursor_color();
         void init_client_data_list();
         void init_client_data_list_callbacks();
         void init_net_obj_type_list();
 
-        void init_client_callbacks();
-        void init_server_callbacks();
+        void init_client(const std::string& serverFullID);
         void set_name(const std::string& n);
 
         void draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData);
         void ensure_display_name_unique(std::string& displayName);
+
+        void connection_update();
 
         TimePoint timeToSendCameraData;
         WorldVec mousePreviousWorldVec = {0, 0};
