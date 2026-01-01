@@ -69,3 +69,8 @@ void DrawingProgramLayerFolder::save_file(cereal::PortableBinaryOutputArchive& a
     for(auto& listItem : *folderList)
         listItem.obj->save_file(a);
 }
+
+void DrawingProgramLayerFolder::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
+    for(auto& listItem : *folderList)
+        listItem.obj->get_used_resources(resourceSet);
+}

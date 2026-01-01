@@ -433,6 +433,7 @@ void World::save_file(cereal::PortableBinaryOutputArchive& a) const {
     drawProg.save_file(a);
     bMan.save_file(a);
     gridMan.save_file(a);
+    rMan.save_file(a);
 }
 
 void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
@@ -441,6 +442,7 @@ void World::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber versi
     drawProg.load_file(a, version);
     bMan.load_file(a, version);
     gridMan.load_file(a, version);
+    rMan.load_file(a, version);
 }
 
 WorldScalar World::calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize) {

@@ -121,6 +121,13 @@ void DrawingProgramLayerListItem::save_file(cereal::PortableBinaryOutputArchive&
         layerData->save_file(a);
 }
 
+void DrawingProgramLayerListItem::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
+    if(folderData)
+        folderData->get_used_resources(resourceSet);
+    else
+        layerData->get_used_resources(resourceSet);
+}
+
 void DrawingProgramLayerListItem::draw(SkCanvas* canvas, const DrawData& drawData) const {
     if(displayData->visible) {
         SkPaint layerPaint;

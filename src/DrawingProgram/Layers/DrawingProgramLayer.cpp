@@ -70,3 +70,8 @@ void DrawingProgramLayer::save_file(cereal::PortableBinaryOutputArchive& a) cons
     for(auto& comp : *components)
         comp.obj->save_file(a);
 }
+
+void DrawingProgramLayer::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
+    for(auto& comp : *components)
+        comp.obj->get_comp().get_used_resources(resourceSet);
+}

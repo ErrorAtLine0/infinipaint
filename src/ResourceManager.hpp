@@ -5,6 +5,7 @@
 #include "ResourceDisplay/ResourceDisplay.hpp"
 #include <Helpers/Networking/NetLibrary.hpp>
 #include <Helpers/NetworkingObjects/NetObjUnorderedSet.hpp>
+#include <Helpers/VersionNumber.hpp>
 
 class World;
 
@@ -32,6 +33,9 @@ class ResourceManager {
         const std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>>& resource_list();
         float get_resource_retrieval_progress(const NetworkingObjects::NetObjID& id);
         std::unordered_map<NetworkingObjects::NetObjID, ResourceData> copy_resource_set_to_map(const std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
+
+        void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
+        void save_file(cereal::PortableBinaryOutputArchive& a) const;
 
         World& world;
     private:

@@ -12,6 +12,7 @@
 #include "World.hpp"
 #include "ResourceDisplay/FileResourceDisplay.hpp"
 #include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/unordered_map.hpp>
 
 ResourceManager::ResourceManager(World& initWorld):
     world(initWorld) 
@@ -179,4 +180,23 @@ std::unordered_map<NetworkingObjects::NetObjID, ResourceData> ResourceManager::c
 
 const std::vector<NetworkingObjects::NetObjOwnerPtr<ResourceData>>& ResourceManager::resource_list() {
     return resourceList;
+}
+
+void ResourceManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    std::unordered_map<NetworkingObjects::NetObjID, ResourceData> loadedResources;
+    a(loadedResources);
+    for(auto& [netID, rData] : loadedResources)
+        resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(netID, rData));
+}
+
+void ResourceManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    std::unordered_set<NetworkingObjects::NetObjID> usedResources;
+    world.drawProg.get_used_resources(usedResources);
+    std::unordered_map<NetworkingObjects::NetObjID, ResourceData> strippedResources;
+    for(auto& n : resourceList)
+        strippedResources.emplace(n.get_net_id(), *n);
+    std::erase_if(strippedResources, [&](const auto& p) {
+        return !usedResources.contains(p.first);
+    });
+    a(strippedResources);
 }

@@ -120,3 +120,7 @@ void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a
 void DrawingProgramLayerManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
     layerTreeRoot->save_file(a);
 }
+
+void DrawingProgramLayerManager::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) {
+    layerTreeRoot->get_used_resources(resourceSet);
+}

@@ -545,6 +545,10 @@ void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
     layerMan.save_file(a);
 }
 
+void DrawingProgram::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) {
+    layerMan.get_used_resources(resourceSet);
+}
+
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(drawData.dontUseDrawProgCache)
         layerMan.draw(canvas, drawData);

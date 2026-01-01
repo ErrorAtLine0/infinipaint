@@ -2,6 +2,7 @@
 #include <Helpers/NetworkingObjects/NetObjManager.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
+#include <unordered_set>
 #include "DrawingProgramLayerFolder.hpp"
 #include "DrawingProgramLayer.hpp"
 #include "SerializedBlendMode.hpp"
@@ -29,6 +30,7 @@ class DrawingProgramLayerListItem {
         void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const;
         void get_flattened_layer_list(std::vector<DrawingProgramLayerListItem*>& objList);
         void scale_up(const WorldScalar& scaleUpAmount);
+        void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
 
         void set_alpha(DrawingProgramLayerManager& layerMan, float newAlpha) const;
         float get_alpha() const;

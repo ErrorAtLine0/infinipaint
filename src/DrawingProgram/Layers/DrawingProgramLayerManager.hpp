@@ -42,6 +42,7 @@ class DrawingProgramLayerManager {
 
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
+        void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet);
 
         bool layer_tree_root_exists();
         const DrawingProgramLayerListItem& get_layer_root();

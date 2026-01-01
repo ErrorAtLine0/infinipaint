@@ -21,4 +21,6 @@ class DrawingProgramLayerFolder {
 
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, DrawingProgramLayerManager& layerMan);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
+
+        void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
 };
