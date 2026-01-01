@@ -91,12 +91,13 @@ void DrawingProgram::init_client_callbacks() {
 }
 
 void DrawingProgram::process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms) {
+    auto selectedSet = selection.get_selection_as_set();
     for(auto& [id, coords] : transforms) {
         auto objPtr = world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(id);
-        if(!objPtr || selection.is_selected(&(*objPtr->objInfo))) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
-            return;
+        if(!objPtr || selectedSet.contains(&(*objPtr->objInfo))) // Whatever transformation we're doing right now will overwrite this transformation, so we can ignore this message
+            continue;
         if(objPtr->coords == coords)
-            return;
+            continue;
         objPtr->coords = coords;
         objPtr->commit_transform(*this);
     }
@@ -110,7 +111,7 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
         if(world.netObjMan.is_server())
             world.netServer->send_items_to_all_clients(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
         else
-            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, CLIENT_TRANSFORM_MANY_COMPONENTS, transforms);
+            world.con.client_send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_TRANSFORM_MANY_COMPONENTS, transforms);
     }
 }
 

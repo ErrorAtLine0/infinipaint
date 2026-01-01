@@ -135,6 +135,10 @@ bool DrawingProgramSelection::is_selected(CanvasComponentContainer::ObjInfo* obj
 
 void DrawingProgramSelection::reset_all() {
     selectedSet.clear();
+    reset_transform_data();
+}
+
+void DrawingProgramSelection::reset_transform_data() {
     selectionTransformCoords = CoordSpaceHelperTransform();
     transformOpHappening = TransformOperation::NONE;
     translateData = TranslationData();
@@ -159,16 +163,14 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 }
 
 void DrawingProgramSelection::commit_transform_selection() {
-    auto selectedSetTemp = selectedSet;
-
     for(auto& comp : selectedSet) {
         comp->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(comp->obj->coords);
-        comp->obj->commit_transform(drawP);
+        comp->obj->commit_transform_dont_invalidate_cache();
     }
     drawP.send_transforms_for(selectedSet);
 
-    reset_all();
-    set_to_selection(selectedSetTemp);
+    reset_transform_data();
+    calculate_aabb();
 }
 
 void DrawingProgramSelection::update() {
@@ -284,6 +286,7 @@ void DrawingProgramSelection::update() {
 
 void DrawingProgramSelection::deselect_all() {
     if(is_something_selected()) {
+        commit_transform_selection();
         for(auto& obj : selectedSet)
             drawP.drawCache.add_component(obj);
         reset_all();
@@ -299,11 +302,9 @@ void DrawingProgramSelection::delete_all() {
 }
 
 void DrawingProgramSelection::erase_component(CanvasComponentContainer::ObjInfo* objToCheck) {
-    if(is_selected(objToCheck)) {
-        std::erase(selectedSet, objToCheck);
-        if(selectedSet.empty())
-            reset_all();
-    }
+    std::erase(selectedSet, objToCheck);
+    if(selectedSet.empty())
+        reset_all();
 }
 
 CanvasComponentContainer::ObjInfo* DrawingProgramSelection::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {

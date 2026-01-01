@@ -38,6 +38,7 @@ class DrawingProgramSelection {
         void sort_selection();
         void calculate_aabb();
         void reset_all();
+        void reset_transform_data();
         std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> erase_select_objects_in_bvh_func(std::vector<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector);
 
         SCollision::ColliderCollection<float> camSpaceSelection;

@@ -669,24 +669,6 @@ namespace NetworkingObjects {
                 return clientData.begin();
             }
 
-            NetworkingObjects::NetObjOrderedListIterator<T> get_prev_client_iterator_from_server_previous_net_obj_id(NetworkingObjects::NetObjID previousObjId) {
-                if(previousObjId == NetworkingObjects::NetObjID{0, 0})
-                    return clientData.begin();
-                else {
-                    auto serverIt = serverIdToDataMap[previousObjId];
-                    for(;;) {
-                        NetworkingObjects::NetObjID netObjID = *serverIt;
-                        auto clientIt = clientIdToDataMap.find(netObjID);
-                        if(clientIt != clientIdToDataMap.end())
-                            return clientIt->second;
-                        if(serverIt == serverData.begin())
-                            return clientData.begin();
-                        --serverIt;
-                    }
-                }
-                return clientData.begin();
-            }
-
             std::list<NetObjID>::iterator get_server_iterator_from_server_previous_net_obj_id(NetworkingObjects::NetObjID previousObjId) {
                 if(previousObjId == NetworkingObjects::NetObjID{0, 0})
                     return serverData.begin();
