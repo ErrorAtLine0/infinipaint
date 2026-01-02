@@ -9,7 +9,7 @@ class WorldUndoManager;
 
 class WorldUndoAction {
     public:
-        virtual const char* get_name() const = 0;
+        virtual std::string get_name() const = 0;
         virtual bool undo(WorldUndoManager& undoMan) = 0;
         virtual bool redo(WorldUndoManager& undoMan) = 0;
         virtual void scale_up(const WorldScalar& scaleAmount);
@@ -35,7 +35,7 @@ class WorldUndoManager {
         UndoObjectID get_undoid_from_netid(const NetworkingObjects::NetObjID& netObjID);
         void register_new_netid_to_existing_undoid(UndoObjectID existingUndoID, const NetworkingObjects::NetObjID& netObjID);
         std::optional<NetworkingObjects::NetObjID> get_netid_from_undoid(UndoObjectID undoID);
-        std::vector<const char*> get_front_undo_queue_names(unsigned count);
+        std::vector<std::string> get_front_undo_queue_names(unsigned count);
 
         World& world;
     private:

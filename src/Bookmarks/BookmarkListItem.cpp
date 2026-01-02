@@ -11,7 +11,25 @@ void BookmarkData::jump_to(World& world) const {
     world.drawData.cam.smooth_move_to(world, coords, windowSize.cast<float>());
 }
 
+void BookmarkData::scale_up(const WorldScalar& scaleUpAmount) {
+    coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+}
+
 BookmarkListItem::BookmarkListItem() {}
+
+BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const BookmarkCompleteInitData& initData) {
+    nameData = netObjMan.make_obj<NameData>();
+    nameData->name = initData.name;
+    if(initData.folderList) {
+        auto& initFolderList = initData.folderList.value();
+        folderData = std::make_unique<BookmarkFolderData>();
+        folderData->folderList = netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
+        for(auto& initFolder : initFolderList)
+            folderData->folderList->emplace_back_direct(folderData->folderList, netObjMan, initFolder);
+    }
+    else
+        bookmarkData = std::make_unique<BookmarkData>(initData.bookmarkData.value());
+}
 
 BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData) {
     if(isFolder) {
@@ -22,6 +40,20 @@ BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, 
         bookmarkData = std::make_unique<BookmarkData>(initBookmarkData);
     nameData = netObjMan.make_obj<NameData>();
     nameData->name = initName;
+}
+
+BookmarkCompleteInitData BookmarkListItem::get_complete_init_data() {
+    BookmarkCompleteInitData toRet;
+    toRet.name = nameData->name;
+    if(folderData) {
+        toRet.folderList = std::vector<BookmarkCompleteInitData>();
+        auto& folderListToRet = toRet.folderList.value();
+        for(auto& b : *folderData->folderList)
+            folderListToRet.emplace_back(b.obj->get_complete_init_data());
+    }
+    else
+        toRet.bookmarkData = *bookmarkData;
+    return toRet;
 }
 
 void BookmarkListItem::reassign_netobj_ids_call() {
@@ -36,7 +68,7 @@ void BookmarkListItem::scale_up(const WorldScalar& scaleUpAmount) {
             i.obj->scale_up(scaleUpAmount);
     }
     else
-        bookmarkData->coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+        bookmarkData->scale_up(scaleUpAmount);
 }
 
 bool BookmarkListItem::is_folder() const {

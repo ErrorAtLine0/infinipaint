@@ -14,12 +14,20 @@ struct BookmarkData {
     template <class Archive> void serialize(Archive& a) {
         a(coords, windowSize);
     }
+    void scale_up(const WorldScalar& scaleUpAmount);
     void jump_to(World& world) const;
+};
+
+struct BookmarkCompleteInitData {
+    std::string name;
+    std::optional<std::vector<BookmarkCompleteInitData>> folderList;
+    std::optional<BookmarkData> bookmarkData;
 };
 
 class BookmarkListItem {
     public:
         BookmarkListItem();
+        BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const BookmarkCompleteInitData& initData);
         BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData);
         bool is_folder() const;
         const BookmarkData& get_bookmark_data() const;
@@ -32,6 +40,7 @@ class BookmarkListItem {
         void scale_up(const WorldScalar& scaleUpAmount);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, BookmarkManager& bMan);
+        BookmarkCompleteInitData get_complete_init_data();
         
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName);
     private:

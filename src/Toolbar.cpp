@@ -1237,8 +1237,8 @@ void Toolbar::performance_metrics() {
             .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         }) {
             gui.text_label("Undo queue");
-            std::vector<const char*> undoList = main.world->undo.get_front_undo_queue_names(10);
-            for(const char* u : undoList)
+            std::vector<std::string> undoList = main.world->undo.get_front_undo_queue_names(10);
+            for(const std::string& u : undoList)
                 gui.text_label(u);
         }
         CLAY_AUTO_ID({

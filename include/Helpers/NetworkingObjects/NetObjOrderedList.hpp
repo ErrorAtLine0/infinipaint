@@ -58,6 +58,9 @@ namespace NetworkingObjects {
             static NetObjOrderedListIterator<T> push_back_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, T* newObj) {
                 return l->insert_single(l, nullptr, l->end(), l.get_obj_man()->template make_obj_from_ptr<T>(newObj));
             }
+            template <typename ...Args> NetObjOrderedListIterator<T> emplace_direct(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListIterator<T>& it, Args&&... items) {
+                return l->insert_single(l, nullptr, it, l.get_obj_man()->template make_obj_direct<T>(items...));
+            }
             static NetObjOrderedListIterator<T> insert_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListIterator<T>& it, T* newObj) {
                 return l->insert_single(l, nullptr, it, l.get_obj_man()->template make_obj_from_ptr<T>(newObj));
             }

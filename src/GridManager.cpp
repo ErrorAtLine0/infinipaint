@@ -22,11 +22,12 @@ void GridManager::add_default_grid(const std::string& newName) {
 
         class AddGridWorldUndoAction : public WorldUndoAction {
             public:
-                AddGridWorldUndoAction(const WorldGrid& initGridData, WorldUndoManager::UndoObjectID initUndoID):
+                AddGridWorldUndoAction(const WorldGrid& initGridData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID):
                     gridData(initGridData),
+                    pos(newPos),
                     undoID(initUndoID)
                 {}
-                const char* get_name() const override {
+                std::string get_name() const override {
                     return "Add Grid";
                 }
                 bool undo(WorldUndoManager& undoMan) override {
@@ -42,7 +43,7 @@ void GridManager::add_default_grid(const std::string& newName) {
                     if(toInsertID.has_value())
                         return false;
                     auto& gridList = undoMan.world.gridMan.grids;
-                    auto insertedIt = gridList->emplace_back_direct(gridList, gridData);
+                    auto insertedIt = gridList->emplace_direct(gridList, gridList->at(pos), gridData);
                     undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
                     return true;
                 }
@@ -52,10 +53,11 @@ void GridManager::add_default_grid(const std::string& newName) {
                 ~AddGridWorldUndoAction() {}
 
                 WorldGrid gridData;
+                uint32_t pos;
                 WorldUndoManager::UndoObjectID undoID;
         };
 
-        world.undo.push(std::make_unique<AddGridWorldUndoAction>(g, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
+        world.undo.push(std::make_unique<AddGridWorldUndoAction>(g, it->pos, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
     }
 }
 
@@ -63,11 +65,12 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
     if(grids) {
         class EraseGridWorldUndoAction : public WorldUndoAction {
             public:
-                EraseGridWorldUndoAction(const WorldGrid& initGridData, WorldUndoManager::UndoObjectID initUndoID):
+                EraseGridWorldUndoAction(const WorldGrid& initGridData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID):
                     gridData(initGridData),
+                    pos(newPos),
                     undoID(initUndoID)
                 {}
-                const char* get_name() const override {
+                std::string get_name() const override {
                     return "Remove Grid";
                 }
                 bool undo(WorldUndoManager& undoMan) override {
@@ -75,7 +78,7 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
                     if(toInsertID.has_value())
                         return false;
                     auto& gridList = undoMan.world.gridMan.grids;
-                    auto insertedIt = gridList->emplace_back_direct(gridList, gridData);
+                    auto insertedIt = gridList->emplace_direct(gridList, gridList->at(pos), gridData);
                     undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
                     return true;
                 }
@@ -93,11 +96,12 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
                 ~EraseGridWorldUndoAction() {}
 
                 WorldGrid gridData;
+                uint32_t pos;
                 WorldUndoManager::UndoObjectID undoID;
         };
 
         auto it = grids->at(indexToRemove);
-        world.undo.push(std::make_unique<EraseGridWorldUndoAction>(*it->obj, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
+        world.undo.push(std::make_unique<EraseGridWorldUndoAction>(*it->obj, it->pos, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
         grids->erase(grids, it);
     }
 }
@@ -110,7 +114,7 @@ void GridManager::finalize_grid_modify(const NetworkingObjects::NetObjTemporaryP
                 gridDataNew(initGridDataNew),
                 undoID(initUndoID)
             {}
-            const char* get_name() const override {
+            std::string get_name() const override {
                 return "Modify Grid";
             }
             bool undo(WorldUndoManager& undoMan) override {
