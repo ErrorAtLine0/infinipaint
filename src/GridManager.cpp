@@ -26,6 +26,9 @@ void GridManager::add_default_grid(const std::string& newName) {
                     gridData(initGridData),
                     undoID(initUndoID)
                 {}
+                const char* get_name() const override {
+                    return "Add Grid";
+                }
                 bool undo(WorldUndoManager& undoMan) override {
                     std::optional<NetworkingObjects::NetObjID> toEraseID = undoMan.get_netid_from_undoid(undoID);
                     if(!toEraseID.has_value())
@@ -64,6 +67,9 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
                     gridData(initGridData),
                     undoID(initUndoID)
                 {}
+                const char* get_name() const override {
+                    return "Remove Grid";
+                }
                 bool undo(WorldUndoManager& undoMan) override {
                     std::optional<NetworkingObjects::NetObjID> toInsertID = undoMan.get_netid_from_undoid(undoID);
                     if(toInsertID.has_value())
@@ -104,6 +110,9 @@ void GridManager::finalize_grid_modify(const NetworkingObjects::NetObjTemporaryP
                 gridDataNew(initGridDataNew),
                 undoID(initUndoID)
             {}
+            const char* get_name() const override {
+                return "Modify Grid";
+            }
             bool undo(WorldUndoManager& undoMan) override {
                 std::optional<NetworkingObjects::NetObjID> toModifyID = undoMan.get_netid_from_undoid(undoID);
                 if(!toModifyID.has_value())

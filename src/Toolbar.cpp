@@ -1221,25 +1221,50 @@ void Toolbar::performance_metrics() {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
+            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+            .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .floating = {.offset = {-10, -10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_BOTTOM, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        std::stringstream a;
-        a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
-        gui.text_label(a.str());
-        gui.text_label("Item Count: " + std::to_string(main.world->drawProg.layerMan.total_component_count()));
-        std::stringstream b;
-        b << "Coord: " << main.world->drawData.cam.c.pos.x().display_int_str(5) << ", " << main.world->drawData.cam.c.pos.y().display_int_str(5);
-        gui.text_label(b.str());
-        std::stringstream c;
-        c << "Zoom: " << main.world->drawData.cam.c.inverseScale.display_int_str(5);
-        gui.text_label(c.str());
-        std::stringstream d;
-        d << "Rotation: " << main.world->drawData.cam.c.rotation;
-        gui.text_label(d.str());
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childGap = io->theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        }) {
+            gui.text_label("Undo queue");
+            std::vector<const char*> undoList = main.world->undo.get_front_undo_queue_names(10);
+            for(const char* u : undoList)
+                gui.text_label(u);
+        }
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childGap = io->theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        }) {
+            std::stringstream a;
+            a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
+            gui.text_label(a.str());
+            gui.text_label("Item Count: " + std::to_string(main.world->drawProg.layerMan.total_component_count()));
+            std::stringstream b;
+            b << "Coord: " << main.world->drawData.cam.c.pos.x().display_int_str(5) << ", " << main.world->drawData.cam.c.pos.y().display_int_str(5);
+            gui.text_label(b.str());
+            std::stringstream c;
+            c << "Zoom: " << main.world->drawData.cam.c.inverseScale.display_int_str(5);
+            gui.text_label(c.str());
+            std::stringstream d;
+            d << "Rotation: " << main.world->drawData.cam.c.rotation;
+            gui.text_label(d.str());
+        }
     }
 }
 

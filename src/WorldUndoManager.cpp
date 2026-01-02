@@ -122,3 +122,13 @@ std::optional<NetworkingObjects::NetObjID> WorldUndoManager::get_netid_from_undo
         return std::nullopt;
     return it->second;
 }
+
+std::vector<const char*> WorldUndoManager::get_front_undo_queue_names(unsigned count) {
+    std::vector<const char*> toRet;
+    for(auto& u : undoQueue | std::views::reverse) {
+        toRet.emplace_back(u->get_name());
+        if(toRet.size() == count)
+            return toRet;
+    }
+    return toRet;
+}

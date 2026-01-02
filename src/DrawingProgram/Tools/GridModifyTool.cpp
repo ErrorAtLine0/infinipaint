@@ -151,7 +151,7 @@ void GridModifyTool::tool_update() {
 }
 
 bool GridModifyTool::prevent_undo_or_redo() {
-    return false;
+    return true;
 }
 
 void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
