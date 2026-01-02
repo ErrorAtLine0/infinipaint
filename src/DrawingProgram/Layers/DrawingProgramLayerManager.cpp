@@ -1,10 +1,12 @@
 #include "DrawingProgramLayerManager.hpp"
 #include "../../World.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
+#include "Helpers/NetworkingObjects/NetObjOwnerPtr.decl.hpp"
 #include "Helpers/Parallel.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include "../../CanvasComponents/CanvasComponentAllocator.hpp"
 #include "../../CanvasComponents/CanvasComponent.hpp"
+#include <chrono>
 
 DrawingProgramLayerManager::DrawingProgramLayerManager(DrawingProgram& drawProg):
     drawP(drawProg), // initialize drawP first for next objects to be initialized properly
@@ -116,16 +118,17 @@ void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a
     }
     else {
         server_init_no_file();
-        auto editingLayerTmpPtr = editingLayer.lock();
+        commitUpdateOnComponentInsert = false;
+        CanvasComponentContainer::NetListTemporaryPtr editingLayerTmpPtrComponents = editingLayer.lock()->get_layer().components;
         uint64_t compCount;
         a(compCount);
         for(uint64_t i = 0; i < compCount; i++) {
             CanvasComponentContainer* newContainer = new CanvasComponentContainer();
             newContainer->load_file(a, version, drawP.world.netObjMan);
-            editingLayerTmpPtr->get_layer().components->push_back_and_send_create(editingLayerTmpPtr->get_layer().components, newContainer);
+            editingLayerTmpPtrComponents->push_back_and_send_create(editingLayerTmpPtrComponents, newContainer);
         }
+        commitUpdateOnComponentInsert = true;
     }
-
     auto flattenedCompList = get_flattened_component_list();
     parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
         comp->obj->commit_update_dont_invalidate_cache(drawP);

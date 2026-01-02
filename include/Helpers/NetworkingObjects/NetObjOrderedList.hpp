@@ -53,22 +53,13 @@ namespace NetworkingObjects {
         public:
             // Don't use this function unless you're sure that class T isn't a base class
             template <typename ...Args> NetObjOrderedListIterator<T> emplace_back_direct(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, Args&&... items) {
-                std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> newObjOwner;
-                newObjOwner.emplace_back(l->end(), std::move(l.get_obj_man()->template make_obj_direct<T>(items...)));
-                auto toRet = l->insert_ordered_list(l, nullptr, newObjOwner);
-                return toRet.empty() ? l->end() : toRet.back();
+                return l->insert_single(l, nullptr, l->end(), l.get_obj_man()->template make_obj_direct<T>(items...));
             }
             static NetObjOrderedListIterator<T> push_back_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, T* newObj) {
-                std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> newObjOwner;
-                newObjOwner.emplace_back(l->end(), std::move(l.get_obj_man()->template make_obj_from_ptr<T>(newObj)));
-                auto toRet = l->insert_ordered_list(l, nullptr, newObjOwner);
-                return toRet.empty() ? l->end() : toRet.back();
+                return l->insert_single(l, nullptr, l->end(), l.get_obj_man()->template make_obj_from_ptr<T>(newObj));
             }
             static NetObjOrderedListIterator<T> insert_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListIterator<T>& it, T* newObj) {
-                std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> newObjOwner;
-                newObjOwner.emplace_back(it, std::move(l.get_obj_man()->template make_obj_from_ptr<T>(newObj)));
-                auto toRet = l->insert_ordered_list(l, nullptr, newObjOwner);
-                return toRet.empty() ? l->end() : toRet.back();
+                return l->insert_single(l, nullptr, it, l.get_obj_man()->template make_obj_from_ptr<T>(newObj));
             }
             static std::vector<NetObjOrderedListIterator<T>> insert_ordered_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<std::pair<NetObjOrderedListIterator<T>, T*>>& newObjs) {
                 if(newObjs.empty())
@@ -120,6 +111,7 @@ namespace NetworkingObjects {
             virtual bool empty() const = 0;
             virtual ~NetObjOrderedList() {}
         protected:
+            virtual NetObjOrderedListIterator<T> insert_single(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, const NetObjOrderedListIterator<T> it, NetObjOwnerPtr<T> newObj) = 0;
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObj) = 0;
             virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) = 0;
             virtual void write_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) = 0;
@@ -219,6 +211,29 @@ namespace NetworkingObjects {
                 }
             }
         protected:
+            virtual NetObjOrderedListIterator<T> insert_single(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, const NetObjOrderedListIterator<T> it, NetObjOwnerPtr<T> newObj) override {
+                NetworkingObjects::NetObjID idPosition;
+                if(it == data.begin())
+                    idPosition = NetworkingObjects::NetObjID{0, 0};
+                else
+                    idPosition = std::prev(it)->obj.get_net_id();
+
+                NetObjOrderedListIterator<T> toRet = data.emplace(it, std::move(newObj), it == data.end() ? data.size() : it->pos);
+                idToDataMap.emplace(toRet->obj.get_net_id(), toRet);
+
+                set_position_obj_info_list<T>(toRet, data.end());
+                l.send_server_update_to_all_clients_except(clientInserting, RELIABLE_COMMAND_CHANNEL, [&toRet, &idPosition](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                    a(ObjPtrOrderedListCommand_StoC::INSERT_LIST_CONSTRUCT, static_cast<uint32_t>(1));
+                    a(idPosition);
+                    toRet->obj.write_create_message(a);
+                });
+                l.send_server_update_to_client(clientInserting, RELIABLE_COMMAND_CHANNEL, [&toRet, &idPosition](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                    a(ObjPtrOrderedListCommand_StoC::INSERT_LIST_REFERENCE, static_cast<uint32_t>(1));
+                    a(idPosition, toRet->obj.get_net_id());
+                });
+                this->call_insert_callback(toRet);
+                return toRet;
+            }
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};
@@ -305,7 +320,6 @@ namespace NetworkingObjects {
                     idToDataMap.emplace(data.back().obj.get_net_id(), it);
                 }
                 // Dont send the object data to all clients in the constructor, as the function that called read_create_message is also the one that will decide where to send the data of the constructed object
-                // Example: the INSERT_SINGLE command in read_update, if it was inserting another NetObjOrderedList, would first construct the list using read_create_message, then it will call insert() to send it to clients
             }
             virtual void read_update(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
                 ObjPtrOrderedListCommand_CtoS command;
@@ -417,6 +431,20 @@ namespace NetworkingObjects {
                 }
             }
         protected:
+            virtual NetObjOrderedListIterator<T> insert_single(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, const NetObjOrderedListIterator<T> it, NetObjOwnerPtr<T> newObj) override {
+                NetObjOrderedListIterator<T> toRet = clientData.emplace(it, std::move(newObj), it == clientData.end() ? clientData.size() : it->pos);
+                clientIdToDataMap.emplace(toRet->obj.get_net_id(), toRet);
+
+                set_position_obj_info_list<T>(toRet, clientData.end());
+                l.send_server_update_to_all_clients_except(clientInserting, RELIABLE_COMMAND_CHANNEL, [&toRet](const NetObjTemporaryPtr<NetObjOrderedList<T>>&, cereal::PortableBinaryOutputArchive& a) {
+                    a(ObjPtrOrderedListCommand_CtoS::INSERT_LIST, static_cast<uint32_t>(1));
+                    a(toRet->pos);
+                    toRet->obj.write_create_message(a);
+                });
+
+                this->call_insert_callback(toRet);
+                return toRet;
+            }
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};

@@ -15,6 +15,7 @@ class CanvasComponentContainer {
     public:
         typedef NetworkingObjects::NetObjOrderedList<CanvasComponentContainer> NetList;
         typedef NetworkingObjects::NetObjOwnerPtr<NetList> NetListOwnerPtr;
+        typedef NetworkingObjects::NetObjTemporaryPtr<NetList> NetListTemporaryPtr;
         typedef NetworkingObjects::NetObjOrderedListObjectInfo<CanvasComponentContainer> ObjInfo;
         typedef NetworkingObjects::NetObjOrderedListIterator<CanvasComponentContainer> ObjInfoIterator;
 
