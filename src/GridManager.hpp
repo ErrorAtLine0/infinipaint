@@ -34,6 +34,7 @@ class GridManager {
         void scale_up(const WorldScalar& scaleUpAmount);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
+        void finalize_grid_modify(const NetworkingObjects::NetObjTemporaryPtr<WorldGrid>& wGrid, const WorldGrid& oldGridData);
 
         NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<WorldGrid>> grids;
         World& world;

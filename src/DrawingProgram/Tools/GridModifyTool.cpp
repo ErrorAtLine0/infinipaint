@@ -190,5 +190,5 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 void GridModifyTool::switch_tool(DrawingProgramToolType newTool) {
     NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
     if(gLock)
-        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(gLock, true);
+        drawP.world.gridMan.finalize_grid_modify(gLock, oldGrid);
 }

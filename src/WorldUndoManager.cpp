@@ -71,7 +71,7 @@ void WorldUndoManager::reassign_netid(const NetworkingObjects::NetObjID& oldNetO
     if(netIDtoUndoIDIterator != netIDToUndoID.end()) {
         UndoObjectID undoID = netIDtoUndoIDIterator->second;
         netIDToUndoID.erase(netIDtoUndoIDIterator);
-        netIDToUndoID.emplace(newNetObjID, undoID);
+        netIDToUndoID[newNetObjID] = undoID;
         undoIDToNetID[undoID] = newNetObjID;
     }
 }
@@ -92,11 +92,28 @@ void WorldUndoManager::remove_by_undoid(UndoObjectID undoID) {
     }
 }
 
-WorldUndoManager::UndoObjectID WorldUndoManager::register_new_netobj(const NetworkingObjects::NetObjID& netObjID) {
-    ++lastUndoObjectID;
-    undoIDToNetID[lastUndoObjectID] = netObjID;
-    netIDToUndoID[netObjID] = lastUndoObjectID;
-    return lastUndoObjectID;
+WorldUndoManager::UndoObjectID WorldUndoManager::get_undoid_from_netid(const NetworkingObjects::NetObjID& netObjID) {
+    auto it = netIDToUndoID.find(netObjID);
+    if(it == netIDToUndoID.end()) {
+        ++lastUndoObjectID;
+        undoIDToNetID[lastUndoObjectID] = netObjID;
+        netIDToUndoID[netObjID] = lastUndoObjectID;
+        return lastUndoObjectID;
+    }
+    return it->second;
+}
+
+void WorldUndoManager::register_new_netid_to_existing_undoid(UndoObjectID existingUndoID, const NetworkingObjects::NetObjID& netObjID) {
+    auto undoIDToNetIDIterator = undoIDToNetID.find(existingUndoID);
+    if(undoIDToNetIDIterator != undoIDToNetID.end()) {
+        netIDToUndoID.erase(undoIDToNetIDIterator->second);
+        undoIDToNetIDIterator->second = netObjID;
+        netIDToUndoID[netObjID] = existingUndoID;
+    }
+    else {
+        netIDToUndoID[netObjID] = existingUndoID;
+        undoIDToNetID[existingUndoID] = netObjID;
+    }
 }
 
 std::optional<NetworkingObjects::NetObjID> WorldUndoManager::get_netid_from_undoid(UndoObjectID undoID) {

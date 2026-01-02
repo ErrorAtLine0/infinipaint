@@ -31,7 +31,8 @@ class WorldUndoManager {
         void reassign_netid(const NetworkingObjects::NetObjID& oldNetObjID, const NetworkingObjects::NetObjID& newNetObjID);
         void remove_by_netid(const NetworkingObjects::NetObjID& netObjID);
         void remove_by_undoid(UndoObjectID undoID);
-        UndoObjectID register_new_netobj(const NetworkingObjects::NetObjID& netObjID);
+        UndoObjectID get_undoid_from_netid(const NetworkingObjects::NetObjID& netObjID);
+        void register_new_netid_to_existing_undoid(UndoObjectID existingUndoID, const NetworkingObjects::NetObjID& netObjID);
         std::optional<NetworkingObjects::NetObjID> get_netid_from_undoid(UndoObjectID undoID);
 
         World& world;
