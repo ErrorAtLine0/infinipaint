@@ -1,0 +1,107 @@
+#include "WorldUndoManager.hpp"
+
+void WorldUndoAction::scale_up(const WorldScalar& scaleAmount) {}
+WorldUndoAction::~WorldUndoAction() {}
+
+WorldUndoManager::WorldUndoManager(World& initWorld):
+    world(initWorld)
+{}
+
+bool WorldUndoManager::can_undo() {
+    return !undoQueue.empty();
+}
+
+bool WorldUndoManager::can_redo() {
+    return !redoQueue.empty();
+}
+
+void WorldUndoManager::push(std::unique_ptr<WorldUndoAction> undoAction) {
+    push_undo(std::move(undoAction));
+    redoQueue.clear();
+}
+
+void WorldUndoManager::push_undo(std::unique_ptr<WorldUndoAction> undoAction) {
+    if(undoQueue.size() == UNDO_QUEUE_LIMIT)
+        undoQueue.pop_front();
+    undoQueue.emplace_back(std::move(undoAction));
+}
+
+void WorldUndoManager::push_redo(std::unique_ptr<WorldUndoAction> undoAction) {
+    if(redoQueue.size() == UNDO_QUEUE_LIMIT)
+        redoQueue.pop_front();
+    redoQueue.emplace_back(std::move(undoAction));
+}
+
+void WorldUndoManager::undo() {
+    if(undoQueue.empty())
+        return;
+    if(!undoQueue.back()->undo(*this))
+        clear();
+    else {
+        push_redo(std::move(undoQueue.back()));
+        undoQueue.pop_back();
+    }
+}
+
+void WorldUndoManager::redo() {
+    if(redoQueue.empty())
+        return;
+    if(!redoQueue.back()->redo(*this))
+        clear();
+    else {
+        push_undo(std::move(redoQueue.back()));
+        redoQueue.pop_back();
+    }
+}
+
+void WorldUndoManager::clear() {
+    redoQueue.clear();
+    undoQueue.clear();
+}
+
+void WorldUndoManager::scale_up(const WorldScalar& scaleAmount) {
+    for(auto& u : undoQueue)
+        u->scale_up(scaleAmount);
+    for(auto& r : redoQueue)
+        r->scale_up(scaleAmount);
+}
+
+void WorldUndoManager::reassign_netid(const NetworkingObjects::NetObjID& oldNetObjID, const NetworkingObjects::NetObjID& newNetObjID) {
+    auto netIDtoUndoIDIterator = netIDToUndoID.find(oldNetObjID);
+    if(netIDtoUndoIDIterator != netIDToUndoID.end()) {
+        UndoObjectID undoID = netIDtoUndoIDIterator->second;
+        netIDToUndoID.erase(netIDtoUndoIDIterator);
+        netIDToUndoID.emplace(newNetObjID, undoID);
+        undoIDToNetID[undoID] = newNetObjID;
+    }
+}
+
+void WorldUndoManager::remove_by_netid(const NetworkingObjects::NetObjID& netObjID) {
+    auto netIDtoUndoIDIterator = netIDToUndoID.find(netObjID);
+    if(netIDtoUndoIDIterator != netIDToUndoID.end()) {
+        undoIDToNetID.erase(netIDtoUndoIDIterator->second);
+        netIDToUndoID.erase(netIDtoUndoIDIterator);
+    }
+}
+
+void WorldUndoManager::remove_by_undoid(UndoObjectID undoID) {
+    auto undoIDtoNetIDIterator = undoIDToNetID.find(undoID);
+    if(undoIDtoNetIDIterator != undoIDToNetID.end()) {
+        netIDToUndoID.erase(undoIDtoNetIDIterator->second);
+        undoIDToNetID.erase(undoID);
+    }
+}
+
+WorldUndoManager::UndoObjectID WorldUndoManager::register_new_netobj(const NetworkingObjects::NetObjID& netObjID) {
+    ++lastUndoObjectID;
+    undoIDToNetID[lastUndoObjectID] = netObjID;
+    netIDToUndoID[netObjID] = lastUndoObjectID;
+    return lastUndoObjectID;
+}
+
+std::optional<NetworkingObjects::NetObjID> WorldUndoManager::get_netid_from_undoid(UndoObjectID undoID) {
+    auto it = undoIDToNetID.find(undoID);
+    if(it == undoIDToNetID.end())
+        return std::nullopt;
+    return it->second;
+}

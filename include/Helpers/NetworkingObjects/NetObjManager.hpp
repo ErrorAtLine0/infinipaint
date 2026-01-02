@@ -27,6 +27,8 @@ namespace NetworkingObjects {
             void disconnect();
             bool is_server() const;
             bool is_connected() const;
+            void set_netid_reassign_callback(const std::function<void(const NetworkingObjects::NetObjID& oldID, const NetworkingObjects::NetObjID& newID)>& newNetIDReassignCallback);
+            void set_netobj_destroy_callback(const std::function<void(const NetworkingObjects::NetObjID& netID)>& newDestroyCallback);
             template <typename T> NetObjOwnerPtr<T> read_create_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
                 NetObjID id;
                 a(id);
@@ -173,5 +175,7 @@ namespace NetworkingObjects {
             std::unordered_map<NetObjID, SingleObjectData> objectData;
             NetObjManagerTypeList typeList;
             NetTypeIDType nextTypeID;
+            std::function<void(const NetworkingObjects::NetObjID& oldID, const NetworkingObjects::NetObjID& newID)> netIDReassignCallback;
+            std::function<void(const NetworkingObjects::NetObjID& netID)> destroyCallback;
     };
 }

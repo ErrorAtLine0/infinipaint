@@ -38,6 +38,7 @@
 World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     netObjMan(!worldInfo.isClient),
     main(initMain),
+    undo(*this),
     rMan(*this),
     drawProg(*this),
     bMan(*this),
@@ -45,6 +46,12 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
     canvasTheme(*this)
 {
     init_net_obj_type_list();
+    netObjMan.set_netobj_destroy_callback([&undo = undo](const NetworkingObjects::NetObjID& idToDestroy) {
+        undo.remove_by_netid(idToDestroy);
+    });
+    netObjMan.set_netid_reassign_callback([&undo = undo](const NetworkingObjects::NetObjID& oldID, const NetworkingObjects::NetObjID& newID) {
+        undo.reassign_netid(oldID, newID);
+    });
 
     netSource = worldInfo.netSource;
 
@@ -474,8 +481,7 @@ void World::scale_up(const WorldScalar& scaleUpAmount) {
     // This means that the scale up message must be send BEFORE the World::scale_up function is called on our end
     // if this client is the one responsible for the scale up
     drawProg.scale_up(scaleUpAmount);
-
-    undo.clear(); // Do last to make sure that any undo generated while scaling up is removed, as it contains outdated scale info
+    undo.scale_up(scaleUpAmount);
 }
 
 void World::draw(SkCanvas* canvas) {

@@ -34,6 +34,8 @@ namespace NetworkingObjects {
 
     template <typename T> NetObjOwnerPtr<T>::~NetObjOwnerPtr() {
         if(objMan && rawPtr) {
+            if(objMan->destroyCallback)
+                objMan->destroyCallback(id);
             auto it = objMan->objectData.find(id);
             delete static_cast<T*>(it->second.p);
             objMan->objectData.erase(it);
@@ -49,10 +51,13 @@ namespace NetworkingObjects {
             NetObjManager::SingleObjectData objData = it->second;
             objData.p = rawPtr;
             objMan->objectData.erase(it);
+            NetworkingObjects::NetObjID oldID = id;
             id = NetObjID::random_gen();
             objMan->objectData.emplace(id, objData);
             if constexpr(hasReassignNetObjIds)
                 rawPtr->reassign_netobj_ids_call();
+            if(objMan->netIDReassignCallback)
+                objMan->netIDReassignCallback(oldID, id);
         }
     }
 

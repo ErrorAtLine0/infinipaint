@@ -43,6 +43,12 @@ namespace NetworkingObjects {
     bool NetObjManager::is_connected() const {
         return (server && !server->is_disconnected()) || (client && !client->is_disconnected());
     }
+    void NetObjManager::set_netid_reassign_callback(const std::function<void(const NetworkingObjects::NetObjID& oldID, const NetworkingObjects::NetObjID& newID)>& newNetIDReassignCallback) {
+        netIDReassignCallback = newNetIDReassignCallback;
+    }
+    void NetObjManager::set_netobj_destroy_callback(const std::function<void(const NetworkingObjects::NetObjID& netID)>& newDestroyCallback) {
+        destroyCallback = newDestroyCallback;
+    }
     void NetObjManager::send_multi_update_messsage(std::function<void()> captureSendBlock, SendUpdateType updateType, const std::shared_ptr<NetServer::ClientData>& specificClient) {
         if(is_connected()) {
             std::shared_ptr<MultiUpdateData> d = std::make_shared<MultiUpdateData>();

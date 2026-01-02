@@ -2,7 +2,7 @@
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
-#include "UndoManager.hpp"
+#include "WorldUndoManager.hpp"
 #include "Bookmarks/BookmarkManager.hpp"
 #include "ResourceManager.hpp"
 #include "DrawingProgram/DrawingProgram.hpp"
@@ -42,7 +42,7 @@ class World {
 
         MainProgram& main;
         DrawData drawData;
-        UndoManager undo;
+        WorldUndoManager undo;
         ResourceManager rMan;
         DrawingProgram drawProg;
         BookmarkManager bMan;
