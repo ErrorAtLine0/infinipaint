@@ -40,7 +40,12 @@ void TextBoxCanvasComponent::save_file(cereal::PortableBinaryOutputArchive& a) c
 }
 
 void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    if(version < VersionNumber(0, 3, 0)) {
+    if(version >= VersionNumber(0, 3, 0)) {
+        TextData richText;
+        a(d.p1, d.p2, richText);
+        textBox->set_rich_text_data(richText);
+    }
+    else {
         bool loadedEditing; // Unused
         Vector4f textColor;
         float textSize;
@@ -50,11 +55,6 @@ void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
         textBox->insert({0, 0}, currentText);
         textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<ColorTextStyleModifier>(textColor));
         textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<SizeTextStyleModifier>(textSize));
-    }
-    else {
-        TextData richText;
-        a(d.p1, d.p2, richText);
-        textBox->set_rich_text_data(richText);
     }
 }
 

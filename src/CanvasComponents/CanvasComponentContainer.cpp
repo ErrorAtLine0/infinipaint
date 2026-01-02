@@ -63,10 +63,20 @@ void CanvasComponentContainer::save_file(cereal::PortableBinaryOutputArchive& a)
 }
 
 void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, NetObjManager& objMan) {
-    a(coords);
-    compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>();
-    compAllocator->load_file(a, version);
-    compAllocator->comp->compContainer = this;
+    if(version >= VersionNumber(0, 4, 0)) {
+        a(coords);
+        compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>();
+        compAllocator->load_file(a, version);
+        compAllocator->comp->compContainer = this;
+    }
+    else {
+        CanvasComponentType t;
+        NetworkingObjects::NetObjID uselessID;
+        a(t, uselessID, coords);
+        compAllocator = objMan.make_obj_direct<CanvasComponentAllocator>(t);
+        compAllocator->comp->load_file(a, version);
+        compAllocator->comp->compContainer = this;
+    }
 }
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {

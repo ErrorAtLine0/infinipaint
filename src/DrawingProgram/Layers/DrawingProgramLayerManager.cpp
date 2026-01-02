@@ -2,6 +2,9 @@
 #include "../../World.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "Helpers/Parallel.hpp"
+#include "../../CanvasComponents/CanvasComponentContainer.hpp"
+#include "../../CanvasComponents/CanvasComponentAllocator.hpp"
+#include "../../CanvasComponents/CanvasComponent.hpp"
 
 DrawingProgramLayerManager::DrawingProgramLayerManager(DrawingProgram& drawProg):
     drawP(drawProg), // initialize drawP first for next objects to be initialized properly
@@ -104,11 +107,25 @@ CanvasComponentContainer::ObjInfo* DrawingProgramLayerManager::add_component_to_
 
 
 void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    layerTreeRoot = drawP.world.netObjMan.make_obj_from_ptr<DrawingProgramLayerListItem>(new DrawingProgramLayerListItem());
-    layerTreeRoot->load_file(a, version, *this);
-    commitUpdateOnComponentInsert = false;
-    layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
-    commitUpdateOnComponentInsert = true;
+    if(version >= VersionNumber(0, 4, 0)) {
+        layerTreeRoot = drawP.world.netObjMan.make_obj_from_ptr<DrawingProgramLayerListItem>(new DrawingProgramLayerListItem());
+        layerTreeRoot->load_file(a, version, *this);
+        commitUpdateOnComponentInsert = false;
+        layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
+        commitUpdateOnComponentInsert = true;
+    }
+    else {
+        server_init_no_file();
+        auto editingLayerTmpPtr = editingLayer.lock();
+        uint64_t compCount;
+        a(compCount);
+        for(uint64_t i = 0; i < compCount; i++) {
+            CanvasComponentContainer* newContainer = new CanvasComponentContainer();
+            newContainer->load_file(a, version, drawP.world.netObjMan);
+            editingLayerTmpPtr->get_layer().components->push_back_and_send_create(editingLayerTmpPtr->get_layer().components, newContainer);
+        }
+    }
+
     auto flattenedCompList = get_flattened_component_list();
     parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
         comp->obj->commit_update_dont_invalidate_cache(drawP);

@@ -4,6 +4,7 @@
 #include "BookmarkListItem.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
+#include <cereal/types/unordered_map.hpp>
 
 BookmarkManager::BookmarkManager(World& w):
     world(w)
@@ -202,7 +203,21 @@ void BookmarkManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void BookmarkManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem());
-
-    bookmarkListRoot->load_file(a, version, *this);
+    if(version >= VersionNumber(0, 4, 0)) {
+        bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem());
+        bookmarkListRoot->load_file(a, version, *this);
+    }
+    else {
+        server_init_no_file();
+        std::unordered_map<std::string, BookmarkData> bookmarkMap;
+        std::vector<std::pair<std::string, BookmarkData>> bookmarkDataSorted;
+        a(bookmarkMap);
+        for(auto& [name, bData] : bookmarkMap)
+            bookmarkDataSorted.emplace_back(name, bData);
+        std::sort(bookmarkDataSorted.begin(), bookmarkDataSorted.end(), [](auto& aPair, auto& bPair) {
+            return aPair.first < bPair.first;
+        });
+        for(auto& [name, bData] : bookmarkDataSorted)
+            bookmarkListRoot->get_folder_list()->push_back_and_send_create(bookmarkListRoot->get_folder_list(), new BookmarkListItem(world.netObjMan, name, false, bData));
+    }
 }

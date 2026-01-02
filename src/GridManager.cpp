@@ -1,6 +1,7 @@
 #include "GridManager.hpp"
 #include "World.hpp"
 #include "MainProgram.hpp"
+#include <cereal/types/unordered_map.hpp>
 
 GridManager::GridManager(World& w):
     world(w) {}
@@ -79,12 +80,19 @@ void GridManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
 
 void GridManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
     grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
-
-    uint32_t gridSize;
-    a(gridSize);
-    for(uint32_t i = 0; i < gridSize; i++) {
-        WorldGrid* g = new WorldGrid;
-        a(*g);
-        grids->push_back_and_send_create(grids, g);
+    if(version >= VersionNumber(0, 4, 0)) {
+        uint32_t gridSize;
+        a(gridSize);
+        for(uint32_t i = 0; i < gridSize; i++) {
+            WorldGrid* g = new WorldGrid;
+            a(*g);
+            grids->push_back_and_send_create(grids, g);
+        }
+    }
+    else if(version >= VersionNumber(0, 2, 0)) {
+        std::unordered_map<NetworkingObjects::NetObjID, WorldGrid> gridMap;
+        a(gridMap);
+        for(auto& [netID, wGrid] : gridMap)
+            grids->emplace_back_direct(grids, wGrid);
     }
 }
