@@ -3,6 +3,7 @@
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <string>
+#include "../WorldUndoManager.hpp"
 #include "../CoordSpaceHelper.hpp"
 #include <Helpers/VersionNumber.hpp>
 
@@ -18,16 +19,18 @@ struct BookmarkData {
     void jump_to(World& world) const;
 };
 
-struct BookmarkCompleteInitData {
+struct BookmarkCompleteUndoData {
+    WorldUndoManager::UndoObjectID undoID;
     std::string name;
-    std::optional<std::vector<BookmarkCompleteInitData>> folderList;
+    std::optional<std::vector<BookmarkCompleteUndoData>> folderList;
     std::optional<BookmarkData> bookmarkData;
+    void scale_up(const WorldScalar& scaleUpAmount);
 };
 
 class BookmarkListItem {
     public:
         BookmarkListItem();
-        BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const BookmarkCompleteInitData& initData);
+        BookmarkListItem(World& w, const BookmarkCompleteUndoData& undoData);
         BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData);
         bool is_folder() const;
         const BookmarkData& get_bookmark_data() const;
@@ -40,7 +43,8 @@ class BookmarkListItem {
         void scale_up(const WorldScalar& scaleUpAmount);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, BookmarkManager& bMan);
-        BookmarkCompleteInitData get_complete_init_data();
+
+        BookmarkCompleteUndoData get_complete_undo_data(WorldUndoManager& u);
         
         void set_name(NetworkingObjects::DelayUpdateSerializedClassManager& delayedNetObjMan, const std::string& newName);
     private:

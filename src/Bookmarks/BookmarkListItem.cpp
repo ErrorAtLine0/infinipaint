@@ -15,20 +15,27 @@ void BookmarkData::scale_up(const WorldScalar& scaleUpAmount) {
     coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
 }
 
+void BookmarkCompleteUndoData::scale_up(const WorldScalar& scaleUpAmount) {
+    if(bookmarkData)
+        bookmarkData.value().scale_up(scaleUpAmount);
+}
+
 BookmarkListItem::BookmarkListItem() {}
 
-BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const BookmarkCompleteInitData& initData) {
-    nameData = netObjMan.make_obj<NameData>();
-    nameData->name = initData.name;
-    if(initData.folderList) {
-        auto& initFolderList = initData.folderList.value();
+BookmarkListItem::BookmarkListItem(World& w, const BookmarkCompleteUndoData& undoData) {
+    nameData = w.netObjMan.make_obj<NameData>();
+    nameData->name = undoData.name;
+    if(undoData.folderList) {
+        auto& initFolderList = undoData.folderList.value();
         folderData = std::make_unique<BookmarkFolderData>();
-        folderData->folderList = netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
-        for(auto& initFolder : initFolderList)
-            folderData->folderList->emplace_back_direct(folderData->folderList, netObjMan, initFolder);
+        folderData->folderList = w.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>();
+        for(auto& initFolder : initFolderList) {
+            auto it = folderData->folderList->emplace_back_direct(folderData->folderList, w, initFolder);
+            w.undo.register_new_netid_to_existing_undoid(initFolder.undoID, it->obj.get_net_id());
+        }
     }
     else
-        bookmarkData = std::make_unique<BookmarkData>(initData.bookmarkData.value());
+        bookmarkData = std::make_unique<BookmarkData>(undoData.bookmarkData.value());
 }
 
 BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData) {
@@ -42,14 +49,16 @@ BookmarkListItem::BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, 
     nameData->name = initName;
 }
 
-BookmarkCompleteInitData BookmarkListItem::get_complete_init_data() {
-    BookmarkCompleteInitData toRet;
+BookmarkCompleteUndoData BookmarkListItem::get_complete_undo_data(WorldUndoManager& u) {
+    BookmarkCompleteUndoData toRet;
     toRet.name = nameData->name;
     if(folderData) {
-        toRet.folderList = std::vector<BookmarkCompleteInitData>();
+        toRet.folderList = std::vector<BookmarkCompleteUndoData>();
         auto& folderListToRet = toRet.folderList.value();
-        for(auto& b : *folderData->folderList)
-            folderListToRet.emplace_back(b.obj->get_complete_init_data());
+        for(auto& b : *folderData->folderList) {
+            folderListToRet.emplace_back(b.obj->get_complete_undo_data(u));
+            folderListToRet.back().undoID = u.get_undoid_from_netid(b.obj.get_net_id());
+        }
     }
     else
         toRet.bookmarkData = *bookmarkData;

@@ -6,6 +6,10 @@
 class DrawingProgramLayerListItem;
 class DrawingProgramLayerManager;
 
+struct DrawingProgramLayerInitData {
+    std::vector<std::shared_ptr<CanvasComponentContainer::CopyData>> components;
+};
+
 class DrawingProgramLayer {
     public:
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
@@ -13,6 +17,7 @@ class DrawingProgramLayer {
         void get_flattened_component_list(std::vector<CanvasComponentContainer::ObjInfo*>& objList) const;
         void set_to_erase();
         void scale_up(const WorldScalar& scaleUpAmount);
+        DrawingProgramLayerInitData get_init_data() const;
 
         CanvasComponentContainer::NetListOwnerPtr components;
 

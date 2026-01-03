@@ -7,6 +7,10 @@
 class DrawingProgramLayerListItem;
 class DrawingProgramLayerManager;
 
+struct DrawingProgramLayerFolderInitData {
+    std::vector<DrawingProgramLayerFolderInitData> folderList;
+};
+
 class DrawingProgramLayerFolder {
     public:
         void draw(SkCanvas* canvas, const DrawData& drawData) const;

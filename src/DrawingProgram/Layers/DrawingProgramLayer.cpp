@@ -9,6 +9,13 @@ void DrawingProgramLayer::draw(SkCanvas* canvas, const DrawData& drawData) const
         p.obj->draw(canvas, drawData);
 }
 
+DrawingProgramLayerInitData DrawingProgramLayer::get_init_data() const {
+    DrawingProgramLayerInitData toRet;
+    for(auto& p : *components)
+        toRet.components.emplace_back(p.obj->get_data_copy());
+    return toRet;
+}
+
 void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListItem& layerListItem, DrawingProgramLayerManager& layerMan) {
     auto insertCallback = [&](const CanvasComponentContainer::ObjInfoIterator& c) {
         c->obj->objInfo = c;

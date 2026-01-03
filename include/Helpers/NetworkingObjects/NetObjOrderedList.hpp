@@ -101,17 +101,90 @@ namespace NetworkingObjects {
                 moveCallback = func;
             }
 
-            virtual bool contains(const NetObjID& p) const = 0;
-            virtual NetObjOrderedListIterator<T> begin() = 0;
-            virtual NetObjOrderedListIterator<T> end() = 0;
-            virtual NetObjOrderedListIterator<T> at(uint32_t index) = 0;
-            virtual NetObjOrderedListIterator<T> get(const NetObjID& id) = 0;
-            virtual NetObjOrderedListConstIterator<T> begin() const = 0;
-            virtual NetObjOrderedListConstIterator<T> end() const = 0;
-            virtual NetObjOrderedListConstIterator<T> at(uint32_t index) const = 0;
-            virtual NetObjOrderedListConstIterator<T> get(const NetObjID& id) const = 0;
-            virtual uint32_t size() const = 0;
-            virtual bool empty() const = 0;
+
+            bool contains(const NetObjID& id) const {
+                return data_map().contains(id);
+            }
+            uint32_t size() const {
+                return data_list().size();
+            }
+            NetObjOrderedListIterator<T> begin() {
+                return data_list().begin();
+            }
+            NetObjOrderedListIterator<T> end() {
+                return data_list().end();
+            }
+            NetObjOrderedListIterator<T> at(uint32_t index) {
+                auto& data = data_list();
+                if(index >= data.size())
+                    return data.end();
+                return std::prev(data.end(), data.size() - index);
+            }
+            std::vector<NetObjOrderedListIterator<T>> at_ordered_indices(const std::vector<uint32_t>& orderedIndices) {
+                auto& data = data_list();
+                std::vector<NetObjOrderedListIterator<T>> toRet(orderedIndices.size());
+                auto lastIt = data.end();
+                uint32_t lastDataIndex = data.size();
+                for(std::pair<uint32_t&, NetObjOrderedListIterator<T>&> p : std::views::zip(orderedIndices, toRet)) {
+                    uint32_t orderedIndex = std::min(p.first, data.size());
+                    NetObjOrderedListIterator<T>& it = p.second;
+                    for(;;) {
+                        if(lastDataIndex >= orderedIndex) {
+                            it = lastIt;
+                            break;
+                        }
+                        --lastDataIndex;
+                        --lastIt;
+                    }
+                }
+                return toRet;
+            }
+            NetObjOrderedListIterator<T> get(const NetObjID& id) {
+                auto it = data_map().find(id);
+                if(it == data_map().end())
+                    return data_list().end();
+                return it->second;
+            }
+            NetObjOrderedListConstIterator<T> begin() const {
+                return data_list().begin();
+            }
+            NetObjOrderedListConstIterator<T> end() const {
+                return data_list().end();
+            }
+            NetObjOrderedListConstIterator<T> at(uint32_t index) const {
+                auto& data = data_list();
+                if(index >= data.size())
+                    return data.end();
+                return std::prev(data.begin(), data.size() - index);
+            }
+            std::vector<NetObjOrderedListConstIterator<T>> at_ordered_indices(const std::vector<uint32_t>& orderedIndices) const {
+                auto& data = data_list();
+                std::vector<NetObjOrderedListConstIterator<T>> toRet(orderedIndices.size());
+                auto lastIt = data.end();
+                uint32_t lastDataIndex = data.size();
+                for(std::pair<uint32_t&, NetObjOrderedListConstIterator<T>&> p : std::views::zip(orderedIndices, toRet)) {
+                    uint32_t orderedIndex = std::min(p.first, data.size());
+                    NetObjOrderedListConstIterator<T>& it = p.second;
+                    for(;;) {
+                        if(lastDataIndex >= orderedIndex) {
+                            it = lastIt;
+                            break;
+                        }
+                        --lastDataIndex;
+                        --lastIt;
+                    }
+                }
+                return toRet;
+            }
+            NetObjOrderedListConstIterator<T> get(const NetObjID& id) const {
+                auto it = data_map().find(id);
+                if(it == data_map().end())
+                    return data_list().end();
+                return it->second;
+            }
+            bool empty() const {
+                return data_list().empty();
+            }
             virtual ~NetObjOrderedList() {}
         protected:
             NetObjOrderedListIterator<T> insert_single(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, const NetObjOrderedListIterator<T> it, NetObjOwnerPtr<T> newObj) {
@@ -119,6 +192,10 @@ namespace NetworkingObjects {
                 toInsert.emplace_back(it, std::move(newObj));
                 return insert_ordered_list(l, clientInserting, toInsert).back();
             }
+            virtual std::list<NetObjOrderedListObjectInfo<T>>& data_list() = 0;
+            virtual const std::list<NetObjOrderedListObjectInfo<T>>& data_list() const = 0;
+            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() = 0;
+            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const = 0;
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObj) = 0;
             virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) = 0;
             virtual void write_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) = 0;
@@ -167,49 +244,6 @@ namespace NetworkingObjects {
     template <typename T> class NetObjOrderedListServer : public NetObjOrderedList<T> {
         public:
             NetObjOrderedListServer() {}
-            virtual bool contains(const NetObjID& id) const override {
-                return idToDataMap.contains(id);
-            }
-            virtual uint32_t size() const override {
-                return data.size();
-            }
-            virtual NetObjOrderedListIterator<T> begin() override {
-                return data.begin();
-            }
-            virtual NetObjOrderedListIterator<T> end() override {
-                return data.end();
-            }
-            virtual NetObjOrderedListIterator<T> at(uint32_t index) override {
-                if(index >= data.size())
-                    return data.end();
-                return std::next(data.begin(), index);
-            }
-            virtual NetObjOrderedListIterator<T> get(const NetObjID& id) override {
-                auto it = idToDataMap.find(id);
-                if(it == idToDataMap.end())
-                    return data.end();
-                return it->second;
-            }
-            virtual NetObjOrderedListConstIterator<T> begin() const override {
-                return data.begin();
-            }
-            virtual NetObjOrderedListConstIterator<T> end() const override {
-                return data.end();
-            }
-            virtual NetObjOrderedListConstIterator<T> at(uint32_t index) const override {
-                if(index >= data.size())
-                    return data.end();
-                return std::next(data.begin(), index);
-            }
-            virtual NetObjOrderedListConstIterator<T> get(const NetObjID& id) const override {
-                auto it = idToDataMap.find(id);
-                if(it == idToDataMap.end())
-                    return data.end();
-                return it->second;
-            }
-            virtual bool empty() const override {
-                return data.empty();
-            }
             virtual void reassign_netobj_ids_call() override {
                 idToDataMap.clear();
                 for(auto it = data.begin(); it != data.end(); ++it) {
@@ -218,6 +252,10 @@ namespace NetworkingObjects {
                 }
             }
         protected:
+            virtual std::list<NetObjOrderedListObjectInfo<T>>& data_list() override { return data; }
+            virtual const std::list<NetObjOrderedListObjectInfo<T>>& data_list() const override { return data; }
+            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() { return idToDataMap; }
+            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const { return idToDataMap; }
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};
@@ -360,49 +398,6 @@ namespace NetworkingObjects {
     template <typename T> class NetObjOrderedListClient : public NetObjOrderedList<T> {
         public:
             NetObjOrderedListClient() {}
-            virtual bool contains(const NetObjID& id) const override {
-                return clientIdToDataMap.contains(id);
-            }
-            virtual uint32_t size() const override {
-                return clientData.size();
-            }
-            virtual NetObjOrderedListIterator<T> begin() override {
-                return clientData.begin();
-            }
-            virtual NetObjOrderedListIterator<T> end() override {
-                return clientData.end();
-            }
-            virtual NetObjOrderedListIterator<T> at(uint32_t index) override {
-                if(index >= clientData.size())
-                    return clientData.end();
-                return std::next(clientData.begin(), index);
-            }
-            virtual NetObjOrderedListIterator<T> get(const NetObjID& id) override {
-                auto it = clientIdToDataMap.find(id);
-                if(it == clientIdToDataMap.end())
-                    return clientData.end();
-                return it->second;
-            }
-            virtual NetObjOrderedListConstIterator<T> begin() const override {
-                return clientData.begin();
-            }
-            virtual NetObjOrderedListConstIterator<T> end() const override {
-                return clientData.end();
-            }
-            virtual NetObjOrderedListConstIterator<T> at(uint32_t index) const override {
-                if(index >= clientData.size())
-                    return clientData.end();
-                return std::next(clientData.begin(), index);
-            }
-            virtual NetObjOrderedListConstIterator<T> get(const NetObjID& id) const override {
-                auto it = clientIdToDataMap.find(id);
-                if(it == clientIdToDataMap.end())
-                    return clientData.end();
-                return it->second;
-            }
-            virtual bool empty() const override {
-                return clientData.empty();
-            }
             virtual void reassign_netobj_ids_call() override {
                 serverData.clear();
                 serverIdToDataMap.clear();
@@ -415,6 +410,10 @@ namespace NetworkingObjects {
                 }
             }
         protected:
+            virtual std::list<NetObjOrderedListObjectInfo<T>>& data_list() override { return clientData; }
+            virtual const std::list<NetObjOrderedListObjectInfo<T>>& data_list() const override { return clientData; }
+            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() { return clientIdToDataMap; }
+            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const { return clientIdToDataMap; }
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};

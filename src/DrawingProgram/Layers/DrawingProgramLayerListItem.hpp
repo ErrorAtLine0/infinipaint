@@ -13,10 +13,23 @@ class DrawingProgramLayer;
 class World;
 class DrawingProgramLayerManager;
 
+struct DrawingProgramLayerListItemMetaInfoInitData {
+    std::string name;
+    float alpha = 1.0f;
+    SerializedBlendMode blendMode = SerializedBlendMode::SRC_OVER;
+};
+
+struct DrawingProgramLayerListItemInitData {
+    DrawingProgramLayerListItemMetaInfoInitData metaInfo;
+    std::optional<DrawingProgramLayerFolderInitData> folderData;
+    std::optional<DrawingProgramLayerInitData> layerData;
+};
+
 class DrawingProgramLayerListItem {
     public:
         DrawingProgramLayerListItem();
         DrawingProgramLayerListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder);
+        DrawingProgramLayerListItem(NetworkingObjects::NetObjManager& netObjMan, const DrawingProgramLayerListItemInitData& initData);
         bool is_folder() const;
         DrawingProgramLayerFolder& get_folder() const;
         DrawingProgramLayer& get_layer() const;
