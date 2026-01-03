@@ -23,6 +23,54 @@ DrawingProgramLayerListItem::DrawingProgramLayerListItem(NetworkingObjects::NetO
     displayData = netObjMan.make_obj<DisplayData>();
 }
 
+DrawingProgramLayerListItem::DrawingProgramLayerListItem(World& w, const DrawingProgramLayerListItemUndoData& initData) {
+    if(initData.folderData) {
+        auto& initFolderList = initData.folderData.value();
+        folderData = std::make_unique<DrawingProgramLayerFolder>();
+        folderData->folderList = w.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<DrawingProgramLayerListItem>>();
+        for(auto& initFolder : initFolderList) {
+            auto it = folderData->folderList->emplace_back_direct(folderData->folderList, w, initFolder);
+            w.undo.register_new_netid_to_existing_undoid(initFolder.undoID, it->obj.get_net_id());
+        }
+    }
+    else {
+        auto& initComponentList = initData.layerData.value();
+        layerData = std::make_unique<DrawingProgramLayer>();
+        layerData->components = w.netObjMan.make_obj<CanvasComponentContainer::NetList>();
+        for(auto& initComponent : initComponentList) {
+            auto it = layerData->components->emplace_back_direct(layerData->components, w.netObjMan, *initComponent.copyData);
+            w.undo.register_new_netid_to_existing_undoid(initComponent.undoID, it->obj.get_net_id());
+        }
+    }
+    nameData = w.netObjMan.make_obj<NameData>();
+    nameData->name = initData.metaInfo.name;
+    displayData = w.netObjMan.make_obj<DisplayData>();
+    displayData->alpha = initData.metaInfo.alpha;
+    displayData->blendMode = initData.metaInfo.blendMode;
+}
+
+DrawingProgramLayerListItemUndoData DrawingProgramLayerListItem::get_undo_data(WorldUndoManager& u) const {
+    DrawingProgramLayerListItemUndoData toRet;
+    toRet.metaInfo.name = nameData->name;
+    toRet.metaInfo.blendMode = displayData->blendMode;
+    toRet.metaInfo.alpha = displayData->alpha;
+    if(folderData) {
+        toRet.folderData = std::vector<DrawingProgramLayerListItemUndoData>();
+        auto& folderListToRet = toRet.folderData.value();
+        for(auto& f : *folderData->folderList) {
+            folderListToRet.emplace_back(f.obj->get_undo_data(u));
+            folderListToRet.back().undoID = u.get_undoid_from_netid(f.obj.get_net_id());
+        }
+    }
+    else {
+        toRet.layerData = std::vector<DrawingProgramComponentUndoData>();
+        auto& layerListToRet = toRet.layerData.value();
+        for(auto& c : *layerData->components)
+            layerListToRet.emplace_back(u.get_undoid_from_netid(c.obj.get_net_id()), c.obj->get_data_copy());
+    }
+    return toRet;
+}
+
 void DrawingProgramLayerListItem::reassign_netobj_ids_call() {
     if(folderData)
         folderData->folderList.reassign_ids();

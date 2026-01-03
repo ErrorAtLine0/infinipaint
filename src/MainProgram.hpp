@@ -63,7 +63,7 @@ class MainProgram {
         } window;
 
         struct Clipboard {
-            std::vector<std::shared_ptr<CanvasComponentContainer::CopyData>> components;
+            std::vector<std::unique_ptr<CanvasComponentContainer::CopyData>> components;
             std::unordered_map<NetworkingObjects::NetObjID, ResourceData> resources;
             WorldVec pos;
             WorldScalar inverseScale;

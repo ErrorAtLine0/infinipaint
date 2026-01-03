@@ -123,6 +123,16 @@ std::optional<NetworkingObjects::NetObjID> WorldUndoManager::get_netid_from_undo
     return it->second;
 }
 
+bool WorldUndoManager::fill_netid_list_from_undoid_list(std::vector<NetworkingObjects::NetObjID>& netIDList, const std::vector<UndoObjectID>& undoIDList) {
+    for(UndoObjectID undoID : undoIDList) {
+        auto netIDOpt = get_netid_from_undoid(undoID);
+        if(!netIDOpt.has_value())
+            return false;
+        netIDList.emplace_back(netIDOpt.value());
+    }
+    return true;
+}
+
 std::vector<std::string> WorldUndoManager::get_front_undo_queue_names(unsigned count) {
     std::vector<std::string> toRet;
     for(auto& u : undoQueue | std::views::reverse) {

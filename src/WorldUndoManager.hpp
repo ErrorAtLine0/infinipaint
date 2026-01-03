@@ -35,6 +35,7 @@ class WorldUndoManager {
         UndoObjectID get_undoid_from_netid(const NetworkingObjects::NetObjID& netObjID);
         void register_new_netid_to_existing_undoid(UndoObjectID existingUndoID, const NetworkingObjects::NetObjID& netObjID);
         std::optional<NetworkingObjects::NetObjID> get_netid_from_undoid(UndoObjectID undoID);
+        bool fill_netid_list_from_undoid_list(std::vector<NetworkingObjects::NetObjID>& netIDList, const std::vector<UndoObjectID>& undoIDList);
         std::vector<std::string> get_front_undo_queue_names(unsigned count);
 
         World& world;

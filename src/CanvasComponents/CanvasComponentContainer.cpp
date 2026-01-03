@@ -41,8 +41,8 @@ void CanvasComponentContainer::register_class(World& w) {
     });
 }
 
-std::shared_ptr<CanvasComponentContainer::CopyData> CanvasComponentContainer::get_data_copy() const {
-    auto toRet = std::make_shared<CopyData>();
+std::unique_ptr<CanvasComponentContainer::CopyData> CanvasComponentContainer::get_data_copy() const {
+    auto toRet = std::make_unique<CanvasComponentContainer::CopyData>();
     toRet->coords = coords;
     toRet->obj = compAllocator->comp->get_data_copy();
     return toRet;

@@ -125,11 +125,11 @@ namespace NetworkingObjects {
                 std::vector<NetObjOrderedListIterator<T>> toRet(orderedIndices.size());
                 auto lastIt = data.end();
                 uint32_t lastDataIndex = data.size();
-                for(std::pair<uint32_t&, NetObjOrderedListIterator<T>&> p : std::views::zip(orderedIndices, toRet)) {
-                    uint32_t orderedIndex = std::min(p.first, data.size());
+                for(std::pair<const uint32_t&, NetObjOrderedListIterator<T>&> p : std::views::zip(orderedIndices, toRet) | std::views::reverse) {
+                    uint32_t orderedIndex = std::min<uint32_t>(p.first, data.size());
                     NetObjOrderedListIterator<T>& it = p.second;
                     for(;;) {
-                        if(lastDataIndex >= orderedIndex) {
+                        if(orderedIndex == lastDataIndex) {
                             it = lastIt;
                             break;
                         }
@@ -144,6 +144,12 @@ namespace NetworkingObjects {
                 if(it == data_map().end())
                     return data_list().end();
                 return it->second;
+            }
+            std::vector<NetObjOrderedListIterator<T>> get_list(const std::vector<NetObjID>& ids) {
+                std::vector<NetObjOrderedListIterator<T>> toRet;
+                for(auto& id : ids)
+                    toRet.emplace_back(get(id));
+                return toRet;
             }
             NetObjOrderedListConstIterator<T> begin() const {
                 return data_list().begin();
@@ -162,8 +168,8 @@ namespace NetworkingObjects {
                 std::vector<NetObjOrderedListConstIterator<T>> toRet(orderedIndices.size());
                 auto lastIt = data.end();
                 uint32_t lastDataIndex = data.size();
-                for(std::pair<uint32_t&, NetObjOrderedListConstIterator<T>&> p : std::views::zip(orderedIndices, toRet)) {
-                    uint32_t orderedIndex = std::min(p.first, data.size());
+                for(std::pair<const uint32_t&, NetObjOrderedListConstIterator<T>&> p : std::views::zip(orderedIndices, toRet)) {
+                    uint32_t orderedIndex = std::min<uint32_t>(p.first, data.size());
                     NetObjOrderedListConstIterator<T>& it = p.second;
                     for(;;) {
                         if(lastDataIndex >= orderedIndex) {
@@ -181,6 +187,12 @@ namespace NetworkingObjects {
                 if(it == data_map().end())
                     return data_list().end();
                 return it->second;
+            }
+            std::vector<NetObjOrderedListConstIterator<T>> get_list(const std::vector<NetObjID>& ids) const {
+                std::vector<NetObjOrderedListConstIterator<T>> toRet;
+                for(auto& id : ids)
+                    toRet.emplace_back(get(id));
+                return toRet;
             }
             bool empty() const {
                 return data_list().empty();

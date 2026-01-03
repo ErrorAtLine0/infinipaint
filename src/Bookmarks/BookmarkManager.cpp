@@ -89,12 +89,18 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                     return isButtonClicked;
                 },
                 .moveObjectsToListAtIndex = [&](NetObjID listObj, size_t index, const std::vector<GUIStuff::TreeListing::ParentObjectIDPair>& objsToInsert) {
+                    std::unordered_map<WorldUndoManager::UndoObjectID, std::pair<std::vector<uint32_t>, std::vector<WorldUndoManager::UndoObjectID>>> toEraseMapUndo;
+                    WorldUndoManager::UndoObjectID insertParentUndoID;
+                    uint32_t insertUndoPosition;
+                    std::vector<WorldUndoManager::UndoObjectID> insertedUndoIDs;
+
                     world.netObjMan.send_multi_update_messsage([&]() {
                         std::unordered_map<NetObjID, std::vector<NetObjOrderedListIterator<BookmarkListItem>>> toEraseMap;
                         uint32_t newIndex = index;
                         std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
                         auto& listPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listObj)->get_folder_list();
 
+                        // Map parent folders to list of objects that should be erased from them
                         for(size_t i = 0; i < objsToInsert.size(); i++) {
                             auto& parentListPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(objsToInsert[i].parent)->get_folder_list();
                             toEraseMap[objsToInsert[i].parent].emplace_back(parentListPtr->get(objsToInsert[i].object));
@@ -102,11 +108,24 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                                 newIndex--;
                         }
 
+                        // Prepare erase map for undo
+                        for(auto& [parentNetID, objsToEraseList] : toEraseMap) {
+                            auto& undoEraseListPairForParent = toEraseMapUndo[world.undo.get_undoid_from_netid(parentNetID)];
+                            uint32_t i = 0;
+                            for(auto& objToErase : objsToEraseList) {
+                                undoEraseListPairForParent.first.emplace_back(objToErase->pos - i);
+                                undoEraseListPairForParent.second.emplace_back(world.undo.get_undoid_from_netid(objToErase->obj.get_net_id()));
+                                i++;
+                            }
+                        }
+
+                        // Erase the list of objects we previously mapped to each parent, and move the erased objects to vector toInsertObjPtrs
                         for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
                             auto& listToEraseFromPtr = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(listToEraseFrom)->get_folder_list();
                             listToEraseFromPtr->erase_list(listToEraseFromPtr, setToErase, &toInsertObjPtrs);
                         }
 
+                        // Insert objects in toInsertObjPtrs into the folder we have selected
                         std::vector<std::pair<NetObjOrderedListIterator<BookmarkListItem>, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
                         auto insertIt = listPtr->at(newIndex);
                         for(uint32_t i = 0; i < objsToInsert.size(); i++) {
@@ -116,8 +135,95 @@ void BookmarkManager::setup_list_gui(const std::string& id) {
                             toInsert.emplace_back(insertIt, std::move(*it));
                             toInsert.back().second.reassign_ids();
                         }
-                        listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
+                        std::vector<NetObjOrderedListIterator<BookmarkListItem>> insertedIterators = listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
+
+                        // Prepare insert list for undo
+                        insertParentUndoID = world.undo.get_undoid_from_netid(listObj);
+                        insertUndoPosition = newIndex;
+                        for(auto& it : insertedIterators)
+                            insertedUndoIDs.emplace_back(world.undo.get_undoid_from_netid(it->obj.get_net_id()));
                     }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+
+                    class MoveBookmarksWorldUndoAction : public WorldUndoAction {
+                        public:
+                            // If the undo ID maps to the net id, we can also assume that the object is definitely inside the list we want to move it from, and not inside some other list
+                            // If it was moved to another list, there would be an undo move that would move it back to this list, and if it was moved by another player the undo id wouldnt map back to the net id, and the undo would fail
+                            // We can also assume all objects in all lists remain in the same order for the same reason, so no need to sort anything if it was sorted when the undo action was generated
+                            MoveBookmarksWorldUndoAction(const std::unordered_map<WorldUndoManager::UndoObjectID, std::pair<std::vector<uint32_t>, std::vector<WorldUndoManager::UndoObjectID>>>& initUndoEraseMap,
+                                                         WorldUndoManager::UndoObjectID initInsertParentUndoID,
+                                                         uint32_t initInsertPosition,
+                                                         std::vector<WorldUndoManager::UndoObjectID> initInsertedUndoIDs):
+                            undoEraseMap(initUndoEraseMap),
+                            insertParentUndoID(initInsertParentUndoID),
+                            insertPosition(initInsertPosition),
+                            insertedUndoIDs(initInsertedUndoIDs)
+                            {}
+                            std::string get_name() const override {
+                                return "Move Bookmarks";
+                            }
+                            bool undo(WorldUndoManager& undoMan) override {
+                                std::vector<NetObjOwnerPtr<BookmarkListItem>> toMoveObjs;
+                                std::vector<NetObjOrderedListIterator<BookmarkListItem>> toEraseList;
+                                NetObjTemporaryPtr<NetObjOrderedList<BookmarkListItem>> eraseListPtr;
+                                std::unordered_map<NetObjID, std::pair<std::vector<uint32_t>*, std::vector<NetObjID>>> toInsertToMap;
+
+                                {
+                                    std::optional<NetObjID> eraseListNetID = undoMan.get_netid_from_undoid(insertParentUndoID);
+                                    if(!eraseListNetID.has_value())
+                                        return false;
+                                    eraseListPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(eraseListNetID.value())->get_folder_list();
+                                }
+
+                                {
+                                    std::vector<NetObjID> toEraseNetIDList;
+                                    if(!undoMan.fill_netid_list_from_undoid_list(toEraseNetIDList, insertedUndoIDs))
+                                        return false;
+                                    toEraseList = eraseListPtr->get_list(toEraseNetIDList);
+                                }
+
+                                {
+                                    for(auto& [undoID, indexUndoIdListPair] : undoEraseMap) {
+                                        std::optional<NetObjID> netID = undoMan.get_netid_from_undoid(undoID);
+                                        if(!netID.has_value())
+                                            return false;
+                                        auto& insertMapEntry = toInsertToMap[netID.value()];
+                                        insertMapEntry.first = &indexUndoIdListPair.first;
+                                        if(!undoMan.fill_netid_list_from_undoid_list(insertMapEntry.second, indexUndoIdListPair.second))
+                                            return false;
+                                    }
+                                }
+
+                                undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                                    eraseListPtr->erase_list(eraseListPtr, toEraseList, &toMoveObjs);
+
+                                    for(auto& [parentNetID, indexNetIDListPair] : toInsertToMap) {
+                                        auto& parentListPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(parentNetID)->get_folder_list();
+                                        std::vector<NetObjOrderedListIterator<BookmarkListItem>> insertIteratorList = parentListPtr->at_ordered_indices(*indexNetIDListPair.first);
+                                        auto& insertNetIDList = indexNetIDListPair.second;
+                                        std::vector<std::pair<NetObjOrderedListIterator<BookmarkListItem>, NetObjOwnerPtr<BookmarkListItem>>> toInsert;
+                                        for(auto [insertIt, netID] : std::views::zip(insertIteratorList, insertNetIDList)) {
+                                            auto it = std::find_if(toMoveObjs.begin(), toMoveObjs.end(), [id = netID](NetObjOwnerPtr<BookmarkListItem>& objPtr) {
+                                                return objPtr.get_net_id() == id;
+                                            });
+                                            toInsert.emplace_back(insertIt, std::move(*it));
+                                            toInsert.back().second.reassign_ids();
+                                        }
+                                        parentListPtr->insert_ordered_list_and_send_create(parentListPtr, toInsert);
+                                    }
+                                }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                                return true;
+                            }
+                            bool redo(WorldUndoManager& undoMan) override {
+                                return false;
+                            }
+                            ~MoveBookmarksWorldUndoAction() {}
+
+                            std::unordered_map<WorldUndoManager::UndoObjectID, std::pair<std::vector<uint32_t>, std::vector<WorldUndoManager::UndoObjectID>>> undoEraseMap;
+                            WorldUndoManager::UndoObjectID insertParentUndoID;
+                            uint32_t insertPosition;
+                            std::vector<WorldUndoManager::UndoObjectID> insertedUndoIDs;
+                    };
+                    world.undo.push(std::make_unique<MoveBookmarksWorldUndoAction>(toEraseMapUndo, insertParentUndoID, insertUndoPosition, insertedUndoIDs));
                 }
             }, selectionData);
 

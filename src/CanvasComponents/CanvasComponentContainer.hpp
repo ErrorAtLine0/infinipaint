@@ -6,6 +6,7 @@
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/NetworkingObjects/NetObjOwnerPtr.hpp>
 #include "CanvasComponentAllocator.hpp"
+#include "../WorldUndoManager.hpp"
 
 class DrawingProgram;
 class DrawingProgramLayerListItem;
@@ -36,7 +37,7 @@ class CanvasComponentContainer {
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, const CopyData& copyData);
 
         static void register_class(World& w);
-        std::shared_ptr<CopyData> get_data_copy() const;
+        std::unique_ptr<CopyData> get_data_copy() const;
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, NetworkingObjects::NetObjManager& objMan);
         CanvasComponent& get_comp() const;
