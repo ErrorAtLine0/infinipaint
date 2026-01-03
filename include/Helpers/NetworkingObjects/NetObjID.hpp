@@ -10,7 +10,7 @@ namespace NetworkingObjects {
         template <typename Archive> void serialize(Archive& a) {
             a(data[1], data[0]);
         }
-        std::string to_string() {
+        std::string to_string() const {
             std::stringstream ss;
             ss << "[" << data[1] << ", " << data[0] << "]";
             return ss.str();
