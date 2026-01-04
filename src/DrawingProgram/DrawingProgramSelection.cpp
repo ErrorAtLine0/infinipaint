@@ -218,6 +218,12 @@ void DrawingProgramSelection::commit_transform_selection() {
                     undoMan.world.drawProg.send_transforms_for(transformSet);
                     return true;
                 }
+                void scale_up(const WorldScalar& scaleUpAmount) override {
+                    for(auto& [oldTransform, newTransform] : transformData) {
+                        oldTransform.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+                        newTransform.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+                    }
+                }
                 ~TransformCanvasComponentsWorldUndoAction() {}
 
                 std::vector<WorldUndoManager::UndoObjectID> undoIDs;
