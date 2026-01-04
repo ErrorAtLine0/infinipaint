@@ -442,7 +442,7 @@ void DrawingProgramLayerManagerGUI::remove_layer(const NetworkingObjects::NetObj
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
-                return layerData.layerData ? "Delete Layer Folder" : "Delete Layer";
+                return layerData.folderData ? "Delete Layer Folder" : "Delete Layer";
             }
             bool undo(WorldUndoManager& undoMan) override {
                 std::optional<NetworkingObjects::NetObjID> toInsertParentID = undoMan.get_netid_from_undoid(parentUndoID);

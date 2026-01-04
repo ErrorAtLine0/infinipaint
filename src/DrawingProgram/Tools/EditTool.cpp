@@ -57,6 +57,45 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
         compEditTool->commit_edit_updates(objInfoBeingEdited, prevData);
         objInfoBeingEdited->obj->commit_update(drawP);
         objInfoBeingEdited->obj->send_comp_update(drawP, true);
+
+        class EditCanvasComponentWorldUndoAction : public WorldUndoAction {
+            public:
+                EditCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponent> initOldData, std::unique_ptr<CanvasComponent> initNewData, WorldUndoManager::UndoObjectID initUndoID):
+                    oldData(std::move(initOldData)),
+                    newData(std::move(initNewData)),
+                    undoID(initUndoID)
+                {}
+                std::string get_name() const override {
+                    return "Edit Canvas Component";
+                }
+                bool undo(WorldUndoManager& undoMan) override {
+                    std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
+                    if(!toEditID.has_value())
+                        return false;
+                    auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
+                    objPtr->get_comp().set_data_from(*oldData);
+                    objPtr->send_comp_update(undoMan.world.drawProg, true);
+                    return true;
+                }
+                bool redo(WorldUndoManager& undoMan) override {
+                    std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
+                    if(!toEditID.has_value())
+                        return false;
+                    auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
+                    objPtr->get_comp().set_data_from(*newData);
+                    objPtr->send_comp_update(undoMan.world.drawProg, true);
+                    return true;
+                }
+                ~EditCanvasComponentWorldUndoAction() {}
+
+                std::unique_ptr<CanvasComponent> oldData;
+                std::unique_ptr<CanvasComponent> newData;
+                WorldUndoManager::UndoObjectID undoID;
+        };
+
+        drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), objInfoBeingEdited->obj->get_comp().get_data_copy(), drawP.world.undo.get_undoid_from_netid(objInfoBeingEdited->obj.get_net_id())));
+
+        oldData = nullptr;
         objInfoBeingEdited = nullptr;
     }
     pointHandles.clear();
@@ -92,6 +131,7 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp) {
     }
     if(isEditing) {
         objInfoBeingEdited = comp;
+        oldData = comp->obj->get_comp().get_data_copy();
         compEditTool->edit_start(*this, objInfoBeingEdited, prevData);
     }
 }
@@ -189,3 +229,5 @@ void EditTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((objInfoBeingEdited->obj->coords.from_space(*h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
     }
 }
+
+EditTool::~EditTool() { }

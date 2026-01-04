@@ -24,6 +24,7 @@ class EditTool : public DrawingProgramToolBase {
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
+        ~EditTool();
 
         void add_point_handle(const HandleData& handle);
         void edit_start(CanvasComponentContainer::ObjInfo* comp);
@@ -34,4 +35,6 @@ class EditTool : public DrawingProgramToolBase {
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
         HandleData* pointDragging = nullptr;
         std::any prevData;
+
+        std::unique_ptr<CanvasComponent> oldData;
 };
