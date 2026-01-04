@@ -163,10 +163,70 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 }
 
 void DrawingProgramSelection::commit_transform_selection() {
-    for(auto& comp : selectedSet) {
-        comp->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(comp->obj->coords);
-        comp->obj->commit_transform_dont_invalidate_cache();
+    if(is_being_transformed()) {
+        std::vector<WorldUndoManager::UndoObjectID> undoIDList;
+        std::vector<std::pair<CoordSpaceHelper, CoordSpaceHelper>> transformDataList;
+        for(auto& comp : selectedSet) {
+            undoIDList.emplace_back(drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id()));
+            auto& transformData = transformDataList.emplace_back();
+            transformData.first = comp->obj->coords;
+            comp->obj->coords = selectionTransformCoords.other_coord_space_from_this_space(comp->obj->coords);
+            transformData.second = comp->obj->coords;
+            comp->obj->commit_transform_dont_invalidate_cache();
+        }
+
+        class TransformCanvasComponentsWorldUndoAction : public WorldUndoAction {
+            public:
+                TransformCanvasComponentsWorldUndoAction(std::vector<WorldUndoManager::UndoObjectID> initUndoIDs, std::vector<std::pair<CoordSpaceHelper, CoordSpaceHelper>> initTransformData):
+                    undoIDs(std::move(initUndoIDs)),
+                    transformData(std::move(initTransformData))
+                {}
+                std::string get_name() const override {
+                    return "Transform Canvas Components";
+                }
+                bool undo(WorldUndoManager& undoMan) override {
+                    std::vector<NetworkingObjects::NetObjID> toEditIDs;
+                    if(!undoMan.fill_netid_list_from_undoid_list(toEditIDs, undoIDs))
+                        return false;
+
+                    std::vector<CanvasComponentContainer::ObjInfo*> transformSet;
+
+                    for(size_t i = 0; i < toEditIDs.size(); i++) {
+                        auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditIDs[i]);
+                        objPtr->coords = transformData[i].first;
+                        objPtr->commit_transform(undoMan.world.drawProg);
+                        transformSet.emplace_back(&(*objPtr->objInfo));
+                    }
+
+                    undoMan.world.drawProg.send_transforms_for(transformSet);
+                    return true;
+                }
+                bool redo(WorldUndoManager& undoMan) override {
+                    std::vector<NetworkingObjects::NetObjID> toEditIDs;
+                    if(!undoMan.fill_netid_list_from_undoid_list(toEditIDs, undoIDs))
+                        return false;
+
+                    std::vector<CanvasComponentContainer::ObjInfo*> transformSet;
+
+                    for(size_t i = 0; i < toEditIDs.size(); i++) {
+                        auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditIDs[i]);
+                        objPtr->coords = transformData[i].second;
+                        objPtr->commit_transform(undoMan.world.drawProg);
+                        transformSet.emplace_back(&(*objPtr->objInfo));
+                    }
+
+                    undoMan.world.drawProg.send_transforms_for(transformSet);
+                    return true;
+                }
+                ~TransformCanvasComponentsWorldUndoAction() {}
+
+                std::vector<WorldUndoManager::UndoObjectID> undoIDs;
+                std::vector<std::pair<CoordSpaceHelper, CoordSpaceHelper>> transformData;
+        };
+
+        drawP.world.undo.push(std::make_unique<TransformCanvasComponentsWorldUndoAction>(std::move(undoIDList), std::move(transformDataList)));
     }
+
     drawP.send_transforms_for(selectedSet);
 
     reset_transform_data();
