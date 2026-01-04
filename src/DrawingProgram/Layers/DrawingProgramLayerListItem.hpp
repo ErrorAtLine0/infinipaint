@@ -22,6 +22,7 @@ struct DrawingProgramLayerListItemMetaInfo {
 
 struct DrawingProgramLayerListItemUndoData {
     WorldUndoManager::UndoObjectID undoID;
+    WorldUndoManager::UndoObjectID containerUndoID; // Contains either the undoID of folderData->folderList, or layerData->components. Allows for undo to directly point to those two containers
     DrawingProgramLayerListItemMetaInfo metaInfo;
     std::optional<std::vector<DrawingProgramLayerListItemUndoData>> folderData;
     std::optional<std::vector<DrawingProgramComponentUndoData>> layerData;

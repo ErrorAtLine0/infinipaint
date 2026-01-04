@@ -38,6 +38,7 @@ class CanvasComponentContainer {
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, const CopyData& copyData);
 
         static void register_class(World& w);
+        void reassign_netobj_ids_call();
         std::unique_ptr<CopyData> get_data_copy() const;
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, NetworkingObjects::NetObjManager& objMan);

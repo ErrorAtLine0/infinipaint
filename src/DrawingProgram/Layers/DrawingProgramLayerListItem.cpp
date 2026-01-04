@@ -39,6 +39,7 @@ DrawingProgramLayerListItem::DrawingProgramLayerListItem(World& w, const Drawing
         auto& initFolderList = initData.folderData.value();
         folderData = std::make_unique<DrawingProgramLayerFolder>();
         folderData->folderList = w.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<DrawingProgramLayerListItem>>();
+        w.undo.register_new_netid_to_existing_undoid(initData.containerUndoID, folderData->folderList.get_net_id());
         for(auto& initFolder : initFolderList) {
             auto it = folderData->folderList->emplace_back_direct(folderData->folderList, w, initFolder);
             w.undo.register_new_netid_to_existing_undoid(initFolder.undoID, it->obj.get_net_id());
@@ -48,6 +49,7 @@ DrawingProgramLayerListItem::DrawingProgramLayerListItem(World& w, const Drawing
         auto& initComponentList = initData.layerData.value();
         layerData = std::make_unique<DrawingProgramLayer>();
         layerData->components = w.netObjMan.make_obj<CanvasComponentContainer::NetList>();
+        w.undo.register_new_netid_to_existing_undoid(initData.containerUndoID, layerData->components.get_net_id());
         for(auto& initComponent : initComponentList) {
             auto it = layerData->components->emplace_back_direct(layerData->components, w.netObjMan, *initComponent.copyData);
             w.undo.register_new_netid_to_existing_undoid(initComponent.undoID, it->obj.get_net_id());
@@ -66,6 +68,7 @@ DrawingProgramLayerListItemUndoData DrawingProgramLayerListItem::get_undo_data(W
     toRet.metaInfo.blendMode = displayData->blendMode;
     toRet.metaInfo.alpha = displayData->alpha;
     if(folderData) {
+        toRet.containerUndoID = u.get_undoid_from_netid(folderData->folderList.get_net_id());
         toRet.folderData = std::vector<DrawingProgramLayerListItemUndoData>();
         auto& folderListToRet = toRet.folderData.value();
         for(auto& f : *folderData->folderList) {
@@ -74,6 +77,7 @@ DrawingProgramLayerListItemUndoData DrawingProgramLayerListItem::get_undo_data(W
         }
     }
     else {
+        toRet.containerUndoID = u.get_undoid_from_netid(layerData->components.get_net_id());
         toRet.layerData = std::vector<DrawingProgramComponentUndoData>();
         auto& layerListToRet = toRet.layerData.value();
         for(auto& c : *layerData->components)
