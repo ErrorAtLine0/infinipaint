@@ -13,17 +13,19 @@ class DrawingProgramLayer;
 class World;
 class DrawingProgramLayerManager;
 
-struct DrawingProgramLayerListItemMetaInfoUndoData {
+struct DrawingProgramLayerListItemMetaInfo {
     std::string name;
     float alpha = 1.0f;
     SerializedBlendMode blendMode = SerializedBlendMode::SRC_OVER;
+    bool operator==(const DrawingProgramLayerListItemMetaInfo&) const = default;
 };
 
 struct DrawingProgramLayerListItemUndoData {
     WorldUndoManager::UndoObjectID undoID;
-    DrawingProgramLayerListItemMetaInfoUndoData metaInfo;
+    DrawingProgramLayerListItemMetaInfo metaInfo;
     std::optional<std::vector<DrawingProgramLayerListItemUndoData>> folderData;
     std::optional<std::vector<DrawingProgramComponentUndoData>> layerData;
+    void scale_up(const WorldScalar& scaleUpAmount);
 };
 
 class DrawingProgramLayerListItem {
@@ -58,6 +60,9 @@ class DrawingProgramLayerListItem {
 
         void set_blend_mode(DrawingProgramLayerManager& layerMan, SerializedBlendMode newBlendMode) const;
         SerializedBlendMode get_blend_mode() const;
+
+        void set_metainfo(DrawingProgramLayerManager& layerMan, const DrawingProgramLayerListItemMetaInfo& metaInfo);
+        DrawingProgramLayerListItemMetaInfo get_metainfo() const;
 
         uint32_t get_component_count() const;
     private:

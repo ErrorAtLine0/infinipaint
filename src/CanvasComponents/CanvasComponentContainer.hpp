@@ -30,6 +30,7 @@ class CanvasComponentContainer {
         struct CopyData {
             CoordSpaceHelper coords;
             std::unique_ptr<CanvasComponent> obj;
+            void scale_up(const WorldScalar& scaleUpAmount);
         };
         
         CanvasComponentContainer();

@@ -7,6 +7,17 @@
 
 using namespace NetworkingObjects;
 
+void DrawingProgramLayerListItemUndoData::scale_up(const WorldScalar& scaleUpAmount) {
+    if(folderData) {
+        for(auto& l : folderData.value())
+            l.scale_up(scaleUpAmount);
+    }
+    else {
+        for(auto& c : layerData.value())
+            c.copyData->scale_up(scaleUpAmount);
+    }
+}
+
 DrawingProgramLayerListItem::DrawingProgramLayerListItem() {}
 
 DrawingProgramLayerListItem::DrawingProgramLayerListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder) {
@@ -235,6 +246,20 @@ void DrawingProgramLayerListItem::set_blend_mode(DrawingProgramLayerManager& lay
 
 SerializedBlendMode DrawingProgramLayerListItem::get_blend_mode() const {
     return displayData->blendMode;
+}
+
+void DrawingProgramLayerListItem::set_metainfo(DrawingProgramLayerManager& layerMan, const DrawingProgramLayerListItemMetaInfo& metaInfo) {
+    set_blend_mode(layerMan, metaInfo.blendMode);
+    set_alpha(layerMan, metaInfo.alpha);
+    set_name(layerMan.drawP.world.delayedUpdateObjectManager, metaInfo.name);
+}
+
+DrawingProgramLayerListItemMetaInfo DrawingProgramLayerListItem::get_metainfo() const {
+    return DrawingProgramLayerListItemMetaInfo{
+        .name = get_name(),
+        .alpha = get_alpha(),
+        .blendMode = get_blend_mode()
+    };
 }
 
 void DrawingProgramLayerListItem::register_class(World& w) {

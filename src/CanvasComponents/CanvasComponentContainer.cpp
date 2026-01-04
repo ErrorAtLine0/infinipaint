@@ -10,6 +10,10 @@
 
 using namespace NetworkingObjects;
 
+void CanvasComponentContainer::CopyData::scale_up(const WorldScalar& scaleUpAmount) {
+    coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
+}
+
 CanvasComponentContainer::CanvasComponentContainer() { }
 
 CanvasComponentContainer::CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type) {
