@@ -17,6 +17,7 @@ namespace emscripten_browser_clipboard {
 
 /////////////////////////////////// Interface //////////////////////////////////
 
+using paste_image_handler = void(*)(std::string, void*);
 using paste_handler = void(*)(std::string&&, void*);
 using copy_handler = char const*(*)(void*);
 
@@ -42,6 +43,42 @@ EM_JS_INLINE(void, paste_async_js, (paste_handler callback, void *callback_data)
   navigator.clipboard.readText()
     .then(text => {
       Module["ccall"]('emscripten_browser_clipboard_detail_paste_return', 'number', ['string', 'number', 'number'], [text, callback, callback_data]);
+    })
+    .catch(err => {
+      console.error('Failed to read clipboard contents: ', err);
+    });
+});
+
+EM_JS_INLINE(void, paste_async_image_js, (paste_image_handler callback, void *callback_data), {
+  /// Register the given callback to handle paste events. Callback data pointer is passed through to the callback.
+  /// Paste handler callback signature is:
+  ///   void my_handler(std::string const &paste_data, void *callback_data = nullptr);
+  navigator.clipboard.read()
+    .then(clipboardContents => {
+      const imageMimetypesSupported = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"];
+      for (const item of clipboardContents) {
+        for(const mimeType of imageMimetypesSupported) {
+          if(item.types.includes(mimeType)) {
+            item.getType(mimeType).then(blob => {
+              const file_reader = new FileReader();
+              file_reader.onload = (event) => {
+                const uint8Arr = new Uint8Array(event.target.result);
+                const data_ptr = Module["_malloc"](uint8Arr.length);
+                const data_on_heap = new Uint8Array(Module["HEAPU8"].buffer, data_ptr, uint8Arr.length);
+                data_on_heap.set(uint8Arr);
+                Module["ccall"]('emscripten_browser_clipboard_detail_paste_image_return', 'number', ['number', 'number', 'number', 'number'], [data_on_heap.byteOffset, uint8Arr.length, callback, callback_data]);
+                Module["_free"](data_ptr);
+              };
+              file_reader.readAsArrayBuffer(blob);
+            })
+            .catch(err => {
+              console.error('Failed to get blob from clipboard item: ', err);
+            });
+            return;
+          }
+        }
+      }
+      console.log('Could not find image mimetype in clipboard');
     })
     .catch(err => {
       console.error('Failed to read clipboard contents: ', err);
@@ -76,6 +113,11 @@ inline void paste_async(paste_handler callback, void *callback_data) {
   detail::paste_async_js(callback, callback_data);
 }
 
+inline void paste_async_image(paste_image_handler callback, void *callback_data) {
+  /// C++ wrapper for javascript paste call
+  detail::paste_async_image_js(callback, callback_data);
+}
+
 inline void copy(copy_handler callback, void *callback_data) {
   /// C++ wrapper for javascript copy call
   detail::copy_js(callback, callback_data);
@@ -95,6 +137,12 @@ EMSCRIPTEN_KEEPALIVE inline int emscripten_browser_clipboard_detail_paste_return
 EMSCRIPTEN_KEEPALIVE inline int emscripten_browser_clipboard_detail_paste_return(char const *paste_data, paste_handler callback, void *callback_data) {
   /// Call paste callback - this function is called from javascript when the paste event occurs
   callback(paste_data, callback_data);
+  return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE inline int emscripten_browser_clipboard_detail_paste_image_return(char const *pasteData, int pasteSize, paste_image_handler callback, void *callback_data) {
+  /// Call paste callback - this function is called from javascript when the paste event occurs
+  callback(std::string(pasteData, pasteSize), callback_data);
   return 1;
 }
 

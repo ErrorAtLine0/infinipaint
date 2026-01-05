@@ -99,7 +99,7 @@ std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManage
     if(!newObjs.empty()) {
         auto editLayerPtr = editingLayer.lock();
         if(!editLayerPtr)
-            return {};
+            throw std::runtime_error("[DrawingProgramLayerManager::add_many_components_to_layer_being_edited] No layer selected!");
         auto toRet = editLayerPtr->get_layer().components->insert_ordered_list_and_send_create(editLayerPtr->get_layer().components, newObjs);
         add_undo_place_components(editingLayer.lock().get(), toRet);
     }
@@ -109,10 +109,9 @@ std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManage
 CanvasComponentContainer::ObjInfo* DrawingProgramLayerManager::add_component_to_layer_being_edited(CanvasComponentContainer* newObj) {
     auto editLayerPtr = editingLayer.lock();
     if(!editLayerPtr)
-        return nullptr;
+        throw std::runtime_error("[DrawingProgramLayerManager::add_component_to_layer_being_edited] No layer selected!");
     return &(*editLayerPtr->get_layer().components->push_back_and_send_create(editLayerPtr->get_layer().components, newObj));
 }
-
 
 void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
     if(version >= VersionNumber(0, 4, 0)) {

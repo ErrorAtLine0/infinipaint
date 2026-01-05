@@ -541,17 +541,24 @@ void Toolbar::top_toolbar() {
                     main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
                 if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
                     #ifdef __EMSCRIPTEN__
+                        static std::weak_ptr<World> worldWeakPtr;
+                        worldWeakPtr = make_weak_ptr(main.world);
                         emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
                             if(!buffer.empty()) {
-                                World* world = (World*)callbackData;
-                                world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                                auto world = ((std::weak_ptr<World>*)callbackData)->lock();
+                                if(world)
+                                    world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                                else
+                                    Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
                             }
-                        }, main.world.get());
+                        }, &worldWeakPtr);
                     #else
                         open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
                             auto wLock = w.lock();
                             if(wLock)
                                 wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
+                            else
+                                Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
                         });
                     #endif
                 }

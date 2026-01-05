@@ -211,6 +211,7 @@ struct InputManager {
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
     std::string get_clipboard_str_SDL();
+    std::string get_clipboard_image_data_SDL();
     void call_text_paste(bool isRichTextPaste);
     void process_text_paste(const std::string& plainClipboardStr);
 

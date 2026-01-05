@@ -36,6 +36,10 @@
 
 #include "Tools/EraserTool.hpp"
 
+#ifdef __EMSCRIPTEN__
+    #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
+#endif
+
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     drawCache(*this),
@@ -164,6 +168,30 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
         if(t.gui.text_button_left_transparent("Paste", "Paste")) {
             selection.deselect_all();
             selection.paste_clipboard(popupPos * t.final_gui_scale());
+            shouldClose = true;
+        }
+        if(t.gui.text_button_left_transparent("Paste Image", "Paste Image")) {
+            #ifdef __EMSCRIPTEN__
+                struct PasteData {
+                    std::weak_ptr<World> w;
+                    Vector2f screenPos;
+                };
+                static PasteData pasteData;
+                pasteData.screenPos = popupPos;
+                pasteData.w = make_weak_ptr(world.main.world);
+                emscripten_browser_clipboard::paste_async_image([](std::string pasteData, void* callbackData){
+                    PasteData* p = (PasteData*)callbackData;
+                    std::shared_ptr<World> wLock = p->w.lock();
+                    if(wLock)
+                        wLock->drawProg.add_file_to_canvas_by_data("Image from clipboard", std::string(pasteData), p->screenPos);
+                    else
+                        Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                }, &pasteData);
+            #else
+                std::string imageData = world.main.input.get_clipboard_image_data_SDL();
+                if(!imageData.empty())
+                    add_file_to_canvas_by_data("Image from clipboard", imageData, popupPos);
+            #endif
             shouldClose = true;
         }
         if(selection.is_something_selected()) {
@@ -486,9 +514,32 @@ void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& fil
 }
 
 void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos) {
-    NetworkingObjects::NetObjTemporaryPtr<ResourceData> imageTempPtr = world.rMan.add_resource_file(filePath);
-    if(imageTempPtr) {
-        NetworkingObjects::NetObjID imageID = imageTempPtr.get_net_id();
+    if(layerMan.is_a_layer_being_edited()) {
+        NetworkingObjects::NetObjTemporaryPtr<ResourceData> imageTempPtr = world.rMan.add_resource_file(filePath);
+        if(imageTempPtr) {
+            NetworkingObjects::NetObjID imageID = imageTempPtr.get_net_id();
+            ResourceDisplay* display = world.rMan.get_display_data(imageID);
+            Vector2f imTrueDim = display->get_dimensions();
+            CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
+            ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
+            newContainer->coords = world.drawData.cam.c;
+            float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
+            float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
+            Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
+            img.d.p1 = dropPos - imDim;
+            img.d.p2 = dropPos + imDim;
+            img.d.imageID = imageID;
+            layerMan.add_component_to_layer_being_edited(newContainer);
+        }
+    }
+}
+
+void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
+    if(layerMan.is_a_layer_being_edited()) {
+        ResourceData newResource;
+        newResource.data = std::make_shared<std::string>(fileBuffer);
+        newResource.name = fileName;
+        NetworkingObjects::NetObjID imageID = world.rMan.add_resource(newResource).get_net_id();
         ResourceDisplay* display = world.rMan.get_display_data(imageID);
         Vector2f imTrueDim = display->get_dimensions();
         CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
@@ -502,25 +553,6 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::p
         img.d.imageID = imageID;
         layerMan.add_component_to_layer_being_edited(newContainer);
     }
-}
-
-void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
-    ResourceData newResource;
-    newResource.data = std::make_shared<std::string>(fileBuffer);
-    newResource.name = fileName;
-    NetworkingObjects::NetObjID imageID = world.rMan.add_resource(newResource).get_net_id();
-    ResourceDisplay* display = world.rMan.get_display_data(imageID);
-    Vector2f imTrueDim = display->get_dimensions();
-    CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
-    ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
-    newContainer->coords = world.drawData.cam.c;
-    float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
-    float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
-    Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();
-    img.d.p1 = dropPos - imDim;
-    img.d.p2 = dropPos + imDim;
-    img.d.imageID = imageID;
-    layerMan.add_component_to_layer_being_edited(newContainer);
 }
 
 float DrawingProgram::drag_point_radius() {

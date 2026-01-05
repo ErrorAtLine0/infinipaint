@@ -136,6 +136,33 @@ std::string InputManager::get_clipboard_str_SDL() {
     return toRet;
 }
 
+std::string InputManager::get_clipboard_image_data_SDL() {
+#ifndef __EMSCRIPTEN__
+    static std::unordered_set<std::string> validMimetypes;
+    if(validMimetypes.empty()) {
+        validMimetypes.emplace("image/png");
+        validMimetypes.emplace("image/gif");
+        validMimetypes.emplace("image/jpeg");
+        validMimetypes.emplace("image/svg+xml");
+        validMimetypes.emplace("image/webp");
+    }
+    size_t mimeTypeSize;
+    char** mimeTypes = SDL_GetClipboardMimeTypes(&mimeTypeSize);
+    if(mimeTypes) {
+        for(size_t i = 0; i < mimeTypeSize; i++) {
+            if(validMimetypes.contains(mimeTypes[i])) {
+                size_t clipboardDataSize;
+                void* clipboardData = SDL_GetClipboardData(mimeTypes[i], &clipboardDataSize);
+                std::string toRet(static_cast<char*>(clipboardData), clipboardDataSize);
+                SDL_free(clipboardData);
+                return toRet;
+            }
+        }
+    }
+#endif
+    return std::string();
+}
+
 void InputManager::set_clipboard_str(std::string_view s) {
 #ifdef __EMSCRIPTEN__
     emscripten_browser_clipboard::copy(std::string(s));
