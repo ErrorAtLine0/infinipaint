@@ -120,5 +120,6 @@ class World {
         NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<uint16_t>> listDebugTest;
         void list_debug_test_update();
         std::chrono::steady_clock::time_point listDebugTestTimeStart = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point nextSendTime = std::chrono::steady_clock::now();
 #endif
 };

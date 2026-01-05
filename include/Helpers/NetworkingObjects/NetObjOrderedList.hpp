@@ -15,8 +15,10 @@
 
 #ifdef ENABLE_NETOBJ_ORDERED_LIST_VERBOSE_DEBUG
     #define NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idMap) netobj_ordered_list_debug_check(data, idMap)
+    #define NETOBJ_CHECK_INSERT_ORDERED(data, newObjs) netobj_check_insert_is_ordered(data, newObjs)
 #else
     #define NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idMap) 
+    #define NETOBJ_CHECK_INSERT_ORDERED(data, newObjs)
 #endif
 
 namespace NetworkingObjects {
@@ -77,6 +79,28 @@ namespace NetworkingObjects {
             throw std::runtime_error("[netobj_ordered_list_debug_check] ID map and list have different sizes!");
         }
         std::cout << "[netobj_ordered_list_debug_check] Debug print end" << std::endl;
+    }
+
+    template <typename T> void netobj_check_insert_is_ordered(const std::list<NetObjOrderedListObjectInfo<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) {
+        std::cout << "[netobj_check_insert_is_ordered] Insert list order check" << std::endl;
+        uint32_t lastPos = 0;
+        bool isEnd = false;
+        for(auto& [it, obj] : newObjs) {
+            if(it == l.end()) {
+                std::cout << "[netobj_check_insert_is_ordered] Insert at: " << l.size() << " (end)" << std::endl;
+                isEnd = true;
+            }
+            else {
+                std::cout << "[netobj_check_insert_is_ordered] Insert at: " << it->pos << std::endl;
+                if(isEnd)
+                    throw std::runtime_error("[netobj_check_insert_is_ordered] Insert list not ordered! (Failure at end)");
+                if(lastPos > it->pos)
+                    throw std::runtime_error("[netobj_check_insert_is_ordered] Insert list not ordered!");
+                lastPos = it->pos;
+                isEnd = false;
+            }
+        }
+        std::cout << "[netobj_check_insert_is_ordered] Insert list is ordered" << std::endl;
     }
 #endif
 
@@ -311,6 +335,8 @@ namespace NetworkingObjects {
                 if(newObjs.empty())
                     return {};
 
+                NETOBJ_CHECK_INSERT_ORDERED(data, newObjs);
+
                 std::vector<NetworkingObjects::NetObjID> idPositionList;
                 for(auto& [itToInsertAt, newObj] : newObjs) {
                     if(itToInsertAt == data.begin())
@@ -464,6 +490,8 @@ namespace NetworkingObjects {
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};
+
+                NETOBJ_CHECK_INSERT_ORDERED(clientData, newObjs);
 
                 std::vector<NetObjOrderedListIterator<T>> toRet;
                 for(auto& [itToInsertAt, newObj] : newObjs) {
@@ -648,8 +676,11 @@ namespace NetworkingObjects {
                             if(!elemData.foundInClient)
                                 continue;
                             if(firstInsertedIt == clientData.end()) {
-                                firstInsertedActualPos = elemData.clientInsertPosIt->pos;
                                 firstInsertedIt = elemData.clientObjectIt;
+                                if(elemData.clientInsertPosIt != clientData.end())
+                                    firstInsertedActualPos = elemData.clientInsertPosIt->pos;
+                                else
+                                    firstInsertedActualPos = clientData.size();
                             }
                             clientData.splice(elemData.clientInsertPosIt, referredToObjectData, elemData.clientObjectIt);
                             clientIdToDataMap.emplace(elemData.clientObjectIt->obj.get_net_id(), elemData.clientObjectIt);
