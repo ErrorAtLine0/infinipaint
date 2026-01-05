@@ -36,6 +36,8 @@ class CoordSpaceHelperTransform {
             SCALE
         };
 
+        bool is_identity();
+
     private:
         void set_rotation(double newRotation);
         void translate(const WorldVec& translation);

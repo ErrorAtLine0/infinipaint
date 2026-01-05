@@ -29,6 +29,8 @@ class DrawingProgramSelection {
         bool mouse_collided_with_rotate_center_handle_point();
         bool mouse_collided_with_rotate_handle_point();
 
+        bool is_empty_transform();
+
         void commit_transform_selection();
         void rebuild_cam_space();
         Vector2f get_rotation_point_pos_from_angle(double angle);

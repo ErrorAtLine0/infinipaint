@@ -163,7 +163,7 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 }
 
 void DrawingProgramSelection::commit_transform_selection() {
-    if(is_being_transformed()) {
+    if(!is_empty_transform()) {
         std::vector<WorldUndoManager::UndoObjectID> undoIDList;
         std::vector<std::pair<CoordSpaceHelper, CoordSpaceHelper>> transformDataList;
         for(auto& comp : selectedSet) {
@@ -438,6 +438,10 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
 
 bool DrawingProgramSelection::is_being_transformed() {
     return transformOpHappening != TransformOperation::NONE;
+}
+
+bool DrawingProgramSelection::is_empty_transform() {
+    return transformOpHappening == TransformOperation::NONE || selectionTransformCoords.is_identity();
 }
 
 std::unordered_set<CanvasComponentContainer::ObjInfo*> DrawingProgramSelection::get_selection_as_set() {

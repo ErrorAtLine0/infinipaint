@@ -43,6 +43,20 @@ bool CoordSpaceHelperTransform::operator!=(const CoordSpaceHelperTransform& othe
 //    return coord;
 //}
 
+bool CoordSpaceHelperTransform::is_identity() {
+    switch(transformType) {
+        case TransformType::NONE:
+            return true;
+        case TransformType::TRANSLATE:
+            return pos == WorldVec{0, 0};
+        case TransformType::SCALE:
+            return inverseScale == WorldScalar(1);
+        case TransformType::ROTATE:
+            return rotation == 0.0;
+    }
+    return true;
+}
+
 WorldVec CoordSpaceHelperTransform::from_space_world(const WorldVec& coord) const {
     switch(transformType) {
         case TransformType::NONE:
