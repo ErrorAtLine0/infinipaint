@@ -179,18 +179,18 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
                 static PasteData pasteData;
                 pasteData.screenPos = popupPos;
                 pasteData.w = make_weak_ptr(world.main.world);
-                emscripten_browser_clipboard::paste_async_image([](std::string pasteData, void* callbackData){
+                emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
                     PasteData* p = (PasteData*)callbackData;
                     std::shared_ptr<World> wLock = p->w.lock();
                     if(wLock)
-                        wLock->drawProg.add_file_to_canvas_by_data("Image from clipboard", std::string(pasteData), p->screenPos);
+                        wLock->drawProg.add_file_to_canvas_by_data("Image from clipboard", pasteData, p->screenPos);
                     else
                         Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
                 }, &pasteData);
             #else
-                std::string imageData = world.main.input.get_clipboard_image_data_SDL();
-                if(!imageData.empty())
-                    add_file_to_canvas_by_data("Image from clipboard", imageData, popupPos);
+                world.main.input.get_clipboard_image_data_SDL([&](std::string_view pasteData) {
+                    add_file_to_canvas_by_data("Image from clipboard", pasteData, popupPos);
+                });
             #endif
             shouldClose = true;
         }

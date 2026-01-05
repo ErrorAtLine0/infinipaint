@@ -136,7 +136,7 @@ std::string InputManager::get_clipboard_str_SDL() {
     return toRet;
 }
 
-std::string InputManager::get_clipboard_image_data_SDL() {
+void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback) {
 #ifndef __EMSCRIPTEN__
     static std::unordered_set<std::string> validMimetypes;
     if(validMimetypes.empty()) {
@@ -153,14 +153,12 @@ std::string InputManager::get_clipboard_image_data_SDL() {
             if(validMimetypes.contains(mimeTypes[i])) {
                 size_t clipboardDataSize;
                 void* clipboardData = SDL_GetClipboardData(mimeTypes[i], &clipboardDataSize);
-                std::string toRet(static_cast<char*>(clipboardData), clipboardDataSize);
+                callback(std::string_view(static_cast<char*>(clipboardData), clipboardDataSize));
                 SDL_free(clipboardData);
-                return toRet;
             }
         }
     }
 #endif
-    return std::string();
 }
 
 void InputManager::set_clipboard_str(std::string_view s) {

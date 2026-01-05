@@ -17,7 +17,7 @@ namespace emscripten_browser_clipboard {
 
 /////////////////////////////////// Interface //////////////////////////////////
 
-using paste_image_handler = void(*)(std::string, void*);
+using paste_image_handler = void(*)(std::string_view, void*);
 using paste_handler = void(*)(std::string&&, void*);
 using copy_handler = char const*(*)(void*);
 
@@ -142,7 +142,7 @@ EMSCRIPTEN_KEEPALIVE inline int emscripten_browser_clipboard_detail_paste_return
 
 EMSCRIPTEN_KEEPALIVE inline int emscripten_browser_clipboard_detail_paste_image_return(char const *pasteData, int pasteSize, paste_image_handler callback, void *callback_data) {
   /// Call paste callback - this function is called from javascript when the paste event occurs
-  callback(std::string(pasteData, pasteSize), callback_data);
+  callback(std::string_view(pasteData, pasteSize), callback_data);
   return 1;
 }
 
