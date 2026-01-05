@@ -305,8 +305,8 @@ namespace NetworkingObjects {
         protected:
             virtual std::list<NetObjOrderedListObjectInfo<T>>& data_list() override { return data; }
             virtual const std::list<NetObjOrderedListObjectInfo<T>>& data_list() const override { return data; }
-            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() { return idToDataMap; }
-            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const { return idToDataMap; }
+            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() override { return idToDataMap; }
+            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const override { return idToDataMap; }
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};
@@ -343,7 +343,7 @@ namespace NetworkingObjects {
                 NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idToDataMap);
                 return toRet;
             }
-            virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) {
+            virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) override {
                 if(itList.empty())
                     return;
 
@@ -459,8 +459,8 @@ namespace NetworkingObjects {
         protected:
             virtual std::list<NetObjOrderedListObjectInfo<T>>& data_list() override { return clientData; }
             virtual const std::list<NetObjOrderedListObjectInfo<T>>& data_list() const override { return clientData; }
-            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() { return clientIdToDataMap; }
-            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const { return clientIdToDataMap; }
+            virtual std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() override { return clientIdToDataMap; }
+            virtual const std::unordered_map<NetworkingObjects::NetObjID, NetObjOrderedListIterator<T>>& data_map() const override { return clientIdToDataMap; }
             virtual std::vector<NetObjOrderedListIterator<T>> insert_ordered_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::shared_ptr<NetServer::ClientData>& clientInserting, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjs) override {
                 if(newObjs.empty())
                     return {};
@@ -483,7 +483,7 @@ namespace NetworkingObjects {
                 NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
                 return toRet;
             }
-            virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) {
+            virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) override {
                 if(itList.empty())
                     return;
 

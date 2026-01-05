@@ -42,7 +42,7 @@ class WorldUndoManager {
     private:
         void push_undo(std::unique_ptr<WorldUndoAction> undoAction);
         void push_redo(std::unique_ptr<WorldUndoAction> undoAction);
-        constexpr static size_t UNDO_QUEUE_LIMIT = 500;
+        constexpr static size_t UNDO_QUEUE_LIMIT = 250;
 
         std::unordered_map<UndoObjectID, NetworkingObjects::NetObjID> undoIDToNetID;
         std::unordered_map<NetworkingObjects::NetObjID, UndoObjectID> netIDToUndoID;

@@ -87,6 +87,10 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& 
                     }) {
                         gui.text_label(tempPtr->get_name());
                     }
+                    if(gui.svg_icon_button_transparent("edit button", "data/icons/pencil.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
+                        layerMan.editingLayer = tempPtr;
+                        isButtonClicked = true;
+                    }
                     if(gui.svg_icon_button_transparent("visible button", tempPtr->get_visible() ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, GUIStuff::TreeListing::ENTRY_HEIGHT)) {
                         tempPtr->set_visible(layerMan, !tempPtr->get_visible());
                         isButtonClicked = true;

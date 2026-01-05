@@ -23,7 +23,7 @@ class UndoManager {
     private:
         void push_undo(const UndoRedoPair& undoRedoPair);
         void push_redo(const UndoRedoPair& undoRedoPair);
-        size_t queueLimit = 500;
+        size_t queueLimit = 250;
         std::deque<UndoRedoPair> undoQueue;
         std::deque<UndoRedoPair> redoQueue;
 };

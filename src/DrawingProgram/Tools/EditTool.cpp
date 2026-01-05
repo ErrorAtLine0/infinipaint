@@ -74,6 +74,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
                         return false;
                     auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
                     objPtr->get_comp().set_data_from(*oldData);
+                    objPtr->commit_update(undoMan.world.drawProg);
                     objPtr->send_comp_update(undoMan.world.drawProg, true);
                     return true;
                 }
@@ -83,6 +84,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
                         return false;
                     auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
                     objPtr->get_comp().set_data_from(*newData);
+                    objPtr->commit_update(undoMan.world.drawProg);
                     objPtr->send_comp_update(undoMan.world.drawProg, true);
                     return true;
                 }
