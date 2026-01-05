@@ -11,6 +11,14 @@
 #include <limits>
 #include <list>
 
+//#define ENABLE_NETOBJ_ORDERED_LIST_VERBOSE_DEBUG
+
+#ifdef ENABLE_NETOBJ_ORDERED_LIST_VERBOSE_DEBUG
+    #define NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idMap) netobj_ordered_list_debug_check(data, idMap)
+#else
+    #define NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idMap) 
+#endif
+
 namespace NetworkingObjects {
     enum class ObjPtrOrderedListCommand_StoC : uint8_t {
         INSERT_LIST_CONSTRUCT,
@@ -45,6 +53,37 @@ namespace NetworkingObjects {
         uint32_t i = start->pos;
         for(; start != end; ++start) {
             start->pos = i;
+            ++i;
+        }
+    }
+
+#ifdef ENABLE_NETOBJ_ORDERED_LIST_VERBOSE_DEBUG
+    template <typename T> void netobj_ordered_list_debug_check(const std::list<NetObjOrderedListObjectInfo<T>>& l, const std::unordered_map<NetObjID, NetObjOrderedListIterator<T>>& idMap) {
+        uint32_t i = 0;
+        std::cout << "[netobj_ordered_list_debug_check] Debug print start\n";
+        for(auto& o : l) {
+            std::cout << "Pos " << o.pos << " with id " << o.obj.get_net_id().to_string() << '\n';
+            if(o.pos != i)
+                throw std::runtime_error("[netobj_ordered_list_debug_check] Position values are incorrect!");
+            ++i;
+            auto it = idMap.find(o.obj.get_net_id());
+            if(it == idMap.end())
+                throw std::runtime_error("[netobj_ordered_list_debug_check] Could not find element in ID Map!");
+            if(&(*it->second) != &o)
+                throw std::runtime_error("[netobj_ordered_list_debug_check] ID Map and list point to different objects!");
+        }
+        if(l.size() != idMap.size()) {
+            std::cout << "ID map size: " << idMap.size() << " list size: " << l.size() << '\n';
+            throw std::runtime_error("[netobj_ordered_list_debug_check] ID map and list have different sizes!");
+        }
+        std::cout << "[netobj_ordered_list_debug_check] Debug print end" << std::endl;
+    }
+#endif
+
+    template <typename T> void refresh_positions_complete(std::list<NetObjOrderedListObjectInfo<T>>& l) {
+        uint32_t i = 0;
+        for(auto& c : l) {
+            c.pos = i;
             ++i;
         }
     }
@@ -301,6 +340,7 @@ namespace NetworkingObjects {
                         a(idPosition, newObjIt->obj.get_net_id());
                 });
                 this->call_insert_callback_list(toRet);
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idToDataMap);
                 return toRet;
             }
             virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) {
@@ -338,11 +378,13 @@ namespace NetworkingObjects {
                 });
 
                 set_position_obj_info_list<T>(smallestPosIt, data.end());
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idToDataMap);
             }
             virtual void write_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) override {
                 a(static_cast<uint32_t>(data.size()));
                 for(auto& c : data)
                     c.obj.write_create_message(a);
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idToDataMap);
             }
             virtual void read_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
                 uint32_t constructedSize;
@@ -353,6 +395,7 @@ namespace NetworkingObjects {
                     auto it = data.emplace(data.end(), l.get_obj_man()->template read_create_message<T>(a, c), i);
                     idToDataMap.emplace(data.back().obj.get_net_id(), it);
                 }
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(data, idToDataMap);
                 // Dont send the object data to all clients in the constructor, as the function that called read_create_message is also the one that will decide where to send the data of the constructed object
             }
             virtual void read_update(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) override {
@@ -373,17 +416,9 @@ namespace NetworkingObjects {
                             newObjs.emplace_back(NetObjOrderedListIterator<T>(), l.get_obj_man()->template read_create_message<T>(a, c));
                         }
 
-                        uint32_t currentIndex = data.size();
-                        NetObjOrderedListIterator<T> currentIt = data.end();
-                        for(std::pair<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>&, uint32_t&> elem : (std::views::zip(newObjs, insertIndices) | std::views::reverse)) {
-                            uint32_t index = elem.second;
-                            auto& it = elem.first.first;
-                            while(currentIndex != index) {
-                                --currentIndex;
-                                --currentIt;
-                            }
-                            it = currentIt;
-                        }
+                        std::vector<NetObjOrderedListIterator<T>> itList = this->at_ordered_indices(insertIndices);
+                        for(size_t i = 0; i < itList.size(); i++)
+                            newObjs[i].first = itList[i];
 
                         insert_ordered_list(l, c, newObjs);
                         break;
@@ -445,6 +480,7 @@ namespace NetworkingObjects {
                     }
                 });
                 this->call_insert_callback_list(toRet);
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
                 return toRet;
             }
             virtual void erase_it_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& itList, std::vector<NetObjOwnerPtr<T>>* erasedObjects) {
@@ -481,6 +517,7 @@ namespace NetworkingObjects {
                 });
 
                 set_position_obj_info_list<T>(smallestPosIt, clientData.end());
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
             }
             virtual void write_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryOutputArchive& a) override {
                 a(static_cast<uint32_t>(clientData.size()));
@@ -491,6 +528,7 @@ namespace NetworkingObjects {
                     auto serverIt = serverData.emplace(serverData.end(), c.obj.get_net_id()); // We are the ones who made this list, so fill up
                     serverIdToDataMap.emplace(c.obj.get_net_id(), serverIt);
                 }
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
             }
             virtual void read_constructor(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
                 uint32_t constructedSize;
@@ -505,6 +543,7 @@ namespace NetworkingObjects {
                     auto serverIt = serverData.emplace(serverData.end(), clientIt->obj.get_net_id());
                     serverIdToDataMap.emplace(clientIt->obj.get_net_id(), serverIt);
                 }
+                NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
             }
             virtual void read_update(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>&) override {
                 ObjPtrOrderedListCommand_StoC c;
@@ -515,17 +554,18 @@ namespace NetworkingObjects {
                         a(newObjsSize);
 
                         std::vector<NetworkingObjects::NetObjID> idsBeforeElements;
+                        std::vector<std::list<NetObjID>::iterator> serverInsertIts;
                         std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> newObjs;
 
                         for(uint32_t i = 0; i < newObjsSize; i++) {
                             auto& idBeforeElement = idsBeforeElements.emplace_back();
                             a(idBeforeElement);
                             newObjs.emplace_back(get_client_iterator_from_server_previous_net_obj_id(idBeforeElement), l.get_obj_man()->template read_create_message<T>(a, nullptr));
+                            serverInsertIts.emplace_back(get_server_iterator_from_server_previous_net_obj_id(idBeforeElement));
                         }
 
                         for(uint32_t i = 0; i < newObjsSize; i++) {
-                            auto serverInsertAtIt = get_server_iterator_from_server_previous_net_obj_id(idsBeforeElements[i]);
-                            auto serverIt = serverData.emplace(serverInsertAtIt, newObjs[i].second.get_net_id());
+                            auto serverIt = serverData.emplace(serverInsertIts[i], newObjs[i].second.get_net_id());
                             serverIdToDataMap.emplace(newObjs[i].second.get_net_id(), serverIt);
                         }
 
@@ -539,9 +579,11 @@ namespace NetworkingObjects {
                             if(i == 0)
                                 firstInsertedIt = newObjIt;
                         }
+
                         set_position_obj_info_list<T>(firstInsertedIt, clientData.end());
                         this->call_insert_callback_list(insertedIterators);
 
+                        NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
                         break;
                     }
                     case ObjPtrOrderedListCommand_StoC::INSERT_LIST_REFERENCE: {
@@ -551,6 +593,7 @@ namespace NetworkingObjects {
                         struct PerElementData {
                             NetworkingObjects::NetObjID idBeforeElement;
                             NetworkingObjects::NetObjID refID;
+                            std::list<NetObjID>::iterator serverInsertIt;
                             bool foundInClient;
                             NetObjOrderedListIterator<T> clientObjectIt;
                             NetObjOrderedListIterator<T> clientInsertPosIt;
@@ -560,6 +603,7 @@ namespace NetworkingObjects {
                         for(uint32_t i = 0; i < newObjsSize; i++) {
                             auto& elemData = receivedElements.emplace_back();
                             a(elemData.idBeforeElement, elemData.refID);
+                            elemData.serverInsertIt = get_server_iterator_from_server_previous_net_obj_id(elemData.idBeforeElement);
                         }
 
                         std::list<NetObjOrderedListObjectInfo<T>> referredToObjectData;
@@ -577,7 +621,7 @@ namespace NetworkingObjects {
                                     if(startRefreshFrom != clientData.end())
                                         startRefreshFrom->pos = elemData.clientObjectIt->pos;
                                 }
-                                referredToObjectData.splice(referredToObjectData.end(), clientData, elemData.clientObjectIt, std::next(elemData.clientObjectIt));
+                                referredToObjectData.splice(referredToObjectData.end(), clientData, elemData.clientObjectIt);
                                 clientIdToDataMap.erase(clientIdToDataMapIt);
                                 elemData.foundInClient = true;
                             }
@@ -586,6 +630,7 @@ namespace NetworkingObjects {
                         }
 
                         set_position_obj_info_list<T>(startRefreshFrom, clientData.end());
+                        NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
 
                         for(auto& elemData : receivedElements) {
                             if(elemData.foundInClient)
@@ -593,8 +638,7 @@ namespace NetworkingObjects {
                         }
 
                         for(auto& elemData : receivedElements) {
-                            auto serverInsertAtIt = get_server_iterator_from_server_previous_net_obj_id(elemData.idBeforeElement);
-                            auto serverIt = serverData.emplace(serverInsertAtIt, elemData.refID);
+                            auto serverIt = serverData.emplace(elemData.serverInsertIt, elemData.refID);
                             serverIdToDataMap.emplace(elemData.refID, serverIt);
                         }
 
@@ -607,7 +651,7 @@ namespace NetworkingObjects {
                                 firstInsertedActualPos = elemData.clientInsertPosIt->pos;
                                 firstInsertedIt = elemData.clientObjectIt;
                             }
-                            clientData.splice(elemData.clientInsertPosIt, referredToObjectData, elemData.clientObjectIt, std::next(elemData.clientObjectIt));
+                            clientData.splice(elemData.clientInsertPosIt, referredToObjectData, elemData.clientObjectIt);
                             clientIdToDataMap.emplace(elemData.clientObjectIt->obj.get_net_id(), elemData.clientObjectIt);
                         }
 
@@ -626,6 +670,7 @@ namespace NetworkingObjects {
                                 actualPos++;
                             }
                         }
+                        NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
                         break;
                     }
                     case ObjPtrOrderedListCommand_StoC::ERASE_ID_LIST: {
@@ -655,6 +700,7 @@ namespace NetworkingObjects {
                         }
 
                         set_position_obj_info_list<T>(smallestPosIt, clientData.end());
+                        NETOBJ_ORDERED_LIST_VERBOSE_DEBUG(clientData, clientIdToDataMap);
                         break;
                     }
                 }

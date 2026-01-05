@@ -9,6 +9,7 @@
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include "DrawingProgram/Layers/DrawingProgramLayerListItem.hpp"
+#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
 #include "CommandList.hpp"
@@ -18,6 +19,7 @@
 #include "VersionConstants.hpp"
 #include "WorldGrid.hpp"
 #include <cereal/archives/portable_binary.hpp>
+#include <chrono>
 #include <fstream>
 #include "FileHelpers.hpp"
 #include "FontData.hpp"
@@ -67,6 +69,9 @@ World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
         else
             load_empty_canvas();
         set_name(name);
+        #ifdef ENABLE_ORDERED_LIST_TEST
+            listDebugTest = netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<uint16_t>>();
+        #endif
     }
 }
 
@@ -108,6 +113,11 @@ void World::init_net_obj_type_list() {
     canvasTheme.register_class();
     ClientData::register_class(*this);
     NetworkingObjects::register_unordered_set_class<ClientData>(netObjMan);
+
+#ifdef ENABLE_ORDERED_LIST_TEST
+    NetworkingObjects::register_generic_serialized_class<uint16_t>(netObjMan);
+    NetworkingObjects::register_ordered_list_class<uint16_t>(netObjMan);
+#endif
 }
 
 void World::init_client(const std::string& serverFullID) {
@@ -134,6 +144,10 @@ void World::init_client(const std::string& serverFullID) {
         init_client_data_list_callbacks();
         ownClientData = netObjMan.get_obj_temporary_ref_from_id<ClientData>(clientDataObjID);
         drawData.cam.smooth_move_to(*main.world, ownClientData->get_cam_coords(), ownClientData->get_window_size(), true);
+
+        #ifdef ENABLE_ORDERED_LIST_TEST
+            listDebugTest = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<uint16_t>>(message, nullptr);
+        #endif
 
         clientStillConnecting = false;
     });
@@ -165,6 +179,9 @@ void World::focus_update() {
         }
         ownClientData->set_cursor_pos(ownClientData, main.input.mouse.pos);
         drawProg.update();
+        #ifdef ENABLE_ORDERED_LIST_TEST
+            list_debug_test_update();
+        #endif
     }
 
     drawData.cam.update_main(*this);
@@ -326,6 +343,9 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
             drawProg.write_components_server(a);
             canvasTheme.write_create_message(a);
             clients.write_create_message(a);
+            #ifdef ENABLE_ORDERED_LIST_TEST
+                listDebugTest.write_create_message(a);
+            #endif
         }
         netServer->send_string_stream_to_client(client, RELIABLE_COMMAND_CHANNEL, ss);
         for(auto& r : rMan.resource_list()) {
@@ -483,6 +503,44 @@ void World::scale_up(const WorldScalar& scaleUpAmount) {
     drawProg.scale_up(scaleUpAmount);
     undo.scale_up(scaleUpAmount);
 }
+
+#ifdef ENABLE_ORDERED_LIST_TEST
+void World::list_debug_test_update() {
+    if(std::chrono::steady_clock::now() < (listDebugTestTimeStart + std::chrono::minutes(1))) {
+        bool isInsert;
+        if(listDebugTest->size() > 70)
+            isInsert = false;
+        else if(listDebugTest->size() < 20)
+            isInsert = true;
+        else
+            isInsert = Random::get().real_range(0.0f, 1.0f) > 0.5f;
+
+        using namespace NetworkingObjects;
+        if(isInsert) {
+            std::vector<std::pair<NetObjOrderedListIterator<uint16_t>, NetObjOwnerPtr<uint16_t>>> toInsert;
+            std::vector<uint32_t> randomIndices;
+            uint32_t insertAmount = Random::get().int_range(5, 25);
+            for(uint32_t i = 0; i < insertAmount; i++)
+                randomIndices.emplace_back(Random::get().int_range<uint32_t>(0, listDebugTest->size() + 10));
+            randomIndices[1] = randomIndices[0];
+            std::sort(randomIndices.begin(), randomIndices.end());
+            for(uint32_t index : randomIndices)
+                toInsert.emplace_back(listDebugTest->at(index), netObjMan.make_obj_direct<uint16_t>(Random::get().int_range<uint32_t>(10, 100)));
+            listDebugTest->insert_ordered_list_and_send_create(listDebugTest, toInsert);
+        }
+        else {
+            std::vector<NetObjOrderedListIterator<uint16_t>> toErase;
+            for(uint32_t i = 0; i < listDebugTest->size(); i++) {
+                if(Random::get().real_range(0.0f, 1.0f) > 0.8f)
+                    toErase.emplace_back(listDebugTest->at(i));
+            }
+            listDebugTest->erase_list(listDebugTest, toErase);
+        }
+    }
+    if(netServer && netServer->get_client_list().empty())
+        listDebugTestTimeStart = std::chrono::steady_clock::now();
+}
+#endif
 
 void World::draw(SkCanvas* canvas) {
     drawData.refresh_draw_optimizing_values();

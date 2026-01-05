@@ -26,9 +26,12 @@ void NetServer::update() {
             if(client->setToDisconnect)
                 disconnectCallback(client);
             else {
+                #ifdef NDEBUG
                 try {
+                #endif
                     client->parse_received_messages(*this);
                     client->send_queued_messages(*this);
+                #ifdef NDEBUG
                 }
                 catch(const std::exception& e) {
                     Logger::get().log("INFO", "[NetServer::update] Exception thrown while parsing and sending messages for a client: " + std::string(e.what()));
@@ -40,6 +43,7 @@ void NetServer::update() {
                     client->setToDisconnect = true;
                     disconnectCallback(client);
                 }
+                #endif
             }
         }
     }

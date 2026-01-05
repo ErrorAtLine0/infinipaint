@@ -17,6 +17,8 @@
 
 class MainProgram;
 
+//#define ENABLE_ORDERED_LIST_TEST
+
 #define DEFAULT_CANVAS_BACKGROUND_COLOR Vector3f{0.07f, 0.07f, 0.07f}
 
 class World {
@@ -113,4 +115,10 @@ class World {
         WorldVec mouseWorldMove = {0, 0};
 
         std::chrono::steady_clock::time_point lastKeepAliveSent;
+
+#ifdef ENABLE_ORDERED_LIST_TEST
+        NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<uint16_t>> listDebugTest;
+        void list_debug_test_update();
+        std::chrono::steady_clock::time_point listDebugTestTimeStart = std::chrono::steady_clock::now();
+#endif
 };
