@@ -109,10 +109,8 @@ void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) cons
             canvas->clipRect(get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2));
         }
 
-        if(display) {
+        if(display)
             display->draw(canvas, drawData, rect_from_points(d.p1, d.p2));
-            canvas->restore();
-        }
         else
             canvas->drawRect(rect_from_points(d.p1, d.p2), SkPaint({0.5f, 0.5f, 0.5f, 0.5f}));
 
