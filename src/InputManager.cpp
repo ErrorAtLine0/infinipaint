@@ -32,6 +32,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{CTRL_MOD, SDLK_C}] = KEY_COPY;
     defaultKeyAssignments[{CTRL_MOD, SDLK_X}] = KEY_CUT;
     defaultKeyAssignments[{CTRL_MOD, SDLK_V}] = KEY_PASTE;
+    defaultKeyAssignments[{CTRL_MOD | SDL_KMOD_SHIFT, SDLK_V}] = KEY_PASTE_IMAGE;
     defaultKeyAssignments[{0, SDLK_B}] = KEY_DRAW_TOOL_BRUSH;
     defaultKeyAssignments[{0, SDLK_E}] = KEY_DRAW_TOOL_ERASER;
     defaultKeyAssignments[{0, SDLK_Z}] = KEY_DRAW_TOOL_ZOOM;
@@ -155,6 +156,7 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
                 void* clipboardData = SDL_GetClipboardData(mimeTypes[i], &clipboardDataSize);
                 callback(std::string_view(static_cast<char*>(clipboardData), clipboardDataSize));
                 SDL_free(clipboardData);
+                return;
             }
         }
     }

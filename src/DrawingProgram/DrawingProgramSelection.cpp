@@ -18,6 +18,10 @@
 #define ROTATION_POINT_RADIUS_MULTIPLIER 0.7f
 #define ROTATION_POINTS_DISTANCE 20.0f
 
+#ifdef __EMSCRIPTEN__
+    #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
+#endif
+
 DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
@@ -343,9 +347,15 @@ void DrawingProgramSelection::update() {
             deselect_all();
             paste_clipboard(drawP.world.main.input.mouse.pos);
         }
+        else if(drawP.world.main.input.key(InputManager::KEY_PASTE_IMAGE).pressed) {
+            deselect_all();
+            paste_image(drawP.world.main.input.mouse.pos);
+        }
     }
     else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed && !drawP.prevent_undo_or_redo())
         paste_clipboard(drawP.world.main.input.mouse.pos);
+    else if(drawP.world.main.input.key(InputManager::KEY_PASTE_IMAGE).pressed && !drawP.prevent_undo_or_redo())
+        paste_image(drawP.world.main.input.mouse.pos);
     else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
         drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
 }
@@ -432,7 +442,40 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
             compSetInserted.emplace_back(&(*it));
         }
         set_to_selection(compSetInserted);
-        //drawP.add_undo_place_components(compSetInserted);
+    }
+}
+
+void DrawingProgramSelection::paste_image(Vector2f pasteScreenPos) {
+    if(drawP.layerMan.is_a_layer_being_edited()) {
+        #ifdef __EMSCRIPTEN__
+            struct PasteData {
+                std::weak_ptr<World> w;
+                Vector2f screenPos;
+            };
+            static PasteData pasteData;
+            pasteData.screenPos = pasteScreenPos;
+            pasteData.w = make_weak_ptr(drawP.world.main.world);
+            emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
+                PasteData* p = (PasteData*)callbackData;
+                std::shared_ptr<World> wLock = p->w.lock();
+                if(wLock)
+                    wLock->drawProg.add_file_to_canvas_by_data("Image from clipboard", pasteData, p->screenPos);
+                else
+                    Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+            }, &pasteData);
+        #else
+            if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
+                drawP.switch_to_tool(DrawingProgramToolType::EDIT);
+
+            std::vector<CanvasComponentContainer::ObjInfo*> compSetInserted;
+            drawP.world.main.input.get_clipboard_image_data_SDL([&](std::string_view pasteData) {
+                compSetInserted.emplace_back(drawP.add_file_to_canvas_by_data("Image from clipboard", pasteData, pasteScreenPos));
+            });
+            if(!compSetInserted.empty() && compSetInserted.back() != nullptr) {
+                drawP.drawCache.erase_component(compSetInserted.back());
+                set_to_selection(compSetInserted);
+            }
+        #endif
     }
 }
 

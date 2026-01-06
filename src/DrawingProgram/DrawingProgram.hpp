@@ -35,7 +35,7 @@ class DrawingProgram {
         void init_server_callbacks();
         void init_client_callbacks();
         void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread);
-        void add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
+        CanvasComponentContainer::ObjInfo* add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
         void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet);
 
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);

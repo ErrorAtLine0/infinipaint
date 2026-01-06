@@ -19,6 +19,7 @@ class DrawingProgramSelection {
         void update();
         void deselect_all();
         void paste_clipboard(Vector2f pasteScreenPos);
+        void paste_image(Vector2f pasteScreenPos);
         std::unordered_set<CanvasComponentContainer::ObjInfo*> get_selection_as_set();
         void delete_all();
         void selection_to_clipboard();

@@ -36,10 +36,6 @@
 
 #include "Tools/EraserTool.hpp"
 
-#ifdef __EMSCRIPTEN__
-    #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
-#endif
-
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     drawCache(*this),
@@ -171,27 +167,8 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
             shouldClose = true;
         }
         if(t.gui.text_button_left_transparent("Paste Image", "Paste Image")) {
-            #ifdef __EMSCRIPTEN__
-                struct PasteData {
-                    std::weak_ptr<World> w;
-                    Vector2f screenPos;
-                };
-                static PasteData pasteData;
-                pasteData.screenPos = popupPos;
-                pasteData.w = make_weak_ptr(world.main.world);
-                emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
-                    PasteData* p = (PasteData*)callbackData;
-                    std::shared_ptr<World> wLock = p->w.lock();
-                    if(wLock)
-                        wLock->drawProg.add_file_to_canvas_by_data("Image from clipboard", pasteData, p->screenPos);
-                    else
-                        Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
-                }, &pasteData);
-            #else
-                world.main.input.get_clipboard_image_data_SDL([&](std::string_view pasteData) {
-                    add_file_to_canvas_by_data("Image from clipboard", pasteData, popupPos);
-                });
-            #endif
+            selection.deselect_all();
+            selection.paste_image(popupPos * t.final_gui_scale());
             shouldClose = true;
         }
         if(selection.is_something_selected()) {
@@ -536,7 +513,7 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::p
     }
 }
 
-void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
+CanvasComponentContainer::ObjInfo* DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos) {
     if(layerMan.is_a_layer_being_edited()) {
         ResourceData newResource;
         newResource.data = std::make_shared<std::string>(fileBuffer);
@@ -553,9 +530,11 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
         img.d.p1 = dropPos - imDim;
         img.d.p2 = dropPos + imDim;
         img.d.imageID = imageID;
-        auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
+        CanvasComponentContainer::ObjInfo* newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
         layerMan.add_undo_place_component(newObjInfo);
+        return newObjInfo;
     }
+    return nullptr;
 }
 
 float DrawingProgram::drag_point_radius() {
