@@ -58,44 +58,48 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
         objInfoBeingEdited->obj->commit_update(drawP);
         objInfoBeingEdited->obj->send_comp_update(drawP, true);
 
-        class EditCanvasComponentWorldUndoAction : public WorldUndoAction {
-            public:
-                EditCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponent> initOldData, std::unique_ptr<CanvasComponent> initNewData, WorldUndoManager::UndoObjectID initUndoID):
-                    oldData(std::move(initOldData)),
-                    newData(std::move(initNewData)),
-                    undoID(initUndoID)
-                {}
-                std::string get_name() const override {
-                    return "Edit Canvas Component";
-                }
-                bool undo(WorldUndoManager& undoMan) override {
-                    std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
-                    if(!toEditID.has_value())
-                        return false;
-                    auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
-                    objPtr->get_comp().set_data_from(*oldData);
-                    objPtr->commit_update(undoMan.world.drawProg);
-                    objPtr->send_comp_update(undoMan.world.drawProg, true);
-                    return true;
-                }
-                bool redo(WorldUndoManager& undoMan) override {
-                    std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
-                    if(!toEditID.has_value())
-                        return false;
-                    auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
-                    objPtr->get_comp().set_data_from(*newData);
-                    objPtr->commit_update(undoMan.world.drawProg);
-                    objPtr->send_comp_update(undoMan.world.drawProg, true);
-                    return true;
-                }
-                ~EditCanvasComponentWorldUndoAction() {}
-
-                std::unique_ptr<CanvasComponent> oldData;
-                std::unique_ptr<CanvasComponent> newData;
-                WorldUndoManager::UndoObjectID undoID;
-        };
-
-        drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), objInfoBeingEdited->obj->get_comp().get_data_copy(), drawP.world.undo.get_undoid_from_netid(objInfoBeingEdited->obj.get_net_id())));
+        if(undoAfterEditDone) {
+            class EditCanvasComponentWorldUndoAction : public WorldUndoAction {
+                public:
+                    EditCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponent> initData, WorldUndoManager::UndoObjectID initUndoID):
+                        data(std::move(initData)),
+                        undoID(initUndoID)
+                    {}
+                    std::string get_name() const override {
+                        return "Edit Canvas Component";
+                    }
+                    bool undo(WorldUndoManager& undoMan) override {
+                        std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
+                        if(!toEditID.has_value())
+                            return false;
+                        auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
+                        std::unique_ptr<CanvasComponent> newData = objPtr->get_comp().get_data_copy();
+                        objPtr->get_comp().set_data_from(*data);
+                        data = std::move(newData);
+                        objPtr->commit_update(undoMan.world.drawProg);
+                        objPtr->send_comp_update(undoMan.world.drawProg, true);
+                        return true;
+                    }
+                    bool redo(WorldUndoManager& undoMan) override {
+                        std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
+                        if(!toEditID.has_value())
+                            return false;
+                        auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
+                        std::unique_ptr<CanvasComponent> newData = objPtr->get_comp().get_data_copy();
+                        objPtr->get_comp().set_data_from(*data);
+                        data = std::move(newData);
+                        objPtr->commit_update(undoMan.world.drawProg);
+                        objPtr->send_comp_update(undoMan.world.drawProg, true);
+                        return true;
+                    }
+                    ~EditCanvasComponentWorldUndoAction() {}
+    
+                    std::unique_ptr<CanvasComponent> data;
+                    WorldUndoManager::UndoObjectID undoID;
+            };
+    
+            drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(objInfoBeingEdited->obj.get_net_id())));
+        }
 
         oldData = nullptr;
         objInfoBeingEdited = nullptr;
@@ -107,7 +111,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
         drawP.selection.deselect_all();
 }
 
-void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp) {
+void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndoAfterEditDone) {
     bool isEditing = true;
     switch(comp->obj->get_comp().get_type()) {
         case CanvasComponentType::TEXTBOX: {
@@ -134,6 +138,7 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp) {
     if(isEditing) {
         objInfoBeingEdited = comp;
         oldData = comp->obj->get_comp().get_data_copy();
+        undoAfterEditDone = initUndoAfterEditDone;
         compEditTool->edit_start(*this, objInfoBeingEdited, prevData);
     }
 }

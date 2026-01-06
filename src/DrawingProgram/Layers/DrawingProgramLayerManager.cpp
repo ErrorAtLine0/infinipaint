@@ -154,8 +154,7 @@ void DrawingProgramLayerManager::add_undo_place_component(CanvasComponentContain
     using namespace NetworkingObjects;
     class AddCanvasComponentWorldUndoAction : public WorldUndoAction {
         public:
-            AddCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponentContainer::CopyData> initCopyData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID, WorldUndoManager::UndoObjectID initComponentListUndoID):
-                copyData(std::move(initCopyData)),
+            AddCanvasComponentWorldUndoAction(uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID, WorldUndoManager::UndoObjectID initComponentListUndoID):
                 pos(newPos),
                 undoID(initUndoID),
                 componentListUndoID(initComponentListUndoID)
@@ -171,7 +170,9 @@ void DrawingProgramLayerManager::add_undo_place_component(CanvasComponentContain
                 if(!toEraseCompListID.has_value())
                     return false;
                 auto compList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<NetObjOrderedList<CanvasComponentContainer>>(toEraseCompListID.value());
-                compList->erase(compList, compList->get(toEraseID.value()));
+                auto toEraseIt = compList->get(toEraseID.value());
+                copyData = toEraseIt->obj->get_data_copy();
+                compList->erase(compList, toEraseIt);
                 return true;
             }
             bool redo(WorldUndoManager& undoMan) override {
@@ -197,7 +198,7 @@ void DrawingProgramLayerManager::add_undo_place_component(CanvasComponentContain
             WorldUndoManager::UndoObjectID componentListUndoID;
     };
 
-    drawP.world.undo.push(std::make_unique<AddCanvasComponentWorldUndoAction>(objInfo->obj->get_data_copy(), objInfo->pos, drawP.world.undo.get_undoid_from_netid(objInfo->obj.get_net_id()), drawP.world.undo.get_undoid_from_netid(objInfo->obj->parentLayer->get_layer().components.get_net_id())));
+    drawP.world.undo.push(std::make_unique<AddCanvasComponentWorldUndoAction>(objInfo->pos, drawP.world.undo.get_undoid_from_netid(objInfo->obj.get_net_id()), drawP.world.undo.get_undoid_from_netid(objInfo->obj->parentLayer->get_layer().components.get_net_id())));
 }
 
 void DrawingProgramLayerManager::erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap) {

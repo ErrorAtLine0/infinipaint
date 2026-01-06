@@ -454,6 +454,7 @@ void DrawingProgram::drag_drop_update() {
                 img.d.p2 = droppedItem.pos + imDim;
                 img.d.imageID = {0, 0};
                 auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
+                layerMan.add_undo_place_component(newObjInfo);
                 droppedDownloadingFiles.emplace_back(newObjInfo, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.dataText.value()));
             }
         }
@@ -529,7 +530,8 @@ void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::p
             img.d.p1 = dropPos - imDim;
             img.d.p2 = dropPos + imDim;
             img.d.imageID = imageID;
-            layerMan.add_component_to_layer_being_edited(newContainer);
+            auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
+            layerMan.add_undo_place_component(newObjInfo);
         }
     }
 }
@@ -551,7 +553,8 @@ void DrawingProgram::add_file_to_canvas_by_data(const std::string& fileName, std
         img.d.p1 = dropPos - imDim;
         img.d.p2 = dropPos + imDim;
         img.d.imageID = imageID;
-        layerMan.add_component_to_layer_being_edited(newContainer);
+        auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
+        layerMan.add_undo_place_component(newObjInfo);
     }
 }
 

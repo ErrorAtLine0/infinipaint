@@ -28,7 +28,7 @@ class EditTool : public DrawingProgramToolBase {
         ~EditTool();
 
         void add_point_handle(const HandleData& handle);
-        void edit_start(CanvasComponentContainer::ObjInfo* comp);
+        void edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndoAfterEditDone = true);
         bool is_editable(CanvasComponentContainer::ObjInfo* comp);
 
         std::unique_ptr<DrawingProgramEditToolBase> compEditTool;
@@ -36,6 +36,7 @@ class EditTool : public DrawingProgramToolBase {
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
         HandleData* pointDragging = nullptr;
         std::any prevData;
+        bool undoAfterEditDone;
 
         std::unique_ptr<CanvasComponent> oldData;
 };

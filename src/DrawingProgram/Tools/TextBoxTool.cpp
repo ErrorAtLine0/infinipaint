@@ -72,7 +72,7 @@ void TextBoxTool::tool_update() {
         textBox.d.p2 = ensure_points_have_distance(textBox.d.p1, textBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
         if(!drawP.controls.leftClickHeld) {
             auto editTool = std::make_unique<EditTool>(drawP);
-            editTool->edit_start(objInfoBeingEdited);
+            editTool->edit_start(objInfoBeingEdited, false);
             drawP.toolToSwitchToAfterUpdate = std::move(editTool);
             return;
         }
