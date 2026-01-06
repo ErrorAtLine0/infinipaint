@@ -185,10 +185,12 @@ void DrawingProgramLayerManager::add_undo_place_component(CanvasComponentContain
                 auto compList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<NetObjOrderedList<CanvasComponentContainer>>(toEraseCompListID.value());
                 auto insertedIt = compList->emplace_direct(compList, compList->at(pos), undoMan.world.netObjMan, *copyData);
                 undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                copyData = nullptr;
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
-                copyData->scale_up(scaleAmount);
+                if(copyData)
+                    copyData->scale_up(scaleAmount);
             }
             ~AddCanvasComponentWorldUndoAction() {}
 
@@ -260,6 +262,7 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
                             undoMan.register_new_netid_to_existing_undoid(insertData.undoID->at(i), toInsert[i].second.get_net_id());
                         }
                         parentListPtr->insert_ordered_list_and_send_create(parentListPtr, toInsert);
+                        insertData.copyData->clear();
                     }
                 }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
 
@@ -279,6 +282,8 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
                         if(!undoMan.fill_netid_list_from_undoid_list(netIDList, eData.undoID))
                             return false;
                         eraseData = parentListPtr->get_list(netIDList);
+                        for(auto& it : eraseData)
+                            eData.copyData.emplace_back(it->obj->get_data_copy());
                     }
                 }
 
@@ -352,6 +357,8 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
                     if(!undoMan.fill_netid_list_from_undoid_list(netIDList, undoPlaceData.undoID))
                         return false;
                     eraseData = parentListPtr->get_list(netIDList);
+                    for(auto& it : eraseData)
+                        undoPlaceData.copyData.emplace_back(it->obj->get_data_copy());
                 }
 
                 parentListPtr->erase_list(parentListPtr, eraseData);
@@ -381,6 +388,7 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
                 }
                 parentListPtr->insert_ordered_list_and_send_create(parentListPtr, toInsert);
 
+                undoPlaceData.copyData.clear();
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
@@ -399,7 +407,6 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
     uint32_t i = 0;
     for(auto& comp : placeList) {
         undoData.undoID.emplace_back(undoMan.get_undoid_from_netid(comp->obj.get_net_id()));
-        undoData.copyData.emplace_back(comp->obj->get_data_copy());
         undoData.pos.emplace_back(comp->pos - i);
         ++i;
     }

@@ -384,14 +384,14 @@ NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem> Drawin
     auto& world = layerMan.drawP.world;
     class AddLayerWorldUndoAction : public WorldUndoAction {
         public:
-            AddLayerWorldUndoAction(DrawingProgramLayerListItemUndoData initLayerData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
+            AddLayerWorldUndoAction(std::unique_ptr<DrawingProgramLayerListItemUndoData> initLayerData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
                 layerData(std::move(initLayerData)),
                 pos(newPos),
                 parentUndoID(initParentUndoID),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
-                return layerData.folderData ? "Add Layer Folder" : "Add Layer";
+                return "Add Layer Item";
             }
             bool undo(WorldUndoManager& undoMan) override {
                 std::optional<NetworkingObjects::NetObjID> toEraseParentID = undoMan.get_netid_from_undoid(parentUndoID);
@@ -402,7 +402,9 @@ NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem> Drawin
                     return false;
 
                 auto& layerList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toEraseParentID.value())->get_folder().folderList;
-                layerList->erase(layerList, layerList->get(toEraseID.value()));
+                auto it = layerList->get(toEraseID.value());
+                layerData = std::make_unique<DrawingProgramLayerListItemUndoData>(it->obj->get_undo_data(undoMan));
+                layerList->erase(layerList, it);
                 return true;
             }
             bool redo(WorldUndoManager& undoMan) override {
@@ -414,16 +416,18 @@ NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem> Drawin
                     return false;
 
                 auto& layerList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toInsertParentID.value())->get_folder().folderList;
-                auto insertedIt = layerList->emplace_direct(layerList, layerList->at(pos), undoMan.world, layerData);
+                auto insertedIt = layerList->emplace_direct(layerList, layerList->at(pos), undoMan.world, *layerData);
                 undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                layerData = nullptr;
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
-                layerData.scale_up(scaleAmount);
+                if(layerData)
+                    layerData->scale_up(scaleAmount);
             }
             ~AddLayerWorldUndoAction() {}
 
-            DrawingProgramLayerListItemUndoData layerData;
+            std::unique_ptr<DrawingProgramLayerListItemUndoData> layerData;
             uint32_t pos;
             WorldUndoManager::UndoObjectID parentUndoID;
             WorldUndoManager::UndoObjectID undoID;
@@ -431,7 +435,7 @@ NetworkingObjects::NetObjOrderedListIterator<DrawingProgramLayerListItem> Drawin
 
     auto insertedLayerPair = create_in_proper_position(newItem);
     auto& it = insertedLayerPair.second;
-    world.undo.push(std::make_unique<AddLayerWorldUndoAction>(it->obj->get_undo_data(world.undo), it->pos, world.undo.get_undoid_from_netid(insertedLayerPair.first), world.undo.get_undoid_from_netid(it->obj.get_net_id())));
+    world.undo.push(std::make_unique<AddLayerWorldUndoAction>(std::make_unique<DrawingProgramLayerListItemUndoData>(it->obj->get_undo_data(world.undo)), it->pos, world.undo.get_undoid_from_netid(insertedLayerPair.first), world.undo.get_undoid_from_netid(it->obj.get_net_id())));
     return it;
 }
 
@@ -439,14 +443,14 @@ void DrawingProgramLayerManagerGUI::remove_layer(const NetworkingObjects::NetObj
     auto& world = layerMan.drawP.world;
     class DeleteLayerWorldUndoAction : public WorldUndoAction {
         public:
-            DeleteLayerWorldUndoAction(DrawingProgramLayerListItemUndoData initLayerData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
+            DeleteLayerWorldUndoAction(std::unique_ptr<DrawingProgramLayerListItemUndoData> initLayerData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
                 layerData(std::move(initLayerData)),
                 pos(newPos),
                 parentUndoID(initParentUndoID),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
-                return layerData.folderData ? "Delete Layer Folder" : "Delete Layer";
+                return "Delete Layer Item";
             }
             bool undo(WorldUndoManager& undoMan) override {
                 std::optional<NetworkingObjects::NetObjID> toInsertParentID = undoMan.get_netid_from_undoid(parentUndoID);
@@ -457,8 +461,9 @@ void DrawingProgramLayerManagerGUI::remove_layer(const NetworkingObjects::NetObj
                     return false;
 
                 auto& layerList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toInsertParentID.value())->get_folder().folderList;
-                auto insertedIt = layerList->emplace_direct(layerList, layerList->at(pos), undoMan.world, layerData);
+                auto insertedIt = layerList->emplace_direct(layerList, layerList->at(pos), undoMan.world, *layerData);
                 undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                layerData = nullptr;
                 return true;
             }
             bool redo(WorldUndoManager& undoMan) override {
@@ -470,15 +475,18 @@ void DrawingProgramLayerManagerGUI::remove_layer(const NetworkingObjects::NetObj
                     return false;
 
                 auto& layerList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toEraseParentID.value())->get_folder().folderList;
-                layerList->erase(layerList, layerList->get(toEraseID.value()));
+                auto it = layerList->get(toEraseID.value());
+                layerData = std::make_unique<DrawingProgramLayerListItemUndoData>(it->obj->get_undo_data(undoMan));
+                layerList->erase(layerList, it);
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
-                layerData.scale_up(scaleAmount);
+                if(layerData)
+                    layerData->scale_up(scaleAmount);
             }
             ~DeleteLayerWorldUndoAction() {}
 
-            DrawingProgramLayerListItemUndoData layerData;
+            std::unique_ptr<DrawingProgramLayerListItemUndoData> layerData;
             uint32_t pos;
             WorldUndoManager::UndoObjectID parentUndoID;
             WorldUndoManager::UndoObjectID undoID;
@@ -486,7 +494,7 @@ void DrawingProgramLayerManagerGUI::remove_layer(const NetworkingObjects::NetObj
 
     auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(parentID)->get_folder().folderList;
     auto it = folderList->get(objectID);
-    world.undo.push(std::make_unique<DeleteLayerWorldUndoAction>(it->obj->get_undo_data(world.undo), it->pos, world.undo.get_undoid_from_netid(parentID), world.undo.get_undoid_from_netid(objectID)));
+    world.undo.push(std::make_unique<DeleteLayerWorldUndoAction>(std::make_unique<DrawingProgramLayerListItemUndoData>(it->obj->get_undo_data(world.undo)), it->pos, world.undo.get_undoid_from_netid(parentID), world.undo.get_undoid_from_netid(objectID)));
     folderList->erase(folderList, it);
 }
 
@@ -494,34 +502,32 @@ void DrawingProgramLayerManagerGUI::editing_layer_check() {
     auto& world = layerMan.drawP.world;
     class EditLayerWorldUndoAction : public WorldUndoAction {
         public:
-            EditLayerWorldUndoAction(const DrawingProgramLayerListItemMetaInfo& initDataOld, const DrawingProgramLayerListItemMetaInfo& initDataNew, WorldUndoManager::UndoObjectID initUndoID):
-                dataOld(initDataOld),
-                dataNew(initDataNew),
+            EditLayerWorldUndoAction(std::unique_ptr<DrawingProgramLayerListItemMetaInfo> initData, WorldUndoManager::UndoObjectID initUndoID):
+                data(std::move(initData)),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
                 return "Edit Layer";
             }
             bool undo(WorldUndoManager& undoMan) override {
-                std::optional<NetworkingObjects::NetObjID> toModifyID = undoMan.get_netid_from_undoid(undoID);
-                if(!toModifyID.has_value())
-                    return false;
-                auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toModifyID.value());
-                objPtr->set_metainfo(undoMan.world.drawProg.layerMan, dataOld);
-                return true;
+                return undo_redo(undoMan);
             }
             bool redo(WorldUndoManager& undoMan) override {
+                return undo_redo(undoMan);
+            }
+            bool undo_redo(WorldUndoManager& undoMan) {
                 std::optional<NetworkingObjects::NetObjID> toModifyID = undoMan.get_netid_from_undoid(undoID);
                 if(!toModifyID.has_value())
                     return false;
                 auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<DrawingProgramLayerListItem>(toModifyID.value());
-                objPtr->set_metainfo(undoMan.world.drawProg.layerMan, dataNew);
+                auto newData = std::make_unique<DrawingProgramLayerListItemMetaInfo>(objPtr->get_metainfo());
+                objPtr->set_metainfo(undoMan.world.drawProg.layerMan, *data);
+                data = std::move(newData);
                 return true;
             }
             ~EditLayerWorldUndoAction() {}
 
-            DrawingProgramLayerListItemMetaInfo dataOld;
-            DrawingProgramLayerListItemMetaInfo dataNew;
+            std::unique_ptr<DrawingProgramLayerListItemMetaInfo> data;
             WorldUndoManager::UndoObjectID undoID;
     };
 
@@ -531,7 +537,7 @@ void DrawingProgramLayerManagerGUI::editing_layer_check() {
         if(tempPtr) {
             const DrawingProgramLayerListItemMetaInfo& currentMetaData = tempPtr->get_metainfo();
             if(currentMetaData != editingData.value())
-                world.undo.push(std::make_unique<EditLayerWorldUndoAction>(editingData.value(), currentMetaData, world.undo.get_undoid_from_netid(oldNetObjID)));
+                world.undo.push(std::make_unique<EditLayerWorldUndoAction>(std::make_unique<DrawingProgramLayerListItemMetaInfo>(editingData.value()), world.undo.get_undoid_from_netid(oldNetObjID)));
         }
     }
     editingData = std::nullopt;

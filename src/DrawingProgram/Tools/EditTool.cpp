@@ -69,18 +69,12 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
                         return "Edit Canvas Component";
                     }
                     bool undo(WorldUndoManager& undoMan) override {
-                        std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
-                        if(!toEditID.has_value())
-                            return false;
-                        auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
-                        std::unique_ptr<CanvasComponent> newData = objPtr->get_comp().get_data_copy();
-                        objPtr->get_comp().set_data_from(*data);
-                        data = std::move(newData);
-                        objPtr->commit_update(undoMan.world.drawProg);
-                        objPtr->send_comp_update(undoMan.world.drawProg, true);
-                        return true;
+                        return undo_redo(undoMan);
                     }
                     bool redo(WorldUndoManager& undoMan) override {
+                        return undo_redo(undoMan);
+                    }
+                    bool undo_redo(WorldUndoManager& undoMan) {
                         std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
                         if(!toEditID.has_value())
                             return false;

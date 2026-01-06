@@ -22,8 +22,8 @@ void GridManager::add_default_grid(const std::string& newName) {
 
         class AddGridWorldUndoAction : public WorldUndoAction {
             public:
-                AddGridWorldUndoAction(const WorldGrid& initGridData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID):
-                    gridData(initGridData),
+                AddGridWorldUndoAction(std::unique_ptr<WorldGrid> initGridData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID):
+                    gridData(std::move(initGridData)),
                     pos(newPos),
                     undoID(initUndoID)
                 {}
@@ -35,7 +35,9 @@ void GridManager::add_default_grid(const std::string& newName) {
                     if(!toEraseID.has_value())
                         return false;
                     auto& gridList = undoMan.world.gridMan.grids;
-                    gridList->erase(gridList, gridList->get(toEraseID.value()));
+                    auto it = gridList->get(toEraseID.value());
+                    gridData = std::make_unique<WorldGrid>(*it->obj);
+                    gridList->erase(gridList, it);
                     return true;
                 }
                 bool redo(WorldUndoManager& undoMan) override {
@@ -43,21 +45,23 @@ void GridManager::add_default_grid(const std::string& newName) {
                     if(toInsertID.has_value())
                         return false;
                     auto& gridList = undoMan.world.gridMan.grids;
-                    auto insertedIt = gridList->emplace_direct(gridList, gridList->at(pos), gridData);
+                    auto insertedIt = gridList->emplace_direct(gridList, gridList->at(pos), *gridData);
                     undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                    gridData = nullptr;
                     return true;
                 }
                 void scale_up(const WorldScalar& scaleAmount) override {
-                    gridData.scale_up(scaleAmount);
+                    if(gridData)
+                        gridData->scale_up(scaleAmount);
                 }
                 ~AddGridWorldUndoAction() {}
 
-                WorldGrid gridData;
+                std::unique_ptr<WorldGrid> gridData;
                 uint32_t pos;
                 WorldUndoManager::UndoObjectID undoID;
         };
 
-        world.undo.push(std::make_unique<AddGridWorldUndoAction>(g, it->pos, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
+        world.undo.push(std::make_unique<AddGridWorldUndoAction>(std::make_unique<WorldGrid>(*it->obj), it->pos, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
     }
 }
 
@@ -65,8 +69,8 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
     if(grids) {
         class DeleteGridWorldUndoAction : public WorldUndoAction {
             public:
-                DeleteGridWorldUndoAction(const WorldGrid& initGridData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID):
-                    gridData(initGridData),
+                DeleteGridWorldUndoAction(std::unique_ptr<WorldGrid> initGridData, uint32_t newPos, WorldUndoManager::UndoObjectID initUndoID):
+                    gridData(std::move(initGridData)),
                     pos(newPos),
                     undoID(initUndoID)
                 {}
@@ -78,8 +82,9 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
                     if(toInsertID.has_value())
                         return false;
                     auto& gridList = undoMan.world.gridMan.grids;
-                    auto insertedIt = gridList->emplace_direct(gridList, gridList->at(pos), gridData);
+                    auto insertedIt = gridList->emplace_direct(gridList, gridList->at(pos), *gridData);
                     undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                    gridData = nullptr;
                     return true;
                 }
                 bool redo(WorldUndoManager& undoMan) override {
@@ -87,21 +92,24 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
                     if(!toEraseID.has_value())
                         return false;
                     auto& gridList = undoMan.world.gridMan.grids;
-                    gridList->erase(gridList, gridList->get(toEraseID.value()));
+                    auto it = gridList->get(toEraseID.value());
+                    gridData = std::make_unique<WorldGrid>(*it->obj);
+                    gridList->erase(gridList, it);
                     return true;
                 }
                 void scale_up(const WorldScalar& scaleAmount) override {
-                    gridData.scale_up(scaleAmount);
+                    if(gridData)
+                        gridData->scale_up(scaleAmount);
                 }
                 ~DeleteGridWorldUndoAction() {}
 
-                WorldGrid gridData;
+                std::unique_ptr<WorldGrid> gridData;
                 uint32_t pos;
                 WorldUndoManager::UndoObjectID undoID;
         };
 
         auto it = grids->at(indexToRemove);
-        world.undo.push(std::make_unique<DeleteGridWorldUndoAction>(*it->obj, it->pos, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
+        world.undo.push(std::make_unique<DeleteGridWorldUndoAction>(std::make_unique<WorldGrid>(*it->obj), it->pos, world.undo.get_undoid_from_netid(it->obj.get_net_id())));
         grids->erase(grids, it);
     }
 }
@@ -109,44 +117,40 @@ void GridManager::remove_grid(uint32_t indexToRemove) {
 void GridManager::finalize_grid_modify(const NetworkingObjects::NetObjTemporaryPtr<WorldGrid>& wGrid, const WorldGrid& oldGridData) {
     class EditGridWorldUndoAction : public WorldUndoAction {
         public:
-            EditGridWorldUndoAction(const WorldGrid& initGridDataOld, const WorldGrid& initGridDataNew, WorldUndoManager::UndoObjectID initUndoID):
-                gridDataOld(initGridDataOld),
-                gridDataNew(initGridDataNew),
+            EditGridWorldUndoAction(std::unique_ptr<WorldGrid> initGridData, WorldUndoManager::UndoObjectID initUndoID):
+                gridData(std::move(initGridData)),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
                 return "Edit Grid";
             }
             bool undo(WorldUndoManager& undoMan) override {
-                std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
-                if(!toEditID.has_value())
-                    return false;
-                auto gridPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<WorldGrid>(toEditID.value());
-                *gridPtr = gridDataOld;
-                undoMan.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(gridPtr, true);
-                return true;
+                return undo_redo(undoMan);
             }
             bool redo(WorldUndoManager& undoMan) override {
+                return undo_redo(undoMan);
+            }
+            bool undo_redo(WorldUndoManager& undoMan) {
                 std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
                 if(!toEditID.has_value())
                     return false;
                 auto gridPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<WorldGrid>(toEditID.value());
-                *gridPtr = gridDataNew;
+                auto newGrid = std::make_unique<WorldGrid>(*gridPtr);
+                *gridPtr = *gridData;
+                gridData = std::move(newGrid);
                 undoMan.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(gridPtr, true);
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
-                gridDataOld.scale_up(scaleAmount);
-                gridDataNew.scale_up(scaleAmount);
+                gridData->scale_up(scaleAmount);
             }
             ~EditGridWorldUndoAction() {}
 
-            WorldGrid gridDataOld;
-            WorldGrid gridDataNew;
+            std::unique_ptr<WorldGrid> gridData;
             WorldUndoManager::UndoObjectID undoID;
     };
 
-    world.undo.push(std::make_unique<EditGridWorldUndoAction>(oldGridData, *wGrid, world.undo.get_undoid_from_netid(wGrid.get_net_id())));
+    world.undo.push(std::make_unique<EditGridWorldUndoAction>(std::make_unique<WorldGrid>(oldGridData), world.undo.get_undoid_from_netid(wGrid.get_net_id())));
     world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(wGrid, true);
 }
 

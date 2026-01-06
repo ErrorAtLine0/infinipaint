@@ -346,14 +346,13 @@ std::pair<NetworkingObjects::NetObjID, NetworkingObjects::NetObjOrderedListItera
 NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::create_bookmark(BookmarkListItem* newItem) {
     class AddBookmarkWorldUndoAction : public WorldUndoAction {
         public:
-            AddBookmarkWorldUndoAction(const BookmarkCompleteUndoData& initBookmarkData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
-                bookmarkData(initBookmarkData),
+            AddBookmarkWorldUndoAction(uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
                 pos(newPos),
                 parentUndoID(initParentUndoID),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
-                return bookmarkData.folderList ? "Add Bookmark Folder" : "Add Bookmark";
+                return "Add Bookmark Item";
             }
             bool undo(WorldUndoManager& undoMan) override {
                 std::optional<NetworkingObjects::NetObjID> toEraseParentID = undoMan.get_netid_from_undoid(parentUndoID);
@@ -364,7 +363,9 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
                     return false;
 
                 auto& bookmarkList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toEraseParentID.value())->get_folder_list();
-                bookmarkList->erase(bookmarkList, bookmarkList->get(toEraseID.value()));
+                auto it = bookmarkList->get(toEraseID.value());
+                bookmarkData = std::make_unique<BookmarkCompleteUndoData>(it->obj->get_complete_undo_data(undoMan));
+                bookmarkList->erase(bookmarkList, it);
                 return true;
             }
             bool redo(WorldUndoManager& undoMan) override {
@@ -376,16 +377,18 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
                     return false;
 
                 auto& bookmarkList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toInsertParentID.value())->get_folder_list();
-                auto insertedIt = bookmarkList->emplace_direct(bookmarkList, bookmarkList->at(pos), undoMan.world, bookmarkData);
+                auto insertedIt = bookmarkList->emplace_direct(bookmarkList, bookmarkList->at(pos), undoMan.world, *bookmarkData);
                 undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                bookmarkData = nullptr;
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
-                bookmarkData.scale_up(scaleAmount);
+                if(bookmarkData)
+                    bookmarkData->scale_up(scaleAmount);
             }
             ~AddBookmarkWorldUndoAction() {}
 
-            BookmarkCompleteUndoData bookmarkData;
+            std::unique_ptr<BookmarkCompleteUndoData> bookmarkData;
             uint32_t pos;
             WorldUndoManager::UndoObjectID parentUndoID;
             WorldUndoManager::UndoObjectID undoID;
@@ -393,21 +396,21 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
 
     auto insertedBookmarkPair = create_in_proper_position(newItem);
     auto& it = insertedBookmarkPair.second;
-    world.undo.push(std::make_unique<AddBookmarkWorldUndoAction>(it->obj->get_complete_undo_data(world.undo), it->pos, world.undo.get_undoid_from_netid(insertedBookmarkPair.first), world.undo.get_undoid_from_netid(it->obj.get_net_id())));
+    world.undo.push(std::make_unique<AddBookmarkWorldUndoAction>(it->pos, world.undo.get_undoid_from_netid(insertedBookmarkPair.first), world.undo.get_undoid_from_netid(it->obj.get_net_id())));
     return it;
 }
 
 void BookmarkManager::remove_bookmark(const NetworkingObjects::NetObjID& parentID, const NetworkingObjects::NetObjID& objectID) {
     class DeleteBookmarkWorldUndoAction : public WorldUndoAction {
         public:
-            DeleteBookmarkWorldUndoAction(const BookmarkCompleteUndoData& initBookmarkData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
-                bookmarkData(initBookmarkData),
+            DeleteBookmarkWorldUndoAction(std::unique_ptr<BookmarkCompleteUndoData> initBookmarkData, uint32_t newPos, WorldUndoManager::UndoObjectID initParentUndoID, WorldUndoManager::UndoObjectID initUndoID):
+                bookmarkData(std::move(initBookmarkData)),
                 pos(newPos),
                 parentUndoID(initParentUndoID),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
-                return bookmarkData.folderList ? "Delete Bookmark Folder" : "Delete Bookmark";
+                return "Delete Bookmark Item";
             }
             bool undo(WorldUndoManager& undoMan) override {
                 std::optional<NetworkingObjects::NetObjID> toInsertParentID = undoMan.get_netid_from_undoid(parentUndoID);
@@ -418,8 +421,9 @@ void BookmarkManager::remove_bookmark(const NetworkingObjects::NetObjID& parentI
                     return false;
 
                 auto& bookmarkList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toInsertParentID.value())->get_folder_list();
-                auto insertedIt = bookmarkList->emplace_direct(bookmarkList, bookmarkList->at(pos), undoMan.world, bookmarkData);
+                auto insertedIt = bookmarkList->emplace_direct(bookmarkList, bookmarkList->at(pos), undoMan.world, *bookmarkData);
                 undoMan.register_new_netid_to_existing_undoid(undoID, insertedIt->obj.get_net_id());
+                bookmarkData = nullptr;
                 return true;
             }
             bool redo(WorldUndoManager& undoMan) override {
@@ -431,15 +435,18 @@ void BookmarkManager::remove_bookmark(const NetworkingObjects::NetObjID& parentI
                     return false;
 
                 auto& bookmarkList = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toEraseParentID.value())->get_folder_list();
-                bookmarkList->erase(bookmarkList, bookmarkList->get(toEraseID.value()));
+                auto it = bookmarkList->get(toEraseID.value());
+                bookmarkData = std::make_unique<BookmarkCompleteUndoData>(it->obj->get_complete_undo_data(undoMan));
+                bookmarkList->erase(bookmarkList, it);
                 return true;
             }
             void scale_up(const WorldScalar& scaleAmount) override {
-                bookmarkData.scale_up(scaleAmount);
+                if(bookmarkData)
+                    bookmarkData->scale_up(scaleAmount);
             }
             ~DeleteBookmarkWorldUndoAction() {}
 
-            BookmarkCompleteUndoData bookmarkData;
+            std::unique_ptr<BookmarkCompleteUndoData> bookmarkData;
             uint32_t pos;
             WorldUndoManager::UndoObjectID parentUndoID;
             WorldUndoManager::UndoObjectID undoID;
@@ -447,7 +454,7 @@ void BookmarkManager::remove_bookmark(const NetworkingObjects::NetObjID& parentI
 
     auto& folderList = world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(parentID)->get_folder_list();
     auto it = folderList->get(objectID);
-    world.undo.push(std::make_unique<DeleteBookmarkWorldUndoAction>(it->obj->get_complete_undo_data(world.undo), it->pos, world.undo.get_undoid_from_netid(parentID), world.undo.get_undoid_from_netid(objectID)));
+    world.undo.push(std::make_unique<DeleteBookmarkWorldUndoAction>(std::make_unique<BookmarkCompleteUndoData>(it->obj->get_complete_undo_data(world.undo)), it->pos, world.undo.get_undoid_from_netid(parentID), world.undo.get_undoid_from_netid(objectID)));
     folderList->erase(folderList, it);
 }
 
@@ -482,34 +489,32 @@ void BookmarkManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNu
 void BookmarkManager::editing_bookmark_check() {
     class EditBookmarkWorldUndoAction : public WorldUndoAction {
         public:
-            EditBookmarkWorldUndoAction(const std::string& initNameOld, const std::string& initNameNew, WorldUndoManager::UndoObjectID initUndoID):
-                nameOld(initNameOld),
-                nameNew(initNameNew),
+            EditBookmarkWorldUndoAction(const std::string& initName, WorldUndoManager::UndoObjectID initUndoID):
+                nameData(initName),
                 undoID(initUndoID)
             {}
             std::string get_name() const override {
                 return "Edit Bookmark";
             }
             bool undo(WorldUndoManager& undoMan) override {
-                std::optional<NetworkingObjects::NetObjID> toModifyID = undoMan.get_netid_from_undoid(undoID);
-                if(!toModifyID.has_value())
-                    return false;
-                auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toModifyID.value());
-                objPtr->set_name(undoMan.world.delayedUpdateObjectManager, nameOld);
-                return true;
+                return undo_redo(undoMan);
             }
             bool redo(WorldUndoManager& undoMan) override {
+                return undo_redo(undoMan);
+            }
+            bool undo_redo(WorldUndoManager& undoMan) {
                 std::optional<NetworkingObjects::NetObjID> toModifyID = undoMan.get_netid_from_undoid(undoID);
                 if(!toModifyID.has_value())
                     return false;
                 auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<BookmarkListItem>(toModifyID.value());
-                objPtr->set_name(undoMan.world.delayedUpdateObjectManager, nameNew);
+                std::string newNameData = objPtr->get_name();
+                objPtr->set_name(undoMan.world.delayedUpdateObjectManager, nameData);
+                nameData = newNameData;
                 return true;
             }
             ~EditBookmarkWorldUndoAction() {}
 
-            std::string nameOld;
-            std::string nameNew;
+            std::string nameData;
             WorldUndoManager::UndoObjectID undoID;
     };
 
@@ -519,7 +524,7 @@ void BookmarkManager::editing_bookmark_check() {
         if(tempPtr) {
             const std::string& currentNameData = tempPtr->get_name();
             if(currentNameData != editingBookmarkName.value())
-                world.undo.push(std::make_unique<EditBookmarkWorldUndoAction>(editingBookmarkName.value(), currentNameData, world.undo.get_undoid_from_netid(oldNetObjID)));
+                world.undo.push(std::make_unique<EditBookmarkWorldUndoAction>(editingBookmarkName.value(), world.undo.get_undoid_from_netid(oldNetObjID)));
         }
     }
     editingBookmarkName = std::nullopt;
