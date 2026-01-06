@@ -187,7 +187,7 @@ void EditTool::tool_update() {
         bool clickedAway = false;
         if(!pointDragging && drawP.controls.leftClick) {
             for(HandleData& h : pointHandles) {
-                if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(*h.p)), drawP.drag_point_radius()))) {
+                if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
                     pointDragging = &h;
                     isMovingPoint = true;
                     break;
@@ -198,7 +198,7 @@ void EditTool::tool_update() {
         }
         else if(pointDragging) {
             if(drawP.controls.leftClickHeld) {
-                Vector2f newPos = objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
+                Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
                 if(newPos != *pointDragging->p) {
                     if(pointDragging->min)
                         newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
@@ -228,7 +228,7 @@ bool EditTool::prevent_undo_or_redo() {
 void EditTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(objInfoBeingEdited) {
         for(HandleData& h : pointHandles)
-            drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((objInfoBeingEdited->obj->coords.from_space(*h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
+            drawP.draw_drag_circle(canvas, drawData.cam.c.to_space((objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * *h.p))), {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
     }
 }
 

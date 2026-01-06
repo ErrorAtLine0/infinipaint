@@ -278,6 +278,8 @@ void TextBoxEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::O
 
     editTool.add_point_handle({&a.d.p1, nullptr, &a.d.p2});
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
+
+    comp->obj->commit_update(drawP);
 }
 
 bool TextBoxEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {

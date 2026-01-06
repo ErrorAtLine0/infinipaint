@@ -22,22 +22,25 @@ class ImageCanvasComponent : public CanvasComponent {
         struct Data {
             Vector2f p1;
             Vector2f p2;
+            Vector2f cropP1 = {0.0f, 0.0f};
+            Vector2f cropP2 = {1.0f, 1.0f};
 
             NetworkingObjects::NetObjID imageID;
+
+            bool editing = false;
         } d;
 
         virtual void update(DrawingProgram& drawP) override;
+
+        bool contains_actual_image();
 
     private:
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
-        void create_draw_data();
         void create_collider();
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
-
-        SkRect imRect;
 
         SCollision::BVHContainer<float> collisionTree;
 };

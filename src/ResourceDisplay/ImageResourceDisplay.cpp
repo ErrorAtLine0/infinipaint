@@ -7,6 +7,7 @@
 //#include <include/codec/SkRawDecoder.h>
 #include <include/codec/SkWbmpDecoder.h>
 #include <include/codec/SkWebpDecoder.h>
+#include <include/core/SkCanvas.h>
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
 
