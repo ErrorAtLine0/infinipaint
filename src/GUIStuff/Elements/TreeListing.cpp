@@ -45,7 +45,7 @@ void TreeListing::update(UpdateInputData& io, GUIManager& gui, NetworkingObjects
                         }
                     }) {}
                 }
-            });
+            }, false);
         }
         Clay_ElementData scrollAreaBB = Clay_GetElementData(localID);
         if(scrollAreaBB.found) {
