@@ -6,6 +6,7 @@ compiler.cppstd=gnu23
 compiler.libcxx=libc++
 compiler.version=17
 os=Macos
+os.version=11.0
 
 [tool_requires]
 cmake/3.27.0
