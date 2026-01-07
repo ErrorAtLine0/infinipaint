@@ -381,7 +381,7 @@ bool GUIManager::radio_button_field(const char* id, std::string_view name, bool 
 bool GUIManager::input_color_component_255(const char* id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     bool isUpdating = insert_element<TextBox<float>>()->update(*io, val,
-        [&](std::string_view str) {
+        [&](const std::string& str) {
             int roundTo255;
             std::stringstream ss;
             ss << str;
@@ -520,7 +520,7 @@ bool GUIManager::input_scalar(const char* id, uint8_t* val, uint8_t min, uint8_t
     bool isUpdating = false;
     push_id(id);
     isUpdating = insert_element<TextBox<uint8_t>>()->update(*io, val, 
-        [&](std::string_view a) {
+        [&](const std::string& a) {
             if(a.empty())
                 return min;
             uint32_t toRet;

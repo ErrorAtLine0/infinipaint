@@ -102,6 +102,7 @@ std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManage
             throw std::runtime_error("[DrawingProgramLayerManager::add_many_components_to_layer_being_edited] No layer selected!");
         auto toRet = editLayerPtr->get_layer().components->insert_ordered_list_and_send_create(editLayerPtr->get_layer().components, newObjs);
         add_undo_place_components(editingLayer.lock().get(), toRet);
+        return toRet;
     }
     return {};
 }

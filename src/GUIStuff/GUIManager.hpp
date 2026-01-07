@@ -147,7 +147,7 @@ class GUIManager {
             return toRet;
         }
         
-        template <typename T> bool input_generic(const char* id, T* val, const std::function<std::optional<T>(std::string_view)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_generic(const char* id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
             isUpdating = insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
@@ -157,7 +157,7 @@ class GUIManager {
 
         template <typename T> bool input_scalar(const char* id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             return input_generic<T>(id, val, 
-                [&](std::string_view a) {
+                [&](const std::string& a) {
                     if(a.empty())
                         return min;
                     T toRet;
@@ -199,7 +199,7 @@ class GUIManager {
 
         template <typename T> bool input_color_hex(const char* id, T* val, bool selectAlpha, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             return input_generic<T>(id, val, 
-                [&](std::string_view str) {
+                [&](const std::string& str) {
                     T def = {0.0f, 0.0f, 0.0f, 1.0f};
                     unsigned startIndex = 0;
                     if(str.empty())
