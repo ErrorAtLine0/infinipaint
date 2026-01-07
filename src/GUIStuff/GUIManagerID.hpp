@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <stack>
 #include <Helpers/Hashes.hpp>
 
@@ -7,12 +8,11 @@ namespace GUIStuff {
 struct GUIManagerID {
     GUIManagerID() = default;
     GUIManagerID(int64_t numID);
-    GUIManagerID(const std::string& strID);
+    GUIManagerID(const char* strID);
     bool operator==(const GUIManagerID& other) const;
 
     bool idIsStr;
-    std::string idStr;
-    int64_t idNum = 0;
+    intptr_t idNum;
 };
 
 typedef std::vector<GUIManagerID> GUIManagerIDStack;
@@ -22,10 +22,7 @@ typedef std::vector<GUIManagerID> GUIManagerIDStack;
 template <> struct std::hash<GUIStuff::GUIManagerID> {
     size_t operator()(const GUIStuff::GUIManagerID& v) const
     {
-        if(v.idIsStr)
-            return std::hash<std::string>{}(v.idStr);
-        else
-            return std::hash<uint64_t>{}(v.idNum);
+        return std::hash<intptr_t>{}(v.idNum);
     }
 };
 

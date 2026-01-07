@@ -48,61 +48,61 @@ class GUIManager {
         Vector2f screen_pos_to_window_pos(const Vector2f& screenPos);
         Vector2f get_mouse_pos();
 
-        bool input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        bool input_text_field(const char* id, std::string_view name, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
-        void text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate = nullptr);
-        void text_label_color(const std::string& val, const SkColor4f& color);
-        void text_label_size(const std::string& val, float modifier);
-        void text_label_light(const std::string& val);
-        void text_label(const std::string& val);
-        void text_label_light_centered(const std::string& val);
-        void text_label_centered(const std::string& val);
-        bool text_button_left_transparent(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
-        bool text_button(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
-        bool text_button_wide(const std::string& id, const std::string& text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
-        bool text_button_sized(const std::string& id, const std::string& text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
+        void text_paragraph(const char* id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate = nullptr);
+        void text_label_color(std::string_view val, const SkColor4f& color);
+        void text_label_size(std::string_view val, float modifier);
+        void text_label_light(std::string_view val);
+        void text_label(std::string_view val);
+        void text_label_light_centered(std::string_view val);
+        void text_label_centered(std::string_view val);
+        bool text_button_left_transparent(const char* id, std::string_view text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
+        bool text_button(const char* id, std::string_view text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
+        bool text_button_wide(const char* id, std::string_view text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
+        bool text_button_sized(const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
 
-        void svg_icon(const std::string& id, const std::string& svgPath, bool isHighlighted = false, const std::function<void()>& elemUpdate = nullptr);
-        bool svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
+        void svg_icon(const char* id, const std::string& svgPath, bool isHighlighted = false, const std::function<void()>& elemUpdate = nullptr);
+        bool svg_icon_button(const char* id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
 
-        bool svg_icon_button_transparent(const std::string& id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
+        bool svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
 
-        bool rotate_wheel(const std::string& id, double* angle, float size = BIG_BUTTON_SIZE, const std::function<void()>& elemUpdate = nullptr);
+        bool rotate_wheel(const char* id, double* angle, float size = BIG_BUTTON_SIZE, const std::function<void()>& elemUpdate = nullptr);
 
         void top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_line_layout(const std::function<void()>& elemUpdate);
         void left_to_right_line_centered_layout(const std::function<void()>& elemUpdate);
 
-        bool selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected);
+        bool selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected);
 
         void push_id(int64_t id);
-        void push_id(const std::string& id);
+        void push_id(const char* id);
         void pop_id();
 
-        void scroll_bar_area(const std::string& id, bool clipHorizontal, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate, bool maxScrollBugWorkaround = true);
-        void scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate = nullptr);
+        void scroll_bar_area(const char* id, bool clipHorizontal, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate, bool maxScrollBugWorkaround = true);
+        void scroll_bar_many_entries_area(const char* id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t elementIndex, bool listHovered)>& entryUpdate, const std::function<void(float scrollContentHeight, float containerHeight, float& scrollAmount)>& elemUpdate = nullptr);
 
-        bool input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
-        bool input_text(const std::string& id, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        bool input_color_component_255(const char* id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        bool input_text(const char* id, std::string* val, bool updateEveryEdit = true, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
-        bool radio_button(const std::string& id, bool val, const std::function<void()>& elemUpdate = nullptr);
-        bool radio_button_field(const std::string& id, const std::string& name, bool val, const std::function<void()>& elemUpdate = nullptr);
+        bool radio_button(const char* id, bool val, const std::function<void()>& elemUpdate = nullptr);
+        bool radio_button_field(const char* id, std::string_view name, bool val, const std::function<void()>& elemUpdate = nullptr);
 
-        void checkbox_field(const std::string& id, const std::string& name, bool* val, const std::function<void()>& elemUpdate = nullptr);
-        void checkbox(const std::string& id, bool* val, const std::function<void()>& elemUpdate = nullptr);
+        void checkbox_field(const char* id, std::string_view name, bool* val, const std::function<void()>& elemUpdate = nullptr);
+        void checkbox(const char* id, bool* val, const std::function<void()>& elemUpdate = nullptr);
 
-        void tab_list(const std::string& id, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate = nullptr);
+        void tab_list(const char* id, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate = nullptr);
 
-        void input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
-        void input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        void input_path(const char* id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
+        void input_path_field(const char* id, std::string_view name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr);
 
-        void dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
+        void dropdown_select(const char* id, size_t* val, const std::vector<std::string>& selections, float width = 200.0f, const std::function<void()>& hoverboxElemUpdate = nullptr);
 
-        void paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
-        void list_popup_menu(const std::string& id, Vector2f popupPos, const std::function<void()>& elemUpdate);
+        void paint_circle_popup_menu(const char* id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate = nullptr);
+        void list_popup_menu(const char* id, Vector2f popupPos, const std::function<void()>& elemUpdate);
 
-        void tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData);
+        void tree_listing(const char* id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData);
 
         void obstructing_window();
 
@@ -147,7 +147,7 @@ class GUIManager {
             return toRet;
         }
         
-        template <typename T> bool input_generic(const std::string& id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_generic(const char* id, T* val, const std::function<std::optional<T>(std::string_view)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
             isUpdating = insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
@@ -155,9 +155,9 @@ class GUIManager {
             return isUpdating;
         }
 
-        template <typename T> bool input_scalar(const std::string& id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_scalar(const char* id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             return input_generic<T>(id, val, 
-                [&](const std::string& a) {
+                [&](std::string_view a) {
                     if(a.empty())
                         return min;
                     T toRet;
@@ -180,23 +180,26 @@ class GUIManager {
                 }, true, false, elemUpdate);
         }
 
-        bool input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
+        bool input_scalar(const char* id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
 
-        template <typename TContainer, typename T> bool input_scalar_fields(const std::string& id, const std::string& name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename TContainer, typename T> bool input_scalar_fields(const char* id, std::string_view name, TContainer* val, size_t elemCount, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
             left_to_right_line_layout([&]() {
                 text_label(name);
-                for(size_t i = 0; i < elemCount; i++)
-                    isUpdating |= input_scalar<T>(std::to_string(i), &(*val)[i], min, max, decimalPrecision, elemUpdate);
+                for(size_t i = 0; i < elemCount; i++) {
+                    push_id(i);
+                    isUpdating |= input_scalar<T>("field", &(*val)[i], min, max, decimalPrecision, elemUpdate);
+                    pop_id();
+                }
             });
             pop_id();
             return isUpdating;
         }
 
-        template <typename T> bool input_color_hex(const std::string& id, T* val, bool selectAlpha, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_color_hex(const char* id, T* val, bool selectAlpha, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             return input_generic<T>(id, val, 
-                [&](const std::string& str) {
+                [&](std::string_view str) {
                     T def = {0.0f, 0.0f, 0.0f, 1.0f};
                     unsigned startIndex = 0;
                     if(str.empty())
@@ -231,21 +234,21 @@ class GUIManager {
                 true, false, elemUpdate);
         }
 
-        template <typename T> bool color_picker(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_picker(const char* id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
             push_id(id);
             bool isUpdating = insert_element<ColorPicker<T>>()->update(*io, val, selectAlpha, elemUpdate);
             pop_id();
             return isUpdating;
         }
 
-        template <typename T> bool slider_scalar(const std::string& id, T* val, T min, T max, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool slider_scalar(const char* id, T* val, T min, T max, const std::function<void()>& elemUpdate = nullptr) {
             push_id(id);
             bool isUpdating = insert_element<NumberSlider<T>>()->update(*io, val, min, max, elemUpdate); 
             pop_id();
             return isUpdating;
         }
 
-        template <typename T> bool input_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_scalar_field(const char* id, std::string_view name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             bool isUpdating = false;
             left_to_right_line_layout([&]() {
                 text_label(name);
@@ -254,7 +257,7 @@ class GUIManager {
             return isUpdating;
         }
 
-        template <typename T> bool slider_scalar_field(const std::string& id, const std::string& name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool slider_scalar_field(const char* id, std::string_view name, T* val, T min, T max, int decimalPrecision = 0, const std::function<void()>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
             left_to_right_line_layout([&]() {
@@ -266,7 +269,7 @@ class GUIManager {
             return isUpdating;
         }
 
-        template <typename T> bool big_color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool big_color_button(const char* id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             bool toRet = false;
             CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE)}}}) {
                 toRet = color_button<T>(id, val, isSelected, elemUpdate);
@@ -274,7 +277,7 @@ class GUIManager {
             return toRet;
         }
 
-        template <typename T> bool color_button(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_button(const char* id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             return selectable_button(id, [&](SelectionHelper& s, bool iS) {
                 CLAY_AUTO_ID({.layout = { 
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -287,7 +290,7 @@ class GUIManager {
             }, GUIStuff::SelectableButton::DrawType::TRANSPARENT_BORDER, isSelected);
         }
 
-        template <typename T> bool color_button_big(const std::string& id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_button_big(const char* id, T* val, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr) {
             bool toRet = false;
             CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)}}}) {
                 toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
@@ -304,7 +307,7 @@ class GUIManager {
             return toRet;
         }
 
-        template <typename T> bool color_picker_button(const std::string& id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_picker_button(const char* id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
             bool& isOpen = insert_any_with_id<bool>(0, false);
@@ -325,9 +328,9 @@ class GUIManager {
             return isUpdating;
         }
 
-        bool font_picker(const std::string& id, std::string* fontName);
+        bool font_picker(const char* id, std::string* fontName);
 
-        template <typename T> bool color_picker_items(const std::string& id, T* val, bool selectAlpha, float fixedPickerWidth = 0.0f) {
+        template <typename T> bool color_picker_items(const char* id, T* val, bool selectAlpha, float fixedPickerWidth = 0.0f) {
             bool isUpdating = false;
             push_id(id);
             if(fixedPickerWidth == 0.0f)
@@ -361,7 +364,7 @@ class GUIManager {
             return isUpdating;
         }
 
-        template <typename T> bool color_picker_button_field(const std::string& id, const std::string& name, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
+        template <typename T> bool color_picker_button_field(const char* id, std::string_view name, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {
             bool isUpdating = false;
             left_to_right_line_layout([&]() {
                 isUpdating = color_picker_button(id, val, selectAlpha, elemUpdate);

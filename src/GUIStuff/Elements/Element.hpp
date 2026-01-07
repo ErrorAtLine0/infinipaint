@@ -21,27 +21,23 @@ namespace GUIStuff {
 // Taken from https://github.com/TimothyHoytBSME/ClayMan (rewritten to be a separate struct, and use templates to change size)
 template <size_t S> class StringArena {
     public:
-        StringArena() {
-            stringArena = std::vector<char>(S);
-        }
         void reset() {
             stringArenaIndex = 0;
         }
-        const char* insert_string_into_arena(const std::string& str) {
+        const char* insert_string_into_arena(std::string_view str) {
             size_t strSize = str.size();
-            if(stringArenaIndex + strSize + 1 > S)
+            if(stringArenaIndex + strSize > S)
                 throw std::overflow_error("[StringArena::insert_string_into_arena] Not enough space to insert string");
             char* startPtr = &stringArena[stringArenaIndex];
-            for(size_t i = 0; i < strSize; i++)
-                stringArena[stringArenaIndex++] = str[i];
-            stringArena[stringArenaIndex++] = ' ';
+            std::copy(str.begin(), str.end(), startPtr);
+            stringArenaIndex += strSize;
             return startPtr;
         }
-        Clay_String std_str_to_clay_str(const std::string& str) {
+        Clay_String std_str_to_clay_str(std::string_view str) {
             return Clay_String{.length = static_cast<int32_t>(str.size()), .chars = insert_string_into_arena(str)};
         }
     private:
-        std::vector<char> stringArena;
+        std::array<char, S> stringArena;
         size_t stringArenaIndex;
 };
 

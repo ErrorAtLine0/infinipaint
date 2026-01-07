@@ -21,7 +21,7 @@ void BookmarkManager::refresh_gui_data() {
     nameForNew.clear();
 }
 
-void BookmarkManager::setup_list_gui(const std::string& id) {
+void BookmarkManager::setup_list_gui(const char* id) {
     using namespace NetworkingObjects;
     if(bookmarkListRoot) {
         auto& gui = world.main.toolbar.gui;

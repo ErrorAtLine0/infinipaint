@@ -1112,11 +1112,13 @@ void Toolbar::drawing_program_gui() {
     }
 }
 
-bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveringOnDropdown) {
+bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown) {
     bool isUpdating = false;
     gui.push_id(id);
     auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
     constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
+
+    size_t nextID = 0;
 
     gui.scroll_bar_area("color palette scroll area", false, [&](float, float, float &) {
         CLAY_AUTO_ID({
@@ -1143,7 +1145,8 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
                             }
                         }) {
                             Vector4f newC = {palette[i].x(), palette[i].y(), palette[i].z(), 1.0f};
-                            if(gui.color_button("c" + std::to_string(i), &newC, (paletteData.selectedColor == (int)i))) {
+                            gui.push_id(nextID++);
+                            if(gui.color_button("c", &newC, (paletteData.selectedColor == (int)i))) {
                                 paletteData.selectedColor = (int)i;
                                 // We want to keep the old color's alpha
                                 color->x() = newC.x();
@@ -1151,6 +1154,7 @@ bool Toolbar::color_palette(const std::string& id, Vector4f* color, bool& hoveri
                                 color->z() = newC.z();
                                 isUpdating = true;
                             }
+                            gui.pop_id();
                             if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
                                 paletteData.selectedColor = -1;
                         }
@@ -1626,7 +1630,7 @@ void Toolbar::options_menu() {
                                                     .layoutDirection = CLAY_LEFT_TO_RIGHT 
                                                 }
                                             }) {
-                                                gui.text_label(nlohmann::json(static_cast<InputManager::KeyCodeEnum>(i)));
+                                                gui.text_label(std::string(nlohmann::json(static_cast<InputManager::KeyCodeEnum>(i))));
                                                 auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
                                                     return p.second == i;
                                                 });

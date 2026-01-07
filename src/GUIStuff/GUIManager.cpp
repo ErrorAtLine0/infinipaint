@@ -291,23 +291,23 @@ void GUIManager::left_to_right_line_centered_layout(const std::function<void()>&
     }
 }
 
-void GUIManager::text_label_size(const std::string& val, float modifier) {
+void GUIManager::text_label_size(std::string_view val, float modifier) {
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = static_cast<uint16_t>(io->fontSize * modifier)}));
 }
 
-void GUIManager::text_label_color(const std::string& val, const SkColor4f& color) {
+void GUIManager::text_label_color(std::string_view val, const SkColor4f& color) {
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(color), .fontSize = io->fontSize }));
 }
 
-void GUIManager::text_label_light(const std::string& val) {
+void GUIManager::text_label_light(std::string_view val) {
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize }));
 }
 
-void GUIManager::text_label(const std::string& val) {
+void GUIManager::text_label(std::string_view val) {
     CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize }));
 }
 
-void GUIManager::text_label_centered(const std::string& val) {
+void GUIManager::text_label_centered(std::string_view val) {
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -318,7 +318,7 @@ void GUIManager::text_label_centered(const std::string& val) {
     }
 }
 
-void GUIManager::text_label_light_centered(const std::string& val) {
+void GUIManager::text_label_light_centered(std::string_view val) {
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -329,7 +329,7 @@ void GUIManager::text_label_light_centered(const std::string& val) {
     }
 }
 
-bool GUIManager::radio_button(const std::string& id, bool val, const std::function<void()>& elemUpdate) {
+bool GUIManager::radio_button(const char* id, bool val, const std::function<void()>& elemUpdate) {
     push_id(id);
     RadioButton* e = insert_element<RadioButton>(); 
     e->update(*io, val, elemUpdate);
@@ -337,7 +337,7 @@ bool GUIManager::radio_button(const std::string& id, bool val, const std::functi
     return e->selection.clicked;
 }
 
-void GUIManager::checkbox(const std::string& id, bool* val, const std::function<void()>& elemUpdate) {
+void GUIManager::checkbox(const char* id, bool* val, const std::function<void()>& elemUpdate) {
     push_id(id);
     CheckBox* e = insert_element<CheckBox>(); 
     e->update(*io, *val, elemUpdate);
@@ -346,7 +346,7 @@ void GUIManager::checkbox(const std::string& id, bool* val, const std::function<
     pop_id();
 }
 
-bool GUIManager::input_text_field(const std::string& id, const std::string& name, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_text_field(const char* id, std::string_view name, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
     bool toRet = false;
     left_to_right_line_layout([&]() {
         text_label(name);
@@ -355,21 +355,21 @@ bool GUIManager::input_text_field(const std::string& id, const std::string& name
     return toRet;
 }
 
-void GUIManager::input_path_field(const std::string& id, const std::string& name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
+void GUIManager::input_path_field(const char* id, std::string_view name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
     left_to_right_line_layout([&]() {
         text_label(name);
         input_path(id, val, fileTypeRestriction, elemUpdate);
     });
 }
 
-void GUIManager::checkbox_field(const std::string& id, const std::string& name, bool* val, const std::function<void()>& elemUpdate) {
+void GUIManager::checkbox_field(const char* id, std::string_view name, bool* val, const std::function<void()>& elemUpdate) {
     left_to_right_line_layout([&]() {
         checkbox(id, val, elemUpdate);
         text_label(name);
     });
 }
 
-bool GUIManager::radio_button_field(const std::string& id, const std::string& name, bool val, const std::function<void()>& elemUpdate) {
+bool GUIManager::radio_button_field(const char* id, std::string_view name, bool val, const std::function<void()>& elemUpdate) {
     bool toRet;
     left_to_right_line_layout([&]() {
         toRet = radio_button(id, val, elemUpdate);
@@ -378,10 +378,10 @@ bool GUIManager::radio_button_field(const std::string& id, const std::string& na
     return toRet;
 }
 
-bool GUIManager::input_color_component_255(const std::string& id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_color_component_255(const char* id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     bool isUpdating = insert_element<TextBox<float>>()->update(*io, val,
-        [&](const std::string& str) {
+        [&](std::string_view str) {
             int roundTo255;
             std::stringstream ss;
             ss << str;
@@ -398,7 +398,7 @@ bool GUIManager::input_color_component_255(const std::string& id, float* val, co
     return isUpdating;
 }
 
-bool GUIManager::input_text(const std::string& id, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_text(const char* id, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     bool toRet = insert_element<TextBox<std::string>>()->update(*io, val,
         [&](const std::string& str) {
@@ -411,7 +411,7 @@ bool GUIManager::input_text(const std::string& id, std::string* val, bool update
     return toRet;
 }
 
-bool GUIManager::selectable_button(const std::string& id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected) {
+bool GUIManager::selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected) {
     push_id(id);
     SelectableButton* e = insert_element<SelectableButton>();
     e->update(*io, drawType, elemUpdate, isSelected);
@@ -420,13 +420,13 @@ bool GUIManager::selectable_button(const std::string& id, const std::function<vo
     return toRet;
 }
 
-void GUIManager::svg_icon(const std::string& id, const std::string& svgPath, bool isHighlighted, const std::function<void()>& elemUpdate) {
+void GUIManager::svg_icon(const char* id, const std::string& svgPath, bool isHighlighted, const std::function<void()>& elemUpdate) {
     push_id(id);
     insert_element<SVGIcon>()->update(*io, svgPath, isHighlighted, elemUpdate);
     pop_id();
 }
 
-bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
+bool GUIManager::svg_icon_button(const char* id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
@@ -440,7 +440,7 @@ bool GUIManager::svg_icon_button(const std::string& id, const std::string& svgPa
     return toRet;
 }
 
-bool GUIManager::svg_icon_button_transparent(const std::string& id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
+bool GUIManager::svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
@@ -454,7 +454,7 @@ bool GUIManager::svg_icon_button_transparent(const std::string& id, const std::s
     return toRet;
 }
 
-bool GUIManager::text_button_sized(const std::string& id, const std::string& text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected, const std::function<void()>& elemUpdate) {
+bool GUIManager::text_button_sized(const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     CLAY_AUTO_ID({.layout = {.sizing = {.width = x, .height = y } } }) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
@@ -466,7 +466,7 @@ bool GUIManager::text_button_sized(const std::string& id, const std::string& tex
     return toRet;
 }
 
-bool GUIManager::text_button(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
+bool GUIManager::text_button(const char* id, std::string_view text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) } } }) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
@@ -478,7 +478,7 @@ bool GUIManager::text_button(const std::string& id, const std::string& text, boo
     return toRet;
 }
 
-bool GUIManager::text_button_wide(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
+bool GUIManager::text_button_wide(const char* id, std::string_view text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     CLAY_AUTO_ID({
         .layout = {
@@ -494,7 +494,7 @@ bool GUIManager::text_button_wide(const std::string& id, const std::string& text
     return toRet;
 }
 
-bool GUIManager::text_button_left_transparent(const std::string& id, const std::string& text, bool isSelected, const std::function<void()>& elemUpdate) {
+bool GUIManager::text_button_left_transparent(const char* id, std::string_view text, bool isSelected, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     CLAY_AUTO_ID({
         .layout = {
@@ -516,11 +516,11 @@ bool GUIManager::text_button_left_transparent(const std::string& id, const std::
     return toRet;
 }
 
-bool GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate) {
+bool GUIManager::input_scalar(const char* id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate) {
     bool isUpdating = false;
     push_id(id);
     isUpdating = insert_element<TextBox<uint8_t>>()->update(*io, val, 
-        [&](const std::string& a) {
+        [&](std::string_view a) {
             if(a.empty())
                 return min;
             uint32_t toRet;
@@ -538,7 +538,7 @@ bool GUIManager::input_scalar(const std::string& id, uint8_t* val, uint8_t min, 
     return isUpdating;
 }
 
-void GUIManager::input_path(const std::string& id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
+void GUIManager::input_path(const char* id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
     push_id(id);
     insert_element<TextBox<std::filesystem::path>>()->update(*io, val, 
         [&](const std::string& a) {
@@ -553,20 +553,20 @@ void GUIManager::input_path(const std::string& id, std::filesystem::path* val, s
     pop_id();
 }
 
-void GUIManager::tab_list(const std::string& id, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate) {
+void GUIManager::tab_list(const char* id, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate) {
     push_id(id);
     insert_element<MovableTabList>()->update(*io, tabNames, selectedTab, closedTab, elemUpdate);
     pop_id();
 }
 
-bool GUIManager::font_picker(const std::string& id, std::string* fontName) {
+bool GUIManager::font_picker(const char* id, std::string* fontName) {
     push_id(id);
     bool toRet = insert_element<FontPicker>()->update(*io, fontName, this);
     pop_id();
     return toRet;
 }
 
-void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
+void GUIManager::dropdown_select(const char* id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
     push_id(id);
     struct DropdownData {
         bool isOpen = false;
@@ -669,7 +669,7 @@ void GUIManager::dropdown_select(const std::string& id, size_t* val, const std::
     pop_id();
 }
 
-void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, const std::function<void(float, float, float&)>& elemUpdate, bool maxScrollBugWorkaround) {
+void GUIManager::scroll_bar_area(const char* id, bool clipHorizontal, const std::function<void(float, float, float&)>& elemUpdate, bool maxScrollBugWorkaround) {
     push_id(id);
     CLAY_AUTO_ID({
         .layout = {
@@ -721,8 +721,7 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
             float scrollerPos = std::fabs(scrollData.scrollPosition->y / scrollPosMax);
             float areaAboveScrollerSize = scrollerPos * (sAreaDim - scrollerSize);
 
-            if(Clay_Hovered())
-                sD.currentScrollPos += io->mouse.scroll.y() * io->deltaTime * 3000.0f;
+            sD.currentScrollPos = scrollData.scrollPosition->y;
 
             CLAY_AUTO_ID({
                 .layout = {
@@ -781,7 +780,7 @@ void GUIManager::scroll_bar_area(const std::string& id, bool clipHorizontal, con
 }
 
 
-void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float&)>& elemUpdate) {
+void GUIManager::scroll_bar_many_entries_area(const char* id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float&)>& elemUpdate) {
     push_id(id);
     scroll_bar_area(id, clipHorizontal, [&](float scrollContentHeight, float containerHeight, float& scrollAmount) {
         if(elemUpdate)
@@ -819,7 +818,7 @@ void GUIManager::scroll_bar_many_entries_area(const std::string& id, float entry
     pop_id();
 }
 
-bool GUIManager::rotate_wheel(const std::string& id, double* angle, float size, const std::function<void()>& elemUpdate) {
+bool GUIManager::rotate_wheel(const char* id, double* angle, float size, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
@@ -831,14 +830,14 @@ bool GUIManager::rotate_wheel(const std::string& id, double* angle, float size, 
     return toRet;
 }
 
-void GUIManager::text_paragraph(const std::string& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate) {
+void GUIManager::text_paragraph(const char* id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate) {
     push_id(id);
     TextParagraph* e = insert_element<TextParagraph>();
     e->update(*io, std::move(paragraph), width, elemUpdate);
     pop_id();
 }
 
-void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate) {
+void GUIManager::paint_circle_popup_menu(const char* id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate) {
     float size = 300.0f;
     push_id(id);
     CLAY_AUTO_ID({.layout = { 
@@ -856,7 +855,7 @@ void GUIManager::paint_circle_popup_menu(const std::string& id, const Vector2f& 
     pop_id();
 }
 
-void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const std::function<void()>& elemUpdate) {
+void GUIManager::list_popup_menu(const char* id, Vector2f popupPos, const std::function<void()>& elemUpdate) {
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
@@ -899,7 +898,7 @@ void GUIManager::list_popup_menu(const std::string& id, Vector2f popupPos, const
     }
 }
 
-void GUIManager::tree_listing(const std::string& id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData) {
+void GUIManager::tree_listing(const char* id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData) {
     push_id(id);
     insert_element<TreeListing>()->update(*io, *this, rootObjID, displayData, selectionData);
     pop_id();
@@ -918,7 +917,7 @@ void GUIManager::push_id(int64_t id) {
     idStack.emplace_back(id);
 }
 
-void GUIManager::push_id(const std::string& id) {
+void GUIManager::push_id(const char* id) {
     idStack.emplace_back(id);
 }
 

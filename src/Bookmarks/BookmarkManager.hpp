@@ -13,7 +13,7 @@ class BookmarkManager {
         BookmarkManager(World& w);
         void server_init_no_file();
         void scale_up(const WorldScalar& scaleUpAmount);
-        void setup_list_gui(const std::string& id);
+        void setup_list_gui(const char* id);
         void refresh_gui_data();
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);

@@ -22,7 +22,7 @@ void DrawingProgramLayerManagerGUI::refresh_gui_data() {
     blendModeValToEdit = 0;
 }
 
-void DrawingProgramLayerManagerGUI::setup_list_gui(const std::string& id, bool& hoveringOverDropdown) {
+void DrawingProgramLayerManagerGUI::setup_list_gui(const char* id, bool& hoveringOverDropdown) {
     using namespace NetworkingObjects;
     auto& world = layerMan.drawP.world;
     if(layerMan.layerTreeRoot) {

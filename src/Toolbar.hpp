@@ -108,7 +108,7 @@ class Toolbar {
         void options_menu();
         void file_picker_gui();
         void performance_metrics();
-        bool color_palette(const std::string& id, Vector4f* color, bool& hoveringOnDropdown);
+        bool color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
         void load_default_theme();
