@@ -241,27 +241,7 @@ void DrawingProgram::update() {
     else if(!unorderedObjectsExistTimePoint)
         unorderedObjectsExistTimePoint = std::chrono::steady_clock::now();
 
-    if(world.main.input.pen.isEraser && !temporaryEraser) {
-        if(drawTool->get_type() == DrawingProgramToolType::BRUSH)
-            switch_to_tool(DrawingProgramToolType::ERASER);
-        temporaryEraser = true;
-    }
-    else if(!world.main.input.pen.isEraser && temporaryEraser) {
-        if(drawTool->get_type() == DrawingProgramToolType::ERASER)
-            switch_to_tool(DrawingProgramToolType::BRUSH);
-        temporaryEraser = false;
-    }
-
-    if(world.main.input.key(InputManager::KEY_HOLD_TO_PAN).held && !temporaryPan) {
-        toolTypeAfterTempPan = drawTool->get_type();
-        switch_to_tool(DrawingProgramToolType::PAN);
-        temporaryPan = true;
-    }
-
-    if(!world.main.input.key(InputManager::KEY_HOLD_TO_PAN).held && temporaryPan) {
-        switch_to_tool(toolTypeAfterTempPan);
-        temporaryPan = false;
-    }
+    tool_temporary_switch_update();
 
     controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;
     controls.leftClick = controls.cursorHoveringOverCanvas && world.main.input.mouse.leftClicks;
@@ -344,6 +324,48 @@ void DrawingProgram::update() {
 
     if(drawCache.should_rebuild())
         rebuild_cache();
+}
+
+void DrawingProgram::tool_temporary_switch_update() {
+    switch(tempMoveToolSwitch) {
+        case TemporaryMoveToolSwitch::NONE:
+            if(world.main.input.key(InputManager::KEY_HOLD_TO_PAN).held) {
+                toolTypeAfterTempMove = drawTool->get_type();
+                switch_to_tool(DrawingProgramToolType::PAN);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::PAN;
+            }
+            if(world.main.input.key(InputManager::KEY_HOLD_TO_ZOOM).held) {
+                toolTypeAfterTempMove = drawTool->get_type();
+                switch_to_tool(DrawingProgramToolType::ZOOM);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::ZOOM;
+            }
+            break;
+        case TemporaryMoveToolSwitch::PAN: {
+            if(!world.main.input.key(InputManager::KEY_HOLD_TO_PAN).held) {
+                switch_to_tool(toolTypeAfterTempMove);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+            }
+            break;
+        }
+        case TemporaryMoveToolSwitch::ZOOM: {
+            if(!world.main.input.key(InputManager::KEY_HOLD_TO_ZOOM).held) {
+                switch_to_tool(toolTypeAfterTempMove);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+            }
+            break;
+        }
+    }
+
+    if(world.main.input.pen.isEraser && !temporaryEraser && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
+        if(drawTool->get_type() == DrawingProgramToolType::BRUSH)
+            switch_to_tool(DrawingProgramToolType::ERASER);
+        temporaryEraser = true;
+    }
+    else if(!world.main.input.pen.isEraser && temporaryEraser && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
+        if(drawTool->get_type() == DrawingProgramToolType::ERASER)
+            switch_to_tool(DrawingProgramToolType::BRUSH);
+        temporaryEraser = false;
+    }
 }
 
 void DrawingProgram::invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck) {

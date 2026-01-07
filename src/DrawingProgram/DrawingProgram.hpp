@@ -83,9 +83,15 @@ class DrawingProgram {
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
         std::unordered_set<CanvasComponentContainer::ObjInfo*> updateableComponents;
 
+        void tool_temporary_switch_update();
+        enum class TemporaryMoveToolSwitch {
+            NONE,
+            PAN,
+            ZOOM
+        };
         bool temporaryEraser = false;
-        bool temporaryPan = false;
-        DrawingProgramToolType toolTypeAfterTempPan;
+        TemporaryMoveToolSwitch tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+        DrawingProgramToolType toolTypeAfterTempMove;
 
         struct GlobalControls {
             float relativeWidth = 15.0f;

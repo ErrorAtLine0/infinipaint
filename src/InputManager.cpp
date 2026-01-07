@@ -35,7 +35,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{CTRL_MOD | SDL_KMOD_SHIFT, SDLK_V}] = KEY_PASTE_IMAGE;
     defaultKeyAssignments[{0, SDLK_B}] = KEY_DRAW_TOOL_BRUSH;
     defaultKeyAssignments[{0, SDLK_E}] = KEY_DRAW_TOOL_ERASER;
-    defaultKeyAssignments[{0, SDLK_Z}] = KEY_DRAW_TOOL_ZOOM;
+    defaultKeyAssignments[{0, SDLK_U}] = KEY_DRAW_TOOL_ZOOM;
     defaultKeyAssignments[{0, SDLK_L}] = KEY_DRAW_TOOL_LASSOSELECT;
     defaultKeyAssignments[{0, SDLK_H}] = KEY_DRAW_TOOL_PAN;
     defaultKeyAssignments[{0, SDLK_T}] = KEY_DRAW_TOOL_TEXTBOX;
@@ -48,6 +48,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_F3}] = KEY_SHOW_METRICS;
     defaultKeyAssignments[{0, SDLK_F2}] = KEY_SHOW_PLAYER_LIST;
     defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
+    defaultKeyAssignments[{0, SDLK_Z}] = KEY_HOLD_TO_ZOOM;
 
 #ifdef __EMSCRIPTEN__
     // Without this, SDL eats the CTRL-V event that initiates the paste event
