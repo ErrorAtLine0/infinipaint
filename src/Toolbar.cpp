@@ -3,6 +3,7 @@
 #include "DrawingProgram/Tools/ScreenshotTool.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/FileDownloader.hpp"
+#include "Helpers/MathExtras.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp"
 #include "MainProgram.hpp"
@@ -1235,7 +1236,7 @@ void Toolbar::performance_metrics() {
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
-        .floating = {.offset = {-10, -10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_BOTTOM, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        .floating = {.offset = {-10, -10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_BOTTOM, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .pointerCaptureMode = CLAY_POINTER_CAPTURE_MODE_PASSTHROUGH, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         CLAY_AUTO_ID({
             .layout = {
@@ -1245,7 +1246,7 @@ void Toolbar::performance_metrics() {
                 .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, 0.7f)),
         }) {
             gui.text_label("Undo queue");
             std::vector<std::string> undoList = main.world->undo.get_front_undo_queue_names(10);
@@ -1260,7 +1261,7 @@ void Toolbar::performance_metrics() {
                 .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, 0.7f)),
         }) {
             std::stringstream a;
             a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
