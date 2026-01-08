@@ -7,7 +7,7 @@ namespace GUIStuff {
 
 struct GUIManagerID {
     GUIManagerID() = default;
-    GUIManagerID(int64_t numID);
+    GUIManagerID(intptr_t numID);
     GUIManagerID(const char* strID);
     bool operator==(const GUIManagerID& other) const;
 
