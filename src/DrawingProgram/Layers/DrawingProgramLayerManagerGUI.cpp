@@ -70,14 +70,16 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const char* id, bool& hoverin
                     bool isButtonClicked = false;
                     if(Clay_Hovered() && gui.io->mouse.leftClick >= 2 && !tempPtr->is_folder() && selectionData.objsSelected.contains(idPair.object) && !gui.io->key.leftCtrl && !gui.io->key.leftShift)
                         layerMan.editingLayer = tempPtr;
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT), .height = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT)},
-                            .padding = CLAY_PADDING_ALL(2),
-                        },
-                    }) {
-                        if(tempPtr.get_net_id() == layerMan.editingLayer.get_net_id())
-                            gui.svg_icon("edit ico", "data/icons/pencil.svg");
+                    if(!tempPtr->is_folder()) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT), .height = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT)},
+                                .padding = CLAY_PADDING_ALL(2),
+                            },
+                        }) {
+                            if(tempPtr.get_net_id() == layerMan.editingLayer.get_net_id())
+                                gui.svg_icon("edit ico", "data/icons/pencil.svg");
+                        }
                     }
                     CLAY_AUTO_ID({
                         .layout = {
