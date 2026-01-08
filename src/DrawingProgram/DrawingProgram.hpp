@@ -127,6 +127,7 @@ class DrawingProgram {
         friend class EyeDropperTool;
         friend class RectDrawTool;
         friend class EllipseDrawTool;
+        friend class LineDrawTool;
         friend class BrushTool;
         friend class EraserTool;
         friend class RectSelectTool;

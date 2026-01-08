@@ -20,7 +20,8 @@ enum class DrawingProgramToolType : int {
     GRIDMODIFY,
     EDIT,
     ZOOM,
-    PAN
+    PAN,
+    LINE
 };
 
 class DrawingProgramToolBase {

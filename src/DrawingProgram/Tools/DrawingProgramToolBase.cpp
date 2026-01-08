@@ -13,6 +13,7 @@
 #include "EditTool.hpp"
 #include "GridModifyTool.hpp"
 #include "ZoomCanvasTool.hpp"
+#include "LineDrawTool.hpp"
 
 DrawingProgramToolBase::DrawingProgramToolBase(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -48,6 +49,8 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
             return std::make_unique<ZoomCanvasTool>(drawP);
         case DrawingProgramToolType::PAN:
             return std::make_unique<PanCanvasTool>(drawP);
+        case DrawingProgramToolType::LINE:
+            return std::make_unique<LineDrawTool>(drawP);
     }
     return nullptr;
 }

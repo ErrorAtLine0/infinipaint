@@ -132,6 +132,7 @@ void DrawingProgram::toolbar_gui() {
         t.gui.obstructing_window();
         if(t.gui.svg_icon_button_transparent("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
         if(t.gui.svg_icon_button_transparent("Eraser Toolbar Button", "data/icons/eraser.svg", drawTool->get_type() == DrawingProgramToolType::ERASER)) { switch_to_tool(DrawingProgramToolType::ERASER); }
+        if(t.gui.svg_icon_button_transparent("Line Toolbar Button", "data/icons/line.svg", drawTool->get_type() == DrawingProgramToolType::LINE)) { switch_to_tool(DrawingProgramToolType::LINE); }
         if(t.gui.svg_icon_button_transparent("Text Toolbar Button", "data/icons/text.svg", drawTool->get_type() == DrawingProgramToolType::TEXTBOX)) { switch_to_tool(DrawingProgramToolType::TEXTBOX); }
         if(t.gui.svg_icon_button_transparent("Ellipse Toolbar Button", "data/icons/circle.svg", drawTool->get_type() == DrawingProgramToolType::ELLIPSE)) { switch_to_tool(DrawingProgramToolType::ELLIPSE); }
         if(t.gui.svg_icon_button_transparent("Rect Toolbar Button", "data/icons/rectangle.svg", drawTool->get_type() == DrawingProgramToolType::RECTANGLE)) { switch_to_tool(DrawingProgramToolType::RECTANGLE); }
