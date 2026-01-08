@@ -60,7 +60,7 @@ void LineDrawTool::tool_update() {
     }
     else {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        constexpr float SNAP_DIVISION_COUNT = 8.0f;
+        constexpr float SNAP_DIVISION_COUNT = 12.0f;
         if(drawP.controls.leftClickHeld) {
             BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
             Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
