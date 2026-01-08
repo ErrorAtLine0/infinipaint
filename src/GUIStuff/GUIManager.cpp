@@ -64,7 +64,8 @@ void GUIManager::begin() {
     io->strArena = &strArena;
     Clay_SetLayoutDimensions(Clay_Dimensions(windowSize.x(), windowSize.y()));
     Clay_SetPointerState(Clay_Vector2((float)io->mouse.pos.x(), (float)io->mouse.pos.y()), io->mouse.leftHeld);
-    Clay_UpdateScrollContainers(false, Clay_Vector2(io->mouse.scroll.y(), io->mouse.scroll.y()), io->deltaTime * 2.0f);
+    // NOTE: Using y scroll for x axis, since horizontal scrolling containers will just use the normal y scroll wheel as well
+    Clay_UpdateScrollContainers(false, Clay_Vector2(io->mouse.scroll.y() * 2.0f, io->mouse.scroll.y() * 2.0f), io->deltaTime);
     Clay_SetCurrentContext(clayInstance);
 
     strArena.reset();
