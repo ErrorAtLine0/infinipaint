@@ -307,6 +307,8 @@ void DrawingProgram::update() {
         switch_to_tool(DrawingProgramToolType::LASSOSELECT);
     else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_PAN).pressed)
         switch_to_tool(DrawingProgramToolType::PAN);
+    else if(world.main.input.key(InputManager::KEY_DRAW_TOOL_LINE).pressed)
+        switch_to_tool(DrawingProgramToolType::LINE);
 
     selection.update();
     drawTool->tool_update();
