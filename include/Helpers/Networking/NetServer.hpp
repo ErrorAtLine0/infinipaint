@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/cereal.hpp>
+#include <array>
 #include "ByteStream.hpp"
 #include "NetLibrary.hpp"
 

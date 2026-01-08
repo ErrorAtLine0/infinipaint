@@ -16,7 +16,7 @@ class DrawingProgramLayerManager;
 struct DrawingProgramLayerListItemMetaInfo {
     std::string name;
     float alpha = 1.0f;
-    SerializedBlendMode blendMode = SerializedBlendMode::SRC_OVER;
+    SerializedBlendMode blendMode = SerializedBlendMode::BLEND_SRC_OVER;
     bool operator==(const DrawingProgramLayerListItemMetaInfo&) const = default;
 };
 
@@ -80,7 +80,7 @@ class DrawingProgramLayerListItem {
         struct DisplayData {
             float alpha = 1.0f;
             bool visible = true;
-            SerializedBlendMode blendMode = SerializedBlendMode::SRC_OVER;
+            SerializedBlendMode blendMode = SerializedBlendMode::BLEND_SRC_OVER;
             template <typename Archive> void serialize(Archive& a) {
                 a(alpha, visible, blendMode);
             }
