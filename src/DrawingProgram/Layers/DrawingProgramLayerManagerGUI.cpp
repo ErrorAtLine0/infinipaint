@@ -296,7 +296,8 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const char* id, bool& hoverin
                     if(tempPtr) {
                         nameToEdit = tempPtr->get_name();
                         alphaValToEdit = tempPtr->get_alpha();
-                        blendModeValToEdit = static_cast<size_t>(tempPtr->get_blend_mode());
+                        auto it = std::find(get_blend_mode_useful_list().begin(), get_blend_mode_useful_list().end(), tempPtr->get_blend_mode());
+                        blendModeValToEdit = (it == get_blend_mode_useful_list().end()) ? 0 : (it - get_blend_mode_useful_list().begin());
                     }
                     else {
                         nameToEdit.clear();
@@ -341,12 +342,12 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const char* id, bool& hoverin
                 tempPtr->set_alpha(layerMan, alphaValToEdit);
                 gui.left_to_right_line_layout([&]() {
                     gui.text_label("Blend Mode");
-                    gui.dropdown_select("input blend mode", &blendModeValToEdit, get_blend_mode_name_list(), 200.0f, [&hoveringOverDropdown]() {
+                    gui.dropdown_select("input blend mode", &blendModeValToEdit, get_blend_mode_useful_name_list(), 240.0f, [&hoveringOverDropdown]() {
                         if(Clay_Hovered())
                             hoveringOverDropdown = true;
                     });
                 });
-                tempPtr->set_blend_mode(layerMan, static_cast<SerializedBlendMode>(blendModeValToEdit));
+                tempPtr->set_blend_mode(layerMan, get_blend_mode_useful_list()[blendModeValToEdit]);
             }
         }
 

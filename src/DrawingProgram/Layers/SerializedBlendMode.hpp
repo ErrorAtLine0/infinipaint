@@ -38,16 +38,16 @@ enum class SerializedBlendMode : uint8_t {
 
 NLOHMANN_JSON_SERIALIZE_ENUM(SerializedBlendMode, {
     {SerializedBlendMode::CLEAR, "Clear"},
-    {SerializedBlendMode::SRC, "Src"},
-    {SerializedBlendMode::DST, "Dst"},
-    {SerializedBlendMode::SRC_OVER, "Src Over"},
-    {SerializedBlendMode::DST_OVER, "Dst Over"},
-    {SerializedBlendMode::SRC_IN, "Src In"},
-    {SerializedBlendMode::DST_IN, "Dst In"},
-    {SerializedBlendMode::SRC_OUT, "Src Out"},
-    {SerializedBlendMode::DST_OUT, "Dst Out"},
-    {SerializedBlendMode::SRC_A_TOP, "Src A Top"},
-    {SerializedBlendMode::DST_A_TOP, "Dst A Top"},
+    {SerializedBlendMode::SRC, "Source"},
+    {SerializedBlendMode::DST, "Destination"},
+    {SerializedBlendMode::SRC_OVER, "Source Over"},
+    {SerializedBlendMode::DST_OVER, "Destination Over"},
+    {SerializedBlendMode::SRC_IN, "Source In"},
+    {SerializedBlendMode::DST_IN, "Destination In"},
+    {SerializedBlendMode::SRC_OUT, "Source Out"},
+    {SerializedBlendMode::DST_OUT, "Destination Out"},
+    {SerializedBlendMode::SRC_A_TOP, "Source Alpha Top"},
+    {SerializedBlendMode::DST_A_TOP, "Destination Alpha Top"},
     {SerializedBlendMode::XOR, "XOR"},
     {SerializedBlendMode::PLUS, "Plus"},
     {SerializedBlendMode::MODULATE, "Modulate"},
@@ -69,4 +69,5 @@ NLOHMANN_JSON_SERIALIZE_ENUM(SerializedBlendMode, {
 })
 
 SkBlendMode serialized_blend_mode_to_sk_blend_mode(SerializedBlendMode serializedBlendMode);
-const std::vector<std::string>& get_blend_mode_name_list();
+const std::vector<SerializedBlendMode>& get_blend_mode_useful_list();
+const std::vector<std::string>& get_blend_mode_useful_name_list();
