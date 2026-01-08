@@ -13,10 +13,10 @@ void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListIt
     auto insertCallback = [&](const CanvasComponentContainer::ObjInfoIterator& c) {
         c->obj->objInfo = c;
         c->obj->parentLayer = &layerListItem;
-        if(layerMan.commitUpdateOnComponentInsert) {
+        if(layerMan.commitUpdateOnComponentInsert)
             c->obj->commit_update(layerMan.drawP); // Run commit update on insert so that world bounds are calculated
+        if(layerMan.addToCacheOnComponentInsert)
             layerMan.drawP.drawCache.add_component(&(*c));
-        }
         if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE)
             layerMan.drawP.updateableComponents.emplace(&(*c));
     };

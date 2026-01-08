@@ -31,9 +31,9 @@ void DrawingProgramLayerManager::write_components_server(cereal::PortableBinaryO
 
 void DrawingProgramLayerManager::read_components_client(cereal::PortableBinaryInputArchive& a) {
     layerTreeRoot = drawP.world.netObjMan.read_create_message<DrawingProgramLayerListItem>(a, nullptr);
-    commitUpdateOnComponentInsert = false;
-    layerTreeRoot->set_component_list_callbacks(*this);
-    commitUpdateOnComponentInsert = true;
+    disable_add_to_cache_and_commit_update_block([&]() {
+        layerTreeRoot->set_component_list_callbacks(*this);
+    });
     auto flattenedCompList = get_flattened_component_list();
     parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
         comp->obj->commit_update_dont_invalidate_cache(drawP);
@@ -107,6 +107,26 @@ std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManage
     return {};
 }
 
+void DrawingProgramLayerManager::disable_add_to_cache_block(const std::function<void()>& toRun) {
+    addToCacheOnComponentInsert = false;
+    toRun();
+    addToCacheOnComponentInsert = true;
+}
+
+void DrawingProgramLayerManager::disable_commit_update_block(const std::function<void()>& toRun) {
+    commitUpdateOnComponentInsert = false;
+    toRun();
+    commitUpdateOnComponentInsert = true;
+}
+
+void DrawingProgramLayerManager::disable_add_to_cache_and_commit_update_block(const std::function<void()>& toRun) {
+    addToCacheOnComponentInsert = false;
+    commitUpdateOnComponentInsert = false;
+    toRun();
+    commitUpdateOnComponentInsert = true;
+    addToCacheOnComponentInsert = true;
+}
+
 CanvasComponentContainer::ObjInfo* DrawingProgramLayerManager::add_component_to_layer_being_edited(CanvasComponentContainer* newObj) {
     auto editLayerPtr = editingLayer.lock();
     if(!editLayerPtr)
@@ -118,22 +138,22 @@ void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a
     if(version >= VersionNumber(0, 4, 0)) {
         layerTreeRoot = drawP.world.netObjMan.make_obj_from_ptr<DrawingProgramLayerListItem>(new DrawingProgramLayerListItem());
         layerTreeRoot->load_file(a, version, *this);
-        commitUpdateOnComponentInsert = false;
-        layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
-        commitUpdateOnComponentInsert = true;
+        disable_add_to_cache_and_commit_update_block([&]() {
+            layerTreeRoot->get_folder().set_component_list_callbacks(*this); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
+        });
     }
     else {
         server_init_no_file();
-        commitUpdateOnComponentInsert = false;
-        CanvasComponentContainer::NetListTemporaryPtr editingLayerTmpPtrComponents = editingLayer.lock()->get_layer().components;
-        uint64_t compCount;
-        a(compCount);
-        for(uint64_t i = 0; i < compCount; i++) {
-            CanvasComponentContainer* newContainer = new CanvasComponentContainer();
-            newContainer->load_file(a, version, drawP.world.netObjMan);
-            editingLayerTmpPtrComponents->push_back_and_send_create(editingLayerTmpPtrComponents, newContainer);
-        }
-        commitUpdateOnComponentInsert = true;
+        disable_add_to_cache_and_commit_update_block([&]() {
+            CanvasComponentContainer::NetListTemporaryPtr editingLayerTmpPtrComponents = editingLayer.lock()->get_layer().components;
+            uint64_t compCount;
+            a(compCount);
+            for(uint64_t i = 0; i < compCount; i++) {
+                CanvasComponentContainer* newContainer = new CanvasComponentContainer();
+                newContainer->load_file(a, version, drawP.world.netObjMan);
+                editingLayerTmpPtrComponents->push_back_and_send_create(editingLayerTmpPtrComponents, newContainer);
+            }
+        });
     }
     auto flattenedCompList = get_flattened_component_list();
     parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {

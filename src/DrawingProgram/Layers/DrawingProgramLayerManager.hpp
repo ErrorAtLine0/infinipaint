@@ -17,6 +17,7 @@ class DrawingProgramLayerManager {
         void add_undo_place_components(DrawingProgramLayerListItem* parent, const std::vector<CanvasComponentContainer::ObjInfoIterator>& placeList);
         void erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap);
         bool commitUpdateOnComponentInsert = true;
+        bool addToCacheOnComponentInsert = true;
     public:
         enum class LayerSelector {
             ALL_VISIBLE_LAYERS,
@@ -46,6 +47,9 @@ class DrawingProgramLayerManager {
         uint32_t edited_layer_component_count();
         CanvasComponentContainer::ObjInfoIterator get_edited_layer_end_iterator();
         bool component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector);
+        void disable_add_to_cache_block(const std::function<void()>& toRun);
+        void disable_commit_update_block(const std::function<void()>& toRun);
+        void disable_add_to_cache_and_commit_update_block(const std::function<void()>& toRun);
 
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
@@ -59,7 +63,6 @@ class DrawingProgramLayerManager {
         std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer_being_edited(const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs);
         std::vector<CanvasComponentContainer::ObjInfo*> get_flattened_component_list() const;
         std::vector<DrawingProgramLayerListItem*> get_flattened_layer_list();
-
         void add_undo_place_component(CanvasComponentContainer::ObjInfo* objInfo);
         DrawingProgramLayerManagerGUI listGUI;
 };

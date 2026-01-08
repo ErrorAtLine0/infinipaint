@@ -435,12 +435,16 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
             newComponentContainer->coords.scale_about(mousePos, scaleMultiplier);
             placedComponents.emplace_back(drawP.layerMan.get_edited_layer_end_iterator(), newComponentContainer);
         }
-        auto newlyInsertedObjectIts = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);
+        std::vector<CanvasComponentContainer::ObjInfoIterator> newlyInsertedObjectIts;
+        drawP.layerMan.disable_add_to_cache_and_commit_update_block([&]() {
+            newlyInsertedObjectIts = drawP.layerMan.add_many_components_to_layer_being_edited(placedComponents);
+        });
         std::vector<CanvasComponentContainer::ObjInfo*> compSetInserted;
-        for(auto& it : newlyInsertedObjectIts) {
-            drawP.drawCache.erase_component(&(*it));
+        for(auto& it : newlyInsertedObjectIts)
             compSetInserted.emplace_back(&(*it));
-        }
+        parallel_loop_container(compSetInserted, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
+            comp->obj->commit_update_dont_invalidate_cache(drawP);
+        });
         set_to_selection(compSetInserted);
     }
 }
