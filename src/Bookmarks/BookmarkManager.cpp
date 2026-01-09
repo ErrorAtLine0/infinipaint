@@ -17,6 +17,8 @@ void BookmarkManager::server_init_no_file() {
 void BookmarkManager::refresh_gui_data() {
     selectionData = GUIStuff::TreeListing::SelectionData();
     editing_bookmark_check();
+    oldSelection.clear();
+    editingBookmarkName = std::nullopt;
     nameToEdit.clear();
     nameForNew.clear();
 }

@@ -18,6 +18,7 @@ void DrawingProgramLayerManagerGUI::refresh_gui_data() {
     oldSelection.clear();
     nameToEdit.clear();
     nameForNew.clear();
+    editingData = std::nullopt;
     alphaValToEdit = 0.0f;
     blendModeValToEdit = 0;
 }

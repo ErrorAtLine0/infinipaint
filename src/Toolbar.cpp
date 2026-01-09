@@ -492,16 +492,20 @@ void Toolbar::top_toolbar() {
             }
         }
         if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen)) {
-            if(layerMenuPopupOpen)
+            if(layerMenuPopupOpen) {
+                main.world->drawProg.layerMan.listGUI.refresh_gui_data();
                 layerMenuPopupOpen = false;
+            }
             else {
                 layerMenuPopupOpen = true;
                 layerMenuPopUpJustOpen = true;
             }
         }
         if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen)) {
-            if(bookmarkMenuPopupOpen)
+            if(bookmarkMenuPopupOpen) {
+                main.world->bMan.refresh_gui_data();
                 bookmarkMenuPopupOpen = false;
+            }
             else {
                 bookmarkMenuPopupOpen = true;
                 bookmarkMenuPopUpJustOpen = true;
