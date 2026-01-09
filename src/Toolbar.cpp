@@ -465,8 +465,12 @@ void Toolbar::top_toolbar() {
         bool gridMenuPopUpJustOpen = false;
         bool layerMenuPopUpJustOpen = false;
         if(gui.svg_icon_button_transparent("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen)) {
-            menuPopUpOpen = true;
-            menuPopUpJustOpen = true;
+            if(menuPopUpOpen)
+                menuPopUpOpen = false;
+            else {
+                menuPopUpOpen = true;
+                menuPopUpJustOpen = true;
+            }
         }
         std::vector<std::pair<std::string, std::string>> tabNames;
         for(size_t i = 0; i < main.worlds.size(); i++)
