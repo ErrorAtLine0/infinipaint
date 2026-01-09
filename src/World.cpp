@@ -548,12 +548,14 @@ void World::list_debug_test_update() {
 
 void World::draw(SkCanvas* canvas) {
     drawData.refresh_draw_optimizing_values();
-    if(drawData.drawGrids)
-        gridMan.draw_back(canvas, drawData);
-    drawProg.draw(canvas, drawData);
-    if(drawData.drawGrids) {
-        gridMan.draw_front(canvas, drawData);
-        gridMan.draw_coordinates(canvas, drawData);
+    if(!clientStillConnecting) {
+        if(drawData.drawGrids)
+            gridMan.draw_back(canvas, drawData);
+        drawProg.draw(canvas, drawData);
+        if(drawData.drawGrids) {
+            gridMan.draw_front(canvas, drawData);
+            gridMan.draw_coordinates(canvas, drawData);
+        }
+        draw_other_player_cursors(canvas, drawData);
     }
-    draw_other_player_cursors(canvas, drawData);
 }

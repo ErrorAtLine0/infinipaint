@@ -114,6 +114,8 @@ class Toolbar {
         void load_default_theme();
         void about_menu_gui();
         void web_version_welcome();
+        void still_connecting_center_message();
+        void no_layers_being_edited_message();
 
         #ifndef __EMSCRIPTEN__
         void update_notification_gui();

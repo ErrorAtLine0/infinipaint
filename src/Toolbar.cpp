@@ -371,7 +371,8 @@ void Toolbar::update() {
             }
         }) {
             top_toolbar();
-            drawing_program_gui();
+            if(!main.world->clientStillConnecting)
+                drawing_program_gui();
             if(viewWebVersionWelcome)
                 web_version_welcome();
 #ifndef __EMSCRIPTEN__
@@ -382,24 +383,32 @@ void Toolbar::update() {
                 file_picker_gui();
             else if(optionsMenuOpen)
                 options_menu();
+            else if(main.world->clientStillConnecting)
+                still_connecting_center_message();
             else if(playerMenuOpen)
                 player_list();
+            else if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
+                no_layers_being_edited_message();
+
             if(showPerformance)
                 performance_metrics();
         }
-        chat_box();
+        if(!main.world->clientStillConnecting)
+            chat_box();
     }
 
-    if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
-        rightClickPopupLocation = std::nullopt;
+    if(!main.world->clientStillConnecting) {
+        if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
+            rightClickPopupLocation = std::nullopt;
 
-    if(rightClickPopupLocation.has_value()) {
-        if(!main.world->drawProg.right_click_popup_gui(rightClickPopupLocation.value()))
+        if(rightClickPopupLocation.has_value()) {
+            if(!main.world->drawProg.right_click_popup_gui(rightClickPopupLocation.value()))
+                rightClickPopupLocation = std::nullopt;
+        }
+
+        if(io->hoverObstructed && io->mouse.rightClick) // This runs specifically if the paint popup has the cursor
             rightClickPopupLocation = std::nullopt;
     }
-
-    if(io->hoverObstructed && io->mouse.rightClick) // This runs specifically if the paint popup has the cursor
-        rightClickPopupLocation = std::nullopt;
 
     end_gui();
 
@@ -477,50 +486,52 @@ void Toolbar::top_toolbar() {
             tabNames.emplace_back(main.worlds[i]->netObjMan.is_connected() ? "data/icons/network.svg" : "", main.worlds[i]->name);
         std::optional<size_t> closedTab;
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
-        if(main.world->netObjMan.is_connected() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
-            playerMenuOpen = !playerMenuOpen;
-        if(gui.svg_icon_button_transparent("Menu Undo Button", "data/icons/undo.svg"))
-            main.world->undo_with_checks();
-        if(gui.svg_icon_button_transparent("Menu Redo Button", "data/icons/redo.svg"))
-            main.world->redo_with_checks();
-        if(gui.svg_icon_button_transparent("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
+        if(!main.world->clientStillConnecting) {
+            if(main.world->netObjMan.is_connected() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
+                playerMenuOpen = !playerMenuOpen;
+            if(gui.svg_icon_button_transparent("Menu Undo Button", "data/icons/undo.svg"))
+                main.world->undo_with_checks();
+            if(gui.svg_icon_button_transparent("Menu Redo Button", "data/icons/redo.svg"))
+                main.world->redo_with_checks();
+            if(gui.svg_icon_button_transparent("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
+                if(gridMenu.popupOpen)
+                    stop_displaying_grid_menu();
+                else {
+                    gridMenu.popupOpen = true;
+                    gridMenuPopUpJustOpen = true;
+                }
+            }
+            if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen)) {
+                if(layerMenuPopupOpen) {
+                    main.world->drawProg.layerMan.listGUI.refresh_gui_data();
+                    layerMenuPopupOpen = false;
+                }
+                else {
+                    layerMenuPopupOpen = true;
+                    layerMenuPopUpJustOpen = true;
+                }
+            }
+            if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen)) {
+                if(bookmarkMenuPopupOpen) {
+                    main.world->bMan.refresh_gui_data();
+                    bookmarkMenuPopupOpen = false;
+                }
+                else {
+                    bookmarkMenuPopupOpen = true;
+                    bookmarkMenuPopUpJustOpen = true;
+                }
+            }
+
+
+            if(closedTab)
+                main.set_tab_to_close(closedTab.value());
             if(gridMenu.popupOpen)
-                stop_displaying_grid_menu();
-            else {
-                gridMenu.popupOpen = true;
-                gridMenuPopUpJustOpen = true;
-            }
+                grid_menu(gridMenuPopUpJustOpen);
+            if(bookmarkMenuPopupOpen)
+                bookmark_menu(bookmarkMenuPopUpJustOpen);
+            if(layerMenuPopupOpen)
+                layer_menu(layerMenuPopUpJustOpen);
         }
-        if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen)) {
-            if(layerMenuPopupOpen) {
-                main.world->drawProg.layerMan.listGUI.refresh_gui_data();
-                layerMenuPopupOpen = false;
-            }
-            else {
-                layerMenuPopupOpen = true;
-                layerMenuPopUpJustOpen = true;
-            }
-        }
-        if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen)) {
-            if(bookmarkMenuPopupOpen) {
-                main.world->bMan.refresh_gui_data();
-                bookmarkMenuPopupOpen = false;
-            }
-            else {
-                bookmarkMenuPopupOpen = true;
-                bookmarkMenuPopUpJustOpen = true;
-            }
-        }
-
-
-        if(closedTab)
-            main.set_tab_to_close(closedTab.value());
-        if(gridMenu.popupOpen)
-            grid_menu(gridMenuPopUpJustOpen);
-        if(bookmarkMenuPopupOpen)
-            bookmark_menu(bookmarkMenuPopUpJustOpen);
-        if(layerMenuPopupOpen)
-            layer_menu(layerMenuPopUpJustOpen);
         if(menuPopUpOpen) {
             CLAY_AUTO_ID({
                 .layout = {
@@ -540,57 +551,59 @@ void Toolbar::top_toolbar() {
                         .isClient = false
                     }, true);
                 }
-                if(gui.text_button_left_transparent("save file", "Save"))
-                    save_func();
-                if(gui.text_button_left_transparent("save as file", "Save As"))
-                    save_as_func();
                 if(gui.text_button_left_transparent("open file", "Open"))
                     open_world_file(false, "", "");
-                if(gui.text_button_left_transparent("screenshot", "Take Screenshot"))
-                    main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
-                if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
-                    #ifdef __EMSCRIPTEN__
-                        static std::weak_ptr<World> worldWeakPtr;
-                        worldWeakPtr = make_weak_ptr(main.world);
-                        emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
-                            if(!buffer.empty()) {
-                                auto world = ((std::weak_ptr<World>*)callbackData)->lock();
-                                if(world)
-                                    world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                if(!main.world->clientStillConnecting) {
+                    if(gui.text_button_left_transparent("save file", "Save"))
+                        save_func();
+                    if(gui.text_button_left_transparent("save as file", "Save As"))
+                        save_as_func();
+                    if(gui.text_button_left_transparent("screenshot", "Take Screenshot"))
+                        main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
+                    if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
+                        #ifdef __EMSCRIPTEN__
+                            static std::weak_ptr<World> worldWeakPtr;
+                            worldWeakPtr = make_weak_ptr(main.world);
+                            emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
+                                if(!buffer.empty()) {
+                                    auto world = ((std::weak_ptr<World>*)callbackData)->lock();
+                                    if(world)
+                                        world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                                    else
+                                        Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                }
+                            }, &worldWeakPtr);
+                        #else
+                            open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
+                                auto wLock = w.lock();
+                                if(wLock)
+                                    wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
                                 else
                                     Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
-                            }
-                        }, &worldWeakPtr);
-                    #else
-                        open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
-                            auto wLock = w.lock();
-                            if(wLock)
-                                wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
-                            else
-                                Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
-                        });
-                    #endif
-                }
-                if(main.world->netObjMan.is_connected()) {
-                    if(gui.text_button_left_transparent("lobby info", "Lobby Info")) {
-                        optionsMenuOpen = true;
-                        optionsMenuType = LOBBY_INFO_MENU;
+                            });
+                        #endif
                     }
-                }
-                else if(gui.text_button_left_transparent("start hosting", "Host")) {
-                    serverLocalID = NetLibrary::get_random_server_local_id();
-                    serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
-                    optionsMenuOpen = true;
-                    optionsMenuType = HOST_MENU;
+                    if(main.world->netObjMan.is_connected()) {
+                        if(gui.text_button_left_transparent("lobby info", "Lobby Info")) {
+                            optionsMenuOpen = true;
+                            optionsMenuType = LOBBY_INFO_MENU;
+                        }
+                    }
+                    else if(gui.text_button_left_transparent("start hosting", "Host")) {
+                        serverLocalID = NetLibrary::get_random_server_local_id();
+                        serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+                        optionsMenuOpen = true;
+                        optionsMenuType = HOST_MENU;
+                    }
+                    if(gui.text_button_left_transparent("canvas specific settings", "Canvas Settings")) {
+                        optionsMenuOpen = true;
+                        optionsMenuType = CANVAS_SETTINGS_MENU;
+                    }
                 }
                 if(gui.text_button_left_transparent("start connecting", "Connect")) {
                     serverToConnectTo.clear();
                     optionsMenuOpen = true;
                     optionsMenuType = CONNECT_MENU;
-                }
-                if(gui.text_button_left_transparent("canvas specific settings", "Canvas Settings")) {
-                    optionsMenuOpen = true;
-                    optionsMenuType = CANVAS_SETTINGS_MENU;
                 }
                 if(gui.text_button_left_transparent("open options", "Settings")) {
                     optionsMenuOpen = true;
@@ -640,6 +653,40 @@ If you like this app, consider downloading the native version for your system)")
         if(gui.text_button_wide("got it", "Got It"))
             viewWebVersionWelcome = false;
         gui.pop_id();
+    }
+}
+
+void Toolbar::still_connecting_center_message() {
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = io->theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    }) {
+        gui.text_label("Connecting to server...");
+    }
+}
+
+void Toolbar::no_layers_being_edited_message() {
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = io->theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    }) {
+        gui.text_label("Select a layer to edit");
     }
 }
 
