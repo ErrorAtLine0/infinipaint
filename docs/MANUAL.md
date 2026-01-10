@@ -90,6 +90,40 @@
 - To set the layer to edit, double click it (or click the pencil icon to the right of the layer). The layer that is currently being edited has a pencil icon to the left of it, and anything you draw will be placed in that layer.
 - Select a layer by clicking it once. When it is selected, you can change its properties such as name, alpha, and blend mode (this is different from the "set to edit" mode)
 - Hold shift and click to select multiple layers at once, or hold control and click to toggle the selection state of the layer. You can then hold <kbd>LMB</kbd> and move the mouse to move/sort the layers
+- Blend modes are the default ones available with the rendering library this program is using ([Skia](https://skia.org/)). The following explanation of the blend modes is mostly just copy-pasted from the library's documentation at [SkBlendMode](https://api.skia.org/SkBlendMode_8h.html):
+	- The documentation is expressed as if the component values are always 0..1 (floats).
+ 	- For brevity, the documentation uses the following abbreviations s : source d : destination sa : source alpha da : destination alpha
+	- Results are abbreviated r : if all 4 components are computed in the same manner ra : result alpha component rc : result "color": red, green, blue components
+-------------------------------------------------------------------------------------------
+| Blend mode name       | Equation                                                        |
+|-----------------------|-----------------------------------------------------------------|
+|Source Over            |r = s + (1-sa) * d                                               |
+|Destination Over       |r = d + (1-da) * s                                               |
+|Source In              |r = s * da                                                       |
+|Destination In         |r = d * sa                                                       |
+|Source Out             |r = s * (1-da)                                                   |
+|Destination Out        |r = d * (1-sa)                                                   |
+|Source Alpha Top       |r = s * da + d * (1-sa)                                          |
+|Destination Alpha Top  |r = d * sa + s * (1-da)                                          |
+|XOR                    |r = s * (1-da) + d * (1-sa)                                      |
+|Plus                   |r = min(s + d, 1)                                                |
+|Modulate               |r = s * d                                                        |
+|Screen                 |r = s + d - s * d                                                |
+|Overlay                |multiply or screen, depending on destination                     |
+|Darken                 |rc = s + d - max(s * da, d * sa), ra = same as Source Over       |
+|Lighten                |rc = s + d - min(s * da, d * sa), ra = same as Source Over       |
+|Color Dodge            |brighten destination to reflect source                           |
+|Color Burn             |darken destination to reflect source                             |
+|Hard Light             |multiply or screen, depending on source                          |
+|Soft Light             |lighten or darken, depending on source                           |
+|Difference             |rc = s + d - 2 * (min(s * da, d * sa)), ra = same as Source Over |
+|Exclusion              |rc = s + d - two(s * d), ra = same as Source Over                |
+|Multiply               |r = s * (1-da) + d * (1-sa) + s * d                              |
+|Hue                    |hue of source with saturation and luminosity of destination      |
+|Saturation             |saturation of source with hue and luminosity of destination      |
+|Color                  |hue and saturation of source with luminosity of destination      |
+|Luminosity             |luminosity of source with hue and saturation of destination      |
+-------------------------------------------------------------------------------------------
 ## Color Palettes
 - Click the color button on the left toolbar to open the color picker. The top color button, initially white, is for the brush color and outlines. The bottom color button, initially black, is for fill color (if applicable)
 - In the color picker window, you can use, create, and edit color palettes
