@@ -12,6 +12,7 @@ struct DrawData {
     DrawCamera cam;
     ResourceManager* rMan;
     MainProgram* main;
+    bool onlyRenderLayerBeingEdited = false;
     bool dontUseDrawProgCache = false;
     bool clampDrawBetween = true;
     bool drawGrids = true;

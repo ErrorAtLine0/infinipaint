@@ -61,8 +61,14 @@ CanvasComponentContainer::ObjInfoIterator DrawingProgramLayerManager::get_edited
 }
 
 void DrawingProgramLayerManager::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(layerTreeRoot)
-        layerTreeRoot->draw(canvas, drawData);
+    if(layerTreeRoot) {
+        if(drawData.onlyRenderLayerBeingEdited) {
+            if(is_a_layer_being_edited())
+                editingLayer.lock()->get_layer().draw(canvas, drawData);
+        }
+        else
+            layerTreeRoot->draw(canvas, drawData);
+    }
 }
 
 std::vector<CanvasComponentContainer::ObjInfo*> DrawingProgramLayerManager::get_flattened_component_list() const {
