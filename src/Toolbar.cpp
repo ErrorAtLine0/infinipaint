@@ -770,7 +770,7 @@ void Toolbar::grid_menu(bool justOpened) {
         gui.push_id("grid menu");
         CLAY_AUTO_ID({
             .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(350), .height = CLAY_SIZING_FIT(0, 600) },
+                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
                 .padding = CLAY_PADDING_ALL(io->theme->padding1),
                 .childGap = io->theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -864,7 +864,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
     gui.push_id("bookmark menu");
     CLAY_AUTO_ID({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(350), .height = CLAY_SIZING_FIT(0, 600) },
+            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -889,7 +889,7 @@ void Toolbar::layer_menu(bool justOpened) {
     gui.push_id("layer menu");
     CLAY_AUTO_ID({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(350), .height = CLAY_SIZING_FIT(0, 600) },
+            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},

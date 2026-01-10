@@ -345,7 +345,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui(const char* id, bool& hoverin
                 tempPtr->set_alpha(layerMan, alphaValToEdit);
                 gui.left_to_right_line_layout([&]() {
                     gui.text_label("Blend Mode");
-                    gui.dropdown_select("input blend mode", &blendModeValToEdit, get_blend_mode_useful_name_list(), 240.0f, [&hoveringOverDropdown]() {
+                    gui.dropdown_select("input blend mode", &blendModeValToEdit, get_blend_mode_useful_name_list(), 190.0f, [&hoveringOverDropdown]() {
                         if(Clay_Hovered())
                             hoveringOverDropdown = true;
                     });
