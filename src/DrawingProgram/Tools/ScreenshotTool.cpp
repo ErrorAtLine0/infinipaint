@@ -64,7 +64,7 @@ void ScreenshotTool::gui_toolbox() {
         if(controls.selectedType != SCREENSHOT_SVG)
             t.gui.checkbox_field("Display Grid", "Display Grid", &controls.displayGrid);
         else
-            t.gui.text_label("Note: Screenshot will only capture\nlayer currently being edited");
+            t.gui.text_label("Note: Screenshot will ignore blend\nmodes and layer alpha");
         if(controls.selectedType != 0)
             t.gui.checkbox_field("Transparent Background", "Transparent Background", &controls.transparentBackground);
         if(controls.imageSize.x() != oldImgSize.x()) {
@@ -275,10 +275,10 @@ void ScreenshotTool::take_screenshot_svg(SkCanvas* canvas, bool transparentBackg
     drawP.world.main.transparentBackground = transparentBackground;
     drawP.world.drawData.drawGrids = false;
     drawP.world.drawData.dontUseDrawProgCache = true;
-    drawP.world.drawData.onlyRenderLayerBeingEdited = true;
+    drawP.world.drawData.isSVGRender = true;
 
     drawP.world.main.draw(canvas);
-    drawP.world.drawData.onlyRenderLayerBeingEdited = false;
+    drawP.world.drawData.isSVGRender = false;
     drawP.world.main.takingScreenshot = false;
     drawP.world.main.transparentBackground = false;
     drawP.world.drawData.drawGrids = oldDrawGrids;

@@ -193,15 +193,20 @@ void DrawingProgramLayerListItem::get_used_resources(std::unordered_set<Networki
 
 void DrawingProgramLayerListItem::draw(SkCanvas* canvas, const DrawData& drawData) const {
     if(displayData->visible) {
-        SkPaint layerPaint;
-        layerPaint.setAlphaf(displayData->alpha);
-        layerPaint.setBlendMode(serialized_blend_mode_to_sk_blend_mode(displayData->blendMode));
-        canvas->saveLayer(nullptr, &layerPaint);
+        if(!drawData.isSVGRender) {
+            SkPaint layerPaint;
+            layerPaint.setAlphaf(displayData->alpha);
+            layerPaint.setBlendMode(serialized_blend_mode_to_sk_blend_mode(displayData->blendMode));
+            canvas->saveLayer(nullptr, &layerPaint);
+        }
+
         if(folderData)
             folderData->draw(canvas, drawData);
         else
             layerData->draw(canvas, drawData);
-        canvas->restore();
+
+        if(!drawData.isSVGRender)
+            canvas->restore();
     }
 }
 
