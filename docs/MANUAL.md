@@ -25,6 +25,9 @@
 	- The size slider on the right changes the size of the brush. All size properties for all tools are relative to the current zoom level
 - Eraser tool
 	- Erases complete objects when they are touched by the eraser. Can't erase portions of an object
+- Line tool
+	- Hold <kbd>LMB</kbd> and drag the mouse to place a straight line
+	- Hold <kbd>Shift</kbd> while creating the line to snap it to a set of common angles
 - Textbox tool
 	- Hold <kbd>LMB</kbd> and drag the mouse to place a textbox
 	- Hold <kbd>Shift</kbd> while creating the textbox to make the textbox a square
@@ -59,6 +62,12 @@
 - Color Select Tool (Eyedropper)
 	- Click anywhere on the canvas with this tool to copy the color of the cursor's position
     - You can choose to select either the stroke color, or fill color
+- Pan tool
+    - Hold <kbd>LMB</kbd> to move around the canvas
+    - There is a "Hold to Pan" keybind (set to <kbd>Space</kbd> by default) to temporarily switch to this tool
+- Zoom tool
+    - Hold <kbd>LMB</kbd> and move the mouse up to zoom in, or move it down to zoom out
+    - There is a "Hold to Zoom" keybind (set to <kbd>Z</kbd> by default) to temporarily switch to this tool
 ## Screenshots
 - Start taking a screenshot by going to Menu->Take Screenshot
 - Hold <kbd>LMB</kbd> and drag the mouse to select an area to take a screenshot of
@@ -70,8 +79,17 @@
 ## Bookmarks
 - You can open the bookmark window by clicking the bookmark icon on the very top right of the screen
 - Move your camera to the place you want to bookmark, give the bookmark a name in the given textbox, and press the + button next to the textbox
-- To jump to the bookmark later, open the bookmark window, and double click on the name of the bookmark you want to jump to in the list
-- To remove a bookmark, click the name of the bookmark in the list, and press the X button
+    - You can add a bookmark folder by pressing the folder button instead of the + button. Open/close the folder by pressing the arrow icon to the left of the folder, and drag bookmarks into the folder while it's open to place them in the folder.
+- To jump to the bookmark later, open the bookmark window, and double click on the name of the bookmark you want to jump to in the list (or press the arrow icon to the right of the bookmark)
+- To remove a bookmark, click the name of the bookmark in the list, and press the trash can icon to the right of the bookmark
+- Hold shift and click to select multiple bookmarks at once, or hold control and click to toggle the selection state of the bookmark. You can then hold <kbd>LMB</kbd> and move the mouse to move/sort the bookmarks
+## Layers
+- You can open the layer window by clicking the layer icon on the top right of the screen (left of the bookmark icon)
+- To create a layer, give it a name in the given textbox, and press the + button next to the textbox
+    - You can add a layer folder by pressing the folder button instead of the + button. Open/close the folder by pressing the arrow icon to the left of the folder, and drag layers into the folder while it's open to place them in the folder.
+- To set the layer to edit, double click it (or click the pencil icon to the right of the layer). The layer that is currently being edited has a pencil icon to the left of it, and anything you draw will be placed in that layer.
+- Select a layer by clicking it once. When it is selected, you can change its properties such as name, alpha, and blend mode (this is different from the "set to edit" mode)
+- Hold shift and click to select multiple layers at once, or hold control and click to toggle the selection state of the layer. You can then hold <kbd>LMB</kbd> and move the mouse to move/sort the layers
 ## Color Palettes
 - Click the color button on the left toolbar to open the color picker. The top color button, initially white, is for the brush color and outlines. The bottom color button, initially black, is for fill color (if applicable)
 - In the color picker window, you can use, create, and edit color palettes
