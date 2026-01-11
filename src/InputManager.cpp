@@ -148,6 +148,7 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
         validMimetypes.emplace("image/jpeg");
         validMimetypes.emplace("image/svg+xml");
         validMimetypes.emplace("image/webp");
+        validMimetypes.emplace("image/bmp");
     }
     size_t mimeTypeSize;
     char** mimeTypes = SDL_GetClipboardMimeTypes(&mimeTypeSize);
