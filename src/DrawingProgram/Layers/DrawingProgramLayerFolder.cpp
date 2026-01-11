@@ -13,10 +13,15 @@ void DrawingProgramLayerFolder::draw(SkCanvas* canvas, const DrawData& drawData)
 
 void DrawingProgramLayerFolder::set_component_list_callbacks(DrawingProgramLayerManager& layerMan) {
     folderList->set_insert_callback([&](auto& c) {
+        layerMan.drawP.drawCache.clear_own_cached_surfaces();
         c->obj->set_component_list_callbacks(layerMan);
     });
     folderList->set_erase_callback([&](auto& c) {
+        layerMan.drawP.drawCache.clear_own_cached_surfaces();
         c->obj->set_to_erase();
+    });
+    folderList->set_move_callback([&](auto& c, uint32_t oldPos) {
+        layerMan.drawP.drawCache.clear_own_cached_surfaces();
     });
     for(auto& listItem : *folderList)
         listItem.obj->set_component_list_callbacks(layerMan);
