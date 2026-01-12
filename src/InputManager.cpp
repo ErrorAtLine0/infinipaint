@@ -7,7 +7,7 @@
 
 #include <Helpers/Logger.hpp>
 
-#ifdef _WIN32_
+#ifdef _WIN32
     #include <include/core/SkStream.h>
     #include <include/encode/SkPngEncoder.h>
     #include "../deps/clip/clip.h"
@@ -186,7 +186,7 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
         for(size_t i = 0; i < mimeTypeSize; i++) {
             if(validMimetypes.contains(mimeTypes[i])) {
                 if(std::string(mimeTypes[i]) == "image/bmp") {
-#ifdef _WIN32_
+#ifdef _WIN32
                     std::vector<uint8_t> result;
                     try {
                         if(!clip::has(clip::image_format()))
