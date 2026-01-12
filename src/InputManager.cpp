@@ -209,11 +209,14 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
                                 if(cSurf) {
                                     SDL_LockSurface(cSurf);
                                     SkDynamicMemoryWStream out;
-                                    SkPngEncoder::Encode(&out, SkPixmap(SkImageInfo::Make(cSurf->w, cSurf->h, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType), cSurf->pixels, cSurf->pitch), {});
-                                    out.flush();
-                                    SDL_UnlockSurface(cSurf);
-                                    SDL_DestroySurface(cSurf);
-                                    result = out.detachAsVector();
+                                    if(SkPngEncoder::Encode(&out, SkPixmap(SkImageInfo::Make(cSurf->w, cSurf->h, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType), cSurf->pixels, cSurf->pitch), {})) {
+                                        out.flush();
+                                        SDL_UnlockSurface(cSurf);
+                                        SDL_DestroySurface(cSurf);
+                                        result = out.detachAsVector();
+                                    }
+                                    else
+                                        throw std::runtime_error("Could not encode image data to PNG");
                                 }
                                 else
                                     throw std::runtime_error("Bitmap could not be converted to new format");
