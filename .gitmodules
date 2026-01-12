@@ -1,3 +1,6 @@
 [submodule "deps/datachannel-wasm"]
 	path = deps/datachannel-wasm
 	url = https://github.com/paullouisageneau/datachannel-wasm.git
+[submodule "deps/clip"]
+	path = deps/clip
+	url = https://github.com/dacap/clip.git

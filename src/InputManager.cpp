@@ -5,6 +5,14 @@
 
 #include <optional>
 
+#include <Helpers/Logger.hpp>
+
+#ifdef _WIN32_
+    #include <include/core/SkStream.h>
+    #include <include/encode/SkPngEncoder.h>
+    #include "../deps/clip/clip.h"
+#endif
+
 #ifdef __EMSCRIPTEN__
 #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
 
@@ -148,17 +156,65 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
         validMimetypes.emplace("image/jpeg");
         validMimetypes.emplace("image/svg+xml");
         validMimetypes.emplace("image/webp");
+#ifdef _WIN32
         validMimetypes.emplace("image/bmp");
+#endif
     }
     size_t mimeTypeSize;
     char** mimeTypes = SDL_GetClipboardMimeTypes(&mimeTypeSize);
     if(mimeTypes) {
         for(size_t i = 0; i < mimeTypeSize; i++) {
             if(validMimetypes.contains(mimeTypes[i])) {
-                size_t clipboardDataSize;
-                void* clipboardData = SDL_GetClipboardData(mimeTypes[i], &clipboardDataSize);
-                callback(std::string_view(static_cast<char*>(clipboardData), clipboardDataSize));
-                SDL_free(clipboardData);
+                if(std::string(mimeTypes[i]) == "image/bmp") {
+#ifdef _WIN32_
+                    if(!clip::has(clip::image_format())) {
+                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Clipboard doesn't contain an image");
+                        return;
+                    }
+
+                    clip::image img;
+                    if(!clip::get_image(img)) {
+                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Error getting image from clipboard");
+                        return;
+                    }
+
+                    clip::image_spec spec = img.spec();
+
+                    if(spec.bits_per_pixel != 8) {
+                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Clipboard doesn't use 8 bits per pixel");
+                        return;
+                    }
+
+                    char* rawImageData = img.data();
+                    std::vector<uint8_t> rgbaImageData(spec.width * spec.height * 4);
+                    for(size_t y = 0; y < spec.height; y++) {
+                        for(size_t x = 0; x < spec.width; x++) {
+                            size_t rawDataIndex = x + y * spec.bytes_per_row;
+                            size_t rgbaDataIndex = x + y * spec.height;
+                            unsigned long rawDataAtIndex = *reinterpret_cast<unsigned long*>(rawImageData + rawDataIndex);
+                            rgbaImageData[rgbaDataIndex + 0] = (rawDataAtIndex & spec.red_mask) >> spec.red_shift;
+                            rgbaImageData[rgbaDataIndex + 1] = (rawDataAtIndex & spec.green_mask) >> spec.green_shift;
+                            rgbaImageData[rgbaDataIndex + 2] = (rawDataAtIndex & spec.blue_mask) >> spec.blue_mask;
+                            if(spec.alpha_mask == 0)
+                                rgbaImageData[rgbaDataIndex + 3] = 255;
+                            else
+                                rgbaImageData[rgbaDataIndex + 3] = (rawDataAtIndex & spec.alpha_mask) >> spec.alpha_mask;
+                        }
+                    }
+
+                    SkDynamicMemoryWStream out;
+                    SkPngEncoder::Encode(&out, SkPixmap(SkImageInfo::Make(spec.width, spec.height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType), rgbaImageData.data(), rgbaImageData.size()), {});
+                    out.flush();
+                    std::vector<uint8_t> result = out.detachAsVector();
+                    callback(std::string_view(reinterpret_cast<char*>(result.data()), result.size()));
+#endif
+                }
+                else {
+                    size_t clipboardDataSize;
+                    void* clipboardData = SDL_GetClipboardData(mimeTypes[i], &clipboardDataSize);
+                    callback(std::string_view(static_cast<char*>(clipboardData), clipboardDataSize));
+                    SDL_free(clipboardData);
+                }
                 return;
             }
         }

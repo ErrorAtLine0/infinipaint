@@ -314,6 +314,12 @@ target_link_libraries(infinipaint zstd::libzstd_static)
 
 if((NOT EMSCRIPTEN) AND WIN32)
     target_link_libraries(infinipaint dwrite)
+    # Clip library for retrieving images from windows clipboard
+    set(CLIP_EXAMPLES OFF CACHE BOOL "Compile clip examples")
+    set(CLIP_TESTS OFF CACHE BOOL "Compile clip tests")
+    set(CLIP_ENABLE_IMAGE ON CACHE BOOL "Compile with image clipboard support")
+    add_subdirectory(deps/clip)
+    target_link_libraries(infinipaint clip)
 endif()
 
 if(EMSCRIPTEN)
