@@ -215,8 +215,11 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
                                         SDL_DestroySurface(cSurf);
                                         result = out.detachAsVector();
                                     }
-                                    else
+                                    else {
+                                        SDL_UnlockSurface(cSurf);
+                                        SDL_DestroySurface(cSurf);
                                         throw std::runtime_error("Could not encode image data to PNG");
+                                    }
                                 }
                                 else
                                     throw std::runtime_error("Bitmap could not be converted to new format");
