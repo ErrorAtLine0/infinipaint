@@ -32,7 +32,11 @@ cpack -G DragNDrop
 ## Windows
 The windows version of this program is built on Visual Studio 2022's compiler.
 
-After cloning the repository, `cd` into the repo, then run:
+After cloning the repository, `cd` into the repo, then update the git submodules to get the `clip` library:
+```
+git submodule update --init --recursive
+```
+Then run:
 ```
 .\conan\export_libs.bat
 conan install . --build=missing -pr=conan/profiles/win-x86_64

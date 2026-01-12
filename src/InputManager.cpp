@@ -147,6 +147,26 @@ std::string InputManager::get_clipboard_str_SDL() {
     return toRet;
 }
 
+#ifdef _WIN32
+// From clip library example, useful for debugging
+void print_clip_image_spec(const clip::image_spec& spec) {
+  std::cout << "Image in clipboard "
+            << spec.width << "x" << spec.height
+            << " (" << spec.bits_per_pixel << "bpp)\n"
+            << "Format:" << "\n"
+            << std::hex
+            << "  Red   mask: " << spec.red_mask << "\n"
+            << "  Green mask: " << spec.green_mask << "\n"
+            << "  Blue  mask: " << spec.blue_mask << "\n"
+            << "  Alpha mask: " << spec.alpha_mask << "\n"
+            << std::dec
+            << "  Red   shift: " << spec.red_shift << "\n"
+            << "  Green shift: " << spec.green_shift << "\n"
+            << "  Blue  shift: " << spec.blue_shift << "\n"
+            << "  Alpha shift: " << spec.alpha_shift << "\n";
+}
+#endif
+
 void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback) {
 #ifndef __EMSCRIPTEN__
     static std::unordered_set<std::string> validMimetypes;
@@ -167,46 +187,51 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
             if(validMimetypes.contains(mimeTypes[i])) {
                 if(std::string(mimeTypes[i]) == "image/bmp") {
 #ifdef _WIN32_
-                    if(!clip::has(clip::image_format())) {
-                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Clipboard doesn't contain an image");
-                        return;
-                    }
-
-                    clip::image img;
-                    if(!clip::get_image(img)) {
-                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Error getting image from clipboard");
-                        return;
-                    }
-
-                    clip::image_spec spec = img.spec();
-
-                    if(spec.bits_per_pixel != 8) {
-                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Clipboard doesn't use 8 bits per pixel");
-                        return;
-                    }
-
-                    char* rawImageData = img.data();
-                    std::vector<uint8_t> rgbaImageData(spec.width * spec.height * 4);
-                    for(size_t y = 0; y < spec.height; y++) {
-                        for(size_t x = 0; x < spec.width; x++) {
-                            size_t rawDataIndex = x + y * spec.bytes_per_row;
-                            size_t rgbaDataIndex = x + y * spec.height;
-                            unsigned long rawDataAtIndex = *reinterpret_cast<unsigned long*>(rawImageData + rawDataIndex);
-                            rgbaImageData[rgbaDataIndex + 0] = (rawDataAtIndex & spec.red_mask) >> spec.red_shift;
-                            rgbaImageData[rgbaDataIndex + 1] = (rawDataAtIndex & spec.green_mask) >> spec.green_shift;
-                            rgbaImageData[rgbaDataIndex + 2] = (rawDataAtIndex & spec.blue_mask) >> spec.blue_mask;
-                            if(spec.alpha_mask == 0)
-                                rgbaImageData[rgbaDataIndex + 3] = 255;
+                    std::vector<uint8_t> result;
+                    try {
+                        if(!clip::has(clip::image_format()))
+                            throw std::runtime_error("Clipboard doesn't contain an image");
+    
+                        clip::image img;
+                        if(!clip::get_image(img))
+                            throw std::runtime_error("Error getting image from clipboard");
+    
+                        clip::image_spec spec = img.spec();
+                        
+                        SDL_PixelFormat pFormat = SDL_GetPixelFormatForMasks(spec.bits_per_pixel, spec.red_mask, spec.green_mask, spec.blue_mask, spec.alpha_mask);
+                        if(pFormat != SDL_PIXELFORMAT_UNKNOWN) {
+                            SDL_Surface* surfOriginal = SDL_CreateSurfaceFrom(spec.width, spec.height, pFormat, img.data(), spec.bytes_per_row);
+                            if(surfOriginal) {
+                                SDL_LockSurface(surfOriginal);
+                                SDL_Surface* cSurf = SDL_ConvertSurface(surfOriginal, SDL_PIXELFORMAT_RGBA32);
+                                SDL_UnlockSurface(surfOriginal);
+                                SDL_DestroySurface(surfOriginal);
+                                if(cSurf) {
+                                    SDL_LockSurface(cSurf);
+                                    SkDynamicMemoryWStream out;
+                                    SkPngEncoder::Encode(&out, SkPixmap(SkImageInfo::Make(cSurf->w, cSurf->h, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType), cSurf->pixels, cSurf->pitch), {});
+                                    out.flush();
+                                    SDL_UnlockSurface(cSurf);
+                                    SDL_DestroySurface(cSurf);
+                                    result = out.detachAsVector();
+                                }
+                                else
+                                    throw std::runtime_error("Bitmap could not be converted to new format");
+                            }
                             else
-                                rgbaImageData[rgbaDataIndex + 3] = (rawDataAtIndex & spec.alpha_mask) >> spec.alpha_mask;
+                                throw std::runtime_error("Bitmap could not be read into surface");
                         }
+                        else
+                            throw std::runtime_error("Bitmap format is unsupported");
                     }
-
-                    SkDynamicMemoryWStream out;
-                    SkPngEncoder::Encode(&out, SkPixmap(SkImageInfo::Make(spec.width, spec.height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType), rgbaImageData.data(), rgbaImageData.size()), {});
-                    out.flush();
-                    std::vector<uint8_t> result = out.detachAsVector();
-                    callback(std::string_view(reinterpret_cast<char*>(result.data()), result.size()));
+                    catch(const std::runtime_error& e) {
+                        Logger::get().log("INFO", std::string("[InputManager::get_clipboard_image_data_SDL] Error thrown: ") + e.what());
+                    }
+                    catch(...) {
+                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Unknown error thrown");
+                    }
+                    if(!result.empty())
+                        callback(std::string_view((char*)(result.data()), result.size())); // This part of the code should throw errors
 #endif
                 }
                 else {
