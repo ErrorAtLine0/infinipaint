@@ -433,7 +433,7 @@ void Toolbar::save_as_func() {
         optionsMenuOpen = true;
         optionsMenuType = SET_DOWNLOAD_NAME;
     #else
-        open_file_selector("Save", {{"Any File", "*"}, {"InfiniPaint Canvas", World::FILE_EXTENSION}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
+        open_file_selector("Save", {{"InfiniPaint Canvas", World::FILE_EXTENSION}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
             auto world = w.lock();
             if(world)
                 world->save_to_file(p);
@@ -1414,7 +1414,7 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
         }
     }, &uploadData);
 #else
-    open_file_selector("Open", {{"Any File", "*"}, {"InfiniPaint Canvas", World::FILE_EXTENSION}}, [&, isClient = isClient, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
+    open_file_selector("Open", {{"InfiniPaint Canvas", World::FILE_EXTENSION}, {"Any File", "*"}}, [&, isClient = isClient, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
         main.new_tab({
             .isClient = isClient,
             .filePathSource = p,
