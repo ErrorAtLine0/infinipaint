@@ -111,7 +111,9 @@ void DrawCamera::update_main(World& w) {
 
     }
     else {
-        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM);
+        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.input.pen.buttons[w.main.toolbar.tabletOptions.middleClickButton].held && w.main.toolbar.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
+                                    (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
+                                    (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
 
         if(newIsAccurateZooming && !isAccurateZooming) {
             startZoomMousePos = w.get_mouse_world_pos();

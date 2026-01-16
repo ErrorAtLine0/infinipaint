@@ -245,16 +245,6 @@ void DrawingProgram::update() {
     tool_temporary_switch_update();
 
     controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;
-    controls.leftClick = controls.cursorHoveringOverCanvas && world.main.input.mouse.leftClicks;
-    if(controls.leftClick) {
-        controls.leftClickHeld = true;
-        world.main.toolbar.rightClickPopupLocation = std::nullopt;
-    }
-    if(controls.leftClickHeld && !world.main.input.mouse.leftDown) {
-        controls.leftClick = false;
-        controls.leftClickHeld = false;
-        controls.leftClickReleased = true;
-    }
 
     controls.middleClick = controls.cursorHoveringOverCanvas && (world.main.input.mouse.middleClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].pressed);
     bool middleHeld = world.main.input.mouse.middleDown || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].held;
@@ -266,6 +256,18 @@ void DrawingProgram::update() {
         controls.middleClick = false;
         controls.middleClickHeld = false;
         controls.middleClickReleased = true;
+    }
+
+    // Left click will be ignored if middle click is held (and left click held state will be gone once middle click is pressed)
+    controls.leftClick = controls.cursorHoveringOverCanvas && world.main.input.mouse.leftClicks && !controls.middleClickHeld;
+    if(controls.leftClick) {
+        controls.leftClickHeld = true;
+        world.main.toolbar.rightClickPopupLocation = std::nullopt;
+    }
+    if(controls.leftClickHeld && (!world.main.input.mouse.leftDown || controls.middleClickHeld)) {
+        controls.leftClick = false;
+        controls.leftClickHeld = false;
+        controls.leftClickReleased = true;
     }
 
     if(controls.cursorHoveringOverCanvas && (world.main.input.mouse.rightClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.rightClickButton].pressed)) {

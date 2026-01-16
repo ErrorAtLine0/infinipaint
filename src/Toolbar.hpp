@@ -77,6 +77,7 @@ class Toolbar {
             uint8_t rightClickButton = 2;
             bool ignoreMouseMovementWhenPenInProximity = false;
             float brushMinimumSize = 0.0f;
+            bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;
 
         Vector4f* colorLeft = nullptr;

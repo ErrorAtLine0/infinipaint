@@ -276,6 +276,7 @@ nlohmann::json Toolbar::get_config_json() {
     tablet["rightClickButton"] = tabletOptions.rightClickButton;
     tablet["ignoreMouseMovementWhenPenInProximity"] = tabletOptions.ignoreMouseMovementWhenPenInProximity;
     tablet["brushMinimumSize"] = tabletOptions.brushMinimumSize;
+    tablet["zoomWhilePenDownAndButtonHeld"] = tabletOptions.zoomWhilePenDownAndButtonHeld;
 
     toRet["tablet"] = tablet;
 
@@ -338,6 +339,7 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);} catch(...) {}
     try{j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);} catch(...) {}
     try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
+    try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
 
     main.update_display_names();
 }
@@ -1583,6 +1585,7 @@ void Toolbar::options_menu() {
                                         gui.input_scalar_field<uint8_t>("middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
                                         gui.input_scalar_field<uint8_t>("right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
                                         gui.slider_scalar_field("tablet brush minimum size", "Brush relative minimum size", &tabletOptions.brushMinimumSize, 0.0f, 1.0f, 3);
+                                        gui.checkbox_field("tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &tabletOptions.zoomWhilePenDownAndButtonHeld);
                                         #ifdef _WIN32
                                             gui.checkbox_field("mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
                                         #endif
