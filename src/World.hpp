@@ -89,6 +89,7 @@ class World {
         void scale_up(const WorldScalar& scaleUpAmount);
         void scale_up_step();
 
+        bool hasUnsavedLocalChanges = false;
         bool setToDestroy = false;
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
 

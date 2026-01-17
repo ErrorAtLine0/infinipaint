@@ -38,6 +38,8 @@ class WorldUndoManager {
         bool fill_netid_list_from_undoid_list(std::vector<NetworkingObjects::NetObjID>& netIDList, const std::vector<UndoObjectID>& undoIDList);
         std::vector<std::string> get_front_undo_queue_names(unsigned count);
 
+        void set_save_action();
+
         World& world;
     private:
         void push_undo(std::unique_ptr<WorldUndoAction> undoAction);
@@ -48,6 +50,10 @@ class WorldUndoManager {
         std::unordered_map<NetworkingObjects::NetObjID, UndoObjectID> netIDToUndoID;
         std::deque<std::unique_ptr<WorldUndoAction>> undoQueue;
         std::deque<std::unique_ptr<WorldUndoAction>> redoQueue;
+
+        std::optional<WorldUndoAction*> undoActionSavedAt = nullptr;
+
+        void set_world_has_unsaved_local_changes();
 
         UndoObjectID lastUndoObjectID = 0;
 };

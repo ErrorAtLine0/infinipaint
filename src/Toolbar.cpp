@@ -485,7 +485,7 @@ void Toolbar::top_toolbar() {
         }
         std::vector<std::pair<std::string, std::string>> tabNames;
         for(size_t i = 0; i < main.worlds.size(); i++)
-            tabNames.emplace_back(main.worlds[i]->netObjMan.is_connected() ? "data/icons/network.svg" : "", main.worlds[i]->name);
+            tabNames.emplace_back(main.worlds[i]->netObjMan.is_connected() ? "data/icons/network.svg" : "", main.worlds[i]->name + (main.worlds[i]->hasUnsavedLocalChanges ? "*" : ""));
         std::optional<size_t> closedTab;
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
         if(!main.world->clientStillConnecting) {

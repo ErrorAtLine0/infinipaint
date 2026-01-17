@@ -1,4 +1,5 @@
 #include "WorldUndoManager.hpp"
+#include "World.hpp"
 
 void WorldUndoAction::scale_up(const WorldScalar& scaleAmount) {}
 WorldUndoAction::~WorldUndoAction() {}
@@ -18,17 +19,23 @@ bool WorldUndoManager::can_redo() {
 void WorldUndoManager::push(std::unique_ptr<WorldUndoAction> undoAction) {
     push_undo(std::move(undoAction));
     redoQueue.clear();
+    world.hasUnsavedLocalChanges = true;
 }
 
 void WorldUndoManager::push_undo(std::unique_ptr<WorldUndoAction> undoAction) {
-    if(undoQueue.size() == UNDO_QUEUE_LIMIT)
+    if(undoQueue.size() == UNDO_QUEUE_LIMIT) {
+        if(undoActionSavedAt.has_value()) {
+            if(undoQueue.front().get() == undoActionSavedAt.value())
+                undoActionSavedAt = nullptr;
+            else if(undoActionSavedAt.value() == nullptr)
+                undoActionSavedAt = std::nullopt;
+        }
         undoQueue.pop_front();
+    }
     undoQueue.emplace_back(std::move(undoAction));
 }
 
 void WorldUndoManager::push_redo(std::unique_ptr<WorldUndoAction> undoAction) {
-    if(redoQueue.size() == UNDO_QUEUE_LIMIT)
-        redoQueue.pop_front();
     redoQueue.emplace_back(std::move(undoAction));
 }
 
@@ -41,6 +48,8 @@ void WorldUndoManager::undo() {
         push_redo(std::move(undoQueue.back()));
         undoQueue.pop_back();
     }
+
+    set_world_has_unsaved_local_changes();
 }
 
 void WorldUndoManager::redo() {
@@ -52,11 +61,14 @@ void WorldUndoManager::redo() {
         push_undo(std::move(redoQueue.back()));
         redoQueue.pop_back();
     }
+
+    set_world_has_unsaved_local_changes();
 }
 
 void WorldUndoManager::clear() {
     redoQueue.clear();
     undoQueue.clear();
+    undoActionSavedAt = std::nullopt;
 }
 
 void WorldUndoManager::scale_up(const WorldScalar& scaleAmount) {
@@ -141,4 +153,27 @@ std::vector<std::string> WorldUndoManager::get_front_undo_queue_names(unsigned c
             return toRet;
     }
     return toRet;
+}
+
+void WorldUndoManager::set_save_action() {
+    if(undoQueue.empty())
+        undoActionSavedAt = nullptr;
+    else
+        undoActionSavedAt = undoQueue.back().get();
+    world.hasUnsavedLocalChanges = false;
+}
+
+void WorldUndoManager::set_world_has_unsaved_local_changes() {
+    // Saved action value meanings:
+    // - a pointer to an action: The file was saved when that undo action was the last one in place
+    // - nullptr: The file was saved when undoQueue was empty
+    // - nullopt: The undo action the file was saved at was lost
+    if(!undoActionSavedAt.has_value())
+        world.hasUnsavedLocalChanges = true;
+    else {
+        if(undoQueue.empty())
+            world.hasUnsavedLocalChanges = undoActionSavedAt.value() != nullptr;
+        else
+            world.hasUnsavedLocalChanges = undoActionSavedAt.value() != undoQueue.back().get();
+    }
 }

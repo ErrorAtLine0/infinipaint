@@ -404,6 +404,7 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
         #endif
 
         Logger::get().log("USERINFO", "File saved");
+        undo.set_save_action();
     }
     catch(const std::exception& e) {
         Logger::get().log("WORLDFATAL", std::string("Save error: ") + e.what());
