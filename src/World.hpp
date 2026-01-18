@@ -72,6 +72,7 @@ class World {
 
         bool clientStillConnecting = false;
 
+        void autosave_to_directory(const std::filesystem::path& directoryToSaveAt);
         void save_to_file(const std::filesystem::path& filePathToSaveAt);
         void load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer);
 
@@ -88,6 +89,8 @@ class World {
 
         void scale_up(const WorldScalar& scaleUpAmount);
         void scale_up_step();
+
+        bool should_ask_before_closing();
 
         bool hasUnsavedLocalChanges = false;
         bool setToDestroy = false;

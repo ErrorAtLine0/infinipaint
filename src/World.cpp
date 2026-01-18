@@ -13,6 +13,7 @@
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
 #include "CommandList.hpp"
+#include "Helpers/StringHelpers.hpp"
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
 #include "Toolbar.hpp"
@@ -275,42 +276,10 @@ void World::set_name(const std::string& n) {
 }
 
 void World::ensure_display_name_unique(std::string& displayName) {
-    for(;;) {
-        bool isUnique = true;
-        for(auto& client : clients->get_data()) {
-            if(client->get_display_name() == displayName) {
-                size_t leftParenthesisIndex = displayName.find_last_of('(');
-                size_t rightParenthesisIndex = displayName.find_last_of(')');
-                bool failToIncrement = true;
-                if(leftParenthesisIndex != std::string::npos && rightParenthesisIndex != std::string::npos && leftParenthesisIndex < rightParenthesisIndex) {
-                    std::string numStr = displayName.substr(leftParenthesisIndex + 1, rightParenthesisIndex - leftParenthesisIndex - 1);
-                    bool isAllDigits = true;
-                    for(char c : numStr) {
-                        if(!isdigit(c)) {
-                            isAllDigits = false;
-                            break;
-                        }
-                    }
-                    if(isAllDigits) {
-                        try {
-                            int s = std::stoi(numStr);
-                            s++;
-                            displayName = displayName.substr(0, leftParenthesisIndex);
-                            displayName += "(" + std::to_string(s) + ")";
-                            failToIncrement = false;
-                        }
-                        catch(...) {}
-                    }
-                }
-                if(failToIncrement)
-                    displayName += " (2)";
-                isUnique = false;
-                break;
-            }
-        }
-        if(isUnique)
-            break;
-    }
+    std::vector<std::string> strList;
+    for(auto& client : clients->get_data())
+        strList.emplace_back(client->get_display_name());
+    displayName = ensure_string_unique(strList, displayName);
 }
 
 void World::start_hosting(const std::string& initNetSource, const std::string& serverLocalID) {
@@ -366,6 +335,16 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
         idToErase.data = client->customID;
         clients->erase(clients, idToErase);
     });
+}
+
+void World::autosave_to_directory(const std::filesystem::path& directoryToSaveAt) {
+    std::vector<std::string> strList;
+    for(auto& entry : std::filesystem::directory_iterator(directoryToSaveAt)) {
+        if(entry.path().has_stem() && entry.path().has_extension() && entry.path().extension() == ("." + FILE_EXTENSION))
+            strList.emplace_back(entry.path().stem());
+    }
+    std::string nameToSaveUnder = ensure_string_unique(strList, name);
+    save_to_file(directoryToSaveAt / std::filesystem::path(nameToSaveUnder + "." + FILE_EXTENSION));
 }
 
 void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
@@ -503,6 +482,20 @@ void World::scale_up(const WorldScalar& scaleUpAmount) {
     // if this client is the one responsible for the scale up
     drawProg.scale_up(scaleUpAmount);
     undo.scale_up(scaleUpAmount);
+}
+
+bool World::should_ask_before_closing() {
+    // If it's a client that didn't save to a file previously, we can ignore asking before quitting (probably don't intend to save anyway)
+    // If it's a server or a client, and the previous statement is false, we should always ask before quitting because the data could be modified by someone on the network
+    // If it's a local file, ask before quitting if we detect any local changes
+    // If on web version, don't ask before closing
+#ifdef __EMCSRIPTEN__
+    return false;
+#else
+    if(netClient || netServer)
+        return !(netClient && filePath.empty());
+    return hasUnsavedLocalChanges;
+#endif
 }
 
 #ifdef ENABLE_ORDERED_LIST_TEST

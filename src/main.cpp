@@ -437,6 +437,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.m->logFile = &mS.logFile;
         mS.m->configPath = mS.configPath;
         mS.m->homePath = mS.homePath;
+#ifndef __EMSCRIPTEN__
+        mS.m->documentsPath = sago::getDocumentsFolder();
+        if(!std::filesystem::exists(mS.m->documentsPath) || !std::filesystem::is_directory(mS.m->documentsPath)) {
+            mS.m->documentsPath = sago::getDesktopFolder();
+            if(!std::filesystem::exists(mS.m->documentsPath) || !std::filesystem::is_directory(mS.m->documentsPath)) {
+                mS.m->documentsPath = mS.m->configPath;
+            }
+        }
+#endif
         mS.m->window.sdlWindow = mS.window;
         mS.m->update_scale_and_density();
 #ifdef __EMSCRIPTEN__
@@ -626,10 +635,14 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 #endif
         switch(event->type) {
             case SDL_EVENT_QUIT:
-                return SDL_APP_SUCCESS;
-            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                if(event->window.windowID == SDL_GetWindowID(mS.window))
+                if(mS.m->app_close_requested())
                     return SDL_APP_SUCCESS;
+                break;
+            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                if(event->window.windowID == SDL_GetWindowID(mS.window)) {
+                    if(mS.m->app_close_requested())
+                        return SDL_APP_SUCCESS;
+                }
                 break;
             case SDL_EVENT_WINDOW_MOVED:
                 mS.m->window.pos.x() = event->window.data1;

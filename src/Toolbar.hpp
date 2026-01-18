@@ -90,6 +90,8 @@ class Toolbar {
         bool flipZoomToolDirection = false;
 
         float final_gui_scale();
+
+        bool app_close_requested();
     private:
         void calculate_final_gui_scale();
         float final_gui_scale_not_fit();
@@ -117,6 +119,17 @@ class Toolbar {
         void web_version_welcome();
         void still_connecting_center_message();
         void no_layers_being_edited_message();
+        void close_popup_gui();
+        void add_world_to_close_popup_data(const std::shared_ptr<World>& w);
+
+        struct ClosePopupData {
+            struct CloseWorldData {
+                std::weak_ptr<World> w;
+                bool setToSave = true;
+            };
+            std::vector<CloseWorldData> worldsToClose; // Using a vector to ensure that the worlds are in proper order
+            bool closeAppWhenDone = false;
+        } closePopupData;
 
         #ifndef __EMSCRIPTEN__
         void update_notification_gui();

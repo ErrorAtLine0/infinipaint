@@ -80,10 +80,8 @@ void MainProgram::update() {
         return false;
     });
 
-    if(setTabToClose) {
-        worlds.erase(worlds.begin() + setTabToClose.value());
-        setTabToClose.reset();
-    }
+    for(auto& s : setTabsToClose)
+        std::erase(worlds, s.lock());
 
     std::erase_if(worlds, [&](const std::shared_ptr<World>& w) {
         return w->setToDestroy;
@@ -129,6 +127,10 @@ void MainProgram::update() {
     return;
 }
 
+bool MainProgram::app_close_requested() {
+    return toolbar.app_close_requested();
+}
+
 void MainProgram::update_display_names() {
     for(auto& w : worlds) {
         if(!w->netObjMan.is_connected())
@@ -157,8 +159,8 @@ void MainProgram::new_tab_open() {
     worldIndex = worlds.size() - 1;
 }
 
-void MainProgram::set_tab_to_close(size_t tabToClose) {
-    setTabToClose = tabToClose;
+void MainProgram::set_tab_to_close(const std::weak_ptr<World>& tabToClose) {
+    setTabsToClose.emplace_back(tabToClose);
 }
 
 void MainProgram::init_net_library() {

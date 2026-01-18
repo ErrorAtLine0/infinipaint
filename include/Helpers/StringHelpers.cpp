@@ -82,3 +82,43 @@ std::string remove_carriage_returns_from_str(std::string s) {
     std::erase(s, '\r');
     return s;
 }
+
+std::string ensure_string_unique(const std::vector<std::string>& stringList, std::string str) {
+    for(;;) {
+        bool isUnique = true;
+        for(const std::string& strToCheckAgainst : stringList) {
+            if(strToCheckAgainst == str) {
+                size_t leftParenthesisIndex = str.find_last_of('(');
+                size_t rightParenthesisIndex = str.find_last_of(')');
+                bool failToIncrement = true;
+                if(leftParenthesisIndex != std::string::npos && rightParenthesisIndex != std::string::npos && leftParenthesisIndex < rightParenthesisIndex) {
+                    std::string numStr = str.substr(leftParenthesisIndex + 1, rightParenthesisIndex - leftParenthesisIndex - 1);
+                    bool isAllDigits = true;
+                    for(char c : numStr) {
+                        if(!isdigit(c)) {
+                            isAllDigits = false;
+                            break;
+                        }
+                    }
+                    if(isAllDigits) {
+                        try {
+                            int s = std::stoi(numStr);
+                            s++;
+                            str = str.substr(0, leftParenthesisIndex);
+                            str += "(" + std::to_string(s) + ")";
+                            failToIncrement = false;
+                        }
+                        catch(...) {}
+                    }
+                }
+                if(failToIncrement)
+                    str += " (2)";
+                isUnique = false;
+                break;
+            }
+        }
+        if(isUnique)
+            break;
+    }
+    return str;
+}

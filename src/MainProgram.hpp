@@ -88,7 +88,7 @@ class MainProgram {
         void early_destroy();
 
         void new_tab(const World::OpenWorldInfo& tabInfo, bool createSameThread = false);
-        void set_tab_to_close(size_t tabToClose);
+        void set_tab_to_close(const std::weak_ptr<World>& tabToClose);
         bool network_being_used();
         bool net_server_hosted();
         void update_display_names();
@@ -100,9 +100,11 @@ class MainProgram {
         void set_vsync_value(int vsyncValue);
         void update_scale_and_density();
         float get_scale_and_density_factor_gui();
+        bool app_close_requested();
 
         std::filesystem::path homePath;
         std::filesystem::path configPath;
+        std::filesystem::path documentsPath;
 
         bool drawGui = true;
         bool takingScreenshot = false;
@@ -121,7 +123,7 @@ class MainProgram {
         std::atomic<bool> tabSetToOpen = false;
         World::OpenWorldInfo newTabToOpenInfo;
 
-        std::optional<size_t> setTabToClose;
+        std::vector<std::weak_ptr<World>> setTabsToClose;
 
         std::string gen_random_display_name();
 

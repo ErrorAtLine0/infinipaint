@@ -375,6 +375,8 @@ void Toolbar::update() {
             top_toolbar();
             if(!main.world->clientStillConnecting)
                 drawing_program_gui();
+            if(!closePopupData.worldsToClose.empty())
+                close_popup_gui();
             if(viewWebVersionWelcome)
                 web_version_welcome();
 #ifndef __EMSCRIPTEN__
@@ -423,11 +425,110 @@ void Toolbar::update() {
     calculate_final_gui_scale();
 }
 
+bool Toolbar::app_close_requested() {
+    for(auto& w : main.worlds) {
+        if(w->should_ask_before_closing())
+            add_world_to_close_popup_data(w);
+    }
+    closePopupData.closeAppWhenDone = true;
+    return closePopupData.worldsToClose.empty();
+}
+
+void Toolbar::add_world_to_close_popup_data(const std::shared_ptr<World>& w) {
+    auto it = std::find_if(closePopupData.worldsToClose.begin(), closePopupData.worldsToClose.end(), [&](auto& wStruct) {
+        return wStruct.w.lock() == w;
+    });
+    if(it == closePopupData.worldsToClose.end())
+        closePopupData.worldsToClose.emplace_back(w, true);
+}
+
+void Toolbar::close_popup_gui() {
+    std::erase_if(closePopupData.worldsToClose, [](auto& wPair) {
+        return wPair.w.expired();
+    });
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+            .childGap = io->theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        },
+        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    }) {
+        gui.obstructing_window();
+        gui.push_id("Close single file popup gui");
+        gui.text_label("Files may contain unsaved changes");
+        size_t i = 0;
+        gui.push_id("File list");
+        for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+            auto wLock = w.lock();
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                    .childGap = io->theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2),
+                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+            }) {
+                gui.push_id(i);
+                gui.checkbox("set to save checkbox", &setToSave);
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                        .childGap = 0,
+                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    }
+                }) {
+                    gui.text_label(wLock->name);
+                    gui.text_label_light(wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
+                }
+                gui.pop_id();
+            }
+            ++i;
+        }
+        gui.pop_id();
+        if(gui.text_button_wide("Save", "Save")) {
+            for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+                auto wLock = w.lock();
+                if(setToSave) {
+                    if(wLock->filePath.empty())
+                        wLock->autosave_to_directory(main.documentsPath);
+                    else
+                        wLock->save_to_file(wLock->filePath);
+                }
+                main.set_tab_to_close(w);
+            }
+            closePopupData.worldsToClose.clear();
+            if(closePopupData.closeAppWhenDone)
+                main.setToQuit = true;
+        }
+        if(gui.text_button_wide("Discard All", "Discard All")) {
+            for(auto& [w, setToSave] : closePopupData.worldsToClose)
+                main.set_tab_to_close(w);
+            closePopupData.worldsToClose.clear();
+            if(closePopupData.closeAppWhenDone)
+                main.setToQuit = true;
+        }
+        if(gui.text_button_wide("Cancel", "Cancel")) {
+            closePopupData.worldsToClose.clear();
+            closePopupData.closeAppWhenDone = false;
+        }
+        gui.pop_id();
+    }
+}
+
 void Toolbar::save_func() {
     if(main.world->filePath == std::filesystem::path())
         save_as_func();
     else
-        main.world->save_to_file(main.world->filePath.string());
+        main.world->save_to_file(main.world->filePath);
 }
 
 void Toolbar::save_as_func() {
@@ -484,10 +585,22 @@ void Toolbar::top_toolbar() {
             }
         }
         std::vector<std::pair<std::string, std::string>> tabNames;
-        for(size_t i = 0; i < main.worlds.size(); i++)
-            tabNames.emplace_back(main.worlds[i]->netObjMan.is_connected() ? "data/icons/network.svg" : "", main.worlds[i]->name + (main.worlds[i]->hasUnsavedLocalChanges ? "*" : ""));
+        for(size_t i = 0; i < main.worlds.size(); i++) {
+            auto& w = main.worlds[i];
+            bool shouldAddStarNextToName = w->should_ask_before_closing() && !w->netServer && !w->netClient;
+            tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
+        }
+
         std::optional<size_t> closedTab;
         gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
+        if(closedTab) {
+            auto& closedWorldPtr = main.worlds[closedTab.value()];
+            if(closedWorldPtr->should_ask_before_closing())
+                add_world_to_close_popup_data(closedWorldPtr);
+            else
+                main.set_tab_to_close(closedWorldPtr);
+        }
+
         if(!main.world->clientStillConnecting) {
             if(main.world->netObjMan.is_connected() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
                 playerMenuOpen = !playerMenuOpen;
@@ -524,9 +637,6 @@ void Toolbar::top_toolbar() {
                 }
             }
 
-
-            if(closedTab)
-                main.set_tab_to_close(closedTab.value());
             if(gridMenu.popupOpen)
                 grid_menu(gridMenuPopUpJustOpen);
             if(bookmarkMenuPopupOpen)

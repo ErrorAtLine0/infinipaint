@@ -12,3 +12,4 @@ std::string byte_vector_to_hex_str(const std::vector<uint8_t>& byteVec);
 std::string read_file_to_string(const std::filesystem::path& filePath);
 bool is_valid_http_url(const std::string& str);
 std::string remove_carriage_returns_from_str(std::string s);
+std::string ensure_string_unique(const std::vector<std::string>& stringList, std::string str);
