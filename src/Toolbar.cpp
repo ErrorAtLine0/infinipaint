@@ -448,7 +448,7 @@ void Toolbar::close_popup_gui() {
     });
     CLAY_AUTO_ID({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -461,39 +461,47 @@ void Toolbar::close_popup_gui() {
         gui.obstructing_window();
         gui.push_id("Close single file popup gui");
         gui.text_label("Files may contain unsaved changes");
-        size_t i = 0;
-        gui.push_id("File list");
-        for(auto& [w, setToSave] : closePopupData.worldsToClose) {
-            auto wLock = w.lock();
+        gui.scroll_bar_area("close file popup gui scroll area", false, [&](float, float, float &) {
             CLAY_AUTO_ID({
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
                     .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-            }) {
-                gui.push_id(i);
-                gui.checkbox("set to save checkbox", &setToSave);
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                        .childGap = 0,
-                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-                    }
-                }) {
-                    gui.text_label(wLock->name);
-                    gui.text_label_light(wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
                 }
-                gui.pop_id();
+            }) {
+                size_t i = 0;
+                for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+                    auto wLock = w.lock();
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                            .childGap = io->theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+                    }) {
+                        gui.push_id(i);
+                        gui.checkbox("set to save checkbox", &setToSave);
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                                .childGap = 0,
+                                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                .layoutDirection = CLAY_TOP_TO_BOTTOM
+                            }
+                        }) {
+                            gui.text_label(wLock->name);
+                            gui.text_label_light(wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
+                        }
+                        gui.pop_id();
+                    }
+                    ++i;
+                }
             }
-            ++i;
-        }
-        gui.pop_id();
+        });
         if(gui.text_button_wide("Save", "Save")) {
             for(auto& [w, setToSave] : closePopupData.worldsToClose) {
                 auto wLock = w.lock();
@@ -726,8 +734,10 @@ void Toolbar::top_toolbar() {
                     optionsMenuType = ABOUT_MENU;
                 }
                 #ifndef __EMSCRIPTEN__
-                    if(gui.text_button_left_transparent("quit button", "Quit"))
-                        main.setToQuit = true;
+                    if(gui.text_button_left_transparent("quit button", "Quit")) {
+                        if(main.app_close_requested())
+                            main.setToQuit = true;
+                    }
                 #endif
                 if(io->mouse.leftClick && !menuPopUpJustOpen)
                     menuPopUpOpen = false;
