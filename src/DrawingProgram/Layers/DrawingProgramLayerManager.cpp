@@ -136,8 +136,8 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
             std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, NetObjOwnerPtr<CanvasComponentContainer>>> toInsert;
             auto insertIt = beginIfTrueEndIfFalse ? components->begin() : components->end();
             for(auto& e : erasedObjects) {
-                e.reassign_ids();
                 toInsert.emplace_back(insertIt, std::move(e));
+                toInsert.back().second.reassign_ids();
             }
             components->insert_ordered_list_and_send_create(components, toInsert);
         };
@@ -200,8 +200,10 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                         }
                         components->erase_list(components, toErase, &erasedObjs);
                         std::vector<NetObjOrderedListIterator<CanvasComponentContainer>> insertIteratorList = components->at_ordered_indices(*moveData.oldPos);
-                        for(uint32_t i = 0; i < toErase.size(); i++)
+                        for(uint32_t i = 0; i < toErase.size(); i++) {
                             toInsert.emplace_back(insertIteratorList[i], std::move(erasedObjs[i]));
+                            toInsert.back().second.reassign_ids();
+                        }
                         components->insert_ordered_list_and_send_create(components, toInsert);
                         *moveData.oldPos = newPos;
                     }
