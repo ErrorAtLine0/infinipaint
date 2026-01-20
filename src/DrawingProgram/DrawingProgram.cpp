@@ -186,6 +186,14 @@ bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
                 selection.delete_all();
                 shouldClose = true;
             }
+            if(t.gui.text_button_left_transparent("Bring to front of layer", "Bring to front of layer")) {
+                selection.push_selection_to_front();
+                shouldClose = true;
+            }
+            if(t.gui.text_button_left_transparent("Send to back of layer", "Send to back of layer")) {
+                selection.push_selection_to_back();
+                shouldClose = true;
+            }
         }
     });
     return !shouldClose;

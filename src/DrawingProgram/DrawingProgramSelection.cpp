@@ -369,6 +369,18 @@ void DrawingProgramSelection::deselect_all() {
     }
 }
 
+void DrawingProgramSelection::push_selection_to_front() {
+    auto selectedVec = selectedSet;
+    deselect_all();
+    drawP.layerMan.push_components_to(selectedVec, false);
+}
+
+void DrawingProgramSelection::push_selection_to_back() {
+    auto selectedVec = selectedSet;
+    deselect_all();
+    drawP.layerMan.push_components_to(selectedVec, true);
+}
+
 void DrawingProgramSelection::delete_all() {
     if(is_something_selected()) {
         auto selectedSetTemp = selectedSet;

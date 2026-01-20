@@ -21,6 +21,8 @@ class DrawingProgramSelection {
         void paste_clipboard(Vector2f pasteScreenPos);
         void paste_image(Vector2f pasteScreenPos);
         std::unordered_set<CanvasComponentContainer::ObjInfo*> get_selection_as_set();
+        void push_selection_to_front();
+        void push_selection_to_back();
         void delete_all();
         void selection_to_clipboard();
         CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);

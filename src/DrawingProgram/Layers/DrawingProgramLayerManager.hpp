@@ -46,6 +46,7 @@ class DrawingProgramLayerManager {
         }
         uint32_t edited_layer_component_count();
         CanvasComponentContainer::ObjInfoIterator get_edited_layer_end_iterator();
+        void push_components_to(const std::vector<CanvasComponentContainer::ObjInfo*>& objs, bool beginIfTrueEndIfFalse);
         bool component_passes_layer_selector(CanvasComponentContainer::ObjInfo* c, LayerSelector layerSelector);
         void disable_add_to_cache_block(const std::function<void()>& toRun);
         void disable_commit_update_block(const std::function<void()>& toRun);
