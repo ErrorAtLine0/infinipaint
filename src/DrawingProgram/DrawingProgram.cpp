@@ -604,8 +604,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
     else {
         canvas->saveLayer(nullptr, nullptr);
             canvas->clear(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
-            drawCache.refresh_all_draw_cache(drawData);
-            drawCache.draw_components_to_canvas(canvas, drawData, {});
+            drawCache.update_and_draw_cached_canvas(canvas, drawData);
             canvas->saveLayer(nullptr, nullptr);
                 selection.draw_components(canvas, drawData);
             canvas->restore();

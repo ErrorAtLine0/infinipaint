@@ -12,6 +12,7 @@
 #endif
 
 std::unordered_map<std::shared_ptr<DrawingProgramCacheBVHNode>, DrawingProgramCache::NodeCache> DrawingProgramCache::nodeCacheMap;
+DrawingProgramCache::WindowCache DrawingProgramCache::windowCache;
 
 DrawingProgramCache::DrawingProgramCache(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -44,6 +45,14 @@ void DrawingProgramCache::invalidate_cache_at_aabb(const SCollision::AABB<WorldS
                 nodeCache.invalidBounds = aabb;
         }
     }
+    if(SCollision::collide(aabb, drawP.world.drawData.cam.viewingAreaGenerousCollider)) {
+        if(windowCache.invalidBounds.has_value()) {
+            auto& iBounds = windowCache.invalidBounds.value();
+            iBounds.include_aabb_in_bounds(aabb);
+        }
+        else
+            windowCache.invalidBounds = aabb;
+    }
 }
 
 bool DrawingProgramCache::should_rebuild() const {
@@ -72,6 +81,8 @@ void DrawingProgramCache::clear_own_cached_surfaces() {
     std::erase_if(nodeCacheMap, [&](auto& nodeCachePair) {
         return nodeCachePair.second.attachedDrawingProgramCache == this;
     });
+    if(windowCache.attachedDrawingProgramCache == this)
+        windowCache.attachedDrawingProgramCache = nullptr;
 }
 
 CanvasComponentContainer::ObjInfo* DrawingProgramCache::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
@@ -301,6 +312,77 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     }
 
     nodeCacheMap.emplace(bvhNode, nodeCache); // Set the nodeCache after rendering is done, so that the draw function doesnt assume we have this node cached
+}
+
+void DrawingProgramCache::set_clear_window_cache() {
+    windowCache.attachedDrawingProgramCache = nullptr;
+}
+
+void DrawingProgramCache::allocate_window_cache_area() {
+    const Vector2i& windowSize = drawP.world.main.window.size;
+    #ifdef USE_BACKEND_OPENGLES_3_0
+        SkImageInfo imgInfo = SkImageInfo::Make(windowSize.x(), windowSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    #else
+        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(windowSize.x(), windowSize.y());
+    #endif
+    #ifdef USE_SKIA_BACKEND_GRAPHITE
+        windowCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
+    #elif USE_SKIA_BACKEND_GANESH
+        windowCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
+    #endif
+
+    if(!windowCache.surface)
+        throw std::runtime_error("[DrawingProgramCache::allocate_window_cache_area] Could not make cache surface");
+    windowCache.size = windowSize;
+}
+
+void DrawingProgramCache::update_window_cache_invalid_bounds(const DrawData& drawData) {
+    auto iBounds = windowCache.invalidBounds.value();
+
+    SCollision::AABB<float> cameraSpaceInvalidAABB = drawData.cam.c.world_collider_to_coords<SCollision::AABB<float>>(iBounds);
+    SCollision::AABB<float> clipRectBoundAABB{cameraSpaceInvalidAABB.min - Vector2f{4, 4}, cameraSpaceInvalidAABB.max + Vector2f{4, 4}};
+
+    SkIRect clipRect = SkIRect::MakeLTRB(clipRectBoundAABB.min.x(),
+                                         clipRectBoundAABB.min.y(),
+                                         clipRectBoundAABB.max.x(),
+                                         clipRectBoundAABB.max.y());
+
+    SCollision::AABB<WorldScalar> clipRectBoundAABBWorld = drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>>(clipRectBoundAABB);
+
+    SkCanvas* cacheCanvas = windowCache.surface->getCanvas();
+    cacheCanvas->save();
+    cacheCanvas->clipIRect(clipRect);
+    cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+    draw_components_to_canvas(cacheCanvas, drawData, clipRectBoundAABBWorld);
+    cacheCanvas->restore();
+    windowCache.invalidBounds = std::nullopt;
+}
+
+void DrawingProgramCache::window_cache_complete_refresh(const DrawData& drawData) {
+    SkCanvas* cacheCanvas = windowCache.surface->getCanvas();
+    cacheCanvas->save();
+    cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+    draw_components_to_canvas(cacheCanvas, drawData, std::nullopt);
+    cacheCanvas->restore();
+    windowCache.attachedDrawingProgramCache = this;
+    windowCache.coords = drawData.cam.c;
+}
+
+void DrawingProgramCache::update_and_draw_cached_canvas(SkCanvas* canvas, const DrawData& drawData) {
+    if(windowCache.surface == nullptr || drawData.main->window.size != windowCache.size) {
+        allocate_window_cache_area();
+        refresh_all_draw_cache(drawData);
+        window_cache_complete_refresh(drawData);
+    }
+    else if(windowCache.attachedDrawingProgramCache != this || drawData.cam.c != windowCache.coords) {
+        refresh_all_draw_cache(drawData);
+        window_cache_complete_refresh(drawData);
+    }
+    else if(windowCache.invalidBounds.has_value()) {
+        refresh_all_draw_cache(drawData);
+        update_window_cache_invalid_bounds(drawData);
+    }
+    canvas->drawImage(windowCache.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kNearest, SkMipmapMode::kNone}, nullptr);
 }
 
 void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::optional<SCollision::AABB<WorldScalar>>& drawBounds) {
