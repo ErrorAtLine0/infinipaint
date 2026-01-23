@@ -400,6 +400,10 @@ void Toolbar::update() {
         if(!main.world->clientStillConnecting)
             chat_box();
     }
+    else {
+        if(!closePopupData.worldsToClose.empty()) // Should still show close popup if gui is disabled
+            close_popup_gui();
+    }
 
     if(!main.world->clientStillConnecting) {
         if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
