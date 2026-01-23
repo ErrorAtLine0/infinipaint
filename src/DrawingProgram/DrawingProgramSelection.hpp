@@ -63,6 +63,8 @@ class DrawingProgramSelection {
 
         struct TranslationData {
             WorldVec startPos;
+            bool translateWithKeys;
+            std::chrono::steady_clock::time_point keyTranslateLastMoveTime;
         } translateData;
 
         struct ScaleData {

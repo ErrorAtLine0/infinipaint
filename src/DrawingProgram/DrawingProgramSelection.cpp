@@ -5,6 +5,7 @@
 #include "../InputManager.hpp"
 #include <Helpers/Parallel.hpp>
 #include <Helpers/Logger.hpp>
+#include <chrono>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include <include/gpu/graphite/Surface.h>
@@ -256,6 +257,8 @@ void DrawingProgramSelection::update() {
 
         rebuild_cam_space();
 
+        constexpr float KEY_TRANSLATE_MAGNITUDE = 5.0f;
+
         if(drawP.is_actual_selection_tool(drawP.drawTool->get_type())) {
             switch(transformOpHappening) {
                 case TransformOperation::NONE:
@@ -274,15 +277,61 @@ void DrawingProgramSelection::update() {
                         else if(mouse_collided_with_selection_aabb()) {
                             translateData.startPos = drawP.world.get_mouse_world_pos();
                             transformOpHappening = TransformOperation::TRANSLATE;
+                            translateData.translateWithKeys = false;
+                        }
+                    }
+                    else {
+                        Vector2f moveVec = {0, 0};
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_UP).pressed)
+                            moveVec.y() -= 1.0f;
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).pressed)
+                            moveVec.y() += 1.0f;
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).pressed)
+                            moveVec.x() += 1.0f;
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).pressed)
+                            moveVec.x() -= 1.0f;
+                        if(moveVec != Vector2f{0.0f, 0.0f}) {
+                            moveVec *= KEY_TRANSLATE_MAGNITUDE;
+                            translateData.startPos = drawP.world.drawData.cam.c.dir_from_space(moveVec);
+                            translateData.translateWithKeys = true;
+                            selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
+                            transformOpHappening = TransformOperation::TRANSLATE;
+                            translateData.keyTranslateLastMoveTime = std::chrono::steady_clock::now();
                         }
                     }
                     break;
                 case TransformOperation::TRANSLATE:
-                    if(drawP.controls.leftClickHeld)
-                        selectionTransformCoords = CoordSpaceHelperTransform(drawP.world.get_mouse_world_pos() - translateData.startPos);
+                    if(translateData.translateWithKeys) {
+                        Vector2f moveVec = {0, 0};
+                        constexpr auto TIME_TO_NEXT_MOVE = std::chrono::milliseconds(700);
+                        constexpr auto TIME_TO_SUBTRACT_BETWEEN_REPEATS = std::chrono::milliseconds(650);
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held)
+                            moveVec.y() -= 1.0f;
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held)
+                            moveVec.y() += 1.0f;
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held)
+                            moveVec.x() += 1.0f;
+                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held)
+                            moveVec.x() -= 1.0f;
+                        if(moveVec != Vector2f{0.0f, 0.0f} && (std::chrono::steady_clock::now() - translateData.keyTranslateLastMoveTime) >= TIME_TO_NEXT_MOVE) {
+                            moveVec *= KEY_TRANSLATE_MAGNITUDE;
+                            translateData.startPos += drawP.world.drawData.cam.c.dir_from_space(moveVec);
+                            selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
+                            translateData.keyTranslateLastMoveTime = std::chrono::steady_clock::now() - TIME_TO_SUBTRACT_BETWEEN_REPEATS; // Time between repeat moves is shorter than time between first press and first repeat
+                        }
+                        bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held || drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held;
+                        if(!anyKeyHeld) {
+                            commit_transform_selection();
+                            return;
+                        }
+                    }
                     else {
-                        commit_transform_selection();
-                        return;
+                        if(drawP.controls.leftClickHeld)
+                            selectionTransformCoords = CoordSpaceHelperTransform(drawP.world.get_mouse_world_pos() - translateData.startPos);
+                        else {
+                            commit_transform_selection();
+                            return;
+                        }
                     }
                     break;
                 case TransformOperation::SCALE:
