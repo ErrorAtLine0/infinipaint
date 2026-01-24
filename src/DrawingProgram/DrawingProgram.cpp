@@ -36,6 +36,9 @@
 
 #include "Tools/EraserTool.hpp"
 
+size_t DrawingProgram::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH = 33; // Around 30FPS
+size_t DrawingProgram::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH = 400;
+
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     drawCache(*this),
@@ -233,10 +236,10 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    if(world.main.window.lastFrameTime > std::chrono::milliseconds(33)) { // Around 30FPS
+    if(world.main.window.lastFrameTime > std::chrono::milliseconds(MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH)) {
         if(!badFrametimeTimePoint)
             badFrametimeTimePoint = std::chrono::steady_clock::now();
-        else if(unorderedObjectsExistTimePoint && std::chrono::steady_clock::now() - badFrametimeTimePoint.value() >= std::chrono::seconds(5) && std::chrono::steady_clock::now() - unorderedObjectsExistTimePoint.value() >= std::chrono::seconds(5)) {
+        else if(unorderedObjectsExistTimePoint && std::chrono::steady_clock::now() - badFrametimeTimePoint.value() >= std::chrono::milliseconds(MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH) && std::chrono::steady_clock::now() - unorderedObjectsExistTimePoint.value() >= std::chrono::milliseconds(MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH)) {
             rebuild_cache();
             unorderedObjectsExistTimePoint = std::nullopt;
             badFrametimeTimePoint = std::nullopt;

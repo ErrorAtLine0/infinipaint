@@ -22,6 +22,8 @@ class World;
 
 class DrawingProgram {
     public:
+        static size_t MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH;
+        static size_t MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH;
         DrawingProgram(World& initWorld);
         void server_init_no_file();
         void toolbar_gui();

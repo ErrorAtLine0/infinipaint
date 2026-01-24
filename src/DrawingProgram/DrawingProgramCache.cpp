@@ -11,6 +11,11 @@
     #include <include/gpu/ganesh/SkSurfaceGanesh.h>
 #endif
 
+size_t DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD = 1000;
+size_t DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE = 50;
+size_t DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES = 40;
+size_t DrawingProgramCache::CACHE_NODE_RESOLUTION = 2048;
+
 std::unordered_map<std::shared_ptr<DrawingProgramCacheBVHNode>, DrawingProgramCache::NodeCache> DrawingProgramCache::nodeCacheMap;
 DrawingProgramCache::WindowCache DrawingProgramCache::windowCache;
 
@@ -178,16 +183,14 @@ void DrawingProgramCache::build_bvh_node_coords_and_resolution(DrawingProgramCac
     //  - We dont have to recalculate it every time we refresh the cache
     //  - Some of the data here is needed to determine whether to generate the cache in the first place
 
-    constexpr int MAX_DIMENSION_RESOLUTION = 2048;
-
     WorldVec cacheBoundDim = node.bounds.dim();
     if(cacheBoundDim.x() > cacheBoundDim.y()) {
-        node.resolution.x() = MAX_DIMENSION_RESOLUTION;
-        node.resolution.y() = MAX_DIMENSION_RESOLUTION * static_cast<double>(cacheBoundDim.y() / cacheBoundDim.x());
+        node.resolution.x() = CACHE_NODE_RESOLUTION;
+        node.resolution.y() = CACHE_NODE_RESOLUTION * static_cast<double>(cacheBoundDim.y() / cacheBoundDim.x());
     }
     else {
-        node.resolution.y() = MAX_DIMENSION_RESOLUTION;
-        node.resolution.x() = MAX_DIMENSION_RESOLUTION * static_cast<double>(cacheBoundDim.x() / cacheBoundDim.y());
+        node.resolution.y() = CACHE_NODE_RESOLUTION;
+        node.resolution.x() = CACHE_NODE_RESOLUTION * static_cast<double>(cacheBoundDim.x() / cacheBoundDim.y());
     }
     node.coords.rotation = 0.0;
     node.coords.pos = node.bounds.min;

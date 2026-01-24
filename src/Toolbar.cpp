@@ -258,11 +258,9 @@ nlohmann::json Toolbar::get_config_json() {
 #ifndef __EMSCRIPTEN__
     toRet["applyDisplayScale"] = main.window.applyDisplayScale;
 #endif
-    toRet["showPerformance"] = showPerformance;
     toRet["displayName"] = main.displayName;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
-    toRet["jumpTransitionEasing"] = jumpTransitionEasing;
     toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
     toRet["flipZoomToolDirection"] = flipZoomToolDirection;
 #ifndef __EMSCRIPTEN__
@@ -277,8 +275,19 @@ nlohmann::json Toolbar::get_config_json() {
     tablet["ignoreMouseMovementWhenPenInProximity"] = tabletOptions.ignoreMouseMovementWhenPenInProximity;
     tablet["brushMinimumSize"] = tabletOptions.brushMinimumSize;
     tablet["zoomWhilePenDownAndButtonHeld"] = tabletOptions.zoomWhilePenDownAndButtonHeld;
-
     toRet["tablet"] = tablet;
+
+    json debugJson;
+    debugJson["showPerformance"] = showPerformance;
+    debugJson["fpsLimit"] = main.fpsLimit;
+    debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
+    debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
+    debugJson["maxCacheNodes"] = DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES;
+    debugJson["maxComponentsInNode"] = DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE;
+    debugJson["componentCountToForceCacheRebuild"] = DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
+    debugJson["maximumFrameTimeToForceCacheRebuild"] = DrawingProgram::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH;
+    debugJson["millisecondMinimumTimeToCheckForCacheRebuild"] = DrawingProgram::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH;
+    toRet["debug"] = debugJson;
 
     return toRet;
 }
@@ -308,7 +317,6 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
         main.input.keyAssignments = main.input.defaultKeyAssignments;
     }
     try{j.at("displayName").get_to(main.displayName);} catch(...) {}
-    try{j.at("jumpTransitionTime").get_to(jumpTransitionTime);} catch(...) {}
     try{j.at("dragZoomSpeed").get_to(dragZoomSpeed);} catch(...) {}
     try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
     try {
@@ -322,10 +330,8 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("applyDisplayScale").get_to(main.window.applyDisplayScale);} catch(...) {}
 #endif
     try{j.at("guiScale").get_to(guiScale);} catch(...) {}
-    try{j.at("showPerformance").get_to(showPerformance);} catch(...) {}
     try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
     try{j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);} catch(...) {}
-    try{j.at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
     if(version >= VersionNumber(0, 3, 0))
         try{j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);} catch(...) {}
     try{j.at("flipZoomToolDirection").get_to(flipZoomToolDirection);} catch(...) {}
@@ -340,6 +346,16 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);} catch(...) {}
     try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
     try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
+
+    try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
+    try{j.at("debug").at("fpsLimit").get_to(main.fpsLimit);} catch(...) {}
+    try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
+    try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}
+    try{j.at("debug").at("maxCacheNodes").get_to(DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES);} catch(...) {}
+    try{j.at("debug").at("maxComponentsInNode").get_to(DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE);} catch(...) {}
+    try{j.at("debug").at("componentCountToForceCacheRebuild").get_to(DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD);} catch(...) {}
+    try{j.at("debug").at("maximumFrameTimeToForceCacheRebuild").get_to(DrawingProgram::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH);} catch(...) {}
+    try{j.at("debug").at("millisecondMinimumTimeToCheckForCacheRebuild").get_to(DrawingProgram::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH);} catch(...) {}
 
     main.update_display_names();
 }
@@ -1833,6 +1849,18 @@ void Toolbar::options_menu() {
                                         #ifndef __EMSCRIPTEN__
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
+                                        gui.text_label_light("Cache related settings");
+                                        gui.input_scalar_field<size_t>("cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
+                                        gui.input_scalar_field<size_t>("max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
+                                        size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
+                                                                           * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
+                                                                           * 4) // 4 Channels per pixel (RGBA)
+                                                                           / (1024 * 1024); // Bytes -> Megabytes conversion
+                                        gui.text_label_light("Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
+                                        gui.input_scalar_field<size_t>("max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
+                                        gui.input_scalar_field<size_t>("components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
+                                        gui.input_scalar_field<size_t>("maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgram::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
+                                        gui.input_scalar_field<size_t>("minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgram::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
                                         gui.pop_id();
                                         break;
                                     }

@@ -15,9 +15,10 @@ struct DrawingProgramCacheBVHNode {
 
 class DrawingProgramCache {
     public:
-        static constexpr size_t MINIMUM_COMPONENTS_TO_START_REBUILD = 1000;
-        static constexpr size_t MAXIMUM_COMPONENTS_IN_SINGLE_NODE = 50;
-        static constexpr size_t MAXIMUM_DRAW_CACHE_SURFACES = 40;
+        static size_t MINIMUM_COMPONENTS_TO_START_REBUILD;
+        static size_t MAXIMUM_COMPONENTS_IN_SINGLE_NODE;
+        static size_t MAXIMUM_DRAW_CACHE_SURFACES;
+        static size_t CACHE_NODE_RESOLUTION;
 
         DrawingProgramCache(DrawingProgram& initDrawP);
         void add_component(CanvasComponentContainer::ObjInfo* c);
