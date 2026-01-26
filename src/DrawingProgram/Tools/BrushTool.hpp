@@ -38,7 +38,6 @@ class BrushTool : public DrawingProgramToolBase {
         std::deque<SmoothingPoint> penSmoothingData;
 
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
-        bool hasRoundCaps = true;
         bool drawingMinimumRelativeToSize = true;
         bool midwayInterpolation = true;
         Vector2f prevPointUnaltered = {0, 0};

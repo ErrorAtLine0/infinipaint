@@ -18,10 +18,11 @@ DrawingProgramToolType LineDrawTool::get_type() {
 
 void LineDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
+    auto& toolConfig = drawP.world.main.toolConfig;
     t.gui.push_id("rect draw tool");
     t.gui.text_label_centered("Draw Line");
-    t.gui.slider_scalar_field("relstrokewidth", "Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
-    t.gui.checkbox_field("hasroundcaps", "Round Caps", &hasRoundCaps);
+    toolConfig.relative_width_slider(t.gui, "Size", &toolConfig.lineDraw.relativeWidth);
+    t.gui.checkbox_field("hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
     t.gui.pop_id();
 }
 
@@ -41,6 +42,7 @@ void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void LineDrawTool::tool_update() {
+    auto& toolConfig = drawP.world.main.toolConfig;
     if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
@@ -48,12 +50,12 @@ void LineDrawTool::tool_update() {
 
             BrushStrokeCanvasComponentPoint p;
             p.pos = drawP.world.main.input.mouse.pos;
-            p.width = drawP.controls.relativeWidth;
+            p.width = toolConfig.get_relative_width(toolConfig.lineDraw.relativeWidth);
             newBrushStroke.d->points.emplace_back(p);
             p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
             newBrushStroke.d->points.emplace_back(p);
-            newBrushStroke.d->color = drawP.controls.foregroundColor;
-            newBrushStroke.d->hasRoundCaps = hasRoundCaps;
+            newBrushStroke.d->color = toolConfig.globalConf.foregroundColor;
+            newBrushStroke.d->hasRoundCaps = toolConfig.lineDraw.hasRoundCaps;
             newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
         }

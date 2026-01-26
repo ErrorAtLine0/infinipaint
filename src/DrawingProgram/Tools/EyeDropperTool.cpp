@@ -31,6 +31,7 @@ DrawingProgramToolType EyeDropperTool::get_type() {
 
 void EyeDropperTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
+    auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
     t.gui.push_id("Color select tool");
     t.gui.text_label_centered("Color Select");
     if(t.gui.radio_button_field("Stroke Color", "Stroke Color", selectingStrokeColor)) selectingStrokeColor = true;
@@ -48,6 +49,9 @@ void EyeDropperTool::erase_component(CanvasComponentContainer::ObjInfo* erasedCo
 }
 
 void EyeDropperTool::tool_update() {
+    auto& toolConfig = drawP.world.main.toolConfig;
+    auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
+
     if(drawP.controls.leftClick) {
         SkSurfaceProps props;
         #ifdef USE_BACKEND_OPENGLES_3_0
@@ -89,9 +93,9 @@ void EyeDropperTool::tool_update() {
         #endif
 
         if(selectingStrokeColor)
-            drawP.controls.foregroundColor = readData.cast<float>() / 255.0f;
+            toolConfig.globalConf.foregroundColor = readData.cast<float>() / 255.0f;
         else
-            drawP.controls.backgroundColor = readData.cast<float>() / 255.0f;
+            toolConfig.globalConf.backgroundColor = readData.cast<float>() / 255.0f;
     }
 }
 

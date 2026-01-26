@@ -49,32 +49,33 @@ DrawingProgramToolType ScreenshotTool::get_type() {
 
 void ScreenshotTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
+    auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
     t.gui.push_id("screenshot tool");
     t.gui.text_label_centered("Screenshot");
     auto oldImgSize = controls.imageSize;
     if(controls.selectionMode == 0)
         t.gui.text_label("Select an area on the canvas...");
-    if(controls.selectionMode != 0 && controls.selectedType != SCREENSHOT_SVG)
+    if(controls.selectionMode != 0 && screenshotConfig.selectedType != SCREENSHOT_SVG)
         t.gui.input_scalar_fields("Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
     if(controls.selectionMode == 2) {
         t.gui.left_to_right_line_layout([&]() {
             t.gui.text_label("Image Type");
-            t.gui.dropdown_select("image type select", &controls.selectedType, controls.typeSelections);
+            t.gui.dropdown_select("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
         });
-        if(controls.selectedType != SCREENSHOT_SVG)
+        if(screenshotConfig.selectedType != SCREENSHOT_SVG)
             t.gui.checkbox_field("Display Grid", "Display Grid", &controls.displayGrid);
         else
             t.gui.text_label("Note: Screenshot will ignore blend\nmodes and layer alpha");
-        if(controls.selectedType != 0)
+        if(screenshotConfig.selectedType != 0)
             t.gui.checkbox_field("Transparent Background", "Transparent Background", &controls.transparentBackground);
         if(controls.imageSize.x() != oldImgSize.x()) {
-            controls.setDimensionSize = controls.imageSize.x();
-            controls.setDimensionIsX = true;
+            screenshotConfig.setDimensionSize = controls.imageSize.x();
+            screenshotConfig.setDimensionIsX = true;
             controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
         }
         else if(controls.imageSize.y() != oldImgSize.y()) {
-            controls.setDimensionSize = controls.imageSize.y();
-            controls.setDimensionIsX = false;
+            screenshotConfig.setDimensionSize = controls.imageSize.y();
+            screenshotConfig.setDimensionIsX = false;
             controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
         }
         if(t.gui.text_button_wide("Take Screenshot", "Take Screenshot")) {
@@ -84,7 +85,7 @@ void ScreenshotTool::gui_toolbox() {
             #else
                 // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
                 Toolbar::ExtensionFilter setExtensionFilter;
-                switch(controls.selectedType) {
+                switch(screenshotConfig.selectedType) {
                     case SCREENSHOT_JPG:
                         setExtensionFilter = {"JPEG", "jpg;jpeg"};
                         break;
@@ -335,6 +336,7 @@ void ScreenshotTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void ScreenshotTool::tool_update() {
+    auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
     if(controls.setToTakeScreenshot) {
         controls.setToTakeScreenshot = false;
         take_screenshot(controls.screenshotSavePath);
@@ -401,12 +403,12 @@ void ScreenshotTool::tool_update() {
             float tempX2 = std::max(controls.rectX1, controls.rectX2);
             float tempY1 = std::min(controls.rectY1, controls.rectY2);
             float tempY2 = std::max(controls.rectY1, controls.rectY2);
-            if(controls.setDimensionIsX) {
-                controls.imageSize.x() = controls.setDimensionSize;
+            if(screenshotConfig.setDimensionIsX) {
+                controls.imageSize.x() = screenshotConfig.setDimensionSize;
                 controls.imageSize.y() = controls.imageSize.x() * (tempY2 - tempY1) / (tempX2 - tempX1);
             }
             else {
-                controls.imageSize.y() = controls.setDimensionSize;
+                controls.imageSize.y() = screenshotConfig.setDimensionSize;
                 controls.imageSize.x() = controls.imageSize.y() * (tempX2 - tempX1) / (tempY2 - tempY1);
             }
 

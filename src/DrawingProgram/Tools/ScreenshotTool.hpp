@@ -18,6 +18,13 @@ class ScreenshotTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual bool prevent_undo_or_redo() override;
+
+        enum ScreenshotType : size_t {
+            SCREENSHOT_JPG,
+            SCREENSHOT_PNG,
+            SCREENSHOT_WEBP,
+            SCREENSHOT_SVG
+        };
     private:
         void commit_rect();
         void take_screenshot(const std::filesystem::path& filePath);
@@ -35,13 +42,6 @@ class ScreenshotTool : public DrawingProgramToolBase {
         //    InputManager::SystemCursorType::E_RESIZE
         //};
 
-        enum ScreenshotType : size_t {
-            SCREENSHOT_JPG,
-            SCREENSHOT_PNG,
-            SCREENSHOT_WEBP,
-            SCREENSHOT_SVG
-        };
-
         struct ScreenshotControls {
             CoordSpaceHelper translateBeginCoords;
             WorldVec translateBeginPos;
@@ -54,17 +54,21 @@ class ScreenshotTool : public DrawingProgramToolBase {
             int selectionMode = 0;
             int dragType = 0;
             Vector2i imageSize = {0, 0};
-            int setDimensionSize = 1000;
-            bool setDimensionIsX = true;
             std::array<SCollision::Circle<float>, 8> circles;
 
             bool displayGrid = true;
             bool transparentBackground = false;
 
-            size_t selectedType = SCREENSHOT_JPG;
             std::vector<std::string> typeSelections = {".jpg", ".png", ".webp", ".svg"};
 
             std::atomic<bool> setToTakeScreenshot = false;
             std::filesystem::path screenshotSavePath;
         } controls;
 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(ScreenshotTool::ScreenshotType, {
+    {ScreenshotTool::ScreenshotType::SCREENSHOT_JPG, "jpg"},
+    {ScreenshotTool::ScreenshotType::SCREENSHOT_PNG, "png"},
+    {ScreenshotTool::ScreenshotType::SCREENSHOT_WEBP, "webp"},
+    {ScreenshotTool::ScreenshotType::SCREENSHOT_SVG, "svg"}
+})

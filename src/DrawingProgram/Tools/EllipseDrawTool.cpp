@@ -19,13 +19,15 @@ DrawingProgramToolType EllipseDrawTool::get_type() {
 
 void EllipseDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
+    auto& toolConfig = drawP.world.main.toolConfig;
+    auto& fillStrokeMode = toolConfig.ellipseDraw.fillStrokeMode;
     t.gui.push_id("ellipse draw tool");
     t.gui.text_label_centered("Draw Ellipse");
     if(t.gui.radio_button_field("fillonly", "Fill only", fillStrokeMode == 0)) fillStrokeMode = 0;
     if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
     if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        t.gui.slider_scalar_field("relstrokewidth", "Outline Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
+        toolConfig.relative_width_slider(t.gui, "Outline Size", &toolConfig.ellipseDraw.relativeWidth);
     t.gui.pop_id();
 }
 
@@ -45,19 +47,21 @@ void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void EllipseDrawTool::tool_update() {
+    auto& toolConfig = drawP.world.main.toolConfig;
+
     if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
             EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());
 
             startAt = drawP.world.main.input.mouse.pos;
-            newEllipse.d.strokeColor = drawP.controls.foregroundColor;
-            newEllipse.d.fillColor = drawP.controls.backgroundColor;
-            newEllipse.d.strokeWidth = drawP.controls.relativeWidth;
+            newEllipse.d.strokeColor = toolConfig.globalConf.foregroundColor;
+            newEllipse.d.fillColor =   toolConfig.globalConf.backgroundColor;
+            newEllipse.d.strokeWidth = toolConfig.get_relative_width(toolConfig.ellipseDraw.relativeWidth);
             newEllipse.d.p1 = startAt;
             newEllipse.d.p2 = startAt;
             newEllipse.d.p2 = ensure_points_have_distance(newEllipse.d.p1, newEllipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-            newEllipse.d.fillStrokeMode = static_cast<uint8_t>(fillStrokeMode);
+            newEllipse.d.fillStrokeMode = static_cast<uint8_t>(toolConfig.ellipseDraw.fillStrokeMode);
             newContainer->coords = drawP.world.drawData.cam.c;
 
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);

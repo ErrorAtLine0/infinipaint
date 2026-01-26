@@ -151,10 +151,12 @@ void DrawingProgram::toolbar_gui() {
         if(newRotationAngle != oldRotationAngle)
             world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), newRotationAngle - oldRotationAngle);
 
-        if(t.gui.big_color_button("Foreground Color", &controls.foregroundColor, &controls.foregroundColor == t.colorLeft))
-            t.color_selector_left(&controls.foregroundColor == t.colorLeft ? nullptr : &controls.foregroundColor);
-        if(t.gui.big_color_button("Background Color", &controls.backgroundColor, &controls.backgroundColor == t.colorLeft))
-            t.color_selector_left(&controls.backgroundColor == t.colorLeft ? nullptr : &controls.backgroundColor);
+        auto& globalConf = world.main.toolConfig.globalConf;
+
+        if(t.gui.big_color_button("Foreground Color", &globalConf.foregroundColor, &globalConf.foregroundColor == t.colorLeft))
+            t.color_selector_left(&globalConf.foregroundColor == t.colorLeft ? nullptr : &globalConf.foregroundColor);
+        if(t.gui.big_color_button("Background Color", &globalConf.backgroundColor, &globalConf.backgroundColor == t.colorLeft))
+            t.color_selector_left(&globalConf.backgroundColor == t.colorLeft ? nullptr : &globalConf.backgroundColor);
     }
     t.gui.pop_id();
 }
@@ -633,5 +635,5 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 Vector4f* DrawingProgram::get_foreground_color_ptr() {
-    return &controls.foregroundColor;
+    return &world.main.toolConfig.globalConf.foregroundColor;
 }

@@ -20,7 +20,5 @@ class RectDrawTool : public DrawingProgramToolBase {
         void commit();
 
         Vector2f startAt;
-        float relativeRadiusWidth = 10.0f;
-        int fillStrokeMode = 1;
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

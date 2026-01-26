@@ -180,6 +180,7 @@ void MainProgram::save_config() {
         j["window"]["maximized"] = window.maximized;
         j["window"]["fullscreen"] = window.fullscreen;
         j["fileselectorpath"] = toolbar.file_selector_path();
+        j["toolConfig"] = toolConfig;
 
         f << std::setw(4) << j;
         f.close();
@@ -239,6 +240,10 @@ void MainProgram::load_config() {
                 toolbar.file_selector_path() = homePath;
             }
 #endif
+            try {
+                j.at("toolConfig").get_to(toolConfig);
+            }
+            catch(...) {}
             f.close();
         } catch(...) {}
     }

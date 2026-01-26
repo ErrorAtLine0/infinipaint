@@ -11,6 +11,7 @@
 #include <include/core/SkSurfaceProps.h>
 #include "Toolbar.hpp"
 #include "World.hpp"
+#include "DrawingProgram/ToolConfiguration.hpp"
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include "include/gpu/graphite/Recorder.h"
@@ -73,6 +74,7 @@ class MainProgram {
         TimePoint deltaTime;
         Toolbar toolbar;
         std::shared_ptr<World> world;
+        ToolConfiguration toolConfig;
 
         std::ofstream* logFile;
         std::deque<Toolbar::LogMessage> logMessages;

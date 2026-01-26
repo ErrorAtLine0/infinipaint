@@ -14,6 +14,4 @@ class EyeDropperTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
-    private:
-        bool selectingStrokeColor = true;
 };

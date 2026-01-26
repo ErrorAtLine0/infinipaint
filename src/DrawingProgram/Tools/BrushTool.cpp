@@ -54,6 +54,8 @@ bool BrushTool::extensive_point_checking_back(const BrushStrokeCanvasComponent& 
 }
 
 void BrushTool::tool_update() {
+    auto& toolConfig = drawP.world.main.toolConfig;
+
     if(drawP.controls.cursorHoveringOverCanvas)
         drawP.world.main.input.hideCursor = true;
 
@@ -94,11 +96,11 @@ void BrushTool::tool_update() {
 
                 BrushStrokeCanvasComponentPoint p;
                 p.pos = drawP.world.main.input.mouse.pos;
-                p.width = drawP.controls.relativeWidth * penWidth;
+                p.width = toolConfig.get_relative_width(toolConfig.brush.relativeWidth) * penWidth;
                 prevPointUnaltered = p.pos;
                 newBrushStroke.d->points.emplace_back(p);
-                newBrushStroke.d->color = drawP.controls.foregroundColor;
-                newBrushStroke.d->hasRoundCaps = hasRoundCaps;
+                newBrushStroke.d->color = toolConfig.globalConf.foregroundColor;
+                newBrushStroke.d->hasRoundCaps = toolConfig.brush.hasRoundCaps;
                 newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
                 objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
                 addedTemporaryPoint = false;
@@ -110,7 +112,7 @@ void BrushTool::tool_update() {
 
             BrushStrokeCanvasComponentPoint p;
             p.pos = containerPtr->coords.get_mouse_pos(drawP.world);
-            p.width = drawP.controls.relativeWidth * penWidth;
+            p.width = toolConfig.get_relative_width(toolConfig.brush.relativeWidth) * penWidth;
 
             if(!addedTemporaryPoint) {
                 if(extensive_point_checking(brushStroke, p.pos)) {
@@ -129,7 +131,7 @@ void BrushTool::tool_update() {
                     brushStroke.d->points.back().width = std::max(brushStroke.d->points.back().width, p.width);
                     brushStroke.d->points[brushStroke.d->points.size() - 2].width = std::max(brushStroke.d->points[brushStroke.d->points.size() - 2].width, p.width);
                 }
-                if((!drawingMinimumRelativeToSize && distToPrev >= 10.0) || (drawingMinimumRelativeToSize && distToPrev >= drawP.controls.relativeWidth * BrushStrokeCanvasComponent::DRAW_MINIMUM_LIMIT)) {
+                if((!drawingMinimumRelativeToSize && distToPrev >= 10.0) || (drawingMinimumRelativeToSize && distToPrev >= toolConfig.get_relative_width(toolConfig.brush.relativeWidth) * BrushStrokeCanvasComponent::DRAW_MINIMUM_LIMIT)) {
                     brushStroke.d->points.back() = p;
                     addedTemporaryPoint = false;
 
@@ -163,8 +165,8 @@ void BrushTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("brush tool");
     t.gui.text_label_centered("Brush");
-    t.gui.checkbox_field("hasroundcaps", "Round Caps", &hasRoundCaps);
-    t.gui.slider_scalar_field("relwidth", "Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
+    t.gui.checkbox_field("hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
+    drawP.world.main.toolConfig.relative_width_slider(t.gui, "Size", &drawP.world.main.toolConfig.brush.relativeWidth);
     t.gui.pop_id();
 }
 
@@ -184,11 +186,11 @@ void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         linePaint.setColor4f(drawP.world.canvasTheme.get_tool_front_color());
         linePaint.setStroke(true);
         linePaint.setStrokeWidth(0.0f);
-        float width;
+        float width = drawP.world.main.toolConfig.get_relative_width(drawP.world.main.toolConfig.brush.relativeWidth);
         if(objInfoBeingEdited)
-            width = drawP.controls.relativeWidth * penWidth * 0.5f;
+            width *= penWidth * 0.5f;
         else
-            width = drawP.controls.relativeWidth * 0.5f;
+            width *= 0.5f;
         Vector2f pos = drawData.main->input.mouse.pos;
         canvas->drawCircle(pos.x(), pos.y(), width, linePaint);
     }

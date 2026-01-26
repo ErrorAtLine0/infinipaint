@@ -16,6 +16,9 @@ DrawingProgramToolType RectDrawTool::get_type() {
 
 void RectDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
+    auto& toolConfig = drawP.world.main.toolConfig;
+    auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
+    auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
     t.gui.push_id("rect draw tool");
     t.gui.text_label_centered("Draw Rectangle");
     t.gui.slider_scalar_field("relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
@@ -23,7 +26,7 @@ void RectDrawTool::gui_toolbox() {
     if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
     if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        t.gui.slider_scalar_field("relstrokewidth", "Outline Size", &drawP.controls.relativeWidth, 3.0f, 40.0f);
+        toolConfig.relative_width_slider(t.gui, "Outline Size", &toolConfig.rectDraw.relativeWidth);
     t.gui.pop_id();
 }
 
@@ -43,16 +46,20 @@ void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void RectDrawTool::tool_update() {
+    auto& toolConfig = drawP.world.main.toolConfig;
+    auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
+    auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
+
     if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::RECTANGLE);
             RectangleCanvasComponent& newRectangle = static_cast<RectangleCanvasComponent&>(newContainer->get_comp());
 
             startAt = drawP.world.main.input.mouse.pos;
-            newRectangle.d.strokeColor = drawP.controls.foregroundColor;
-            newRectangle.d.fillColor = drawP.controls.backgroundColor;
+            newRectangle.d.strokeColor = toolConfig.globalConf.foregroundColor;
+            newRectangle.d.fillColor = toolConfig.globalConf.backgroundColor;
             newRectangle.d.cornerRadius = relativeRadiusWidth;
-            newRectangle.d.strokeWidth = drawP.controls.relativeWidth;
+            newRectangle.d.strokeWidth = toolConfig.get_relative_width(toolConfig.rectDraw.relativeWidth);
             newRectangle.d.p1 = startAt;
             newRectangle.d.p2 = startAt;
             newRectangle.d.p2 = ensure_points_have_distance(newRectangle.d.p1, newRectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);

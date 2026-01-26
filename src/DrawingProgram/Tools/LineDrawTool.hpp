@@ -20,6 +20,5 @@ class LineDrawTool : public DrawingProgramToolBase {
         void commit();
 
         Vector2f startAt;
-        bool hasRoundCaps = true;
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

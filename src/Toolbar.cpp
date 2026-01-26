@@ -476,7 +476,7 @@ void Toolbar::close_popup_gui() {
         },
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        .floating = {.zIndex = 1, .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.obstructing_window();
         gui.push_id("Close single file popup gui");
@@ -1700,6 +1700,7 @@ void Toolbar::options_menu() {
                                         gui.slider_scalar_field("drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, 3);
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
                                         gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
+                                        gui.checkbox_field("make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, 1);
 
