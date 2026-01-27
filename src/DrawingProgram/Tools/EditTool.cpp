@@ -13,6 +13,7 @@
 #include "EditTools/RectDrawEditTool.hpp"
 #include "EditTools/ImageEditTool.hpp"
 #include "EditTools/EllipseDrawEditTool.hpp"
+#include "EditTools/BrushEditTool.hpp"
 
 EditTool::EditTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -124,6 +125,10 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
             compEditTool = std::make_unique<ImageEditTool>(drawP);
             break;
         }
+        case CanvasComponentType::BRUSHSTROKE: {
+            compEditTool = std::make_unique<BrushEditTool>(drawP);
+            break;
+        }
         default: {
             isEditing = false;
             break;
@@ -138,7 +143,7 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
 }
 
 bool EditTool::is_editable(CanvasComponentContainer::ObjInfo* comp) {
-    return comp->obj->get_comp().get_type() != CanvasComponentType::BRUSHSTROKE;
+    return true; // Brush strokes used to not be editable, but now they are so this always returns true
 }
 
 void EditTool::tool_update() {

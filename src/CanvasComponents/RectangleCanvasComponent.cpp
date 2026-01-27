@@ -27,6 +27,14 @@ void RectangleCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, 
     a(d.strokeColor, d.fillColor, d.cornerRadius, d.strokeWidth, d.p1, d.p2, d.fillStrokeMode);
 }
 
+void RectangleCanvasComponent::change_stroke_color(const Vector4f& newStrokeColor) {
+    d.strokeColor = newStrokeColor;
+}
+
+std::optional<Vector4f> RectangleCanvasComponent::get_stroke_color() const {
+    return d.strokeColor;
+}
+
 std::unique_ptr<CanvasComponent> RectangleCanvasComponent::get_data_copy() const {
     auto toRet = std::make_unique<RectangleCanvasComponent>();
     toRet->d = d;

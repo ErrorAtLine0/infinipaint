@@ -42,11 +42,7 @@ void LassoSelectTool::gui_toolbox() {
     auto& t = drawP.world.main.toolbar;
     t.gui.push_id("lasso select tool");
     t.gui.text_label_centered("Lasso Select");
-    t.gui.text_label("Select from:");
-    if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
-        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
-    if(t.gui.radio_button_field("all visible", "All visible layers", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS))
-        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS;
+    drawP.selection.selection_gui();
     t.gui.pop_id();
 }
 

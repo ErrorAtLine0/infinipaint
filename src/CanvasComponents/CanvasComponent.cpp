@@ -30,4 +30,11 @@ CanvasComponent* CanvasComponent::allocate_comp(CanvasComponentType type) {
     return nullptr;
 }
 
+void CanvasComponent::change_stroke_color(const Vector4f& newStrokeColor) {
+}
+
+std::optional<Vector4f> CanvasComponent::get_stroke_color() const {
+    return std::nullopt;
+}
+
 CanvasComponent::~CanvasComponent() {}

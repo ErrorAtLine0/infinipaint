@@ -14,19 +14,19 @@
 #define DEFAULT_SMOOTHNESS 5
 
 void BrushStrokeCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(d->points, d->color, d->hasRoundCaps);
+    a(*d.points, d.color, d.hasRoundCaps);
 }
 
 void BrushStrokeCanvasComponent::load(cereal::PortableBinaryInputArchive& a) {
-    a(d->points, d->color, d->hasRoundCaps);
+    a(*d.points, d.color, d.hasRoundCaps);
 }
 
 void BrushStrokeCanvasComponent::save_file(cereal::PortableBinaryOutputArchive& a) const {
-    a(d->points, d->color, d->hasRoundCaps);
+    a(*d.points, d.color, d.hasRoundCaps);
 }
 
 void BrushStrokeCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    a(d->points, d->color, d->hasRoundCaps);
+    a(*d.points, d.color, d.hasRoundCaps);
 }
 
 std::unique_ptr<CanvasComponent> BrushStrokeCanvasComponent::get_data_copy() const {
@@ -39,9 +39,17 @@ CanvasComponentType BrushStrokeCanvasComponent::get_type() const {
     return CanvasComponentType::BRUSHSTROKE;
 }
 
+void BrushStrokeCanvasComponent::change_stroke_color(const Vector4f& newStrokeColor) {
+    d.color = newStrokeColor;
+}
+
+std::optional<Vector4f> BrushStrokeCanvasComponent::get_stroke_color() const {
+    return d.color;
+}
+
 void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
     SkPaint paint;
-    paint.setColor4f(SkColor4f{d->color.x(), d->color.y(), d->color.z(), d->color.w()});
+    paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
 
     unsigned mipmapLevel = compContainer ? compContainer->get_mipmap_level(drawData) : 0;
 
@@ -57,8 +65,8 @@ void BrushStrokeCanvasComponent::set_data_from(const CanvasComponent& other) {
 }
 
 void BrushStrokeCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
-    if(!d->points.empty()) {
-        std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d->points.size() - 1, DEFAULT_SMOOTHNESS);
+    if(!d.points->empty()) {
+        std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d.points->size() - 1, DEFAULT_SMOOTHNESS);
         auto triangleFunc = [&](Vector2f a, Vector2f b, Vector2f c) {
             return false;
         };
@@ -94,7 +102,7 @@ std::vector<size_t> BrushStrokeCanvasComponent::get_wedge_indices(const std::vec
 }
 
 std::vector<BrushStrokeCanvasComponentPoint> BrushStrokeCanvasComponent::smooth_points(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) const {
-    std::vector<BrushStrokeCanvasComponentPoint>& points = d->points;
+    std::vector<BrushStrokeCanvasComponentPoint>& points = *d.points;
 
     size_t pointsSize = endIndex - beginIndex + 1;
     if(pointsSize < 2) 
@@ -138,7 +146,7 @@ std::vector<BrushStrokeCanvasComponentPoint> BrushStrokeCanvasComponent::smooth_
 }
 
 std::vector<BrushStrokeCanvasComponentPoint> BrushStrokeCanvasComponent::smooth_points_avg(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) const {
-    std::vector<BrushStrokeCanvasComponentPoint>& points = d->points;
+    std::vector<BrushStrokeCanvasComponentPoint>& points = *d.points;
 
     size_t pointsSize = endIndex - beginIndex + 1;
     if(pointsSize < 2) 
@@ -180,11 +188,11 @@ std::vector<BrushStrokeCanvasComponentPoint> BrushStrokeCanvasComponent::every_n
 void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<BrushStrokeCanvasComponentPoint>& smoothedPoints, size_t skipVertexCount, std::shared_ptr<SkPathBuilder> bPathBuilder) const {
     const int ARC_SMOOTHNESS = 10;
     const int CIRCLE_SMOOTHNESS = 20;
-    const std::vector<BrushStrokeCanvasComponentPoint>& pointsN = d->points;
+    const std::vector<BrushStrokeCanvasComponentPoint>& pointsN = *d.points;
     std::vector<SkPoint> topPoints;
     std::vector<SkPoint> bottomPoints;
 
-    if(pointsN.size() == 1 && d->hasRoundCaps) {
+    if(pointsN.size() == 1 && d.hasRoundCaps) {
         std::vector<Vector2f> circlePoints = gen_circle_points(pointsN.front().pos, pointsN.front().width / 2.0f, CIRCLE_SMOOTHNESS);
         for(size_t i = 0; i < circlePoints.size(); i++) {
             if(passTriangleFunc(pointsN.front().pos, circlePoints[i], circlePoints[(i + 1) % circlePoints.size()])) return;
@@ -218,7 +226,7 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
         bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[1]));
         newIndex = 2;
 
-        if(d->hasRoundCaps && pointsBegin == 0) {
+        if(d.hasRoundCaps && pointsBegin == 0) {
             Vector2f arcDirStart = (convert_vec2<Vector2f>(vertArray[0]) - points[0].pos).normalized();
             Vector2f arcDirEnd = (convert_vec2<Vector2f>(vertArray[1]) - points[0].pos).normalized();
             Vector2f arcDirCenter = (points[0].pos - points[1].pos).normalized();
@@ -326,7 +334,7 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
             else
                 bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
         }
-        else if(d->hasRoundCaps) { // It's the last point, cap it off
+        else if(d.hasRoundCaps) { // It's the last point, cap it off
             Vector2f arcDirStart = (convert_vec2<Vector2f>(vertArray[(newIndex + 1) % 3]) - points.back().pos).normalized();
             Vector2f arcDirEnd = (convert_vec2<Vector2f>(vertArray[(newIndex + 2) % 3]) - points.back().pos).normalized();
             Vector2f arcDirCenter = -rectDir;
@@ -349,10 +357,10 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
 
 void BrushStrokeCanvasComponent::create_collider() {
     using namespace SCollision;
-    if(d->points.empty())
+    if(d.points->empty())
         return;
     ColliderCollection<float> strokeObjects;
-    std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d->points.size() - 1, DEFAULT_SMOOTHNESS);
+    std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d.points->size() - 1, DEFAULT_SMOOTHNESS);
     create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
         strokeObjects.triangle.emplace_back(a, b, c);
         return false;
@@ -392,7 +400,7 @@ bool BrushStrokeCanvasComponent::collides_within_coords(const SCollision::Collid
         return false;
 
     bool toRet = false;
-    std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d->points.size() - 1, DEFAULT_SMOOTHNESS);
+    std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d.points->size() - 1, DEFAULT_SMOOTHNESS);
     create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
         toRet = SCollision::collide(checkAgainst, SCollision::Triangle<float>{a, b, c});
         return toRet;

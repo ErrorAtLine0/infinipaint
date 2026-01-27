@@ -51,11 +51,11 @@ void LineDrawTool::tool_update() {
             BrushStrokeCanvasComponentPoint p;
             p.pos = drawP.world.main.input.mouse.pos;
             p.width = toolConfig.get_relative_width(toolConfig.lineDraw.relativeWidth);
-            newBrushStroke.d->points.emplace_back(p);
+            newBrushStroke.d.points->emplace_back(p);
             p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
-            newBrushStroke.d->points.emplace_back(p);
-            newBrushStroke.d->color = toolConfig.globalConf.foregroundColor;
-            newBrushStroke.d->hasRoundCaps = toolConfig.lineDraw.hasRoundCaps;
+            newBrushStroke.d.points->emplace_back(p);
+            newBrushStroke.d.color = toolConfig.globalConf.foregroundColor;
+            newBrushStroke.d.hasRoundCaps = toolConfig.lineDraw.hasRoundCaps;
             newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
         }
@@ -66,7 +66,7 @@ void LineDrawTool::tool_update() {
         if(drawP.controls.leftClickHeld) {
             BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
             Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
-            Vector2f oldPos = brushStroke.d->points.front().pos;
+            Vector2f oldPos = brushStroke.d.points->front().pos;
             if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
                 Vector2f diff = (newPos - oldPos);
                 float diffLength = diff.norm();
@@ -76,7 +76,7 @@ void LineDrawTool::tool_update() {
                 angle = (angle * std::numbers::pi) / SNAP_DIVISION_COUNT;
                 newPos = oldPos + diffLength * Vector2f{cos(angle), sin(angle)};
             }
-            brushStroke.d->points.back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
+            brushStroke.d.points->back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
             containerPtr->send_comp_update(drawP, false);
             containerPtr->commit_update(drawP);
         }

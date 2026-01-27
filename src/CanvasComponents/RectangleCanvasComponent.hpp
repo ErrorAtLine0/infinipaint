@@ -10,6 +10,8 @@ class RectangleCanvasComponent : public CanvasComponent {
         virtual void load(cereal::PortableBinaryInputArchive& a) override;
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
+        virtual void change_stroke_color(const Vector4f& newStrokeColor) override;
+        virtual std::optional<Vector4f> get_stroke_color() const override;
         virtual CanvasComponentType get_type() const override;
         std::unique_ptr<CanvasComponent> get_data_copy() const override;
         virtual void set_data_from(const CanvasComponent& other) override;

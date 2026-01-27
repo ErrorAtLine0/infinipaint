@@ -27,7 +27,106 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
+void DrawingProgramSelection::selection_gui() {
+    auto& t = drawP.world.main.toolbar;
+    t.gui.push_id("general selection gui");
+    t.gui.text_label("Select from:");
+    if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
+        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
+    if(t.gui.radio_button_field("all visible", "All visible layers", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS))
+        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS;
+    if(is_something_selected()) {
+        t.gui.left_to_right_line_layout([&]() {
+            if(t.gui.color_button_big("Stroke Color Button", &strokeColorChangeData.newColor, &strokeColorChangeData.newColor == t.colorRight)) {
+                if(strokeColorChangeData.newColor.w() == 0.0f)
+                    strokeColorChangeData.newColor.w() = 1.0f;
+                t.color_selector_right(&strokeColorChangeData.newColor == t.colorRight ? nullptr : &strokeColorChangeData.newColor);
+            }
+            t.gui.text_label("Stroke Color");
+        });
+        update_selection_stroke_color();
+    }
+    t.gui.pop_id();
+}
+
+void DrawingProgramSelection::update_selection_stroke_color() {
+    if(strokeColorChangeData.oldColor != strokeColorChangeData.newColor) {
+        for(auto& c : selectedSet) {
+            if(c->obj->get_comp().get_stroke_color() != std::nullopt) {
+                strokeColorChangeData.oldColorData.emplace(c->obj.get_net_id(), c->obj->get_comp().get_stroke_color().value());
+                c->obj->get_comp().change_stroke_color(strokeColorChangeData.newColor);
+                c->obj->commit_update_dont_invalidate_cache(drawP); // Object isn't in the cache since it's selected
+                c->obj->send_comp_update(drawP, false);
+            }
+        }
+        strokeColorChangeData.oldColor = strokeColorChangeData.newColor;
+    }
+}
+
+void DrawingProgramSelection::check_add_stroke_color_change_undo() {
+    if(!strokeColorChangeData.oldColorData.empty()) {
+        class EditCanvasComponentsStrokeColorWorldUndoAction : public WorldUndoAction {
+            public:
+                EditCanvasComponentsStrokeColorWorldUndoAction(std::vector<WorldUndoManager::UndoObjectID> initUndoIDs, std::vector<Vector4f> initOldColors):
+                    undoIDs(std::move(initUndoIDs)),
+                    colors(std::move(initOldColors))
+                {}
+                std::string get_name() const override {
+                    return "Edit Stroke Colors";
+                }
+                bool undo(WorldUndoManager& undoMan) override {
+                    return undo_redo(undoMan);
+                }
+                bool redo(WorldUndoManager& undoMan) override {
+                    return undo_redo(undoMan);
+                }
+                bool undo_redo(WorldUndoManager& undoMan) {
+                    std::vector<NetworkingObjects::NetObjID> netIDs;
+
+                    if(!undoMan.fill_netid_list_from_undoid_list(netIDs, undoIDs))
+                        return false;
+
+                    undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                        for(size_t i = 0; i < netIDs.size(); i++) {
+                            auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(netIDs[i]);
+                            if(objPtr) {
+                                Vector4f oldColor = objPtr->get_comp().get_stroke_color().value();
+                                objPtr->get_comp().change_stroke_color(colors[i]);
+                                colors[i] = oldColor;
+                                objPtr->commit_update(undoMan.world.drawProg);
+                                objPtr->send_comp_update(undoMan.world.drawProg, true);
+                            }
+                        }
+                    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+
+                    return true;
+                }
+                ~EditCanvasComponentsStrokeColorWorldUndoAction() {}
+
+                std::vector<WorldUndoManager::UndoObjectID> undoIDs;
+                std::vector<Vector4f> colors;
+        };
+
+        std::vector<WorldUndoManager::UndoObjectID> undoIDs;
+        std::vector<Vector4f> oldColors;
+
+        for(auto& [netID, strokeColor] : strokeColorChangeData.oldColorData) {
+            undoIDs.emplace_back(drawP.world.undo.get_undoid_from_netid(netID));
+            oldColors.emplace_back(strokeColor);
+        }
+
+        drawP.world.undo.push(std::make_unique<EditCanvasComponentsStrokeColorWorldUndoAction>(std::move(undoIDs), std::move(oldColors)));
+        strokeColorChangeData.oldColorData.clear();
+
+        auto& t = drawP.world.main.toolbar;
+        if(&strokeColorChangeData.newColor == t.colorRight)
+            t.colorRight = nullptr; // Just making sure that the color selector doesn't leak
+    }
+}
+
 void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
+    check_add_stroke_color_change_undo();
+
     std::vector<CanvasComponentContainer::ObjInfo*> selectedComponents;
     if(frontObjectOnly) {
         CanvasComponentContainer::ObjInfo* a = drawP.drawCache.get_front_object_colliding_with_in_editing_layer(cC);
@@ -44,6 +143,8 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
 }
 
 void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
+    check_add_stroke_color_change_undo();
+
     if(frontObjectOnly) {
         CanvasComponentContainer::ObjInfo* p = get_front_object_colliding_with_in_editing_layer(cC);
         if(p) {
@@ -139,11 +240,15 @@ bool DrawingProgramSelection::is_selected(CanvasComponentContainer::ObjInfo* obj
 }
 
 void DrawingProgramSelection::reset_all() {
+    check_add_stroke_color_change_undo();
     selectedSet.clear();
     reset_transform_data();
+    strokeColorChangeData = StrokeColorChangeData();
 }
 
 void DrawingProgramSelection::reset_transform_data() {
+    check_add_stroke_color_change_undo();
+
     selectionTransformCoords = CoordSpaceHelperTransform();
     transformOpHappening = TransformOperation::NONE;
     translateData = TranslationData();
@@ -168,6 +273,8 @@ bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
 }
 
 void DrawingProgramSelection::commit_transform_selection() {
+    check_add_stroke_color_change_undo();
+
     if(!is_empty_transform()) {
         std::vector<WorldUndoManager::UndoObjectID> undoIDList;
         std::vector<std::pair<CoordSpaceHelper, CoordSpaceHelper>> transformDataList;
@@ -267,17 +374,22 @@ void DrawingProgramSelection::update() {
                             scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
                             scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
                             transformOpHappening = TransformOperation::SCALE;
+                            check_add_stroke_color_change_undo();
                         }
-                        else if(mouse_collided_with_rotate_center_handle_point())
+                        else if(mouse_collided_with_rotate_center_handle_point()) {
                             transformOpHappening = TransformOperation::ROTATE_RELOCATE_CENTER;
+                            check_add_stroke_color_change_undo();
+                        }
                         else if(mouse_collided_with_rotate_handle_point()) {
                             rotateData.rotationAngle = 0.0;
                             transformOpHappening = TransformOperation::ROTATE;
+                            check_add_stroke_color_change_undo();
                         }
                         else if(mouse_collided_with_selection_aabb()) {
                             translateData.startPos = drawP.world.get_mouse_world_pos();
                             transformOpHappening = TransformOperation::TRANSLATE;
                             translateData.translateWithKeys = false;
+                            check_add_stroke_color_change_undo();
                         }
                     }
                     else {
@@ -297,6 +409,7 @@ void DrawingProgramSelection::update() {
                             selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
                             transformOpHappening = TransformOperation::TRANSLATE;
                             translateData.keyTranslateLastMoveTime = std::chrono::steady_clock::now();
+                            check_add_stroke_color_change_undo();
                         }
                     }
                     break;
@@ -410,6 +523,8 @@ void DrawingProgramSelection::update() {
 }
 
 void DrawingProgramSelection::deselect_all() {
+    check_add_stroke_color_change_undo();
+
     if(is_something_selected()) {
         commit_transform_selection();
         for(auto& obj : selectedSet)
@@ -419,18 +534,24 @@ void DrawingProgramSelection::deselect_all() {
 }
 
 void DrawingProgramSelection::push_selection_to_front() {
+    check_add_stroke_color_change_undo();
+
     auto selectedVec = selectedSet;
     deselect_all();
     drawP.layerMan.push_components_to(selectedVec, false);
 }
 
 void DrawingProgramSelection::push_selection_to_back() {
+    check_add_stroke_color_change_undo();
+
     auto selectedVec = selectedSet;
     deselect_all();
     drawP.layerMan.push_components_to(selectedVec, true);
 }
 
 void DrawingProgramSelection::delete_all() {
+    check_add_stroke_color_change_undo();
+
     if(is_something_selected()) {
         auto selectedSetTemp = selectedSet;
         reset_all(); // Clear set before erasing, since calling erase_component_set will run a check to see if each object is selected and erase them one by one, which is slower
@@ -439,6 +560,8 @@ void DrawingProgramSelection::delete_all() {
 }
 
 void DrawingProgramSelection::erase_component(CanvasComponentContainer::ObjInfo* objToCheck) {
+    check_add_stroke_color_change_undo();
+
     std::erase(selectedSet, objToCheck);
     if(selectedSet.empty())
         reset_all();
@@ -455,6 +578,8 @@ CanvasComponentContainer::ObjInfo* DrawingProgramSelection::get_front_object_col
 }
 
 void DrawingProgramSelection::selection_to_clipboard() {
+    check_add_stroke_color_change_undo();
+
     auto& clipboard = drawP.world.main.clipboard;
     std::unordered_set<NetworkingObjects::NetObjID> resourceSet;
     for(auto& c : selectedSet)
@@ -468,6 +593,8 @@ void DrawingProgramSelection::selection_to_clipboard() {
 }
 
 void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
+    check_add_stroke_color_change_undo();
+
     if(drawP.layerMan.is_a_layer_being_edited()) {
         auto& clipboard = drawP.world.main.clipboard;
 
@@ -511,6 +638,8 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
 }
 
 void DrawingProgramSelection::paste_image(Vector2f pasteScreenPos) {
+    check_add_stroke_color_change_undo();
+
     if(drawP.layerMan.is_a_layer_being_edited()) {
         #ifdef __EMSCRIPTEN__
             struct PasteData {

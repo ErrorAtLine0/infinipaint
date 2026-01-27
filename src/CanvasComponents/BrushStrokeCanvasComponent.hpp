@@ -23,13 +23,14 @@ class BrushStrokeCanvasComponent : public CanvasComponent {
         virtual void save_file(cereal::PortableBinaryOutputArchive& a) const override;
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
         virtual std::unique_ptr<CanvasComponent> get_data_copy() const override;
+        virtual void change_stroke_color(const Vector4f& newStrokeColor) override;
+        virtual std::optional<Vector4f> get_stroke_color() const override;
 
         struct Data {
-            std::vector<BrushStrokeCanvasComponentPoint> points;
+            std::shared_ptr<std::vector<BrushStrokeCanvasComponentPoint>> points = std::make_shared<std::vector<BrushStrokeCanvasComponentPoint>>(); // It's a pointer here since brush strokes cant be edited
             Vector4f color;
             bool hasRoundCaps;
-        };
-        std::shared_ptr<Data> d = std::make_shared<Data>(); // It's a pointer here since brush strokes cant be edited
+        } d;
 
         virtual void set_data_from(const CanvasComponent& other) override;
     private:

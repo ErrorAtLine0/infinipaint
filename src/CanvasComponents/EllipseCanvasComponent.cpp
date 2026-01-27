@@ -25,6 +25,14 @@ void EllipseCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
     a(d.strokeColor, d.fillColor, d.strokeWidth, d.p1, d.p2, d.fillStrokeMode);
 }
 
+void EllipseCanvasComponent::change_stroke_color(const Vector4f& newStrokeColor) {
+    d.strokeColor = newStrokeColor;
+}
+
+std::optional<Vector4f> EllipseCanvasComponent::get_stroke_color() const {
+    return d.strokeColor;
+}
+
 void EllipseCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
     SkPaint p;
     if(d.fillStrokeMode == 0 || d.fillStrokeMode == 2) {

@@ -8,6 +8,7 @@ class DrawingProgram;
 class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
+        void selection_gui();
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void erase_component(CanvasComponentContainer::ObjInfo* objToCheck);
@@ -37,6 +38,15 @@ class DrawingProgramSelection {
         void commit_transform_selection();
         void rebuild_cam_space();
         Vector2f get_rotation_point_pos_from_angle(double angle);
+
+        void update_selection_stroke_color();
+
+        void check_add_stroke_color_change_undo();
+        struct StrokeColorChangeData {
+            Vector4f newColor = {1.0f, 1.0f, 1.0f, 0.0f};
+            Vector4f oldColor = {1.0f, 1.0f, 1.0f, 0.0f};
+            std::unordered_map<NetworkingObjects::NetObjID, Vector4f> oldColorData;
+        } strokeColorChangeData;
 
         void set_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection);
         void add_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection);

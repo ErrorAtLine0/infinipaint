@@ -32,7 +32,7 @@ void BrushTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
 bool BrushTool::extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
-    auto& points = brushStroke.d->points;
+    auto& points = *brushStroke.d.points;
     if(points.size() >= 1 && (newPoint - points[points.size() - 1].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
         return false;
     if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
@@ -43,7 +43,7 @@ bool BrushTool::extensive_point_checking(const BrushStrokeCanvasComponent& brush
 }
 
 bool BrushTool::extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
-    auto& points = brushStroke.d->points;
+    auto& points = *brushStroke.d.points;
     if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
         return false;
     if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
@@ -98,9 +98,9 @@ void BrushTool::tool_update() {
                 p.pos = drawP.world.main.input.mouse.pos;
                 p.width = toolConfig.get_relative_width(toolConfig.brush.relativeWidth) * penWidth;
                 prevPointUnaltered = p.pos;
-                newBrushStroke.d->points.emplace_back(p);
-                newBrushStroke.d->color = toolConfig.globalConf.foregroundColor;
-                newBrushStroke.d->hasRoundCaps = toolConfig.brush.hasRoundCaps;
+                newBrushStroke.d.points->emplace_back(p);
+                newBrushStroke.d.color = toolConfig.globalConf.foregroundColor;
+                newBrushStroke.d.hasRoundCaps = toolConfig.brush.hasRoundCaps;
                 newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
                 objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
                 addedTemporaryPoint = false;
@@ -109,6 +109,7 @@ void BrushTool::tool_update() {
         else {
             NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
             BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
+            auto& brushPoints = *brushStroke.d.points;
 
             BrushStrokeCanvasComponentPoint p;
             p.pos = containerPtr->coords.get_mouse_pos(drawP.world);
@@ -116,28 +117,28 @@ void BrushTool::tool_update() {
 
             if(!addedTemporaryPoint) {
                 if(extensive_point_checking(brushStroke, p.pos)) {
-                    brushStroke.d->points.emplace_back(p);
+                    brushPoints.emplace_back(p);
                     addedTemporaryPoint = true;
                 }
                 else
-                    brushStroke.d->points.back().width = std::max(brushStroke.d->points.back().width, p.width);
+                    brushPoints.back().width = std::max(brushPoints.back().width, p.width);
             }
 
             if(addedTemporaryPoint) {
-                const BrushStrokeCanvasComponentPoint& prevP = brushStroke.d->points[brushStroke.d->points.size() - 2];
+                const BrushStrokeCanvasComponentPoint& prevP = brushPoints[brushPoints.size() - 2];
                 float distToPrev = (p.pos - prevP.pos).norm();
                 if(extensive_point_checking_back(brushStroke, p.pos)) {
-                    brushStroke.d->points.back().pos = p.pos;
-                    brushStroke.d->points.back().width = std::max(brushStroke.d->points.back().width, p.width);
-                    brushStroke.d->points[brushStroke.d->points.size() - 2].width = std::max(brushStroke.d->points[brushStroke.d->points.size() - 2].width, p.width);
+                    brushPoints.back().pos = p.pos;
+                    brushPoints.back().width = std::max(brushPoints.back().width, p.width);
+                    brushPoints[brushPoints.size() - 2].width = std::max(brushPoints[brushPoints.size() - 2].width, p.width);
                 }
                 if((!drawingMinimumRelativeToSize && distToPrev >= 10.0) || (drawingMinimumRelativeToSize && distToPrev >= toolConfig.get_relative_width(toolConfig.brush.relativeWidth) * BrushStrokeCanvasComponent::DRAW_MINIMUM_LIMIT)) {
-                    brushStroke.d->points.back() = p;
+                    brushPoints.back() = p;
                     addedTemporaryPoint = false;
 
                     if(midwayInterpolation) {
-                        if(brushStroke.d->points.size() != 2) // Don't interpolate the first point
-                            brushStroke.d->points[brushStroke.d->points.size() - 2].pos = (prevPointUnaltered + p.pos) * 0.5;
+                        if(brushPoints.size() != 2) // Don't interpolate the first point
+                            brushPoints[brushPoints.size() - 2].pos = (prevPointUnaltered + p.pos) * 0.5;
                         prevPointUnaltered = p.pos;
                     }
                 }
