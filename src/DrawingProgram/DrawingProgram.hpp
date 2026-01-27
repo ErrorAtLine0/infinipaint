@@ -22,8 +22,6 @@ class World;
 
 class DrawingProgram {
     public:
-        static size_t MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH;
-        static size_t MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH;
         DrawingProgram(World& initWorld);
         void server_init_no_file();
         void toolbar_gui();
@@ -65,8 +63,6 @@ class DrawingProgram {
         void check_updateable_components();
         void update_downloading_dropped_files();
 
-        std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
-        std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
 
         bool selection_action_menu(Vector2f popupPos);
         void rebuild_cache();

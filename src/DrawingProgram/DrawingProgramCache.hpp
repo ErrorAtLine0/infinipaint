@@ -19,6 +19,8 @@ class DrawingProgramCache {
         static size_t MAXIMUM_COMPONENTS_IN_SINGLE_NODE;
         static size_t MAXIMUM_DRAW_CACHE_SURFACES;
         static size_t CACHE_NODE_RESOLUTION;
+        static size_t MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH;
+        static size_t MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH;
 
         DrawingProgramCache(DrawingProgram& initDrawP);
         void add_component(CanvasComponentContainer::ObjInfo* c);
@@ -32,9 +34,9 @@ class DrawingProgramCache {
         void node_loop_erase_if_components(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::function<bool(CanvasComponentContainer::ObjInfo* comp)> f);
         void node_loop_components(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, std::function<void(CanvasComponentContainer::ObjInfo* comp)> f);
         bool should_rebuild() const;
+        bool check_rebuild_needed_from_framerate();
         void update_and_draw_cached_canvas(SkCanvas* canvas, const DrawData& drawData);
         void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::optional<SCollision::AABB<WorldScalar>>& drawBounds);
-        bool unsorted_components_exist() const;
         void invalidate_cache_at_aabb(const SCollision::AABB<WorldScalar>& aabb);
         void set_clear_window_cache();
 
@@ -68,6 +70,9 @@ class DrawingProgramCache {
         void refresh_draw_cache(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const DrawData& drawData);
         void draw_cache_image_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode);
         void recursive_draw_layer_item_to_canvas(const DrawingProgramLayerListItem& layerListItem, SkCanvas* canvas, const DrawData& drawData, const std::optional<SCollision::AABB<WorldScalar>>& drawBounds, const std::vector<std::shared_ptr<DrawingProgramCacheBVHNode>>& nodesToDraw);
+
+        std::optional<std::chrono::steady_clock::time_point> badFrametimeTimePoint;
+        std::optional<std::chrono::steady_clock::time_point> unorderedObjectsExistTimePoint;
 
         std::shared_ptr<DrawingProgramCacheBVHNode> bvhRoot;
         std::vector<CanvasComponentContainer::ObjInfo*> unsortedComponents;

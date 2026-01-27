@@ -608,7 +608,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
             mS.canvas->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
 
-            mS.ctx->flush();
+            mS.ctx->flushAndSubmit();
 
             SDL_GL_SwapWindow(mS.window);
         #endif

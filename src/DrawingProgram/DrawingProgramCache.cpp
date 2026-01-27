@@ -13,8 +13,14 @@
 
 size_t DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD = 1000;
 size_t DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE = 50;
-size_t DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES = 40;
+#ifdef __EMSCRIPTEN__
+    size_t DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES = 40; // Use less VRAM in web build
+#else
+    size_t DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES = 96;
+#endif
 size_t DrawingProgramCache::CACHE_NODE_RESOLUTION = 2048;
+size_t DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH = 33; // Around 30FPS
+size_t DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH = 5000; // Should be a bit long to prevent objects that are being updated, like brush strokes, from constantly refreshing the cache.
 
 std::unordered_map<std::shared_ptr<DrawingProgramCacheBVHNode>, DrawingProgramCache::NodeCache> DrawingProgramCache::nodeCacheMap;
 DrawingProgramCache::WindowCache DrawingProgramCache::windowCache;
@@ -64,8 +70,25 @@ bool DrawingProgramCache::should_rebuild() const {
     return (unsortedComponents.size() >= MINIMUM_COMPONENTS_TO_START_REBUILD);
 }
 
-bool DrawingProgramCache::unsorted_components_exist() const {
-    return !unsortedComponents.empty();
+bool DrawingProgramCache::check_rebuild_needed_from_framerate() {
+    if(drawP.world.main.window.lastFrameTime > std::chrono::milliseconds(MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH)) {
+        if(!badFrametimeTimePoint)
+            badFrametimeTimePoint = std::chrono::steady_clock::now();
+        else if(unorderedObjectsExistTimePoint && std::chrono::steady_clock::now() - badFrametimeTimePoint.value() >= std::chrono::milliseconds(MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH) && std::chrono::steady_clock::now() - unorderedObjectsExistTimePoint.value() >= std::chrono::milliseconds(MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH)) {
+            unorderedObjectsExistTimePoint = std::nullopt;
+            badFrametimeTimePoint = std::nullopt;
+            return true;
+        }
+    }
+    else
+        badFrametimeTimePoint = std::nullopt;
+
+    if(unsortedComponents.empty())
+        unorderedObjectsExistTimePoint = std::nullopt;
+    else if(!unorderedObjectsExistTimePoint)
+        unorderedObjectsExistTimePoint = std::chrono::steady_clock::now();
+
+    return false;
 }
 
 void DrawingProgramCache::build(const std::unordered_set<CanvasComponentContainer::ObjInfo*>& objsToExclude) {
@@ -202,18 +225,13 @@ void DrawingProgramCache::build_bvh_node_coords_and_resolution(DrawingProgramCac
 }
 
 void DrawingProgramCache::refresh_all_draw_cache(const DrawData& drawData) {
-    std::deque<std::shared_ptr<DrawingProgramCacheBVHNode>> nodeFlatList; // We want to render children before parents, so that parents can make use of the cached children
     traverse_bvh_run_function(drawData.cam.viewingAreaGenerousCollider, [&](std::shared_ptr<DrawingProgramCacheBVHNode> node) {
         if(node && node->coords.inverseScale <= drawData.cam.c.inverseScale) {
-            auto it = nodeCacheMap.find(node);
-            if((it == nodeCacheMap.end()) || it->second.invalidBounds.has_value())
-                nodeFlatList.emplace_front(node);
+            refresh_draw_cache(node, drawData);
             return false;
         }
         return true;
     });
-    if(!nodeFlatList.empty())
-        refresh_draw_cache(nodeFlatList.front(), drawData);
 }
 
 void DrawingProgramCache::traverse_bvh_run_function(const SCollision::AABB<WorldScalar>& aabb, std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>& node)> f) {
@@ -243,6 +261,8 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     auto bvhNodeCacheIt = nodeCacheMap.find(bvhNode);
     if(bvhNodeCacheIt != nodeCacheMap.end()) {
         nodeCache = bvhNodeCacheIt->second;
+        if(!nodeCache.invalidBounds.has_value()) // Node is cached already, and doesn't have invalid areas, so there's nothing to do
+            return;
         nodeCacheMap.erase(bvhNode); // Ensure nodeCache is erased, so that the draw_components_to_canvas function doesnt use it while drawing
     }
     else {

@@ -36,9 +36,6 @@
 
 #include "Tools/EraserTool.hpp"
 
-size_t DrawingProgram::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH = 33; // Around 30FPS
-size_t DrawingProgram::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH = 400;
-
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     drawCache(*this),
@@ -238,23 +235,6 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    if(world.main.window.lastFrameTime > std::chrono::milliseconds(MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH)) {
-        if(!badFrametimeTimePoint)
-            badFrametimeTimePoint = std::chrono::steady_clock::now();
-        else if(unorderedObjectsExistTimePoint && std::chrono::steady_clock::now() - badFrametimeTimePoint.value() >= std::chrono::milliseconds(MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH) && std::chrono::steady_clock::now() - unorderedObjectsExistTimePoint.value() >= std::chrono::milliseconds(MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH)) {
-            rebuild_cache();
-            unorderedObjectsExistTimePoint = std::nullopt;
-            badFrametimeTimePoint = std::nullopt;
-        }
-    }
-    else
-        badFrametimeTimePoint = std::nullopt;
-
-    if(!drawCache.unsorted_components_exist())
-        unorderedObjectsExistTimePoint = std::nullopt;
-    else if(!unorderedObjectsExistTimePoint)
-        unorderedObjectsExistTimePoint = std::chrono::steady_clock::now();
-
     tool_temporary_switch_update();
 
     controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;
@@ -340,7 +320,7 @@ void DrawingProgram::update() {
     update_downloading_dropped_files();
     check_updateable_components();
 
-    if(drawCache.should_rebuild())
+    if(drawCache.check_rebuild_needed_from_framerate() || drawCache.should_rebuild())
         rebuild_cache();
 }
 
