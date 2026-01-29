@@ -51,9 +51,9 @@ std::pair<std::optional<float>, ToolConfiguration::RelativeWidthFailCode> ToolCo
     auto& lockedCameraScale = drawP.controls.lockedCameraScale;
     if(lockedCameraScale.has_value()) {
         float lockMultiplier = static_cast<float>(WorldMultiplier(lockedCameraScale.value()) / WorldMultiplier(camInverseScale));
-        if(lockMultiplier < 0.001f)
+        if(lockMultiplier < 0.005f)
             return {std::nullopt, RelativeWidthFailCode::TOO_ZOOMED_OUT};
-        else if(lockMultiplier > 1000.0f)
+        else if(lockMultiplier > 200.0f)
             return {std::nullopt, RelativeWidthFailCode::TOO_ZOOMED_IN};
         return {relativeWidth * lockMultiplier, RelativeWidthFailCode::SUCCESS};
     }
