@@ -1,6 +1,7 @@
 #pragma once
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
+#include "ToolConfiguration.hpp"
 #include "Tools/GridModifyTool.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
 #include "Tools/PanCanvasTool.hpp"
@@ -92,6 +93,8 @@ class DrawingProgram {
         DrawingProgramToolType toolTypeAfterTempMove;
 
         struct GlobalControls {
+            std::optional<WorldScalar> lockedCameraScale;
+
             WorldVec previousMouseWorldPos = {0, 0};
             WorldVec currentMouseWorldPos = {0, 0};
             bool leftClick = false;
@@ -143,4 +146,5 @@ class DrawingProgram {
         friend class DrawingProgramLayerManager;
         friend class DrawingProgramLayer;
         friend class DrawingProgramLayerFolder;
+        friend class ToolConfiguration;
 };

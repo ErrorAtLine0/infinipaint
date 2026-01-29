@@ -21,7 +21,7 @@ void LineDrawTool::gui_toolbox() {
     auto& toolConfig = drawP.world.main.toolConfig;
     t.gui.push_id("rect draw tool");
     t.gui.text_label_centered("Draw Line");
-    toolConfig.relative_width_slider(t.gui, "Size", &toolConfig.lineDraw.relativeWidth);
+    toolConfig.relative_width_gui(drawP, "Size", &toolConfig.lineDraw.relativeWidth);
     t.gui.checkbox_field("hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
     t.gui.pop_id();
 }
@@ -50,7 +50,7 @@ void LineDrawTool::tool_update() {
 
             BrushStrokeCanvasComponentPoint p;
             p.pos = drawP.world.main.input.mouse.pos;
-            p.width = toolConfig.get_relative_width(toolConfig.lineDraw.relativeWidth);
+            p.width = toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, toolConfig.lineDraw.relativeWidth);
             newBrushStroke.d.points->emplace_back(p);
             p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
             newBrushStroke.d.points->emplace_back(p);

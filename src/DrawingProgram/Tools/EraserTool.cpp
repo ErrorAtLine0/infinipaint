@@ -16,7 +16,7 @@ void EraserTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("eraser tool");
     t.gui.text_label_centered("Eraser");
-    drawP.world.main.toolConfig.relative_width_slider(t.gui, "Size", &drawP.world.main.toolConfig.eraser.relativeWidth);
+    drawP.world.main.toolConfig.relative_width_gui(drawP, "Size", &drawP.world.main.toolConfig.eraser.relativeWidth);
     t.gui.text_label("Erase from:");
     if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
         drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
@@ -46,7 +46,7 @@ void EraserTool::tool_update() {
     if(drawP.controls.leftClickHeld) {
         const Vector2f& prevMousePos = drawP.controls.leftClick ? drawP.world.main.input.mouse.pos : drawP.world.main.input.mouse.lastPos;
         SCollision::ColliderCollection<float> cC;
-        float width = drawP.world.main.toolConfig.get_relative_width(drawP.world.main.toolConfig.eraser.relativeWidth);
+        float width = drawP.world.main.toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, drawP.world.main.toolConfig.eraser.relativeWidth);
         SCollision::generate_wide_line(cC, prevMousePos, drawP.world.main.input.mouse.pos, width * 2.0f, true);
         auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
@@ -97,7 +97,7 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         linePaint.setColor4f(c);
         linePaint.setStyle(SkPaint::kStroke_Style);
         linePaint.setStrokeCap(SkPaint::kRound_Cap);
-        float width = drawP.world.main.toolConfig.get_relative_width(drawP.world.main.toolConfig.eraser.relativeWidth);
+        float width = drawP.world.main.toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, drawP.world.main.toolConfig.eraser.relativeWidth);
         linePaint.setStrokeWidth(width * 2.0f);
         SkPathBuilder erasePath;
         erasePath.moveTo(convert_vec2<SkPoint>(drawData.main->input.mouse.lastPos));

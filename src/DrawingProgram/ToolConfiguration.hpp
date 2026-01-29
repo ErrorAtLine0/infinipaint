@@ -56,8 +56,8 @@ class ToolConfiguration {
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(GlobalConfig, useGlobalRelativeWidth, foregroundColor, backgroundColor, relativeWidth)
         } globalConf;
 
-        float get_relative_width(float relativeWidthLocal) const;
-        void relative_width_slider(GUIStuff::GUIManager& gui, const char* label, float* relativeWidthLocal);
+        float get_relative_width(DrawingProgram& drawP, const WorldScalar& camInverseScale, float relativeWidthLocal) const;
+        void relative_width_gui(DrawingProgram& drawP, const char* label, float* relativeWidthLocal);
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(ToolConfiguration, brush, eraser, ellipseDraw, rectDraw, eyeDropper, lineDraw, screenshot, globalConf)
 };

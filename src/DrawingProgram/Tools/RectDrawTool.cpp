@@ -26,7 +26,7 @@ void RectDrawTool::gui_toolbox() {
     if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
     if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        toolConfig.relative_width_slider(t.gui, "Outline Size", &toolConfig.rectDraw.relativeWidth);
+        toolConfig.relative_width_gui(drawP, "Outline Size", &toolConfig.rectDraw.relativeWidth);
     t.gui.pop_id();
 }
 
@@ -59,7 +59,7 @@ void RectDrawTool::tool_update() {
             newRectangle.d.strokeColor = toolConfig.globalConf.foregroundColor;
             newRectangle.d.fillColor = toolConfig.globalConf.backgroundColor;
             newRectangle.d.cornerRadius = relativeRadiusWidth;
-            newRectangle.d.strokeWidth = toolConfig.get_relative_width(toolConfig.rectDraw.relativeWidth);
+            newRectangle.d.strokeWidth = toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, toolConfig.rectDraw.relativeWidth);
             newRectangle.d.p1 = startAt;
             newRectangle.d.p2 = startAt;
             newRectangle.d.p2 = ensure_points_have_distance(newRectangle.d.p1, newRectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);

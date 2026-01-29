@@ -27,7 +27,7 @@ void EllipseDrawTool::gui_toolbox() {
     if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
     if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        toolConfig.relative_width_slider(t.gui, "Outline Size", &toolConfig.ellipseDraw.relativeWidth);
+        toolConfig.relative_width_gui(drawP, "Outline Size", &toolConfig.ellipseDraw.relativeWidth);
     t.gui.pop_id();
 }
 
@@ -57,7 +57,7 @@ void EllipseDrawTool::tool_update() {
             startAt = drawP.world.main.input.mouse.pos;
             newEllipse.d.strokeColor = toolConfig.globalConf.foregroundColor;
             newEllipse.d.fillColor =   toolConfig.globalConf.backgroundColor;
-            newEllipse.d.strokeWidth = toolConfig.get_relative_width(toolConfig.ellipseDraw.relativeWidth);
+            newEllipse.d.strokeWidth = toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, toolConfig.ellipseDraw.relativeWidth);
             newEllipse.d.p1 = startAt;
             newEllipse.d.p2 = startAt;
             newEllipse.d.p2 = ensure_points_have_distance(newEllipse.d.p1, newEllipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
