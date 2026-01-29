@@ -26,7 +26,7 @@ void RectDrawTool::gui_toolbox() {
     if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
     if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        toolConfig.relative_width_gui(drawP, "Outline Size", &toolConfig.rectDraw.relativeWidth);
+        toolConfig.relative_width_gui(drawP, "Outline Size");
     t.gui.pop_id();
 }
 
@@ -52,14 +52,24 @@ void RectDrawTool::tool_update() {
 
     if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
+            auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+            auto relativeRadiusWidthResult = drawP.world.main.toolConfig.get_relative_width_from_value(drawP, drawP.world.drawData.cam.c.inverseScale, relativeRadiusWidth);
+            if(!relativeWidthResult.first.has_value() || !relativeRadiusWidthResult.first.has_value()) {
+                if(drawP.controls.leftClick)
+                    drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+                return;
+            }
+            float width = relativeWidthResult.first.value();
+            float radiusWidth = relativeRadiusWidthResult.first.value();
+
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::RECTANGLE);
             RectangleCanvasComponent& newRectangle = static_cast<RectangleCanvasComponent&>(newContainer->get_comp());
 
             startAt = drawP.world.main.input.mouse.pos;
             newRectangle.d.strokeColor = toolConfig.globalConf.foregroundColor;
             newRectangle.d.fillColor = toolConfig.globalConf.backgroundColor;
-            newRectangle.d.cornerRadius = relativeRadiusWidth;
-            newRectangle.d.strokeWidth = toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, toolConfig.rectDraw.relativeWidth);
+            newRectangle.d.cornerRadius = radiusWidth;
+            newRectangle.d.strokeWidth = width;
             newRectangle.d.p1 = startAt;
             newRectangle.d.p2 = startAt;
             newRectangle.d.p2 = ensure_points_have_distance(newRectangle.d.p1, newRectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);

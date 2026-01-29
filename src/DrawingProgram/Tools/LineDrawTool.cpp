@@ -21,7 +21,7 @@ void LineDrawTool::gui_toolbox() {
     auto& toolConfig = drawP.world.main.toolConfig;
     t.gui.push_id("rect draw tool");
     t.gui.text_label_centered("Draw Line");
-    toolConfig.relative_width_gui(drawP, "Size", &toolConfig.lineDraw.relativeWidth);
+    toolConfig.relative_width_gui(drawP, "Size");
     t.gui.checkbox_field("hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
     t.gui.pop_id();
 }
@@ -45,12 +45,20 @@ void LineDrawTool::tool_update() {
     auto& toolConfig = drawP.world.main.toolConfig;
     if(!objInfoBeingEdited) {
         if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
+            auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+            if(!relativeWidthResult.first.has_value()) {
+                if(drawP.controls.leftClick)
+                    drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+                return;
+            }
+            float width = relativeWidthResult.first.value();
+
             CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
             BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
 
             BrushStrokeCanvasComponentPoint p;
             p.pos = drawP.world.main.input.mouse.pos;
-            p.width = toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, toolConfig.lineDraw.relativeWidth);
+            p.width = width;
             newBrushStroke.d.points->emplace_back(p);
             p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
             newBrushStroke.d.points->emplace_back(p);

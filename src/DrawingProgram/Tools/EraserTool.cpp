@@ -16,7 +16,7 @@ void EraserTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("eraser tool");
     t.gui.text_label_centered("Eraser");
-    drawP.world.main.toolConfig.relative_width_gui(drawP, "Size", &drawP.world.main.toolConfig.eraser.relativeWidth);
+    drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
     t.gui.text_label("Erase from:");
     if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
         drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
@@ -44,9 +44,16 @@ void EraserTool::tool_update() {
         drawP.world.main.input.hideCursor = true;
 
     if(drawP.controls.leftClickHeld) {
+        auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+        if(!relativeWidthResult.first.has_value()) {
+            if(drawP.controls.leftClick)
+                drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+            return;
+        }
+        float width = relativeWidthResult.first.value() * 0.5f;
+
         const Vector2f& prevMousePos = drawP.controls.leftClick ? drawP.world.main.input.mouse.pos : drawP.world.main.input.mouse.lastPos;
         SCollision::ColliderCollection<float> cC;
-        float width = drawP.world.main.toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, drawP.world.main.toolConfig.eraser.relativeWidth);
         SCollision::generate_wide_line(cC, prevMousePos, drawP.world.main.input.mouse.pos, width * 2.0f, true);
         auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
 
@@ -90,18 +97,21 @@ bool EraserTool::prevent_undo_or_redo() {
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawData.main->toolbar.io->hoverObstructed) {
-        SkColor4f c = drawP.world.canvasTheme.get_tool_front_color();
-        c.fA = 0.5f;
+        auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+        if(relativeWidthResult.first.has_value()) {
+            float width = relativeWidthResult.first.value() * 0.5f;
+            SkColor4f c = drawP.world.canvasTheme.get_tool_front_color();
+            c.fA = 0.5f;
 
-        SkPaint linePaint;
-        linePaint.setColor4f(c);
-        linePaint.setStyle(SkPaint::kStroke_Style);
-        linePaint.setStrokeCap(SkPaint::kRound_Cap);
-        float width = drawP.world.main.toolConfig.get_relative_width(drawP, drawP.world.drawData.cam.c.inverseScale, drawP.world.main.toolConfig.eraser.relativeWidth);
-        linePaint.setStrokeWidth(width * 2.0f);
-        SkPathBuilder erasePath;
-        erasePath.moveTo(convert_vec2<SkPoint>(drawData.main->input.mouse.lastPos));
-        erasePath.lineTo(convert_vec2<SkPoint>(drawData.main->input.mouse.pos));
-        canvas->drawPath(erasePath.detach(), linePaint);
+            SkPaint linePaint;
+            linePaint.setColor4f(c);
+            linePaint.setStyle(SkPaint::kStroke_Style);
+            linePaint.setStrokeCap(SkPaint::kRound_Cap);
+            linePaint.setStrokeWidth(width * 2.0f);
+            SkPathBuilder erasePath;
+            erasePath.moveTo(convert_vec2<SkPoint>(drawData.main->input.mouse.lastPos));
+            erasePath.lineTo(convert_vec2<SkPoint>(drawData.main->input.mouse.pos));
+            canvas->drawPath(erasePath.detach(), linePaint);
+        }
     }
 }

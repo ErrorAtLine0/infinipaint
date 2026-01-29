@@ -56,8 +56,18 @@ class ToolConfiguration {
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(GlobalConfig, useGlobalRelativeWidth, foregroundColor, backgroundColor, relativeWidth)
         } globalConf;
 
-        float get_relative_width(DrawingProgram& drawP, const WorldScalar& camInverseScale, float relativeWidthLocal) const;
-        void relative_width_gui(DrawingProgram& drawP, const char* label, float* relativeWidthLocal);
+        enum class RelativeWidthFailCode {
+            SUCCESS,
+            TOO_ZOOMED_IN,
+            TOO_ZOOMED_OUT
+        };
+
+        float& get_stroke_size_relative_width_ref(DrawingProgramToolType toolType);
+        const float& get_stroke_size_relative_width_ref(DrawingProgramToolType toolType) const;
+        std::pair<std::optional<float>, RelativeWidthFailCode> get_relative_width_from_value(DrawingProgram& drawP, const WorldScalar& camInverseScale, float relativeWidth) const;
+        std::pair<std::optional<float>, RelativeWidthFailCode> get_relative_width_stroke_size(DrawingProgram& drawP, const WorldScalar& camInverseScale) const;
+        void print_relative_width_fail_message(RelativeWidthFailCode failCode);
+        void relative_width_gui(DrawingProgram& drawP, const char* label);
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(ToolConfiguration, brush, eraser, ellipseDraw, rectDraw, eyeDropper, lineDraw, screenshot, globalConf)
 };
