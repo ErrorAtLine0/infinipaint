@@ -32,6 +32,13 @@ class CanvasComponentContainer {
             std::unique_ptr<CanvasComponent> obj;
             void scale_up(const WorldScalar& scaleUpAmount);
         };
+
+        struct TransformDrawData {
+            Vector2f translation;
+            float rotation;
+            float scale;
+        };
+        std::optional<TransformDrawData> transformHolder; // Can be used to store transforms when calculating transforms in parallel
         
         CanvasComponentContainer();
         CanvasComponentContainer(NetworkingObjects::NetObjManager& objMan, CanvasComponentType type);
@@ -45,6 +52,8 @@ class CanvasComponentContainer {
         CanvasComponent& get_comp() const;
         SCollision::AABB<WorldScalar> get_world_bounds() const;
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
+        void draw_with_transform(SkCanvas* canvas, const DrawData& drawData, const TransformDrawData& transformDrawData) const;
+        TransformDrawData calculate_draw_transform(const DrawData& drawData) const;
         void commit_update(DrawingProgram& drawP);
         void commit_transform_dont_invalidate_cache(); // Must be thread safe
         void commit_transform(DrawingProgram& drawP);
@@ -66,16 +75,9 @@ class CanvasComponentContainer {
 
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a);
 
-        struct TransformDrawData {
-            Vector2f translation;
-            float rotation;
-            float scale;
-        };
-
         unsigned get_mipmap_level(const DrawData& drawData) const;
         CanvasComponent* allocate_comp(CanvasComponentType type);
         void canvas_do_transform(SkCanvas* canvas, const TransformDrawData& transformData) const;
-        TransformDrawData calculate_draw_transform(const DrawData& drawData) const;
         void calculate_world_bounds();
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;

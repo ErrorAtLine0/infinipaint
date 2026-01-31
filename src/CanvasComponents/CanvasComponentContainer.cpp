@@ -88,12 +88,15 @@ void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, 
 }
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {
-    if(should_draw(drawData)) {
-        canvas->save();
-        canvas_do_transform(canvas, calculate_draw_transform(drawData));
-        get_comp().draw(canvas, drawData);
-        canvas->restore();
-    }
+    if(should_draw(drawData))
+        draw_with_transform(canvas, drawData, calculate_draw_transform(drawData));
+}
+
+void CanvasComponentContainer::draw_with_transform(SkCanvas* canvas, const DrawData& drawData, const TransformDrawData& transformDrawData) const {
+    canvas->save();
+    canvas_do_transform(canvas, transformDrawData);
+    get_comp().draw(canvas, drawData);
+    canvas->restore();
 }
 
 void CanvasComponentContainer::commit_update(DrawingProgram& drawP) {
@@ -132,7 +135,7 @@ bool CanvasComponentContainer::collides_with_cam_coords(const CoordSpaceHelper& 
 bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const {
     if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
         return false;
-    else if((camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY) >= coords.inverseScale)
+    else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY))
         return SCollision::collide(checkAgainstCam, camCoords.to_space(worldAABB.value().min));
     else {
         auto c = checkAgainstWorld.transform<float>(

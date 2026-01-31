@@ -2,6 +2,7 @@
 #include "DrawingProgram.hpp"
 #include "../World.hpp"
 #include "../MainProgram.hpp"
+#include "Helpers/Parallel.hpp"
 #include "Layers/DrawingProgramLayerManager.hpp"
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
@@ -424,8 +425,10 @@ void DrawingProgramCache::draw_components_to_canvas(SkCanvas* canvas, const Draw
                     }
                 }
             }
-            if(node) // Not the "unsorted components" node (which is nullptr)
+            if(node && node->coords.inverseScale > (drawData.cam.c.inverseScale >> CanvasComponentContainer::COMP_MIN_SHIFT_BEFORE_DISAPPEAR)) // Not the "unsorted components" node (which is nullptr)
                 uncachedNodes.emplace_back(node);
+            else
+                return false;
             return true;
         });
 
@@ -448,21 +451,35 @@ void DrawingProgramCache::recursive_draw_layer_item_to_canvas(const DrawingProgr
         }
         else {
             std::vector<CanvasComponentContainer::ObjInfo*> compsToDraw;
-            for(auto& c : unsortedComponents) {
-                if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())))
-                    compsToDraw.emplace_back(c);
-            }
+            parallel_loop_container(nodesToDraw, [&](auto& node) {
+                std::for_each(node->components.begin(), node->components.end(), [&](auto& c) {
+                    if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())) && c->obj->should_draw(drawData))
+                        c->obj->transformHolder = c->obj->calculate_draw_transform(drawData);
+                    else
+                        c->obj->transformHolder = std::nullopt;
+                });
+            });
+            parallel_loop_container(unsortedComponents, [&](auto& c) {
+                if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())) && c->obj->should_draw(drawData))
+                    c->obj->transformHolder = c->obj->calculate_draw_transform(drawData);
+                else
+                    c->obj->transformHolder = std::nullopt;
+            });
             for(auto& node : nodesToDraw) {
                 for(auto& c : node->components) {
-                    if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())))
+                    if(c->obj->transformHolder.has_value())
                         compsToDraw.emplace_back(c);
                 }
+            }
+            for(auto& c : unsortedComponents) {
+                if(c->obj->transformHolder.has_value())
+                    compsToDraw.emplace_back(c);
             }
             std::sort(compsToDraw.begin(), compsToDraw.end(), [](auto& a, auto& b) {
                 return a->pos < b->pos;
             });
             for(auto& c : compsToDraw)
-                c->obj->draw(canvas, drawData);
+                c->obj->draw_with_transform(canvas, drawData, c->obj->transformHolder.value());
         }
         canvas->restore();
     }
