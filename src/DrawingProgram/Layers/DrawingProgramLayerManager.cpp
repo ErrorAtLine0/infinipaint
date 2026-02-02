@@ -140,6 +140,7 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                 toInsert.back().second.reassign_ids();
             }
             components->insert_ordered_list_and_send_create(components, toInsert);
+            toEraseList.clear();
         };
         for(auto& obj : objs) {
             if(parentLayer != obj->obj->parentLayer) {
