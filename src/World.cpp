@@ -341,7 +341,7 @@ void World::autosave_to_directory(const std::filesystem::path& directoryToSaveAt
     std::vector<std::string> strList;
     for(auto& entry : std::filesystem::directory_iterator(directoryToSaveAt)) {
         if(entry.path().has_stem() && entry.path().has_extension() && entry.path().extension() == ("." + FILE_EXTENSION))
-            strList.emplace_back(entry.path().stem());
+            strList.emplace_back(entry.path().stem().string());
     }
     std::string nameToSaveUnder = ensure_string_unique(strList, name);
     save_to_file(directoryToSaveAt / std::filesystem::path(nameToSaveUnder + "." + FILE_EXTENSION));
