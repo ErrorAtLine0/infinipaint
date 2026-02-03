@@ -207,8 +207,8 @@ elseif(APPLE)
             BUNDLE True
             MACOSX_BUNDLE_GUI_IDENTIFIER com.erroratline0.infinipaint
             MACOSX_BUNDLE_BUNDLE_NAME infinipaint
-            MACOSX_BUNDLE_BUNDLE_VERSION "0.4.0"
-            MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.0"
+            MACOSX_BUNDLE_BUNDLE_VERSION "0.4.1"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/macosinstall/Info.plist
         )
         add_custom_command(TARGET infinipaint POST_BUILD
@@ -385,7 +385,7 @@ if(APPLE OR WIN32)
     set(CPACK_PACKAGE_NAME "infinipaint")
     set(CPACK_PACKAGE_VERSION_MAJOR "0")
     set(CPACK_PACKAGE_VERSION_MINOR "4")
-    set(CPACK_PACKAGE_VERSION_PATCH "0")
+    set(CPACK_PACKAGE_VERSION_PATCH "1")
     set(CPACK_PACKAGE_VENDOR "ErrorAtLine0")
     set(CPACK_PACKAGE_CONTACT "erroratline0@gmail.com")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")

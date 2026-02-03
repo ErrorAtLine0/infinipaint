@@ -14,7 +14,7 @@ template <class T> std::weak_ptr<T> make_weak_ptr(std::shared_ptr<T> ptr) { retu
 #define RELIABLE_COMMAND_CHANNEL "reliableCommand"
 #define UNRELIABLE_COMMAND_CHANNEL "unreliableCommand"
 #define RESOURCE_COMMAND_CHANNEL "resourceCommand"
-#define MAIN_NETLIBRARY_CHANNEL "main00006" // NOTE: Change this value whenever netcode is incompatible with the previous version
+#define MAIN_NETLIBRARY_CHANNEL "main00007" // NOTE: Change this value whenever netcode is incompatible with the previous version
 
 typedef uint8_t MessageCommandType;
 typedef uint8_t NetTypeIDType;

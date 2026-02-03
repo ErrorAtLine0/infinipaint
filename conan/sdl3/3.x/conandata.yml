@@ -1,4 +1,0 @@
-sources:
-  "3.2.26":
-    url: "https://github.com/libsdl-org/SDL/releases/download/release-3.2.26/SDL3-3.2.26.tar.gz"
-    sha256: "dad488474a51a0b01d547cd2834893d6299328d2e30f479a3564088b5476bae2"

@@ -60,6 +60,22 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.4.1" date="2026-02-03">
+            <description>
+                <p>Minor update:</p>
+                <ul>
+                    <li>Send objects to front or back of layer through right click popup menu</li>
+                    <li>Change color of outlines and brush strokes through selection tool</li>
+                    <li>Improved cache system increases FPS</li>
+                    <li>Popup menu to save files before closing</li>
+                    <li>Tool configuration is saved</li>
+                    <li>Lock brush/outline size from zoom</li>
+                    <li>Move selected objects with arrow keys</li>
+                    <li>Switch from pan to zoom when pen touches tablet</li>
+                    <li>Every tool has its own size value</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.4.0" date="2026-01-10">
             <description>
                 <p>Major update:</p>
