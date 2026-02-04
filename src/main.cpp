@@ -603,6 +603,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
         #ifdef USE_BACKEND_VULKAN
             mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+            mS.ctx->flushAndSubmit();
             mS.vulkanWindowContext->swapBuffers();
         #elif USE_BACKEND_OPENGL
 

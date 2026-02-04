@@ -6,11 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Options to set
 set(availableGraphicsBackends OpenGL3.3 OpenGL2.1 OpenGLES3.0 Vulkan)
-if(WIN32)
-    set(GRAPHICS_BACKEND Vulkan CACHE STRING "Graphics backend to use")
-else()
-    set(GRAPHICS_BACKEND OpenGL3.3 CACHE STRING "Graphics backend to use")
-endif()
+set(GRAPHICS_BACKEND OpenGL3.3 CACHE STRING "Graphics backend to use")
 
 set_property(CACHE GRAPHICS_BACKEND PROPERTY STRINGS ${availableGraphicsBackends})
 list(FIND availableGraphicsBackends ${GRAPHICS_BACKEND} graphicsBackendIndex)

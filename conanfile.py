@@ -45,7 +45,6 @@ class CompressorRecipe(ConanFile):
                 "use_system_libpng": False,
                 "use_system_libwebp": False,
                 "use_system_zlib": False,
-                "use_vulkan": True,
                 "enable_svg": True,
                 "enable_skottie": False,
                 "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
