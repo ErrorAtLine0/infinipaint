@@ -498,8 +498,10 @@ void DrawingProgramCache::draw_cache_image_to_canvas(SkCanvas* canvas, const Dra
     }
 }
 
-void DrawingProgramCache::delete_window_cache_surface() {
+void DrawingProgramCache::delete_all_draw_cache() {
     windowCache.surface = nullptr;
+    windowCache.attachedDrawingProgramCache = nullptr;
+    nodeCacheMap.clear();
 }
 
 DrawingProgramCache::~DrawingProgramCache() {

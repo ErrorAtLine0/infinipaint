@@ -794,7 +794,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    DrawingProgramCache::delete_window_cache_surface();
+    DrawingProgramCache::delete_all_draw_cache();
 
     MainStruct& mS = *((MainStruct*)appstate);
     try {
