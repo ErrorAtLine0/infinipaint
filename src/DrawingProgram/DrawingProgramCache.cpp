@@ -110,7 +110,7 @@ void DrawingProgramCache::clear_own_cached_surfaces() {
     std::erase_if(nodeCacheMap, [&](auto& nodeCachePair) {
         return nodeCachePair.second.attachedDrawingProgramCache == this;
     });
-    if(windowCache.attachedDrawingProgramCache == this)
+    if(windowCache.attachedDrawingProgramCache == this) // Don't delete the cache surface. We don't have to reallocate it if the window size didn't change
         windowCache.attachedDrawingProgramCache = nullptr;
 }
 
@@ -338,10 +338,6 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
     nodeCacheMap.emplace(bvhNode, nodeCache); // Set the nodeCache after rendering is done, so that the draw function doesnt assume we have this node cached
 }
 
-void DrawingProgramCache::set_clear_window_cache() {
-    windowCache.attachedDrawingProgramCache = nullptr;
-}
-
 void DrawingProgramCache::allocate_window_cache_area() {
     const Vector2i& windowSize = drawP.world.main.window.size;
     #ifdef USE_BACKEND_OPENGLES_3_0
@@ -500,6 +496,10 @@ void DrawingProgramCache::draw_cache_image_to_canvas(SkCanvas* canvas, const Dra
 
         canvas->restore();
     }
+}
+
+void DrawingProgramCache::delete_window_cache_surface() {
+    windowCache.surface = nullptr;
 }
 
 DrawingProgramCache::~DrawingProgramCache() {

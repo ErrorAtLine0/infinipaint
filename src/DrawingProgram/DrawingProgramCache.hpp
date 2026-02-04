@@ -38,7 +38,7 @@ class DrawingProgramCache {
         void update_and_draw_cached_canvas(SkCanvas* canvas, const DrawData& drawData);
         void draw_components_to_canvas(SkCanvas* canvas, const DrawData& drawData, const std::optional<SCollision::AABB<WorldScalar>>& drawBounds);
         void invalidate_cache_at_aabb(const SCollision::AABB<WorldScalar>& aabb);
-        void set_clear_window_cache();
+        static void delete_window_cache_surface();
 
         CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
         ~DrawingProgramCache();

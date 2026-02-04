@@ -55,6 +55,7 @@
 #include <SDL3/SDL_scancode.h>
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL.h>
+#include "DrawingProgram/DrawingProgramCache.hpp"
 
 #include <fstream>
 
@@ -793,6 +794,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
+    DrawingProgramCache::delete_window_cache_surface();
+
     MainStruct& mS = *((MainStruct*)appstate);
     try {
         mS.m->save_config();
