@@ -12,7 +12,6 @@
 
 #include <include/core/SkTypes.h>
 #include <include/gpu/vk/VulkanBackendContext.h>
-#include <tools/gpu/vk/GrVulkanDefines.h>
 #include <functional>
 
 namespace skgpu {

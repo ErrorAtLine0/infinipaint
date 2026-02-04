@@ -470,7 +470,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
                                                                 (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr());
                 mS.surface = mS.vulkanWindowContext->getBackbufferSurface();
             #elif USE_SKIA_BACKEND_GANESH
-                std::unique_ptr<const skwindow::DisplayParams> displayParams = skwindow::DisplayParamsBuilder().build();
+                std::unique_ptr<const skwindow::DisplayParams> displayParams = skwindow::DisplayParamsBuilder().detach();
 
                 mS.vulkanWindowContext = std::make_unique<skwindow::internal::VulkanWindowContext>(std::move(displayParams),
                                             [window = mS.window](VkInstance instance) {

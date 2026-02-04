@@ -6,7 +6,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Options to set
 set(availableGraphicsBackends OpenGL3.3 OpenGL2.1 OpenGLES3.0 Vulkan)
-set(GRAPHICS_BACKEND OpenGL3.3 CACHE STRING "Graphics backend to use")
+if(WIN32)
+    set(GRAPHICS_BACKEND Vulkan CACHE STRING "Graphics backend to use")
+else()
+    set(GRAPHICS_BACKEND OpenGL3.3 CACHE STRING "Graphics backend to use")
+endif()
+
 set_property(CACHE GRAPHICS_BACKEND PROPERTY STRINGS ${availableGraphicsBackends})
 list(FIND availableGraphicsBackends ${GRAPHICS_BACKEND} graphicsBackendIndex)
 if(graphicsBackendIndex EQUAL -1)
@@ -134,7 +139,6 @@ set(sources "src/main.cpp"
 
 if((NOT EMSCRIPTEN) AND (GRAPHICS_BACKEND STREQUAL "Vulkan"))
     list(APPEND sources
-        "include/VkBootstrap.cpp"
         "src/VulkanContext/VkTestMemoryAllocator.cpp"
         "src/VulkanContext/VkTestUtils.cpp"
         "src/VulkanContext/WindowContext.cpp"
