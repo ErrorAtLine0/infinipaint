@@ -408,9 +408,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #ifdef NDEBUG
     try {
 #endif
-        GrContextOptions opts;
-        opts.fSuppressPrints = true;
-
         int initWidth = 1000;
         int initHeight = 900;
 
@@ -489,6 +486,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             #endif
         #elif USE_BACKEND_OPENGL
             sk_sp<const GrGLInterface> iface = GrGLMakeNativeInterface();
+
+            GrContextOptions opts;
+            opts.fSuppressPrints = true;
+            opts.fDisableDriverCorrectnessWorkarounds = true; // Driver workarounds causing glitches in windows drivers
 
             mS.ctx = GrDirectContexts::MakeGL(iface, opts);
             if(!mS.ctx)
