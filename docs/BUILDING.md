@@ -53,7 +53,9 @@ You can create an NSIS installer of the application by running:
 cpack -G NSIS
 ```
 ## Emscripten
-You can use Emscripten to build a web version of this program. Keep in mind that this version might be more buggy. In addition, I have only tried building it on a Linux machine.
+You can use Emscripten to build a web version of this program. Keep in mind that this version might be more buggy, and is missing a few features. In addition, I have only tried building it on a Linux machine.
+
+You'll need to setup conan toolchains. You can read about that [here](https://github.com/conan-io/conan-toolchains).
 
 After cloning the repository, `cd` into the repo, then update the git submodules to get `datachannel-wasm`:
 ```
@@ -70,20 +72,8 @@ cmake ../.. -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -DCMAKE_BUIL
 cmake --build .
 source generators/deactivate_conanbuild.sh
 ```
-These commands will generate a javascript file containing the entire program. An example of a website that can run and display this program can be found in `emscripteninstall/index.html`. To try this out, place `infinipaint.js`, `emscripteninstall/index.html`, and `emscripteninstall/loading.gif` in a folder, and host a webserver from that folder.
-
-Alternatively, you could compile a version of this program that is entirely contained in a single HTML file. This is not ideal for hosting, as the entire HTML file has to be downloaded before anything can be displayed to the user. However, you can open this file in any browser without a need for a web server.
-
-After cloning the repository and updating the git submodules, `cd` into the repo, then run:
+These commands will generate a javascript file containing the entire program. An example of a website that can run and display this program can be found in `emscripteninstall/index.html`. To try this out, place `infinipaint.js`, `emscripteninstall/index.html`, and `emscripteninstall/loading.gif` in a folder, and host a webserver from that folder. The server must set these two HTTP headers:
 ```
-./conan/export_libs.sh
-conan install . --profile:host=conan/profiles/emscripten --profile:build=default --build=missing
-cd build/Release
-ln -s ../../data data
-ln -s ../../emscripteninstall emscripteninstall
-source generators/conanbuild.sh
-cmake ../.. -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -DEMSCRIPTEN_SINGLE_HTML_FILE=ON
-cmake --build .
-source generators/deactivate_conanbuild.sh
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
 ```
-You can open `infinipaint.html` directly in any browser to run the program.
