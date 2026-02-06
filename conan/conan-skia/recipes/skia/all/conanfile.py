@@ -707,6 +707,9 @@ class ConanSkia(ConanFile):
         cflags_c = []
         cflags_cc = self.conf.get("tools.build:cxxflags", default=[], check_type=list)
         cflags_cc += [cppstd_flag(self)]
+        if cflags_cc == [None]: # Fail to get c++ flags when using emsdk, so set the flags manually here
+            print("Failed to get C++ build flags, setting flags manually")
+            cflags_cc = ["-pthread"]
 
         args += f"extra_cflags={json.dumps(cflags)}\n"
         args += f"extra_cflags_c={json.dumps(cflags_c)}\n"

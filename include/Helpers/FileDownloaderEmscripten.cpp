@@ -2,6 +2,7 @@
 #include "FileDownloader.hpp"
 #include <cstdio>
 #include <iostream>
+#include <vector>
 
 std::vector<FileDownloader::DownloadHandler> FileDownloader::currentDownloads;
 

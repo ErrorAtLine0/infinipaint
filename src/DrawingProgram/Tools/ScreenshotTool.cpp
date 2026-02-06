@@ -81,7 +81,7 @@ void ScreenshotTool::gui_toolbox() {
         if(t.gui.text_button_wide("Take Screenshot", "Take Screenshot")) {
             controls.selectionMode = 0;
             #ifdef __EMSCRIPTEN__
-                take_screenshot("a" + controls.typeSelections[controls.selectedType]);
+                take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType]);
             #else
                 // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
                 Toolbar::ExtensionFilter setExtensionFilter;

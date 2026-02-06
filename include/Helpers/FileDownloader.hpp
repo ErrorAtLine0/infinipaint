@@ -2,6 +2,10 @@
 #include <memory>
 #include <functional>
 #include <atomic>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 #ifndef __EMSCRIPTEN__
     #include <mutex>

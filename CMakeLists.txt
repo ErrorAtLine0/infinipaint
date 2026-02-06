@@ -23,7 +23,6 @@ option(USE_THREADSAN "Enable Thread Sanitizer" OFF)
 option(USE_MEMORYSAN "Enable Memory Sanitizer" OFF)
 
 option(NO_CONAN_BUILD "Not using conan to get packages" OFF)
-option(EMSCRIPTEN_SINGLE_HTML_FILE "Building with emscripten generates a single HTML file" OFF)
 option(CONFIG_NEXT_TO_EXECUTABLE "Place configuration folder next to executable (portable executable)" OFF)
 option(MACOS_MAKE_BUNDLE "Package the application as a bundle" ON)
 
@@ -233,14 +232,9 @@ if(EMSCRIPTEN)
         target_link_options(infinipaint PRIVATE -O3)
     endif()
 
-    target_compile_options(infinipaint PRIVATE -Wall -sUSE_HARFBUZZ=1 -fdiagnostics-color -sUSE_SDL=0 -include functional -fexceptions)
-    target_link_options(infinipaint PRIVATE --emrun -sUSE_HARFBUZZ=1 -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 -sFETCH --embed-file data -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -sINITIAL_MEMORY=67108864 -fexceptions)
-    if(EMSCRIPTEN_SINGLE_HTML_FILE)
-        target_link_options(infinipaint PRIVATE --shell-file emscripteninstall/singlefilereleaseshell.html)
-        set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    else()
-        set(CMAKE_EXECUTABLE_SUFFIX ".js")
-    endif()
+    target_compile_options(infinipaint PRIVATE -Wall -sUSE_HARFBUZZ=1 -fdiagnostics-color -sUSE_SDL=0 -include functional -fexceptions -pthread)
+    target_link_options(infinipaint PRIVATE --emrun -sUSE_HARFBUZZ=1 -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 -sFETCH --embed-file data -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=ccall -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -fexceptions -pthread) # -sINITIAL_MEMORY=67108864 
+    set(CMAKE_EXECUTABLE_SUFFIX ".js")
     message("In Emscripten Mode")
 endif()
 
@@ -326,6 +320,7 @@ endif()
 
 if(EMSCRIPTEN)
     add_subdirectory(deps/datachannel-wasm EXCLUDE_FROM_ALL)
+    target_compile_options(datachannel-wasm PRIVATE -pthread)
     target_link_libraries(infinipaint datachannel-wasm)
 else()
     target_link_libraries(infinipaint LibDataChannel::LibDataChannel CURL::libcurl)
