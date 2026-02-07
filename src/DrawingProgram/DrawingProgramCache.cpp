@@ -356,24 +356,27 @@ void DrawingProgramCache::allocate_window_cache_area() {
 }
 
 void DrawingProgramCache::update_window_cache_invalid_bounds(const DrawData& drawData) {
-    auto iBounds = windowCache.invalidBounds.value();
+    auto invalidBound = windowCache.invalidBounds.value();
+    if(SCollision::collide(invalidBound, drawData.cam.viewingAreaGenerousCollider)) {
+        auto iBounds = drawData.cam.viewingAreaGenerousCollider.get_intersection_between_aabbs(invalidBound);
 
-    SCollision::AABB<float> cameraSpaceInvalidAABB = drawData.cam.c.world_collider_to_coords<SCollision::AABB<float>>(iBounds);
-    SCollision::AABB<float> clipRectBoundAABB{cameraSpaceInvalidAABB.min - Vector2f{4, 4}, cameraSpaceInvalidAABB.max + Vector2f{4, 4}};
+        SCollision::AABB<float> cameraSpaceInvalidAABB = drawData.cam.c.world_collider_to_coords<SCollision::AABB<float>>(iBounds);
+        SCollision::AABB<float> clipRectBoundAABB{cameraSpaceInvalidAABB.min - Vector2f{4, 4}, cameraSpaceInvalidAABB.max + Vector2f{4, 4}};
 
-    SkIRect clipRect = SkIRect::MakeLTRB(clipRectBoundAABB.min.x(),
-                                         clipRectBoundAABB.min.y(),
-                                         clipRectBoundAABB.max.x(),
-                                         clipRectBoundAABB.max.y());
+        SkIRect clipRect = SkIRect::MakeLTRB(clipRectBoundAABB.min.x(),
+                                             clipRectBoundAABB.min.y(),
+                                             clipRectBoundAABB.max.x(),
+                                             clipRectBoundAABB.max.y());
 
-    SCollision::AABB<WorldScalar> clipRectBoundAABBWorld = drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>>(clipRectBoundAABB);
+        SCollision::AABB<WorldScalar> clipRectBoundAABBWorld = drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>>(clipRectBoundAABB);
 
-    SkCanvas* cacheCanvas = windowCache.surface->getCanvas();
-    cacheCanvas->save();
-    cacheCanvas->clipIRect(clipRect);
-    cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
-    draw_components_to_canvas(cacheCanvas, drawData, clipRectBoundAABBWorld);
-    cacheCanvas->restore();
+        SkCanvas* cacheCanvas = windowCache.surface->getCanvas();
+        cacheCanvas->save();
+        cacheCanvas->clipIRect(clipRect);
+        cacheCanvas->clear(SkColor4f{0, 0, 0, 0});
+        draw_components_to_canvas(cacheCanvas, drawData, clipRectBoundAABBWorld);
+        cacheCanvas->restore();
+    }
     windowCache.invalidBounds = std::nullopt;
 }
 

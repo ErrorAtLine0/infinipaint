@@ -28,7 +28,7 @@ namespace SCollision {
             T width() const { return max.x() - min.x(); }
             T height() const { return max.y() - min.y(); }
             // Do not try to get intersection between AABBs unless you know they collide
-            AABB<T> get_intersection_between_aabbs(const AABB<T>& other) {
+            AABB<T> get_intersection_between_aabbs(const AABB<T>& other) const {
                 return {
                     cwise_vec_max(other.min, min),
                     cwise_vec_min(other.max, max)
