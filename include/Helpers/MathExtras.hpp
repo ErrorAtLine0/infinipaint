@@ -142,14 +142,22 @@ template <typename T> bool is_collision_line_segment_line_segment(const Matrix<T
     return (oa * ob < T(0) && oc * od < T(0));
 }
 
-template <typename T> std::optional<Vector2d> collision_line_segment_line_segment_pos(const Matrix<T, 2, 1>& a, const Matrix<T, 2, 1>& b, const Matrix<T, 2, 1>& c, const Matrix<T, 2, 1>& d) {
+template <typename T> std::optional<Matrix<T, 2, 1>> collision_line_segment_line_segment_pos(const Matrix<T, 2, 1>& a, const Matrix<T, 2, 1>& b, const Matrix<T, 2, 1>& c, const Matrix<T, 2, 1>& d) {
     T oa = orient_vals_vec(c, d, a);
     T ob = orient_vals_vec(c, d, b);
     T oc = orient_vals_vec(a, b, c);
     T od = orient_vals_vec(a, b, d);
-    if(oa * ob < 0 && oc * od < 0)
-        return std::optional<Vector2d>((a * ob - b * oa) / (ob - oa));
+    if(oa * ob < T(0) && oc * od < T(0))
+        return std::optional<Matrix<T, 2, 1>>((a * ob - b * oa) / (ob - oa));
     return std::nullopt;
+}
+
+template <typename T> Matrix<T, 2, 1> collision_line_segment_line_segment_guaranteed(const Matrix<T, 2, 1>& a, const Matrix<T, 2, 1>& b, const Matrix<T, 2, 1>& c, const Matrix<T, 2, 1>& d) {
+    T oa = orient_vals_vec(c, d, a);
+    T ob = orient_vals_vec(c, d, b);
+    T oc = orient_vals_vec(a, b, c);
+    T od = orient_vals_vec(a, b, d);
+    return Matrix<T, 2, 1>((a * ob - b * oa) / (ob - oa));
 }
 
 template <typename T> bool is_collision_aabb_line_segment(const AlignedBox<T, 2>& aabb, const Matrix<T, 2, 1>& lineP1, const Matrix<T, 2, 1>& lineP2) {
@@ -161,8 +169,29 @@ template <typename T> bool is_collision_aabb_line_segment(const AlignedBox<T, 2>
            is_collision_line_segment_line_segment(lineP1, lineP2, aabb.corner(AlignedBox<T, 2>::TopLeft),    aabb.corner(AlignedBox<T, 2>::BottomLeft));
 }
 
+template <typename T> std::vector<Matrix<T, 2, 1>> collision_aabb_small_line_segment_large(const AlignedBox<T, 2>& aabb, const Matrix<T, 2, 1>& lineP1, const Matrix<T, 2, 1>& lineP2) {
+    std::vector<Matrix<T, 2, 1>> toRet;
+    auto optCollision = collision_line_segment_line_segment_pos(lineP1, lineP2, aabb.corner(AlignedBox<T, 2>::TopLeft), aabb.corner(AlignedBox<T, 2>::TopRight));
+    if(optCollision.has_value())
+        toRet.emplace_back(optCollision.value());
+    optCollision = collision_line_segment_line_segment_pos(lineP1, lineP2, aabb.corner(AlignedBox<T, 2>::TopRight), aabb.corner(AlignedBox<T, 2>::BottomRight));
+    if(optCollision.has_value())
+        toRet.emplace_back(optCollision.value());
+    optCollision = collision_line_segment_line_segment_pos(lineP1, lineP2, aabb.corner(AlignedBox<T, 2>::BottomLeft), aabb.corner(AlignedBox<T, 2>::BottomRight));
+    if(optCollision.has_value())
+        toRet.emplace_back(optCollision.value());
+    optCollision = collision_line_segment_line_segment_pos(lineP1, lineP2, aabb.corner(AlignedBox<T, 2>::TopLeft), aabb.corner(AlignedBox<T, 2>::BottomLeft));
+    if(optCollision.has_value())
+        toRet.emplace_back(optCollision.value());
+    return toRet;
+}
+
 template <typename T> T vec_distance(const Vector<T, 2>& v1, const Vector<T, 2>& v2) {
     return (v1 - v2).norm();
+}
+
+template <typename T> T vec_distance_sqrd(const Vector<T, 2>& v1, const Vector<T, 2>& v2) {
+    return (v1 - v2).squaredNorm();
 }
 
 template <typename T> T vec_length(const Vector<T, 2>& v) {
@@ -283,4 +312,43 @@ template <typename T> Vector<T, 2> ensure_points_have_distance(const Vector<T, 2
     if(std::abs(a.y() - b.y()) < d)
         toRet.y() = a.y() + d;
     return toRet;
+}
+
+// https://www.gabrielgambetta.com/computer-graphics-from-scratch/11-clipping.html
+template <typename T> void clip_triangle_against_axis(std::vector<std::array<Vector<T, 2>, 3>>& triangleList, const std::array<Vector<T, 2>, 3>& t, const std::array<Vector<T, 2>, 2>& axisLineSegment, const std::function<bool(const Vector<T, 2>&)>& isInClippingAreaFunc) {
+    std::array<bool, 3> inClippingArea = {
+        isInClippingAreaFunc(t[0]),
+        isInClippingAreaFunc(t[1]),
+        isInClippingAreaFunc(t[2])
+    };
+
+    auto oneVertexInClippingArea = [&](const Vector<T, 2>& a, const Vector<T, 2>& b, const Vector<T, 2>& c) {
+        Vector<T, 2> bPrime = collision_line_segment_line_segment_guaranteed(a, b, axisLineSegment[0], axisLineSegment[1]);
+        Vector<T, 2> cPrime = collision_line_segment_line_segment_guaranteed(a, c, axisLineSegment[0], axisLineSegment[1]);
+        triangleList.emplace_back(std::array<Vector<T, 2>, 3>{a, bPrime, cPrime});
+    };
+
+    auto twoVerticesInClippingArea = [&](const Vector<T, 2>& a, const Vector<T, 2>& b, const Vector<T, 2>& c) {
+        Vector<T, 2> aPrime = collision_line_segment_line_segment_guaranteed(a, c, axisLineSegment[0], axisLineSegment[1]);
+        Vector<T, 2> bPrime = collision_line_segment_line_segment_guaranteed(b, c, axisLineSegment[0], axisLineSegment[1]);
+        triangleList.emplace_back(std::array<Vector<T, 2>, 3>{a, b, aPrime});
+        triangleList.emplace_back(std::array<Vector<T, 2>, 3>{aPrime, b, bPrime});
+    };
+
+    if(inClippingArea[0] && inClippingArea[1] && inClippingArea[2])
+        triangleList.emplace_back(t);
+    else if(!inClippingArea[0] && !inClippingArea[1] && !inClippingArea[2])
+        return;
+    else if(inClippingArea[0] && !inClippingArea[1] && !inClippingArea[2])
+        oneVertexInClippingArea(t[0], t[1], t[2]);
+    else if(!inClippingArea[0] && inClippingArea[1] && !inClippingArea[2])
+        oneVertexInClippingArea(t[1], t[0], t[2]);
+    else if(!inClippingArea[0] && !inClippingArea[1] && inClippingArea[2])
+        oneVertexInClippingArea(t[2], t[0], t[1]);
+    else if(inClippingArea[0] && inClippingArea[1] && !inClippingArea[2])
+        twoVerticesInClippingArea(t[0], t[1], t[2]);
+    else if(inClippingArea[0] && !inClippingArea[1] && inClippingArea[2])
+        twoVerticesInClippingArea(t[0], t[2], t[1]);
+    else if(!inClippingArea[0] && inClippingArea[1] && inClippingArea[2])
+        twoVerticesInClippingArea(t[1], t[2], t[0]);
 }

@@ -3,12 +3,14 @@
 #include <cereal/types/vector.hpp>
 #include <limits>
 #include <Eigen/Geometry>
+#include "Eigen/Core"
 #include "Helpers/MathExtras.hpp"
 #include "../TimePoint.hpp"
 #include <include/core/SkVertices.h>
 #include <include/pathops/SkPathOps.h>
 #include "../DrawCollision.hpp"
 #include "CanvasComponentContainer.hpp"
+#include "Helpers/SCollision.hpp"
 
 #define AABB_PRECHECK_BVH_LEVELS 2
 #define DEFAULT_SMOOTHNESS 5
@@ -57,6 +59,82 @@ void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData
         canvas->drawPath(*brushPath, paint);
     else
         canvas->drawPath(*brushPathLOD[mipmapLevel - 1], paint);
+
+    //SkPaint paint2;
+    //paint2.setColor4f(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
+    //paint2.setStroke(true);
+    //SCollision::ColliderCollection<float> strokeObjects;
+    //std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d.points->size() - 1, DEFAULT_SMOOTHNESS);
+    //create_triangles([&](Vector2f a, Vector2f b, Vector2f c) {
+    //    strokeObjects.triangle.emplace_back(a, b, c);
+    //    return false;
+    //}, points, 0, nullptr);
+    //strokeObjects.recalculate_bounds();
+    //draw_collider(canvas, drawData, strokeObjects, paint2);
+}
+
+bool BrushStrokeCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords) const {
+    std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d.points->size() - 1, DEFAULT_SMOOTHNESS);
+
+    std::vector<SkPath> pathsToDraw;
+
+    auto triangleFunc = [&](Vector2f a, Vector2f b, Vector2f c) {
+        SCollision::Triangle worldTri = {
+            coords.from_space(a),
+            coords.from_space(b),
+            coords.from_space(c)
+        };
+
+        auto clipListFunc = [](const std::vector<std::array<WorldVec, 3>>& clipList, const std::array<WorldVec, 2>& axisLineSegment, const std::function<bool(const WorldVec&)>& isInClippingAreaFunc) {
+            std::vector<std::array<WorldVec, 3>> resultList;
+            for(auto& t : clipList)
+                clip_triangle_against_axis(resultList, t, axisLineSegment, isInClippingAreaFunc);
+            return resultList;
+        };
+
+        if(SCollision::collide(worldTri.bounds, drawData.cam.viewingAreaGenerousCollider)) {
+            std::vector<std::array<WorldVec, 3>> clipList = {worldTri.p};
+            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
+                return p.y() > drawData.cam.viewingAreaGenerousCollider.min.y();
+            });
+            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.max, drawData.cam.viewingAreaGenerousCollider.bottom_left()}, [&](const WorldVec& p) {
+                return p.y() < drawData.cam.viewingAreaGenerousCollider.max.y();
+            });
+            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.bottom_left()}, [&](const WorldVec& p) {
+                return p.x() > drawData.cam.viewingAreaGenerousCollider.min.x();
+            });
+            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.max, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
+                return p.x() < drawData.cam.viewingAreaGenerousCollider.max.x();
+            });
+            for(auto& tri : clipList) {
+                auto& c = drawData.cam.c;
+                SkPathBuilder pathBuilder;
+                std::vector<SkPoint> triSkPoints = {convert_vec2<SkPoint>(c.to_space(tri[0])), convert_vec2<SkPoint>(c.to_space(tri[1])), convert_vec2<SkPoint>(c.to_space(tri[2]))};
+                pathBuilder.addPolygon({triSkPoints.data(), triSkPoints.size()}, true);
+                pathsToDraw.emplace_back(pathBuilder.detach());
+            }
+        }
+        return false;
+    };
+
+    create_triangles(triangleFunc, points, 0, nullptr);
+
+    if(d.color.w() == 1.0f) {
+        SkPaint paint;
+        paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
+        for(const SkPath& p : pathsToDraw)
+            canvas->drawPath(p, paint);
+    }
+    else {
+        canvas->saveLayerAlphaf(nullptr, d.color.w());
+        SkPaint paint;
+        paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), 1.0f});
+        for(const SkPath& p : pathsToDraw)
+            canvas->drawPath(p, paint);
+        canvas->restore();
+    }
+
+    return true;
 }
 
 void BrushStrokeCanvasComponent::set_data_from(const CanvasComponent& other) {
@@ -351,7 +429,7 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
 
     if(bPathBuilder && !topPoints.empty()) {
         topPoints.insert(topPoints.begin(), bottomPoints.rbegin(), bottomPoints.rend());
-        bPathBuilder->addPolygon({topPoints.data(), topPoints.size()}, false);
+            bPathBuilder->addPolygon({topPoints.data(), topPoints.size()}, false);
     }
 }
 

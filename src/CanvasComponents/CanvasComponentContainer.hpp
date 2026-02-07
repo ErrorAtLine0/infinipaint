@@ -22,6 +22,7 @@ class CanvasComponentContainer {
 
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS = 14;
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_SCALING = 14;
+        constexpr static float COMP_MAX_BEFORE_STOP_SCALING = 1 << COMP_MAX_SHIFT_BEFORE_STOP_SCALING;
         constexpr static int COMP_MIN_SHIFT_BEFORE_DISAPPEAR = 11;
         constexpr static int COMP_COLLIDE_MIN_SHIFT_TINY = 9;
         constexpr static int COMP_MIPMAP_LEVEL_ONE = 2;

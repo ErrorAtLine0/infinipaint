@@ -30,6 +30,8 @@ class CanvasComponent {
         friend class CanvasComponentContainer;
         friend class CanvasComponentAllocator;
 
+        virtual bool accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords) const;
+
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) const = 0;
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const = 0;

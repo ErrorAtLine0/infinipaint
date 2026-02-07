@@ -93,10 +93,12 @@ void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) 
 }
 
 void CanvasComponentContainer::draw_with_transform(SkCanvas* canvas, const DrawData& drawData, const TransformDrawData& transformDrawData) const {
-    canvas->save();
-    canvas_do_transform(canvas, transformDrawData);
-    get_comp().draw(canvas, drawData);
-    canvas->restore();
+    if(transformDrawData.scale < COMP_MAX_BEFORE_STOP_SCALING || !get_comp().accurate_draw(canvas, drawData, coords)) {
+        canvas->save();
+        canvas_do_transform(canvas, transformDrawData);
+        get_comp().draw(canvas, drawData);
+        canvas->restore();
+    }
 }
 
 void CanvasComponentContainer::commit_update(DrawingProgram& drawP) {
@@ -163,7 +165,7 @@ CanvasComponentContainer::TransformDrawData CanvasComponentContainer::calculate_
     TransformDrawData toRet;
     toRet.translation = -coords.to_space(drawData.cam.c.pos);
     toRet.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
-    toRet.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), static_cast<float>(1 << COMP_MAX_SHIFT_BEFORE_STOP_SCALING));
+    toRet.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), COMP_MAX_BEFORE_STOP_SCALING);
     return toRet;
 }
 

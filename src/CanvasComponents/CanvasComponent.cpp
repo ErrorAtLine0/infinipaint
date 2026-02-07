@@ -37,4 +37,8 @@ std::optional<Vector4f> CanvasComponent::get_stroke_color() const {
     return std::nullopt;
 }
 
+bool CanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords) const {
+    return false;
+}
+
 CanvasComponent::~CanvasComponent() {}

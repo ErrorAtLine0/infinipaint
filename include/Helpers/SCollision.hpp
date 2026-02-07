@@ -48,6 +48,12 @@ namespace SCollision {
             bool fully_contains_aabb(const AABB<T>& other) const {
                 return other.min.x() >= min.x() && other.min.y() >= min.y() && other.max.x() <= max.x() && other.max.y() <= max.y();
             }
+            Vector<T, 2> clamp_point_to_aabb(const Vector<T, 2>& p) const {
+                return {
+                    std::clamp(p.x(), min.x(), max.x()),
+                    std::clamp(p.y(), min.y(), max.y())
+                };
+            }
             template <typename S> AABB<S> transform(const std::function<Vector<S, 2>(const Vector<T, 2>&)>& transformFunc, const std::function<S(const T&)>& transformLinearFunc) const {
                 Vector<S, 2> aabb1 = transformFunc(min);
                 Vector<S, 2> aabb2 = transformFunc(max);
@@ -321,6 +327,7 @@ namespace SCollision {
 
         return (u >= T(0)) && (v >= T(0)) && (u + v < T(1));
     }
+    
     template <typename T> bool collide(const Triangle<T>& t, const Vector<T, 2>& p) {
         return collide(p, t);
     }
