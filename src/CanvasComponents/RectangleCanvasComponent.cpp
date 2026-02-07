@@ -41,7 +41,7 @@ std::unique_ptr<CanvasComponent> RectangleCanvasComponent::get_data_copy() const
     return toRet;
 }
 
-void RectangleCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
+void RectangleCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
     if(d.fillStrokeMode == 0 || d.fillStrokeMode == 2) {
         SkPaint p;
         p.setStyle(SkPaint::kFill_Style);

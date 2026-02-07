@@ -79,7 +79,7 @@ void TextBoxCanvasComponent::init_text_box(DrawingProgram& drawP) {
     textBox->set_width(d.p2.x() - d.p1.x() - TEXTBOX_PADDING * 2.0f);
 }
 
-void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
+void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
     SkRect clipR = SkRect::MakeLTRB(d.p1.x(), d.p1.y(), d.p2.x(), d.p2.y());
     if(d.editing) {
         SkPaint p;

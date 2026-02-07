@@ -37,8 +37,16 @@ std::optional<Vector4f> CanvasComponent::get_stroke_color() const {
     return std::nullopt;
 }
 
-bool CanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords) const {
+bool CanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords, const std::shared_ptr<void>& predrawData) const {
     return false;
+}
+
+std::shared_ptr<void> CanvasComponent::get_predraw_data(const DrawData& drawData) const {
+    return nullptr;
+}
+
+std::shared_ptr<void> CanvasComponent::get_predraw_data_accurate(const DrawData& drawData, const CoordSpaceHelper& coords) const {
+    return nullptr;
 }
 
 CanvasComponent::~CanvasComponent() {}

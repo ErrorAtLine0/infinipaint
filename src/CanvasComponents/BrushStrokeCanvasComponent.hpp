@@ -34,8 +34,10 @@ class BrushStrokeCanvasComponent : public CanvasComponent {
 
         virtual void set_data_from(const CanvasComponent& other) override;
     private:
-        virtual void draw(SkCanvas* canvas, const DrawData& drawData) const override;
-        virtual bool accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords) const override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const override;
+        virtual bool accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords, const std::shared_ptr<void>& predrawData) const override;
+        virtual std::shared_ptr<void> get_predraw_data_accurate(const DrawData& drawData, const CoordSpaceHelper& coords) const override;
+
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
         void create_collider();

@@ -89,14 +89,14 @@ void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, 
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {
     if(should_draw(drawData))
-        draw_with_transform(canvas, drawData, calculate_draw_transform(drawData));
+        draw_with_predraw_data(canvas, drawData, calculate_predraw_data(drawData));
 }
 
-void CanvasComponentContainer::draw_with_transform(SkCanvas* canvas, const DrawData& drawData, const TransformDrawData& transformDrawData) const {
-    if(transformDrawData.scale < COMP_MAX_BEFORE_STOP_SCALING || !get_comp().accurate_draw(canvas, drawData, coords)) {
+void CanvasComponentContainer::draw_with_predraw_data(SkCanvas* canvas, const DrawData& drawData, const PreDrawData& preDrawData) const {
+    if(preDrawData.transformData.scale < COMP_MAX_BEFORE_STOP_SCALING || !get_comp().accurate_draw(canvas, drawData, coords, preDrawData.extraData)) {
         canvas->save();
-        canvas_do_transform(canvas, transformDrawData);
-        get_comp().draw(canvas, drawData);
+        canvas_do_transform(canvas, preDrawData.transformData);
+        get_comp().draw(canvas, drawData, preDrawData.extraData);
         canvas->restore();
     }
 }
@@ -151,7 +151,7 @@ bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, 
     }
 }
 
-void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const TransformDrawData& transformData) const {
+void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) const {
     canvas->scale(transformData.scale, transformData.scale);
     canvas->rotate(transformData.rotation);
     canvas->translate(transformData.translation.x(), transformData.translation.y());
@@ -161,8 +161,18 @@ bool CanvasComponentContainer::should_draw(const DrawData& drawData) const {
     return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider);
 }
 
-CanvasComponentContainer::TransformDrawData CanvasComponentContainer::calculate_draw_transform(const DrawData& drawData) const {
-    TransformDrawData toRet;
+CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predraw_data(const DrawData& drawData) const {
+    PreDrawData toRet;
+    toRet.transformData = calculate_draw_transform(drawData);
+    if(toRet.transformData.scale < COMP_MAX_BEFORE_STOP_SCALING)
+        toRet.extraData = get_comp().get_predraw_data(drawData);
+    else
+        toRet.extraData = get_comp().get_predraw_data_accurate(drawData, coords);
+    return toRet;
+}
+
+CanvasComponentContainer::TransformData CanvasComponentContainer::calculate_draw_transform(const DrawData& drawData) const {
+    TransformData toRet;
     toRet.translation = -coords.to_space(drawData.cam.c.pos);
     toRet.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
     toRet.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), COMP_MAX_BEFORE_STOP_SCALING);

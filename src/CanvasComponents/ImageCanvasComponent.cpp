@@ -86,7 +86,7 @@ void ImageCanvasComponent::get_used_resources(std::unordered_set<NetworkingObjec
     resourceSet.emplace(d.imageID);
 }
 
-void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
+void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
     ResourceDisplay* display = drawData.rMan->get_display_data(d.imageID);
     if(d.editing) {
         canvas->saveLayerAlphaf(nullptr, 1.0f);

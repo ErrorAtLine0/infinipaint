@@ -8,6 +8,7 @@
 #include "../TimePoint.hpp"
 #include <include/core/SkVertices.h>
 #include <include/pathops/SkPathOps.h>
+#include <memory>
 #include "../DrawCollision.hpp"
 #include "CanvasComponentContainer.hpp"
 #include "Helpers/SCollision.hpp"
@@ -49,7 +50,7 @@ std::optional<Vector4f> BrushStrokeCanvasComponent::get_stroke_color() const {
     return d.color;
 }
 
-void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData) const {
+void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
     SkPaint paint;
     paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
 
@@ -73,10 +74,10 @@ void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData
     //draw_collider(canvas, drawData, strokeObjects, paint2);
 }
 
-bool BrushStrokeCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords) const {
+std::shared_ptr<void> BrushStrokeCanvasComponent::get_predraw_data_accurate(const DrawData& drawData, const CoordSpaceHelper& coords) const {
     std::vector<BrushStrokeCanvasComponentPoint> points = smooth_points(0, d.points->size() - 1, DEFAULT_SMOOTHNESS);
 
-    std::vector<SkPath> pathsToDraw;
+    auto pathsToDraw = std::make_shared<std::vector<SkPath>>();
 
     auto triangleFunc = [&](Vector2f a, Vector2f b, Vector2f c) {
         SCollision::Triangle worldTri = {
@@ -111,7 +112,7 @@ bool BrushStrokeCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData&
                 SkPathBuilder pathBuilder;
                 std::vector<SkPoint> triSkPoints = {convert_vec2<SkPoint>(c.to_space(tri[0])), convert_vec2<SkPoint>(c.to_space(tri[1])), convert_vec2<SkPoint>(c.to_space(tri[2]))};
                 pathBuilder.addPolygon({triSkPoints.data(), triSkPoints.size()}, true);
-                pathsToDraw.emplace_back(pathBuilder.detach());
+                pathsToDraw->emplace_back(pathBuilder.detach());
             }
         }
         return false;
@@ -119,19 +120,27 @@ bool BrushStrokeCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData&
 
     create_triangles(triangleFunc, points, 0, nullptr);
 
-    if(d.color.w() == 1.0f) {
-        SkPaint paint;
-        paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
-        for(const SkPath& p : pathsToDraw)
-            canvas->drawPath(p, paint);
-    }
-    else {
-        canvas->saveLayerAlphaf(nullptr, d.color.w());
-        SkPaint paint;
-        paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), 1.0f});
-        for(const SkPath& p : pathsToDraw)
-            canvas->drawPath(p, paint);
-        canvas->restore();
+    return pathsToDraw;
+}
+
+bool BrushStrokeCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords, const std::shared_ptr<void>& predrawData) const {
+    auto pathsToDraw = std::static_pointer_cast<std::vector<SkPath>>(predrawData);
+
+    if(!pathsToDraw->empty()) {
+        if(d.color.w() == 1.0f) {
+            SkPaint paint;
+            paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
+            for(const SkPath& p : *pathsToDraw)
+                canvas->drawPath(p, paint);
+        }
+        else {
+            canvas->saveLayerAlphaf(nullptr, d.color.w());
+            SkPaint paint;
+            paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), 1.0f});
+            for(const SkPath& p : *pathsToDraw)
+                canvas->drawPath(p, paint);
+            canvas->restore();
+        }
     }
 
     return true;

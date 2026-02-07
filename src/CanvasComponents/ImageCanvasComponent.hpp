@@ -35,7 +35,7 @@ class ImageCanvasComponent : public CanvasComponent {
         bool contains_actual_image();
 
     private:
-        virtual void draw(SkCanvas* canvas, const DrawData& drawData) const override;
+        virtual void draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
         void create_collider();

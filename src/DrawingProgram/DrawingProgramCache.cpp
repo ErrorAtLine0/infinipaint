@@ -449,32 +449,32 @@ void DrawingProgramCache::recursive_draw_layer_item_to_canvas(const DrawingProgr
             parallel_loop_container(nodesToDraw, [&](auto& node) {
                 std::for_each(node->components.begin(), node->components.end(), [&](auto& c) {
                     if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())) && c->obj->should_draw(drawData))
-                        c->obj->transformHolder = c->obj->calculate_draw_transform(drawData);
+                        c->obj->preDrawDataHolder = c->obj->calculate_predraw_data(drawData);
                     else
-                        c->obj->transformHolder = std::nullopt;
+                        c->obj->preDrawDataHolder = std::nullopt;
                 });
             });
             parallel_loop_container(unsortedComponents, [&](auto& c) {
                 if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())) && c->obj->should_draw(drawData))
-                    c->obj->transformHolder = c->obj->calculate_draw_transform(drawData);
+                    c->obj->preDrawDataHolder = c->obj->calculate_predraw_data(drawData);
                 else
-                    c->obj->transformHolder = std::nullopt;
+                    c->obj->preDrawDataHolder = std::nullopt;
             });
             for(auto& node : nodesToDraw) {
                 for(auto& c : node->components) {
-                    if(c->obj->transformHolder.has_value())
+                    if(c->obj->preDrawDataHolder.has_value())
                         compsToDraw.emplace_back(c);
                 }
             }
             for(auto& c : unsortedComponents) {
-                if(c->obj->transformHolder.has_value())
+                if(c->obj->preDrawDataHolder.has_value())
                     compsToDraw.emplace_back(c);
             }
             std::sort(compsToDraw.begin(), compsToDraw.end(), [](auto& a, auto& b) {
                 return a->pos < b->pos;
             });
             for(auto& c : compsToDraw)
-                c->obj->draw_with_transform(canvas, drawData, c->obj->transformHolder.value());
+                c->obj->draw_with_predraw_data(canvas, drawData, c->obj->preDrawDataHolder.value());
         }
         canvas->restore();
     }
