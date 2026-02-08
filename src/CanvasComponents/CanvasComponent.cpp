@@ -49,4 +49,8 @@ std::shared_ptr<void> CanvasComponent::get_predraw_data_accurate(const DrawData&
     return nullptr;
 }
 
+bool CanvasComponent::should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const {
+    return true;
+}
+
 CanvasComponent::~CanvasComponent() {}

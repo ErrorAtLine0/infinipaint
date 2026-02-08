@@ -41,6 +41,7 @@ class BrushStrokeCanvasComponent : public CanvasComponent {
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
         void create_collider();
+        bool should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const override;
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 

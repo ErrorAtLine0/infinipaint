@@ -79,22 +79,23 @@ std::shared_ptr<void> BrushStrokeCanvasComponent::get_predraw_data_accurate(cons
 
     auto pathsToDraw = std::make_shared<std::vector<SkPath>>();
 
+    SCollision::AABB<float> viewGenerousColliderInObjSpace = coords.world_collider_to_coords<SCollision::AABB<float>>(drawData.cam.viewingAreaGenerousCollider);
+    viewGenerousColliderInObjSpace.min -= Vector2f{1.0f, 1.0f};
+    viewGenerousColliderInObjSpace.max += Vector2f{1.0f, 1.0f};
+
     auto triangleFunc = [&](Vector2f a, Vector2f b, Vector2f c) {
-        SCollision::Triangle worldTri = {
-            coords.from_space(a),
-            coords.from_space(b),
-            coords.from_space(c)
-        };
+        SCollision::Triangle<float> triCollider = {a, b, c};
 
-        auto clipListFunc = [](const std::vector<std::array<WorldVec, 3>>& clipList, const std::array<WorldVec, 2>& axisLineSegment, const std::function<bool(const WorldVec&)>& isInClippingAreaFunc) {
-            std::vector<std::array<WorldVec, 3>> resultList;
-            for(auto& t : clipList)
-                clip_triangle_against_axis(resultList, t, axisLineSegment, isInClippingAreaFunc);
-            return resultList;
-        };
+        if(SCollision::collide(triCollider.bounds, viewGenerousColliderInObjSpace)) {
+            auto clipListFunc = [](const std::vector<std::array<WorldVec, 3>>& clipList, const std::array<WorldVec, 2>& axisLineSegment, const std::function<bool(const WorldVec&)>& isInClippingAreaFunc) {
+                std::vector<std::array<WorldVec, 3>> resultList;
+                for(auto& t : clipList)
+                    clip_triangle_against_axis(resultList, t, axisLineSegment, isInClippingAreaFunc);
+                return resultList;
+            };
 
-        if(SCollision::collide(worldTri.bounds, drawData.cam.viewingAreaGenerousCollider)) {
-            std::vector<std::array<WorldVec, 3>> clipList = {worldTri.p};
+            std::vector<std::array<WorldVec, 3>> clipList;
+            clipList.emplace_back(std::array<WorldVec, 3>{coords.from_space(a), coords.from_space(b), coords.from_space(c)});
             clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
                 return p.y() > drawData.cam.viewingAreaGenerousCollider.min.y();
             });
@@ -493,6 +494,22 @@ bool BrushStrokeCanvasComponent::collides_within_coords(const SCollision::Collid
         return toRet;
     }, points, 0, nullptr);
     return toRet;
+}
+
+bool BrushStrokeCanvasComponent::should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const {
+    SCollision::AABB<float> viewGenerousColliderInObjSpace = coords.world_collider_to_coords<SCollision::AABB<float>>(drawData.cam.viewingAreaGenerousCollider);
+    viewGenerousColliderInObjSpace.min -= Vector2f{1.0f, 1.0f};
+    viewGenerousColliderInObjSpace.max += Vector2f{1.0f, 1.0f};
+    bool deepPrecheck = false;
+    for(auto& aabb : precheckAABBLevels) {
+        if(SCollision::collide(viewGenerousColliderInObjSpace, aabb)) {
+            deepPrecheck = true;
+            break;
+        }
+    }
+    if(!deepPrecheck && !precheckAABBLevels.empty())
+        return false;
+    return true;
 }
 
 SCollision::AABB<float> BrushStrokeCanvasComponent::get_obj_coord_bounds() const {

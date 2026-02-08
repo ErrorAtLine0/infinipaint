@@ -158,7 +158,7 @@ void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const Trans
 }
 
 bool CanvasComponentContainer::should_draw(const DrawData& drawData) const {
-    return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider);
+    return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
 }
 
 CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predraw_data(const DrawData& drawData) const {
