@@ -489,7 +489,7 @@ bool World::should_ask_before_closing() {
     // If it's a server or a client, and the previous statement is false, we should always ask before quitting because the data could be modified by someone on the network
     // If it's a local file, ask before quitting if we detect any local changes
     // If on web version, don't ask before closing
-#ifdef __EMCSRIPTEN__
+#ifdef __EMSCRIPTEN__
     return false;
 #else
     if(netClient || netServer)
