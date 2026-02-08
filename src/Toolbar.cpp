@@ -252,6 +252,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["keybinds"] = jKeybinds;
     toRet["guiScale"] = guiScale;
     toRet["jumpTransitionTime"] = jumpTransitionTime;
+    toRet["disableGraphicsDriverWorkarounds"] = main.window.disableGraphicsDriverWorkarounds;
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
     toRet["vsync"] = main.window.vsyncValue;
@@ -330,6 +331,8 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("applyDisplayScale").get_to(main.window.applyDisplayScale);} catch(...) {}
 #endif
     try{j.at("guiScale").get_to(guiScale);} catch(...) {}
+    try{j.at("jumpTransitionTime").get_to(jumpTransitionTime);} catch(...) {}
+    try{j.at("disableGraphicsDriverWorkarounds").get_to(main.window.disableGraphicsDriverWorkarounds);} catch(...) {}
     try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
     try{j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);} catch(...) {}
     if(version >= VersionNumber(0, 3, 0))
@@ -1701,6 +1704,7 @@ void Toolbar::options_menu() {
                                         gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
                                         gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
                                         gui.checkbox_field("make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                                        gui.checkbox_field("disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.window.disableGraphicsDriverWorkarounds);
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, 1);
 

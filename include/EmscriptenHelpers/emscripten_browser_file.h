@@ -86,11 +86,15 @@ inline void upload(std::string const &accept_types, upload_handler callback, voi
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
-EM_JS_INLINE(void, download, (char const *filename, char const *mime_type, void const *buffer, size_t buffer_size), {
+EM_JS_INLINE(void, download, (char const *filename, char const *mime_type, void const *b, size_t buffer_size), {
+  // Fix copied from: https://github.com/Armchair-Software/emscripten-browser-file/issues/1
   /// Offer a buffer in memory as a file to download, specifying download filename and mime type
   var a = document.createElement('a');
   a.download = UTF8ToString(filename);
-  a.href = URL.createObjectURL(new Blob([new Uint8Array(Module["HEAPU8"].buffer, buffer, buffer_size)], {type: UTF8ToString(mime_type)}));
+  var bufferCopy = new ArrayBuffer(buffer_size);
+  var uint8Array = new Uint8Array(bufferCopy);
+  uint8Array.set(new Uint8Array(Module["HEAPU8"].buffer, b, buffer_size));
+  a.href = URL.createObjectURL(new Blob([uint8Array], {type: UTF8ToString(mime_type)}));
   a.click();
 });
 #pragma GCC diagnostic pop

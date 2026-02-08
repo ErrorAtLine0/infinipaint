@@ -19,6 +19,5 @@ class LineDrawTool : public DrawingProgramToolBase {
     private:
         void commit();
 
-        Vector2f startAt;
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

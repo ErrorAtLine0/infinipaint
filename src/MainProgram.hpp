@@ -50,6 +50,8 @@ class MainProgram {
                 bool applyDisplayScale = true;
             #endif
 
+            bool disableGraphicsDriverWorkarounds = false;
+
             int defaultMSAASampleCount = 0;
             SkSurfaceProps defaultMSAASurfaceProps;
 

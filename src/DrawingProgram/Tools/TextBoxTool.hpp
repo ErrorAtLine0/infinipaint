@@ -21,6 +21,5 @@ class TextBoxTool : public DrawingProgramToolBase {
 
         Vector2f startAt;
         Vector2f endAt;
-        int drawStage = 0;
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

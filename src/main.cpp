@@ -490,7 +490,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
             GrContextOptions opts;
             opts.fSuppressPrints = true;
-            opts.fDisableDriverCorrectnessWorkarounds = true; // Driver workarounds causing glitches in windows drivers
+            opts.fDisableDriverCorrectnessWorkarounds = mS.m->window.disableGraphicsDriverWorkarounds; // Driver workarounds causing glitches on intel drivers on windows, but are required in the Emscripten version. Good idea to have a toggle for it
 
             mS.ctx = GrDirectContexts::MakeGL(iface, opts);
             if(!mS.ctx)
