@@ -226,7 +226,7 @@ void EditTool::tool_update() {
 }
 
 bool EditTool::prevent_undo_or_redo() {
-    return objInfoBeingEdited;
+    return objInfoBeingEdited || drawP.selection.is_something_selected();
 }
 
 void EditTool::draw(SkCanvas* canvas, const DrawData& drawData) {
