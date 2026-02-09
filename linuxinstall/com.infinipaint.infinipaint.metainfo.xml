@@ -60,7 +60,7 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
-        <release version="0.4.1" date="2026-02-03">
+        <release version="0.4.1" date="2026-02-09">
             <description>
                 <p>Minor update:</p>
                 <ul>
