@@ -550,6 +550,7 @@ void World::draw(SkCanvas* canvas) {
             gridMan.draw_front(canvas, drawData);
             gridMan.draw_coordinates(canvas, drawData);
         }
-        draw_other_player_cursors(canvas, drawData);
+        if(!main.takingScreenshot)
+            draw_other_player_cursors(canvas, drawData);
     }
 }
