@@ -474,6 +474,7 @@ void World::scale_up_step() {
 
 void World::scale_up(const WorldScalar& scaleUpAmount) {
     Logger::get().log("USERINFO", "Canvas scaled up");
+    drawProg.drawCache.clear_own_cached_surfaces();
     bMan.scale_up(scaleUpAmount);
     gridMan.scale_up(scaleUpAmount);
     drawData.cam.scale_up(*this, scaleUpAmount);
