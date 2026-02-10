@@ -139,7 +139,7 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                 toInsert.emplace_back(insertIt, std::move(e));
                 toInsert.back().second.reassign_ids();
             }
-            components->insert_ordered_list_and_send_create(components, toInsert);
+            components->insert_sorted_list_and_send_create(components, toInsert);
             toEraseList.clear();
         };
         for(auto& obj : objs) {
@@ -190,6 +190,8 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                         auto components = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer::NetList>(compNetID);
                         std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, NetObjOwnerPtr<CanvasComponentContainer>>> toInsert;
                         std::vector<NetObjOrderedListIterator<CanvasComponentContainer>> toErase = components->get_list(moveData.objs);
+                        components->sort_it_list(toErase); // There's a chance that objects could have changed order on the client side, so sort them
+
                         std::vector<NetObjOwnerPtr<CanvasComponentContainer>> erasedObjs;
                         std::vector<uint32_t> newPos;
                         {
@@ -205,7 +207,7 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                             toInsert.emplace_back(insertIteratorList[i], std::move(erasedObjs[i]));
                             toInsert.back().second.reassign_ids();
                         }
-                        components->insert_ordered_list_and_send_create(components, toInsert);
+                        components->insert_sorted_list_and_send_create(components, toInsert);
                         *moveData.oldPos = newPos;
                     }
                 }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
@@ -223,7 +225,7 @@ std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManage
         auto editLayerPtr = editingLayer.lock();
         if(!editLayerPtr)
             throw std::runtime_error("[DrawingProgramLayerManager::add_many_components_to_layer_being_edited] No layer selected!");
-        auto toRet = editLayerPtr->get_layer().components->insert_ordered_list_and_send_create(editLayerPtr->get_layer().components, newObjs);
+        auto toRet = editLayerPtr->get_layer().components->insert_sorted_list_and_send_create(editLayerPtr->get_layer().components, newObjs);
         add_undo_place_components(editingLayer.lock().get(), toRet);
         return toRet;
     }
@@ -405,7 +407,7 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
                             toInsert[i].second = undoMan.world.netObjMan.make_obj_direct<CanvasComponentContainer>(undoMan.world.netObjMan, *insertData.copyData->at(i));
                             undoMan.register_new_netid_to_existing_undoid(insertData.undoID->at(i), toInsert[i].second.get_net_id());
                         }
-                        parentListPtr->insert_ordered_list_and_send_create(parentListPtr, toInsert);
+                        parentListPtr->insert_sorted_list_and_send_create(parentListPtr, toInsert);
                         insertData.copyData->clear();
                     }
                 }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
@@ -530,7 +532,7 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
                     toInsert[i].second = undoMan.world.netObjMan.make_obj_direct<CanvasComponentContainer>(undoMan.world.netObjMan, *undoPlaceData.copyData.at(i));
                     undoMan.register_new_netid_to_existing_undoid(undoPlaceData.undoID.at(i), toInsert[i].second.get_net_id());
                 }
-                parentListPtr->insert_ordered_list_and_send_create(parentListPtr, toInsert);
+                parentListPtr->insert_sorted_list_and_send_create(parentListPtr, toInsert);
 
                 undoPlaceData.copyData.clear();
                 return true;

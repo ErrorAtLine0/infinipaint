@@ -112,6 +112,18 @@ namespace NetworkingObjects {
         }
     }
 
+    template <typename T> void sort_netobj_ordered_list_iterator_list(const std::list<NetObjOrderedListObjectInfo<T>>& l, std::vector<NetObjOrderedListIterator<T>>& itListToSort) {
+        std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
+            return b == l.end() || (a != l.end() && a->pos < b->pos);
+        });
+    }
+
+    template <typename T> void sort_netobj_ordered_list_iterator_insert_list(const std::list<NetObjOrderedListObjectInfo<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& itListToSort) {
+        std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
+            return b.first == l.end() || (a.first != l.end() && a.first->pos < b.first->pos);
+        });
+    }
+
     template <typename T> class NetObjOrderedList {
         public:
             // Don't use this function unless you're sure that class T isn't a base class
@@ -127,7 +139,7 @@ namespace NetworkingObjects {
             static NetObjOrderedListIterator<T> insert_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const NetObjOrderedListIterator<T>& it, T* newObj) {
                 return l->insert_single(l, nullptr, it, l.get_obj_man()->template make_obj_from_ptr<T>(newObj));
             }
-            static std::vector<NetObjOrderedListIterator<T>> insert_ordered_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<std::pair<NetObjOrderedListIterator<T>, T*>>& newObjs) {
+            static std::vector<NetObjOrderedListIterator<T>> insert_sorted_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<std::pair<NetObjOrderedListIterator<T>, T*>>& newObjs) {
                 if(newObjs.empty())
                     return {};
                 std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> ownerPtrOrderedList;
@@ -135,9 +147,24 @@ namespace NetworkingObjects {
                     ownerPtrOrderedList.emplace_back(newObjs[i].first, std::move(l.get_obj_man()->template make_obj_from_ptr<T>(newObjs[i].second)));
                 return l->insert_ordered_list(l, nullptr, ownerPtrOrderedList);
             }
-            static std::vector<NetObjOrderedListIterator<T>> insert_ordered_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjPtrs) {
+            static std::vector<NetObjOrderedListIterator<T>> insert_sorted_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjPtrs) {
                 if(newObjPtrs.empty())
                     return {};
+                return l->insert_ordered_list(l, nullptr, newObjPtrs);
+            }
+            static std::vector<NetObjOrderedListIterator<T>> insert_unsorted_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<std::pair<NetObjOrderedListIterator<T>, T*>>& newObjs) {
+                if(newObjs.empty())
+                    return {};
+                std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>> ownerPtrOrderedList;
+                for(uint32_t i = 0; i < static_cast<uint32_t>(newObjs.size()); i++)
+                    ownerPtrOrderedList.emplace_back(newObjs[i].first, std::move(l.get_obj_man()->template make_obj_from_ptr<T>(newObjs[i].second)));
+                sort_netobj_ordered_list_iterator_insert_list(l, ownerPtrOrderedList);
+                return l->insert_ordered_list(l, nullptr, ownerPtrOrderedList);
+            }
+            static std::vector<NetObjOrderedListIterator<T>> insert_unsorted_list_and_send_create(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& newObjPtrs) {
+                if(newObjPtrs.empty())
+                    return {};
+                sort_netobj_ordered_list_iterator_insert_list(l, newObjPtrs);
                 return l->insert_ordered_list(l, nullptr, newObjPtrs);
             }
             static void erase_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, const std::vector<NetObjOrderedListIterator<T>>& iterators, std::vector<NetObjOwnerPtr<T>>* erasedObjects = nullptr) {
@@ -256,6 +283,9 @@ namespace NetworkingObjects {
                 for(auto& id : ids)
                     toRet.emplace_back(get(id));
                 return toRet;
+            }
+            void sort_it_list(std::vector<NetObjOrderedListIterator<T>>& itList) const {
+                sort_netobj_ordered_list_iterator_list(data_list(), itList);
             }
             bool empty() const {
                 return data_list().empty();

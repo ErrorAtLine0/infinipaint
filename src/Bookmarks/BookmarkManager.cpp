@@ -137,7 +137,7 @@ void BookmarkManager::setup_list_gui(const char* id) {
                             toInsert.emplace_back(insertIt, std::move(*it));
                             toInsert.back().second.reassign_ids();
                         }
-                        std::vector<NetObjOrderedListIterator<BookmarkListItem>> insertedIterators = listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
+                        std::vector<NetObjOrderedListIterator<BookmarkListItem>> insertedIterators = listPtr->insert_sorted_list_and_send_create(listPtr, toInsert);
 
                         // Prepare insert list for undo
                         insertParentUndoID = world.undo.get_undoid_from_netid(listObj);
@@ -210,7 +210,7 @@ void BookmarkManager::setup_list_gui(const char* id) {
                                             toInsert.emplace_back(insertIt, std::move(*it));
                                             toInsert.back().second.reassign_ids();
                                         }
-                                        parentListPtr->insert_ordered_list_and_send_create(parentListPtr, toInsert);
+                                        parentListPtr->insert_sorted_list_and_send_create(parentListPtr, toInsert);
                                     }
                                 }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
                                 return true;
@@ -259,7 +259,7 @@ void BookmarkManager::setup_list_gui(const char* id) {
                                         toInsert.emplace_back(insertIt, std::move(*it));
                                         toInsert.back().second.reassign_ids();
                                     }
-                                    listPtr->insert_ordered_list_and_send_create(listPtr, toInsert);
+                                    listPtr->insert_sorted_list_and_send_create(listPtr, toInsert);
                                 }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
 
                                 return true;
