@@ -374,10 +374,15 @@ namespace NetworkingObjects {
                     return;
 
                 std::vector<std::pair<uint32_t, NetObjOwnerPtr<T>>> erasedObjectsWithPos;
+                if(erasedObjects) {
+                    for(auto& it : itList)
+                        erasedObjectsWithPos.emplace_back(it->pos, NetObjOwnerPtr<T>());
+                }
 
                 NetObjOrderedListIterator<T> smallestPosIt = data.end();
                 std::vector<NetObjID> idListToSend;
-                for(auto& it : itList) {
+                for(size_t i = 0; i < itList.size(); i++) {
+                    auto& it = itList[i];
                     if(smallestPosIt == data.end() || smallestPosIt->pos >= it->pos) {
                         smallestPosIt = std::next(it);
                         if(smallestPosIt != data.end())
@@ -387,7 +392,7 @@ namespace NetworkingObjects {
                     this->call_erase_callback(it);
                     idToDataMap.erase(it->obj.get_net_id());
                     if(erasedObjects)
-                        erasedObjectsWithPos.emplace_back(it->pos, std::move(it->obj));
+                        erasedObjectsWithPos[i].second = std::move(it->obj);
                     data.erase(it);
                 }
 
@@ -516,9 +521,15 @@ namespace NetworkingObjects {
                     return;
 
                 std::vector<std::pair<uint32_t, NetObjOwnerPtr<T>>> erasedObjectsWithPos;
+                if(erasedObjects) {
+                    for(auto& it : itList)
+                        erasedObjectsWithPos.emplace_back(it->pos, NetObjOwnerPtr<T>());
+                }
+
                 NetObjOrderedListIterator<T> smallestPosIt = clientData.end();
                 std::vector<NetObjID> idListToSend;
-                for(auto& it : itList) {
+                for(size_t i = 0; i < itList.size(); i++) {
+                    auto& it = itList[i];
                     if(smallestPosIt == clientData.end() || smallestPosIt->pos >= it->pos) {
                         smallestPosIt = std::next(it);
                         if(smallestPosIt != clientData.end())
@@ -528,7 +539,7 @@ namespace NetworkingObjects {
                     this->call_erase_callback(it);
                     clientIdToDataMap.erase(it->obj.get_net_id());
                     if(erasedObjects)
-                        erasedObjectsWithPos.emplace_back(it->pos, std::move(it->obj));
+                        erasedObjectsWithPos[i].second = std::move(it->obj);
                     clientData.erase(it);
                 }
 

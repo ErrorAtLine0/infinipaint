@@ -33,6 +33,8 @@ void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListIt
     components->set_erase_callback(eraseCallback);
     components->set_move_callback([&](const CanvasComponentContainer::ObjInfoIterator& c, uint32_t oldPos) {
         layerMan.drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
+        if(layerMan.drawP.selection.is_selected(&(*c)))
+            layerMan.drawP.selection.sort_selection(); // If item is selected, selected items will be unordered, so sort everything again
     });
     // Make sure the insert callback is called on existing objects
     for(auto it = components->begin(); it != components->end(); ++it)

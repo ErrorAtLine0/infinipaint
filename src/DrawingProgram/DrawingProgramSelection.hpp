@@ -18,6 +18,7 @@ class DrawingProgramSelection {
         void draw_gui(SkCanvas* canvas, const DrawData& drawData);
         bool is_being_transformed();
         void update();
+        void sort_selection();
         void deselect_all();
         void paste_clipboard(Vector2f pasteScreenPos);
         void paste_image(Vector2f pasteScreenPos);
@@ -50,7 +51,6 @@ class DrawingProgramSelection {
 
         void set_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection);
         void add_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection);
-        void sort_selection();
         void calculate_aabb();
         void reset_all();
         void reset_transform_data();

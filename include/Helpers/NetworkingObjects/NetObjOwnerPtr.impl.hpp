@@ -11,6 +11,7 @@
 namespace NetworkingObjects {
     template <typename T> NetObjOwnerPtr<T>::NetObjOwnerPtr():
         objMan(nullptr),
+        id(NetObjID{0, 0}),
         rawPtr(nullptr)
     {}
 
