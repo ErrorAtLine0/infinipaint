@@ -12,10 +12,6 @@ template <typename S, typename T> S convert_vec2(const T& t) {
     return S{t[0], t[1]};
 }
 
-template <typename S, typename T> S convert_vec2_narrow_double_to_float(const T& t) {
-    return S{static_cast<float>(t[0]), static_cast<float>(t[1])};
-}
-
 template <typename S, typename T> S convert_vec3(const T& t) {
     return S{t[0], t[1], t[2]};
 }

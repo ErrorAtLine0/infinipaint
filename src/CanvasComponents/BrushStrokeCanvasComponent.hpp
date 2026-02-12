@@ -13,13 +13,6 @@ struct BrushStrokeCanvasComponentPoint {
     }
 };
 
-struct BrushStrokeCanvasComponentPointDouble {
-    BrushStrokeCanvasComponentPointDouble();
-    BrushStrokeCanvasComponentPointDouble(const BrushStrokeCanvasComponentPoint& p);
-    Vector2d pos;
-    double width;
-};
-
 class BrushStrokeCanvasComponent : public CanvasComponent {
     public:
         constexpr static float DRAW_MINIMUM_LIMIT = 0.3;
@@ -57,13 +50,13 @@ class BrushStrokeCanvasComponent : public CanvasComponent {
 
         std::array<std::shared_ptr<SkPath>, 2> brushPathLOD;
 
-        std::vector<BrushStrokeCanvasComponentPointDouble> every_nth_point_include_front_and_back(const std::vector<BrushStrokeCanvasComponentPointDouble>& pts, size_t n) const;
+        std::vector<BrushStrokeCanvasComponentPoint> every_nth_point_include_front_and_back(const std::vector<BrushStrokeCanvasComponentPoint>& pts, size_t n) const;
 
         void add_precheck_aabb_level(size_t level, const std::vector<SCollision::BVHContainer<float>>& levelArray);
         std::vector<SCollision::AABB<float>> precheckAABBLevels;
-        void create_triangles(const std::function<bool(Vector2d, Vector2d, Vector2d)>& passTriangleFunc, const std::vector<BrushStrokeCanvasComponentPointDouble>& smoothedPoints, size_t skipVertexCount, std::shared_ptr<SkPathBuilder> bPath) const;
-        std::vector<size_t> get_wedge_indices(const std::vector<BrushStrokeCanvasComponentPointDouble>& points) const;
-        std::vector<BrushStrokeCanvasComponentPointDouble> smooth_points(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) const;
-        //std::vector<BrushStrokeCanvasComponentPoint> smooth_points_avg(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) const;
+        void create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc, const std::vector<BrushStrokeCanvasComponentPoint>& smoothedPoints, size_t skipVertexCount, std::shared_ptr<SkPathBuilder> bPath) const;
+        std::vector<size_t> get_wedge_indices(const std::vector<BrushStrokeCanvasComponentPoint>& points) const;
+        std::vector<BrushStrokeCanvasComponentPoint> smooth_points(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) const;
+        std::vector<BrushStrokeCanvasComponentPoint> smooth_points_avg(size_t beginIndex, size_t endIndex, unsigned numOfDivisions) const;
 };
 
