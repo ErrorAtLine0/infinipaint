@@ -4,6 +4,7 @@
 #include <limits>
 #include <Eigen/Geometry>
 #include "Eigen/Core"
+#include "Helpers/ConvertVec.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "../TimePoint.hpp"
 #include <include/core/SkVertices.h>
@@ -333,7 +334,7 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
         std::vector<Vector2d> circlePoints = gen_circle_points(pointsN.front().pos, pointsN.front().width / 2.0, CIRCLE_SMOOTHNESS);
         for(size_t i = 0; i < circlePoints.size(); i++) {
             if(passTriangleFunc(pointsN.front().pos, circlePoints[i], circlePoints[(i + 1) % circlePoints.size()])) return;
-            topPoints.emplace_back(convert_vec2<SkPoint>(circlePoints[i]));
+            topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(circlePoints[i]));
         }
     }
 
@@ -358,9 +359,9 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
         perpPrev.normalize();
 
         vertArray[0] = points[pointsBegin].pos + perpPrev * points[pointsBegin].width * 0.5;
-        topPoints.emplace_back(convert_vec2<SkPoint>(vertArray[0]));
+        topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(vertArray[0]));
         vertArray[1] = points[pointsBegin].pos - perpPrev * points[pointsBegin].width * 0.5;
-        bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[1]));
+        bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(vertArray[1]));
         newIndex = 2;
 
         if(d.hasRoundCaps && pointsBegin == 0) {
@@ -372,9 +373,9 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
             arcPoints.emplace_back(vertArray[1]);
             for(size_t i = 0; i < arcPoints.size() - 1; i++) {
                 if(passTriangleFunc(points[0].pos, arcPoints[i], arcPoints[i + 1])) return;
-                bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+                bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints[i]));
             }
-            bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
+            bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints.back()));
         }
 
         for(size_t j = pointsBegin + 1; j < pointsEnd; j++) {
@@ -396,12 +397,12 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
                 perp = -perp;
 
             vertArray[newIndex] = points[j].pos + perp * 0.5 * points[j].width;
-            topPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
+            topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(vertArray[newIndex]));
             newIndex = (newIndex + 1) % 3;
             if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
             
             vertArray[newIndex] = points[j].pos - perp * 0.5 * points[j].width;
-            bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
+            bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(vertArray[newIndex]));
             newIndex = (newIndex + 1) % 3;
             if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
 
@@ -414,12 +415,12 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
         if(perp.dot(perpPrev) < 0.0)
             perp = -perp;
         vertArray[newIndex] = points[pointsEnd].pos + perp * points[pointsEnd].width * 0.5;
-        topPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
+        topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(vertArray[newIndex]));
         newIndex = (newIndex + 1) % 3;
         if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
 
         vertArray[newIndex] = points[pointsEnd].pos - perp * points[pointsEnd].width * 0.5;
-        bottomPoints.emplace_back(convert_vec2<SkPoint>(vertArray[newIndex]));
+        bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(vertArray[newIndex]));
         newIndex = (newIndex + 1) % 3;
         if(passTriangleFunc(vertArray[0], vertArray[1], vertArray[2])) return;
 
@@ -439,7 +440,7 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
 
             Vector2d wedgeP1 = ((currentP1 - currentP2).dot(nextRectDir)) <= 0.0 ? currentP1 : currentP2;
             Vector2d wedgeP2 = ((nextP1 - nextP2).dot(rectDir)) <= 0.0 ? nextP1 : nextP2;
-            bool isTopWedge = convert_vec2<SkPoint>(wedgeP1) == topPoints.back();
+            bool isTopWedge = convert_vec2_narrow_double_to_float<SkPoint>(wedgeP1) == topPoints.back();
 
             double arcRadius;
 
@@ -462,14 +463,14 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
             for(size_t i = 0; i < arcPoints.size() - 1; i++) {
                 if(passTriangleFunc(wedgeCenter, arcPoints[i], arcPoints[i + 1])) return;
                 if(isTopWedge)
-                    topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+                    topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints[i]));
                 else
-                    bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+                    bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints[i]));
             }
             if(isTopWedge)
-                topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
+                topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints.back()));
             else
-                bottomPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
+                bottomPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints.back()));
         }
         else if(d.hasRoundCaps) { // It's the last point, cap it off
             Vector2d arcDirStart = (vertArray[(newIndex + 1) % 3] - points.back().pos).normalized();
@@ -480,9 +481,9 @@ void BrushStrokeCanvasComponent::create_triangles(const std::function<bool(Vecto
             arcPoints.emplace_back(vertArray[(newIndex + 2) % 3]);
             for(size_t i = 0; i < arcPoints.size() - 1; i++) {
                 if(passTriangleFunc(points.back().pos, arcPoints[i], arcPoints[i + 1])) return;
-                topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints[i]));
+                topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints[i]));
             }
-            topPoints.emplace_back(convert_vec2<SkPoint>(arcPoints.back()));
+            topPoints.emplace_back(convert_vec2_narrow_double_to_float<SkPoint>(arcPoints.back()));
         }
     }
 
