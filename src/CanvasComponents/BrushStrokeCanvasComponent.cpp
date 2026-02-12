@@ -14,7 +14,7 @@
 #include "Helpers/SCollision.hpp"
 
 #define AABB_PRECHECK_BVH_LEVELS 2
-#define DEFAULT_SMOOTHNESS 5
+#define DEFAULT_SMOOTHNESS 3
 
 void BrushStrokeCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
     a(*d.points, d.color, d.hasRoundCaps);
