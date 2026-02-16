@@ -147,20 +147,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
         std::vector<uint8_t> finalImgRawData(imageByteSize);
         SkPixmap finalImgData(finalImgInfo, finalImgRawData.data(), imageRowSize);
         
-        #ifdef USE_BACKEND_OPENGLES_3_0
-            SkImageInfo imgInfo = SkImageInfo::Make(drawP.world.main.window.size.x(), drawP.world.main.window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
-        #else
-            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(drawP.world.main.window.size.x(), drawP.world.main.window.size.y());
-        #endif
-        #ifdef USE_SKIA_BACKEND_GRAPHITE
-            sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, &drawP.world.main.window.defaultMSAASurfaceProps);
-        #elif USE_SKIA_BACKEND_GANESH
-            sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
-        #endif
-        if(!surface) {
-            Logger::get().log("INFO", "[SkSurfaces::WrapBackendRenderTarget] Screenshot Tool could not make surface");
-            return;
-        }
+        sk_sp<SkSurface> surface = drawP.world.main.create_native_surface(drawP.world.main.window.size, true);
         SkCanvas* screenshotCanvas = surface->getCanvas();
         if(!screenshotCanvas) {
             Logger::get().log("INFO", "Screenshot Tool could not make canvas");

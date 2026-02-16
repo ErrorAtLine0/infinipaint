@@ -716,24 +716,8 @@ void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& 
         selectionDrawData.cam.set_viewing_area(drawP.world.main.window.size.cast<float>());
         selectionDrawData.refresh_draw_optimizing_values();
 
-        SkImageInfo imgInfo = canvas->imageInfo();
-        sk_sp<SkSurface> surface;
-        #ifdef USE_SKIA_BACKEND_GRAPHITE
-            surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
-        #elif USE_SKIA_BACKEND_GANESH
-            surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
-        #endif
-        if(!surface)
-            throw std::runtime_error("[DrawingProgramSelection::draw_components] Could not make temporary surface");
-
         for(auto& c : selectedSet)
             c->obj->draw(canvas, selectionDrawData);
-
-        SkPaint glowBlurP;
-        glowBlurP.setImageFilter(SkImageFilters::Blur(5, 5, nullptr));
-
-        canvas->drawImage(surface->makeTemporaryImage(), 0, 0, SkSamplingOptions{SkFilterMode::kLinear}, &glowBlurP);
-        canvas->drawImage(surface->makeTemporaryImage(), 0, 0, SkSamplingOptions{SkFilterMode::kLinear}, nullptr);
     }
 }
 

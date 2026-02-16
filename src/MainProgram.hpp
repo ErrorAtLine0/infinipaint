@@ -86,6 +86,7 @@ class MainProgram {
         MainProgram();
         void update();
         void draw(SkCanvas* canvas);
+        sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
         bool setToQuit = false;
         

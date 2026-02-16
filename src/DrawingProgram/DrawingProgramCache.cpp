@@ -266,21 +266,8 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
             return;
         nodeCacheMap.erase(bvhNode); // Ensure nodeCache is erased, so that the draw_components_to_canvas function doesnt use it while drawing
     }
-    else {
-        #ifdef USE_BACKEND_OPENGLES_3_0
-            SkImageInfo imgInfo = SkImageInfo::Make(bvhNode->resolution.x(), bvhNode->resolution.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
-        #else
-            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(bvhNode->resolution.x(), bvhNode->resolution.y());
-        #endif
-        #ifdef USE_SKIA_BACKEND_GRAPHITE
-            nodeCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
-        #elif USE_SKIA_BACKEND_GANESH
-            nodeCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
-        #endif
-
-        if(!nodeCache.surface)
-            throw std::runtime_error("[DrawingProgramCache::refresh_draw_cache] Could not make cache surface");
-    }
+    else
+        nodeCache.surface = drawP.world.main.create_native_surface(bvhNode->resolution, true);
 
     SkCanvas* cacheCanvas = nodeCache.surface->getCanvas();
 
@@ -339,19 +326,7 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
 
 void DrawingProgramCache::allocate_window_cache_area() {
     const Vector2i& windowSize = drawP.world.main.window.size;
-    #ifdef USE_BACKEND_OPENGLES_3_0
-        SkImageInfo imgInfo = SkImageInfo::Make(windowSize.x(), windowSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
-    #else
-        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(windowSize.x(), windowSize.y());
-    #endif
-    #ifdef USE_SKIA_BACKEND_GRAPHITE
-        windowCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.recorder(), imgInfo, skgpu::Mipmapped::kNo, drawP.world.main.window.defaultMSAASurfaceProps);
-    #elif USE_SKIA_BACKEND_GANESH
-        windowCache.surface = SkSurfaces::RenderTarget(drawP.world.main.window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, drawP.world.main.window.defaultMSAASampleCount, &drawP.world.main.window.defaultMSAASurfaceProps);
-    #endif
-
-    if(!windowCache.surface)
-        throw std::runtime_error("[DrawingProgramCache::allocate_window_cache_area] Could not make cache surface");
+    windowCache.surface = drawP.world.main.create_native_surface(windowSize, true);
     windowCache.size = windowSize;
 }
 

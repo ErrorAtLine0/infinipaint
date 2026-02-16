@@ -282,18 +282,7 @@ void sdl_terminate(MainStruct& mS) {
 
 void resize_window(MainStruct& mS) {
     // Having intermediate surface allows for changing options more easily
-    #ifdef USE_BACKEND_OPENGLES_3_0
-        SkImageInfo imgInfo = SkImageInfo::Make(mS.m->window.size.x(), mS.m->window.size.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
-    #else
-        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(mS.m->window.size.x(), mS.m->window.size.y());
-    #endif
-#ifdef USE_SKIA_BACKEND_GRAPHITE
-    mS.intermediateSurface = SkSurfaces::RenderTarget(mS.vulkanWindowContext->graphiteRecorder(), imgInfo, skgpu::Mipmapped::kNo, &mS.m->window.defaultMSAASurfaceProps);
-#elif USE_SKIA_BACKEND_GANESH
-    mS.intermediateSurface = SkSurfaces::RenderTarget(mS.ctx.get(), skgpu::Budgeted::kNo, imgInfo, mS.m->window.defaultMSAASampleCount, &mS.m->window.defaultMSAASurfaceProps);
-#endif
-    if(!mS.intermediateSurface)
-        throw std::runtime_error("[resize_window] Could not make intermediate surface");
+    mS.intermediateSurface = mS.m->create_native_surface(mS.m->window.size, true);
     mS.intermediateCanvas = mS.intermediateSurface->getCanvas();
 
     if(!mS.intermediateCanvas)

@@ -289,6 +289,25 @@ void MainProgram::draw(SkCanvas* canvas) {
     toolbar.draw(canvas);
 }
 
+sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {
+    #ifdef USE_BACKEND_OPENGLES_3_0
+        SkImageInfo imgInfo = SkImageInfo::Make(resolution.x(), resolution.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    #else
+        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(resolution.x(), resolution.y());
+    #endif
+    SkSurfaceProps defaultProps;
+    #ifdef USE_SKIA_BACKEND_GRAPHITE
+        auto surfaceToRet = SkSurfaces::RenderTarget(window.recorder(), imgInfo, skgpu::Mipmapped::kNo, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
+    #elif USE_SKIA_BACKEND_GANESH
+        auto surfaceToRet = SkSurfaces::RenderTarget(window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, isMSAA ? window.defaultMSAASampleCount : 0, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
+    #endif
+
+    if(!surfaceToRet)
+        throw std::runtime_error("[MainProgram::create_native_surface] Could not make native surface");
+
+    return surfaceToRet;
+}
+
 bool MainProgram::network_being_used() {
     for(auto& w : worlds) {
         if(w->netObjMan.is_connected())
