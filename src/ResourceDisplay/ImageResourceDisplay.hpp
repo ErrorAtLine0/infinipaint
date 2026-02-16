@@ -19,6 +19,7 @@ class ImageResourceDisplay : public ResourceDisplay {
         struct FrameData {
             sk_sp<SkImage> data;
             float duration;
+            std::unordered_map<unsigned, sk_sp<SkImage>> mipmapLevels;
         };
         std::vector<FrameData> frames;
 

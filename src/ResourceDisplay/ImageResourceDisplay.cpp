@@ -11,6 +11,13 @@
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
 
+#ifdef USE_SKIA_BACKEND_GRAPHITE
+    #include <include/gpu/graphite/Surface.h>
+#elif USE_SKIA_BACKEND_GANESH
+    #include <include/gpu/ganesh/GrDirectContext.h>
+    #include <include/gpu/ganesh/SkSurfaceGanesh.h>
+#endif
+
 std::array<const SkCodecs::Decoder, 7> decoders = {
     SkBmpDecoder::Decoder(),
     SkGifDecoder::Decoder(),
@@ -34,7 +41,7 @@ void ImageResourceDisplay::load_thread() {
             frameTime = frameInfo.fDuration;
         auto decodeResult = codec->getImage(imageInfo, &imageOptions);
         if(std::get<1>(decodeResult) == SkCodec::Result::kSuccess)
-            frames[i] = {std::get<0>(decodeResult)->withDefaultMipmaps(), frameTime};
+            frames[i] = {std::get<0>(decodeResult), frameTime};
         else {
             Logger::get().log("WORLDFATAL", "Could not decode image, got error code " + std::to_string(std::get<1>(decodeResult)) + ". Image has dimensions " + std::to_string(imageInfo.width()) + " " + std::to_string(imageInfo.height()));
             break;
@@ -107,8 +114,30 @@ bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileNa
 void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) {
     if(loadedFrames == 0)
         canvas->drawRect(imRect, SkPaint({0.5f, 0.5f, 0.5f, 0.5f}));
-    else
-        canvas->drawImageRect(frames[frameIndex].data, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});
+    else {
+        SkRect imRectPixelSize = canvas->getLocalToDeviceAs3x3().mapRect(imRect);
+        float imWidth = std::max(imRectPixelSize.width(), 32.0f);
+        unsigned divisionLevel = imageInfo.width() / imWidth;
+        auto& frame = frames[frameIndex];
+        if(divisionLevel <= 1)
+            canvas->drawImageRect(frame.data, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+        else {
+            unsigned mipmapLevel = std::log2(divisionLevel);
+            auto mipmapIt = frame.mipmapLevels.find(mipmapLevel);
+
+            if(mipmapIt == frame.mipmapLevels.end()) {
+                unsigned divideResolutionBy = std::exp2(mipmapLevel);
+                SkISize mipmapResolution(imageInfo.width() / divideResolutionBy, imageInfo.height() / divideResolutionBy);
+
+                SkImageInfo mipmapImgInfo = imageInfo.makeDimensions(mipmapResolution);
+                sk_sp<SkImage> mipmapImage = frame.data->makeScaled(mipmapImgInfo, SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone));
+                frame.mipmapLevels.emplace(mipmapLevel, mipmapImage);
+                canvas->drawImageRect(mipmapImage, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+            }
+            else
+                canvas->drawImageRect(mipmapIt->second, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+        }
+    }
 }
 
 Vector2f ImageResourceDisplay::get_dimensions() const {
