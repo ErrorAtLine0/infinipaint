@@ -16,10 +16,14 @@ class ImageResourceDisplay : public ResourceDisplay {
         virtual Type get_type() const override;
         virtual ~ImageResourceDisplay() override;
     private:
+        struct MipmapLevelData {
+            sk_sp<SkImage> imageData;
+            std::chrono::steady_clock::time_point timeLastUsed;
+        };
         struct FrameData {
             sk_sp<SkImage> data;
             float duration;
-            std::unordered_map<unsigned, sk_sp<SkImage>> mipmapLevels;
+            std::unordered_map<unsigned, MipmapLevelData> mipmapLevels;
         };
         std::vector<FrameData> frames;
 

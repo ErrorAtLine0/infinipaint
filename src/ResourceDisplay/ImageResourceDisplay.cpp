@@ -1,4 +1,5 @@
 #include "ImageResourceDisplay.hpp"
+#include <chrono>
 #include <include/codec/SkPngDecoder.h>
 #include <include/codec/SkJpegDecoder.h>
 #include <include/codec/SkBmpDecoder.h>
@@ -57,6 +58,13 @@ bool ImageResourceDisplay::update_draw() const {
 }
 
 void ImageResourceDisplay::update(World& w) {
+    for(auto& frame : frames) {
+        std::erase_if(frame.mipmapLevels, [](const auto& mipmapPair) {
+            static constexpr std::chrono::duration TIME_TO_REMOVE_MIPMAP_CACHE = std::chrono::seconds(40);
+            return std::chrono::steady_clock::now() - mipmapPair.second.timeLastUsed > TIME_TO_REMOVE_MIPMAP_CACHE;
+        });
+    }
+
     mustUpdateDraw = false;
     if(!loadedFirstFrame && loadedFrames >= 1) {
         mustUpdateDraw = true;
@@ -131,11 +139,13 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
 
                 SkImageInfo mipmapImgInfo = imageInfo.makeDimensions(mipmapResolution);
                 sk_sp<SkImage> mipmapImage = frame.data->makeScaled(mipmapImgInfo, SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone));
-                frame.mipmapLevels.emplace(mipmapLevel, mipmapImage);
+                frame.mipmapLevels.emplace(mipmapLevel, MipmapLevelData{mipmapImage, std::chrono::steady_clock::now()});
                 canvas->drawImageRect(mipmapImage, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
             }
-            else
-                canvas->drawImageRect(mipmapIt->second, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+            else {
+                mipmapIt->second.timeLastUsed = std::chrono::steady_clock::now();
+                canvas->drawImageRect(mipmapIt->second.imageData, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+            }
         }
     }
 }
