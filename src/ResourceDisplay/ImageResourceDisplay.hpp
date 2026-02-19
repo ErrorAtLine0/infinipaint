@@ -49,19 +49,20 @@ class ImageResourceDisplay : public ResourceDisplay {
         SkImageInfo imageInfo;
 
         float currentTime = 0.0f;
-        int frameIndex = 0;
+        unsigned frameIndex = 0;
         bool mustUpdateDraw = false;
 
         std::unique_ptr<std::thread> loadThread;
         std::atomic<bool> shutdownLoadThread = false;
         std::atomic<bool> mustUpdateDrawLoadThread = false;
 
-        int get_exact_mipmap_level_for_dimensions(const Vector2i& dim);
-        int get_best_allocated_mipmap_level(int mipmapLevel);
-        int get_smallest_mipmap_level() const;
-        Vector2i get_mipmap_level_image_dimensions(int mipmapLevel) const;
-        int calculate_smallest_mipmap_level();
-        void load_thread_func(int mipmapLevel);
-        void attempt_load_mipmap_in_separate_thread(int mipmapLevel);
+        unsigned get_exact_mipmap_level_for_image_component(const DrawData& drawData, const CoordSpaceHelper& compCoords, const SkRect& imRect);
+        unsigned get_exact_mipmap_level_for_dimensions(const Vector2i& dim);
+        unsigned get_best_allocated_mipmap_level(unsigned mipmapLevel);
+        unsigned get_smallest_mipmap_level() const;
+        Vector2i get_mipmap_level_image_dimensions(unsigned mipmapLevel) const;
+        unsigned calculate_smallest_mipmap_level();
+        void load_thread_func(unsigned mipmapLevel);
+        void attempt_load_mipmap_in_separate_thread(unsigned mipmapLevel);
         sk_sp<SkImage> load_frame_with_codec(const std::unique_ptr<SkCodec>& codec, unsigned width, unsigned height, unsigned frameIndexToLoad);
 };

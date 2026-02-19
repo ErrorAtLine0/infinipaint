@@ -13,6 +13,8 @@
 #include <Helpers/Logger.hpp>
 #include <include/core/SkImageInfo.h>
 #include <include/core/SkSamplingOptions.h>
+#include <bit>
+#include <limits>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include <include/gpu/graphite/Surface.h>
@@ -74,7 +76,7 @@ void ImageResourceDisplay::update(World& w) {
             currentTime -= frames[frameIndex].duration;
             frameIndex++;
             mustUpdateDraw = true;
-            if(frameIndex >= static_cast<int>(frames.size()))
+            if(frameIndex >= frames.size())
                 frameIndex = 0;
         }
         else
@@ -103,14 +105,11 @@ void ImageResourceDisplay::camera_view_update(const CoordSpaceHelper& compCoords
         attempt_load_mipmap_in_separate_thread(get_smallest_mipmap_level());
     else {
         if(SCollision::collide(compAABB, drawData.cam.viewingAreaGenerousCollider)) {
-            Vector2f transformedImRectDimensions;
-            transformedImRectDimensions.x() = drawData.cam.c.scalar_to_space(compCoords.scalar_from_space(imRect.width()));
-            transformedImRectDimensions.y() = drawData.cam.c.scalar_to_space(compCoords.scalar_from_space(imRect.height()));
-            int mipmapLevel = get_exact_mipmap_level_for_dimensions(transformedImRectDimensions.cast<int>());
+            unsigned mipmapLevel = get_exact_mipmap_level_for_image_component(drawData, compCoords, imRect);
             if(mipmapLevel != get_smallest_mipmap_level()) {
                 if(mipmapLevelsStatus[mipmapLevel] == MipmapLevelStatus::UNALLOCATED) {
                     attempt_load_mipmap_in_separate_thread(mipmapLevel);
-                    int nextBestMipmapLevel = get_best_allocated_mipmap_level(mipmapLevel);
+                    unsigned nextBestMipmapLevel = get_best_allocated_mipmap_level(mipmapLevel);
                     if(nextBestMipmapLevel != get_smallest_mipmap_level())
                         mipmapLevelsStatus[nextBestMipmapLevel] = MipmapLevelStatus::ALLOCATED_JUST_SET;
                 }
@@ -157,7 +156,7 @@ bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileNa
     return false;
 }
 
-void ImageResourceDisplay::attempt_load_mipmap_in_separate_thread(int mipmapLevel) {
+void ImageResourceDisplay::attempt_load_mipmap_in_separate_thread(unsigned mipmapLevel) {
     if(imageLoadThreadCount >= IMAGE_LOAD_THREAD_COUNT_MAX)
         return;
     if(!loadThread) {
@@ -173,7 +172,7 @@ void ImageResourceDisplay::attempt_load_mipmap_in_separate_thread(int mipmapLeve
     }
 }
 
-void ImageResourceDisplay::load_thread_func(int mipmapLevel) {
+void ImageResourceDisplay::load_thread_func(unsigned mipmapLevel) {
     auto codec = SkCodec::MakeFromData(SkData::MakeWithoutCopy(this->fileData->c_str(), this->fileData->size()), decoders2);
     Vector2i imDim = get_mipmap_level_image_dimensions(mipmapLevel);
     for(size_t i = 0; i < frames.size(); i++) {
@@ -197,9 +196,9 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
         canvas->drawRect(imRect, SkPaint({0.5f, 0.5f, 0.5f, 0.5f}));
     else {
         SkRect imRectPixelSize = canvas->getLocalToDeviceAs3x3().mapRect(imRect);
-        int mipmapLevel = get_exact_mipmap_level_for_dimensions({imRectPixelSize.width(), imRectPixelSize.height()});
+        unsigned mipmapLevel = get_exact_mipmap_level_for_dimensions({imRectPixelSize.width(), imRectPixelSize.height()});
         auto& frame = frames[frameIndex];
-        int closestMipmapLevel = get_best_allocated_mipmap_level(mipmapLevel);
+        unsigned closestMipmapLevel = get_best_allocated_mipmap_level(mipmapLevel);
         if(drawData.main->takingScreenshot) {
             if(closestMipmapLevel == mipmapLevel) {
                 if(closestMipmapLevel == get_smallest_mipmap_level())
@@ -226,40 +225,53 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
     }
 }
 
-int ImageResourceDisplay::get_exact_mipmap_level_for_dimensions(const Vector2i& dim) {
-    int minimumImageDim = std::min(imageInfo.width(), imageInfo.height());
-    int minimumRectDim = std::min(dim.x(), dim.y());
-    int imDim = std::max<int>(minimumRectDim, SMALLEST_MIPMAP_RESOLUTION);
-    int divisionLevel = minimumImageDim / imDim;
-    return (divisionLevel <= 1) ? 0 : std::log2(divisionLevel);
+unsigned ImageResourceDisplay::get_exact_mipmap_level_for_image_component(const DrawData& drawData, const CoordSpaceHelper& compCoords, const SkRect& imRect) {
+    unsigned minimumRectDim;
+    if(imRect.width() < imRect.height())
+        minimumRectDim = drawData.cam.c.scalar_to_space(compCoords.scalar_from_space(imRect.width()));
+    else
+        minimumRectDim = drawData.cam.c.scalar_to_space(compCoords.scalar_from_space(imRect.height()));
+    unsigned minimumImageDim = std::min(imageInfo.width(), imageInfo.height());
+    unsigned imDim = std::max<unsigned>(minimumRectDim, SMALLEST_MIPMAP_RESOLUTION);
+    unsigned divisionLevel = minimumImageDim / imDim;
+    return (divisionLevel <= 1) ? 0 : std::bit_width(divisionLevel - 1);
 }
 
-int ImageResourceDisplay::get_best_allocated_mipmap_level(int mipmapLevel) {
+unsigned ImageResourceDisplay::get_exact_mipmap_level_for_dimensions(const Vector2i& dim) {
+    unsigned minimumImageDim = std::min(imageInfo.width(), imageInfo.height());
+    unsigned minimumRectDim = std::min(dim.x(), dim.y());
+    unsigned imDim = std::max<unsigned>(minimumRectDim, SMALLEST_MIPMAP_RESOLUTION);
+    unsigned divisionLevel = minimumImageDim / imDim;
+    return (divisionLevel <= 1) ? 0 : (std::bit_width(divisionLevel) - 1);
+}
+
+unsigned ImageResourceDisplay::get_best_allocated_mipmap_level(unsigned mipmapLevel) {
     if(mipmapLevel == get_smallest_mipmap_level())
         return mipmapLevel;
-    for(int i = mipmapLevel; i >= 0; i--) {
+    constexpr static unsigned NUMERIC_UNSIGNED_MAX = std::numeric_limits<unsigned>::max();
+    for(unsigned i = mipmapLevel; i != NUMERIC_UNSIGNED_MAX; i--) {
         if(mipmapLevelsStatus[i] != MipmapLevelStatus::UNALLOCATED)
             return i;
     }
-    for(int i = mipmapLevel; i < get_smallest_mipmap_level(); i++) {
+    for(unsigned i = mipmapLevel; i < get_smallest_mipmap_level(); i++) {
         if(mipmapLevelsStatus[i] != MipmapLevelStatus::UNALLOCATED)
             return i;
     }
     return get_smallest_mipmap_level();
 }
 
-int ImageResourceDisplay::calculate_smallest_mipmap_level() {
-    int minimumImageDim = std::min(imageInfo.width(), imageInfo.height());
-    int divisionLevel = minimumImageDim / SMALLEST_MIPMAP_RESOLUTION;
-    return (divisionLevel <= 1) ? 0 : std::log2(divisionLevel);
+unsigned ImageResourceDisplay::calculate_smallest_mipmap_level() {
+    unsigned minimumImageDim = std::min(imageInfo.width(), imageInfo.height());
+    unsigned divisionLevel = minimumImageDim / SMALLEST_MIPMAP_RESOLUTION;
+    return (divisionLevel <= 1) ? 0 : std::bit_width(divisionLevel - 1);
 }
 
-int ImageResourceDisplay::get_smallest_mipmap_level() const {
+unsigned ImageResourceDisplay::get_smallest_mipmap_level() const {
     return mipmapLevelsStatus.size();
 }
 
-Vector2i ImageResourceDisplay::get_mipmap_level_image_dimensions(int mipmapLevel) const {
-    unsigned divideResolutionBy = std::exp2(mipmapLevel);
+Vector2i ImageResourceDisplay::get_mipmap_level_image_dimensions(unsigned mipmapLevel) const {
+    unsigned divideResolutionBy = 1 << mipmapLevel;
     return {imageInfo.width() / divideResolutionBy, imageInfo.height() / divideResolutionBy};
 }
 
