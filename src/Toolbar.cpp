@@ -10,6 +10,7 @@
 #include "GUIStuff/Elements/Element.hpp"
 #include "GUIStuff/GUIManager.hpp"
 #include "InputManager.hpp"
+#include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "VersionConstants.hpp"
 #include "World.hpp"
 #include <SDL3/SDL_dialog.h>
@@ -282,6 +283,7 @@ nlohmann::json Toolbar::get_config_json() {
     debugJson["showPerformance"] = showPerformance;
     debugJson["fpsLimit"] = main.fpsLimit;
     debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
+    debugJson["imageLoadMaxThreads"] = ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX;
     debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
     debugJson["maxCacheNodes"] = DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES;
     debugJson["maxComponentsInNode"] = DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE;
@@ -353,6 +355,7 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
     try{j.at("debug").at("fpsLimit").get_to(main.fpsLimit);} catch(...) {}
     try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
+    try{j.at("debug").at("imageLoadMaxThreads").get_to(ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX);} catch(...) {}
     try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}
     try{j.at("debug").at("maxCacheNodes").get_to(DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES);} catch(...) {}
     try{j.at("debug").at("maxComponentsInNode").get_to(DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE);} catch(...) {}
@@ -1856,6 +1859,7 @@ void Toolbar::options_menu() {
                                         #ifndef __EMSCRIPTEN__
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
+                                        gui.input_scalar_field<int>("image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
                                         gui.text_label_light("Cache related settings");
                                         gui.input_scalar_field<size_t>("cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
                                         gui.input_scalar_field<size_t>("max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);

@@ -12,8 +12,8 @@ void SvgResourceDisplay::update(World& w) {
     mustUpdateDraw = false;
 }
 
-bool SvgResourceDisplay::load(ResourceManager& rMan, const std::string& fileName, const std::string& fileData) {
-    SkMemoryStream strm(fileData.c_str(), fileData.size());
+bool SvgResourceDisplay::load(ResourceManager& rMan, const std::string& fileName, const std::shared_ptr<std::string>& fileData) {
+    SkMemoryStream strm(fileData->c_str(), fileData->size());
     svgDom = SkSVGDOM::Builder().make(strm);
 
     mustUpdateDraw = true;

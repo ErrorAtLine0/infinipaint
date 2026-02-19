@@ -151,19 +151,19 @@ ResourceDisplay* ResourceManager::get_display_data(const NetworkingObjects::NetO
         return nullptr;
 
     auto imgResource(std::make_unique<ImageResourceDisplay>());
-    if(imgResource->load(*this, resourceData->name, *resourceData->data)) {
+    if(imgResource->load(*this, resourceData->name, resourceData->data)) {
         displays.emplace(fileID, std::move(imgResource));
         return displays[fileID].get();
     }
 
     auto svgResource(std::make_unique<SvgResourceDisplay>());
-    if(svgResource->load(*this, resourceData->name, *resourceData->data)) {
+    if(svgResource->load(*this, resourceData->name, resourceData->data)) {
         displays.emplace(fileID, std::move(svgResource));
         return displays[fileID].get();
     }
 
     auto fileResource(std::make_unique<FileResourceDisplay>());
-    fileResource->load(*this, resourceData->name, *resourceData->data);
+    fileResource->load(*this, resourceData->name, resourceData->data);
     displays.emplace(fileID, std::move(fileResource));
     return displays[fileID].get();
 }

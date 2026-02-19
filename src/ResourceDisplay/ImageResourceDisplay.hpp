@@ -4,42 +4,65 @@
 #include <vector>
 #include <thread>
 #include <include/codec/SkCodec.h>
+#include <queue>
 
 class ImageResourceDisplay : public ResourceDisplay {
     public:
         virtual void update(World& w) override;
-        virtual bool load(ResourceManager& rMan, const std::string& fileName, const std::string& fileData) override;
+        virtual bool load(ResourceManager& rMan, const std::string& fileName, const std::shared_ptr<std::string>& fileData) override;
         virtual bool update_draw() const override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) override;
         virtual Vector2f get_dimensions() const override;
         virtual float get_dimension_scale() const override;
         virtual Type get_type() const override;
+        virtual void camera_view_update(const CoordSpaceHelper& compCoords, const SCollision::AABB<WorldScalar>& compAABB, const DrawData& drawData, const SkRect& imRect) override;
         virtual ~ImageResourceDisplay() override;
+
+        static int IMAGE_LOAD_THREAD_COUNT_MAX;
+
     private:
-        struct MipmapLevelData {
-            sk_sp<SkImage> imageData;
-            std::chrono::steady_clock::time_point timeLastUsed;
-        };
+        static constexpr int SMALLEST_MIPMAP_RESOLUTION = 128;
+        
         struct FrameData {
-            sk_sp<SkImage> data;
-            float duration;
-            std::unordered_map<unsigned, MipmapLevelData> mipmapLevels;
+            // Mipmap level calculation is done using the smaller dimension, not the bigger one, to ensure that the dimensions are never invalid
+            std::vector<sk_sp<SkImage>> mipmapLevels;
+            sk_sp<SkImage> smallestMipmapLevel; // Smaller dimension of this should be around SMALLEST_MIPMAP_RESOLUTION pixels. Is always allocated and used when cachedMipmapLevel is unavailable or when the image is viewed from far away
+            float duration = -1.0f;
         };
+
+        static std::unordered_map<std::shared_ptr<std::string>, sk_sp<SkImage>> screenshotCache;
+
+        static std::atomic<int> imageLoadThreadCount;
+
         std::vector<FrameData> frames;
 
+        enum class MipmapLevelStatus {
+            UNALLOCATED,
+            ALLOCATED_JUST_SET,
+            ALLOCATED_WILL_REMOVE
+        };
+
+        std::vector<std::atomic<MipmapLevelStatus>> mipmapLevelsStatus;
+        std::atomic<bool> smallestMipmapLevelLoaded = false;
+
+        std::shared_ptr<std::string> fileData;
         SkImageInfo imageInfo;
-
-        void load_thread();
-
-        int totalFramesToLoad;
-        std::atomic<int> loadedFrames = 0;
-        sk_sp<SkData> imageRawData;
-        std::unique_ptr<SkCodec> codec;
-        std::atomic<bool> shutdownLoadThread = false;
-        std::unique_ptr<std::thread> loadThread;
 
         float currentTime = 0.0f;
         int frameIndex = 0;
-        bool mustUpdateDraw = false;
         bool loadedFirstFrame = false;
+        bool mustUpdateDraw = false;
+
+        std::unique_ptr<std::thread> loadThread;
+        std::atomic<bool> shutdownLoadThread = false;
+        std::atomic<bool> mustUpdateDrawLoadThread = false;
+
+        int get_exact_mipmap_level_for_dimensions(const Vector2i& dim);
+        int get_best_allocated_mipmap_level(int mipmapLevel);
+        int get_smallest_mipmap_level() const;
+        Vector2i get_mipmap_level_image_dimensions(int mipmapLevel) const;
+        int calculate_smallest_mipmap_level();
+        void load_thread_func(int mipmapLevel);
+        void attempt_load_mipmap_in_separate_thread(int mipmapLevel);
+        sk_sp<SkImage> load_frame_with_codec(const std::unique_ptr<SkCodec>& codec, unsigned width, unsigned height, unsigned frameIndexToLoad);
 };
