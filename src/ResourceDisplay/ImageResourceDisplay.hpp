@@ -65,5 +65,5 @@ class ImageResourceDisplay : public ResourceDisplay {
         unsigned calculate_smallest_mipmap_level();
         void load_thread_func(unsigned mipmapLevel);
         void attempt_load_mipmap_in_separate_thread(unsigned mipmapLevel);
-        sk_sp<SkImage> load_frame_with_codec(const std::unique_ptr<SkCodec>& codec, unsigned width, unsigned height, unsigned frameIndexToLoad);
+        sk_sp<SkImage> load_frame_with_codec(const std::unique_ptr<SkCodec>& codec, unsigned mipmapLevel, unsigned frameIndexToLoad);
 };

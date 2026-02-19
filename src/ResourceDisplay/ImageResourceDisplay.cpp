@@ -86,18 +86,22 @@ void ImageResourceDisplay::update(World& w) {
     }
 }
 
-sk_sp<SkImage> ImageResourceDisplay::load_frame_with_codec(const std::unique_ptr<SkCodec>& codec, unsigned width, unsigned height, unsigned frameIndexToLoad) {
+sk_sp<SkImage> ImageResourceDisplay::load_frame_with_codec(const std::unique_ptr<SkCodec>& codec, unsigned mipmapLevel, unsigned frameIndexToLoad) {
     SkCodec::Options imageOptions;
     imageOptions.fFrameIndex = frameIndexToLoad;
     auto decodeResult = codec->getImage(imageInfo, &imageOptions);
     if(std::get<1>(decodeResult) != SkCodec::Result::kSuccess)
         throw std::runtime_error("Could not decode image, got error code " + std::to_string(std::get<1>(decodeResult)) + ". Image decoded with dimensions " + std::to_string(imageInfo.width()) + " " + std::to_string(imageInfo.height()));
     sk_sp<SkImage> ogImage = std::get<0>(decodeResult);
-    SkImageInfo scaledImageInfo = imageInfo.makeDimensions(SkISize(width, height));
-    auto scaledImage = ogImage->makeScaled(scaledImageInfo, {SkFilterMode::kLinear, SkMipmapMode::kNone});
-    if(!scaledImage)
-        throw std::runtime_error("Could not scale image.");
-    return scaledImage;
+    // Scale down by 50% in each iteration for better quality
+    for(size_t i = 1; i <= mipmapLevel; i++) {
+        Vector2i mipmapLevelDim = get_mipmap_level_image_dimensions(i);
+        SkImageInfo scaledImageInfo = imageInfo.makeDimensions({mipmapLevelDim.x(), mipmapLevelDim.y()});
+        ogImage = ogImage->makeScaled(scaledImageInfo, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+        if(!ogImage)
+            throw std::runtime_error("Could not scale image.");
+    }
+    return ogImage;
 }
 
 void ImageResourceDisplay::camera_view_update(const CoordSpaceHelper& compCoords, const SCollision::AABB<WorldScalar>& compAABB, const DrawData& drawData, const SkRect& imRect) {
@@ -174,13 +178,12 @@ void ImageResourceDisplay::attempt_load_mipmap_in_separate_thread(unsigned mipma
 
 void ImageResourceDisplay::load_thread_func(unsigned mipmapLevel) {
     auto codec = SkCodec::MakeFromData(SkData::MakeWithoutCopy(this->fileData->c_str(), this->fileData->size()), decoders2);
-    Vector2i imDim = get_mipmap_level_image_dimensions(mipmapLevel);
     for(size_t i = 0; i < frames.size(); i++) {
         if(shutdownLoadThread)
             return;
         auto& frame = frames[i];
         auto& mipmapImage = (mipmapLevel == get_smallest_mipmap_level()) ? frame.smallestMipmapLevel : frame.mipmapLevels[mipmapLevel];
-        mipmapImage = load_frame_with_codec(codec, imDim.x(), imDim.y(), i);
+        mipmapImage = load_frame_with_codec(codec, mipmapLevel, i);
     }
     if(mipmapLevel == get_smallest_mipmap_level())
         smallestMipmapLevelLoaded = true;
@@ -211,7 +214,7 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
                     canvas->drawImageRect(screenshotCache[fileData], imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
                 else {
                     auto codec = SkCodec::MakeFromData(SkData::MakeWithoutCopy(this->fileData->c_str(), this->fileData->size()), decoders2);
-                    screenshotCache[fileData] = load_frame_with_codec(codec, imageInfo.width(), imageInfo.height(), frameIndex);
+                    screenshotCache[fileData] = load_frame_with_codec(codec, 0, frameIndex);
                     canvas->drawImageRect(screenshotCache[fileData], imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
                 }
             }
