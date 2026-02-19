@@ -50,7 +50,6 @@ class ImageResourceDisplay : public ResourceDisplay {
 
         float currentTime = 0.0f;
         int frameIndex = 0;
-        bool loadedFirstFrame = false;
         bool mustUpdateDraw = false;
 
         std::unique_ptr<std::thread> loadThread;
