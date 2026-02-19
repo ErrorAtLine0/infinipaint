@@ -28,6 +28,7 @@ class ImageResourceDisplay : public ResourceDisplay {
             // Mipmap level calculation is done using the smaller dimension, not the bigger one, to ensure that the dimensions are never invalid
             std::vector<sk_sp<SkImage>> mipmapLevels;
             sk_sp<SkImage> smallestMipmapLevel; // Smaller dimension of this should be around SMALLEST_MIPMAP_RESOLUTION pixels. Is always allocated and used when cachedMipmapLevel is unavailable or when the image is viewed from far away
+                                                // Has auto generated mipmaps
             float duration = -1.0f;
         };
 

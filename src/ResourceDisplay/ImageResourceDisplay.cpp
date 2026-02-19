@@ -101,6 +101,8 @@ sk_sp<SkImage> ImageResourceDisplay::load_frame_with_codec(const std::unique_ptr
         if(!ogImage)
             throw std::runtime_error("Could not scale image.");
     }
+    if(mipmapLevel == get_smallest_mipmap_level())
+        return ogImage->withDefaultMipmaps();
     return ogImage;
 }
 
@@ -205,7 +207,7 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
         if(drawData.main->takingScreenshot) {
             if(closestMipmapLevel == mipmapLevel) {
                 if(closestMipmapLevel == get_smallest_mipmap_level())
-                    canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+                    canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});
                 else
                     canvas->drawImageRect(frame.mipmapLevels[closestMipmapLevel], imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
             }
@@ -221,7 +223,7 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
         }
         else {
             if(closestMipmapLevel == get_smallest_mipmap_level())
-                canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+                canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});
             else
                 canvas->drawImageRect(frame.mipmapLevels[closestMipmapLevel], imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
         }
