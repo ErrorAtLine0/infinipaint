@@ -66,6 +66,7 @@ class World {
 
         void focus_update();
         void unfocus_update();
+        void on_switch_out();
 
         void draw(SkCanvas* canvas);
         void early_destroy();

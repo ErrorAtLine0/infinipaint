@@ -16,6 +16,7 @@ class ImageResourceDisplay : public ResourceDisplay {
         virtual float get_dimension_scale() const override;
         virtual Type get_type() const override;
         virtual void camera_view_update(const CoordSpaceHelper& compCoords, const SCollision::AABB<WorldScalar>& compAABB, const DrawData& drawData, const SkRect& imRect) override;
+        virtual void clear_cache() override;
         virtual ~ImageResourceDisplay() override;
 
         static int IMAGE_LOAD_THREAD_COUNT_MAX;

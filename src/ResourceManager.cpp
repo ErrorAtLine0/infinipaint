@@ -200,3 +200,8 @@ void ResourceManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
     });
     a(strippedResources);
 }
+
+void ResourceManager::clear_display_cache() {
+    for(auto& [id, display] : displays)
+        display->clear_cache();
+}

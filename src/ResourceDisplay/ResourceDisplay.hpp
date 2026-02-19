@@ -27,5 +27,6 @@ class ResourceDisplay {
         virtual float get_dimension_scale() const = 0;
         virtual Type get_type() const = 0;
         virtual void camera_view_update(const CoordSpaceHelper& compCoords, const SCollision::AABB<WorldScalar>& compAABB, const DrawData& drawData, const SkRect& imRect);
+        virtual void clear_cache();
         virtual ~ResourceDisplay();
 };

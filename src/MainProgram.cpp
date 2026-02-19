@@ -96,6 +96,8 @@ void MainProgram::update() {
 
     std::shared_ptr<World> oldWorld = world;
     world = worlds[worldIndex];
+    if(oldWorld != world && oldWorld)
+        oldWorld->on_switch_out();
 
     deltaTime.update_time_since();
     deltaTime.update_time_point();

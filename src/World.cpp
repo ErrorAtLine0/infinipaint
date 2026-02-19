@@ -244,6 +244,10 @@ void World::unfocus_update() {
         return;
 }
 
+void World::on_switch_out() {
+    rMan.clear_display_cache();
+}
+
 void World::send_chat_message(const std::string& message) {
     if(!clientStillConnecting)
         ownClientData->send_chat_message(ownClientData, *this, message);

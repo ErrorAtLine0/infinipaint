@@ -287,6 +287,20 @@ ResourceDisplay::Type ImageResourceDisplay::get_type() const {
     return ResourceDisplay::Type::IMAGE;
 }
 
+void ImageResourceDisplay::clear_cache() {
+    if(loadThread) {
+        shutdownLoadThread = true;
+        loadThread->join();
+        loadThread = nullptr;
+    }
+    for(auto& frame : frames) {
+        for(auto& mipmap : frame.mipmapLevels)
+            mipmap = nullptr;
+    }
+    for(auto& mipmapStatus : mipmapLevelsStatus)
+        mipmapStatus = MipmapLevelStatus::UNALLOCATED;
+}
+
 ImageResourceDisplay::~ImageResourceDisplay() {
     if(loadThread) {
         shutdownLoadThread = true;
