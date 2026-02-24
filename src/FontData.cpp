@@ -12,7 +12,6 @@
     #include <include/ports/SkFontMgr_android_ndk.h>
     #include <SDL3/SDL_filesystem.h>
     #include <Helpers/StringHelpers.hpp>
-    #include <Helpers/Logger.hpp>
 #elif __APPLE__
     #include <include/ports/SkFontMgr_mac_ct.h>
     #include <ApplicationServices/ApplicationServices.h>
@@ -41,15 +40,12 @@ FontData::FontData()
         std::filesystem::path fontFolderPath("data/fonts");
         char** filesInPath = SDL_GlobDirectory(fontFolderPath.c_str(), nullptr, 0, &globCount);
         if(filesInPath) {
-            Logger::get().cross_platform_println("Yay!");
             for(int i = 0; i < globCount; i++) {
                 std::filesystem::path filePath = fontFolderPath / std::filesystem::path(filesInPath[i]);
                 SDL_PathInfo fileInfo;
-                Logger::get().cross_platform_println("Font: " + filePath.string());
                 if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
                     std::string strData = read_file_to_string(filePath);
                     fontFiles.emplace_back(SkData::MakeWithCopy(strData.data(), strData.size()));
-                    Logger::get().cross_platform_println("loaded!");
                 }
             }
             SDL_free(filesInPath);
