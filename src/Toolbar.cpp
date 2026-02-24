@@ -70,7 +70,6 @@ void Toolbar::load_icons_at(const std::filesystem::path& pathToLoad) {
             std::filesystem::path filePath = pathToLoad / std::filesystem::path(filesInPath[i]);
             SDL_PathInfo fileInfo;
             if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
-                Logger::get().log("INFO", filePath.string());
                 std::string iconRelativePath = filePath.relative_path().string();
                 std::replace(iconRelativePath.begin(), iconRelativePath.end(), '\\', '/');
                 std::string iconData = read_file_to_string(iconRelativePath);
@@ -2264,8 +2263,15 @@ void Toolbar::initialize_io_before_update() {
 }
 
 void Toolbar::start_gui() {
-    gui.windowPos = Vector2f{0.0f, 0.0f};
-    gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
+    SDL_Rect windowRect;
+    if(SDL_GetWindowSafeArea(main.window.sdlWindow, &windowRect)) {
+        gui.windowPos = {windowRect.x, windowRect.y};
+        gui.windowSize = Vector2f{windowRect.w, windowRect.h} / final_gui_scale();
+    }
+    else {
+        gui.windowPos = Vector2f{0.0f, 0.0f};
+        gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
+    }
     gui.io = io;
     io->hoverObstructed = false;
     gui.begin();

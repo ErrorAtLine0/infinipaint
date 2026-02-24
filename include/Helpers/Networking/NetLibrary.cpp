@@ -7,9 +7,11 @@
 #include <variant>
 #include <vector>
 #include <Helpers/Random.hpp>
+#include "Helpers/StringHelpers.hpp"
 #include "NetClient.hpp"
 #include "NetServer.hpp"
 #include <bit>
+#include <SDL3/SDL_iostream.h>
 
 std::atomic<bool> NetLibrary::alreadyInitialized = false;
 std::string NetLibrary::signalingAddr;
@@ -28,33 +30,33 @@ NetLibrary::LoadP2PSettingsInPathResult NetLibrary::load_p2p_settings_in_path(co
     config.iceServers.clear();
     signalingAddr.clear();
 
-    std::ifstream f(p2pConfigPath);
+    std::string fileData;
 
-    if(f.is_open()) {
-        try {
-            nlohmann::json j;
-            f >> j;
-
-            j.at("signalingServer").get_to<std::string>(signalingAddr);
-
-            std::vector<std::string> stunList = j.at("stunList").get<std::vector<std::string>>();
-            std::vector<nlohmann::json> turnList = j.at("turnList");
-            for(std::string& s : stunList) {
-                if(s.substr(0, 5).compare("stun:"))
-                    s.insert(0, "stun:");
-                config.iceServers.emplace_back(s);
-            }
-            for(const nlohmann::json& turnServer : turnList)
-                config.iceServers.emplace_back(turnServer["url"].get<std::string>(), turnServer["port"].get<uint16_t>(), turnServer["username"].get<std::string>(), turnServer["credential"].get<std::string>());
-        }
-        catch(...) {
-            return LoadP2PSettingsInPathResult::FAILED_TO_READ;
-        }
+    try {
+        fileData = read_file_to_string(p2pConfigPath);
     }
-    else
+    catch(...) {
         return LoadP2PSettingsInPathResult::FAILED_TO_OPEN;
+    }
 
-    f.close();
+    try {
+        nlohmann::json j = nlohmann::json::parse(fileData);
+
+        j.at("signalingServer").get_to<std::string>(signalingAddr);
+
+        std::vector<std::string> stunList = j.at("stunList").get<std::vector<std::string>>();
+        std::vector<nlohmann::json> turnList = j.at("turnList");
+        for(std::string& s : stunList) {
+            if(s.substr(0, 5).compare("stun:"))
+                s.insert(0, "stun:");
+            config.iceServers.emplace_back(s);
+        }
+        for(const nlohmann::json& turnServer : turnList)
+            config.iceServers.emplace_back(turnServer["url"].get<std::string>(), turnServer["port"].get<uint16_t>(), turnServer["username"].get<std::string>(), turnServer["credential"].get<std::string>());
+    }
+    catch(...) {
+        return LoadP2PSettingsInPathResult::FAILED_TO_READ;
+    }
 
     return LoadP2PSettingsInPathResult::SUCCESS;
 }
@@ -89,7 +91,7 @@ void NetLibrary::init(const std::filesystem::path& p2pConfigPath) {
     // Not sure why, but TLS verification fails on mac
     // Should be fixed later, but for now this is fine, as the signaling server doesn't have
     // critical information
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__ANDROID__)
     rtc::WebSocket::Configuration wsConfig;
     wsConfig.disableTlsVerification = true;
     ws = std::make_shared<rtc::WebSocket>(wsConfig);
