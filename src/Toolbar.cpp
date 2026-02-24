@@ -14,6 +14,7 @@
 #include "VersionConstants.hpp"
 #include "World.hpp"
 #include <SDL3/SDL_dialog.h>
+#include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_render.h>
 #include <algorithm>
 #include <filesystem>
@@ -52,28 +53,39 @@ Toolbar::Toolbar(MainProgram& initMain):
     // NOTE: On windows, when the native file picker is open, any call to MakeFromFile fails
     // So, it's better to load the icons at the beginning of the program so that the icon loading doesn't fail later
     load_icons_at("data/icons");
+
+#ifdef __ANDROID__
+    load_icons_at("data/icons/RemixIcon"); // SDL_GlobDirectory doesn't work recursively on Android
+#endif
     
     load_default_palette();
     load_default_theme();
 }
 
 void Toolbar::load_icons_at(const std::filesystem::path& pathToLoad) {
-    for(auto& iconDirEntry : std::filesystem::recursive_directory_iterator(pathToLoad)) {
-        if(iconDirEntry.is_regular_file()) {
-            std::string iconRelativePath = iconDirEntry.path().relative_path().string();
-            std::replace(iconRelativePath.begin(), iconRelativePath.end(), '\\', '/');
-            auto stream = SkStream::MakeFromFile(iconRelativePath.c_str());
-            if(!stream)
-                throw std::runtime_error("[Toolbar::Toolbar] Could not open file " + iconRelativePath);
-            auto svgDom = SkSVGDOM::Builder().make(*stream);
-            if(!svgDom)
-                throw std::runtime_error("[Toolbar::Toolbar] Could not parse SVG " + iconRelativePath);
-            else {
-                if(svgDom->containerSize().width() == 0 || svgDom->containerSize().height() == 0)
-                    svgDom->setContainerSize({1000, 1000});
-                io->svgData[iconRelativePath] = svgDom;
+    int globCount;
+    char** filesInPath = SDL_GlobDirectory(pathToLoad.c_str(), nullptr, 0, &globCount);
+    if(filesInPath) {
+        for(int i = 0; i < globCount; i++) {
+            std::filesystem::path filePath = pathToLoad / std::filesystem::path(filesInPath[i]);
+            SDL_PathInfo fileInfo;
+            if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
+                Logger::get().log("INFO", filePath.string());
+                std::string iconRelativePath = filePath.relative_path().string();
+                std::replace(iconRelativePath.begin(), iconRelativePath.end(), '\\', '/');
+                std::string iconData = read_file_to_string(iconRelativePath);
+                auto stream = SkMemoryStream(iconData.c_str(), iconData.size(), false);
+                auto svgDom = SkSVGDOM::Builder().make(stream);
+                if(!svgDom)
+                    throw std::runtime_error("[Toolbar::Toolbar] Could not parse SVG " + iconRelativePath);
+                else {
+                    if(svgDom->containerSize().width() == 0 || svgDom->containerSize().height() == 0)
+                        svgDom->setContainerSize({1000, 1000});
+                    io->svgData[iconRelativePath] = svgDom;
+                }
             }
         }
+        SDL_free(filesInPath);
     }
 }
 
@@ -216,11 +228,22 @@ void Toolbar::color_selector_right(Vector4f* color) {
 }
 
 void Toolbar::load_licenses() {
-    std::filesystem::path third_party_license_path("data/third_party_licenses");
-    for(const auto& entry : std::filesystem::directory_iterator(third_party_license_path)) {
-        if(entry.is_regular_file())
-            thirdPartyLicenses.emplace_back(entry.path().filename().string(), read_file_to_string(entry.path()));
+    {
+        int globCount;
+        std::filesystem::path third_party_license_path("data/third_party_licenses");
+        char** filesInPath = SDL_GlobDirectory(third_party_license_path.c_str(), nullptr, 0, &globCount);
+        if(filesInPath) {
+            for(int i = 0; i < globCount; i++) {
+                std::filesystem::path filePath = third_party_license_path / std::filesystem::path(filesInPath[i]);
+                SDL_PathInfo fileInfo;
+                if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
+                    thirdPartyLicenses.emplace_back(filePath.filename().string(), read_file_to_string(filePath));
+                }
+            }
+            SDL_free(filesInPath);
+        }
     }
+
     std::sort(thirdPartyLicenses.begin(), thirdPartyLicenses.end(), [](const auto& a1, const auto& a2) {
         return std::lexicographical_compare(a1.first.begin(), a1.first.end(), a2.first.begin(), a2.first.end());
     });

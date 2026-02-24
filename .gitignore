@@ -1,6 +1,5 @@
 .cache
 build
-src/Server/build
 CMakeUserPresets.json
 compile_commands.json
 bscript

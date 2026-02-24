@@ -112,7 +112,6 @@ set(sources "src/main.cpp"
             "src/GUIStuff/Elements/TextParagraph.cpp"
             "src/GUIStuff/Elements/FontPicker.cpp"
             "src/GUIStuff/Elements/TreeListing.cpp"
-            "include/sago/platform_folders.cpp"
             "include/Helpers/Networking/NetLibrary.cpp"
             "include/Helpers/Networking/NetServer.cpp"
             "include/Helpers/Networking/NetClient.cpp"
@@ -177,7 +176,11 @@ else()
 endif()
 
 if(NOT EMSCRIPTEN)
-    find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+    if(ANDROID)
+        find_package(SDL3 REQUIRED CONFIG)
+    else()
+        find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+    endif()
     find_package(LibDataChannel REQUIRED)
     find_package(CURL REQUIRED)
     find_package(harfbuzz REQUIRED)
@@ -194,96 +197,104 @@ find_package(zstd REQUIRED)
 message("Skia root: " ${SKIA_INCLUDE})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
-add_executable(infinipaint ${sources})
+if(ANDROID)
+    add_library(main SHARED ${sources})
+else()
+    add_executable(main ${sources})
+endif()
+
+if((NOT ANDROID) AND (NOT EMSCRIPTEN))
+    set_target_properties(main PROPERTIES OUTPUT_NAME "infinipaint")
+endif()
 
 if(WIN32)
-    set_target_properties(infinipaint PROPERTIES WIN32_EXECUTABLE TRUE)
+    set_target_properties(main PROPERTIES WIN32_EXECUTABLE TRUE)
 elseif(APPLE)
     if(MACOS_MAKE_BUNDLE)
-        target_compile_definitions(infinipaint PRIVATE MACOS_MAKE_BUNDLE)
-        set_target_properties(infinipaint PROPERTIES MACOSX_BUNDLE TRUE)
-        set_target_properties(infinipaint PROPERTIES
+        target_compile_definitions(main PRIVATE MACOS_MAKE_BUNDLE)
+        set_target_properties(main PROPERTIES MACOSX_BUNDLE TRUE)
+        set_target_properties(main PROPERTIES
             BUNDLE True
-            MACOSX_BUNDLE_GUI_IDENTIFIER com.erroratline0.infinipaint
+            MACOSX_BUNDLE_GUI_IDENTIFIER com.infinipaint.infinipaint
             MACOSX_BUNDLE_BUNDLE_NAME infinipaint
             MACOSX_BUNDLE_BUNDLE_VERSION "0.4.1"
             MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/macosinstall/Info.plist
         )
-        add_custom_command(TARGET infinipaint POST_BUILD
+        add_custom_command(TARGET main POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/data"
-            "$<TARGET_FILE_DIR:infinipaint>/../Resources/data"
+            "${CMAKE_SOURCE_DIR}/assets/data"
+            "$<TARGET_FILE_DIR:main>/../Resources/data"
         )
-        add_custom_command(TARGET infinipaint POST_BUILD
+        add_custom_command(TARGET main POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_SOURCE_DIR}/macosinstall/appicon.icns"
-            "$<TARGET_FILE_DIR:infinipaint>/../Resources/appicon.icns"
+            "$<TARGET_FILE_DIR:main>/../Resources/appicon.icns"
         )
     endif()
 endif()
 
 if(EMSCRIPTEN)
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
-        target_compile_options(infinipaint PRIVATE -g3)
-        target_link_options(infinipaint PRIVATE -g3)
+        target_compile_options(main PRIVATE -g3)
+        target_link_options(main PRIVATE -g3)
     else()
-        target_compile_options(infinipaint PRIVATE -O3)
-        target_link_options(infinipaint PRIVATE -O3)
+        target_compile_options(main PRIVATE -O3)
+        target_link_options(main PRIVATE -O3)
     endif()
 
-    target_compile_options(infinipaint PRIVATE -Wall -sUSE_HARFBUZZ=1 -fdiagnostics-color -sUSE_SDL=0 -include functional -fexceptions -pthread)
-    target_link_options(infinipaint PRIVATE --emrun -sUSE_HARFBUZZ=1 -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 -sFETCH --embed-file data -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=ccall,HEAPU8,HEAPU32 -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -fexceptions -pthread) # -sINITIAL_MEMORY=67108864 
+    target_compile_options(main PRIVATE -Wall -sUSE_HARFBUZZ=1 -fdiagnostics-color -sUSE_SDL=0 -include functional -fexceptions -pthread)
+    target_link_options(main PRIVATE --emrun -sUSE_HARFBUZZ=1 -sUSE_SDL=0 -sFULL_ES2 -sUSE_WEBGL2=1 -sFETCH --embed-file data -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=ccall,HEAPU8,HEAPU32 -sEXPORTED_FUNCTIONS=[_main,_malloc,_free] -sMAXIMUM_MEMORY=4GB -sSINGLE_FILE -lidbfs.js -fexceptions -pthread) # -sINITIAL_MEMORY=67108864 
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     message("In Emscripten Mode")
 endif()
 
 if(USE_ASAN)
-    target_compile_options(infinipaint PRIVATE -fsanitize=address)
-    target_link_options(infinipaint PRIVATE -fsanitize=address)
+    target_compile_options(main PRIVATE -fsanitize=address)
+    target_link_options(main PRIVATE -fsanitize=address)
     message("Using ASAN")
 endif()
 if(USE_UBSAN)
-    target_compile_options(infinipaint PRIVATE -fsanitize=undefined)
-    target_link_options(infinipaint PRIVATE -fsanitize=undefined)
+    target_compile_options(main PRIVATE -fsanitize=undefined)
+    target_link_options(main PRIVATE -fsanitize=undefined)
     message("Using UBSan")
 endif()
 if(USE_LEAKSAN)
-    target_compile_options(infinipaint PRIVATE -fsanitize=leak)
-    target_link_options(infinipaint PRIVATE -fsanitize=leak)
+    target_compile_options(main PRIVATE -fsanitize=leak)
+    target_link_options(main PRIVATE -fsanitize=leak)
     message("Using LeakSan")
 endif()
 if(USE_THREADSAN)
-    target_compile_options(infinipaint PRIVATE -fsanitize=thread)
-    target_link_options(infinipaint PRIVATE -fsanitize=thread)
+    target_compile_options(main PRIVATE -fsanitize=thread)
+    target_link_options(main PRIVATE -fsanitize=thread)
     message("Using ThreadSan")
 endif()
 if(USE_MEMORYSAN)
-    target_compile_options(infinipaint PRIVATE -fsanitize=memory)
-    target_link_options(infinipaint PRIVATE -fsanitize=memory)
+    target_compile_options(main PRIVATE -fsanitize=memory)
+    target_link_options(main PRIVATE -fsanitize=memory)
     message("Using MemSan")
 endif()
 
 if(NOT WIN32)
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
-        target_compile_options(infinipaint PRIVATE -g -Wall -fdiagnostics-color)
+        target_compile_options(main PRIVATE -g -Wall -fdiagnostics-color)
         message("In Debug Mode")
     else()
-        target_compile_options(infinipaint PRIVATE -O3 -Wall -fdiagnostics-color)
-        target_link_options(infinipaint PRIVATE -O3) # Other things to consider: -ffast-math and -march=native
+        target_compile_options(main PRIVATE -O3 -Wall -fdiagnostics-color)
+        target_link_options(main PRIVATE -O3) # Other things to consider: -ffast-math and -march=native
         message("In Release Mode")
     endif()
 endif()
 
-target_include_directories(infinipaint PRIVATE "include")
+target_include_directories(main PRIVATE "include")
 
-target_compile_definitions(infinipaint PRIVATE IS_CLIENT)
+target_compile_definitions(main PRIVATE IS_CLIENT)
 if(WIN32)
-    target_compile_definitions(infinipaint PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_compile_definitions(main PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 endif()
 
 if(CONFIG_NEXT_TO_EXECUTABLE)
-    target_compile_definitions(infinipaint PRIVATE CONFIG_NEXT_TO_EXECUTABLE)
+    target_compile_definitions(main PRIVATE CONFIG_NEXT_TO_EXECUTABLE)
     message("Place config next to executable")
 else()
     message("Place config in global config folder")
@@ -292,90 +303,100 @@ endif()
 if(NOT EMSCRIPTEN AND ((GRAPHICS_BACKEND STREQUAL "OpenGL3.3") OR (GRAPHICS_BACKEND STREQUAL "OpenGLES3.0") OR (GRAPHICS_BACKEND STREQUAL "OpenGL2.1")))
     find_package(OpenGL REQUIRED)
     if(GRAPHICS_BACKEND STREQUAL "OpenGLES3.0")
-        target_link_libraries(infinipaint OpenGL::GLES3)
+        target_link_libraries(main OpenGL::GLES3)
     else()
-        target_link_libraries(infinipaint OpenGL::GL)
+        target_link_libraries(main OpenGL::GL)
     endif()
 endif()
 
-if((NOT EMSCRIPTEN) AND (NOT APPLE))
+if((NOT EMSCRIPTEN) AND (NOT APPLE) AND (NOT ANDROID))
     if(NO_CONAN_BUILD)
-        target_link_libraries(infinipaint TBB::tbb)
+        target_link_libraries(main TBB::tbb)
     else()
-        target_link_libraries(infinipaint onetbb::onetbb)
+        target_link_libraries(main onetbb::onetbb)
     endif()
 endif()
 
-target_link_libraries(infinipaint zstd::libzstd_static)
+target_link_libraries(main zstd::libzstd_static)
 
 if((NOT EMSCRIPTEN) AND WIN32)
-    target_link_libraries(infinipaint dwrite)
+    target_link_libraries(main dwrite)
     # Clip library for retrieving images from windows clipboard
     set(CLIP_EXAMPLES OFF CACHE BOOL "Compile clip examples")
     set(CLIP_TESTS OFF CACHE BOOL "Compile clip tests")
     set(CLIP_ENABLE_IMAGE ON CACHE BOOL "Compile with image clipboard support")
     add_subdirectory(deps/clip)
-    target_link_libraries(infinipaint clip)
+    target_link_libraries(main clip)
 endif()
 
 if(EMSCRIPTEN)
     add_subdirectory(deps/datachannel-wasm EXCLUDE_FROM_ALL)
     target_compile_options(datachannel-wasm PRIVATE -pthread)
-    target_link_libraries(infinipaint datachannel-wasm)
+    target_link_libraries(main datachannel-wasm)
 else()
-    target_link_libraries(infinipaint LibDataChannel::LibDataChannel CURL::libcurl)
+    target_link_libraries(main LibDataChannel::LibDataChannel CURL::libcurl)
 endif()
 
 if(NO_CONAN_BUILD)
-    target_link_libraries(infinipaint ${SKIA_SVG_LIB} ${SKIA_RESOURCES_LIB} ${SKIA_LIB} ${SKIA_UNICODE_CORE_LIB} ${SKIA_UNICODE_ICU_LIB} ${SKIA_UNICODE_CORE_LIB} ${SKIA_PARAGRAPH_LIB} ${SKIA_SHAPER_LIB})
-    target_include_directories(infinipaint PRIVATE ${SKIA_INCLUDE})
-    target_link_libraries(infinipaint SDL3::SDL3 ICU::uc Fontconfig::Fontconfig Freetype::Freetype PNG::PNG ZLIB::ZLIB)
+    target_link_libraries(main ${SKIA_SVG_LIB} ${SKIA_RESOURCES_LIB} ${SKIA_LIB} ${SKIA_UNICODE_CORE_LIB} ${SKIA_UNICODE_ICU_LIB} ${SKIA_UNICODE_CORE_LIB} ${SKIA_PARAGRAPH_LIB} ${SKIA_SHAPER_LIB})
+    target_include_directories(main PRIVATE ${SKIA_INCLUDE})
+    target_link_libraries(main SDL3::SDL3 ICU::uc Fontconfig::Fontconfig Freetype::Freetype PNG::PNG ZLIB::ZLIB)
 else()
-    target_link_libraries(infinipaint skia-infinipaint::skia-infinipaint sdl::sdl icu-infinipaint::icu-infinipaint)
+    target_link_libraries(main skia-infinipaint::skia-infinipaint)
+    if(ANDROID)
+        target_link_libraries(main SDL3::SDL3)
+    else()
+        target_link_libraries(main sdl::sdl)
+    endif()
+    target_link_libraries(main icu-infinipaint::icu-infinipaint)
 endif()
 
 if(NOT EMSCRIPTEN)
-    target_link_libraries(infinipaint harfbuzz::harfbuzz)
+    target_link_libraries(main harfbuzz::harfbuzz)
 endif()
 
 if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX)
-    target_link_libraries(infinipaint OpenGL::EGL)
+    target_link_libraries(main OpenGL::EGL)
+endif()
+
+if(ANDROID)
+    target_link_libraries(main EGL)
 endif()
 
 if(GRAPHICS_BACKEND STREQUAL "Vulkan")
-    target_compile_definitions(infinipaint PRIVATE USE_BACKEND_VULKAN SK_VULKAN)
+    target_compile_definitions(main PRIVATE USE_BACKEND_VULKAN SK_VULKAN)
     if(USE_GRAPHITE)
-        target_compile_definitions(infinipaint PRIVATE SK_GRAPHITE USE_SKIA_BACKEND_GRAPHITE)
+        target_compile_definitions(main PRIVATE SK_GRAPHITE USE_SKIA_BACKEND_GRAPHITE)
         message("Using Vulkan Graphite Backend")
     else()
-        target_compile_definitions(infinipaint PRIVATE USE_SKIA_BACKEND_GANESH)
+        target_compile_definitions(main PRIVATE USE_SKIA_BACKEND_GANESH)
         message("Using Vulkan Ganesh Backend")
     endif()
 else()
     if(GRAPHICS_BACKEND STREQUAL "OpenGLES3.0")
-        target_compile_definitions(infinipaint PRIVATE USE_BACKEND_OPENGLES_3_0)
+        target_compile_definitions(main PRIVATE USE_BACKEND_OPENGLES_3_0)
         message("Using OpenGL ES 3.0")
     elseif(GRAPHICS_BACKEND STREQUAL "OpenGL2.1")
-        target_compile_definitions(infinipaint PRIVATE USE_BACKEND_OPENGL_2_1)
+        target_compile_definitions(main PRIVATE USE_BACKEND_OPENGL_2_1)
         message("Using OpenGL 2.1")
     else()
-        target_compile_definitions(infinipaint PRIVATE USE_BACKEND_OPENGL_3_3)
+        target_compile_definitions(main PRIVATE USE_BACKEND_OPENGL_3_3)
         message("Using OpenGL 3.3")
     endif()
-    target_compile_definitions(infinipaint PRIVATE USE_BACKEND_OPENGL USE_SKIA_BACKEND_GANESH)
+    target_compile_definitions(main PRIVATE USE_BACKEND_OPENGL USE_SKIA_BACKEND_GANESH)
 endif()
 
-target_compile_definitions(infinipaint PRIVATE BOOST_MP_STANDALONE EIGEN_MPL2_ONLY)
+target_compile_definitions(main PRIVATE BOOST_MP_STANDALONE EIGEN_MPL2_ONLY)
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-Wdeprecated-declarations HAS_DEPRECATED_DECLARATIONS)
 
 if(HAS_DEPRECATED_DECLARATIONS)
-    target_compile_options(infinipaint PRIVATE -Wno-deprecated-declarations)
+    target_compile_options(main PRIVATE -Wno-deprecated-declarations)
 endif()
 
 if(APPLE OR WIN32)
-    install(TARGETS infinipaint DESTINATION .)
+    install(TARGETS main DESTINATION .)
 
     set(CPACK_PACKAGE_NAME "infinipaint")
     set(CPACK_PACKAGE_VERSION_MAJOR "0")
@@ -389,7 +410,7 @@ endif()
 if(APPLE)
     # Nothing specific here for now
 elseif(WIN32)
-    install(DIRECTORY data DESTINATION .)
+    install(DIRECTORY assets/data DESTINATION .)
 
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
 	include(InstallRequiredSystemLibraries)
@@ -426,8 +447,8 @@ elseif(WIN32)
 
      set(CPACK_PACKAGE_INSTALL_DIRECTORY "infinipaint")
 else()
-    install(DIRECTORY data DESTINATION bin)
-    install(TARGETS infinipaint DESTINATION bin)
+    install(DIRECTORY assets/data DESTINATION bin)
+    install(TARGETS main DESTINATION bin)
     install(FILES linuxinstall/com.infinipaint.infinipaint.desktop DESTINATION share/applications)
     install(FILES logo.svg DESTINATION share/icons/hicolor/scalable/apps RENAME com.infinipaint.infinipaint.svg)
     install(FILES logo.svg DESTINATION share/icons/hicolor/scalable/mimetypes RENAME com.infinipaint.infinipaint-application-infpnt.svg)

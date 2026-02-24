@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <regex>
+#include <SDL3/SDL_iostream.h>
 
 std::vector<std::string> split_string_by_token(std::string str, std::string token) {
     // slightly modified from: https://stackoverflow.com/a/46943631
@@ -44,27 +45,18 @@ std::string byte_vector_to_hex_str(const std::vector<uint8_t>& byteVec) {
 }
 
 std::string read_file_to_string(const std::filesystem::path& filePath) {
+    // Could also use SDL_LoadFile, but that allocates into a void* and involves a copy into std::string
+
     std::string toRet;
-    // https://nullptr.org/cpp-read-file-into-string/
-    std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
-
-    if(!file.is_open())
-        throw std::runtime_error("[read_file_to_string] Could not open file");
-
-    size_t resourcesize;
-
-    auto tellgResult = file.tellg();
-
-    if(tellgResult == -1)
-        throw std::runtime_error("[read_file_to_string] tellg failed for file");
-
-    resourcesize = static_cast<size_t>(tellgResult);
-
-    file.seekg(0, std::ios_base::beg);
-    toRet.resize(resourcesize);
-    file.read(toRet.data(), resourcesize);
-    file.close();
-
+    SDL_IOStream* file = SDL_IOFromFile(filePath.c_str(), "rb");
+    if(!file)
+        throw std::runtime_error("[read_file_to_string] Could not open file " + filePath.string());
+    Sint64 fileSize = SDL_GetIOSize(file);
+    if(fileSize < 0)
+        throw std::runtime_error("[read_file_to_string] tellg failed for file " + filePath.string());
+    toRet.resize(fileSize);
+    SDL_ReadIO(file, toRet.data(), fileSize);
+    SDL_CloseIO(file);
     return toRet;
 }
 

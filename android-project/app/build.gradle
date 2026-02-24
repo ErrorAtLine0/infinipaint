@@ -1,0 +1,80 @@
+plugins {
+     id 'com.android.application'
+}
+
+task conanInstall {
+    def conanExecutable = "conan" // define the path to your conan installation
+    def buildDir = new File("app/build")
+    buildDir.mkdirs()
+    ["Debug", "Release"].each { String build_type ->
+        // ["armv7", "armv8", "x86", "x86_64"]
+        ["armv8", "x86_64"].each { String arch ->
+            def cmd = conanExecutable + " install " +
+                    "../../.. --profile android -s build_type="+ build_type +" -s arch=" + arch +
+                    " --build missing -c tools.cmake.cmake_layout:build_folder_vars=['settings.arch']"
+            print(">> ${cmd} \n")
+
+            def sout = new StringBuilder(), serr = new StringBuilder()
+            def proc = cmd.execute(null, buildDir)
+            proc.consumeProcessOutput(sout, serr)
+            proc.waitFor()
+            println "$sout $serr"
+            if (proc.exitValue() != 0) {
+                throw new Exception("out> $sout err> $serr" + "\nCommand: ${cmd}")
+            }
+        }
+    }
+}
+
+android {
+    namespace = "com.erroratline0.infinipaint"
+    compileSdkVersion 35
+    ndkVersion = "29.0.14206865"
+    defaultConfig {
+        applicationId 'com.erroratline0.InfiniPaint'
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode 1
+        versionName "1.0"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_PLATFORM=android-21", "-DANDROID_STL=c++_static", "-DCMAKE_TOOLCHAIN_FILE=conan_android_toolchain.cmake", "-DGRAPHICS_BACKEND=OpenGLES3.0"
+                // abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+                abiFilters 'arm64-v8a', 'x86_64'
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    applicationVariants.all { variant ->
+        tasks["merge${variant.name.capitalize()}Assets"]
+            .dependsOn("externalNativeBuild${variant.name.capitalize()}")
+    }
+
+    sourceSets.main {
+        jniLibs.srcDir 'libs'
+        assets.srcDirs = ['../../assets']
+    }
+    externalNativeBuild {
+        cmake {
+            version "3.31.6"
+            path '../../CMakeLists.txt'
+        }
+    }
+
+    lint {
+        abortOnError = false
+    }
+    buildFeatures {
+        prefab true
+    }
+}
+
+dependencies {
+    implementation files('libs/SDL3-3.4.2.aar')
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+}

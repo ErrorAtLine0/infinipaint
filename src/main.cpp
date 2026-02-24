@@ -2,7 +2,7 @@
 #include "Helpers/StringHelpers.hpp"
 #include "Helpers/FileDownloader.hpp"
 #include "include/gpu/GpuTypes.h"
-#include "sago/platform_folders.h"
+#include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_oldnames.h>
 #include <chrono>
@@ -326,7 +326,9 @@ const char* emscripten_before_unload(int eventType, const void *reserved, void *
 #endif
 
 void init_logs(MainStruct& mS) {
-    mS.homePath = std::filesystem::current_path();
+    char* homePathSDL = SDL_GetCurrentDirectory();
+    mS.homePath = std::filesystem::path(homePathSDL);
+    SDL_free(homePathSDL);
 #ifdef __EMSCRIPTEN__
     EM_ASM(
         FS.mkdir('/infinipaint');
@@ -348,15 +350,10 @@ void init_logs(MainStruct& mS) {
     std::filesystem::create_directory(CONFIG_FOLDER_NAME);
     mS.configPath = mS.homePath / CONFIG_FOLDER_NAME;
 #else
-    std::string CONFIG_FOLDER_NAME = "infinipaint";
-    std::filesystem::path configHome(sago::getConfigHome());
-    std::filesystem::create_directory(configHome);
-    mS.configPath = configHome / CONFIG_FOLDER_NAME;
+    char* configPathSDL = SDL_GetPrefPath("ErrorAtLine0", "infinipaint");
+    mS.configPath = std::filesystem::path(configPathSDL);
+    SDL_free(configPathSDL);
 #endif
-
-    if(!std::filesystem::create_directory(mS.configPath))
-        std::cout << "Failed to create config directory." << std::endl;
-
     mS.logFile = std::ofstream(mS.configPath / "log.txt");
     Logger::get().add_log("FATAL", [&, mS = &mS](const std::string& text) {
         mS->logFile << "[FATAL] " << text << std::endl;
@@ -365,7 +362,7 @@ void init_logs(MainStruct& mS) {
     });
     Logger::get().add_log("INFO", [&, mS = &mS](const std::string& text) {
         mS->logFile << "[INFO] " << text << std::endl;
-        std::cout << "[INFO] " << text << std::endl;
+        Logger::get().cross_platform_println("[INFO] " + text);
     });
 
     Logger::get().log("INFO", "Home Path: " + mS.homePath.string());
@@ -425,13 +422,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.m->configPath = mS.configPath;
         mS.m->homePath = mS.homePath;
 #ifndef __EMSCRIPTEN__
-        mS.m->documentsPath = sago::getDocumentsFolder();
-        if(!std::filesystem::exists(mS.m->documentsPath) || !std::filesystem::is_directory(mS.m->documentsPath)) {
-            mS.m->documentsPath = sago::getDesktopFolder();
-            if(!std::filesystem::exists(mS.m->documentsPath) || !std::filesystem::is_directory(mS.m->documentsPath)) {
+        const char* documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS);
+        if(!documentsPathSDL) {
+            documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DESKTOP);
+            if(!documentsPathSDL)
                 mS.m->documentsPath = mS.m->configPath;
-            }
+            else
+                mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
         }
+        else
+            mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
 #endif
         mS.m->window.sdlWindow = mS.window;
         mS.m->update_scale_and_density();

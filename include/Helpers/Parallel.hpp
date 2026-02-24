@@ -6,7 +6,7 @@
 #endif
 
 template <typename ContainerType> void parallel_loop_container(const ContainerType& c, std::function<void(const typename ContainerType::value_type&)> func, bool forceSingleThread = false) {
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
     std::for_each(c.begin(), c.end(), func);
 #else
     if(forceSingleThread)

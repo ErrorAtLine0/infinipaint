@@ -99,10 +99,13 @@ class CompressorRecipe(ConanFile):
                 "vulkan": False,
                 "opengles": False
             })
-        else:
+        elif self.settings.os != "Android":
             self.requires("sdl/3.4.0")
 
-        if self.settings.os != "Emscripten" and self.settings.os != "Macos":
+        if self.settings.os == "Android":
+            self.requires("libusb/1.0.29")
+
+        if self.settings.os != "Emscripten" and self.settings.os != "Macos" and self.settings.os != "Android":
             self.requires("hwloc/2.12.2", options = {
                 "shared": True
             })
