@@ -2265,7 +2265,7 @@ void Toolbar::initialize_io_before_update() {
 void Toolbar::start_gui() {
     SDL_Rect windowRect;
     if(SDL_GetWindowSafeArea(main.window.sdlWindow, &windowRect)) {
-        gui.windowPos = {windowRect.x, windowRect.y};
+        gui.windowPos = Vector2f{windowRect.x, windowRect.y} / final_gui_scale();
         gui.windowSize = Vector2f{windowRect.w, windowRect.h} / final_gui_scale();
     }
     else {
