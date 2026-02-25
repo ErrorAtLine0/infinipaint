@@ -145,6 +145,9 @@ struct MainStruct {
     std::filesystem::path configPath;
     std::filesystem::path homePath;
     std::ofstream logFile;
+
+    std::chrono::steady_clock::time_point lastRenderTimePoint = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::duration frameRefreshDuration = std::chrono::steady_clock::duration::zero();
 } MainData;
 
 #ifdef __EMSCRIPTEN__
@@ -175,6 +178,18 @@ bool load_file_to_string(std::string& toRet, std::string_view fileName) {
 
     file.close();
     return true;
+}
+
+void get_refresh_rate(MainStruct& mS) {
+    mS.frameRefreshDuration = std::chrono::seconds(0);
+    SDL_DisplayID displayID = SDL_GetDisplayForWindow(mS.window);
+    if(displayID == 0)
+        return;
+    const SDL_DisplayMode* displayMode = SDL_GetCurrentDisplayMode(displayID);
+    if(!displayMode)
+        return;
+    if(displayMode->refresh_rate != 0.0f)
+        mS.frameRefreshDuration = std::chrono::microseconds(static_cast<int>((1.0f / displayMode->refresh_rate) * 1000000.0f));
 }
 
 void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
@@ -265,6 +280,8 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
 
     for(unsigned i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++)
         mS.systemCursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
+
+    get_refresh_rate(mS);
 }
 
 void sdl_terminate(MainStruct& mS) {
@@ -547,6 +564,31 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     return SDL_APP_CONTINUE;
 }
 
+void attempt_redraw_and_swap_buffers(MainStruct& mS) {
+    int swapInterval = 0;
+    SDL_GL_GetSwapInterval(&swapInterval);
+    if(std::chrono::steady_clock::now() - mS.lastRenderTimePoint > mS.frameRefreshDuration || swapInterval == 0) {
+        #ifdef USE_BACKEND_VULKAN
+            mS.vulkanWindowContext->swapBuffers();
+        #elif USE_BACKEND_OPENGL
+            SDL_GL_SwapWindow(mS.window);
+        #endif
+        mS.lastRenderTimePoint = std::chrono::steady_clock::now();
+
+        mS.intermediateCanvas->save();
+        mS.m->draw(mS.intermediateCanvas, mS.m->world, mS.m->world->drawData);
+        mS.intermediateCanvas->restore();
+
+        #ifdef USE_BACKEND_VULKAN
+            mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+            mS.ctx->flushAndSubmit();
+        #elif USE_BACKEND_OPENGL
+            mS.canvas->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+            mS.ctx->flushAndSubmit();
+        #endif
+    }
+}
+
 SDL_AppResult SDL_AppIterate(void *appstate) {
     std::chrono::steady_clock::time_point frameTimeStart = std::chrono::steady_clock::now();
 
@@ -588,22 +630,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_StopTextInput(mS.window);
         mS.m->input.text.lastAcceptingTextInputVal = mS.m->input.text.get_accepting_input();
 
-        mS.intermediateCanvas->save();
-        mS.m->draw(mS.intermediateCanvas, mS.m->world, mS.m->world->drawData);
-        mS.intermediateCanvas->restore();
-
-        #ifdef USE_BACKEND_VULKAN
-            mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
-            mS.ctx->flushAndSubmit();
-            mS.vulkanWindowContext->swapBuffers();
-        #elif USE_BACKEND_OPENGL
-
-            mS.canvas->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
-
-            mS.ctx->flushAndSubmit();
-
-            SDL_GL_SwapWindow(mS.window);
-        #endif
+        attempt_redraw_and_swap_buffers(mS);
 
         mS.m->input.frame_reset(mS.m->window.size);
 #ifdef NDEBUG
@@ -643,6 +670,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     mS.m->window.writtenPos.x() = event->window.data1;
                     mS.m->window.writtenPos.y() = event->window.data2;
                 }
+                get_refresh_rate(mS);
                 break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 mS.m->window.size.x() = event->window.data1;
@@ -652,12 +680,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     mS.m->window.writtenSize.y() = event->window.data2;
                 }
                 resize_window(mS);
+                get_refresh_rate(mS);
                 break;
             case SDL_EVENT_WINDOW_MAXIMIZED:
                 mS.m->window.maximized = true;
+                get_refresh_rate(mS);
                 break;
             case SDL_EVENT_WINDOW_RESTORED:
                 mS.m->window.maximized = false;
+                get_refresh_rate(mS);
                 break;
             case SDL_EVENT_MOUSE_MOTION:
                 mS.m->update_scale_and_density();
@@ -766,6 +797,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDL_EVENT_PEN_BUTTON_DOWN: {
                 mS.m->input.set_pen_button_down(event->pbutton);
                 //mS.m->input.mouse.set_pos({event->pbutton.x, event->pbutton.y});
+                break;
+            }
+            case SDL_EVENT_DISPLAY_ORIENTATION:
+            case SDL_EVENT_DISPLAY_ADDED:
+            case SDL_EVENT_DISPLAY_REMOVED:
+            case SDL_EVENT_DISPLAY_MOVED:
+            case SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED:
+            case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
+            case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
+            case SDL_EVENT_DISPLAY_USABLE_BOUNDS_CHANGED: {
+                get_refresh_rate(mS);
                 break;
             }
             default:
