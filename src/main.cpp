@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <include/core/SkAlphaType.h>
 #include <include/core/SkColorType.h>
+#include <thread>
 #ifdef USE_BACKEND_OPENGL 
 #ifndef __EMSCRIPTEN__
     #ifdef USE_BACKEND_OPENGLES_3_0
@@ -147,6 +148,7 @@ struct MainStruct {
     std::ofstream logFile;
 
     std::chrono::steady_clock::time_point lastRenderTimePoint = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point lastUpdateTimePoint = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration frameRefreshDuration = std::chrono::steady_clock::duration::zero();
 } MainData;
 
@@ -564,6 +566,17 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     return SDL_APP_CONTINUE;
 }
 
+void cpu_save_sleep(MainStruct& mS) {
+    int swapInterval = 0;
+    constexpr std::chrono::duration MINIMUM_UPDATE_FRAMETIME = std::chrono::milliseconds(3);
+    SDL_GL_GetSwapInterval(&swapInterval);
+    if(swapInterval != 0) {
+        std::chrono::time_point point1 = mS.lastRenderTimePoint + mS.frameRefreshDuration;
+        std::chrono::time_point point2 = mS.lastUpdateTimePoint + MINIMUM_UPDATE_FRAMETIME;
+        std::this_thread::sleep_until(std::min(point1, point2));
+    }
+}
+
 void attempt_redraw_and_swap_buffers(MainStruct& mS) {
     int swapInterval = 0;
     SDL_GL_GetSwapInterval(&swapInterval);
@@ -593,6 +606,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     std::chrono::steady_clock::time_point frameTimeStart = std::chrono::steady_clock::now();
 
     MainStruct& mS = *((MainStruct*)appstate);
+    mS.lastUpdateTimePoint = std::chrono::steady_clock::now();
+
 #ifdef NDEBUG
     try {
 #endif
@@ -630,6 +645,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_StopTextInput(mS.window);
         mS.m->input.text.lastAcceptingTextInputVal = mS.m->input.text.get_accepting_input();
 
+        cpu_save_sleep(mS);
         attempt_redraw_and_swap_buffers(mS);
 
         mS.m->input.frame_reset(mS.m->window.size);
