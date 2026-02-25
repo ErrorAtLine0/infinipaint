@@ -586,7 +586,7 @@ void DrawingProgram::get_used_resources(std::unordered_set<NetworkingObjects::Ne
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(drawData.dontUseDrawProgCache)
+    if(drawData.takingScreenshot)
         layerMan.draw(canvas, drawData);
     else {
         canvas->saveLayer(nullptr, nullptr);
@@ -597,23 +597,20 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
             canvas->restore();
         canvas->restore();
 
-        if(!drawData.main->takingScreenshot) {
-            for(auto& droppedDownFile : droppedDownloadingFiles)
-                static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
+        for(auto& droppedDownFile : droppedDownloadingFiles)
+            static_cast<ImageCanvasComponent&>(droppedDownFile.comp->obj->get_comp()).draw_download_progress_bar(canvas, drawData, droppedDownFile.downData->progress);
 
-            for(auto& c : updateableComponents) {
-                if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
-                    auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
-                    float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
-                    img.draw_download_progress_bar(canvas, drawData, progress);
-                }
+        for(auto& c : updateableComponents) {
+            if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
+                auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
+                float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
+                img.draw_download_progress_bar(canvas, drawData, progress);
             }
         }
 
         selection.draw_gui(canvas, drawData);
+        drawTool->draw(canvas, drawData);
     }
-
-    drawTool->draw(canvas, drawData);
 }
 
 Vector4f* DrawingProgram::get_foreground_color_ptr() {

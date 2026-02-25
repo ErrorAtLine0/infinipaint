@@ -544,17 +544,16 @@ void World::list_debug_test_update() {
 }
 #endif
 
-void World::draw(SkCanvas* canvas) {
-    drawData.refresh_draw_optimizing_values();
+void World::draw(SkCanvas* canvas, const DrawData& calledDrawData) {
     if(!clientStillConnecting) {
-        if(drawData.drawGrids)
-            gridMan.draw_back(canvas, drawData);
-        drawProg.draw(canvas, drawData);
-        if(drawData.drawGrids) {
-            gridMan.draw_front(canvas, drawData);
-            gridMan.draw_coordinates(canvas, drawData);
+        if(calledDrawData.drawGrids)
+            gridMan.draw_back(canvas, calledDrawData);
+        drawProg.draw(canvas, calledDrawData);
+        if(calledDrawData.drawGrids) {
+            gridMan.draw_front(canvas, calledDrawData);
+            gridMan.draw_coordinates(canvas, calledDrawData);
         }
-        if(!main.takingScreenshot)
-            draw_other_player_cursors(canvas, drawData);
+        if(!drawData.takingScreenshot)
+            draw_other_player_cursors(canvas, calledDrawData);
     }
 }

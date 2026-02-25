@@ -285,10 +285,11 @@ float MainProgram::get_scale_and_density_factor_gui() {
     return window.scale * window.density;
 }
 
-void MainProgram::draw(SkCanvas* canvas) {
-    canvas->clear(transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : world->canvasTheme.get_back_color());
-    world->draw(canvas);
-    toolbar.draw(canvas);
+void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData) {
+    canvas->clear(drawData.transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : worldToDraw->canvasTheme.get_back_color());
+    worldToDraw->draw(canvas, drawData);
+    if(!drawData.takingScreenshot)
+        toolbar.draw(canvas);
 }
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {

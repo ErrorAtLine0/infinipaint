@@ -2298,10 +2298,8 @@ void Toolbar::end_gui() {
 }
 
 void Toolbar::draw(SkCanvas* canvas) {
-    if(!main.takingScreenshot) {
-        canvas->save();
-        canvas->scale(final_gui_scale(), final_gui_scale());
-        gui.draw(canvas);
-        canvas->restore();
-    }
+    canvas->save();
+    canvas->scale(final_gui_scale(), final_gui_scale());
+    gui.draw(canvas);
+    canvas->restore();
 }

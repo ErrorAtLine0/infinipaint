@@ -64,9 +64,9 @@ void EyeDropperTool::tool_update() {
         int yPos = std::clamp<int>(drawP.world.main.input.mouse.pos.y(), 0, drawP.world.main.window.size.y() - 1);
 
         eyeDropperCanvas->save();
-        drawP.world.drawData.dontUseDrawProgCache = true;
-        drawP.world.main.draw(eyeDropperCanvas);
-        drawP.world.drawData.dontUseDrawProgCache = false;
+        DrawData d = drawP.world.drawData;
+        d.takingScreenshot = true;
+        drawP.world.main.draw(eyeDropperCanvas, drawP.world.main.world, d);
         eyeDropperCanvas->restore();
         //drawP.world.main.window.ctx->flush();
 

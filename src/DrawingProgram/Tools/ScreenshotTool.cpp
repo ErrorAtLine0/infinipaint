@@ -240,7 +240,6 @@ void ScreenshotTool::take_screenshot_svg(SkCanvas* canvas, bool transparentBackg
 
     Vector2f canvasSize{controls.rectX2 - controls.rectX1, controls.rectY2 - controls.rectY1};
 
-    DrawData d = drawP.world.drawData;
     WorldVec topLeft = controls.coords.from_space({secRectX1, secRectY1});
     WorldVec topRight = controls.coords.from_space({secRectX2, secRectY1});
     WorldVec bottomLeft = controls.coords.from_space({secRectX1, secRectY2});
@@ -254,23 +253,15 @@ void ScreenshotTool::take_screenshot_svg(SkCanvas* canvas, bool transparentBackg
     vectorZoom.y() = distY / WorldScalar(canvasSize.y() * 0.5);
     WorldScalar newInverseScale = (vectorZoom.x() + vectorZoom.y()) * WorldScalar(0.5);
 
-    drawP.world.drawData.cam.set_based_on_properties(drawP.world, topLeft, newInverseScale, controls.coords.rotation);
-    drawP.world.drawData.cam.set_viewing_area(canvasSize);
-    drawP.world.drawData.refresh_draw_optimizing_values();
-
-    bool oldDrawGrids = drawP.world.drawData.drawGrids;
-    drawP.world.main.takingScreenshot = true;
-    drawP.world.main.transparentBackground = transparentBackground;
-    drawP.world.drawData.drawGrids = false;
-    drawP.world.drawData.dontUseDrawProgCache = true;
-    drawP.world.drawData.isSVGRender = true;
-
-    drawP.world.main.draw(canvas);
-    drawP.world.drawData.isSVGRender = false;
-    drawP.world.main.takingScreenshot = false;
-    drawP.world.main.transparentBackground = false;
-    drawP.world.drawData.drawGrids = oldDrawGrids;
-    drawP.world.drawData = d;
+    DrawData screenshotDrawData = drawP.world.drawData;
+    screenshotDrawData.cam.set_based_on_properties(drawP.world, topLeft, newInverseScale, controls.coords.rotation);
+    screenshotDrawData.cam.set_viewing_area(canvasSize);
+    screenshotDrawData.takingScreenshot = true;
+    screenshotDrawData.transparentBackground = transparentBackground;
+    screenshotDrawData.drawGrids = false;
+    screenshotDrawData.isSVGRender = true;
+    screenshotDrawData.refresh_draw_optimizing_values();
+    drawP.world.main.draw(canvas, drawP.world.main.world, screenshotDrawData);
 }
 
 void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground) {
@@ -281,7 +272,6 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
     float secRectY1 = controls.rectY1 + (controls.rectY2 - controls.rectY1) * (sectionImagePos.y() / (double)fullImageSize.y());
     float secRectY2 = controls.rectY1 + (controls.rectY2 - controls.rectY1) * ((sectionImagePos.y() + canvasSize.y()) / (double)fullImageSize.y());
 
-    DrawData d = drawP.world.drawData;
     WorldVec topLeft = controls.coords.from_space({secRectX1, secRectY1});
     WorldVec topRight = controls.coords.from_space({secRectX2, secRectY1});
     WorldVec bottomLeft = controls.coords.from_space({secRectX1, secRectY2});
@@ -295,21 +285,14 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
     vectorZoom.y() = distY / WorldScalar(canvasSize.y() * 0.5);
     WorldScalar newInverseScale = (vectorZoom.x() + vectorZoom.y()) * WorldScalar(0.5);
 
-    drawP.world.drawData.cam.set_based_on_properties(drawP.world, topLeft, newInverseScale, controls.coords.rotation);
-    drawP.world.drawData.cam.set_viewing_area(sectionImageSize.cast<float>());
-    drawP.world.drawData.refresh_draw_optimizing_values();
-
-    bool oldDrawGrids = drawP.world.drawData.drawGrids;
-    drawP.world.main.takingScreenshot = true;
-    drawP.world.main.transparentBackground = transparentBackground;
-    drawP.world.drawData.drawGrids = controls.displayGrid;
-    drawP.world.drawData.dontUseDrawProgCache = true;
-
-    drawP.world.main.draw(canvas);
-    drawP.world.main.takingScreenshot = false;
-    drawP.world.main.transparentBackground = false;
-    drawP.world.drawData.drawGrids = oldDrawGrids;
-    drawP.world.drawData = d;
+    DrawData screenshotDrawData = drawP.world.drawData;
+    screenshotDrawData.cam.set_based_on_properties(drawP.world, topLeft, newInverseScale, controls.coords.rotation);
+    screenshotDrawData.cam.set_viewing_area(sectionImageSize.cast<float>());
+    screenshotDrawData.takingScreenshot = true;
+    screenshotDrawData.transparentBackground = transparentBackground;
+    screenshotDrawData.drawGrids = controls.displayGrid;
+    screenshotDrawData.refresh_draw_optimizing_values();
+    drawP.world.main.draw(canvas, drawP.world.main.world, screenshotDrawData);
 
     SkImageInfo aaImgInfo = SkImageInfo::Make(sectionImageSize.x(), sectionImageSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     void* fullImgRawDataStartPt = (uint8_t*)fullImgRawData + 4 * (size_t)sectionImagePos.x() + 4 * (size_t)fullImageSize.x() * (size_t)sectionImagePos.y();
@@ -478,42 +461,40 @@ bool ScreenshotTool::prevent_undo_or_redo() {
 }
 
 void ScreenshotTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawData.main->takingScreenshot) {
-        if(controls.selectionMode == 0) {
-            SkPaint paint1;
-            paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
-            canvas->drawPaint(paint1);
-        }
-        else {
-            canvas->save();
-            controls.coords.transform_sk_canvas(canvas, drawData);
-            float x1 = std::min(controls.rectX1, controls.rectX2);
-            float x2 = std::max(controls.rectX1, controls.rectX2);
-            float y1 = std::min(controls.rectY1, controls.rectY2);
-            float y2 = std::max(controls.rectY1, controls.rectY2);
-            SkPoint p1{x1, y1};
-            SkPoint p2{x2, y2};
-            SkPathBuilder path1B;
-            path1B.addRect(SkRect::MakeLTRB(p1.x(), p1.y(), p2.x(), p2.y()));
-            path1B.setFillType(SkPathFillType::kInverseWinding);
-            SkPath path1 = path1B.detach();
-            SkPaint paint1;
-            paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
-            canvas->drawPath(path1, paint1);
+    if(controls.selectionMode == 0) {
+        SkPaint paint1;
+        paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
+        canvas->drawPaint(paint1);
+    }
+    else {
+        canvas->save();
+        controls.coords.transform_sk_canvas(canvas, drawData);
+        float x1 = std::min(controls.rectX1, controls.rectX2);
+        float x2 = std::max(controls.rectX1, controls.rectX2);
+        float y1 = std::min(controls.rectY1, controls.rectY2);
+        float y2 = std::max(controls.rectY1, controls.rectY2);
+        SkPoint p1{x1, y1};
+        SkPoint p2{x2, y2};
+        SkPathBuilder path1B;
+        path1B.addRect(SkRect::MakeLTRB(p1.x(), p1.y(), p2.x(), p2.y()));
+        path1B.setFillType(SkPathFillType::kInverseWinding);
+        SkPath path1 = path1B.detach();
+        SkPaint paint1;
+        paint1.setColor4f({0.0f, 0.0f, 0.0f, 0.3f});
+        canvas->drawPath(path1, paint1);
 
-            path1.setFillType(SkPathFillType::kWinding);
-            SkPaint paint2;
-            paint2.setColor4f({1.0f, 1.0f, 1.0f, 0.9f});
-            paint2.setStyle(SkPaint::kStroke_Style);
-            canvas->drawPath(path1, paint2);
+        path1.setFillType(SkPathFillType::kWinding);
+        SkPaint paint2;
+        paint2.setColor4f({1.0f, 1.0f, 1.0f, 0.9f});
+        paint2.setStyle(SkPaint::kStroke_Style);
+        canvas->drawPath(path1, paint2);
 
-            canvas->restore();
+        canvas->restore();
 
-            if(controls.selectionMode == 2) {
-                paint2.setStyle(SkPaint::kFill_Style);
-                for(auto& circ : controls.circles)
-                    drawP.draw_drag_circle(canvas, circ.pos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData, 1.0f);
-            }
+        if(controls.selectionMode == 2) {
+            paint2.setStyle(SkPaint::kFill_Style);
+            for(auto& circ : controls.circles)
+                drawP.draw_drag_circle(canvas, circ.pos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData, 1.0f);
         }
     }
 }

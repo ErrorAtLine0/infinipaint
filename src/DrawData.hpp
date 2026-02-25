@@ -12,10 +12,11 @@ struct DrawData {
     DrawCamera cam;
     ResourceManager* rMan;
     MainProgram* main;
+    bool takingScreenshot = false;
     bool isSVGRender = false;
-    bool dontUseDrawProgCache = false;
     bool clampDrawBetween = true;
     bool drawGrids = true;
+    bool transparentBackground = false;
     WorldScalar clampDrawMinimum;
     WorldScalar mipMapLevelOne;
     WorldScalar mipMapLevelTwo;

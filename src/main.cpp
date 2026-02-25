@@ -589,7 +589,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         mS.m->input.text.lastAcceptingTextInputVal = mS.m->input.text.get_accepting_input();
 
         mS.intermediateCanvas->save();
-        mS.m->draw(mS.intermediateCanvas);
+        mS.m->draw(mS.intermediateCanvas, mS.m->world, mS.m->world->drawData);
         mS.intermediateCanvas->restore();
 
         #ifdef USE_BACKEND_VULKAN

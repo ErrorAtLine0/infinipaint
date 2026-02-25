@@ -85,7 +85,7 @@ class MainProgram {
         
         MainProgram();
         void update();
-        void draw(SkCanvas* canvas);
+        void draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData);
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
         bool setToQuit = false;
@@ -112,8 +112,6 @@ class MainProgram {
         std::filesystem::path documentsPath;
 
         bool drawGui = true;
-        bool takingScreenshot = false;
-        bool transparentBackground = false;
 
         Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;
 

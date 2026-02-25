@@ -204,7 +204,7 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
         unsigned mipmapLevel = get_exact_mipmap_level_for_dimensions({imRectPixelSize.width(), imRectPixelSize.height()});
         auto& frame = frames[frameIndex];
         unsigned closestMipmapLevel = get_best_allocated_mipmap_level(mipmapLevel);
-        if(drawData.main->takingScreenshot) {
+        if(drawData.takingScreenshot) {
             if(closestMipmapLevel == mipmapLevel) {
                 if(closestMipmapLevel == get_smallest_mipmap_level())
                     canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});

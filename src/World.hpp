@@ -68,7 +68,7 @@ class World {
         void unfocus_update();
         void on_switch_out();
 
-        void draw(SkCanvas* canvas);
+        void draw(SkCanvas* canvas, const DrawData& calledDrawData);
         void early_destroy();
 
         bool clientStillConnecting = false;

@@ -56,7 +56,7 @@ void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData
 
     unsigned mipmapLevel = compContainer ? compContainer->get_mipmap_level(drawData) : 0;
 
-    if(mipmapLevel == 0 || drawData.dontUseDrawProgCache) // check dontUseDrawProgCache, to make sure that SVG screenshots dont use LOD
+    if(mipmapLevel == 0 || drawData.takingScreenshot) // check takingScreenshot, to make sure that screenshots dont use LOD
         canvas->drawPath(*brushPath, paint);
     else
         canvas->drawPath(*brushPathLOD[mipmapLevel - 1], paint);
