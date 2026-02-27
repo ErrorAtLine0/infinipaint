@@ -191,7 +191,7 @@ bool BrushTool::prevent_undo_or_redo() {
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawData.main->toolbar.io->hoverObstructed) {
+    if(drawData.main->world->drawProg.controls.cursorHoveringOverCanvas) {
         auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
         if(relativeWidthResult.first.has_value()) {
             SkPaint linePaint;

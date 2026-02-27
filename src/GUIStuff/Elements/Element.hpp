@@ -102,6 +102,8 @@ struct UpdateInputData {
 
     std::string textInput;
     bool hoverObstructed = false;
+    std::vector<SCollision::AABB<float>> hoverObstructingAABBs;
+    std::vector<SCollision::Circle<float>> hoverObstructingCircles;
     bool acceptingTextInput = false;
     float deltaTime = 0.0f;
 

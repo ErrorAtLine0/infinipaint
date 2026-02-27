@@ -78,7 +78,8 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
             clickedOut = false;
         }
         if(dropdownOpen) {
-            CLAY_AUTO_ID({
+            Clay_ElementId localID = CLAY_ID_LOCAL("Font picker floating element");
+            CLAY(localID, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIT(0, 300)},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
@@ -100,7 +101,7 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
                     .width = CLAY_BORDER_OUTSIDE(1)
                 }
             }) {
-                gui->obstructing_window();
+                gui->obstructing_window(localID);
                 if(Clay_Hovered())
                     clickedOut = false;
                 gui->scroll_bar_many_entries_area("Font Selector", ENTRY_HEIGHT, sortedFontList.size(), true, [fontName, gui, &fontChangedFromSelection, &sortedFontList = sortedFontList, val, &io = io](size_t i, bool listHovered) {

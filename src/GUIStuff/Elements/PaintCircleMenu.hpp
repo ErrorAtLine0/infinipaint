@@ -3,6 +3,8 @@
 
 namespace GUIStuff {
 
+    class GUIManager;
+
 class PaintCircleMenu : public Element {
     public:
         struct Data {
@@ -11,7 +13,7 @@ class PaintCircleMenu : public Element {
             Vector4f* selectedColor = nullptr;
             std::vector<Vector3f> palette;
         };
-        void update(UpdateInputData& io, const Data& data, const std::function<void()>& elemUpdate);
+        void update(GUIManager& gui, const Data& data, const std::function<void()>& elemUpdate);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
     private:
         void draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io);

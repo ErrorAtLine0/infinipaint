@@ -197,6 +197,8 @@ void get_refresh_rate(MainStruct& mS) {
 void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     SDL_SetHint(SDL_HINT_APP_NAME, "InfiniPaint");
     SDL_SetHint(SDL_HINT_PEN_MOUSE_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas"); // Ensures that SDL only grabs input when browser is focused on canvas
 
     if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
@@ -602,6 +604,24 @@ void attempt_redraw_and_swap_buffers(MainStruct& mS) {
     }
 }
 
+void regular_draw(MainStruct& mS) {
+    mS.lastRenderTimePoint = std::chrono::steady_clock::now();
+
+    mS.intermediateCanvas->save();
+    mS.m->draw(mS.intermediateCanvas, mS.m->world, mS.m->world->drawData);
+    mS.intermediateCanvas->restore();
+
+    #ifdef USE_BACKEND_VULKAN
+        mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+        mS.ctx->flushAndSubmit();
+        mS.vulkanWindowContext->swapBuffers();
+    #elif USE_BACKEND_OPENGL
+        mS.canvas->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+        mS.ctx->flushAndSubmit();
+        SDL_GL_SwapWindow(mS.window);
+    #endif
+}
+
 SDL_AppResult SDL_AppIterate(void *appstate) {
     std::chrono::steady_clock::time_point frameTimeStart = std::chrono::steady_clock::now();
 
@@ -645,8 +665,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_StopTextInput(mS.window);
         mS.m->input.text.lastAcceptingTextInputVal = mS.m->input.text.get_accepting_input();
 
-        cpu_save_sleep(mS);
-        attempt_redraw_and_swap_buffers(mS);
+        //cpu_save_sleep(mS);
+        //attempt_redraw_and_swap_buffers(mS);
+        regular_draw(mS);
 
         mS.m->input.frame_reset(mS.m->window.size);
 #ifdef NDEBUG
@@ -813,6 +834,32 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDL_EVENT_PEN_BUTTON_DOWN: {
                 mS.m->input.set_pen_button_down(event->pbutton);
                 //mS.m->input.mouse.set_pos({event->pbutton.x, event->pbutton.y});
+                break;
+            }
+            case SDL_EVENT_FINGER_DOWN: {
+                mS.m->update_scale_and_density();
+                mS.m->input.touch.isDown = true;
+                mS.m->input.mouse.leftDown = true;
+                if((std::chrono::steady_clock::now() - mS.m->input.touch.lastLeftClickTime) > std::chrono::milliseconds(300))
+                    mS.m->input.touch.leftClicksSaved = 0;
+                mS.m->input.touch.leftClicksSaved++;
+                mS.m->input.mouse.leftClicks = mS.m->input.touch.leftClicksSaved;
+                mS.m->input.touch.lastLeftClickTime = std::chrono::steady_clock::now();
+				mS.m->input.mouse.set_pos({event->tfinger.x * mS.m->window.size.x() * mS.m->window.density, event->tfinger.y * mS.m->window.size.y() * mS.m->window.density});
+                mS.m->input.mouse.move = Vector2f{0.0f, 0.0f};
+                break;
+            }
+            case SDL_EVENT_FINGER_UP: {
+                mS.m->update_scale_and_density();
+                mS.m->input.touch.isDown = false;
+                mS.m->input.mouse.leftDown = false;
+				mS.m->input.mouse.set_pos({-1.0f, -1.0f});
+                mS.m->input.mouse.move = Vector2f{0.0f, 0.0f};
+                break;
+            }
+            case SDL_EVENT_FINGER_MOTION: {
+                mS.m->update_scale_and_density();
+				mS.m->input.mouse.set_pos({event->tfinger.x * mS.m->window.size.x() * mS.m->window.density, event->tfinger.y * mS.m->window.size.y() * mS.m->window.density});
                 break;
             }
             case SDL_EVENT_DISPLAY_ORIENTATION:

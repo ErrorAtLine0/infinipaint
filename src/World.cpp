@@ -165,6 +165,9 @@ void World::init_client(const std::string& serverFullID) {
 }
 
 void World::focus_update() {
+    mousePreviousWorldVec = drawData.cam.c.from_space(main.input.mouse.pos);
+    mouseWorldMove = drawData.cam.c.from_space(main.input.mouse.move);
+
     connection_update();
     if(setToDestroy)
         return;
@@ -188,9 +191,6 @@ void World::focus_update() {
     drawData.cam.update_main(*this);
 
     rMan.update();
-
-    mousePreviousWorldVec = drawData.cam.c.from_space(main.input.mouse.pos);
-    mouseWorldMove = drawData.cam.c.from_space(main.input.mouse.move);
 
     if(main.input.key(InputManager::KEY_UNDO).repeat)
         undo_with_checks();

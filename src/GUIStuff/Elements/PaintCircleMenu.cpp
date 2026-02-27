@@ -1,6 +1,7 @@
 #include "PaintCircleMenu.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include <include/core/SkPathBuilder.h>
+#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
@@ -10,7 +11,8 @@ constexpr float CIRCLE_END = 150.0f;
 constexpr double ROTATE_BAR_SNAP_DISTANCE = 0.2;
 constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
 
-void PaintCircleMenu::update(UpdateInputData& io, const Data& data, const std::function<void()>& elemUpdate) {
+void PaintCircleMenu::update(GUIManager& gui, const Data& data, const std::function<void()>& elemUpdate) {
+    auto& io = *gui.io;
     CLAY_AUTO_ID({.layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },
@@ -19,7 +21,6 @@ void PaintCircleMenu::update(UpdateInputData& io, const Data& data, const std::f
         bool isHoveredNoObstruction = Clay_Hovered() && !io.hoverObstructed;
         Vector2f vecFromCenter = (io.mouse.pos - bb.center()).normalized();
         float distFromCenter = vec_distance(io.mouse.pos, bb.center());
-        bool rotateHovered = false;
         if(data.newRotationAngle) {
             rotateBarSelect.update(isHoveredNoObstruction && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END, io.mouse.leftClick, io.mouse.leftHeld);
             if(rotateBarSelect.held) {
@@ -38,9 +39,7 @@ void PaintCircleMenu::update(UpdateInputData& io, const Data& data, const std::f
             }
             else
                 *data.newRotationAngle = data.currentRotationAngle;
-            rotateHovered = rotateBarSelect.hovered;
         }
-        bool colorHovered = false;
         if(!data.palette.empty() && data.selectedColor) {
             colorBarSelect.update(isHoveredNoObstruction && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START, io.mouse.leftClick, io.mouse.leftHeld);
             if(colorBarSelect.hovered) {
@@ -54,9 +53,9 @@ void PaintCircleMenu::update(UpdateInputData& io, const Data& data, const std::f
                     selectedColor.z() = data.palette[colorSelectionIndex].z();
                 }
             }
-            colorHovered = colorBarSelect.hovered;
         }
-        if(rotateHovered || colorHovered)
+        io.hoverObstructingCircles.emplace_back(bb.center() + gui.windowPos, CIRCLE_END);
+        if(SCollision::collide(io.hoverObstructingCircles.back(), io.mouse.pos))
             io.hoverObstructed = true;
         if(elemUpdate)
             elemUpdate();
@@ -72,6 +71,9 @@ void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_Rend
 
     draw_rotate_bar(canvas, io);
     draw_palette_bar(canvas, io);
+    SkPaint p;
+    p.setColor4f(color_mul_alpha(io.theme->backColor1, 0.5f));
+    canvas->drawCircle(0.0f, 0.0f, PALETTE_START, p);
 
     canvas->restore();
 }

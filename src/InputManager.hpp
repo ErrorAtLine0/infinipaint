@@ -72,6 +72,12 @@ struct InputManager {
         friend struct InputManager;
     } mouse;
 
+    struct Touch {
+        bool isDown = false;
+        int leftClicksSaved = 0;
+        std::chrono::steady_clock::time_point lastLeftClickTime;
+    } touch;
+
     struct Pen {
         bool inProximity = false;
         bool isDown = false;

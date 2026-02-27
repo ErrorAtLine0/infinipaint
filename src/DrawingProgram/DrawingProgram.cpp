@@ -120,7 +120,8 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
 void DrawingProgram::toolbar_gui() {
     Toolbar& t = world.main.toolbar;
     t.gui.push_id("Drawing Program Toolbar GUI");
-    CLAY_AUTO_ID({
+    Clay_ElementId localID = CLAY_ID_LOCAL("Drawing program toolbar GUI");
+    CLAY(localID, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
             .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
@@ -131,7 +132,7 @@ void DrawingProgram::toolbar_gui() {
         .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
     }) {
-        t.gui.obstructing_window();
+        t.gui.obstructing_window(localID);
         if(t.gui.svg_icon_button_transparent("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
         if(t.gui.svg_icon_button_transparent("Eraser Toolbar Button", "data/icons/eraser.svg", drawTool->get_type() == DrawingProgramToolType::ERASER)) { switch_to_tool(DrawingProgramToolType::ERASER); }
         if(t.gui.svg_icon_button_transparent("Line Toolbar Button", "data/icons/line.svg", drawTool->get_type() == DrawingProgramToolType::LINE)) { switch_to_tool(DrawingProgramToolType::LINE); }
@@ -214,7 +215,8 @@ bool DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
 void DrawingProgram::tool_options_gui() {
     Toolbar& t = world.main.toolbar;
     float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    CLAY_AUTO_ID({
+    Clay_ElementId localID = CLAY_ID_LOCAL("Drawing program tool options gui");
+    CLAY(localID, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
             .padding = CLAY_PADDING_ALL(t.io->theme->padding1),
@@ -225,7 +227,7 @@ void DrawingProgram::tool_options_gui() {
         .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
     }) {
-        t.gui.obstructing_window();
+        t.gui.obstructing_window(localID);
         drawTool->gui_toolbox();
     }
 }
@@ -239,7 +241,14 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 void DrawingProgram::update() {
     tool_temporary_switch_update();
 
-    controls.cursorHoveringOverCanvas = !world.main.toolbar.io->hoverObstructed;
+    {
+        controls.cursorHoveringOverCanvas = true;
+        Vector2f mousePosGUI = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
+        for(auto& aabb : world.main.toolbar.io->hoverObstructingAABBs)
+            controls.cursorHoveringOverCanvas &= !SCollision::collide(mousePosGUI, aabb);
+        for(auto& circle : world.main.toolbar.io->hoverObstructingCircles)
+            controls.cursorHoveringOverCanvas &= !SCollision::collide(mousePosGUI, circle);
+    }
 
     controls.middleClick = controls.cursorHoveringOverCanvas && (world.main.input.mouse.middleClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].pressed);
     bool middleHeld = world.main.input.mouse.middleDown || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].held;

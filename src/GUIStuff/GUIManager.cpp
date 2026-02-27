@@ -246,8 +246,8 @@ void GUIManager::draw(SkCanvas* canvas) {
     canvas->restore();
 }
 
-void GUIManager::top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate) {
-    CLAY_AUTO_ID({.layout = { 
+void GUIManager::top_to_bottom_window_popup_layout(const Clay_ElementId& windowLocalID, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate) {
+    CLAY(windowLocalID, {.layout = { 
             .sizing = {.width = x, .height = y },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
@@ -258,8 +258,7 @@ void GUIManager::top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_Sizin
     .floating = { .attachTo = CLAY_ATTACH_TO_PARENT },
     .border = {.color = convert_vec4<Clay_Color>(io->theme->fillColor2), .width = CLAY_BORDER_OUTSIDE(1)}
     }) {
-        if(Clay_Hovered())
-            io->hoverObstructed = true;
+        obstructing_window(windowLocalID);
         elemUpdate();
     }
 }
@@ -623,7 +622,7 @@ void GUIManager::dropdown_select(const char* id, size_t* val, const std::vector<
                     .width = CLAY_BORDER_OUTSIDE(1)
                 }
             }) {
-                obstructing_window();
+                obstructing_window(localID);
                 scroll_bar_many_entries_area("dropdown scroll area", 18.0f, selections.size(), true, [&](size_t i, bool) {
                     bool selectedEntry = *val == i;
 
@@ -851,7 +850,7 @@ void GUIManager::paint_circle_popup_menu(const char* id, const Vector2f& centerP
         }
     }) {
         PaintCircleMenu* e = insert_element<PaintCircleMenu>();
-        e->update(*io, val, elemUpdate);
+        e->update(*this, val, elemUpdate);
     }
     pop_id();
 }
@@ -890,7 +889,7 @@ void GUIManager::list_popup_menu(const char* id, Vector2f popupPos, const std::f
                 .attachTo = CLAY_ATTACH_TO_ROOT
             }
         }) {
-            obstructing_window();
+            obstructing_window(localID);
             push_id(1);
             elemUpdate();
             pop_id();
@@ -905,9 +904,11 @@ void GUIManager::tree_listing(const char* id, NetworkingObjects::NetObjID rootOb
     pop_id();
 }
 
-void GUIManager::obstructing_window() {
+void GUIManager::obstructing_window(const Clay_ElementId& elementID) {
     if(Clay_Hovered())
         io->hoverObstructed = true;
+    const Clay_ElementData& elemData = Clay_GetElementData(elementID);
+    io->hoverObstructingAABBs.emplace_back(SCollision::AABB<float>{Vector2f{elemData.boundingBox.x, elemData.boundingBox.y} + windowPos, Vector2f{elemData.boundingBox.x + elemData.boundingBox.width, elemData.boundingBox.y + elemData.boundingBox.height} + windowPos});
 }
 
 void GUIManager::clay_error_handler(Clay_ErrorData errorData) {

@@ -69,7 +69,7 @@ class GUIManager {
 
         bool rotate_wheel(const char* id, double* angle, float size = BIG_BUTTON_SIZE, const std::function<void()>& elemUpdate = nullptr);
 
-        void top_to_bottom_window_popup_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
+        void top_to_bottom_window_popup_layout(const Clay_ElementId& localID, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate);
         void left_to_right_line_layout(const std::function<void()>& elemUpdate);
         void left_to_right_line_centered_layout(const std::function<void()>& elemUpdate);
@@ -104,7 +104,7 @@ class GUIManager {
 
         void tree_listing(const char* id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData);
 
-        void obstructing_window();
+        void obstructing_window(const Clay_ElementId& elementID);
 
         template <typename NewElement> NewElement* insert_element() {
             auto [it, inserted] = elements.emplace(idStack, ElementContainer());
@@ -317,7 +317,7 @@ class GUIManager {
                 if(clicked)
                     isOpen = true;
                 if(isOpen) {
-                    top_to_bottom_window_popup_layout(CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&]() {
+                    top_to_bottom_window_popup_layout(CLAY_ID_LOCAL("COLOR PICKER"), CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&]() {
                         isUpdating = color_picker_items("c", val, selectAlpha);
                         if(io->mouse.leftClick && !Clay_Hovered() && !clicked)
                             isOpen = false;

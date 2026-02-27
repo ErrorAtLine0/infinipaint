@@ -33,6 +33,7 @@
 #endif
 
 #include <Helpers/Logger.hpp>
+#include "DrawCollision.hpp"
 
 MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),

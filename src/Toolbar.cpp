@@ -494,7 +494,8 @@ void Toolbar::close_popup_gui() {
     std::erase_if(closePopupData.worldsToClose, [](auto& wPair) {
         return wPair.w.expired();
     });
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CLOSE POPUP");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -506,7 +507,7 @@ void Toolbar::close_popup_gui() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.zIndex = 1, .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.push_id("Close single file popup gui");
         gui.text_label("Files may contain unsaved changes");
         gui.scroll_bar_area("close file popup gui scroll area", false, [&](float, float, float &) {
@@ -614,7 +615,8 @@ void Toolbar::paint_popup(Vector2f popupPos) {
 }
 
 void Toolbar::top_toolbar() {
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT TOP TOOLBAR");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io->theme->padding1 / 2)),
@@ -625,7 +627,7 @@ void Toolbar::top_toolbar() {
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.push_id("menu top toolbar");
         global_log();
         bool menuPopUpJustOpen = false;
@@ -701,7 +703,8 @@ void Toolbar::top_toolbar() {
                 layer_menu(layerMenuPopUpJustOpen);
         }
         if(menuPopUpOpen) {
-            CLAY_AUTO_ID({
+            Clay_ElementId menuPopupId = CLAY_ID_LOCAL("Menu Popup");
+            CLAY(menuPopupId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -713,7 +716,7 @@ void Toolbar::top_toolbar() {
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
                 .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
-                gui.obstructing_window();
+                gui.obstructing_window(menuPopupId);
                 if(gui.text_button_left_transparent("new file local", "New File")) {
                     main.new_tab({
                         .isClient = false
@@ -796,7 +799,8 @@ void Toolbar::top_toolbar() {
 }
 
 void Toolbar::web_version_welcome() {
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("Web version welcome");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -808,7 +812,7 @@ void Toolbar::web_version_welcome() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.push_id("web version welcome gui");
         gui.text_label_centered("Welcome to the web version of InfiniPaint!");
         gui.text_label(
@@ -905,7 +909,8 @@ void Toolbar::update_notification_check() {
 }
 
 void Toolbar::update_notification_gui() {
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("UPDATE NOTIFICATION GUI");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -917,7 +922,7 @@ void Toolbar::update_notification_gui() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.push_id("update notification gui");
         gui.text_label_centered("Update v" + updateCheckerData.newVersionStr + " available!");
         if(gui.text_button_wide("download", "Open download page in web browser")) {
@@ -938,7 +943,8 @@ void Toolbar::update_notification_gui() {
 void Toolbar::grid_menu(bool justOpened) {
     if(main.world->gridMan.grids) {
         gui.push_id("grid menu");
-        CLAY_AUTO_ID({
+        Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT GRID MENU");
+        CLAY(localId, {
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
                 .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -950,7 +956,7 @@ void Toolbar::grid_menu(bool justOpened) {
             .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
             .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
         }) {
-            gui.obstructing_window();
+            gui.obstructing_window(localId);
             gui.text_label_centered("Grids");
             float entryHeight = 25.0f;
             if(main.world->gridMan.grids->empty())
@@ -1032,7 +1038,8 @@ void Toolbar::stop_displaying_grid_menu() {
 
 void Toolbar::bookmark_menu(bool justOpened) {
     gui.push_id("bookmark menu");
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT BOOKMARK MENU");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1044,7 +1051,7 @@ void Toolbar::bookmark_menu(bool justOpened) {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.text_label_centered("Bookmarks");
         main.world->bMan.setup_list_gui("bookmark menu list");
         if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
@@ -1057,7 +1064,8 @@ void Toolbar::bookmark_menu(bool justOpened) {
 
 void Toolbar::layer_menu(bool justOpened) {
     gui.push_id("layer menu");
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT LAYER MENU");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1069,7 +1077,7 @@ void Toolbar::layer_menu(bool justOpened) {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.text_label_centered("Layers");
         bool hoveringOverDropdown = false;
         main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list", hoveringOverDropdown);
@@ -1111,13 +1119,14 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
 void Toolbar::chat_box() {
     constexpr float CHATBOX_WIDTH = 700;
     if(main.world->netObjMan.is_connected()) {
-        CLAY_AUTO_ID({
+        Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN BUTTON");
+        CLAY(localId, {
             .layout = {
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
             },
             .floating = {.offset = {static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
         }) {
-            gui.obstructing_window();
+            gui.obstructing_window(localId);
             gui.push_id("chat box open button");
             if(gui.svg_icon_button("Chat Open Button", "data/icons/chat.svg", chatBoxState != CHATBOXSTATE_CLOSE)) {
                 if(chatBoxState == CHATBOXSTATE_CLOSE)
@@ -1128,7 +1137,8 @@ void Toolbar::chat_box() {
             gui.pop_id();
         }
     }
-    CLAY_AUTO_ID({
+    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN");
+    CLAY(localId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
             .childGap = 0,
@@ -1137,7 +1147,7 @@ void Toolbar::chat_box() {
         },
         .floating = {.offset = {60 + static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(localId);
         gui.push_id("chat box");
         if(chatBoxState == CHATBOXSTATE_JUSTOPEN || chatBoxState == CHATBOXSTATE_OPEN) {
             gui.push_id("messages");
@@ -1196,7 +1206,8 @@ void Toolbar::chat_box() {
                 chatMessage.time.update_time_since();
                 if(chatMessage.time < DISPLAY_TIME) {
                     float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
-                    CLAY_AUTO_ID({
+                    Clay_ElementId elemId = CLAY_IDI_LOCAL("CHAT MESSAGE ID", id);
+                    CLAY(elemId, {
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                             .padding = CLAY_PADDING_ALL(0),
@@ -1207,7 +1218,7 @@ void Toolbar::chat_box() {
                         .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
                     }) {
                         gui.push_id(id);
-                        gui.obstructing_window();
+                        gui.obstructing_window(elemId);
                         gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, a), CHATBOX_WIDTH);
                         gui.pop_id();
                     }
@@ -1236,7 +1247,8 @@ void Toolbar::global_log() {
             logM.time.update_time_since();
             if(logM.time < DISPLAY_TIME) {
                 float a = 1.0f - lerp_time<float>(logM.time, DISPLAY_TIME, FADE_START_TIME);
-                CLAY_AUTO_ID({
+                Clay_ElementId elemId = CLAY_ID_LOCAL("GLOBAL LOG");
+                CLAY(elemId, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1247,7 +1259,7 @@ void Toolbar::global_log() {
                     .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
                     .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
                 }) {
-                    gui.obstructing_window();
+                    gui.obstructing_window(elemId);
                     SkColor4f c{0, 0, 0, 0};
                     switch(logM.color) {
                         case LogMessage::COLOR_NORMAL:
@@ -1283,7 +1295,8 @@ void Toolbar::drawing_program_gui() {
                     .padding = {.top = 40, .bottom = 40}
                 }
             }) {
-                CLAY_AUTO_ID({
+                auto localId = CLAY_ID_LOCAL("Drawing program gui color picker left");
+                CLAY(localId, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1294,7 +1307,7 @@ void Toolbar::drawing_program_gui() {
                     .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                     .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
                 }) {
-                    gui.obstructing_window();
+                    gui.obstructing_window(localId);
                     isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io->theme->padding1 * 2.0f);
                     bool hoveringOnDropdown = false;
                     isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
@@ -1314,7 +1327,8 @@ void Toolbar::drawing_program_gui() {
                     .padding = {.top = 40, .bottom = 40}
                 }
             }) {
-                CLAY_AUTO_ID({
+                auto localID = CLAY_ID_LOCAL("Drawing program gui color picker right");
+                CLAY(localID, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1325,7 +1339,7 @@ void Toolbar::drawing_program_gui() {
                     .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
                     .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
                 }) {
-                    gui.obstructing_window();
+                    gui.obstructing_window(localID);
                     isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io->theme->padding1 * 2.0f);
                     bool hoveringOnDropdown = false;
                     isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
@@ -1506,7 +1520,8 @@ void Toolbar::performance_metrics() {
 }
 
 void Toolbar::player_list() {
-    CLAY_AUTO_ID({
+    Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT PLAYER LIST");
+    CLAY(elemId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1518,7 +1533,7 @@ void Toolbar::player_list() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(elemId);
         gui.push_id("client list");
         gui.text_label_centered("Player List");
         if(!main.world->clientStillConnecting) {
@@ -1599,7 +1614,8 @@ void Toolbar::options_menu() {
     switch(optionsMenuType) {
         case HOST_MENU:
         case CONNECT_MENU: {
-            CLAY_AUTO_ID({
+            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT CONNECT MENU");
+            CLAY(elemId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(650), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1611,7 +1627,7 @@ void Toolbar::options_menu() {
                 .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
                 .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
-                gui.obstructing_window();
+                gui.obstructing_window(elemId);
                 if(optionsMenuType == HOST_MENU) {
                     gui.push_id("host menu");
                     std::string oldS = serverToConnectTo;
@@ -1666,7 +1682,8 @@ void Toolbar::options_menu() {
                 .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("gsettings");
-                CLAY_AUTO_ID({
+                Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT GENERAL SETTINGS MENU");
+                CLAY(elemId, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                         .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1675,7 +1692,7 @@ void Toolbar::options_menu() {
                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                     }
                 }) {
-                    gui.obstructing_window();
+                    gui.obstructing_window(elemId);
                     CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIT(150), .height = CLAY_SIZING_GROW(0) },
@@ -1913,7 +1930,8 @@ void Toolbar::options_menu() {
             break;
         }
         case LOBBY_INFO_MENU: {
-            CLAY_AUTO_ID({
+            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT LOBBY INFO MENU");
+            CLAY(elemId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(650), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1926,7 +1944,7 @@ void Toolbar::options_menu() {
                 .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("lobby info menu");
-                gui.obstructing_window();
+                gui.obstructing_window(elemId);
                 if(!main.world || !main.world->netObjMan.is_connected())
                     optionsMenuOpen = false;
                 else {
@@ -1945,7 +1963,8 @@ void Toolbar::options_menu() {
             break;
         }
         case CANVAS_SETTINGS_MENU: {
-            CLAY_AUTO_ID({
+            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT CANVAS SETTINGS MENU");
+            CLAY(elemId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1958,7 +1977,7 @@ void Toolbar::options_menu() {
                 .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("canvas settings menu");
-                gui.obstructing_window();
+                gui.obstructing_window(elemId);
                 SkColor4f newColorToSet = main.world->canvasTheme.get_back_color();
                 gui.color_picker_button_field("canvasColor", "Canvas Color", &newColorToSet, false);
                 main.world->canvasTheme.set_back_color(convert_vec3<Vector3f>(newColorToSet));
@@ -1969,7 +1988,8 @@ void Toolbar::options_menu() {
             break;
         }
         case SET_DOWNLOAD_NAME: {
-            CLAY_AUTO_ID({
+            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT DOWNLOAD NAME MENU");
+            CLAY(elemId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
                     .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1982,7 +2002,7 @@ void Toolbar::options_menu() {
                 .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 gui.push_id("set download name menu");
-                gui.obstructing_window();
+                gui.obstructing_window(elemId);
                 if(!main.world)
                     optionsMenuOpen = false;
                 gui.input_text_field("file name", "File Name", &downloadNameSet);
@@ -2006,7 +2026,8 @@ void Toolbar::options_menu() {
 }
 
 void Toolbar::about_menu_gui() {
-    CLAY_AUTO_ID({
+    Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT ABOUT MENU");
+    CLAY(elemId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -2019,7 +2040,7 @@ void Toolbar::about_menu_gui() {
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.push_id("about menu popup");
-        gui.obstructing_window();
+        gui.obstructing_window(elemId);
         gui.left_to_right_line_layout([&]() {
             gui.push_id("Menu Selector");
             CLAY_AUTO_ID({
@@ -2088,8 +2109,9 @@ void Toolbar::reload_theme_list() {
 
 void Toolbar::file_picker_gui() {
     gui.push_id("filepicker");
+    Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT FILE PICKER MENU");
     bool isDoneByDoubleClick = false;
-    CLAY_AUTO_ID({
+    CLAY(elemId, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(500) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -2101,7 +2123,7 @@ void Toolbar::file_picker_gui() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window();
+        gui.obstructing_window(elemId);
         gui.text_label_centered(filePicker.filePickerWindowName);
         gui.left_to_right_line_layout([&]() {
             if(gui.svg_icon_button("file picker back button", "data/icons/backarrow.svg", false, 30.0f)) {
@@ -2274,6 +2296,8 @@ void Toolbar::start_gui() {
     }
     gui.io = io;
     io->hoverObstructed = false;
+    io->hoverObstructingAABBs.clear();
+    io->hoverObstructingCircles.clear();
     gui.begin();
 }
 
