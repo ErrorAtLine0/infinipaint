@@ -66,7 +66,8 @@ class World {
 
         void focus_update();
         void unfocus_update();
-        void on_switch_out();
+        void on_tab_out();
+        void on_tab_in();
 
         void draw(SkCanvas* canvas, const DrawData& calledDrawData);
         void early_destroy();
@@ -92,6 +93,7 @@ class World {
         void scale_up_step();
 
         bool should_ask_before_closing();
+        bool is_focus();
 
         bool hasUnsavedLocalChanges = false;
         bool setToDestroy = false;
@@ -100,6 +102,11 @@ class World {
         std::shared_ptr<NetServer> netServer;
         std::shared_ptr<NetClient> netClient;
     private:
+        InputManager::KeyCallbackManager::Callback* undoKeyCallback;
+        InputManager::KeyCallbackManager::Callback* redoKeyCallback;
+        void register_callbacks();
+        void deregister_callbacks();
+
         void load_empty_canvas();
 
         Vector3f get_random_cursor_color();

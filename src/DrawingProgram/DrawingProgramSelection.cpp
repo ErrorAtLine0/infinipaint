@@ -494,32 +494,44 @@ void DrawingProgramSelection::update() {
             commit_transform_selection();
             return;
         }
+    }
+}
 
-        if(drawP.world.main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
-            deselect_all();
-        else if(drawP.world.main.input.key(InputManager::KEY_DRAW_DELETE).pressed)
+void DrawingProgramSelection::register_key_callbacks() {
+    drawP.keyCallbacks[InputManager::KEY_DRAW_DELETE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DRAW_DELETE].register_callback([&](auto& key) {
+        if(key.down && !key.repeat)
             delete_all();
-        else if(drawP.world.main.input.key(InputManager::KEY_COPY).pressed && !is_being_transformed())
+    });
+    drawP.keyCallbacks[InputManager::KEY_COPY] = drawP.world.main.input.keyCallbacks[InputManager::KEY_COPY].register_callback([&](auto& key) {
+        if(key.down && !key.repeat)
             selection_to_clipboard();
-        else if(drawP.world.main.input.key(InputManager::KEY_CUT).pressed && !is_being_transformed()) {
+    });
+    drawP.keyCallbacks[InputManager::KEY_CUT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_CUT].register_callback([&](auto& key) {
+        if(key.down && !key.repeat) {
             selection_to_clipboard();
             delete_all();
         }
-        else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed) {
+    });
+    drawP.keyCallbacks[InputManager::KEY_PASTE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE].register_callback([&](auto& key) {
+        if(key.down && !key.repeat) {
             deselect_all();
             paste_clipboard(drawP.world.main.input.mouse.pos);
         }
-        else if(drawP.world.main.input.key(InputManager::KEY_PASTE_IMAGE).pressed) {
+    });
+    drawP.keyCallbacks[InputManager::KEY_PASTE_IMAGE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE_IMAGE].register_callback([&](auto& key) {
+        if(key.down && !key.repeat) {
             deselect_all();
             paste_image(drawP.world.main.input.mouse.pos);
         }
-    }
-    else if(drawP.world.main.input.key(InputManager::KEY_PASTE).pressed && !drawP.prevent_undo_or_redo())
-        paste_clipboard(drawP.world.main.input.mouse.pos);
-    else if(drawP.world.main.input.key(InputManager::KEY_PASTE_IMAGE).pressed && !drawP.prevent_undo_or_redo())
-        paste_image(drawP.world.main.input.mouse.pos);
-    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_ESCAPE).pressed)
-        drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
+    });
+    drawP.keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL].register_callback([&](auto& key) {
+        if(key.down && !key.repeat) {
+            if(is_something_selected())
+                deselect_all();
+            else
+                drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
+        }
+    });
 }
 
 void DrawingProgramSelection::deselect_all() {
@@ -580,16 +592,18 @@ CanvasComponentContainer::ObjInfo* DrawingProgramSelection::get_front_object_col
 void DrawingProgramSelection::selection_to_clipboard() {
     check_add_stroke_color_change_undo();
 
-    auto& clipboard = drawP.world.main.clipboard;
-    std::unordered_set<NetworkingObjects::NetObjID> resourceSet;
-    for(auto& c : selectedSet)
-        c->obj->get_comp().get_used_resources(resourceSet);
-    clipboard.components.clear();
-    for(auto& c : selectedSet)
-        clipboard.components.emplace_back(c->obj->get_data_copy());
-    clipboard.pos = initialSelectionAABB.center();
-    clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
-    clipboard.resources = drawP.world.rMan.copy_resource_set_to_map(resourceSet);
+    if(is_something_selected()) {
+        auto& clipboard = drawP.world.main.clipboard;
+        std::unordered_set<NetworkingObjects::NetObjID> resourceSet;
+        for(auto& c : selectedSet)
+            c->obj->get_comp().get_used_resources(resourceSet);
+        clipboard.components.clear();
+        for(auto& c : selectedSet)
+            clipboard.components.emplace_back(c->obj->get_data_copy());
+        clipboard.pos = initialSelectionAABB.center();
+        clipboard.inverseScale = drawP.world.drawData.cam.c.inverseScale;
+        clipboard.resources = drawP.world.rMan.copy_resource_set_to_map(resourceSet);
+    }
 }
 
 void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {

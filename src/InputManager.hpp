@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <queue>
+#include <Helpers/CallbackManager.hpp>
 #include "UndoManager.hpp"
 
 #include <SDL3/SDL.h>
@@ -173,6 +174,7 @@ struct InputManager {
         KEY_SHOW_PLAYER_LIST,
         KEY_HOLD_TO_PAN,
         KEY_HOLD_TO_ZOOM,
+        KEY_DESELECT_AND_EDIT_TOOL,
 
         KEY_ASSIGNABLE_COUNT, // Not a real key
 
@@ -231,6 +233,15 @@ struct InputManager {
 
     const KeyData& key(KeyCode kCode);
 
+    CallbackManager<SDL_KeyboardEvent> sdlKeyCallbacks;
+
+    struct KeyCallbackArgs {
+        bool down;
+        bool repeat;
+    };
+    typedef CallbackManager<KeyCallbackArgs> KeyCallbackManager;
+    std::array<KeyCallbackManager, KEY_COUNT> keyCallbacks;
+
     std::unordered_map<Vector2ui32, KeyCode> keyAssignments;
     std::unordered_map<Vector2ui32, KeyCode> defaultKeyAssignments;
     std::array<KeyData, KEY_COUNT> keys;
@@ -266,5 +277,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(InputManager::KeyCodeEnum, {
     {InputManager::KEY_OPEN_CHAT, "Open Chat"},
     {InputManager::KEY_SHOW_PLAYER_LIST, "Show Player List"},
     {InputManager::KEY_HOLD_TO_PAN, "Hold to Pan"},
-    {InputManager::KEY_HOLD_TO_ZOOM, "Hold to Zoom"}
+    {InputManager::KEY_HOLD_TO_ZOOM, "Hold to Zoom"},
+    {InputManager::KEY_DESELECT_AND_EDIT_TOOL, "Deselect selection / Edit Tool"}
 })

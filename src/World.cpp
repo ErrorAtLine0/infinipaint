@@ -151,6 +151,9 @@ void World::init_client(const std::string& serverFullID) {
         #endif
 
         clientStillConnecting = false;
+
+        if(is_focus())
+            register_callbacks();
     });
     netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
@@ -191,11 +194,6 @@ void World::focus_update() {
     drawData.cam.update_main(*this);
 
     rMan.update();
-
-    if(main.input.key(InputManager::KEY_UNDO).repeat)
-        undo_with_checks();
-    else if(main.input.key(InputManager::KEY_REDO).repeat)
-        redo_with_checks();
 }
 
 void World::connection_update() {
@@ -228,6 +226,10 @@ void World::connection_update() {
     }
 }
 
+bool World::is_focus() {
+    return main.world.get() == this;
+}
+
 void World::undo_with_checks() {
     if(!clientStillConnecting && !drawProg.prevent_undo_or_redo())
         undo.undo();
@@ -244,8 +246,33 @@ void World::unfocus_update() {
         return;
 }
 
-void World::on_switch_out() {
+void World::on_tab_out() {
     rMan.clear_display_cache();
+    if(!clientStillConnecting)
+        deregister_callbacks();
+}
+
+void World::on_tab_in() {
+    if(!clientStillConnecting)
+        register_callbacks();
+}
+
+void World::register_callbacks() {
+    drawProg.register_callbacks();
+    redoKeyCallback = main.input.keyCallbacks[InputManager::KEY_REDO].register_callback([&](auto& key) {
+        if(key.down && !key.repeat)
+            redo_with_checks();
+    });
+    undoKeyCallback = main.input.keyCallbacks[InputManager::KEY_UNDO].register_callback([&](auto& key) {
+        if(key.down && !key.repeat)
+            undo_with_checks();
+    });
+}
+
+void World::deregister_callbacks() {
+    drawProg.deregister_callbacks();
+    main.input.keyCallbacks[InputManager::KEY_REDO].deregister_callback(redoKeyCallback);
+    main.input.keyCallbacks[InputManager::KEY_UNDO].deregister_callback(undoKeyCallback);
 }
 
 void World::send_chat_message(const std::string& message) {

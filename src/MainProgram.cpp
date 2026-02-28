@@ -61,6 +61,19 @@ MainProgram::MainProgram():
         *logFile << "[CHAT] " << text << std::endl;
         std::cout << "[CHAT] " << text << std::endl;
     });
+
+    register_callbacks();
+}
+
+void MainProgram::register_callbacks() {
+    input.keyCallbacks[InputManager::KEY_NOGUI].register_callback([&](auto& keyData) {
+        if(keyData.down && !keyData.repeat)
+            drawGui = !drawGui;
+    });
+    input.keyCallbacks[InputManager::KEY_FULLSCREEN].register_callback([&](auto& keyData) {
+        if(keyData.down && !keyData.repeat)
+            drawGui = !drawGui;
+    });
 }
 
 void MainProgram::update() {
@@ -97,8 +110,12 @@ void MainProgram::update() {
 
     std::shared_ptr<World> oldWorld = world;
     world = worlds[worldIndex];
-    if(oldWorld != world && oldWorld)
-        oldWorld->on_switch_out();
+    if(oldWorld != world) {
+        if(oldWorld)
+            oldWorld->on_tab_out();
+        if(world)
+            world->on_tab_in();
+    }
 
     deltaTime.update_time_since();
     deltaTime.update_time_point();
@@ -114,11 +131,6 @@ void MainProgram::update() {
 
     toolbar.update(); // GUI should be setup after the world data has been fully updated for this frame, so that the GUI reflects the current state of the world data
 
-    if(input.key(InputManager::KEY_NOGUI).pressed)
-        drawGui = !drawGui;
-
-    if(input.key(InputManager::KEY_FULLSCREEN).pressed)
-        input.toggleFullscreen = true;
 
     NetLibrary::update();
 

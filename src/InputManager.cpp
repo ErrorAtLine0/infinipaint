@@ -58,6 +58,7 @@ InputManager::InputManager() {
     defaultKeyAssignments[{0, SDLK_F2}] = KEY_SHOW_PLAYER_LIST;
     defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
     defaultKeyAssignments[{0, SDLK_Z}] = KEY_HOLD_TO_ZOOM;
+    defaultKeyAssignments[{0, SDLK_ESCAPE}] = KEY_DESELECT_AND_EDIT_TOOL;
 
 #ifdef __EMSCRIPTEN__
     // Without this, SDL eats the CTRL-V event that initiates the paste event
@@ -355,8 +356,10 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
     // e.key != SDLK_LMETA  && e.key != SDLK_RMETA  && 
 
-    if(stopKeyInput)
+    if(stopKeyInput && !e.down)
         return;
+
+    sdlKeyCallbacks.run_callbacks(e);
 
     switch(kPress) {
         case SDLK_UP:
@@ -482,12 +485,14 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             break;
     }
 
-    if(text.get_accepting_input())
+    if(text.get_accepting_input() && e.down)
         return;
 
     auto f = keyAssignments.find({make_generic_key_mod(kMod), kPress});
-    if(f != keyAssignments.end())
+    if(f != keyAssignments.end()) {
         set_key_down(e, f->second);
+        keyCallbacks[f->second].run_callbacks(KeyCallbackArgs{.down = e.down, .repeat = e.repeat});
+    }
 }
 
 void InputManager::call_text_paste(bool isRichTextPaste) {

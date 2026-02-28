@@ -56,6 +56,10 @@ class DrawingProgram {
         void invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck);
         void preupdate_component(CanvasComponentContainer::ObjInfo* objToCheck);
         void send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor);
+
+        void register_callbacks();
+        void deregister_callbacks();
+        
     private:
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
 
@@ -120,6 +124,8 @@ class DrawingProgram {
         std::unique_ptr<DrawingProgramToolBase> drawTool;
 
         uint32_t nextID = 0;
+
+        std::unordered_map<unsigned, InputManager::KeyCallbackManager::Callback*> keyCallbacks;
 
         friend class EyeDropperTool;
         friend class RectDrawTool;

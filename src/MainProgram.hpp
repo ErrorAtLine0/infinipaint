@@ -122,6 +122,7 @@ class MainProgram {
 
         ~MainProgram();
     private:
+        void register_callbacks();
         void new_tab_open();
         std::atomic<bool> tabSetToOpen = false;
         World::OpenWorldInfo newTabToOpenInfo;
