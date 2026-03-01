@@ -259,20 +259,21 @@ void World::on_tab_in() {
 
 void World::register_callbacks() {
     drawProg.register_callbacks();
-    redoKeyCallback = main.input.keyCallbacks[InputManager::KEY_REDO].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
+    keyCallbacks[InputManager::KEY_REDO] = main.input.keyCallbacks[InputManager::KEY_REDO].register_callback([&](auto& key) {
+        if(key.down)
             redo_with_checks();
     });
-    undoKeyCallback = main.input.keyCallbacks[InputManager::KEY_UNDO].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
+    keyCallbacks[InputManager::KEY_UNDO] = main.input.keyCallbacks[InputManager::KEY_UNDO].register_callback([&](auto& key) {
+        if(key.down)
             undo_with_checks();
     });
 }
 
 void World::deregister_callbacks() {
     drawProg.deregister_callbacks();
-    main.input.keyCallbacks[InputManager::KEY_REDO].deregister_callback(redoKeyCallback);
-    main.input.keyCallbacks[InputManager::KEY_UNDO].deregister_callback(undoKeyCallback);
+    for(auto& [key, callback] : keyCallbacks)
+        main.input.keyCallbacks[key].deregister_callback(callback);
+    keyCallbacks.clear();
 }
 
 void World::send_chat_message(const std::string& message) {

@@ -94,7 +94,9 @@ struct UpdateInputData {
         std::optional<std::string> textOut;
     } clipboard;
 
-    std::function<void(std::shared_ptr<RichText::TextBox>, std::shared_ptr<RichText::TextBox::Cursor>)> richTextBoxEdit;
+    std::shared_ptr<RichText::TextBox> previousRichTextBoxToEdit;
+    std::shared_ptr<RichText::TextBox> richTextBoxToEdit;
+    std::shared_ptr<RichText::TextBox::Cursor> richTextBoxToEditCursor;
 
     SkFont get_font(float fSize) const;
 

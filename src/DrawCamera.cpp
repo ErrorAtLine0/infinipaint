@@ -158,10 +158,10 @@ void DrawCamera::update_main(World& w) {
                 }
             }
         }
-        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.get_accepting_input()) {
+        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
         }
-        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.get_accepting_input()) {
+        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
         }
     }

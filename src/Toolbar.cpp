@@ -2275,9 +2275,9 @@ void Toolbar::initialize_io_before_update() {
     io->key.leftCtrl = main.input.key(InputManager::KEY_TEXT_CTRL).held;
     io->key.enter = main.input.key(InputManager::KEY_TEXT_ENTER).repeat;
     io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
-    io->richTextBoxEdit = [&](std::shared_ptr<RichText::TextBox> t, std::shared_ptr<RichText::TextBox::Cursor> c) {
-        main.input.text.set_rich_text_box_input(t, c, false);
-    };
+    io->previousRichTextBoxToEdit = io->richTextBoxToEdit;
+    io->richTextBoxToEditCursor = nullptr;
+    io->richTextBoxToEdit = nullptr;
 
     if(io->acceptingTextInput)
         main.input.text_input_silence_everything();
@@ -2319,6 +2319,12 @@ void Toolbar::end_gui() {
     gui.end();
     if(io->clipboard.textOut)
         main.input.set_clipboard_str(*io->clipboard.textOut);
+    if(io->richTextBoxToEdit != io->previousRichTextBoxToEdit) {
+        if(io->richTextBoxToEdit)
+            main.input.set_rich_text_box_input_front(io->richTextBoxToEdit, io->richTextBoxToEditCursor, false);
+        if(io->previousRichTextBoxToEdit)
+            main.input.remove_rich_text_box_input(io->previousRichTextBoxToEdit);
+    }
 }
 
 void Toolbar::draw(SkCanvas* canvas) {

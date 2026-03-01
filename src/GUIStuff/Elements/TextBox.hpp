@@ -31,7 +31,8 @@ template <typename T> class TextBox : public Element {
             }) {
                 selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
                 if(data && selection.selected) {
-                    io.richTextBoxEdit(textbox, cur);
+                    io.richTextBoxToEdit = textbox;
+                    io.richTextBoxToEditCursor = cur;
                     textbox->process_mouse_left_button(*cur, io.mouse.pos - bb.min, io.mouse.leftClick, io.mouse.leftHeld, io.key.leftShift);
                     if((updateEveryEdit && textbox->inputChangedTextBox) || io.key.enter) {
                         update_on_edit();

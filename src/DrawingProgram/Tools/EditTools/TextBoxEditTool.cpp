@@ -295,7 +295,7 @@ bool TextBoxEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
 
     bool collidesWithBox = comp->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
 
-    input.text.set_rich_text_box_input(a.textBox, a.cursor, true, currentMods);
+    //input.text.set_rich_text_box_input_back(a.textBox, a.cursor, true, currentMods);
     a.textBox->process_mouse_left_button(*a.cursor, a.get_mouse_pos(drawP), (drawP.controls.leftClick && collidesWithBox) ? drawP.world.main.input.mouse.leftClicks : 0, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
     return true;

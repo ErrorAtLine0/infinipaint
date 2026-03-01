@@ -125,8 +125,6 @@ class DrawingProgram {
 
         uint32_t nextID = 0;
 
-        std::unordered_map<unsigned, InputManager::KeyCallbackManager::Callback*> keyCallbacks;
-
         friend class EyeDropperTool;
         friend class RectDrawTool;
         friend class EllipseDrawTool;

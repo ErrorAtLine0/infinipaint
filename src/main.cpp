@@ -1,6 +1,7 @@
 #include "Helpers/SCollision.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "Helpers/FileDownloader.hpp"
+#include "VersionConstants.hpp"
 #include "include/gpu/GpuTypes.h"
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_hints.h>
@@ -195,6 +196,14 @@ void get_refresh_rate(MainStruct& mS) {
 }
 
 void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "InfiniPaint");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, VersionConstants::CURRENT_VERSION_STRING.c_str());
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.infinipaint.infinipaint");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "Yousef Khadadeh (ErrorAtLine0)");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "Copyright (c) 2026 Yousef Khadadeh");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://infinipaint.com/");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
+
     SDL_SetHint(SDL_HINT_APP_NAME, "InfiniPaint");
     SDL_SetHint(SDL_HINT_PEN_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
@@ -455,6 +464,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
 #endif
         mS.m->window.sdlWindow = mS.window;
+        mS.m->input.sdlWindow = mS.window;
         mS.m->update_scale_and_density();
 #ifdef __EMSCRIPTEN__
         emscripten_set_beforeunload_callback((void*)mSPtr, emscripten_before_unload);
@@ -659,12 +669,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_SetCursor(mS.systemCursors[static_cast<unsigned>(mS.m->input.cursorIcon)]);
         }
 
-        if(mS.m->input.text.get_accepting_input() && !mS.m->input.text.lastAcceptingTextInputVal)
-            SDL_StartTextInput(mS.window);
-        else if(!mS.m->input.text.get_accepting_input() && mS.m->input.text.lastAcceptingTextInputVal)
-            SDL_StopTextInput(mS.window);
-        mS.m->input.text.lastAcceptingTextInputVal = mS.m->input.text.get_accepting_input();
-
         //cpu_save_sleep(mS);
         //attempt_redraw_and_swap_buffers(mS);
         regular_draw(mS);
@@ -769,7 +773,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.backend_key_up_update(event->key);
                 break;
             case SDL_EVENT_TEXT_INPUT:
-                mS.m->input.text.newInput += event->text.text;
                 mS.m->input.text.add_text_to_textbox(event->text.text);
                 break;
             case SDL_EVENT_DROP_FILE:

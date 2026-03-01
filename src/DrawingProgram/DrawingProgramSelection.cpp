@@ -353,18 +353,7 @@ void DrawingProgramSelection::commit_transform_selection() {
 
 void DrawingProgramSelection::update() {
     if(is_something_selected()) {
-        selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
-        selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
-        selectionRectPoints[2] = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
-        selectionRectPoints[3] = selectionTransformCoords.from_space_world(initialSelectionAABB.top_right());
-
-        scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(initialSelectionAABB.max);
-        rotateData.centerHandlePoint = drawP.world.drawData.cam.c.to_space(rotateData.centerPos);
-        rotateData.handlePoint = get_rotation_point_pos_from_angle(rotateData.rotationAngle);
-
         rebuild_cam_space();
-
-        constexpr float KEY_TRANSLATE_MAGNITUDE = 5.0f;
 
         if(drawP.is_actual_selection_tool(drawP.drawTool->get_type())) {
             switch(transformOpHappening) {
@@ -392,53 +381,9 @@ void DrawingProgramSelection::update() {
                             check_add_stroke_color_change_undo();
                         }
                     }
-                    else {
-                        Vector2f moveVec = {0, 0};
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_UP).pressed)
-                            moveVec.y() -= 1.0f;
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).pressed)
-                            moveVec.y() += 1.0f;
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).pressed)
-                            moveVec.x() += 1.0f;
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).pressed)
-                            moveVec.x() -= 1.0f;
-                        if(moveVec != Vector2f{0.0f, 0.0f}) {
-                            moveVec *= KEY_TRANSLATE_MAGNITUDE;
-                            translateData.startPos = drawP.world.drawData.cam.c.dir_from_space(moveVec);
-                            translateData.translateWithKeys = true;
-                            selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
-                            transformOpHappening = TransformOperation::TRANSLATE;
-                            translateData.keyTranslateLastMoveTime = std::chrono::steady_clock::now();
-                            check_add_stroke_color_change_undo();
-                        }
-                    }
                     break;
                 case TransformOperation::TRANSLATE:
-                    if(translateData.translateWithKeys) {
-                        Vector2f moveVec = {0, 0};
-                        constexpr auto TIME_TO_NEXT_MOVE = std::chrono::milliseconds(700);
-                        constexpr auto TIME_TO_SUBTRACT_BETWEEN_REPEATS = std::chrono::milliseconds(650);
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held)
-                            moveVec.y() -= 1.0f;
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held)
-                            moveVec.y() += 1.0f;
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held)
-                            moveVec.x() += 1.0f;
-                        if(drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held)
-                            moveVec.x() -= 1.0f;
-                        if(moveVec != Vector2f{0.0f, 0.0f} && (std::chrono::steady_clock::now() - translateData.keyTranslateLastMoveTime) >= TIME_TO_NEXT_MOVE) {
-                            moveVec *= KEY_TRANSLATE_MAGNITUDE;
-                            translateData.startPos += drawP.world.drawData.cam.c.dir_from_space(moveVec);
-                            selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
-                            translateData.keyTranslateLastMoveTime = std::chrono::steady_clock::now() - TIME_TO_SUBTRACT_BETWEEN_REPEATS; // Time between repeat moves is shorter than time between first press and first repeat
-                        }
-                        bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held || drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held;
-                        if(!anyKeyHeld) {
-                            commit_transform_selection();
-                            return;
-                        }
-                    }
-                    else {
+                    if(!translateData.translateWithKeys) {
                         if(drawP.controls.leftClickHeld)
                             selectionTransformCoords = CoordSpaceHelperTransform(drawP.world.get_mouse_world_pos() - translateData.startPos);
                         else {
@@ -498,33 +443,34 @@ void DrawingProgramSelection::update() {
 }
 
 void DrawingProgramSelection::register_key_callbacks() {
-    drawP.keyCallbacks[InputManager::KEY_DRAW_DELETE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DRAW_DELETE].register_callback([&](auto& key) {
+    auto& keyCallbacks = drawP.world.keyCallbacks;
+    keyCallbacks[InputManager::KEY_DRAW_DELETE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DRAW_DELETE].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             delete_all();
     });
-    drawP.keyCallbacks[InputManager::KEY_COPY] = drawP.world.main.input.keyCallbacks[InputManager::KEY_COPY].register_callback([&](auto& key) {
+    keyCallbacks[InputManager::KEY_COPY] = drawP.world.main.input.keyCallbacks[InputManager::KEY_COPY].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             selection_to_clipboard();
     });
-    drawP.keyCallbacks[InputManager::KEY_CUT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_CUT].register_callback([&](auto& key) {
+    keyCallbacks[InputManager::KEY_CUT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_CUT].register_callback([&](auto& key) {
         if(key.down && !key.repeat) {
             selection_to_clipboard();
             delete_all();
         }
     });
-    drawP.keyCallbacks[InputManager::KEY_PASTE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE].register_callback([&](auto& key) {
+    keyCallbacks[InputManager::KEY_PASTE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE].register_callback([&](auto& key) {
         if(key.down && !key.repeat) {
             deselect_all();
             paste_clipboard(drawP.world.main.input.mouse.pos);
         }
     });
-    drawP.keyCallbacks[InputManager::KEY_PASTE_IMAGE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE_IMAGE].register_callback([&](auto& key) {
+    keyCallbacks[InputManager::KEY_PASTE_IMAGE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE_IMAGE].register_callback([&](auto& key) {
         if(key.down && !key.repeat) {
             deselect_all();
             paste_image(drawP.world.main.input.mouse.pos);
         }
     });
-    drawP.keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL].register_callback([&](auto& key) {
+    keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL].register_callback([&](auto& key) {
         if(key.down && !key.repeat) {
             if(is_something_selected())
                 deselect_all();
@@ -532,6 +478,58 @@ void DrawingProgramSelection::register_key_callbacks() {
                 drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
         }
     });
+    keyCallbacks[InputManager::KEY_TEXT_UP] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_UP].register_callback([&](auto& key) {
+        translate_key(InputManager::KEY_TEXT_UP, key.down);
+    });
+    keyCallbacks[InputManager::KEY_TEXT_DOWN] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_DOWN].register_callback([&](auto& key) {
+        translate_key(InputManager::KEY_TEXT_DOWN, key.down);
+    });
+    keyCallbacks[InputManager::KEY_TEXT_LEFT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_LEFT].register_callback([&](auto& key) {
+        translate_key(InputManager::KEY_TEXT_LEFT, key.down);
+    });
+    keyCallbacks[InputManager::KEY_TEXT_RIGHT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_RIGHT].register_callback([&](auto& key) {
+        translate_key(InputManager::KEY_TEXT_RIGHT, key.down);
+    });
+}
+
+void DrawingProgramSelection::translate_key(unsigned keyPressed, bool pressed) {
+    if(pressed) {
+        constexpr float KEY_TRANSLATE_MAGNITUDE = 5.0f;
+        Vector2f moveVec;
+        switch(keyPressed) {
+            case InputManager::KEY_TEXT_UP:
+                moveVec = {0.0f, -1.0f};
+                break;
+            case InputManager::KEY_TEXT_DOWN:
+                moveVec = {0.0f, 1.0f};
+                break;
+            case InputManager::KEY_TEXT_RIGHT:
+                moveVec = {1.0f, 0.0f};
+                break;
+            case InputManager::KEY_TEXT_LEFT:
+                moveVec = {-1.0f, 0.0f};
+                break;
+        }
+        moveVec *= KEY_TRANSLATE_MAGNITUDE;
+        if(transformOpHappening == TransformOperation::NONE) {
+            translateData.startPos = drawP.world.drawData.cam.c.dir_from_space(moveVec);
+            translateData.translateWithKeys = true;
+            transformOpHappening = TransformOperation::TRANSLATE;
+            check_add_stroke_color_change_undo();
+        }
+        else if(transformOpHappening == TransformOperation::TRANSLATE && translateData.translateWithKeys) {
+            moveVec *= KEY_TRANSLATE_MAGNITUDE;
+            translateData.startPos += drawP.world.drawData.cam.c.dir_from_space(moveVec);
+        }
+        selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
+    }
+    else if(transformOpHappening == TransformOperation::TRANSLATE && translateData.translateWithKeys) {
+        bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held || drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held;
+        if(!anyKeyHeld) {
+            commit_transform_selection();
+            return;
+        }
+    }
 }
 
 void DrawingProgramSelection::deselect_all() {
@@ -700,6 +698,15 @@ std::unordered_set<CanvasComponentContainer::ObjInfo*> DrawingProgramSelection::
 }
 
 void DrawingProgramSelection::rebuild_cam_space() {
+    selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
+    selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
+    selectionRectPoints[2] = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
+    selectionRectPoints[3] = selectionTransformCoords.from_space_world(initialSelectionAABB.top_right());
+
+    scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(initialSelectionAABB.max);
+    rotateData.centerHandlePoint = drawP.world.drawData.cam.c.to_space(rotateData.centerPos);
+    rotateData.handlePoint = get_rotation_point_pos_from_angle(rotateData.rotationAngle);
+
     SCollision::ColliderCollection<WorldScalar> collideRectWorld;
     collideRectWorld.triangle.emplace_back(selectionRectPoints[0], selectionRectPoints[1], selectionRectPoints[2]);
     collideRectWorld.triangle.emplace_back(selectionRectPoints[0], selectionRectPoints[2], selectionRectPoints[3]);
@@ -714,15 +721,6 @@ Vector2f DrawingProgramSelection::get_rotation_point_pos_from_angle(double angle
 
 void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {
     if(is_something_selected()) {
-        selectionRectPoints[0] = selectionTransformCoords.from_space_world(initialSelectionAABB.min);
-        selectionRectPoints[1] = selectionTransformCoords.from_space_world(initialSelectionAABB.bottom_left());
-        selectionRectPoints[2] = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
-        selectionRectPoints[3] = selectionTransformCoords.from_space_world(initialSelectionAABB.top_right());
-
-        scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(initialSelectionAABB.max));
-        rotateData.centerHandlePoint = drawP.world.drawData.cam.c.to_space(selectionTransformCoords.from_space_world(rotateData.centerPos));
-        rotateData.handlePoint = get_rotation_point_pos_from_angle(rotateData.rotationAngle);
-
         rebuild_cam_space();
 
         DrawData selectionDrawData = drawData;

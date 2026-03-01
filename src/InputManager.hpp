@@ -89,36 +89,33 @@ struct InputManager {
         std::array<KeyData, 256> buttons;
     } pen;
 
+    void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+    void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+    void remove_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox);
+    
     struct Text {
-        std::string newInput;
-        bool lastAcceptingTextInputVal = false;
+        bool is_accepting_input();
 
-        void set_accepting_input();
-        bool get_accepting_input();
-
-        void set_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
         void add_text_to_textbox(const std::string& inputText);
 
         void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
         void do_textbox_operation_with_undo(const std::function<void()>& func);
 
         private:
+            struct TextBoxInfo {
+                bool isRichTextBox;
+                std::shared_ptr<RichText::TextBox> textBox;
+                std::shared_ptr<RichText::TextBox::Cursor> cursor;
+                std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
+                UndoManager textboxUndo;
+            };
+
+            void set_accepting_input(SDL_Window* window, bool newAcceptingInputVal);
+
             bool isNextPasteRich = false;
-
-            bool isRichTextBox;
-            std::shared_ptr<RichText::TextBox> textBox;
-            std::shared_ptr<RichText::TextBox::Cursor> cursor;
-            std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
-
-            bool newIsRichTextBox;
-            std::shared_ptr<RichText::TextBox> newTextBox;
-            std::shared_ptr<RichText::TextBox::Cursor> newCursor;
-            std::optional<RichText::TextStyleModifier::ModifierMap> newModMap;
-
-            UndoManager textboxUndo;
-
             bool acceptingInput = false;
-            bool acceptingInputNew = false;
+
+            std::deque<TextBoxInfo> textBoxes;
 
             friend struct InputManager;
     } text;
@@ -245,6 +242,8 @@ struct InputManager {
     std::unordered_map<Vector2ui32, KeyCode> keyAssignments;
     std::unordered_map<Vector2ui32, KeyCode> defaultKeyAssignments;
     std::array<KeyData, KEY_COUNT> keys;
+
+    SDL_Window* sdlWindow;
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(InputManager::KeyCodeEnum, {

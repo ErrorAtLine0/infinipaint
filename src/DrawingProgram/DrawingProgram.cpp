@@ -46,55 +46,55 @@ DrawingProgram::DrawingProgram(World& initWorld):
 }
 
 void DrawingProgram::register_callbacks() {
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_BRUSH] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_BRUSH].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_BRUSH] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_BRUSH].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::BRUSH);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_ERASER] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ERASER].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_ERASER] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ERASER].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::ERASER);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTSELECT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTSELECT].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTSELECT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTSELECT].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::RECTSELECT);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTANGLE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTANGLE].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTANGLE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTANGLE].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::RECTANGLE);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_ELLIPSE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ELLIPSE].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_ELLIPSE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ELLIPSE].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::ELLIPSE);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_TEXTBOX] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_TEXTBOX].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_TEXTBOX] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_TEXTBOX].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::TEXTBOX);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_EYEDROPPER] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_EYEDROPPER].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_EYEDROPPER] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_EYEDROPPER].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::EYEDROPPER);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_SCREENSHOT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_SCREENSHOT].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_SCREENSHOT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_SCREENSHOT].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::SCREENSHOT);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_ZOOM] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ZOOM].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_ZOOM] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ZOOM].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::ZOOM);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_LASSOSELECT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_LASSOSELECT].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_LASSOSELECT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_LASSOSELECT].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::LASSOSELECT);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_PAN] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_PAN].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_PAN] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_PAN].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::PAN);
     });
-    keyCallbacks[InputManager::KEY_DRAW_TOOL_LINE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_LINE].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_LINE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_LINE].register_callback([&](auto& key) {
         if(key.down && !key.repeat)
             switch_to_tool(DrawingProgramToolType::LINE);
     });
-    keyCallbacks[InputManager::KEY_HOLD_TO_PAN] = world.main.input.keyCallbacks[InputManager::KEY_HOLD_TO_PAN].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_HOLD_TO_PAN] = world.main.input.keyCallbacks[InputManager::KEY_HOLD_TO_PAN].register_callback([&](auto& key) {
         if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
             toolTypeAfterTempMove = drawTool->get_type();
             switch_to_tool(DrawingProgramToolType::PAN);
@@ -105,7 +105,7 @@ void DrawingProgram::register_callbacks() {
             tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
         }
     });
-    keyCallbacks[InputManager::KEY_HOLD_TO_ZOOM] = world.main.input.keyCallbacks[InputManager::KEY_HOLD_TO_ZOOM].register_callback([&](auto& key) {
+    world.keyCallbacks[InputManager::KEY_HOLD_TO_ZOOM] = world.main.input.keyCallbacks[InputManager::KEY_HOLD_TO_ZOOM].register_callback([&](auto& key) {
         if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
             toolTypeAfterTempMove = drawTool->get_type();
             switch_to_tool(DrawingProgramToolType::ZOOM);
@@ -120,10 +120,8 @@ void DrawingProgram::register_callbacks() {
 }
 
 void DrawingProgram::deregister_callbacks() {
-    for(auto& [key, callback] : keyCallbacks)
-        world.main.input.keyCallbacks[key].deregister_callback(callback);
-    keyCallbacks.clear();
     tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+    selection.deselect_all();
 }
 
 void DrawingProgram::server_init_no_file() {

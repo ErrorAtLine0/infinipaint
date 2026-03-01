@@ -30,6 +30,7 @@ class DrawingProgramSelection {
         CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
         void register_key_callbacks();
     private:
+        void translate_key(unsigned keyPressed, bool pressed);
         bool mouse_collided_with_selection_aabb();
         bool mouse_collided_with_scale_point();
         bool mouse_collided_with_rotate_center_handle_point();
@@ -75,7 +76,6 @@ class DrawingProgramSelection {
         struct TranslationData {
             WorldVec startPos;
             bool translateWithKeys;
-            std::chrono::steady_clock::time_point keyTranslateLastMoveTime;
         } translateData;
 
         struct ScaleData {
