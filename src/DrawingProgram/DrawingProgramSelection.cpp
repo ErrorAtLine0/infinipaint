@@ -442,7 +442,7 @@ void DrawingProgramSelection::update() {
     }
 }
 
-void DrawingProgramSelection::register_key_callbacks() {
+void DrawingProgramSelection::register_callbacks() {
     auto& keyCallbacks = drawP.world.keyCallbacks;
     keyCallbacks[InputManager::KEY_DRAW_DELETE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DRAW_DELETE].register_callback([&](auto& key) {
         if(key.down && !key.repeat)

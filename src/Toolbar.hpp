@@ -90,6 +90,7 @@ class Toolbar {
         bool flipZoomToolDirection = false;
 
         float final_gui_scale();
+        bool check_if_position_isnt_obstructed(const Vector2f& pos);
 
         bool app_close_requested();
     private:

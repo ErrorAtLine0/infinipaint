@@ -59,7 +59,9 @@ class DrawingProgram {
 
         void register_callbacks();
         void deregister_callbacks();
-        
+
+        typedef CallbackManager<InputManager::MouseButtonCallbackArgs> MouseButtonOnCanvasCallbackManager;
+        MouseButtonOnCanvasCallbackManager mouseButtonOnCanvasCallbacks;
     private:
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
 
@@ -67,7 +69,6 @@ class DrawingProgram {
         void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
         void check_updateable_components();
         void update_downloading_dropped_files();
-
 
         bool selection_action_menu(Vector2f popupPos);
         void rebuild_cache();
@@ -95,6 +96,8 @@ class DrawingProgram {
         bool temporaryEraser = false;
         TemporaryMoveToolSwitch tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
         DrawingProgramToolType toolTypeAfterTempMove;
+
+        InputManager::MouseButtonCallbackManager::Callback* mouseButtonCallback;
 
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;

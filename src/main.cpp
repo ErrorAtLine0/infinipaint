@@ -464,7 +464,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
 #endif
         mS.m->window.sdlWindow = mS.window;
-        mS.m->input.sdlWindow = mS.window;
         mS.m->update_scale_and_density();
 #ifdef __EMSCRIPTEN__
         emscripten_set_beforeunload_callback((void*)mSPtr, emscripten_before_unload);
@@ -737,34 +736,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     if(!mS.m->toolbar.tabletOptions.ignoreMouseMovementWhenPenInProximity || !mS.m->input.pen.inProximity)
                 #endif
                     {
-					    mS.m->input.mouse.set_pos({event->motion.x * mS.m->window.density, event->motion.y * mS.m->window.density});
+                        mS.m->input.backend_mouse_motion_update(event->motion);
                     }
                 break;
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                if(event->button.button == 1)
-                    mS.m->input.mouse.leftDown = false;
-                else if(event->button.button == 2)
-                    mS.m->input.mouse.middleDown = false;
-                else if(event->button.button == 3)
-                    mS.m->input.mouse.rightDown = false;
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_mouse_button_up_update(event->button);
                 break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if(event->button.button == 1) {
-                    mS.m->input.mouse.leftDown = true;
-                    mS.m->input.mouse.leftClicks = event->button.clicks;
-                }
-                else if(event->button.button == 2) {
-                    mS.m->input.mouse.middleDown = true;
-                    mS.m->input.mouse.middleClicks = event->button.clicks;
-                }
-                else if(event->button.button == 3) {
-                    mS.m->input.mouse.rightDown = true;
-                    mS.m->input.mouse.rightClicks = event->button.clicks;
-                }
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_mouse_button_down_update(event->button);
                 break;
             case SDL_EVENT_MOUSE_WHEEL:
-                mS.m->input.mouse.scrollAmount.x() += event->wheel.x;
-                mS.m->input.mouse.scrollAmount.y() += event->wheel.y;
+                mS.m->input.backend_mouse_wheel_update(event->wheel);
                 break;
             case SDL_EVENT_KEY_DOWN:
                mS.m->input.backend_key_down_update(event->key);

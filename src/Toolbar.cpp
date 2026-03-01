@@ -2305,6 +2305,16 @@ float Toolbar::final_gui_scale() {
     return finalCalculatedGuiScale;
 }
 
+bool Toolbar::check_if_position_isnt_obstructed(const Vector2f& pos) {
+    bool positionIsntObstructed = true;
+    Vector2f posGUI = pos / final_gui_scale();
+    for(auto& aabb : io->hoverObstructingAABBs)
+        positionIsntObstructed &= !SCollision::collide(posGUI, aabb);
+    for(auto& circle : io->hoverObstructingCircles)
+        positionIsntObstructed &= !SCollision::collide(posGUI, circle);
+    return positionIsntObstructed;
+}
+
 void Toolbar::calculate_final_gui_scale() {
     Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{700.0f, 700.0f};
     Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};

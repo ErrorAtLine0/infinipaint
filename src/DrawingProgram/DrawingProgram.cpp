@@ -116,11 +116,30 @@ void DrawingProgram::register_callbacks() {
             tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
         }
     });
-    selection.register_key_callbacks();
+    mouseButtonCallback = world.main.input.mouseButtonCallbacks.register_callback([&](const InputManager::MouseButtonCallbackArgs& button) {
+        bool isHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(button.pos);
+        if(isHoveringOverCanvas) {
+            if(button.button == InputManager::MouseButtonCallbackArgs::Button::RIGHT) {
+                if(button.down) {
+                    if(world.main.toolbar.rightClickPopupLocation)
+                        world.main.toolbar.rightClickPopupLocation = std::nullopt;
+                    else
+                        world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
+                }
+            }
+            else {
+                if(button.down)
+                    world.main.toolbar.rightClickPopupLocation = std::nullopt;
+                mouseButtonOnCanvasCallbacks.run_callbacks(button);
+            }
+        }
+    });
+    selection.register_callbacks();
 }
 
 void DrawingProgram::deregister_callbacks() {
     tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+    world.main.input.mouseButtonCallbacks.deregister_callback(mouseButtonCallback);
     selection.deselect_all();
 }
 
@@ -320,21 +339,12 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 void DrawingProgram::update() {
     tool_temporary_switch_update();
 
-    {
-        controls.cursorHoveringOverCanvas = true;
-        Vector2f mousePosGUI = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
-        for(auto& aabb : world.main.toolbar.io->hoverObstructingAABBs)
-            controls.cursorHoveringOverCanvas &= !SCollision::collide(mousePosGUI, aabb);
-        for(auto& circle : world.main.toolbar.io->hoverObstructingCircles)
-            controls.cursorHoveringOverCanvas &= !SCollision::collide(mousePosGUI, circle);
-    }
+    controls.cursorHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
 
     controls.middleClick = controls.cursorHoveringOverCanvas && (world.main.input.mouse.middleClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].pressed);
     bool middleHeld = world.main.input.mouse.middleDown || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].held;
-    if(controls.middleClick) {
+    if(controls.middleClick)
         controls.middleClickHeld = true;
-        world.main.toolbar.rightClickPopupLocation = std::nullopt;
-    }
     if(controls.middleClickHeld && !middleHeld) {
         controls.middleClick = false;
         controls.middleClickHeld = false;
@@ -343,21 +353,12 @@ void DrawingProgram::update() {
 
     // Left click will be ignored if middle click is held (and left click held state will be gone once middle click is pressed)
     controls.leftClick = controls.cursorHoveringOverCanvas && world.main.input.mouse.leftClicks && !controls.middleClickHeld;
-    if(controls.leftClick) {
+    if(controls.leftClick)
         controls.leftClickHeld = true;
-        world.main.toolbar.rightClickPopupLocation = std::nullopt;
-    }
     if(controls.leftClickHeld && (!world.main.input.mouse.leftDown || controls.middleClickHeld)) {
         controls.leftClick = false;
         controls.leftClickHeld = false;
         controls.leftClickReleased = true;
-    }
-
-    if(controls.cursorHoveringOverCanvas && (world.main.input.mouse.rightClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.rightClickButton].pressed)) {
-        if(world.main.toolbar.rightClickPopupLocation)
-            world.main.toolbar.rightClickPopupLocation = std::nullopt;
-        else
-            world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
     }
 
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;

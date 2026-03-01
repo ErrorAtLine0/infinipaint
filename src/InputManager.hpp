@@ -16,9 +16,10 @@
 #include <SDL3/SDL_keycode.h>
 
 using namespace Eigen;
+class MainProgram;
 
 struct InputManager {
-    InputManager();
+    InputManager(MainProgram& initMain);
 
     void frame_reset(const Vector2i& windowSize);
 
@@ -213,6 +214,10 @@ struct InputManager {
 
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);
+    void backend_mouse_button_up_update(const SDL_MouseButtonEvent& e);
+    void backend_mouse_button_down_update(const SDL_MouseButtonEvent& e);
+    void backend_mouse_motion_update(const SDL_MouseMotionEvent& e);
+    void backend_mouse_wheel_update(const SDL_MouseWheelEvent& e);
     void backend_key_up_update(const SDL_KeyboardEvent& e);
     void backend_key_down_update(const SDL_KeyboardEvent& e);
 
@@ -243,7 +248,33 @@ struct InputManager {
     std::unordered_map<Vector2ui32, KeyCode> defaultKeyAssignments;
     std::array<KeyData, KEY_COUNT> keys;
 
-    SDL_Window* sdlWindow;
+    struct MouseButtonCallbackArgs {
+        enum class Button : uint8_t {
+            LEFT = 1,
+            MIDDLE,
+            RIGHT
+        } button;
+        bool down;
+        uint8_t clicks;
+        Vector2f pos;
+    };
+    typedef CallbackManager<MouseButtonCallbackArgs> MouseButtonCallbackManager;
+    MouseButtonCallbackManager mouseButtonCallbacks;
+
+    struct MouseMotionCallbackArgs {
+        Vector2f pos;
+        Vector2f move;
+    };
+    typedef CallbackManager<MouseMotionCallbackArgs> MouseMotionCallbackManager;
+    MouseMotionCallbackManager mouseMotionCallbacks;
+
+    struct MouseWheelCallbackArgs {
+        Vector2f amount;
+    };
+    typedef CallbackManager<MouseWheelCallbackArgs> MouseWheelCallbackManager;
+    MouseWheelCallbackManager mouseWheelCallbacks;
+
+    MainProgram& main;
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(InputManager::KeyCodeEnum, {

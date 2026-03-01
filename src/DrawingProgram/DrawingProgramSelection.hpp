@@ -28,7 +28,7 @@ class DrawingProgramSelection {
         void delete_all();
         void selection_to_clipboard();
         CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
-        void register_key_callbacks();
+        void register_callbacks();
     private:
         void translate_key(unsigned keyPressed, bool pressed);
         bool mouse_collided_with_selection_aabb();

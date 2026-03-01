@@ -23,10 +23,12 @@ extern "C" {
         return isAcceptingInputEmscripten;
     }
 }
-
 #endif
 
-InputManager::InputManager() {
+#include "MainProgram.hpp"
+
+InputManager::InputManager(MainProgram& initMain):
+    main(initMain) {
     frame_reset({0, 0});
 
     defaultKeyAssignments[{0, SDLK_W}] = KEY_CAMERA_ROTATE_COUNTERCLOCKWISE;
@@ -92,7 +94,7 @@ void InputManager::text_input_silence_everything() {
 }
 
 void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
-    text.set_accepting_input(sdlWindow, true);
+    text.set_accepting_input(main.window.sdlWindow, true);
     Text::TextBoxInfo textBoxInfo;
     textBoxInfo.textBox = nTextBox;
     textBoxInfo.cursor = nCursor;
@@ -102,7 +104,7 @@ void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText:
 }
 
 void InputManager::set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
-    text.set_accepting_input(sdlWindow, true);
+    text.set_accepting_input(main.window.sdlWindow, true);
     Text::TextBoxInfo textBoxInfo;
     textBoxInfo.textBox = nTextBox;
     textBoxInfo.cursor = nCursor;
@@ -116,7 +118,7 @@ void InputManager::remove_rich_text_box_input(const std::shared_ptr<RichText::Te
         return (info.textBox == nTextBox);
     });
     if(text.textBoxes.empty())
-        text.set_accepting_input(sdlWindow, false);
+        text.set_accepting_input(main.window.sdlWindow, false);
 }
 
 void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
@@ -372,6 +374,62 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     if(m & SDL_KMOD_SHIFT)
         toRet |= SDL_KMOD_SHIFT;
     return toRet;
+}
+
+void InputManager::backend_mouse_button_up_update(const SDL_MouseButtonEvent& e) {
+    Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
+    if(e.button == 1)
+        mouse.leftDown = false;
+    else if(e.button == 2)
+        mouse.middleDown = false;
+    else if(e.button == 3)
+        mouse.rightDown = false;
+    mouseButtonCallbacks.run_callbacks({
+        .button = static_cast<MouseButtonCallbackArgs::Button>(e.button),
+        .down = e.down,
+        .clicks = e.clicks,
+        .pos = mousePos
+    });
+}
+
+void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& e) {
+    Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
+    if(e.button == 1) {
+        mouse.leftDown = true;
+        mouse.leftClicks = e.clicks;
+    }
+    else if(e.button == 2) {
+        mouse.middleDown = true;
+        mouse.middleClicks = e.clicks;
+    }
+    else if(e.button == 3) {
+        mouse.rightDown = true;
+        mouse.rightClicks = e.clicks;
+    }
+    mouseButtonCallbacks.run_callbacks({
+        .button = static_cast<MouseButtonCallbackArgs::Button>(e.button),
+        .down = e.down,
+        .clicks = e.clicks,
+        .pos = mousePos
+    });
+}
+
+void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    Vector2f mouseRel = {e.xrel * main.window.density, e.yrel * main.window.density};
+    mouse.set_pos(mouseNewPos);
+    mouseMotionCallbacks.run_callbacks({
+        .pos = mouseNewPos,
+        .move = mouseRel
+    });
+}
+
+void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
+    mouse.scrollAmount.x() += e.x;
+    mouse.scrollAmount.y() += e.y;
+    mouseWheelCallbacks.run_callbacks({
+        .amount = {e.x, e.y},
+    });
 }
 
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {

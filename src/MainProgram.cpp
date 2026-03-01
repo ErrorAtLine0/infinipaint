@@ -36,6 +36,7 @@
 #include "DrawCollision.hpp"
 
 MainProgram::MainProgram():
+    input(*this),
     fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
