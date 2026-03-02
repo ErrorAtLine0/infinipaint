@@ -5,6 +5,7 @@
 #include <Helpers/SCollision.hpp>
 #include "CoordSpaceHelper.hpp"
 #include <Helpers/VersionNumber.hpp>
+#include "InputManager.hpp"
 
 using namespace Eigen;
 
@@ -28,6 +29,11 @@ class DrawCamera {
 
         void save_file(cereal::PortableBinaryOutputArchive& a, const World& w) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, World& w);
+
+        void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button);
+        void input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion);
+        void input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel);
     private:
         struct SmoothMove {
             CoordSpaceHelper start;

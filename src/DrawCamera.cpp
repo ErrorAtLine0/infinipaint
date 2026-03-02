@@ -108,21 +108,43 @@ void DrawCamera::update_main(World& w) {
             c.rotate_about(smoothMove.endCenter, smoothMove.end.rotation);
             smoothMove.occurring = false;
         }
-
     }
     else {
+        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.is_accepting_input())
+            c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
+        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input())
+            c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
+    }
+
+    set_viewing_area(w.main.window.size.cast<float>());
+
+    if(c.inverseScale < WorldScalar(1))
+        w.scale_up_step();
+}
+
+void DrawCamera::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+}
+
+void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
+    if(!smoothMove.occurring) {
         bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.input.pen.buttons[w.main.toolbar.tabletOptions.middleClickButton].held && w.main.toolbar.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
                                     (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
                                     (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
-
         if(newIsAccurateZooming && !isAccurateZooming) {
-            startZoomMousePos = w.get_mouse_world_pos();
+            startZoomMousePos = c.from_space(button.pos);
             startZoomVal = c.inverseScale;
             startZoomCameraPos = c.pos;
         }
         isAccurateZooming = newIsAccurateZooming;
+    }
+    else
+        isAccurateZooming = false;
+}
+
+void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
+    if(!smoothMove.occurring) {
         if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
-            WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? w.main.input.mouse.move.y() : -w.main.input.mouse.move.y()));
+            WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
             if(zoomFactor < WorldScalar(0.000001))
                 zoomFactor = WorldScalar(0.000001);
 
@@ -136,40 +158,33 @@ void DrawCamera::update_main(World& w) {
             }
         }
         else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN))
-            c.pos -= c.dir_from_space(w.main.input.mouse.move);
-        if(w.main.input.mouse.scrollAmount.y() && !w.main.toolbar.io->hoverObstructed) {
-            // Ignore the value of scrollAmount, since that leads to problems on macOS
+            c.pos -= c.dir_from_space(motion.move);
+    }
+}
 
-            WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
+void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
+    if(!smoothMove.occurring && wheel.tickAmount.y() && w.main.toolbar.check_if_position_isnt_obstructed(wheel.mousePos)) {
+        WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
+        WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
 
-            if(zoomFactor < WorldScalar(0.000001))
-                zoomFactor = WorldScalar(0.000001);
+        if(zoomFactor < WorldScalar(0.000001))
+            zoomFactor = WorldScalar(0.000001);
 
-            if(zoomFactor != WorldScalar(0)) {
-                if(w.main.input.mouse.scrollAmount.y() < 0.0)
-                    zoomFactor = WorldScalar(1) / zoomFactor;
+        if(zoomFactor != WorldScalar(0)) {
+            if(wheel.tickAmount.y() < 0.0)
+                zoomFactor = WorldScalar(1) / zoomFactor;
 
+            for(int i = 0; i < std::abs(wheel.tickAmount.y()); i++) {
                 c.scale(zoomFactor);
                 if(c.inverseScale < WorldScalar(0.0001))
                     c.inverseScale = WorldScalar(0.0001);
                 else {
-                    WorldVec mVec = c.pos - w.get_mouse_world_pos();
-                    c.pos = w.get_mouse_world_pos() + mVec / zoomFactor;
+                    WorldVec mVec = c.pos - mouseWorldPos;
+                    c.pos = mouseWorldPos + mVec / zoomFactor;
                 }
             }
         }
-        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
-            c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
-        }
-        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
-            c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
-        }
     }
-
-    set_viewing_area(w.main.window.size.cast<float>());
-
-    if(c.inverseScale < WorldScalar(1))
-        w.scale_up_step();
 }
 
 void DrawCamera::save_file(cereal::PortableBinaryOutputArchive& a, const World& w) const {

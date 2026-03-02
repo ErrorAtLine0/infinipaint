@@ -421,7 +421,7 @@ void DrawingProgramSelection::input_key_callback_display_selection(const InputMa
 }
 
 void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button) {
-    if(button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT) {
+    if(button.button == InputManager::MouseButton::LEFT && is_something_selected()) {
         switch(transformOpHappening) {
             case TransformOperation::NONE: {
                 if(button.down && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
@@ -466,7 +466,7 @@ void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selec
 }
 
 void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(drawP.world.main.input.mouse.leftDown) {
+    if(drawP.world.main.input.mouse.leftDown && is_something_selected()) {
         rebuild_cam_space();
 
         switch(transformOpHappening) {
@@ -510,41 +510,43 @@ void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const
 }
 
 void DrawingProgramSelection::translate_key(unsigned keyPressed, bool pressed) {
-    if(pressed) {
-        constexpr float KEY_TRANSLATE_MAGNITUDE = 5.0f;
-        Vector2f moveVec;
-        switch(keyPressed) {
-            case InputManager::KEY_TEXT_UP:
-                moveVec = {0.0f, -1.0f};
-                break;
-            case InputManager::KEY_TEXT_DOWN:
-                moveVec = {0.0f, 1.0f};
-                break;
-            case InputManager::KEY_TEXT_RIGHT:
-                moveVec = {1.0f, 0.0f};
-                break;
-            case InputManager::KEY_TEXT_LEFT:
-                moveVec = {-1.0f, 0.0f};
-                break;
-        }
-        moveVec *= KEY_TRANSLATE_MAGNITUDE;
-        if(transformOpHappening == TransformOperation::NONE) {
-            translateData.startPos = drawP.world.drawData.cam.c.dir_from_space(moveVec);
-            translateData.translateWithKeys = true;
-            transformOpHappening = TransformOperation::TRANSLATE;
-            check_add_stroke_color_change_undo();
+    if(is_something_selected()) {
+        if(pressed) {
+            constexpr float KEY_TRANSLATE_MAGNITUDE = 5.0f;
+            Vector2f moveVec;
+            switch(keyPressed) {
+                case InputManager::KEY_TEXT_UP:
+                    moveVec = {0.0f, -1.0f};
+                    break;
+                case InputManager::KEY_TEXT_DOWN:
+                    moveVec = {0.0f, 1.0f};
+                    break;
+                case InputManager::KEY_TEXT_RIGHT:
+                    moveVec = {1.0f, 0.0f};
+                    break;
+                case InputManager::KEY_TEXT_LEFT:
+                    moveVec = {-1.0f, 0.0f};
+                    break;
+            }
+            moveVec *= KEY_TRANSLATE_MAGNITUDE;
+            if(transformOpHappening == TransformOperation::NONE) {
+                translateData.startPos = drawP.world.drawData.cam.c.dir_from_space(moveVec);
+                translateData.translateWithKeys = true;
+                transformOpHappening = TransformOperation::TRANSLATE;
+                check_add_stroke_color_change_undo();
+            }
+            else if(transformOpHappening == TransformOperation::TRANSLATE && translateData.translateWithKeys) {
+                moveVec *= KEY_TRANSLATE_MAGNITUDE;
+                translateData.startPos += drawP.world.drawData.cam.c.dir_from_space(moveVec);
+            }
+            selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
         }
         else if(transformOpHappening == TransformOperation::TRANSLATE && translateData.translateWithKeys) {
-            moveVec *= KEY_TRANSLATE_MAGNITUDE;
-            translateData.startPos += drawP.world.drawData.cam.c.dir_from_space(moveVec);
-        }
-        selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
-    }
-    else if(transformOpHappening == TransformOperation::TRANSLATE && translateData.translateWithKeys) {
-        bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held || drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held;
-        if(!anyKeyHeld) {
-            commit_transform_selection();
-            return;
+            bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held || drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held;
+            if(!anyKeyHeld) {
+                commit_transform_selection();
+                return;
+            }
         }
     }
 }

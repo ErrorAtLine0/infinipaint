@@ -55,7 +55,7 @@ void DrawingProgram::on_tab_out() {
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     bool isHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(button.pos);
     if(isHoveringOverCanvas) {
-        if(button.button == InputManager::MouseButtonCallbackArgs::Button::RIGHT) {
+        if(button.button == InputManager::MouseButton::RIGHT) {
             if(button.down) {
                 if(world.main.toolbar.rightClickPopupLocation)
                     world.main.toolbar.rightClickPopupLocation = std::nullopt;
@@ -66,14 +66,15 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
         else {
             if(button.down)
                 world.main.toolbar.rightClickPopupLocation = std::nullopt;
-            if(button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT)
+            if(button.button == InputManager::MouseButton::LEFT)
                 controls.leftClickHeld = button.down;
-            else if(button.button == InputManager::MouseButtonCallbackArgs::Button::MIDDLE)
+            else if(button.button == InputManager::MouseButton::MIDDLE)
                 controls.middleClickHeld = button.down;
             drawTool->input_mouse_button_on_canvas_callback(button);
+            world.drawData.cam.input_mouse_button_on_canvas_callback(world, button);
         }
     }
-    else if(!button.down && button.button != InputManager::MouseButtonCallbackArgs::Button::RIGHT) {
+    else if(!button.down && button.button != InputManager::MouseButton::RIGHT) {
         drawTool->input_mouse_button_on_canvas_callback(button);
     }
 }

@@ -57,13 +57,13 @@ void LassoSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& ke
 
 void LassoSelectTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     drawP.selection.input_mouse_button_on_canvas_callback_modify_selection(button);
-    if(!controls.isSelecting && button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT && button.down && !drawP.selection.is_being_transformed()) {
+    if(!controls.isSelecting && button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed()) {
         controls = LassoSelectControls();
         controls.coords = drawP.world.drawData.cam.c;
         controls.lassoPoints.emplace_back(controls.coords.get_mouse_pos(drawP.world));
         controls.isSelecting = true;
     }
-    else if(controls.isSelecting && button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT && !button.down) {
+    else if(controls.isSelecting && button.button == InputManager::MouseButton::LEFT && !button.down) {
         if(controls.lassoPoints.size() > 3) {
             SCollision::ColliderCollection<float> cC;
 

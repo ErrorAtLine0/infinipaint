@@ -336,6 +336,11 @@ void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCal
         world->input_mouse_motion_callback(motion);
 }
 
+void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+    if(world)
+        world->input_mouse_wheel_callback(wheel);
+}
+
 bool MainProgram::network_being_used() {
     for(auto& w : worlds) {
         if(w->netObjMan.is_connected())

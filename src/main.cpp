@@ -748,6 +748,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.backend_mouse_button_down_update(event->button);
                 break;
             case SDL_EVENT_MOUSE_WHEEL:
+                mS.m->update_scale_and_density();
                 mS.m->input.backend_mouse_wheel_update(event->wheel);
                 break;
             case SDL_EVENT_KEY_DOWN:

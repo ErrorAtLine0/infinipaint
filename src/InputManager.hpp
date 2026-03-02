@@ -245,12 +245,14 @@ struct InputManager {
     std::unordered_map<Vector2ui32, KeyCode> defaultKeyAssignments;
     std::array<KeyData, KEY_COUNT> keys;
 
+    enum class MouseButton : uint8_t {
+        LEFT = 1,
+        MIDDLE,
+        RIGHT
+    } button;
+
     struct MouseButtonCallbackArgs {
-        enum class Button : uint8_t {
-            LEFT = 1,
-            MIDDLE,
-            RIGHT
-        } button;
+        MouseButton button;
         bool down;
         uint8_t clicks;
         Vector2f pos;
@@ -262,7 +264,9 @@ struct InputManager {
     };
 
     struct MouseWheelCallbackArgs {
+        Vector2f mousePos;
         Vector2f amount;
+        Vector2i tickAmount;
     };
 
     MainProgram& main;

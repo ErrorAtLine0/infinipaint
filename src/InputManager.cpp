@@ -385,7 +385,7 @@ void InputManager::backend_mouse_button_up_update(const SDL_MouseButtonEvent& e)
     else if(e.button == 3)
         mouse.rightDown = false;
     main.input_mouse_button_callback(MouseButtonCallbackArgs{
-        .button = static_cast<MouseButtonCallbackArgs::Button>(e.button),
+        .button = static_cast<MouseButton>(e.button),
         .down = e.down,
         .clicks = e.clicks,
         .pos = mousePos
@@ -407,7 +407,7 @@ void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& 
         mouse.rightClicks = e.clicks;
     }
     main.input_mouse_button_callback(MouseButtonCallbackArgs{
-        .button = static_cast<MouseButtonCallbackArgs::Button>(e.button),
+        .button = static_cast<MouseButton>(e.button),
         .down = e.down,
         .clicks = e.clicks,
         .pos = mousePos
@@ -425,8 +425,15 @@ void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
 }
 
 void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
+    Vector2f mouseNewPos = {e.mouse_x * main.window.density, e.mouse_y * main.window.density};
+    mouse.set_pos(mouseNewPos);
     mouse.scrollAmount.x() += e.x;
     mouse.scrollAmount.y() += e.y;
+    main.input_mouse_wheel_callback({
+        .mousePos = mouseNewPos,
+        .amount = {e.x, e.y},
+        .tickAmount = {e.integer_x, e.integer_y}
+    });
 }
 
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {

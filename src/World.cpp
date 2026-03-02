@@ -262,17 +262,27 @@ void World::input_key_callback(const InputManager::KeyCallbackArgs& key) {
             }
         }
         drawProg.input_key_callback(key);
+        drawData.cam.input_key_callback(key);
     }
 }
 
 void World::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(!clientStillConnecting)
+    if(!clientStillConnecting) {
         drawProg.input_mouse_button_callback(button);
+    }
 }
 
 void World::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(!clientStillConnecting)
+    if(!clientStillConnecting) {
         drawProg.input_mouse_motion_callback(motion);
+        drawData.cam.input_mouse_motion_callback(*this, motion);
+    }
+}
+
+void World::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+    if(!clientStillConnecting) {
+        drawData.cam.input_mouse_wheel_callback(*this, wheel);
+    }
 }
 
 void World::send_chat_message(const std::string& message) {

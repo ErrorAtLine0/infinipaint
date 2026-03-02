@@ -123,6 +123,7 @@ class MainProgram {
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
+        void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
 
         ~MainProgram();
     private:
