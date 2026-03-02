@@ -26,25 +26,10 @@ void LineDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
-        objInfoBeingEdited = nullptr;
-}
-
-bool LineDrawTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
-    t.paint_popup(popupPos);
-    return true;
-}
-
-void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {
-    commit();
-}
-
-void LineDrawTool::tool_update() {
-    auto& toolConfig = drawP.world.main.toolConfig;
-    if(!objInfoBeingEdited) {
-        if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
+void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT) {
+        auto& toolConfig = drawP.world.main.toolConfig;
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             if(!relativeWidthResult.first.has_value()) {
                 if(drawP.controls.leftClick)
@@ -67,30 +52,49 @@ void LineDrawTool::tool_update() {
             newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
         }
-    }
-    else {
-        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        constexpr float SNAP_DIVISION_COUNT = 12.0f;
-        if(drawP.controls.leftClickHeld) {
-            BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-            Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
-            Vector2f oldPos = brushStroke.d.points->front().pos;
-            if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
-                Vector2f diff = (newPos - oldPos);
-                float diffLength = diff.norm();
-                diff.normalize();
-                float angle = (std::atan2(diff.y(), diff.x()) / std::numbers::pi) * SNAP_DIVISION_COUNT;
-                angle = std::round(angle);
-                angle = (angle * std::numbers::pi) / SNAP_DIVISION_COUNT;
-                newPos = oldPos + diffLength * Vector2f{cos(angle), sin(angle)};
-            }
-            brushStroke.d.points->back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
-            containerPtr->send_comp_update(drawP, false);
-            containerPtr->commit_update(drawP);
-        }
-        else
+        else if(!button.down && objInfoBeingEdited)
             commit();
     }
+}
+
+void LineDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(objInfoBeingEdited) {
+        constexpr float SNAP_DIVISION_COUNT = 12.0f;
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
+        Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+        Vector2f oldPos = brushStroke.d.points->front().pos;
+        if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
+            Vector2f diff = (newPos - oldPos);
+            float diffLength = diff.norm();
+            diff.normalize();
+            float angle = (std::atan2(diff.y(), diff.x()) / std::numbers::pi) * SNAP_DIVISION_COUNT;
+            angle = std::round(angle);
+            angle = (angle * std::numbers::pi) / SNAP_DIVISION_COUNT;
+            newPos = oldPos + diffLength * Vector2f{cos(angle), sin(angle)};
+        }
+        brushStroke.d.points->back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
+        containerPtr->send_comp_update(drawP, false);
+        containerPtr->commit_update(drawP);
+    }
+}
+
+void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
+    if(objInfoBeingEdited == erasedComp)
+        objInfoBeingEdited = nullptr;
+}
+
+bool LineDrawTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
+void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {
+    commit();
+}
+
+void LineDrawTool::tool_update() {
 }
 
 bool LineDrawTool::prevent_undo_or_redo() {
