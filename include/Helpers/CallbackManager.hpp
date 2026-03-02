@@ -18,9 +18,13 @@ template <typename... Args> class CallbackManager {
             for(auto& f : funcs)
                 (*f)(a...);
         }
-        ~CallbackManager() {
+        void clear() {
             for(Callback* c : funcs)
                 delete c;
+            funcs.clear();
+        }
+        ~CallbackManager() {
+            clear();
         }
     private:
         std::vector<Callback*> funcs;

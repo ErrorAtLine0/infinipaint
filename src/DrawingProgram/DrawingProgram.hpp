@@ -57,11 +57,10 @@ class DrawingProgram {
         void preupdate_component(CanvasComponentContainer::ObjInfo* objToCheck);
         void send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor);
 
-        void register_callbacks();
-        void deregister_callbacks();
-
-        typedef CallbackManager<InputManager::MouseButtonCallbackArgs> MouseButtonOnCanvasCallbackManager;
-        MouseButtonOnCanvasCallbackManager mouseButtonOnCanvasCallbacks;
+        void on_tab_out();
+        void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
+        void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
     private:
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
 
@@ -96,8 +95,6 @@ class DrawingProgram {
         bool temporaryEraser = false;
         TemporaryMoveToolSwitch tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
         DrawingProgramToolType toolTypeAfterTempMove;
-
-        InputManager::MouseButtonCallbackManager::Callback* mouseButtonCallback;
 
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;

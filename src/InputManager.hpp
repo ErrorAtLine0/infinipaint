@@ -235,14 +235,11 @@ struct InputManager {
 
     const KeyData& key(KeyCode kCode);
 
-    CallbackManager<SDL_KeyboardEvent> sdlKeyCallbacks;
-
     struct KeyCallbackArgs {
+        KeyCode key;
         bool down;
         bool repeat;
     };
-    typedef CallbackManager<KeyCallbackArgs> KeyCallbackManager;
-    std::array<KeyCallbackManager, KEY_COUNT> keyCallbacks;
 
     std::unordered_map<Vector2ui32, KeyCode> keyAssignments;
     std::unordered_map<Vector2ui32, KeyCode> defaultKeyAssignments;
@@ -258,21 +255,15 @@ struct InputManager {
         uint8_t clicks;
         Vector2f pos;
     };
-    typedef CallbackManager<MouseButtonCallbackArgs> MouseButtonCallbackManager;
-    MouseButtonCallbackManager mouseButtonCallbacks;
 
     struct MouseMotionCallbackArgs {
         Vector2f pos;
         Vector2f move;
     };
-    typedef CallbackManager<MouseMotionCallbackArgs> MouseMotionCallbackManager;
-    MouseMotionCallbackManager mouseMotionCallbacks;
 
     struct MouseWheelCallbackArgs {
         Vector2f amount;
     };
-    typedef CallbackManager<MouseWheelCallbackArgs> MouseWheelCallbackManager;
-    MouseWheelCallbackManager mouseWheelCallbacks;
 
     MainProgram& main;
 };

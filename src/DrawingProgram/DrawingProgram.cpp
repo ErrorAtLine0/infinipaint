@@ -45,102 +45,131 @@ DrawingProgram::DrawingProgram(World& initWorld):
     drawTool = DrawingProgramToolBase::allocate_tool_type(*this, DrawingProgramToolType::BRUSH);
 }
 
-void DrawingProgram::register_callbacks() {
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_BRUSH] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_BRUSH].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::BRUSH);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_ERASER] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ERASER].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::ERASER);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTSELECT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTSELECT].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::RECTSELECT);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTANGLE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_RECTANGLE].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::RECTANGLE);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_ELLIPSE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ELLIPSE].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::ELLIPSE);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_TEXTBOX] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_TEXTBOX].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::TEXTBOX);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_EYEDROPPER] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_EYEDROPPER].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::EYEDROPPER);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_SCREENSHOT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_SCREENSHOT].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::SCREENSHOT);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_ZOOM] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_ZOOM].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::ZOOM);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_LASSOSELECT] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_LASSOSELECT].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::LASSOSELECT);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_PAN] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_PAN].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::PAN);
-    });
-    world.keyCallbacks[InputManager::KEY_DRAW_TOOL_LINE] = world.main.input.keyCallbacks[InputManager::KEY_DRAW_TOOL_LINE].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            switch_to_tool(DrawingProgramToolType::LINE);
-    });
-    world.keyCallbacks[InputManager::KEY_HOLD_TO_PAN] = world.main.input.keyCallbacks[InputManager::KEY_HOLD_TO_PAN].register_callback([&](auto& key) {
-        if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
-            toolTypeAfterTempMove = drawTool->get_type();
-            switch_to_tool(DrawingProgramToolType::PAN);
-            tempMoveToolSwitch = TemporaryMoveToolSwitch::PAN;
-        }
-        else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::PAN) {
-            switch_to_tool(toolTypeAfterTempMove);
-            tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
-        }
-    });
-    world.keyCallbacks[InputManager::KEY_HOLD_TO_ZOOM] = world.main.input.keyCallbacks[InputManager::KEY_HOLD_TO_ZOOM].register_callback([&](auto& key) {
-        if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
-            toolTypeAfterTempMove = drawTool->get_type();
-            switch_to_tool(DrawingProgramToolType::ZOOM);
-            tempMoveToolSwitch = TemporaryMoveToolSwitch::ZOOM;
-        }
-        else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::ZOOM) {
-            switch_to_tool(toolTypeAfterTempMove);
-            tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
-        }
-    });
-    mouseButtonCallback = world.main.input.mouseButtonCallbacks.register_callback([&](const InputManager::MouseButtonCallbackArgs& button) {
-        bool isHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(button.pos);
-        if(isHoveringOverCanvas) {
-            if(button.button == InputManager::MouseButtonCallbackArgs::Button::RIGHT) {
-                if(button.down) {
-                    if(world.main.toolbar.rightClickPopupLocation)
-                        world.main.toolbar.rightClickPopupLocation = std::nullopt;
-                    else
-                        world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
-                }
-            }
-            else {
-                if(button.down)
-                    world.main.toolbar.rightClickPopupLocation = std::nullopt;
-                mouseButtonOnCanvasCallbacks.run_callbacks(button);
-            }
-        }
-    });
-    selection.register_callbacks();
+void DrawingProgram::on_tab_out() {
+    tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+    selection.deselect_all();
+    controls.leftClickHeld = false;
+    controls.middleClickHeld = false;
 }
 
-void DrawingProgram::deregister_callbacks() {
-    tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
-    world.main.input.mouseButtonCallbacks.deregister_callback(mouseButtonCallback);
-    selection.deselect_all();
+void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    bool isHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(button.pos);
+    if(isHoveringOverCanvas) {
+        if(button.button == InputManager::MouseButtonCallbackArgs::Button::RIGHT) {
+            if(button.down) {
+                if(world.main.toolbar.rightClickPopupLocation)
+                    world.main.toolbar.rightClickPopupLocation = std::nullopt;
+                else
+                    world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
+            }
+        }
+        else {
+            if(button.down)
+                world.main.toolbar.rightClickPopupLocation = std::nullopt;
+            if(button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT)
+                controls.leftClickHeld = button.down;
+            else if(button.button == InputManager::MouseButtonCallbackArgs::Button::MIDDLE)
+                controls.middleClickHeld = button.down;
+            drawTool->input_mouse_button_on_canvas_callback(button);
+        }
+    }
+    else if(!button.down && button.button != InputManager::MouseButtonCallbackArgs::Button::RIGHT) {
+        drawTool->input_mouse_button_on_canvas_callback(button);
+    }
+}
+
+void DrawingProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    drawTool->input_mouse_motion_callback(motion);
+}
+
+void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    switch(key.key) {
+        case InputManager::KEY_DRAW_TOOL_BRUSH: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::BRUSH);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_ERASER: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::ERASER);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_RECTSELECT: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::RECTSELECT);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_RECTANGLE: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::RECTANGLE);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_ELLIPSE: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::ELLIPSE);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_TEXTBOX: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::TEXTBOX);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_EYEDROPPER: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::EYEDROPPER);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_SCREENSHOT: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::SCREENSHOT);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_ZOOM: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::ZOOM);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_LASSOSELECT: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::LASSOSELECT);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_PAN: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::PAN);
+            break;
+        }
+        case InputManager::KEY_DRAW_TOOL_LINE: {
+            if(key.down && !key.repeat)
+                switch_to_tool(DrawingProgramToolType::LINE);
+            break;
+        }
+        case InputManager::KEY_HOLD_TO_PAN: {
+            if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
+                toolTypeAfterTempMove = drawTool->get_type();
+                switch_to_tool(DrawingProgramToolType::PAN);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::PAN;
+            }
+            else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::PAN) {
+                switch_to_tool(toolTypeAfterTempMove);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+            }
+            break;
+        }
+        case InputManager::KEY_HOLD_TO_ZOOM: {
+            if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
+                toolTypeAfterTempMove = drawTool->get_type();
+                switch_to_tool(DrawingProgramToolType::ZOOM);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::ZOOM;
+            }
+            else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::ZOOM) {
+                switch_to_tool(toolTypeAfterTempMove);
+                tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+            }
+            break;
+        }
+    }
+    drawTool->input_key_callback(key);
 }
 
 void DrawingProgram::server_init_no_file() {
@@ -340,26 +369,6 @@ void DrawingProgram::update() {
     tool_temporary_switch_update();
 
     controls.cursorHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
-
-    controls.middleClick = controls.cursorHoveringOverCanvas && (world.main.input.mouse.middleClicks || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].pressed);
-    bool middleHeld = world.main.input.mouse.middleDown || world.main.input.pen.buttons[world.main.toolbar.tabletOptions.middleClickButton].held;
-    if(controls.middleClick)
-        controls.middleClickHeld = true;
-    if(controls.middleClickHeld && !middleHeld) {
-        controls.middleClick = false;
-        controls.middleClickHeld = false;
-        controls.middleClickReleased = true;
-    }
-
-    // Left click will be ignored if middle click is held (and left click held state will be gone once middle click is pressed)
-    controls.leftClick = controls.cursorHoveringOverCanvas && world.main.input.mouse.leftClicks && !controls.middleClickHeld;
-    if(controls.leftClick)
-        controls.leftClickHeld = true;
-    if(controls.leftClickHeld && (!world.main.input.mouse.leftDown || controls.middleClickHeld)) {
-        controls.leftClick = false;
-        controls.leftClickHeld = false;
-        controls.leftClickReleased = true;
-    }
 
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;
     controls.currentMouseWorldPos = world.get_mouse_world_pos();

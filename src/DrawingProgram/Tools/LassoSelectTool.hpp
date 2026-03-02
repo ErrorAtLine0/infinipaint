@@ -18,13 +18,13 @@ class LassoSelectTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual bool prevent_undo_or_redo() override;
-
+        virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
+        virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
         struct LassoSelectControls {
-            int selectionMode = 0;
-
+            bool isSelecting = false;
             CoordSpaceHelper coords;
-
             std::vector<Vector2f> lassoPoints;
         } controls;
 };

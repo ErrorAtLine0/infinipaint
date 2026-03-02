@@ -151,9 +151,6 @@ void World::init_client(const std::string& serverFullID) {
         #endif
 
         clientStillConnecting = false;
-
-        if(is_focus())
-            register_callbacks();
     });
     netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
@@ -248,32 +245,34 @@ void World::unfocus_update() {
 
 void World::on_tab_out() {
     rMan.clear_display_cache();
+}
+
+void World::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    if(!clientStillConnecting) {
+        switch(key.key) {
+            case InputManager::KEY_REDO: {
+                if(key.down)
+                    redo_with_checks();
+                break;
+            }
+            case InputManager::KEY_UNDO: {
+                if(key.down)
+                    undo_with_checks();
+                break;
+            }
+        }
+        drawProg.input_key_callback(key);
+    }
+}
+
+void World::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(!clientStillConnecting)
-        deregister_callbacks();
+        drawProg.input_mouse_button_callback(button);
 }
 
-void World::on_tab_in() {
+void World::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(!clientStillConnecting)
-        register_callbacks();
-}
-
-void World::register_callbacks() {
-    drawProg.register_callbacks();
-    keyCallbacks[InputManager::KEY_REDO] = main.input.keyCallbacks[InputManager::KEY_REDO].register_callback([&](auto& key) {
-        if(key.down)
-            redo_with_checks();
-    });
-    keyCallbacks[InputManager::KEY_UNDO] = main.input.keyCallbacks[InputManager::KEY_UNDO].register_callback([&](auto& key) {
-        if(key.down)
-            undo_with_checks();
-    });
-}
-
-void World::deregister_callbacks() {
-    drawProg.deregister_callbacks();
-    for(auto& [key, callback] : keyCallbacks)
-        main.input.keyCallbacks[key].deregister_callback(callback);
-    keyCallbacks.clear();
+        drawProg.input_mouse_motion_callback(motion);
 }
 
 void World::send_chat_message(const std::string& message) {

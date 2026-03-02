@@ -352,144 +352,161 @@ void DrawingProgramSelection::commit_transform_selection() {
 }
 
 void DrawingProgramSelection::update() {
-    if(is_something_selected()) {
-        rebuild_cam_space();
+}
 
-        if(drawP.is_actual_selection_tool(drawP.drawTool->get_type())) {
-            switch(transformOpHappening) {
-                case TransformOperation::NONE:
-                    if(drawP.controls.leftClick && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                        if(mouse_collided_with_scale_point()) {
-                            scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
-                            scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
-                            transformOpHappening = TransformOperation::SCALE;
-                            check_add_stroke_color_change_undo();
-                        }
-                        else if(mouse_collided_with_rotate_center_handle_point()) {
-                            transformOpHappening = TransformOperation::ROTATE_RELOCATE_CENTER;
-                            check_add_stroke_color_change_undo();
-                        }
-                        else if(mouse_collided_with_rotate_handle_point()) {
-                            rotateData.rotationAngle = 0.0;
-                            transformOpHappening = TransformOperation::ROTATE;
-                            check_add_stroke_color_change_undo();
-                        }
-                        else if(mouse_collided_with_selection_aabb()) {
-                            translateData.startPos = drawP.world.get_mouse_world_pos();
-                            transformOpHappening = TransformOperation::TRANSLATE;
-                            translateData.translateWithKeys = false;
-                            check_add_stroke_color_change_undo();
-                        }
-                    }
-                    break;
-                case TransformOperation::TRANSLATE:
-                    if(!translateData.translateWithKeys) {
-                        if(drawP.controls.leftClickHeld)
-                            selectionTransformCoords = CoordSpaceHelperTransform(drawP.world.get_mouse_world_pos() - translateData.startPos);
-                        else {
-                            commit_transform_selection();
-                            return;
-                        }
-                    }
-                    break;
-                case TransformOperation::SCALE:
-                    if(drawP.controls.leftClickHeld) {
-                        WorldVec centerToScaleStart = scaleData.startPos - scaleData.centerPos;
-                        Vector2f centerToScaleStartInCamSpace = drawP.world.drawData.cam.c.normalized_dir_to_space(centerToScaleStart.normalized());
-                        Vector2f scaleCenterPointInCamSpace = drawP.world.drawData.cam.c.to_space(scaleData.centerPos);
-                        scaleData.currentPos = drawP.world.drawData.cam.c.from_space(project_point_on_line(drawP.world.main.input.mouse.pos, scaleCenterPointInCamSpace, (scaleCenterPointInCamSpace + centerToScaleStartInCamSpace).eval()));
-
-                        WorldVec centerToScaleCurrent = scaleData.currentPos - scaleData.centerPos;
-
-                        WorldScalar centerToScaleStartNorm = centerToScaleStart.norm();
-                        WorldScalar centerToScaleCurrentNorm = centerToScaleCurrent.norm();
-                        bool isAnyNumberZero = centerToScaleCurrentNorm == WorldScalar(0) || centerToScaleStartNorm == WorldScalar(0);
-
-                        if(!isAnyNumberZero) {
-                            WorldMultiplier scaleAmount = WorldMultiplier(centerToScaleStartNorm) / WorldMultiplier(centerToScaleCurrentNorm);
-
-                            selectionTransformCoords = CoordSpaceHelperTransform(scaleData.centerPos, scaleAmount);
-                        }
-                    }
-                    else {
-                        commit_transform_selection();
-                        return;
-                    }
-                    break;
-                case TransformOperation::ROTATE_RELOCATE_CENTER:
-                    if(drawP.controls.leftClickHeld)
-                        rotateData.centerPos = drawP.world.get_mouse_world_pos();
-                    else
-                        transformOpHappening = TransformOperation::NONE;
-                    break;
-                case TransformOperation::ROTATE:
-                    if(drawP.controls.leftClickHeld) {
-                        Vector2f rotationPointDiff = drawP.world.main.input.mouse.pos - rotateData.centerHandlePoint;
-                        rotateData.rotationAngle = std::atan2(rotationPointDiff.y(), rotationPointDiff.x());
-                        selectionTransformCoords = CoordSpaceHelperTransform(rotateData.centerPos, rotateData.rotationAngle);
-                    }
-                    else {
-                        commit_transform_selection();
-                        return;
-                    }
-                    break;
-            }
+void DrawingProgramSelection::input_key_callback_modify_selection(const InputManager::KeyCallbackArgs& key) {
+    switch(key.key) {
+        case InputManager::KEY_TEXT_UP: {
+            translate_key(InputManager::KEY_TEXT_UP, key.down);
+            break;
         }
-        else if(transformOpHappening != TransformOperation::NONE) {
-            commit_transform_selection();
-            return;
+        case InputManager::KEY_TEXT_DOWN: {
+            translate_key(InputManager::KEY_TEXT_DOWN, key.down);
+            break;
+        }
+        case InputManager::KEY_TEXT_LEFT: {
+            translate_key(InputManager::KEY_TEXT_LEFT, key.down);
+            break;
+        }
+        case InputManager::KEY_TEXT_RIGHT: {
+            translate_key(InputManager::KEY_TEXT_RIGHT, key.down);
+            break;
         }
     }
 }
 
-void DrawingProgramSelection::register_callbacks() {
-    auto& keyCallbacks = drawP.world.keyCallbacks;
-    keyCallbacks[InputManager::KEY_DRAW_DELETE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DRAW_DELETE].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            delete_all();
-    });
-    keyCallbacks[InputManager::KEY_COPY] = drawP.world.main.input.keyCallbacks[InputManager::KEY_COPY].register_callback([&](auto& key) {
-        if(key.down && !key.repeat)
-            selection_to_clipboard();
-    });
-    keyCallbacks[InputManager::KEY_CUT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_CUT].register_callback([&](auto& key) {
-        if(key.down && !key.repeat) {
-            selection_to_clipboard();
-            delete_all();
+void DrawingProgramSelection::input_key_callback_display_selection(const InputManager::KeyCallbackArgs& key) {
+    switch(key.key) {
+        case InputManager::KEY_DRAW_DELETE: {
+            if(key.down && !key.repeat)
+                delete_all();
+            break;
         }
-    });
-    keyCallbacks[InputManager::KEY_PASTE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE].register_callback([&](auto& key) {
-        if(key.down && !key.repeat) {
-            deselect_all();
-            paste_clipboard(drawP.world.main.input.mouse.pos);
+        case InputManager::KEY_COPY: {
+            if(key.down && !key.repeat)
+                selection_to_clipboard();
+            break;
         }
-    });
-    keyCallbacks[InputManager::KEY_PASTE_IMAGE] = drawP.world.main.input.keyCallbacks[InputManager::KEY_PASTE_IMAGE].register_callback([&](auto& key) {
-        if(key.down && !key.repeat) {
-            deselect_all();
-            paste_image(drawP.world.main.input.mouse.pos);
+        case InputManager::KEY_CUT: {
+            if(key.down && !key.repeat) {
+                selection_to_clipboard();
+                delete_all();
+            }
+            break;
         }
-    });
-    keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL] = drawP.world.main.input.keyCallbacks[InputManager::KEY_DESELECT_AND_EDIT_TOOL].register_callback([&](auto& key) {
-        if(key.down && !key.repeat) {
-            if(is_something_selected())
+        case InputManager::KEY_PASTE: {
+            if(key.down && !key.repeat) {
                 deselect_all();
-            else
-                drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
+                paste_clipboard(drawP.world.main.input.mouse.pos);
+            }
+            break;
         }
-    });
-    keyCallbacks[InputManager::KEY_TEXT_UP] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_UP].register_callback([&](auto& key) {
-        translate_key(InputManager::KEY_TEXT_UP, key.down);
-    });
-    keyCallbacks[InputManager::KEY_TEXT_DOWN] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_DOWN].register_callback([&](auto& key) {
-        translate_key(InputManager::KEY_TEXT_DOWN, key.down);
-    });
-    keyCallbacks[InputManager::KEY_TEXT_LEFT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_LEFT].register_callback([&](auto& key) {
-        translate_key(InputManager::KEY_TEXT_LEFT, key.down);
-    });
-    keyCallbacks[InputManager::KEY_TEXT_RIGHT] = drawP.world.main.input.keyCallbacks[InputManager::KEY_TEXT_RIGHT].register_callback([&](auto& key) {
-        translate_key(InputManager::KEY_TEXT_RIGHT, key.down);
-    });
+        case InputManager::KEY_PASTE_IMAGE: {
+            if(key.down && !key.repeat) {
+                deselect_all();
+                paste_image(drawP.world.main.input.mouse.pos);
+            }
+            break;
+        }
+        case InputManager::KEY_DESELECT_AND_EDIT_TOOL: {
+            if(key.down && !key.repeat) {
+                if(is_something_selected())
+                    deselect_all();
+                else
+                    drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
+            }
+            break;
+        }
+    }
+}
+
+void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.button == InputManager::MouseButtonCallbackArgs::Button::LEFT) {
+        switch(transformOpHappening) {
+            case TransformOperation::NONE: {
+                if(button.down && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
+                    if(mouse_collided_with_scale_point()) {
+                        scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
+                        scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
+                        transformOpHappening = TransformOperation::SCALE;
+                        check_add_stroke_color_change_undo();
+                    }
+                    else if(mouse_collided_with_rotate_center_handle_point()) {
+                        transformOpHappening = TransformOperation::ROTATE_RELOCATE_CENTER;
+                        check_add_stroke_color_change_undo();
+                    }
+                    else if(mouse_collided_with_rotate_handle_point()) {
+                        rotateData.rotationAngle = 0.0;
+                        transformOpHappening = TransformOperation::ROTATE;
+                        check_add_stroke_color_change_undo();
+                    }
+                    else if(mouse_collided_with_selection_aabb()) {
+                        translateData.startPos = drawP.world.get_mouse_world_pos();
+                        transformOpHappening = TransformOperation::TRANSLATE;
+                        translateData.translateWithKeys = false;
+                        check_add_stroke_color_change_undo();
+                    }
+                }
+                break;
+            }
+            case TransformOperation::TRANSLATE:
+            case TransformOperation::ROTATE:
+            case TransformOperation::SCALE: {
+                if(!button.down)
+                    commit_transform_selection();
+                break;
+            }
+            case TransformOperation::ROTATE_RELOCATE_CENTER: {
+                if(!button.down)
+                    transformOpHappening = TransformOperation::NONE;
+                break;
+            }
+        }
+    }
+}
+
+void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(drawP.world.main.input.mouse.leftDown) {
+        rebuild_cam_space();
+
+        switch(transformOpHappening) {
+            case TransformOperation::NONE:
+                break;
+            case TransformOperation::TRANSLATE: {
+                if(!translateData.translateWithKeys)
+                    selectionTransformCoords = CoordSpaceHelperTransform(drawP.world.drawData.cam.c.from_space(motion.pos) - translateData.startPos);
+                break;
+            }
+            case TransformOperation::SCALE: {
+                WorldVec centerToScaleStart = scaleData.startPos - scaleData.centerPos;
+                Vector2f centerToScaleStartInCamSpace = drawP.world.drawData.cam.c.normalized_dir_to_space(centerToScaleStart.normalized());
+                Vector2f scaleCenterPointInCamSpace = drawP.world.drawData.cam.c.to_space(scaleData.centerPos);
+                scaleData.currentPos = drawP.world.drawData.cam.c.from_space(project_point_on_line(motion.pos, scaleCenterPointInCamSpace, (scaleCenterPointInCamSpace + centerToScaleStartInCamSpace).eval()));
+
+                WorldVec centerToScaleCurrent = scaleData.currentPos - scaleData.centerPos;
+
+                WorldScalar centerToScaleStartNorm = centerToScaleStart.norm();
+                WorldScalar centerToScaleCurrentNorm = centerToScaleCurrent.norm();
+                bool isAnyNumberZero = centerToScaleCurrentNorm == WorldScalar(0) || centerToScaleStartNorm == WorldScalar(0);
+
+                if(!isAnyNumberZero) {
+                    WorldMultiplier scaleAmount = WorldMultiplier(centerToScaleStartNorm) / WorldMultiplier(centerToScaleCurrentNorm);
+                    selectionTransformCoords = CoordSpaceHelperTransform(scaleData.centerPos, scaleAmount);
+                }
+                break;
+            }
+            case TransformOperation::ROTATE_RELOCATE_CENTER: {
+                rotateData.centerPos = drawP.world.drawData.cam.c.from_space(motion.pos);
+                break;
+            }
+            case TransformOperation::ROTATE: {
+                Vector2f rotationPointDiff = drawP.world.main.input.mouse.pos - rotateData.centerHandlePoint;
+                rotateData.rotationAngle = std::atan2(rotationPointDiff.y(), rotationPointDiff.x());
+                selectionTransformCoords = CoordSpaceHelperTransform(rotateData.centerPos, rotateData.rotationAngle);
+                break;
+            }
+        }
+    }
 }
 
 void DrawingProgramSelection::translate_key(unsigned keyPressed, bool pressed) {
@@ -703,7 +720,7 @@ void DrawingProgramSelection::rebuild_cam_space() {
     selectionRectPoints[2] = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
     selectionRectPoints[3] = selectionTransformCoords.from_space_world(initialSelectionAABB.top_right());
 
-    scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(initialSelectionAABB.max);
+    scaleData.handlePoint = drawP.world.drawData.cam.c.to_space(selectionRectPoints[2]);
     rotateData.centerHandlePoint = drawP.world.drawData.cam.c.to_space(rotateData.centerPos);
     rotateData.handlePoint = get_rotation_point_pos_from_angle(rotateData.rotationAngle);
 

@@ -384,7 +384,7 @@ void InputManager::backend_mouse_button_up_update(const SDL_MouseButtonEvent& e)
         mouse.middleDown = false;
     else if(e.button == 3)
         mouse.rightDown = false;
-    mouseButtonCallbacks.run_callbacks({
+    main.input_mouse_button_callback(MouseButtonCallbackArgs{
         .button = static_cast<MouseButtonCallbackArgs::Button>(e.button),
         .down = e.down,
         .clicks = e.clicks,
@@ -406,7 +406,7 @@ void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& 
         mouse.rightDown = true;
         mouse.rightClicks = e.clicks;
     }
-    mouseButtonCallbacks.run_callbacks({
+    main.input_mouse_button_callback(MouseButtonCallbackArgs{
         .button = static_cast<MouseButtonCallbackArgs::Button>(e.button),
         .down = e.down,
         .clicks = e.clicks,
@@ -418,7 +418,7 @@ void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
     Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
     Vector2f mouseRel = {e.xrel * main.window.density, e.yrel * main.window.density};
     mouse.set_pos(mouseNewPos);
-    mouseMotionCallbacks.run_callbacks({
+    main.input_mouse_motion_callback({
         .pos = mouseNewPos,
         .move = mouseRel
     });
@@ -427,9 +427,6 @@ void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
 void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
     mouse.scrollAmount.x() += e.x;
     mouse.scrollAmount.y() += e.y;
-    mouseWheelCallbacks.run_callbacks({
-        .amount = {e.x, e.y},
-    });
 }
 
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
@@ -446,8 +443,6 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
     if(stopKeyInput)
         return;
-
-    sdlKeyCallbacks.run_callbacks(e);
 
     std::shared_ptr<RichText::TextBox> textBox = text.textBoxes.empty() ? nullptr : text.textBoxes.front().textBox;
     std::shared_ptr<RichText::TextBox::Cursor> cursor = text.textBoxes.empty() ? nullptr : text.textBoxes.front().cursor;
@@ -581,23 +576,22 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         return;
 
     auto f = keyAssignments.find({make_generic_key_mod(kMod), kPress});
-    KeyCallbackArgs keyArgs{.down = e.down, .repeat = e.repeat};
     if(f != keyAssignments.end()) {
         set_key_down(e, f->second);
-        keyCallbacks[f->second].run_callbacks(keyArgs);
+        main.input_key_callback(KeyCallbackArgs{.key = f->second, .down = e.down, .repeat = e.repeat});
     }
     switch(kPress) {
         case SDLK_UP:
-            keyCallbacks[KEY_TEXT_UP].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_UP, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_DOWN:
-            keyCallbacks[KEY_TEXT_DOWN].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_DOWN, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_LEFT:
-            keyCallbacks[KEY_TEXT_LEFT].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_LEFT, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_RIGHT:
-            keyCallbacks[KEY_TEXT_RIGHT].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_RIGHT, .down = e.down, .repeat = e.repeat});
             break;
     }
 }
@@ -704,26 +698,25 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
             break;
     }
 
-    KeyCallbackArgs keyArgs{.down = e.down, .repeat = e.repeat};
     for(auto& p : keyAssignments) {
         if(p.first.y() == kPress) { // Dont try matching modifiers when setting key to go up
             set_key_up(e, p.second);
-            keyCallbacks[p.second].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = p.second, .down = e.down, .repeat = e.repeat});
         }
     }
 
     switch(kPress) {
         case SDLK_UP:
-            keyCallbacks[KEY_TEXT_UP].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_UP, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_DOWN:
-            keyCallbacks[KEY_TEXT_DOWN].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_DOWN, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_LEFT:
-            keyCallbacks[KEY_TEXT_LEFT].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_LEFT, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_RIGHT:
-            keyCallbacks[KEY_TEXT_RIGHT].run_callbacks(keyArgs);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_RIGHT, .down = e.down, .repeat = e.repeat});
             break;
     }
 }

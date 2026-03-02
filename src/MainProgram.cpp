@@ -62,19 +62,6 @@ MainProgram::MainProgram():
         *logFile << "[CHAT] " << text << std::endl;
         std::cout << "[CHAT] " << text << std::endl;
     });
-
-    register_callbacks();
-}
-
-void MainProgram::register_callbacks() {
-    input.keyCallbacks[InputManager::KEY_NOGUI].register_callback([&](auto& keyData) {
-        if(keyData.down && !keyData.repeat)
-            drawGui = !drawGui;
-    });
-    input.keyCallbacks[InputManager::KEY_FULLSCREEN].register_callback([&](auto& keyData) {
-        if(keyData.down && !keyData.repeat)
-            drawGui = !drawGui;
-    });
 }
 
 void MainProgram::update() {
@@ -114,8 +101,6 @@ void MainProgram::update() {
     if(oldWorld != world) {
         if(oldWorld)
             oldWorld->on_tab_out();
-        if(world)
-            world->on_tab_in();
     }
 
     deltaTime.update_time_since();
@@ -323,6 +308,32 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
         throw std::runtime_error("[MainProgram::create_native_surface] Could not make native surface");
 
     return surfaceToRet;
+}
+
+void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    switch(key.key) {
+        case InputManager::KEY_NOGUI: {
+            if(key.down && !key.repeat)
+                drawGui = !drawGui;
+            break;
+        }
+        case InputManager::KEY_FULLSCREEN: {
+            if(key.down && !key.repeat)
+                drawGui = !drawGui;
+        }
+    }
+    if(world)
+        world->input_key_callback(key);
+}
+
+void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(world)
+        world->input_mouse_button_callback(button);
+}
+
+void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(world)
+        world->input_mouse_motion_callback(motion);
 }
 
 bool MainProgram::network_being_used() {

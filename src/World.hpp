@@ -67,7 +67,6 @@ class World {
         void focus_update();
         void unfocus_update();
         void on_tab_out();
-        void on_tab_in();
 
         void draw(SkCanvas* canvas, const DrawData& calledDrawData);
         void early_destroy();
@@ -102,11 +101,10 @@ class World {
         std::shared_ptr<NetServer> netServer;
         std::shared_ptr<NetClient> netClient;
 
-        std::unordered_map<unsigned, InputManager::KeyCallbackManager::Callback*> keyCallbacks;
+        void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
+        void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
     private:
-        void register_callbacks();
-        void deregister_callbacks();
-
         void load_empty_canvas();
 
         Vector3f get_random_cursor_color();

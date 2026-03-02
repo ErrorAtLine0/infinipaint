@@ -2,6 +2,7 @@
 #include "../CoordSpaceHelperTransform.hpp"
 #include "Layers/DrawingProgramLayerManager.hpp"
 #include "DrawingProgramCache.hpp"
+#include "../InputManager.hpp"
 
 class DrawingProgram;
 
@@ -28,7 +29,10 @@ class DrawingProgramSelection {
         void delete_all();
         void selection_to_clipboard();
         CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
-        void register_callbacks();
+        void input_key_callback_modify_selection(const InputManager::KeyCallbackArgs& key);
+        void input_key_callback_display_selection(const InputManager::KeyCallbackArgs& key);
+        void input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button);
+        void input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion);
     private:
         void translate_key(unsigned keyPressed, bool pressed);
         bool mouse_collided_with_selection_aabb();

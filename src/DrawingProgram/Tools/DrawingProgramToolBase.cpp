@@ -54,3 +54,7 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
     }
     return nullptr;
 }
+
+void DrawingProgramToolBase::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
+void DrawingProgramToolBase::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {}
+void DrawingProgramToolBase::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {}
