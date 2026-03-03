@@ -30,28 +30,13 @@ void RectDrawTool::gui_toolbox() {
     t.gui.pop_id();
 }
 
-void RectDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
-        objInfoBeingEdited = nullptr;
-}
+void RectDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.button == InputManager::MouseButton::LEFT) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
+            auto& toolConfig = drawP.world.main.toolConfig;
+            auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
+            auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
 
-bool RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
-    t.paint_popup(popupPos);
-    return true;
-}
-
-void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
-    commit();
-}
-
-void RectDrawTool::tool_update() {
-    auto& toolConfig = drawP.world.main.toolConfig;
-    auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
-    auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
-
-    if(!objInfoBeingEdited) {
-        if(drawP.controls.leftClick && drawP.layerMan.is_a_layer_being_edited()) {
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             auto relativeRadiusWidthResult = drawP.world.main.toolConfig.get_relative_width_from_value(drawP, drawP.world.drawData.cam.c.inverseScale, relativeRadiusWidth);
             if(!relativeWidthResult.first.has_value() || !relativeRadiusWidthResult.first.has_value()) {
@@ -77,25 +62,44 @@ void RectDrawTool::tool_update() {
             newContainer->coords = drawP.world.drawData.cam.c;
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
         }
-    }
-    else {
-        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        if(drawP.controls.leftClickHeld) {
-            Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
-            if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
-                float height = std::fabs(startAt.y() - newPos.y());
-                newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
-            }
-            RectangleCanvasComponent& rectangle = static_cast<RectangleCanvasComponent&>(containerPtr->get_comp());
-            rectangle.d.p1 = cwise_vec_min(startAt, newPos);
-            rectangle.d.p2 = cwise_vec_max(startAt, newPos);
-            rectangle.d.p2 = ensure_points_have_distance(rectangle.d.p1, rectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-            containerPtr->send_comp_update(drawP, false);
-            containerPtr->commit_update(drawP);
-        }
-        else
+        else if(!button.down && objInfoBeingEdited)
             commit();
     }
+}
+
+void RectDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+        if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
+            float height = std::fabs(startAt.y() - newPos.y());
+            newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);
+        }
+        RectangleCanvasComponent& rectangle = static_cast<RectangleCanvasComponent&>(containerPtr->get_comp());
+        rectangle.d.p1 = cwise_vec_min(startAt, newPos);
+        rectangle.d.p2 = cwise_vec_max(startAt, newPos);
+        rectangle.d.p2 = ensure_points_have_distance(rectangle.d.p1, rectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
+        containerPtr->send_comp_update(drawP, false);
+        containerPtr->commit_update(drawP);
+    }
+}
+
+void RectDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
+    if(objInfoBeingEdited == erasedComp)
+        objInfoBeingEdited = nullptr;
+}
+
+bool RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
+    Toolbar& t = drawP.world.main.toolbar;
+    t.paint_popup(popupPos);
+    return true;
+}
+
+void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
+    commit();
+}
+
+void RectDrawTool::tool_update() {
 }
 
 bool RectDrawTool::prevent_undo_or_redo() {

@@ -12,12 +12,6 @@
 #include <include/core/SkColorSpace.h>
 #include <include/core/SkStream.h>
 #include <include/core/SkSurface.h>
-#ifdef USE_SKIA_BACKEND_GRAPHITE
-    #include <include/gpu/graphite/Surface.h>
-#elif USE_SKIA_BACKEND_GANESH
-    #include <include/gpu/ganesh/GrDirectContext.h>
-    #include <include/gpu/ganesh/SkSurfaceGanesh.h>
-#endif
 #include <Helpers/Logger.hpp>
 
 EyeDropperTool::EyeDropperTool(DrawingProgram& initDrawP):
@@ -45,30 +39,15 @@ bool EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
     return true;
 }
 
-void EyeDropperTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-}
-
-void EyeDropperTool::tool_update() {
+void EyeDropperTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
 
-    if(drawP.controls.leftClick) {
-        SkSurfaceProps props;
-        sk_sp<SkSurface> surface = drawP.world.main.create_native_surface(drawP.world.main.window.size, false);
-        SkCanvas* eyeDropperCanvas = surface->getCanvas();
-        if(!eyeDropperCanvas) {
-            Logger::get().log("INFO", "Eye Dropper Tool could not make canvas");
-            return;
-        }
-        int xPos = std::clamp<int>(drawP.world.main.input.mouse.pos.x(), 0, drawP.world.main.window.size.x() - 1);
-        int yPos = std::clamp<int>(drawP.world.main.input.mouse.pos.y(), 0, drawP.world.main.window.size.y() - 1);
+    if(button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed()) {
+        auto& surface = drawP.world.main.window.surface;
 
-        eyeDropperCanvas->save();
-        DrawData d = drawP.world.drawData;
-        d.takingScreenshot = true;
-        drawP.world.main.draw(eyeDropperCanvas, drawP.world.main.world, d);
-        eyeDropperCanvas->restore();
-        //drawP.world.main.window.ctx->flush();
+        int xPos = std::clamp<int>(button.pos.x(), 0, drawP.world.main.window.size.x() - 1);
+        int yPos = std::clamp<int>(button.pos.y(), 0, drawP.world.main.window.size.y() - 1);
 
         Vector4<uint8_t> readData;
         SkImageInfo readDataInfo = SkImageInfo::Make(1, 1, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
@@ -84,6 +63,12 @@ void EyeDropperTool::tool_update() {
         else
             toolConfig.globalConf.backgroundColor = readData.cast<float>() / 255.0f;
     }
+}
+
+void EyeDropperTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
+}
+
+void EyeDropperTool::tool_update() {
 }
 
 bool EyeDropperTool::prevent_undo_or_redo() {
