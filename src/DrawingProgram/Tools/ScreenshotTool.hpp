@@ -18,6 +18,8 @@ class ScreenshotTool : public DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual bool prevent_undo_or_redo() override;
+        virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
 
         enum ScreenshotType : size_t {
             SCREENSHOT_JPG,
@@ -31,17 +33,6 @@ class ScreenshotTool : public DrawingProgramToolBase {
         void take_screenshot_area_hw(const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground);
         void take_screenshot_svg(SkCanvas* canvas, bool transparentBackground);
 
-        //static constexpr std::array<InputManager::SystemCursorType, 8> cursors{
-        //    InputManager::SystemCursorType::SE_RESIZE,
-        //    InputManager::SystemCursorType::S_RESIZE,
-        //    InputManager::SystemCursorType::SW_RESIZE,
-        //    InputManager::SystemCursorType::W_RESIZE,
-        //    InputManager::SystemCursorType::NW_RESIZE,
-        //    InputManager::SystemCursorType::N_RESIZE,
-        //    InputManager::SystemCursorType::NE_RESIZE,
-        //    InputManager::SystemCursorType::E_RESIZE
-        //};
-
         struct ScreenshotControls {
             CoordSpaceHelper translateBeginCoords;
             WorldVec translateBeginPos;
@@ -51,7 +42,12 @@ class ScreenshotTool : public DrawingProgramToolBase {
             float rectX2;
             float rectY1;
             float rectY2;
-            int selectionMode = 0;
+            enum class SelectionMode {
+                NO_SELECTION,
+                DRAGGING_BORDER,
+                SELECTION_EXISTS,
+                DRAGGING_AREA
+            } selectionMode;
             int dragType = 0;
             Vector2i imageSize = {0, 0};
             std::array<SCollision::Circle<float>, 8> circles;
@@ -64,6 +60,9 @@ class ScreenshotTool : public DrawingProgramToolBase {
             std::atomic<bool> setToTakeScreenshot = false;
             std::filesystem::path screenshotSavePath;
         } controls;
+        bool dragging_border_update(const Vector2f& camCursorPos);
+        bool selection_exists_update();
+        bool dragging_area_update(const Vector2f& camCursorPos);
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(ScreenshotTool::ScreenshotType, {
