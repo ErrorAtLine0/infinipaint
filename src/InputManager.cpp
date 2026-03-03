@@ -354,15 +354,6 @@ void InputManager::set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode) {
     keys[kCode].held = false;
 }
 
-void InputManager::set_pen_button_down(const SDL_PenButtonEvent& e) {
-    pen.buttons[e.button].held = true;
-    pen.buttons[e.button].pressed = true;
-}
-
-void InputManager::set_pen_button_up(const SDL_PenButtonEvent& e) {
-    pen.buttons[e.button].held = false;
-}
-
 uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     uint32_t toRet = 0;
     if(m & SDL_KMOD_CTRL)
@@ -378,22 +369,28 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
 
 void InputManager::backend_mouse_button_up_update(const SDL_MouseButtonEvent& e) {
     Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mousePos);
+
     if(e.button == 1)
         mouse.leftDown = false;
     else if(e.button == 2)
         mouse.middleDown = false;
     else if(e.button == 3)
         mouse.rightDown = false;
-    main.input_mouse_button_callback(MouseButtonCallbackArgs{
+    MouseButtonCallbackArgs args{
         .button = static_cast<MouseButton>(e.button),
         .down = e.down,
         .clicks = e.clicks,
         .pos = mousePos
-    });
+    };
+    main.input_mouse_button_callback(args);
+    main.input_pure_mouse_button_callback(args);
 }
 
 void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& e) {
     Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mousePos);
+
     if(e.button == 1) {
         mouse.leftDown = true;
         mouse.leftClicks = e.clicks;
@@ -406,18 +403,25 @@ void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& 
         mouse.rightDown = true;
         mouse.rightClicks = e.clicks;
     }
-    main.input_mouse_button_callback(MouseButtonCallbackArgs{
+    MouseButtonCallbackArgs args{
         .button = static_cast<MouseButton>(e.button),
         .down = e.down,
         .clicks = e.clicks,
         .pos = mousePos
-    });
+    };
+    main.input_mouse_button_callback(args);
+    main.input_pure_mouse_button_callback(args);
 }
 
 void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
     Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
-    Vector2f mouseRel = {e.xrel * main.window.density, e.yrel * main.window.density};
     mouse.set_pos(mouseNewPos);
+
+    Vector2f mouseRel = {e.xrel * main.window.density, e.yrel * main.window.density};
+    main.input_pure_mouse_motion_callback({
+        .pos = mouseNewPos,
+        .move = mouseRel
+    });
     main.input_mouse_motion_callback({
         .pos = mouseNewPos,
         .move = mouseRel
@@ -427,12 +431,143 @@ void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
 void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
     Vector2f mouseNewPos = {e.mouse_x * main.window.density, e.mouse_y * main.window.density};
     mouse.set_pos(mouseNewPos);
+
     mouse.scrollAmount.x() += e.x;
     mouse.scrollAmount.y() += e.y;
     main.input_mouse_wheel_callback({
         .mousePos = mouseNewPos,
         .amount = {e.x, e.y},
         .tickAmount = {e.integer_x, e.integer_y}
+    });
+}
+
+void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mouseNewPos);
+
+    pen.previousPos = mouseNewPos;
+    pen.buttons[e.button].held = true;
+    pen.buttons[e.button].pressed = true;
+
+    if(e.button == main.toolbar.tabletOptions.middleClickButton) {
+        main.input_mouse_button_callback({
+            .button = MouseButton::MIDDLE,
+            .down = e.down,
+            .clicks = 1,
+            .pos = mouseNewPos
+        });
+    }
+    else if(e.button == main.toolbar.tabletOptions.rightClickButton) {
+        main.input_mouse_button_callback({
+            .button = MouseButton::RIGHT,
+            .down = e.down,
+            .clicks = 1,
+            .pos = mouseNewPos
+        });
+    }
+
+    main.input_pen_button_callback({
+        .button = e.button,
+        .down = e.down,
+        .pos = mouseNewPos
+    });
+}
+
+void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mouseNewPos);
+
+    pen.previousPos = mouseNewPos;
+    pen.buttons[e.button].held = false;
+
+    if(e.button == main.toolbar.tabletOptions.middleClickButton) {
+        main.input_mouse_button_callback({
+            .button = MouseButton::MIDDLE,
+            .down = e.down,
+            .clicks = 1,
+            .pos = mouseNewPos
+        });
+    }
+    else if(e.button == main.toolbar.tabletOptions.rightClickButton) {
+        main.input_mouse_button_callback({
+            .button = MouseButton::RIGHT,
+            .down = e.down,
+            .clicks = 1,
+            .pos = mouseNewPos
+        });
+    }
+
+    main.input_pen_button_callback({
+        .button = e.button,
+        .down = e.down,
+        .pos = mouseNewPos
+    });
+}
+
+void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mouseNewPos);
+
+    pen.previousPos = mouseNewPos;
+    pen.isDown = true;
+    mouse.leftDown = true;
+    if((std::chrono::steady_clock::now() - pen.lastPenLeftClickTime) > std::chrono::milliseconds(300))
+        pen.leftClicksSaved = 0;
+    pen.leftClicksSaved++;
+    mouse.leftClicks = pen.leftClicksSaved;
+    pen.lastPenLeftClickTime = std::chrono::steady_clock::now();
+    pen.isEraser = e.eraser;
+
+    main.input_mouse_button_callback({
+        .button = MouseButton::LEFT,
+        .down = e.down,
+        .clicks = mouse.leftClicks,
+        .pos = mouseNewPos
+    });
+    main.input_pen_touch_callback({
+        .down = e.down,
+        .eraser = e.eraser,
+        .pos = mouseNewPos
+    });
+}
+
+void InputManager::backend_pen_touch_up_update(const SDL_PenTouchEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mouseNewPos);
+
+    pen.previousPos = mouseNewPos;
+    pen.isDown = false;
+    mouse.leftDown = false;
+    pen.isEraser = e.eraser;
+    pen.pressure = 0.0;
+
+    main.input_mouse_button_callback({
+        .button = MouseButton::LEFT,
+        .down = e.down,
+        .clicks = 0,
+        .pos = mouseNewPos
+    });
+    main.input_pen_touch_callback({
+        .down = e.down,
+        .eraser = e.eraser,
+        .pos = mouseNewPos
+    });
+}
+
+void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mouseNewPos);
+
+    Vector2f mouseRel = mouseNewPos - pen.previousPos;
+    pen.previousPos = mouseNewPos;
+
+    main.input_mouse_motion_callback({
+        .pos = mouseNewPos,
+        .move = mouseRel
+    });
+    main.input_pen_motion_callback({
+        .pos = mouseNewPos,
+        .move = mouseRel
     });
 }
 

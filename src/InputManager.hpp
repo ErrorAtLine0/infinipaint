@@ -71,7 +71,6 @@ struct InputManager {
         uint8_t rightClicks = 0;
         uint8_t middleClicks = 0;
         Vector2f lastPos = {0, 0};
-        friend struct InputManager;
     } mouse;
 
     struct Touch {
@@ -86,6 +85,8 @@ struct InputManager {
         bool isEraser = false;
         float pressure = 0.0f;
         int leftClicksSaved = 0;
+        Vector2f previousPos;
+
         std::chrono::steady_clock::time_point lastPenLeftClickTime;
         std::array<KeyData, 256> buttons;
     } pen;
@@ -208,18 +209,21 @@ struct InputManager {
 
     bool ctrl_or_meta_held();
     void stop_key_input();
-    void set_pen_button_up(const SDL_PenButtonEvent& e);
-    void set_pen_button_down(const SDL_PenButtonEvent& e);
     uint32_t make_generic_key_mod(SDL_Keymod m);
-
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);
+
     void backend_mouse_button_up_update(const SDL_MouseButtonEvent& e);
     void backend_mouse_button_down_update(const SDL_MouseButtonEvent& e);
     void backend_mouse_motion_update(const SDL_MouseMotionEvent& e);
     void backend_mouse_wheel_update(const SDL_MouseWheelEvent& e);
     void backend_key_up_update(const SDL_KeyboardEvent& e);
     void backend_key_down_update(const SDL_KeyboardEvent& e);
+    void backend_pen_button_down_update(const SDL_PenButtonEvent& e);
+    void backend_pen_button_up_update(const SDL_PenButtonEvent& e);
+    void backend_pen_touch_down_update(const SDL_PenTouchEvent& e);
+    void backend_pen_touch_up_update(const SDL_PenTouchEvent& e);
+    void backend_pen_motion_update(const SDL_PenMotionEvent& e);
 
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
@@ -267,6 +271,23 @@ struct InputManager {
         Vector2f mousePos;
         Vector2f amount;
         Vector2i tickAmount;
+    };
+
+    struct PenButtonCallbackArgs {
+        uint8_t button;
+        bool down;
+        Vector2f pos;
+    };
+
+    struct PenTouchCallbackArgs {
+        bool down;
+        bool eraser;
+        Vector2f pos;
+    };
+
+    struct PenMotionCallbackArgs {
+        Vector2f pos;
+        Vector2f move;
     };
 
     MainProgram& main;

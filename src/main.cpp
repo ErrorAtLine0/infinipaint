@@ -784,20 +784,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
             case SDL_EVENT_PEN_MOTION: {
                 mS.m->update_scale_and_density();
-                mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
-				mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.density, event->pmotion.y * mS.m->window.density});
-                break;
-            }
-            case SDL_EVENT_PEN_DOWN: {
-                mS.m->input.pen.isDown = true;
-                mS.m->input.mouse.leftDown = true;
-                if((std::chrono::steady_clock::now() - mS.m->input.pen.lastPenLeftClickTime) > std::chrono::milliseconds(300))
-                    mS.m->input.pen.leftClicksSaved = 0;
-                mS.m->input.pen.leftClicksSaved++;
-                mS.m->input.mouse.leftClicks = mS.m->input.pen.leftClicksSaved;
-                mS.m->input.pen.lastPenLeftClickTime = std::chrono::steady_clock::now();
-                mS.m->input.pen.isEraser = event->ptouch.eraser;
-                //mS.m->input.mouse.set_pos({event->ptouch.x, event->ptouch.y});
+                mS.m->input.backend_pen_motion_update(event->pmotion);
+                //mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
+				//mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.density, event->pmotion.y * mS.m->window.density});
                 break;
             }
             case SDL_EVENT_PEN_AXIS: {
@@ -806,22 +795,24 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 //mS.m->input.mouse.set_pos({event->paxis.x, event->paxis.y});
                 break;
             }
+            case SDL_EVENT_PEN_DOWN: {
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_pen_touch_down_update(event->ptouch);
+                break;
+            }
             case SDL_EVENT_PEN_UP: {
-                mS.m->input.pen.isDown = false;
-                mS.m->input.mouse.leftDown = false;
-                mS.m->input.pen.isEraser = event->ptouch.eraser;
-                mS.m->input.pen.pressure = 0.0;
-                //mS.m->input.mouse.set_pos({event->ptouch.x, event->ptouch.y});
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_pen_touch_up_update(event->ptouch);
                 break;
             }
             case SDL_EVENT_PEN_BUTTON_UP: {
-                mS.m->input.set_pen_button_up(event->pbutton);
-                //mS.m->input.mouse.set_pos({event->pbutton.x, event->pbutton.y});
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_pen_button_up_update(event->pbutton);
                 break;
             }
             case SDL_EVENT_PEN_BUTTON_DOWN: {
-                mS.m->input.set_pen_button_down(event->pbutton);
-                //mS.m->input.mouse.set_pos({event->pbutton.x, event->pbutton.y});
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_pen_button_down_update(event->pbutton);
                 break;
             }
             case SDL_EVENT_FINGER_DOWN: {

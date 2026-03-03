@@ -121,9 +121,14 @@ class MainProgram {
         std::string displayName;
 
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
+        void input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
+        void input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button);
+        void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
+        void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
 
         ~MainProgram();
     private:
