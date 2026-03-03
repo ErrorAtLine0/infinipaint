@@ -159,6 +159,7 @@ void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key
             else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::PAN) {
                 switch_to_tool(toolTypeAfterTempMove);
                 tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+                pen_tool_switch_check();
             }
             break;
         }
@@ -171,11 +172,40 @@ void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key
             else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::ZOOM) {
                 switch_to_tool(toolTypeAfterTempMove);
                 tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+                pen_tool_switch_check();
             }
             break;
         }
     }
     drawTool->input_key_callback(key);
+}
+
+void DrawingProgram::input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    drawTool->input_pure_mouse_button_callback(button);
+}
+
+void DrawingProgram::input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    drawTool->input_pure_mouse_motion_callback(motion);
+}
+
+void DrawingProgram::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
+    pen_tool_switch_check();
+    drawTool->input_pen_button_callback(button);
+}
+
+void DrawingProgram::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
+    pen_tool_switch_check();
+    drawTool->input_pen_touch_callback(touch);
+}
+
+void DrawingProgram::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
+    pen_tool_switch_check();
+    drawTool->input_pen_motion_callback(motion);
+}
+
+void DrawingProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
+    pen_tool_switch_check();
+    drawTool->input_pen_axis_callback(axis);
 }
 
 void DrawingProgram::server_init_no_file() {
@@ -372,8 +402,6 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    tool_temporary_switch_update();
-
     controls.cursorHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
 
     controls.previousMouseWorldPos = controls.currentMouseWorldPos;
@@ -385,7 +413,6 @@ void DrawingProgram::update() {
     }
 
     drag_drop_update();
-
 
     selection.update();
     drawTool->tool_update();
@@ -400,7 +427,7 @@ void DrawingProgram::update() {
         rebuild_cache();
 }
 
-void DrawingProgram::tool_temporary_switch_update() {
+void DrawingProgram::pen_tool_switch_check() {
     if(world.main.input.pen.isEraser && !temporaryEraser && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
         if(drawTool->get_type() == DrawingProgramToolType::BRUSH)
             switch_to_tool(DrawingProgramToolType::ERASER);

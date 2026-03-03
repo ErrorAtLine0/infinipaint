@@ -4,6 +4,7 @@
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_keycode.h>
 
+#include <SDL3/SDL_pen.h>
 #include <optional>
 
 #include <Helpers/Logger.hpp>
@@ -448,6 +449,7 @@ void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
     pen.previousPos = mouseNewPos;
     pen.buttons[e.button].held = true;
     pen.buttons[e.button].pressed = true;
+    pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 
     if(e.button == main.toolbar.tabletOptions.middleClickButton) {
         main.input_mouse_button_callback({
@@ -479,6 +481,7 @@ void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
 
     pen.previousPos = mouseNewPos;
     pen.buttons[e.button].held = false;
+    pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 
     if(e.button == main.toolbar.tabletOptions.middleClickButton) {
         main.input_mouse_button_callback({
@@ -560,6 +563,7 @@ void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
 
     Vector2f mouseRel = mouseNewPos - pen.previousPos;
     pen.previousPos = mouseNewPos;
+    pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 
     main.input_mouse_motion_callback({
         .pos = mouseNewPos,
@@ -569,6 +573,24 @@ void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
         .pos = mouseNewPos,
         .move = mouseRel
     });
+}
+
+void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
+    Vector2f mouseNewPos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mouseNewPos);
+
+    pen.previousPos = mouseNewPos;
+    pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
+
+    // For now, only pass pressure axis
+    if(e.axis == SDL_PEN_AXIS_PRESSURE) {
+        pen.pressure = e.value;
+        main.input_pen_axis_callback({
+            .pos = mouseNewPos,
+            .axis = e.axis,
+            .value = e.value
+        });
+    }
 }
 
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {

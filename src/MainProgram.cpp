@@ -326,12 +326,6 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
         world->input_key_callback(key);
 }
 
-void MainProgram::input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-}
-
-void MainProgram::input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-}
-
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(world)
         world->input_mouse_button_callback(button);
@@ -347,13 +341,34 @@ void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallb
         world->input_mouse_wheel_callback(wheel);
 }
 
+void MainProgram::input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(world)
+        world->input_pure_mouse_button_callback(button);
+}
+
+void MainProgram::input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(world)
+        world->input_pure_mouse_motion_callback(motion);
+}
+
 void MainProgram::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
+    if(world)
+        world->input_pen_button_callback(button);
 }
 
 void MainProgram::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
+    if(world)
+        world->input_pen_touch_callback(touch);
 }
 
 void MainProgram::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
+    if(world)
+        world->input_pen_motion_callback(motion);
+}
+
+void MainProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
+    if(world)
+        world->input_pen_axis_callback(axis);
 }
 
 bool MainProgram::network_being_used() {

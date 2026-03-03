@@ -267,9 +267,8 @@ void World::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void World::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(!clientStillConnecting) {
+    if(!clientStillConnecting)
         drawProg.input_mouse_button_callback(button);
-    }
 }
 
 void World::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
@@ -280,9 +279,38 @@ void World::input_mouse_motion_callback(const InputManager::MouseMotionCallbackA
 }
 
 void World::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
-    if(!clientStillConnecting) {
+    if(!clientStillConnecting)
         drawData.cam.input_mouse_wheel_callback(*this, wheel);
-    }
+}
+
+void World::input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(!clientStillConnecting)
+        drawProg.input_pure_mouse_button_callback(button);
+}
+
+void World::input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(!clientStillConnecting)
+        drawProg.input_pure_mouse_motion_callback(motion);
+}
+
+void World::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
+    if(!clientStillConnecting)
+        drawProg.input_pen_button_callback(button);
+}
+
+void World::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
+    if(!clientStillConnecting)
+        drawProg.input_pen_touch_callback(touch);
+}
+
+void World::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
+    if(!clientStillConnecting)
+        drawProg.input_pen_motion_callback(motion);
+}
+
+void World::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
+    if(!clientStillConnecting)
+        drawProg.input_pen_axis_callback(axis);
 }
 
 void World::send_chat_message(const std::string& message) {

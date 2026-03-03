@@ -224,6 +224,7 @@ struct InputManager {
     void backend_pen_touch_down_update(const SDL_PenTouchEvent& e);
     void backend_pen_touch_up_update(const SDL_PenTouchEvent& e);
     void backend_pen_motion_update(const SDL_PenMotionEvent& e);
+    void backend_pen_axis_update(const SDL_PenAxisEvent& e);
 
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
@@ -288,6 +289,12 @@ struct InputManager {
     struct PenMotionCallbackArgs {
         Vector2f pos;
         Vector2f move;
+    };
+
+    struct PenAxisCallbackArgs {
+        Vector2f pos;
+        SDL_PenAxis axis;
+        float value;
     };
 
     MainProgram& main;

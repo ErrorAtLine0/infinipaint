@@ -61,6 +61,12 @@ class DrawingProgram {
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
+        void input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
+        void input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
+        void input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button);
+        void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
+        void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
+        void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
     private:
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
 
@@ -86,7 +92,7 @@ class DrawingProgram {
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
         std::unordered_set<CanvasComponentContainer::ObjInfo*> updateableComponents;
 
-        void tool_temporary_switch_update();
+        void pen_tool_switch_check();
         enum class TemporaryMoveToolSwitch {
             NONE,
             PAN,
