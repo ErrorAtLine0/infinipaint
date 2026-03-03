@@ -267,8 +267,10 @@ void World::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void World::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(!clientStillConnecting)
+    if(!clientStillConnecting) {
         drawProg.input_mouse_button_callback(button);
+        drawData.cam.input_mouse_button_on_canvas_callback(*this, button);
+    }
 }
 
 void World::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {

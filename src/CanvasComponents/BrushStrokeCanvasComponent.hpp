@@ -15,7 +15,7 @@ struct BrushStrokeCanvasComponentPoint {
 
 class BrushStrokeCanvasComponent : public CanvasComponent {
     public:
-        constexpr static float DRAW_MINIMUM_LIMIT = 0.3;
+        constexpr static float DRAW_MINIMUM_LIMIT = 0.7f;
 
         virtual CanvasComponentType get_type() const override;
         virtual void save(cereal::PortableBinaryOutputArchive& a) const override;

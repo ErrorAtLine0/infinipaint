@@ -24,6 +24,9 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
+        virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
+        virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
     private:
         bool extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
         bool extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
@@ -31,13 +34,9 @@ class BrushTool : public DrawingProgramToolBase {
 
         float penWidth = 1.0f;
         bool addedTemporaryPoint = false;
-        struct SmoothingPoint {
-            float val;
-            std::chrono::steady_clock::time_point t;
-        };
-        std::deque<SmoothingPoint> penSmoothingData;
 
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
+
         bool drawingMinimumRelativeToSize = true;
         bool midwayInterpolation = true;
         Vector2f prevPointUnaltered = {0, 0};

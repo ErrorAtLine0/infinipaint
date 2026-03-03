@@ -53,10 +53,14 @@ void DrawingProgram::on_tab_out() {
 }
 
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    auto buttonCallbacks = [&](const InputManager::MouseButtonCallbackArgs& b) {
+        drawTool->input_mouse_button_on_canvas_callback(b);
+    };
+
     bool isHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(button.pos);
-    if(isHoveringOverCanvas) {
+    if(isHoveringOverCanvas && button.down) {
         if(button.button == InputManager::MouseButton::RIGHT) {
-            if(button.down) {
+            if(!controls.middleClickHeld && !controls.leftClickHeld) {
                 if(world.main.toolbar.rightClickPopupLocation)
                     world.main.toolbar.rightClickPopupLocation = std::nullopt;
                 else
@@ -64,18 +68,35 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
             }
         }
         else {
-            if(button.down)
-                world.main.toolbar.rightClickPopupLocation = std::nullopt;
-            if(button.button == InputManager::MouseButton::LEFT)
-                controls.leftClickHeld = button.down;
-            else if(button.button == InputManager::MouseButton::MIDDLE)
-                controls.middleClickHeld = button.down;
-            drawTool->input_mouse_button_on_canvas_callback(button);
-            world.drawData.cam.input_mouse_button_on_canvas_callback(world, button);
+            world.main.toolbar.rightClickPopupLocation = std::nullopt;
+            if(button.button == InputManager::MouseButton::LEFT && !controls.middleClickHeld) {
+                controls.leftClickHeld = true;
+                buttonCallbacks(button);
+            }
+            else if(button.button == InputManager::MouseButton::MIDDLE) {
+                if(controls.leftClickHeld) {
+                    controls.leftClickHeld = false;
+                    InputManager::MouseButtonCallbackArgs leftReleaseCallback;
+                    leftReleaseCallback.clicks = 0;
+                    leftReleaseCallback.down = false;
+                    leftReleaseCallback.pos = button.pos;
+                    leftReleaseCallback.button = InputManager::MouseButton::LEFT;
+                    buttonCallbacks(leftReleaseCallback);
+                }
+                controls.middleClickHeld = true;
+                buttonCallbacks(button);
+            }
         }
     }
-    else if(!button.down && button.button != InputManager::MouseButton::RIGHT) {
-        drawTool->input_mouse_button_on_canvas_callback(button);
+    else if(!button.down) {
+        if(controls.leftClickHeld && button.button == InputManager::MouseButton::LEFT) {
+            controls.leftClickHeld = false;
+            buttonCallbacks(button);
+        }
+        else if(controls.middleClickHeld && button.button == InputManager::MouseButton::MIDDLE) {
+            controls.middleClickHeld = false;
+            buttonCallbacks(button);
+        }
     }
 
     if(toolToSwitchToAfterUpdate) {

@@ -110,10 +110,22 @@ void DrawCamera::update_main(World& w) {
         }
     }
     else {
-        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.is_accepting_input())
+        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
-        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input())
+            InputManager::MouseMotionCallbackArgs motion{
+                .pos = w.main.input.mouse.pos,
+                .move = {0, 0}
+            };
+            w.drawProg.drawTool->input_mouse_motion_callback(motion);
+        }
+        if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
+            InputManager::MouseMotionCallbackArgs motion{
+                .pos = w.main.input.mouse.pos,
+                .move = {0, 0}
+            };
+            w.drawProg.drawTool->input_mouse_motion_callback(motion);
+        }
     }
 
     set_viewing_area(w.main.window.size.cast<float>());
@@ -127,7 +139,7 @@ void DrawCamera::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 
 void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
     if(!smoothMove.occurring) {
-        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.input.pen.buttons[w.main.toolbar.tabletOptions.middleClickButton].held && w.main.toolbar.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
+        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.toolbar.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
                                     (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
                                     (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
         if(newIsAccurateZooming && !isAccurateZooming) {

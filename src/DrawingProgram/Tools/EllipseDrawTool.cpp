@@ -38,8 +38,7 @@ void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::
 
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             if(!relativeWidthResult.first.has_value()) {
-                if(drawP.controls.leftClick)
-                    drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+                drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
                 return;
             }
             float width = relativeWidthResult.first.value();

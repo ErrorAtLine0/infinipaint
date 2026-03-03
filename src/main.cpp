@@ -790,9 +790,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_PEN_AXIS: {
-                if(event->paxis.axis == SDL_PEN_AXIS_PRESSURE)
-                    mS.m->input.pen.pressure = event->paxis.value;
-                //mS.m->input.mouse.set_pos({event->paxis.x, event->paxis.y});
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_pen_axis_update(event->paxis);
                 break;
             }
             case SDL_EVENT_PEN_DOWN: {
