@@ -151,6 +151,14 @@ Vector2f CoordSpaceHelper::get_mouse_pos(const World& w) const {
     return to_space(w.drawData.cam.c.from_space(w.main.input.mouse.pos));
 }
 
+Vector2f CoordSpaceHelper::from_cam_space_to_this(const World& w, const Vector2f& coord) const {
+    return to_space(w.drawData.cam.c.from_space(coord));
+}
+
+Vector2f CoordSpaceHelper::from_this_to_cam_space(const World& w, const Vector2f& coord) const {
+    return w.drawData.cam.c.to_space(from_space(coord));
+}
+
 CoordSpaceHelper CoordSpaceHelper::other_coord_space_to_this_space(const CoordSpaceHelper& other) const {
     CoordSpaceHelper toRet;
     toRet.pos = to_space_world(other.pos);

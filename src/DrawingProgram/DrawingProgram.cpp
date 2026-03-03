@@ -77,6 +77,11 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
     else if(!button.down && button.button != InputManager::MouseButton::RIGHT) {
         drawTool->input_mouse_button_on_canvas_callback(button);
     }
+
+    if(toolToSwitchToAfterUpdate) {
+        switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
+        toolToSwitchToAfterUpdate = nullptr;
+    }
 }
 
 void DrawingProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
@@ -384,12 +389,6 @@ void DrawingProgram::update() {
 
     selection.update();
     drawTool->tool_update();
-
-    // Switch tools after the tool update, not before, so that we dont have to call erase_component on the toolToSwitchToAfterUpdate as well (components will not be erased in this time period)
-    if(toolToSwitchToAfterUpdate) {
-        switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
-        toolToSwitchToAfterUpdate = nullptr;
-    }
 
     if(controls.leftClickReleased)
         controls.leftClickReleased = false;

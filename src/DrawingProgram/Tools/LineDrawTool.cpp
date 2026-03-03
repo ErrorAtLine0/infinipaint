@@ -62,7 +62,7 @@ void LineDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCa
         constexpr float SNAP_DIVISION_COUNT = 12.0f;
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-        Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+        Vector2f newPos = containerPtr->coords.from_cam_space_to_this(drawP.world, motion.pos);
         Vector2f oldPos = brushStroke.d.points->front().pos;
         if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
             Vector2f diff = (newPos - oldPos);

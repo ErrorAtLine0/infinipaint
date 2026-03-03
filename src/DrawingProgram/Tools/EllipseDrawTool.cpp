@@ -47,7 +47,7 @@ void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::ELLIPSE);
             EllipseCanvasComponent& newEllipse = static_cast<EllipseCanvasComponent&>(newContainer->get_comp());
 
-            startAt = drawP.world.main.input.mouse.pos;
+            startAt = button.pos;
             newEllipse.d.strokeColor = toolConfig.globalConf.foregroundColor;
             newEllipse.d.fillColor =   toolConfig.globalConf.backgroundColor;
             newEllipse.d.strokeWidth = width;
@@ -67,7 +67,7 @@ void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::
 void EllipseDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+        Vector2f newPos = containerPtr->coords.from_cam_space_to_this(drawP.world, motion.pos);
         if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
             float height = std::fabs(startAt.y() - newPos.y());
             newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);

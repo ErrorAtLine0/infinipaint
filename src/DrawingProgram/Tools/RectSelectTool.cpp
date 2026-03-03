@@ -39,9 +39,9 @@ void RectSelectTool::input_mouse_button_on_canvas_callback(const InputManager::M
     }
     else if(controls.isSelecting && button.button == InputManager::MouseButton::LEFT && !button.down) {
         using namespace SCollision;
-        controls.selectEndAt = controls.coords.to_space(drawP.world.drawData.cam.c.from_space(button.pos));
-        Vector2f newP1 = drawP.world.drawData.cam.c.to_space(controls.coords.from_space(cwise_vec_min(controls.selectStartAt, controls.selectEndAt)));
-        Vector2f newP2 = drawP.world.drawData.cam.c.to_space(controls.coords.from_space(cwise_vec_max(controls.selectStartAt, controls.selectEndAt)));
+        controls.selectEndAt = controls.coords.from_cam_space_to_this(drawP.world, button.pos);
+        Vector2f newP1 = controls.coords.from_this_to_cam_space(drawP.world, cwise_vec_min(controls.selectStartAt, controls.selectEndAt));
+        Vector2f newP2 = controls.coords.from_this_to_cam_space(drawP.world, cwise_vec_max(controls.selectStartAt, controls.selectEndAt));
         std::array<Vector2f, 4> newT = triangle_from_rect_points(newP1, newP2);
 
         ColliderCollection<float> cC;
@@ -64,7 +64,7 @@ void RectSelectTool::input_mouse_button_on_canvas_callback(const InputManager::M
 
 void RectSelectTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(controls.isSelecting)
-        controls.selectEndAt = controls.coords.to_space(drawP.world.drawData.cam.c.from_space(motion.pos));
+        controls.selectEndAt = controls.coords.from_cam_space_to_this(drawP.world, motion.pos);
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
 }
 

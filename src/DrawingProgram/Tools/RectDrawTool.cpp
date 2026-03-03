@@ -40,8 +40,7 @@ void RectDrawTool::input_mouse_button_on_canvas_callback(const InputManager::Mou
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             auto relativeRadiusWidthResult = drawP.world.main.toolConfig.get_relative_width_from_value(drawP, drawP.world.drawData.cam.c.inverseScale, relativeRadiusWidth);
             if(!relativeWidthResult.first.has_value() || !relativeRadiusWidthResult.first.has_value()) {
-                if(drawP.controls.leftClick)
-                    drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+                drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
                 return;
             }
             float width = relativeWidthResult.first.value();
@@ -50,7 +49,7 @@ void RectDrawTool::input_mouse_button_on_canvas_callback(const InputManager::Mou
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::RECTANGLE);
             RectangleCanvasComponent& newRectangle = static_cast<RectangleCanvasComponent&>(newContainer->get_comp());
 
-            startAt = drawP.world.main.input.mouse.pos;
+            startAt = button.pos;
             newRectangle.d.strokeColor = toolConfig.globalConf.foregroundColor;
             newRectangle.d.fillColor = toolConfig.globalConf.backgroundColor;
             newRectangle.d.cornerRadius = radiusWidth;
@@ -70,7 +69,7 @@ void RectDrawTool::input_mouse_button_on_canvas_callback(const InputManager::Mou
 void RectDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        Vector2f newPos = containerPtr->coords.get_mouse_pos(drawP.world);
+        Vector2f newPos = containerPtr->coords.from_cam_space_to_this(drawP.world, motion.pos);
         if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
             float height = std::fabs(startAt.y() - newPos.y());
             newPos.x() = startAt.x() + (((newPos.x() - startAt.x()) < 0.0f ? -1.0f : 1.0f) * height);

@@ -71,7 +71,7 @@ void LassoSelectTool::input_mouse_button_on_canvas_callback(const InputManager::
             polygon.emplace_back(controls.lassoPoints);
             auto& poly = polygon[0];
             for(auto& v : poly)
-                v = drawP.world.drawData.cam.c.to_space(controls.coords.from_space(v));
+                v = controls.coords.from_this_to_cam_space(drawP.world, v);
 
             std::vector<unsigned> indices = mapbox::earcut(polygon);
 
@@ -104,7 +104,7 @@ void LassoSelectTool::input_mouse_button_on_canvas_callback(const InputManager::
 
 void LassoSelectTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(controls.isSelecting) {
-        Vector2f newLassoPoint = controls.coords.to_space(drawP.world.drawData.cam.c.from_space(motion.pos));
+        Vector2f newLassoPoint = controls.coords.from_cam_space_to_this(drawP.world, motion.pos);
         float lassoPointDist = vec_distance(controls.lassoPoints.back(), newLassoPoint);
         if(lassoPointDist > 4.0f)
             controls.lassoPoints.emplace_back(newLassoPoint);
