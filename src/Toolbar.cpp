@@ -1243,11 +1243,12 @@ void Toolbar::global_log() {
     }) {
         constexpr float DISPLAY_TIME = 8.0f;
         constexpr float FADE_START_TIME = 7.0f;
+        int i = 0;
         for(auto& logM : main.logMessages) {
             logM.time.update_time_since();
             if(logM.time < DISPLAY_TIME) {
                 float a = 1.0f - lerp_time<float>(logM.time, DISPLAY_TIME, FADE_START_TIME);
-                Clay_ElementId elemId = CLAY_ID_LOCAL("GLOBAL LOG");
+                Clay_ElementId elemId = CLAY_IDI_LOCAL("GLOBAL LOG", i++);
                 CLAY(elemId, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
