@@ -68,20 +68,6 @@ void MainProgram::update() {
     while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
     lastFrameTime = std::chrono::steady_clock::now();
 
-    std::erase_if(input.droppedItems, [&](auto& droppedItem) {
-        if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
-            const std::filesystem::path& droppedFilePath = droppedItem.dataPath.value();
-            if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
-                new_tab({
-                    .isClient = false,
-                    .filePathSource = droppedFilePath
-                }, true);
-                return true;
-            }
-        }
-        return false;
-    });
-
     for(auto& s : setTabsToClose)
         std::erase(worlds, s.lock());
 
@@ -308,6 +294,26 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
         throw std::runtime_error("[MainProgram::create_native_surface] Could not make native surface");
 
     return surfaceToRet;
+}
+
+void MainProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
+    if(std::filesystem::is_regular_file(drop.data)) {
+        std::filesystem::path droppedFilePath(drop.data);
+        if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
+            new_tab({
+                .isClient = false,
+                .filePathSource = droppedFilePath
+            }, true);
+            return;
+        }
+    }
+    if(world)
+        world->input_drop_file_callback(drop);
+}
+
+void MainProgram::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
+    if(world)
+        world->input_drop_text_callback(drop);
 }
 
 void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {

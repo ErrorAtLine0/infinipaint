@@ -247,6 +247,16 @@ void World::on_tab_out() {
     rMan.clear_display_cache();
 }
 
+void World::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
+    if(!clientStillConnecting)
+        drawProg.input_drop_file_callback(drop);
+}
+
+void World::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
+    if(!clientStillConnecting)
+        drawProg.input_drop_text_callback(drop);
+}
+
 void World::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     if(!clientStillConnecting) {
         switch(key.key) {

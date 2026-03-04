@@ -52,6 +52,31 @@ void DrawingProgram::on_tab_out() {
     controls.middleClickHeld = false;
 }
 
+void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
+    if(world.main.toolbar.check_if_position_isnt_obstructed(drop.pos) && std::filesystem::is_regular_file(drop.data)) {
+        #ifdef __EMSCRIPTEN_
+            add_file_to_canvas_by_path(drop.data, world.main.input.mouse.pos, true);
+        #else
+            add_file_to_canvas_by_path(drop.data, drop.pos, true);
+        #endif
+    }
+}
+
+void DrawingProgram::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
+    if(world.main.toolbar.check_if_position_isnt_obstructed(drop.pos) && is_valid_http_url(drop.data)) {
+        CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
+        ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
+        newContainer->coords = world.drawData.cam.c;
+        Vector2f imDim = Vector2f{100.0f, 100.0f};
+        img.d.p1 = drop.pos - imDim;
+        img.d.p2 = drop.pos + imDim;
+        img.d.imageID = {0, 0};
+        auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
+        layerMan.add_undo_place_component(newObjInfo);
+        droppedDownloadingFiles.emplace_back(newObjInfo, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(drop.data));
+    }
+}
+
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto buttonCallbacks = [&](const InputManager::MouseButtonCallbackArgs& b) {
         drawTool->input_mouse_button_on_canvas_callback(b);
@@ -433,8 +458,6 @@ void DrawingProgram::update() {
         addFileInNextFrame = false;
     }
 
-    drag_drop_update();
-
     selection.update();
     drawTool->tool_update();
 
@@ -525,32 +548,6 @@ void DrawingProgram::rebuild_cache() {
         drawCache.build(selection.get_selection_as_set());
     else
         drawCache.build({});
-}
-
-void DrawingProgram::drag_drop_update() {
-    if(controls.cursorHoveringOverCanvas && layerMan.is_a_layer_being_edited()) {
-        for(auto& droppedItem : world.main.input.droppedItems) {
-            if(droppedItem.dataPath.has_value() && std::filesystem::is_regular_file(droppedItem.dataPath.value())) {
-#ifdef __EMSCRIPTEN_
-                add_file_to_canvas_by_path(droppedItem.dataPath.value(), world.main.input.mouse.pos, true);
-#else
-                add_file_to_canvas_by_path(droppedItem.dataPath.value(), droppedItem.pos, true);
-#endif
-            }
-            else if(droppedItem.dataText.has_value() && is_valid_http_url(droppedItem.dataText.value())) {
-                CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
-                ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
-                newContainer->coords = world.drawData.cam.c;
-                Vector2f imDim = Vector2f{100.0f, 100.0f};
-                img.d.p1 = droppedItem.pos - imDim;
-                img.d.p2 = droppedItem.pos + imDim;
-                img.d.imageID = {0, 0};
-                auto newObjInfo = layerMan.add_component_to_layer_being_edited(newContainer);
-                layerMan.add_undo_place_component(newObjInfo);
-                droppedDownloadingFiles.emplace_back(newObjInfo, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(droppedItem.dataText.value()));
-            }
-        }
-    }
 }
 
 void DrawingProgram::update_downloading_dropped_files() {

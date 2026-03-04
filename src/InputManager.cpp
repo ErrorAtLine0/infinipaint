@@ -368,6 +368,28 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     return toRet;
 }
 
+void InputManager::backend_drop_file_event(const SDL_DropEvent& e) {
+    Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mousePos);
+
+    main.input_drop_file_callback({
+        .pos = mousePos,
+        .source = e.source,
+        .data = e.data
+    });
+}
+
+void InputManager::backend_drop_text_event(const SDL_DropEvent& e) {
+    Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
+    mouse.set_pos(mousePos);
+
+    main.input_drop_text_callback({
+        .pos = mousePos,
+        .source = e.source,
+        .data = e.data
+    });
+}
+
 void InputManager::backend_mouse_button_up_update(const SDL_MouseButtonEvent& e) {
     Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
     mouse.set_pos(mousePos);
@@ -901,8 +923,6 @@ void InputManager::frame_reset(const Vector2i& windowSize) {
     mouse.leftClicks = 0;
     mouse.rightClicks = 0;
     mouse.middleClicks = 0;
-
-    droppedItems.clear();
 
     cursorIcon = SystemCursorType::DEFAULT;
 

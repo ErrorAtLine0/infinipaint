@@ -36,6 +36,76 @@ DrawingProgramToolType GridModifyTool::get_type() {
 void GridModifyTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
+void GridModifyTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.button == InputManager::MouseButton::LEFT) {
+        switch(selectionMode) {
+            case 0:
+                if(button.down) {
+                    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+                    if(gLock) {
+                        WorldGrid& g = *gLock;
+                        Vector2f gOffsetScreenPos = drawP.world.drawData.cam.c.to_space(g.offset);
+                        Vector2f gSizeScreenPos = drawP.world.drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
+                        if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                            selectionMode = 1;
+                        else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                            selectionMode = 2;
+                        else if(g.bounds.has_value()) {
+                            const auto& b = g.bounds.value();
+                            Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
+                            Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
+                            if(SCollision::collide(SCollision::Circle(bMin, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                                selectionMode = 3;
+                            else if(SCollision::collide(SCollision::Circle(bMax, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                                selectionMode = 4;
+                        }
+                    }
+                }
+                break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                if(!button.down)
+                    selectionMode = 0;
+                break;
+        }
+    }
+}
+
+void GridModifyTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock) {
+        WorldGrid& g = *gLock;
+        switch(selectionMode) {
+            case 0:
+                break;
+            case 1:
+                g.offset = drawP.world.get_mouse_world_pos();
+                break;
+            case 2:
+                g.size = std::max(FixedPoint::abs(drawP.world.get_mouse_world_pos().x() - g.offset.x()), WorldScalar(1));
+                break;
+            case 3:
+                if(g.bounds.has_value()) {
+                    auto& b = g.bounds.value();
+                    b.min = cwise_vec_min(drawP.world.get_mouse_world_pos(), b.max);
+                }
+                else
+                    selectionMode = 0;
+                break;
+            case 4:
+                if(g.bounds.has_value()) {
+                    auto& b = g.bounds.value();
+                    b.max = cwise_vec_max(drawP.world.get_mouse_world_pos(), b.min);
+                }
+                else
+                    selectionMode = 0;
+                break;
+        }
+    }
+}
+
 void GridModifyTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Grid modify tool");
@@ -93,60 +163,7 @@ bool GridModifyTool::right_click_popup_gui(Vector2f popupPos) {
 
 void GridModifyTool::tool_update() {
     NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
-    if(gLock) {
-        WorldGrid& g = *gLock;
-        switch(selectionMode) {
-            case 0:
-                if(drawP.controls.leftClick) {
-                    Vector2f gOffsetScreenPos = drawP.world.drawData.cam.c.to_space(g.offset);
-                    Vector2f gSizeScreenPos = drawP.world.drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
-                    if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
-                        selectionMode = 1;
-                    else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
-                        selectionMode = 2;
-                    else if(g.bounds.has_value()) {
-                        const auto& b = g.bounds.value();
-                        Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
-                        Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
-                        if(SCollision::collide(SCollision::Circle(bMin, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
-                            selectionMode = 3;
-                        else if(SCollision::collide(SCollision::Circle(bMax, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
-                            selectionMode = 4;
-                    }
-                }
-                break;
-            case 1:
-                if(drawP.controls.leftClickHeld)
-                    g.offset = drawP.world.get_mouse_world_pos();
-                else
-                    selectionMode = 0;
-                break;
-            case 2:
-                if(drawP.controls.leftClickHeld)
-                    g.size = std::max(FixedPoint::abs(drawP.world.get_mouse_world_pos().x() - g.offset.x()), WorldScalar(1));
-                else
-                    selectionMode = 0;
-                break;
-            case 3:
-                if(drawP.controls.leftClickHeld && g.bounds.has_value()) {
-                    auto& b = g.bounds.value();
-                    b.min = cwise_vec_min(drawP.world.get_mouse_world_pos(), b.max);
-                }
-                else
-                    selectionMode = 0;
-                break;
-            case 4:
-                if(drawP.controls.leftClickHeld && g.bounds.has_value()) {
-                    auto& b = g.bounds.value();
-                    b.max = cwise_vec_max(drawP.world.get_mouse_world_pos(), b.min);
-                }
-                else
-                    selectionMode = 0;
-                break;
-        }
-        drawP.world.delayedUpdateObjectManager.send_update_to_all<WorldGrid>(gLock, false);
-    }
-    else
+    if(!gLock)
         selectionMode = 0;
 }
 

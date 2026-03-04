@@ -122,12 +122,6 @@ struct InputManager {
             friend struct InputManager;
     } text;
 
-    struct DroppedItem {
-        Vector2f pos;
-        std::optional<std::string> dataText;
-        std::optional<std::filesystem::path> dataPath;
-    };
-
 #ifdef __APPLE__
     SDL_Keymod CTRL_MOD = SDL_KMOD_GUI;
 #else
@@ -136,8 +130,6 @@ struct InputManager {
 
     int stopKeyInput = 0;
     std::optional<Vector2ui32> lastPressedKeybind;
-
-    std::vector<DroppedItem> droppedItems;
 
     void text_input_silence_everything();
 
@@ -213,6 +205,8 @@ struct InputManager {
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);
 
+    void backend_drop_file_event(const SDL_DropEvent& e);
+    void backend_drop_text_event(const SDL_DropEvent& e);
     void backend_mouse_button_up_update(const SDL_MouseButtonEvent& e);
     void backend_mouse_button_down_update(const SDL_MouseButtonEvent& e);
     void backend_mouse_motion_update(const SDL_MouseMotionEvent& e);
@@ -295,6 +289,12 @@ struct InputManager {
         Vector2f pos;
         SDL_PenAxis axis;
         float value;
+    };
+
+    struct DropCallbackArgs {
+        Vector2f pos;
+        const char* source;
+        const char* data;
     };
 
     MainProgram& main;

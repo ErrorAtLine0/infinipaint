@@ -762,17 +762,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             case SDL_EVENT_DROP_FILE:
                 mS.m->update_scale_and_density();
-                mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.density,
-                    .dataPath = std::u8string_view(reinterpret_cast<const char8_t*>(event->drop.data))
-                });
+                mS.m->input.backend_drop_file_event(event->drop);
                 break;
             case SDL_EVENT_DROP_TEXT:
                 mS.m->update_scale_and_density();
-                mS.m->input.droppedItems.emplace_back(InputManager::DroppedItem{
-                    .pos = Vector2f{event->drop.x, event->drop.y} * mS.m->window.density,
-                    .dataText = event->drop.data
-                });
+                mS.m->input.backend_drop_text_event(event->drop);
                 break;
             case SDL_EVENT_PEN_PROXIMITY_IN: {
                 mS.m->input.pen.inProximity = true;

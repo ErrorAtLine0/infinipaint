@@ -101,6 +101,8 @@ class World {
         std::shared_ptr<NetServer> netServer;
         std::shared_ptr<NetClient> netClient;
 
+        void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
+        void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
