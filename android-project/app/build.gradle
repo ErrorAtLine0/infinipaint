@@ -92,6 +92,6 @@ android {
 }
 
 dependencies {
-    implementation files('libs/SDL3-3.4.2.aar')
+    implementation files('libs/SDL3.aar')
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 }
