@@ -86,14 +86,6 @@ InputManager::InputManager(MainProgram& initMain):
     keyAssignments = defaultKeyAssignments;
 }
 
-void InputManager::text_input_silence_everything() {
-    for(auto& p : keys) {
-        p.pressed = false;
-        p.repeat = false;
-        // Not silencing p.held, as that causes double presses on some keyboards
-    }
-}
-
 void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
     text.set_accepting_input(main.window.sdlWindow, true);
     Text::TextBoxInfo textBoxInfo;
@@ -741,6 +733,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
                 text.do_textbox_operation_with_undo([&]() {
                     textBox->process_key_input(*cursor, RichText::TextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
                 });
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_ENTER, .down = e.down, .repeat = e.repeat});
             break;
         }
         case SDLK_TAB: {
@@ -752,7 +745,8 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             break;
         }
         case SDLK_ESCAPE:
-            set_key_down(e, KEY_GENERIC_ESCAPE);
+            set_key_down(e, KEY_TEXT_ESCAPE);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_ESCAPE, .down = e.down, .repeat = e.repeat});
             break;
         default:
             break;
@@ -768,16 +762,28 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
     }
     switch(kPress) {
         case SDLK_UP:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_UP, .down = e.down, .repeat = e.repeat});
+            set_key_down(e, KEY_GENERIC_UP);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_UP, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_DOWN:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_DOWN, .down = e.down, .repeat = e.repeat});
+            set_key_down(e, KEY_GENERIC_DOWN);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_DOWN, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_LEFT:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_LEFT, .down = e.down, .repeat = e.repeat});
+            set_key_down(e, KEY_GENERIC_LEFT);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_LEFT, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_RIGHT:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_RIGHT, .down = e.down, .repeat = e.repeat});
+            set_key_down(e, KEY_GENERIC_RIGHT);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_RIGHT, .down = e.down, .repeat = e.repeat});
+            break;
+        case SDLK_RETURN:
+            set_key_down(e, KEY_GENERIC_ENTER);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_ENTER, .down = e.down, .repeat = e.repeat});
+            break;
+        case SDLK_ESCAPE:
+            set_key_down(e, KEY_GENERIC_ESCAPE);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_ESCAPE, .down = e.down, .repeat = e.repeat});
             break;
     }
 }
@@ -873,12 +879,14 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
             break;
         case SDLK_RETURN:
             set_key_up(e, KEY_TEXT_ENTER);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_ENTER, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_TAB:
             set_key_up(e, KEY_TEXT_TAB);
             break;
         case SDLK_ESCAPE:
-            set_key_up(e, KEY_GENERIC_ESCAPE);
+            set_key_up(e, KEY_TEXT_ESCAPE);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_ESCAPE, .down = e.down, .repeat = e.repeat});
             break;
         default:
             break;
@@ -893,16 +901,28 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
 
     switch(kPress) {
         case SDLK_UP:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_UP, .down = e.down, .repeat = e.repeat});
+            set_key_up(e, KEY_GENERIC_UP);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_UP, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_DOWN:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_DOWN, .down = e.down, .repeat = e.repeat});
+            set_key_up(e, KEY_GENERIC_DOWN);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_DOWN, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_LEFT:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_LEFT, .down = e.down, .repeat = e.repeat});
+            set_key_up(e, KEY_GENERIC_LEFT);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_LEFT, .down = e.down, .repeat = e.repeat});
             break;
         case SDLK_RIGHT:
-            main.input_key_callback(KeyCallbackArgs{.key = KEY_TEXT_RIGHT, .down = e.down, .repeat = e.repeat});
+            set_key_up(e, KEY_GENERIC_RIGHT);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_RIGHT, .down = e.down, .repeat = e.repeat});
+            break;
+        case SDLK_RETURN:
+            set_key_up(e, KEY_GENERIC_ENTER);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_ENTER, .down = e.down, .repeat = e.repeat});
+            break;
+        case SDLK_ESCAPE:
+            set_key_up(e, KEY_GENERIC_ESCAPE);
+            main.input_key_callback(KeyCallbackArgs{.key = KEY_GENERIC_ESCAPE, .down = e.down, .repeat = e.repeat});
             break;
     }
 }

@@ -393,17 +393,6 @@ void Toolbar::update() {
     update_notification_check();
 #endif
 
-    if(main.input.key(InputManager::KEY_SAVE).pressed && !optionsMenuOpen && !filePicker.isOpen)
-        save_func();
-    if(main.input.key(InputManager::KEY_SAVE_AS).pressed && !optionsMenuOpen && !filePicker.isOpen)
-        save_as_func();
-    if(main.input.key(InputManager::KEY_SHOW_METRICS).pressed)
-        showPerformance = !showPerformance;
-    if(main.input.key(InputManager::KEY_OPEN_CHAT).pressed && chatBoxState == CHATBOXSTATE_CLOSE)
-        chatBoxState = CHATBOXSTATE_JUSTOPEN;
-    if(main.input.key(InputManager::KEY_SHOW_PLAYER_LIST).pressed)
-        playerMenuOpen = !playerMenuOpen;
-
     start_gui();
 
     if(main.drawGui) {
@@ -2259,30 +2248,126 @@ void Toolbar::file_picker_gui() {
 }
 
 
-void Toolbar::initialize_io_before_update() {
-    io->mouse.leftClick = main.input.mouse.leftClicks;
-    io->mouse.rightClick = main.input.mouse.rightClicks;
-    io->mouse.leftHeld = main.input.mouse.leftDown;
-    io->mouse.rightHeld = main.input.mouse.rightDown;
-    io->mouse.globalPos = main.input.mouse.pos / final_gui_scale();
-    io->mouse.scroll = main.input.mouse.scrollAmount;
+void Toolbar::initialize_io() {
     io->deltaTime = main.deltaTime;
-
-    io->key.left = main.input.key(InputManager::KEY_TEXT_LEFT).repeat;
-    io->key.right = main.input.key(InputManager::KEY_TEXT_RIGHT).repeat;
-    io->key.up = main.input.key(InputManager::KEY_TEXT_UP).repeat;
-    io->key.down = main.input.key(InputManager::KEY_TEXT_DOWN).repeat;
     io->key.leftShift = main.input.key(InputManager::KEY_TEXT_SHIFT).held;
     io->key.leftCtrl = main.input.key(InputManager::KEY_TEXT_CTRL).held;
-    io->key.enter = main.input.key(InputManager::KEY_TEXT_ENTER).repeat;
-    io->key.escape = main.input.key(InputManager::KEY_GENERIC_ESCAPE).repeat;
     io->previousRichTextBoxToEdit = io->richTextBoxToEdit;
     io->richTextBoxToEditCursor = nullptr;
     io->richTextBoxToEdit = nullptr;
+}
 
-    if(io->acceptingTextInput)
-        main.input.text_input_silence_everything();
-    io->acceptingTextInput = false;
+void Toolbar::end_io() {
+    if(io->clipboard.textOut)
+        main.input.set_clipboard_str(*io->clipboard.textOut);
+    if(io->richTextBoxToEdit != io->previousRichTextBoxToEdit) {
+        if(io->richTextBoxToEdit)
+            main.input.set_rich_text_box_input_front(io->richTextBoxToEdit, io->richTextBoxToEditCursor, false);
+        if(io->previousRichTextBoxToEdit)
+            main.input.remove_rich_text_box_input(io->previousRichTextBoxToEdit);
+    }
+    io->key.left = false;
+    io->key.right = false;
+    io->key.up = false;
+    io->key.down = false;
+    io->key.enter = false;
+    io->key.escape = false;
+    io->mouse.leftClick = 0;
+    io->mouse.rightClick = 0;
+    io->mouse.scroll = {0, 0};
+}
+
+void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    if(key.down) {
+        switch(key.key) {
+            case InputManager::KEY_TEXT_LEFT: {
+                io->key.left = true;
+                break;
+            }
+            case InputManager::KEY_TEXT_RIGHT: {
+                io->key.right = true;
+                break;
+            }
+            case InputManager::KEY_TEXT_UP: {
+                io->key.up = true;
+                break;
+            }
+            case InputManager::KEY_TEXT_DOWN: {
+                io->key.down = true;
+                break;
+            }
+            case InputManager::KEY_TEXT_ENTER: {
+                io->key.enter = true;
+                break;
+            }
+            case InputManager::KEY_TEXT_ESCAPE: {
+                io->key.escape = true;
+                break;
+            }
+            case InputManager::KEY_SAVE: {
+                save_func();
+                break;
+            }
+            case InputManager::KEY_SAVE_AS: {
+                save_as_func();
+                break;
+            }
+            case InputManager::KEY_SHOW_METRICS: {
+                showPerformance = !showPerformance;
+                break;
+            }
+            case InputManager::KEY_OPEN_CHAT: {
+                if(chatBoxState == CHATBOXSTATE_CLOSE)
+                    chatBoxState = CHATBOXSTATE_JUSTOPEN;
+                break;
+            }
+            case InputManager::KEY_SHOW_PLAYER_LIST: {
+                playerMenuOpen = !playerMenuOpen;
+                break;
+            }
+        }
+    }
+}
+
+void Toolbar::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.down) {
+        switch(button.button) {
+            case InputManager::MouseButton::LEFT: {
+                io->mouse.leftClick = std::max<int>(io->mouse.leftClick, button.clicks);
+                io->mouse.leftHeld = true;
+                break;
+            }
+            case InputManager::MouseButton::RIGHT: {
+                io->mouse.rightClick = std::max<int>(io->mouse.rightClick, button.clicks);
+                io->mouse.rightHeld = true;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    else {
+        switch(button.button) {
+            case InputManager::MouseButton::LEFT: {
+                io->mouse.leftHeld = false;
+                break;
+            }
+            case InputManager::MouseButton::RIGHT: {
+                io->mouse.rightHeld = false;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+}
+
+void Toolbar::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    io->mouse.globalPos = motion.pos / final_gui_scale();
+}
+
+void Toolbar::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+    io->mouse.scroll = wheel.amount;
 }
 
 void Toolbar::start_gui() {
@@ -2295,6 +2380,7 @@ void Toolbar::start_gui() {
         gui.windowPos = Vector2f{0.0f, 0.0f};
         gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
     }
+    initialize_io();
     gui.io = io;
     io->hoverObstructed = false;
     io->hoverObstructingAABBs.clear();
@@ -2328,14 +2414,7 @@ float Toolbar::final_gui_scale_not_fit() {
 
 void Toolbar::end_gui() {
     gui.end();
-    if(io->clipboard.textOut)
-        main.input.set_clipboard_str(*io->clipboard.textOut);
-    if(io->richTextBoxToEdit != io->previousRichTextBoxToEdit) {
-        if(io->richTextBoxToEdit)
-            main.input.set_rich_text_box_input_front(io->richTextBoxToEdit, io->richTextBoxToEditCursor, false);
-        if(io->previousRichTextBoxToEdit)
-            main.input.remove_rich_text_box_input(io->previousRichTextBoxToEdit);
-    }
+    end_io();
 }
 
 void Toolbar::draw(SkCanvas* canvas) {

@@ -210,7 +210,7 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas"); // Ensures that SDL only grabs input when browser is focused on canvas
 
-    if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+    if(!SDL_Init(SDL_INIT_VIDEO))
         throw std::runtime_error("[SDL_Init] " + std::string(SDL_GetError()));
 
     Uint32 window_flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;

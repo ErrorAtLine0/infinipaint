@@ -356,20 +356,20 @@ void DrawingProgramSelection::update() {
 
 void DrawingProgramSelection::input_key_callback_modify_selection(const InputManager::KeyCallbackArgs& key) {
     switch(key.key) {
-        case InputManager::KEY_TEXT_UP: {
-            translate_key(InputManager::KEY_TEXT_UP, key.down);
+        case InputManager::KEY_GENERIC_UP: {
+            translate_key(InputManager::KEY_GENERIC_UP, key.down);
             break;
         }
-        case InputManager::KEY_TEXT_DOWN: {
-            translate_key(InputManager::KEY_TEXT_DOWN, key.down);
+        case InputManager::KEY_GENERIC_DOWN: {
+            translate_key(InputManager::KEY_GENERIC_DOWN, key.down);
             break;
         }
-        case InputManager::KEY_TEXT_LEFT: {
-            translate_key(InputManager::KEY_TEXT_LEFT, key.down);
+        case InputManager::KEY_GENERIC_LEFT: {
+            translate_key(InputManager::KEY_GENERIC_LEFT, key.down);
             break;
         }
-        case InputManager::KEY_TEXT_RIGHT: {
-            translate_key(InputManager::KEY_TEXT_RIGHT, key.down);
+        case InputManager::KEY_GENERIC_RIGHT: {
+            translate_key(InputManager::KEY_GENERIC_RIGHT, key.down);
             break;
         }
     }
@@ -515,16 +515,16 @@ void DrawingProgramSelection::translate_key(unsigned keyPressed, bool pressed) {
             constexpr float KEY_TRANSLATE_MAGNITUDE = 5.0f;
             Vector2f moveVec;
             switch(keyPressed) {
-                case InputManager::KEY_TEXT_UP:
+                case InputManager::KEY_GENERIC_UP:
                     moveVec = {0.0f, -1.0f};
                     break;
-                case InputManager::KEY_TEXT_DOWN:
+                case InputManager::KEY_GENERIC_DOWN:
                     moveVec = {0.0f, 1.0f};
                     break;
-                case InputManager::KEY_TEXT_RIGHT:
+                case InputManager::KEY_GENERIC_RIGHT:
                     moveVec = {1.0f, 0.0f};
                     break;
-                case InputManager::KEY_TEXT_LEFT:
+                case InputManager::KEY_GENERIC_LEFT:
                     moveVec = {-1.0f, 0.0f};
                     break;
             }
@@ -542,7 +542,7 @@ void DrawingProgramSelection::translate_key(unsigned keyPressed, bool pressed) {
             selectionTransformCoords = CoordSpaceHelperTransform(translateData.startPos);
         }
         else if(transformOpHappening == TransformOperation::TRANSLATE && translateData.translateWithKeys) {
-            bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_TEXT_LEFT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_TEXT_DOWN).held || drawP.world.main.input.key(InputManager::KEY_TEXT_UP).held;
+            bool anyKeyHeld = drawP.world.main.input.key(InputManager::KEY_GENERIC_LEFT).held || drawP.world.main.input.key(InputManager::KEY_GENERIC_RIGHT).held || drawP.world.main.input.key(InputManager::KEY_GENERIC_DOWN).held || drawP.world.main.input.key(InputManager::KEY_GENERIC_UP).held;
             if(!anyKeyHeld) {
                 commit_transform_selection();
                 return;

@@ -25,7 +25,6 @@ void RectSelectTool::gui_toolbox() {
 }
 
 void RectSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-    drawP.selection.input_key_callback_display_selection(key);
     drawP.selection.input_key_callback_modify_selection(key);
 }
 

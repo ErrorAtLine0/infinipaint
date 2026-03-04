@@ -92,8 +92,6 @@ void MainProgram::update() {
     deltaTime.update_time_since();
     deltaTime.update_time_point();
 
-    toolbar.initialize_io_before_update();
-
     for(auto& w : worlds) {
         if(w == world)
             w->focus_update();
@@ -102,7 +100,6 @@ void MainProgram::update() {
     }
 
     toolbar.update(); // GUI should be setup after the world data has been fully updated for this frame, so that the GUI reflects the current state of the world data
-
 
     NetLibrary::update();
 
@@ -328,21 +325,25 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
                 drawGui = !drawGui;
         }
     }
+    toolbar.input_key_callback(key);
     if(world)
         world->input_key_callback(key);
 }
 
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    toolbar.input_mouse_button_callback(button);
     if(world)
         world->input_mouse_button_callback(button);
 }
 
 void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    toolbar.input_mouse_motion_callback(motion);
     if(world)
         world->input_mouse_motion_callback(motion);
 }
 
 void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+    toolbar.input_mouse_wheel_callback(wheel);
     if(world)
         world->input_mouse_wheel_callback(wheel);
 }

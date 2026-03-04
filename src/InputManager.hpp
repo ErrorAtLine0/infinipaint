@@ -131,8 +131,6 @@ struct InputManager {
     int stopKeyInput = 0;
     std::optional<Vector2ui32> lastPressedKeybind;
 
-    void text_input_silence_everything();
-
     enum KeyCodeEnum : unsigned {
         // Assignable
         KEY_CAMERA_ROTATE_CLOCKWISE = 0,
@@ -189,6 +187,12 @@ struct InputManager {
         KEY_TEXT_SELECTALL,
         KEY_TEXT_UNDO,
         KEY_TEXT_REDO,
+        KEY_TEXT_ESCAPE,
+        KEY_GENERIC_UP,
+        KEY_GENERIC_DOWN,
+        KEY_GENERIC_LEFT,
+        KEY_GENERIC_RIGHT,
+        KEY_GENERIC_ENTER,
         KEY_GENERIC_ESCAPE,
         KEY_GENERIC_LSHIFT,
         KEY_GENERIC_LALT,

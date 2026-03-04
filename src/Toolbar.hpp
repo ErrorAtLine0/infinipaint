@@ -40,7 +40,10 @@ class Toolbar {
         std::string chatMessageInput;
 
         Toolbar(MainProgram& initMain);
-        void initialize_io_before_update();
+        void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
+        void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
+        void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
         void update();
         void draw(SkCanvas* canvas);
         void color_selector_left(Vector4f* color);
@@ -94,6 +97,8 @@ class Toolbar {
 
         bool app_close_requested();
     private:
+        void end_io();
+        void initialize_io();
         void calculate_final_gui_scale();
         float final_gui_scale_not_fit();
 

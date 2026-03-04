@@ -51,7 +51,6 @@ bool LassoSelectTool::right_click_popup_gui(Vector2f popupPos) {
 }
 
 void LassoSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-    drawP.selection.input_key_callback_display_selection(key);
     drawP.selection.input_key_callback_modify_selection(key);
 }
 

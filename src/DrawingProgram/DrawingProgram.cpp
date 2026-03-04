@@ -223,6 +223,7 @@ void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key
             break;
         }
     }
+    selection.input_key_callback_display_selection(key);
     drawTool->input_key_callback(key);
 }
 
