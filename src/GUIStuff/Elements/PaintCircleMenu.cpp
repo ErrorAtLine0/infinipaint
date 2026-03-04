@@ -22,7 +22,7 @@ void PaintCircleMenu::update(GUIManager& gui, const Data& data, const std::funct
         Vector2f vecFromCenter = (io.mouse.pos - bb.center()).normalized();
         float distFromCenter = vec_distance(io.mouse.pos, bb.center());
         if(data.newRotationAngle) {
-            rotateBarSelect.update(isHoveredNoObstruction && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END, io.mouse.leftClick, io.mouse.leftHeld);
+            rotateBarSelect.update(isHoveredNoObstruction && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END, io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
             if(rotateBarSelect.held) {
                 double& newRotationAngle = *data.newRotationAngle;
                 newRotationAngle = std::atan2(vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
@@ -41,7 +41,7 @@ void PaintCircleMenu::update(GUIManager& gui, const Data& data, const std::funct
                 *data.newRotationAngle = data.currentRotationAngle;
         }
         if(!data.palette.empty() && data.selectedColor) {
-            colorBarSelect.update(isHoveredNoObstruction && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START, io.mouse.leftClick, io.mouse.leftHeld);
+            colorBarSelect.update(isHoveredNoObstruction && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START, io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
             if(colorBarSelect.hovered) {
                 Vector4f& selectedColor = *data.selectedColor;
                 double selectionAngle = std::atan2(-vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;

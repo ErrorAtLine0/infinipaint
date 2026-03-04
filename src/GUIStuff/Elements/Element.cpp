@@ -1,4 +1,6 @@
 #include "Element.hpp"
+#include "Helpers/MathExtras.hpp"
+#include <chrono>
 
 namespace GUIStuff {
     SkFont get_setup_skfont() {
@@ -35,24 +37,31 @@ namespace GUIStuff {
         return {{command->boundingBox.x, command->boundingBox.y}, {command->boundingBox.x + command->boundingBox.width, command->boundingBox.y + command->boundingBox.height}};
     }
     
-    void SelectionHelper::update(bool isHovering, bool isLeftClick, bool isLeftHeld) {
+    void SelectionHelper::update(bool isHovering, bool isLeftClick, bool isLeftHeld, const Vector2f& cursorPos) {
         hovered = isHovering;
     
         clicked = false;
+        tapped = false;
         justUnselected = false;
         bool oldSelected = selected;
     
         if(isLeftClick) {
             if(hovered) {
-                selected = true;
-                clicked = true;
                 held = true;
+                clicked = true;
+                timeClicked = std::chrono::steady_clock::now();
+                clickPos = cursorPos;
             }
             else
                 selected = false;
         }
-        else if(!isLeftHeld)
+        else if(!isLeftHeld) {
+            if(held && hovered && (std::chrono::steady_clock::now() - timeClicked) < std::chrono::milliseconds(250) && vec_distance_sqrd(clickPos, cursorPos) < (25 * 25)) {
+                selected = true;
+                tapped = true;
+            }
             held = false;
+        }
 
         if(!selected && oldSelected)
             justUnselected = true;

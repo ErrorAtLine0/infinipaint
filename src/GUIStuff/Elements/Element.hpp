@@ -119,12 +119,15 @@ struct UpdateInputData {
 
 class SelectionHelper {
     public:
-        void update(bool isHovering, bool isLeftClick, bool isLeftHeld);
+        void update(bool isHovering, bool isLeftClick, bool isLeftHeld, const Vector2f& cursorPos);
         bool held = false;
         bool hovered = false;
         bool selected = false;
         bool clicked = false;
         bool justUnselected = false;
+        bool tapped = false;
+        Vector2f clickPos;
+        std::chrono::steady_clock::time_point timeClicked;
 };
 
 class Element {

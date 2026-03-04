@@ -24,7 +24,7 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
         },
         .clip = {.horizontal = true, .childOffset = Clay_GetScrollOffset()}
     }) {
-        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
         if(elemUpdate)
             elemUpdate();
         for(size_t i = 0; i < buttons.size(); i++) {

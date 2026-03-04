@@ -18,7 +18,7 @@ void RotateWheel::update(UpdateInputData& io, double* newRotationAnglePtr, const
         },
         .custom = { .customData = this }
     }) {
-        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
         Vector2f vecFromCenter = (io.mouse.pos - bb.center()).normalized();
         float distFromCenter = vec_distance(io.mouse.pos, bb.center());
         wheelHovered = selection.hovered && distFromCenter > wheel_start() && distFromCenter < wheel_end();

@@ -11,7 +11,7 @@ void CheckBox::update(UpdateInputData& io, bool newIsTicked, const std::function
         },
         .custom = { .customData = this }
     }) {
-        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
         if(isTicked != newIsTicked) {
             hoverAnimation2 = selection.hovered ? CHECKBOX_ANIMATION_TIME : 0.0f;
             isTicked = newIsTicked;

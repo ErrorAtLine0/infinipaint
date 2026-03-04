@@ -9,7 +9,7 @@ void RadioButton::update(UpdateInputData& io, bool newIsTicked, const std::funct
         },
         .custom = { .customData = this }
     }) {
-        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
         if(isTicked != newIsTicked) {
             hoverAnimation2 = RADIOBUTTON_ANIMATION_TIME;
             isTicked = newIsTicked;

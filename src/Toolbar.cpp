@@ -623,7 +623,7 @@ void Toolbar::top_toolbar() {
         bool bookmarkMenuPopUpJustOpen = false;
         bool gridMenuPopUpJustOpen = false;
         bool layerMenuPopUpJustOpen = false;
-        if(gui.svg_icon_button_transparent("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen)) {
+        if(gui.svg_icon_button_transparent("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
             if(menuPopUpOpen)
                 menuPopUpOpen = false;
             else {
@@ -655,7 +655,7 @@ void Toolbar::top_toolbar() {
                 main.world->undo_with_checks();
             if(gui.svg_icon_button_transparent("Menu Redo Button", "data/icons/redo.svg"))
                 main.world->redo_with_checks();
-            if(gui.svg_icon_button_transparent("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen)) {
+            if(gui.svg_icon_button_transparent("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
                 if(gridMenu.popupOpen)
                     stop_displaying_grid_menu();
                 else {
@@ -663,7 +663,7 @@ void Toolbar::top_toolbar() {
                     gridMenuPopUpJustOpen = true;
                 }
             }
-            if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen)) {
+            if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
                 if(layerMenuPopupOpen) {
                     main.world->drawProg.layerMan.listGUI.refresh_gui_data();
                     layerMenuPopupOpen = false;
@@ -673,7 +673,7 @@ void Toolbar::top_toolbar() {
                     layerMenuPopUpJustOpen = true;
                 }
             }
-            if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen)) {
+            if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
                 if(bookmarkMenuPopupOpen) {
                     main.world->bMan.refresh_gui_data();
                     bookmarkMenuPopupOpen = false;
@@ -710,16 +710,25 @@ void Toolbar::top_toolbar() {
                     main.new_tab({
                         .isClient = false
                     }, true);
+                    menuPopUpOpen = false;
                 }
-                if(gui.text_button_left_transparent("open file", "Open"))
+                if(gui.text_button_left_transparent("open file", "Open")) {
                     open_world_file(false, "", "");
+                    menuPopUpOpen = false;
+                }
                 if(!main.world->clientStillConnecting) {
-                    if(gui.text_button_left_transparent("save file", "Save"))
+                    if(gui.text_button_left_transparent("save file", "Save")) {
                         save_func();
-                    if(gui.text_button_left_transparent("save as file", "Save As"))
+                        menuPopUpOpen = false;
+                    }
+                    if(gui.text_button_left_transparent("save as file", "Save As")) {
                         save_as_func();
-                    if(gui.text_button_left_transparent("screenshot", "Take Screenshot"))
+                        menuPopUpOpen = false;
+                    }
+                    if(gui.text_button_left_transparent("screenshot", "Take Screenshot")) {
                         main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
+                        menuPopUpOpen = false;
+                    }
                     if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
                         #ifdef __EMSCRIPTEN__
                             static std::weak_ptr<World> worldWeakPtr;
@@ -742,11 +751,13 @@ void Toolbar::top_toolbar() {
                                     Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
                             });
                         #endif
+                        menuPopUpOpen = false;
                     }
                     if(main.world->netObjMan.is_connected()) {
                         if(gui.text_button_left_transparent("lobby info", "Lobby Info")) {
                             optionsMenuOpen = true;
                             optionsMenuType = LOBBY_INFO_MENU;
+                            menuPopUpOpen = false;
                         }
                     }
                     else if(gui.text_button_left_transparent("start hosting", "Host")) {
@@ -754,32 +765,38 @@ void Toolbar::top_toolbar() {
                         serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
                         optionsMenuOpen = true;
                         optionsMenuType = HOST_MENU;
+                        menuPopUpOpen = false;
                     }
                     if(gui.text_button_left_transparent("canvas specific settings", "Canvas Settings")) {
                         optionsMenuOpen = true;
                         optionsMenuType = CANVAS_SETTINGS_MENU;
+                        menuPopUpOpen = false;
                     }
                 }
                 if(gui.text_button_left_transparent("start connecting", "Connect")) {
                     serverToConnectTo.clear();
                     optionsMenuOpen = true;
                     optionsMenuType = CONNECT_MENU;
+                    menuPopUpOpen = false;
                 }
                 if(gui.text_button_left_transparent("open options", "Settings")) {
                     optionsMenuOpen = true;
                     optionsMenuType = GENERAL_SETTINGS_MENU;
+                    menuPopUpOpen = false;
                 }
                 if(gui.text_button_left_transparent("about menu button", "About")) {
                     optionsMenuOpen = true;
                     optionsMenuType = ABOUT_MENU;
+                    menuPopUpOpen = false;
                 }
                 #ifndef __EMSCRIPTEN__
                     if(gui.text_button_left_transparent("quit button", "Quit")) {
                         if(main.app_close_requested())
                             main.setToQuit = true;
+                        menuPopUpOpen = false;
                     }
                 #endif
-                if(io->mouse.leftClick && !menuPopUpJustOpen)
+                if(io->mouse.leftClick && !Clay_Hovered() && !menuPopUpJustOpen)
                     menuPopUpOpen = false;
             }
         }
@@ -1162,7 +1179,7 @@ void Toolbar::chat_box() {
 
             gui.left_to_right_line_layout([&]() {
                 gui.input_text("message input", &chatMessageInput);
-                if(gui.text_button("send button", "Send")) {
+                if(gui.text_button("send button", "Send", false, true)) {
                     if(!chatMessageInput.empty())
                         main.world->send_chat_message(chatMessageInput);
                 }

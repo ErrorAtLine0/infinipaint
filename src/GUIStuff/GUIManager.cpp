@@ -334,14 +334,14 @@ bool GUIManager::radio_button(const char* id, bool val, const std::function<void
     RadioButton* e = insert_element<RadioButton>(); 
     e->update(*io, val, elemUpdate);
     pop_id();
-    return e->selection.clicked;
+    return e->selection.tapped;
 }
 
 void GUIManager::checkbox(const char* id, bool* val, const std::function<void()>& elemUpdate) {
     push_id(id);
     CheckBox* e = insert_element<CheckBox>(); 
     e->update(*io, *val, elemUpdate);
-    if(e->selection.clicked)
+    if(e->selection.tapped)
         *val = !(*val);
     pop_id();
 }
@@ -411,11 +411,11 @@ bool GUIManager::input_text(const char* id, std::string* val, bool updateEveryEd
     return toRet;
 }
 
-bool GUIManager::selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected) {
+bool GUIManager::selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected, bool onClick) {
     push_id(id);
     SelectableButton* e = insert_element<SelectableButton>();
     e->update(*io, drawType, elemUpdate, isSelected);
-    bool toRet = e->selection.clicked;
+    bool toRet = onClick ? e->selection.clicked : e->selection.tapped;
     pop_id();
     return toRet;
 }
@@ -440,7 +440,7 @@ bool GUIManager::svg_icon_button(const char* id, const std::string& svgPath, boo
     return toRet;
 }
 
-bool GUIManager::svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
+bool GUIManager::svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, bool onClick, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     push_id(id);
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
@@ -448,7 +448,7 @@ bool GUIManager::svg_icon_button_transparent(const char* id, const std::string& 
             svg_icon("1", svgPath, is || s.held || s.hovered);
             if(elemUpdate)
                 elemUpdate();
-        }, SelectableButton::DrawType::TRANSPARENT_ALL, isSelected);
+        }, SelectableButton::DrawType::TRANSPARENT_ALL, isSelected, onClick);
     }
     pop_id();
     return toRet;
@@ -466,14 +466,14 @@ bool GUIManager::text_button_sized(const char* id, std::string_view text, Clay_S
     return toRet;
 }
 
-bool GUIManager::text_button(const char* id, std::string_view text, bool isSelected, const std::function<void()>& elemUpdate) {
+bool GUIManager::text_button(const char* id, std::string_view text, bool isSelected, bool onClick, const std::function<void()>& elemUpdate) {
     bool toRet = false;
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) } } }) {
         toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
             text_label(text);
             if(elemUpdate)
                 elemUpdate();
-        }, SelectableButton::DrawType::FILLED, isSelected);
+        }, SelectableButton::DrawType::FILLED, isSelected, onClick);
     }
     return toRet;
 }
@@ -824,7 +824,7 @@ bool GUIManager::rotate_wheel(const char* id, double* angle, float size, const s
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
         RotateWheel* e = insert_element<RotateWheel>();
         e->update(*io, angle, elemUpdate);
-        toRet = e->selection.clicked;
+        toRet = e->selection.tapped;
     }
     pop_id();
     return toRet;

@@ -58,14 +58,14 @@ class GUIManager {
         void text_label_light_centered(std::string_view val);
         void text_label_centered(std::string_view val);
         bool text_button_left_transparent(const char* id, std::string_view text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
-        bool text_button(const char* id, std::string_view text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
+        bool text_button(const char* id, std::string_view text, bool isSelected = false, bool onClick = false, const std::function<void()>& elemUpdate = nullptr);
         bool text_button_wide(const char* id, std::string_view text, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
         bool text_button_sized(const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected = false, const std::function<void()>& elemUpdate = nullptr);
 
         void svg_icon(const char* id, const std::string& svgPath, bool isHighlighted = false, const std::function<void()>& elemUpdate = nullptr);
         bool svg_icon_button(const char* id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
 
-        bool svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, const std::function<void()>& elemUpdate = nullptr);
+        bool svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected = false, float size = BIG_BUTTON_SIZE, bool hasBorder = true, bool onClick = false, const std::function<void()>& elemUpdate = nullptr);
 
         bool rotate_wheel(const char* id, double* angle, float size = BIG_BUTTON_SIZE, const std::function<void()>& elemUpdate = nullptr);
 
@@ -74,7 +74,7 @@ class GUIManager {
         void left_to_right_line_layout(const std::function<void()>& elemUpdate);
         void left_to_right_line_centered_layout(const std::function<void()>& elemUpdate);
 
-        bool selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected);
+        bool selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected, bool onClick = false);
 
         void push_id(int64_t id);
         void push_id(const char* id);

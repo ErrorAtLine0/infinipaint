@@ -29,7 +29,7 @@ template <typename T> class TextBox : public Element {
                 },
                 .custom = { .customData = this }
             }) {
-                selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+                selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
                 if(data && selection.selected) {
                     io.richTextBoxToEdit = textbox;
                     io.richTextBoxToEditCursor = cur;

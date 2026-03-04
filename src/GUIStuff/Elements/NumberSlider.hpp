@@ -17,7 +17,7 @@ template <typename T> class NumberSlider : public Element {
                 },
                 .custom = { .customData = this }
             }) {
-                selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+                selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
                 if(selection.held && data) {
                     float fracPosOnSlider = (io.mouse.pos.x() - bb.min.x()) / bb.width();
                     *data = static_cast<T>(std::clamp<double>(std::lerp<double>(min, max, fracPosOnSlider), min, max)); // Clamp as double then cast so that unsigned types dont wrap on clamp

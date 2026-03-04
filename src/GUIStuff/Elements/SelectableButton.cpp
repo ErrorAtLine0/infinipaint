@@ -49,7 +49,7 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
             .backgroundColor = convert_vec4<Clay_Color>(backgroundColorHighlight),
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         }) {
-            selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+            selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
             elemUpdate(selection, isSelected);
         }
     }

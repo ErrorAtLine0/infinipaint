@@ -29,7 +29,7 @@ template <typename T> class ColorPicker : public Element {
                 .aspectRatio = {1.0f},
                 .custom = { .customData = this }
             }) {
-                selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld);
+                selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
                 if(selection.clicked && data) {
                     float svSelectionAreaSize = get_sv_selection_area_size();
                     modifyingSv = SCollision::collide(SCollision::AABB<float>(bb.min, bb.min + Vector2f{svSelectionAreaSize, svSelectionAreaSize}), io.mouse.pos);
