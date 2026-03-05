@@ -4,12 +4,13 @@
 #include <limits>
 #include <modules/skparagraph/include/TextStyle.h>
 #include "../../FontData.hpp"
+#include "../../InputManager.hpp"
 
 namespace GUIStuff {
 
 template <typename T> class TextBox : public Element {
     public:
-        bool update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
+        bool update(UpdateInputData& io, T* newData, const std::function<std::optional<T>(const std::string&)>& newFromStr, const std::function<std::string(const T&)> newToStr, bool newSingleLine, bool updateEveryEdit, const InputManager::TextInputProperties& textInputProps, const std::function<void(SelectionHelper&)>& elemUpdate) {
             bool isUpdating = false;
 
             if(!textbox || !cur)
@@ -33,6 +34,8 @@ template <typename T> class TextBox : public Element {
                 if(data && selection.selected) {
                     io.richTextBoxToEdit = textbox;
                     io.richTextBoxToEditCursor = cur;
+                    io.richTextBoxToEditRectangle = rect;
+                    io.richTextInputProperties = textInputProps;
                     textbox->process_mouse_left_button(*cur, io.mouse.pos - bb.min, io.mouse.leftClick, io.mouse.leftHeld, io.key.leftShift);
                     if((updateEveryEdit && textbox->inputChangedTextBox) || io.key.enter) {
                         update_on_edit();
@@ -52,6 +55,8 @@ template <typename T> class TextBox : public Element {
 
             if(textbox)
                 textbox->inputChangedTextBox = false;
+
+            *rect = {(bb.min + io.windowPos) * io.guiScaleMultiplier, (bb.max + io.windowPos) * io.guiScaleMultiplier};
 
             return isUpdating;
         }
@@ -108,6 +113,7 @@ template <typename T> class TextBox : public Element {
             textbox->set_allow_newlines(false);
 
             cur = std::make_shared<RichText::TextBox::Cursor>();
+            rect = std::make_shared<SCollision::AABB<float>>();
 
             if(data) {
                 cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, toStr(*data));
@@ -131,8 +137,9 @@ template <typename T> class TextBox : public Element {
 
         std::shared_ptr<RichText::TextBox> textbox;
         std::shared_ptr<RichText::TextBox::Cursor> cur;
+        std::shared_ptr<SCollision::AABB<float>> rect;
 
-        SCollision::AABB<float> bb;
+        SCollision::AABB<float> bb = {{1.0f, 1.0f}, {2.0f, 2.0f}};
 };
 
 }

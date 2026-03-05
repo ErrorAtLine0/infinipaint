@@ -6,6 +6,7 @@
 #include <iostream>
 #include <ostream>
 #include <Eigen/Geometry>
+#include <SDL3/SDL_rect.h>
 
 using namespace Eigen;
 
@@ -75,6 +76,9 @@ namespace SCollision {
             }
             template <class Archive> void serialize(Archive& a) {
                 a(min, max);
+            }
+            SDL_Rect get_sdl_rect() const {
+                return SDL_Rect{static_cast<int>(min.x()), static_cast<int>(min.y()), static_cast<int>(width()), static_cast<int>(height())};
             }
     };
     template <typename T> class Circle {

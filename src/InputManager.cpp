@@ -5,6 +5,7 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <SDL3/SDL_pen.h>
+#include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_timer.h>
 #include <optional>
 
@@ -87,32 +88,35 @@ InputManager::InputManager(MainProgram& initMain):
     keyAssignments = defaultKeyAssignments;
 }
 
-void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
-    text.set_accepting_input(main.window.sdlWindow, true);
+void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
     Text::TextBoxInfo textBoxInfo;
     textBoxInfo.textBox = nTextBox;
     textBoxInfo.cursor = nCursor;
     textBoxInfo.modMap = nModMap;
     textBoxInfo.isRichTextBox = isRichTextBox;
+    textBoxInfo.rect = textboxRect;
+    textBoxInfo.textInputProperties = inputProps;
     text.textBoxes.emplace_front(textBoxInfo);
+    text.update_accepting_input(main.window.sdlWindow);
 }
 
-void InputManager::set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
-    text.set_accepting_input(main.window.sdlWindow, true);
+void InputManager::set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
     Text::TextBoxInfo textBoxInfo;
     textBoxInfo.textBox = nTextBox;
     textBoxInfo.cursor = nCursor;
     textBoxInfo.modMap = nModMap;
     textBoxInfo.isRichTextBox = isRichTextBox;
+    textBoxInfo.rect = textboxRect;
+    textBoxInfo.textInputProperties = inputProps;
     text.textBoxes.emplace_back(textBoxInfo);
+    text.update_accepting_input(main.window.sdlWindow);
 }
 
 void InputManager::remove_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox) {
     std::erase_if(text.textBoxes, [&nTextBox](Text::TextBoxInfo& info) {
         return (info.textBox == nTextBox);
     });
-    if(text.textBoxes.empty())
-        text.set_accepting_input(main.window.sdlWindow, false);
+    text.update_accepting_input(main.window.sdlWindow);
 }
 
 void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
@@ -153,18 +157,24 @@ void InputManager::Text::do_textbox_operation_with_undo(const std::function<void
 }
 
 bool InputManager::Text::is_accepting_input() {
-    return acceptingInput;
+    return !textBoxes.empty();
 }
 
-void InputManager::Text::set_accepting_input(SDL_Window* window, bool newAcceptingInputVal) {
-    if(!acceptingInput && newAcceptingInputVal) {
-        SDL_StartTextInput(window);
-        acceptingInput = true;
+void InputManager::Text::update_accepting_input(SDL_Window* window) {
+    if(!textBoxes.empty()) {
+        auto& textbox = textBoxes.front();
+        if(!propID.has_value())
+            propID = SDL_CreateProperties();
+        SDL_PropertiesID propIDVal = propID.value();
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_TYPE_NUMBER, textbox.textInputProperties.inputType);
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, textbox.textInputProperties.capitalization);
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, textbox.textInputProperties.autocorrect);
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN, textbox.textInputProperties.multiline);
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER, textbox.textInputProperties.androidInputType);
+        SDL_StartTextInputWithProperties(window, propIDVal);
     }
-    else if(acceptingInput && !newAcceptingInputVal) {
+    else
         SDL_StopTextInput(window);
-        acceptingInput = false;
-    }
 }
 
 std::string InputManager::get_clipboard_str_SDL() {
@@ -968,7 +978,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             break;
     }
 
-    if(text.acceptingInput)
+    if(text.is_accepting_input())
         return;
 
     auto f = keyAssignments.find({make_generic_key_mod(kMod), kPress});
@@ -1156,6 +1166,15 @@ void InputManager::update() {
     if(touch.touchEventType == Touch::NO_TOUCH_EVENT && (SDL_GetTicksNS() - touch.fingers[0].timestamp) > (200 * 1000000)) { // 200ms to determine whether touch is with a single finger
         touch_finger_do_mouse_down();
         touch.touchEventType = Touch::ONE_FINGER_EVENT;
+    }
+    if(!text.textBoxes.empty()) {
+        auto& textbox = text.textBoxes.front();
+        if(textbox.rect) {
+            SDL_Rect r = textbox.rect->get_sdl_rect();
+            SDL_SetTextInputArea(main.window.sdlWindow, &r, textbox.cursor->pos.fTextByteIndex);
+        }
+        else
+            SDL_SetTextInputArea(main.window.sdlWindow, nullptr, textbox.cursor->pos.fTextByteIndex);
     }
 }
 

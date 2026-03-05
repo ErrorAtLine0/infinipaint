@@ -2273,6 +2273,8 @@ void Toolbar::initialize_io() {
     io->previousRichTextBoxToEdit = io->richTextBoxToEdit;
     io->richTextBoxToEditCursor = nullptr;
     io->richTextBoxToEdit = nullptr;
+    io->richTextBoxToEditRectangle = nullptr;
+    io->guiScaleMultiplier = final_gui_scale();
 }
 
 void Toolbar::end_io() {
@@ -2280,7 +2282,7 @@ void Toolbar::end_io() {
         main.input.set_clipboard_str(*io->clipboard.textOut);
     if(io->richTextBoxToEdit != io->previousRichTextBoxToEdit) {
         if(io->richTextBoxToEdit)
-            main.input.set_rich_text_box_input_front(io->richTextBoxToEdit, io->richTextBoxToEditCursor, false);
+            main.input.set_rich_text_box_input_front(io->richTextBoxToEdit, io->richTextBoxToEditCursor, false, io->richTextBoxToEditRectangle, io->richTextInputProperties);
         if(io->previousRichTextBoxToEdit)
             main.input.remove_rich_text_box_input(io->previousRichTextBoxToEdit);
     }
@@ -2409,11 +2411,11 @@ void Toolbar::input_finger_motion_callback(const InputManager::FingerMotionCallb
 void Toolbar::start_gui() {
     SDL_Rect windowRect;
     if(SDL_GetWindowSafeArea(main.window.sdlWindow, &windowRect)) {
-        gui.windowPos = Vector2f{windowRect.x, windowRect.y} / final_gui_scale();
+        io->windowPos = gui.windowPos = Vector2f{windowRect.x, windowRect.y} / final_gui_scale();
         gui.windowSize = Vector2f{windowRect.w, windowRect.h} / final_gui_scale();
     }
     else {
-        gui.windowPos = Vector2f{0.0f, 0.0f};
+        io->windowPos = gui.windowPos = Vector2f{0.0f, 0.0f};
         gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
     }
     initialize_io();

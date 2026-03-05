@@ -1,5 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
+#include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_touch.h>
 #include <array>
 #include "RichText/TextStyleModifier.hpp"
@@ -15,6 +17,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
+
+#include <Helpers/SCollision.hpp>
 
 using namespace Eigen;
 class MainProgram;
@@ -103,8 +107,59 @@ struct InputManager {
 
     bool isTouchDevice = true;
 
-    void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
-    void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+    enum AndroidInputType : int {
+        ANDROIDTEXT_TYPE_CLASS_DATETIME = 0x00000004,
+        ANDROIDTEXT_TYPE_CLASS_NUMBER = 0x00000002,
+        ANDROIDTEXT_TYPE_CLASS_PHONE = 0x00000003,
+        ANDROIDTEXT_TYPE_CLASS_TEXT = 0x00000001,
+        ANDROIDTEXT_TYPE_DATETIME_VARIATION_DATE = 0x00000010,
+        ANDROIDTEXT_TYPE_DATETIME_VARIATION_NORMAL = 0x00000000,
+        ANDROIDTEXT_TYPE_DATETIME_VARIATION_TIME = 0x00000020,
+        ANDROIDTEXT_TYPE_MASK_CLASS = 0x0000000f,
+        ANDROIDTEXT_TYPE_MASK_FLAGS = 0x00fff000,
+        ANDROIDTEXT_TYPE_MASK_VARIATION = 0x00000ff0,
+        ANDROIDTEXT_TYPE_NULL = 0x00000000,
+        ANDROIDTEXT_TYPE_NUMBER_FLAG_DECIMAL = 0x00002000,
+        ANDROIDTEXT_TYPE_NUMBER_FLAG_SIGNED = 0x00001000,
+        ANDROIDTEXT_TYPE_NUMBER_VARIATION_NORMAL = 0x00000000,
+        ANDROIDTEXT_TYPE_NUMBER_VARIATION_PASSWORD = 0x00000010,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_AUTO_COMPLETE = 0x00010000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_AUTO_CORRECT = 0x00008000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_CAP_CHARACTERS = 0x00001000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_CAP_SENTENCES = 0x00004000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_CAP_WORDS = 0x00002000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_ENABLE_TEXT_CONVERSION_SUGGESTIONS = 0x00100000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_ENABLE_TEXT_SUGGESTION_SELECTED = 0x00200000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_IME_MULTI_LINE = 0x00040000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_MULTI_LINE = 0x00020000,
+        ANDROIDTEXT_TYPE_TEXT_FLAG_NO_SUGGESTIONS = 0x00080000,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_EMAIL_ADDRESS = 0x00000020,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_EMAIL_SUBJECT = 0x00000030,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_FILTER = 0x000000b0,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_LONG_MESSAGE = 0x00000050,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_NORMAL = 0x00000000,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_PASSWORD = 0x00000080,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_PERSON_NAME = 0x00000060,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_PHONETIC = 0x000000c0,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_POSTAL_ADDRESS = 0x00000070,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_SHORT_MESSAGE = 0x00000040,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_URI = 0x00000010,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_VISIBLE_PASSWORD = 0x00000090,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_WEB_EDIT_TEXT = 0x000000a0,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS = 0x000000d0,
+        ANDROIDTEXT_TYPE_TEXT_VARIATION_WEB_PASSWORD = 0x000000e0
+    };
+
+    struct TextInputProperties {
+        SDL_TextInputType inputType;
+        SDL_Capitalization capitalization;
+        bool autocorrect;
+        bool multiline;
+        int androidInputType;
+    };
+
+    void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+    void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
     void remove_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox);
     
     struct Text {
@@ -120,14 +175,17 @@ struct InputManager {
                 bool isRichTextBox;
                 std::shared_ptr<RichText::TextBox> textBox;
                 std::shared_ptr<RichText::TextBox::Cursor> cursor;
+                std::shared_ptr<SCollision::AABB<float>> rect;
                 std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
+                TextInputProperties textInputProperties;
                 UndoManager textboxUndo;
             };
 
-            void set_accepting_input(SDL_Window* window, bool newAcceptingInputVal);
+            void update_accepting_input(SDL_Window* window);
 
             bool isNextPasteRich = false;
-            bool acceptingInput = false;
+
+            std::optional<SDL_PropertiesID> propID;
 
             std::deque<TextBoxInfo> textBoxes;
 

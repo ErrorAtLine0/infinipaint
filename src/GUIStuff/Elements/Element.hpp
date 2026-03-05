@@ -13,6 +13,7 @@
 #include <Helpers/Serializers.hpp>
 #include <nlohmann/json.hpp>
 #include "../../RichText/TextBox.hpp"
+#include "../../InputManager.hpp"
 
 using namespace Eigen;
 
@@ -97,6 +98,8 @@ struct UpdateInputData {
     std::shared_ptr<RichText::TextBox> previousRichTextBoxToEdit;
     std::shared_ptr<RichText::TextBox> richTextBoxToEdit;
     std::shared_ptr<RichText::TextBox::Cursor> richTextBoxToEditCursor;
+    InputManager::TextInputProperties richTextInputProperties;
+    std::shared_ptr<SCollision::AABB<float>> richTextBoxToEditRectangle;
 
     SkFont get_font(float fSize) const;
 
@@ -109,6 +112,9 @@ struct UpdateInputData {
     bool acceptingTextInput = false;
     float deltaTime = 0.0f;
     bool isTouch = true;
+
+    float guiScaleMultiplier = 1.0f;
+    Vector2f windowPos = {0.0f, 0.0f};
 
     std::shared_ptr<FontData> fonts;
     sk_sp<SkTypeface> textTypeface;

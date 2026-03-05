@@ -147,15 +147,26 @@ class GUIManager {
             return toRet;
         }
         
-        template <typename T> bool input_generic(const char* id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+        template <typename T> bool input_generic(const char* id, T* val, const std::function<std::optional<T>(const std::string&)>& fromStr, const std::function<std::string(const T&)>& toStr, bool singleLine, bool updateEveryEdit, const InputManager::TextInputProperties& inputProps, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
             bool isUpdating = false;
             push_id(id);
-            isUpdating = insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, elemUpdate);
+            isUpdating = insert_element<TextBox<T>>()->update(*io, val, fromStr, toStr, singleLine, updateEveryEdit, inputProps, elemUpdate);
             pop_id();
             return isUpdating;
         }
 
         template <typename T> bool input_scalar(const char* id, T* val, T min, T max, int decimalPrecision = 0, const std::function<void(SelectionHelper&)>& elemUpdate = nullptr) {
+            InputManager::TextInputProperties textInputProps {
+                .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
+                .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+                .autocorrect = false,
+                .multiline = false,
+                .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_NUMBER
+            };
+            if(std::is_signed<T>())
+                textInputProps.androidInputType |= InputManager::AndroidInputType::ANDROIDTEXT_TYPE_NUMBER_FLAG_SIGNED;
+            if(std::is_floating_point<T>())
+                textInputProps.androidInputType |= InputManager::AndroidInputType::ANDROIDTEXT_TYPE_NUMBER_FLAG_DECIMAL;
             return input_generic<T>(id, val, 
                 [&](const std::string& a) {
                     if(a.empty())
@@ -177,7 +188,7 @@ class GUIManager {
                     else
                         ss << *val;
                     return ss.str();
-                }, true, false, elemUpdate);
+                }, true, false, textInputProps, elemUpdate);
         }
 
         bool input_scalar(const char* id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate);
@@ -231,7 +242,15 @@ class GUIManager {
                     }
                     return ss.str();
                 },
-                true, false, elemUpdate);
+                true, false,
+                {
+                    .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
+                    .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+                    .autocorrect = false,
+                    .multiline = false,
+                    .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
+                },
+                elemUpdate);
         }
 
         template <typename T> bool color_picker(const char* id, T* val, bool selectAlpha, const std::function<void()>& elemUpdate = nullptr) {

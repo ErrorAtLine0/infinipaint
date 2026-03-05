@@ -393,7 +393,15 @@ bool GUIManager::input_color_component_255(const char* id, float* val, const std
             std::stringstream ss;
             ss << convertTo255;
             return ss.str();
-        }, true, false, elemUpdate);
+        }, true, false, 
+        {
+            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
+            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+            .autocorrect = false,
+            .multiline = false,
+            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_NUMBER
+        },
+    elemUpdate);
     pop_id();
     return isUpdating;
 }
@@ -406,7 +414,15 @@ bool GUIManager::input_text(const char* id, std::string* val, bool updateEveryEd
         },
         [&](const std::string& str) {
             return str;
-        }, true, updateEveryEdit, elemUpdate);
+        }, true, updateEveryEdit, 
+        {
+            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
+            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+            .autocorrect = false,
+            .multiline = false,
+            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
+        },
+    elemUpdate);
     pop_id();
     return toRet;
 }
@@ -533,7 +549,15 @@ bool GUIManager::input_scalar(const char* id, uint8_t* val, uint8_t min, uint8_t
         },
         [&](const uint8_t& a) {
             return std::to_string(static_cast<uint32_t>(a));
-        }, true, false, elemUpdate);
+        }, true, false,
+        {
+            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
+            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+            .autocorrect = false,
+            .multiline = false,
+            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_NUMBER
+        },
+    elemUpdate);
     pop_id();
     return isUpdating;
 }
@@ -549,7 +573,15 @@ void GUIManager::input_path(const char* id, std::filesystem::path* val, std::fil
         },
         [&](const std::filesystem::path& a) {
             return a.string();
-        }, true, false, elemUpdate);
+        }, true, false, 
+        {
+            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
+            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+            .autocorrect = false,
+            .multiline = false,
+            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
+        },
+        elemUpdate);
     pop_id();
 }
 
