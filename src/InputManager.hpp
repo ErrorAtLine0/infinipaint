@@ -99,6 +99,8 @@ struct InputManager {
         std::array<KeyData, 256> buttons;
     } pen;
 
+    bool isTouchDevice = true;
+
     void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
     void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
     void remove_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox);

@@ -441,7 +441,7 @@ void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selec
                         check_add_stroke_color_change_undo();
                     }
                     else if(mouse_collided_with_selection_aabb()) {
-                        translateData.startPos = drawP.world.get_mouse_world_pos();
+                        translateData.startPos = drawP.world.drawData.cam.c.from_space(button.pos);
                         transformOpHappening = TransformOperation::TRANSLATE;
                         translateData.translateWithKeys = false;
                         check_add_stroke_color_change_undo();

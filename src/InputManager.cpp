@@ -401,6 +401,8 @@ void InputManager::backend_mouse_button_up_update(const SDL_MouseButtonEvent& e)
     };
     main.input_mouse_button_callback(args);
     main.input_pure_mouse_button_callback(args);
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& e) {
@@ -427,6 +429,8 @@ void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& 
     };
     main.input_mouse_button_callback(args);
     main.input_pure_mouse_button_callback(args);
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
@@ -442,6 +446,8 @@ void InputManager::backend_mouse_motion_update(const SDL_MouseMotionEvent& e) {
         .pos = mouseNewPos,
         .move = mouseRel
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
@@ -455,6 +461,8 @@ void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
         .amount = {e.x, e.y},
         .tickAmount = {e.integer_x, e.integer_y}
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
@@ -488,6 +496,8 @@ void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
         .down = e.down,
         .pos = mouseNewPos
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
@@ -520,6 +530,8 @@ void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
         .down = e.down,
         .pos = mouseNewPos
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
@@ -547,6 +559,8 @@ void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
         .eraser = e.eraser,
         .pos = mouseNewPos
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_pen_touch_up_update(const SDL_PenTouchEvent& e) {
@@ -570,6 +584,8 @@ void InputManager::backend_pen_touch_up_update(const SDL_PenTouchEvent& e) {
         .eraser = e.eraser,
         .pos = mouseNewPos
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
@@ -588,6 +604,8 @@ void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
         .pos = mouseNewPos,
         .move = mouseRel
     });
+
+    isTouchDevice = false;
 }
 
 void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
@@ -648,6 +666,8 @@ void InputManager::backend_touch_finger_down_update(const SDL_TouchFingerEvent& 
             break;
         }
     }
+
+    isTouchDevice = true;
 }
 
 void InputManager::backend_touch_finger_up_update(const SDL_TouchFingerEvent& e) {
@@ -714,6 +734,8 @@ void InputManager::backend_touch_finger_up_update(const SDL_TouchFingerEvent& e)
     std::erase_if(touch.fingers, [&e](auto& tE) {
         return e.fingerID == tE.fingerID;
     });
+
+    isTouchDevice = true;
 }
 
 void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e) {
@@ -778,6 +800,8 @@ void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent
             break;
         }
     }
+
+    isTouchDevice = true;
 }
 
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {

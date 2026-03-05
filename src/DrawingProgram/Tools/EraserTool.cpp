@@ -110,7 +110,7 @@ bool EraserTool::prevent_undo_or_redo() {
 }
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(drawData.main->world->drawProg.controls.cursorHoveringOverCanvas) {
+    if(!drawP.world.main.input.isTouchDevice && drawData.main->world->drawProg.controls.cursorHoveringOverCanvas) {
         if(!lastPosOpt.has_value())
             lastPosOpt = drawData.main->input.mouse.pos;
         auto& lastPos = lastPosOpt.value();
