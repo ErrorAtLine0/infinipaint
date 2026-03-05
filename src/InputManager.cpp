@@ -166,11 +166,12 @@ void InputManager::Text::update_accepting_input(SDL_Window* window) {
         if(!propID.has_value())
             propID = SDL_CreateProperties();
         SDL_PropertiesID propIDVal = propID.value();
-        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_TYPE_NUMBER, textbox.textInputProperties.inputType);
+        // There is a bug where decimal places disappear when textinput type is set to number on android. We'll just set those textinputs back to text type
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_TYPE_NUMBER, (textbox.textInputProperties.inputType == SDL_TEXTINPUT_TYPE_NUMBER) ? SDL_TEXTINPUT_TYPE_TEXT : textbox.textInputProperties.inputType);
         SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, textbox.textInputProperties.capitalization);
         SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, textbox.textInputProperties.autocorrect);
         SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN, textbox.textInputProperties.multiline);
-        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER, textbox.textInputProperties.androidInputType);
+        SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER, (textbox.textInputProperties.androidInputType & ANDROIDTEXT_TYPE_CLASS_NUMBER) ? ANDROIDTEXT_TYPE_CLASS_TEXT : textbox.textInputProperties.androidInputType);
         SDL_StartTextInputWithProperties(window, propIDVal);
     }
     else
