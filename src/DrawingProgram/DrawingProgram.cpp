@@ -227,14 +227,6 @@ void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key
     drawTool->input_key_callback(key);
 }
 
-void DrawingProgram::input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    drawTool->input_pure_mouse_button_callback(button);
-}
-
-void DrawingProgram::input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    drawTool->input_pure_mouse_motion_callback(motion);
-}
-
 void DrawingProgram::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
     pen_tool_switch_check();
     drawTool->input_pen_button_callback(button);

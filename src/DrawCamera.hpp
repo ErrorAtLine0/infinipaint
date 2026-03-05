@@ -34,8 +34,8 @@ class DrawCamera {
         void input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel);
-        void input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchArgs& touch);
-        void input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionArgs& motion);
+        void input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchCallbackArgs& touch);
+        void input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionCallbackArgs& motion);
     private:
         struct SmoothMove {
             CoordSpaceHelper start;

@@ -107,14 +107,12 @@ class World {
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
-        void input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
-        void input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         void input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button);
         void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
         void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
-        void input_multi_finger_touch_callback(const InputManager::MultiFingerTouchArgs& touch);
-        void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionArgs& motion);
+        void input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch);
+        void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion);
     private:
         void load_empty_canvas();
 

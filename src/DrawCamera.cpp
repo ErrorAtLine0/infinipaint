@@ -201,7 +201,7 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
     }
 }
 
-void DrawCamera::input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchArgs& touch) {
+void DrawCamera::input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchCallbackArgs& touch) {
     if(!smoothMove.occurring && !isAccurateZooming && !isTouchTransforming && touch.down) {
         touchInitialPositions = touch.pos;
         touchInitialC = c;
@@ -211,7 +211,7 @@ void DrawCamera::input_multi_finger_touch_callback(World& w, const InputManager:
         isTouchTransforming = false;
 }
 
-void DrawCamera::input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionArgs& motion) {
+void DrawCamera::input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionCallbackArgs& motion) {
     if(!smoothMove.occurring && !isAccurateZooming && isTouchTransforming) {
         c = touchInitialC;
 

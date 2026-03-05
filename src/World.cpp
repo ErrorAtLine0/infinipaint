@@ -295,16 +295,6 @@ void World::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArg
         drawData.cam.input_mouse_wheel_callback(*this, wheel);
 }
 
-void World::input_pure_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(!clientStillConnecting)
-        drawProg.input_pure_mouse_button_callback(button);
-}
-
-void World::input_pure_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(!clientStillConnecting)
-        drawProg.input_pure_mouse_motion_callback(motion);
-}
-
 void World::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
     if(!clientStillConnecting)
         drawProg.input_pen_button_callback(button);
@@ -325,12 +315,12 @@ void World::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axi
         drawProg.input_pen_axis_callback(axis);
 }
 
-void World::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchArgs& touch) {
+void World::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch) {
     if(!clientStillConnecting)
         drawData.cam.input_multi_finger_touch_callback(*this, touch);
 }
 
-void World::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionArgs& motion) {
+void World::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion) {
     if(!clientStillConnecting)
         drawData.cam.input_multi_finger_motion_callback(*this, motion);
 }

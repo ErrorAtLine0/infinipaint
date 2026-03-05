@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Dense>
+#include <SDL3/SDL_touch.h>
 #include <array>
 #include "RichText/TextStyleModifier.hpp"
 #include "RichText/TextBox.hpp"
@@ -75,9 +76,10 @@ struct InputManager {
     } mouse;
 
     struct Touch {
-        bool isDown = false;
         int leftClicksSaved = 0;
+        int fingerTapsSaved = 0;
         std::chrono::steady_clock::time_point lastLeftClickTime;
+        std::chrono::steady_clock::time_point lastFingerTapTime;
         std::vector<SDL_TouchFingerEvent> fingers;
         enum TypeOfTouchEvent {
             NO_TOUCH_EVENT,
@@ -220,6 +222,9 @@ struct InputManager {
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);
     std::vector<Vector2f> get_multiple_finger_positions();
     std::vector<Vector2f> get_multiple_finger_motions();
+    void touch_finger_do_mouse_down();
+    void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
+    void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
 
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
@@ -269,7 +274,14 @@ struct InputManager {
         RIGHT
     } button;
 
+    enum class MouseDeviceType {
+        MOUSE,
+        PEN,
+        TOUCH
+    };
+
     struct MouseButtonCallbackArgs {
+        MouseDeviceType deviceType;
         MouseButton button;
         bool down;
         uint8_t clicks;
@@ -277,6 +289,7 @@ struct InputManager {
     };
 
     struct MouseMotionCallbackArgs {
+        MouseDeviceType deviceType;
         Vector2f pos;
         Vector2f move;
     };
@@ -316,14 +329,29 @@ struct InputManager {
         const char* data;
     };
 
-    struct MultiFingerTouchArgs {
+    struct MultiFingerTouchCallbackArgs {
         bool down;
         std::vector<Vector2f> pos;
     };
 
-    struct MultiFingerMotionArgs {
+    struct MultiFingerMotionCallbackArgs {
         std::vector<Vector2f> pos;
         std::vector<Vector2f> move;
+    };
+
+    struct FingerTouchCallbackArgs {
+        SDL_FingerID fingerID;
+        bool down;
+        Vector2f pos;
+        size_t fingerDownCount;
+        int fingerTapCount;
+    };
+
+    struct FingerMotionCallbackArgs {
+        SDL_FingerID fingerID;
+        Vector2f pos;
+        Vector2f move;
+        size_t fingerDownCount;
     };
 
     MainProgram& main;

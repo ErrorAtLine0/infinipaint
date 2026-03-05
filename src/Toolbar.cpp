@@ -2348,45 +2348,62 @@ void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void Toolbar::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    io->mouse.globalPos = button.pos / final_gui_scale();
-    if(button.down) {
-        switch(button.button) {
-            case InputManager::MouseButton::LEFT: {
-                io->mouse.leftClick = std::max<int>(io->mouse.leftClick, button.clicks);
-                io->mouse.leftHeld = true;
-                break;
+    if(button.deviceType != InputManager::MouseDeviceType::TOUCH) {
+        io->mouse.globalPos = button.pos / final_gui_scale();
+        if(button.down) {
+            switch(button.button) {
+                case InputManager::MouseButton::LEFT: {
+                    io->mouse.leftClick = std::max<int>(io->mouse.leftClick, button.clicks);
+                    io->mouse.leftHeld = true;
+                    break;
+                }
+                case InputManager::MouseButton::RIGHT: {
+                    io->mouse.rightClick = std::max<int>(io->mouse.rightClick, button.clicks);
+                    io->mouse.rightHeld = true;
+                    break;
+                }
+                default:
+                    break;
             }
-            case InputManager::MouseButton::RIGHT: {
-                io->mouse.rightClick = std::max<int>(io->mouse.rightClick, button.clicks);
-                io->mouse.rightHeld = true;
-                break;
-            }
-            default:
-                break;
         }
-    }
-    else {
-        switch(button.button) {
-            case InputManager::MouseButton::LEFT: {
-                io->mouse.leftHeld = false;
-                break;
+        else {
+            switch(button.button) {
+                case InputManager::MouseButton::LEFT: {
+                    io->mouse.leftHeld = false;
+                    break;
+                }
+                case InputManager::MouseButton::RIGHT: {
+                    io->mouse.rightHeld = false;
+                    break;
+                }
+                default:
+                    break;
             }
-            case InputManager::MouseButton::RIGHT: {
-                io->mouse.rightHeld = false;
-                break;
-            }
-            default:
-                break;
         }
     }
 }
 
 void Toolbar::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    io->mouse.globalPos = motion.pos / final_gui_scale();
+    if(motion.deviceType != InputManager::MouseDeviceType::TOUCH)
+        io->mouse.globalPos = motion.pos / final_gui_scale();
 }
 
 void Toolbar::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
     io->mouse.scroll = wheel.amount;
+}
+
+void Toolbar::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+    io->mouse.globalPos = touch.pos / final_gui_scale();
+    if(touch.down) {
+        io->mouse.leftClick = std::max<int>(io->mouse.leftClick, touch.fingerTapCount);
+        io->mouse.leftHeld = true;
+    }
+    else
+        io->mouse.leftHeld = false;
+}
+
+void Toolbar::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
+    io->mouse.globalPos = motion.pos / final_gui_scale();
 }
 
 void Toolbar::start_gui() {
