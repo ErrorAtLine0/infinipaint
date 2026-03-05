@@ -113,6 +113,8 @@ class World {
         void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
         void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
+        void input_multi_finger_touch_callback(const InputManager::MultiFingerTouchArgs& touch);
+        void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionArgs& motion);
     private:
         void load_empty_canvas();
 

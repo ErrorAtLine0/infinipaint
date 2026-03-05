@@ -810,28 +810,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
             case SDL_EVENT_FINGER_DOWN: {
                 mS.m->update_scale_and_density();
-                mS.m->input.touch.isDown = true;
-                mS.m->input.mouse.leftDown = true;
-                if((std::chrono::steady_clock::now() - mS.m->input.touch.lastLeftClickTime) > std::chrono::milliseconds(300))
-                    mS.m->input.touch.leftClicksSaved = 0;
-                mS.m->input.touch.leftClicksSaved++;
-                mS.m->input.mouse.leftClicks = mS.m->input.touch.leftClicksSaved;
-                mS.m->input.touch.lastLeftClickTime = std::chrono::steady_clock::now();
-				mS.m->input.mouse.set_pos({event->tfinger.x * mS.m->window.size.x() * mS.m->window.density, event->tfinger.y * mS.m->window.size.y() * mS.m->window.density});
-                mS.m->input.mouse.move = Vector2f{0.0f, 0.0f};
+                mS.m->input.backend_touch_finger_down_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_FINGER_UP: {
                 mS.m->update_scale_and_density();
-                mS.m->input.touch.isDown = false;
-                mS.m->input.mouse.leftDown = false;
-				mS.m->input.mouse.set_pos({-1.0f, -1.0f});
-                mS.m->input.mouse.move = Vector2f{0.0f, 0.0f};
+                mS.m->input.backend_touch_finger_up_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_FINGER_MOTION: {
                 mS.m->update_scale_and_density();
-				mS.m->input.mouse.set_pos({event->tfinger.x * mS.m->window.size.x() * mS.m->window.density, event->tfinger.y * mS.m->window.size.y() * mS.m->window.density});
+                mS.m->input.backend_touch_finger_motion_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_DISPLAY_ORIENTATION:

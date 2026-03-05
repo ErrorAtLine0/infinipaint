@@ -2347,6 +2347,7 @@ void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void Toolbar::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    io->mouse.globalPos = button.pos / final_gui_scale();
     if(button.down) {
         switch(button.button) {
             case InputManager::MouseButton::LEFT: {

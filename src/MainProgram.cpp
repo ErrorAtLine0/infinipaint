@@ -68,6 +68,8 @@ void MainProgram::update() {
     while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
     lastFrameTime = std::chrono::steady_clock::now();
 
+    input.update();
+
     for(auto& s : setTabsToClose)
         std::erase(worlds, s.lock());
 
@@ -376,6 +378,16 @@ void MainProgram::input_pen_motion_callback(const InputManager::PenMotionCallbac
 void MainProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
     if(world)
         world->input_pen_axis_callback(axis);
+}
+
+void MainProgram::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchArgs& touch) {
+    if(world)
+        world->input_multi_finger_touch_callback(touch);
+}
+
+void MainProgram::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionArgs& motion) {
+    if(world)
+        world->input_multi_finger_motion_callback(motion);
 }
 
 bool MainProgram::network_being_used() {

@@ -325,6 +325,16 @@ void World::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axi
         drawProg.input_pen_axis_callback(axis);
 }
 
+void World::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchArgs& touch) {
+    if(!clientStillConnecting)
+        drawData.cam.input_multi_finger_touch_callback(*this, touch);
+}
+
+void World::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionArgs& motion) {
+    if(!clientStillConnecting)
+        drawData.cam.input_multi_finger_motion_callback(*this, motion);
+}
+
 void World::send_chat_message(const std::string& message) {
     if(!clientStillConnecting)
         ownClientData->send_chat_message(ownClientData, *this, message);

@@ -5,6 +5,7 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <SDL3/SDL_pen.h>
+#include <SDL3/SDL_timer.h>
 #include <optional>
 
 #include <Helpers/Logger.hpp>
@@ -607,6 +608,178 @@ void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
     }
 }
 
+std::vector<Vector2f> InputManager::get_multiple_finger_positions() {
+    std::vector<Vector2f> pos;
+    for(const SDL_TouchFingerEvent& fingerEvent : touch.fingers)
+        pos.emplace_back(fingerEvent.x * main.window.size.x() * main.window.density, fingerEvent.y * main.window.size.y() * main.window.density);
+    return pos;
+}
+
+std::vector<Vector2f> InputManager::get_multiple_finger_motions() {
+    std::vector<Vector2f> pos;
+    for(const SDL_TouchFingerEvent& fingerEvent : touch.fingers)
+        pos.emplace_back(fingerEvent.dx * main.window.size.x() * main.window.density, fingerEvent.dy * main.window.size.y() * main.window.density);
+    return pos;
+}
+
+void InputManager::backend_touch_finger_down_update(const SDL_TouchFingerEvent& e) {
+    touch.fingers.emplace_back(e);
+    switch(touch.touchEventType) {
+        case Touch::NO_TOUCH_EVENT: {
+            if(touch.fingers.size() == 2) {
+                touch.isDown = true;
+                touch.touchEventType = Touch::TWO_FINGER_EVENT;
+                main.input_multi_finger_touch_callback({
+                    .down = true,
+                    .pos = get_multiple_finger_positions()
+                });
+            }
+            break;
+        }
+        case Touch::ONE_FINGER_EVENT: {
+            break;
+        }
+        case Touch::TWO_FINGER_EVENT: {
+            break;
+        }
+        case Touch::EVENT_DONE: {
+            if(touch.fingers.size() == 1)
+                touch.touchEventType = Touch::NO_TOUCH_EVENT;
+            break;
+        }
+    }
+}
+
+void InputManager::backend_touch_finger_up_update(const SDL_TouchFingerEvent& e) {
+    switch(touch.touchEventType) {
+        case Touch::NO_TOUCH_EVENT: {
+            Vector2f mouseNewPos = {e.x * main.window.size.x() * main.window.density, e.y * main.window.size.y() * main.window.density};
+            mouse.set_pos(mouseNewPos);
+            touch.isDown = false;
+            mouse.leftDown = false;
+
+            if((std::chrono::steady_clock::now() - touch.lastLeftClickTime) > std::chrono::milliseconds(300))
+                touch.leftClicksSaved = 0;
+            touch.leftClicksSaved++;
+            mouse.leftClicks = touch.leftClicksSaved;
+            touch.lastLeftClickTime = std::chrono::steady_clock::now();
+
+            main.input_mouse_button_callback({
+                .button = MouseButton::LEFT,
+                .down = true,
+                .clicks = mouse.leftClicks,
+                .pos = mouseNewPos
+            });
+            main.input_mouse_button_callback({
+                .button = MouseButton::LEFT,
+                .down = false,
+                .clicks = 0,
+                .pos = mouseNewPos
+            });
+
+            touch.touchEventType = Touch::EVENT_DONE;
+            break;
+        }
+        case Touch::ONE_FINGER_EVENT: {
+            Vector2f mouseNewPos = {e.x * main.window.size.x() * main.window.density, e.y * main.window.size.y() * main.window.density};
+            mouse.set_pos(mouseNewPos);
+            touch.isDown = false;
+            mouse.leftDown = false;
+
+            main.input_mouse_button_callback({
+                .button = MouseButton::LEFT,
+                .down = false,
+                .clicks = 0,
+                .pos = mouseNewPos
+            });
+
+            touch.touchEventType = Touch::EVENT_DONE;
+            break;
+        }
+        case Touch::TWO_FINGER_EVENT: {
+            touch.isDown = false;
+
+            main.input_multi_finger_touch_callback({
+                .down = false,
+                .pos = get_multiple_finger_positions()
+            });
+
+            touch.touchEventType = Touch::EVENT_DONE;
+            break;
+        }
+        case Touch::EVENT_DONE: {
+            break;
+        }
+    }
+    std::erase_if(touch.fingers, [&e](auto& tE) {
+        return e.fingerID == tE.fingerID;
+    });
+}
+
+void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e) {
+    switch(touch.touchEventType) {
+        case Touch::NO_TOUCH_EVENT: {
+            {
+                auto& prevTouch = touch.fingers[0];
+                Vector2f mouseNewPos = {prevTouch.x * main.window.size.x() * main.window.density, prevTouch.y * main.window.size.y() * main.window.density};
+                mouse.set_pos(mouseNewPos);
+                mouse.leftDown = true;
+
+                if((std::chrono::steady_clock::now() - touch.lastLeftClickTime) > std::chrono::milliseconds(300))
+                    touch.leftClicksSaved = 0;
+                touch.leftClicksSaved++;
+                mouse.leftClicks = touch.leftClicksSaved;
+                touch.lastLeftClickTime = std::chrono::steady_clock::now();
+
+                main.input_mouse_button_callback({
+                    .button = MouseButton::LEFT,
+                    .down = true,
+                    .clicks = mouse.leftClicks,
+                    .pos = mouseNewPos
+                });
+            }
+            {
+                Vector2f mouseNewPos = {e.x * main.window.size.x() * main.window.density, e.y * main.window.size.y() * main.window.density};
+                mouse.set_pos(mouseNewPos);
+                Vector2f mouseRel = {e.dx * main.window.size.x() * main.window.density, e.dy * main.window.size.y() * main.window.density};
+                main.input_mouse_motion_callback({
+                    .pos = mouseNewPos,
+                    .move = mouseRel
+                });
+            }
+
+            touch.touchEventType = Touch::ONE_FINGER_EVENT;
+            break;
+        }
+        case Touch::ONE_FINGER_EVENT: {
+            Vector2f mouseNewPos = {e.x * main.window.size.x() * main.window.density, e.y * main.window.size.y() * main.window.density};
+            mouse.set_pos(mouseNewPos);
+            Vector2f mouseRel = {e.dx * main.window.size.x() * main.window.density, e.dy * main.window.size.y() * main.window.density};
+            main.input_mouse_motion_callback({
+                .pos = mouseNewPos,
+                .move = mouseRel
+            });
+            break;
+        }
+        case Touch::TWO_FINGER_EVENT: {
+            main.input_multi_finger_motion_callback({
+                .pos = get_multiple_finger_positions(),
+                .move = get_multiple_finger_motions()
+            });
+            break;
+        }
+        case Touch::EVENT_DONE: {
+            break;
+        }
+    }
+    for(auto& tE : touch.fingers) {
+        if(tE.fingerID == e.fingerID) {
+            tE = e;
+            break;
+        }
+    }
+}
+
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
     auto kPress = e.key;
     auto kMod = e.mod;
@@ -934,6 +1107,30 @@ void InputManager::stop_key_input() {
 void InputManager::Mouse::set_pos(const Vector2f& newPos) {
     pos = newPos;
     move = newPos - lastPos;
+}
+
+void InputManager::update() {
+
+    if(touch.touchEventType == Touch::NO_TOUCH_EVENT && (SDL_GetTicksNS() - touch.fingers[0].timestamp) > (100 * 1000000)) { // 100ms to determine whether touch is with a single finger
+        auto& prevTouch = touch.fingers[0];
+        Vector2f mouseNewPos = {prevTouch.x * main.window.size.x() * main.window.density, prevTouch.y * main.window.size.y() * main.window.density};
+        mouse.set_pos(mouseNewPos);
+        mouse.leftDown = true;
+
+        if((std::chrono::steady_clock::now() - touch.lastLeftClickTime) > std::chrono::milliseconds(300))
+            touch.leftClicksSaved = 0;
+        touch.leftClicksSaved++;
+        mouse.leftClicks = touch.leftClicksSaved;
+        touch.lastLeftClickTime = std::chrono::steady_clock::now();
+
+        main.input_mouse_button_callback({
+            .button = MouseButton::LEFT,
+            .down = true,
+            .clicks = mouse.leftClicks,
+            .pos = mouseNewPos
+        });
+        touch.touchEventType = Touch::ONE_FINGER_EVENT;
+    }
 }
 
 void InputManager::frame_reset(const Vector2i& windowSize) {

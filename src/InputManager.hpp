@@ -21,6 +21,7 @@ class MainProgram;
 struct InputManager {
     InputManager(MainProgram& initMain);
 
+    void update();
     void frame_reset(const Vector2i& windowSize);
 
     // Just renamed SDL3 cursor types, but if we need to change to a different backend we can
@@ -77,6 +78,13 @@ struct InputManager {
         bool isDown = false;
         int leftClicksSaved = 0;
         std::chrono::steady_clock::time_point lastLeftClickTime;
+        std::vector<SDL_TouchFingerEvent> fingers;
+        enum TypeOfTouchEvent {
+            NO_TOUCH_EVENT,
+            ONE_FINGER_EVENT,
+            TWO_FINGER_EVENT,
+            EVENT_DONE
+        } touchEventType = EVENT_DONE;
     } touch;
 
     struct Pen {
@@ -208,6 +216,8 @@ struct InputManager {
     uint32_t make_generic_key_mod(SDL_Keymod m);
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);
+    std::vector<Vector2f> get_multiple_finger_positions();
+    std::vector<Vector2f> get_multiple_finger_motions();
 
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
@@ -223,6 +233,9 @@ struct InputManager {
     void backend_pen_touch_up_update(const SDL_PenTouchEvent& e);
     void backend_pen_motion_update(const SDL_PenMotionEvent& e);
     void backend_pen_axis_update(const SDL_PenAxisEvent& e);
+    void backend_touch_finger_down_update(const SDL_TouchFingerEvent& e);
+    void backend_touch_finger_up_update(const SDL_TouchFingerEvent& e);
+    void backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e);
 
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
@@ -299,6 +312,16 @@ struct InputManager {
         Vector2f pos;
         const char* source;
         const char* data;
+    };
+
+    struct MultiFingerTouchArgs {
+        bool down;
+        std::vector<Vector2f> pos;
+    };
+
+    struct MultiFingerMotionArgs {
+        std::vector<Vector2f> pos;
+        std::vector<Vector2f> move;
     };
 
     MainProgram& main;

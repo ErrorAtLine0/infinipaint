@@ -1,9 +1,11 @@
 #include "DrawCamera.hpp"
 #include "DrawingProgram/Tools/DrawingProgramToolBase.hpp"
 #include "Helpers/FixedPoint.hpp"
+#include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
 #include "World.hpp"
 #include "InputManager.hpp"
+#include <Helpers/Logger.hpp>
 
 DrawCamera::DrawCamera():
     c({0, 0}, WorldScalar(1000000), 0.0)
@@ -138,7 +140,7 @@ void DrawCamera::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
-    if(!smoothMove.occurring) {
+    if(!smoothMove.occurring && !isTouchTransforming) {
         bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.toolbar.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
                                     (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
                                     (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
@@ -154,7 +156,7 @@ void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputMana
 }
 
 void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
-    if(!smoothMove.occurring) {
+    if(!smoothMove.occurring && !isTouchTransforming) {
         if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
             WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
             if(zoomFactor < WorldScalar(0.000001))
@@ -175,7 +177,7 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
 }
 
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
-    if(!smoothMove.occurring && wheel.tickAmount.y() && w.main.toolbar.check_if_position_isnt_obstructed(wheel.mousePos)) {
+    if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y() && w.main.toolbar.check_if_position_isnt_obstructed(wheel.mousePos)) {
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
         WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
 
@@ -196,6 +198,40 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
                 }
             }
         }
+    }
+}
+
+void DrawCamera::input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchArgs& touch) {
+    if(!smoothMove.occurring && !isAccurateZooming && !isTouchTransforming && touch.down) {
+        touchInitialPositions = touch.pos;
+        touchInitialC = c;
+        isTouchTransforming = true;
+    }
+    else
+        isTouchTransforming = false;
+}
+
+void DrawCamera::input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionArgs& motion) {
+    if(!smoothMove.occurring && !isAccurateZooming && isTouchTransforming) {
+        c = touchInitialC;
+
+        Vector2f initialCenter = (touchInitialPositions[0] + touchInitialPositions[1]) * 0.5f;
+        Vector2f newCenter = (motion.pos[0] + motion.pos[1]) * 0.5f;
+        c.pos -= c.dir_from_space(newCenter - initialCenter);
+        WorldVec newCenterWorld = c.from_space(newCenter);
+
+        float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
+        float newDistance = vec_distance(motion.pos[0], motion.pos[1]);
+        float scaleAmount = newDistance / initialDistance;
+        c.scale_about_double(newCenterWorld, scaleAmount);
+
+        Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
+        float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
+        Vector2f newDiff = motion.pos[0] - newCenter;
+        float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
+        float rotateAngle = initialAngle - newAngle;
+        rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
+        c.rotate_about(newCenterWorld, rotateAngle);
     }
 }
 
