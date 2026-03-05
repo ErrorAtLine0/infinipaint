@@ -29,7 +29,7 @@ class ScreenshotTool : public DrawingProgramToolBase {
         };
     private:
         void commit_rect();
-        void take_screenshot(const std::filesystem::path& filePath);
+        void take_screenshot(const std::filesystem::path& filePath, ScreenshotType screenshotType);
         void take_screenshot_area_hw(const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground);
         void take_screenshot_svg(SkCanvas* canvas, bool transparentBackground);
 
@@ -47,7 +47,7 @@ class ScreenshotTool : public DrawingProgramToolBase {
                 DRAGGING_BORDER,
                 SELECTION_EXISTS,
                 DRAGGING_AREA
-            } selectionMode;
+            } selectionMode = SelectionMode::NO_SELECTION;
             int dragType = 0;
             Vector2i imageSize = {0, 0};
             std::array<SCollision::Circle<float>, 8> circles;
@@ -59,6 +59,7 @@ class ScreenshotTool : public DrawingProgramToolBase {
 
             std::atomic<bool> setToTakeScreenshot = false;
             std::filesystem::path screenshotSavePath;
+            ScreenshotType screenshotSaveType;
         } controls;
         bool dragging_border_update(const Vector2f& camCursorPos);
         bool selection_exists_update();

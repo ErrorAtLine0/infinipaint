@@ -108,6 +108,7 @@ struct UpdateInputData {
     std::vector<SCollision::Circle<float>> hoverObstructingCircles;
     bool acceptingTextInput = false;
     float deltaTime = 0.0f;
+    bool isTouch = true;
 
     std::shared_ptr<FontData> fonts;
     sk_sp<SkTypeface> textTypeface;

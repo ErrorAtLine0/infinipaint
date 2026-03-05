@@ -1,6 +1,7 @@
 #include "Toolbar.hpp"
 #include "DrawingProgram/Tools/DrawingProgramToolBase.hpp"
 #include "DrawingProgram/Tools/ScreenshotTool.hpp"
+#include "FileHelpers.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/FileDownloader.hpp"
 #include "Helpers/MathExtras.hpp"
@@ -746,7 +747,7 @@ void Toolbar::top_toolbar() {
                             open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
                                 auto wLock = w.lock();
                                 if(wLock)
-                                    wLock->drawProg.add_file_to_canvas_by_path(p.string(), wLock->main.window.size.cast<float>() / 2.0f, false);
+                                    wLock->drawProg.add_file_to_canvas_by_path(p, wLock->main.window.size.cast<float>() / 2.0f, false);
                                 else
                                     Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
                             });
@@ -2252,7 +2253,7 @@ void Toolbar::file_picker_gui() {
             if(gui.text_button_wide("filepicker done", "Done") || isDoneByDoubleClick) {
                 if(!filePicker.fileName.empty()) {
                     pathToRet = filePicker.currentSearchPath / filePicker.fileName;
-                    filePicker.postSelectionFunc(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
+                    filePicker.postSelectionFunc(force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions), filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
                 }
                 filePicker.isOpen = false;
             }
@@ -2403,6 +2404,7 @@ void Toolbar::start_gui() {
     io->hoverObstructed = false;
     io->hoverObstructingAABBs.clear();
     io->hoverObstructingCircles.clear();
+    io->isTouch = main.input.isTouchDevice;
     gui.begin();
 }
 

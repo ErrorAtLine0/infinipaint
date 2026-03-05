@@ -103,7 +103,8 @@ void ScreenshotTool::gui_toolbox() {
                     auto world = w.lock();
                     if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
                         ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
-                        screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
+                        screenshotTool->controls.screenshotSavePath = p;
+                        screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
                         screenshotTool->controls.setToTakeScreenshot = true;
                     }
                 }, "screenshot", true);
@@ -281,24 +282,13 @@ bool ScreenshotTool::dragging_area_update(const Vector2f& camCursorPos) {
 void ScreenshotTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
-void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
+void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, ScreenshotType screenshotType) {
     if(controls.imageSize.x() <= 0 || controls.imageSize.y() <= 0) {
         std::cout << "[ScreenshotTool::take_screenshot] Image size is 0 or negative" << std::endl;
         return;
     }
 
-    std::string ext = filePath.extension().string();
-    size_t extType = SCREENSHOT_JPG;
-    if(ext == ".jpg" || ext == ".jpeg")
-        extType = SCREENSHOT_JPG;
-    else if(ext == ".png")
-        extType = SCREENSHOT_PNG;
-    else if(ext == ".webp")
-        extType = SCREENSHOT_WEBP;
-    else if(ext == ".svg")
-        extType = SCREENSHOT_SVG;
-
-    if(extType != SCREENSHOT_SVG) {
+    if(screenshotType != SCREENSHOT_SVG) {
         size_t imageByteSize = (size_t)controls.imageSize.x() * (size_t)controls.imageSize.y() * 4;
         size_t imageRowSize = 4 * controls.imageSize.x();
     
@@ -315,12 +305,12 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
     
         for(int i = 0; i < controls.imageSize.x(); i += drawP.world.main.window.size.x())
             for(int j = 0; j < controls.imageSize.y(); j += drawP.world.main.window.size.y())
-                take_screenshot_area_hw(surface, screenshotCanvas, finalImgRawData.data(), controls.imageSize, Vector2i{i, j}, Vector2i{std::min(drawP.world.main.window.size.x(), controls.imageSize.x() - i), std::min(drawP.world.main.window.size.y(), controls.imageSize.y() - j)}, drawP.world.main.window.size, extType != 0 && controls.transparentBackground);
+                take_screenshot_area_hw(surface, screenshotCanvas, finalImgRawData.data(), controls.imageSize, Vector2i{i, j}, Vector2i{std::min(drawP.world.main.window.size.x(), controls.imageSize.x() - i), std::min(drawP.world.main.window.size.y(), controls.imageSize.y() - j)}, drawP.world.main.window.size, screenshotType != SCREENSHOT_JPG && controls.transparentBackground);
     
         bool success = false;
         SkDynamicMemoryWStream out;
     
-        switch(extType) {
+        switch(screenshotType) {
             case SCREENSHOT_JPG:
                 success = SkJpegEncoder::Encode(&out, finalImgData, {});
                 break;
@@ -341,10 +331,9 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
 
     #ifndef __EMSCRIPTEN__
         try {
-            std::ofstream fi(filePath, std::ios::out | std::ios::binary);
             auto skData = out.detachAsData();
-            fi.write((const char*)skData->bytes(), skData->size());
-            fi.close();
+            if(!SDL_SaveFile(filePath.c_str(), skData->bytes(), skData->size()))
+                throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
             Logger::get().log("WORLDFATAL", std::string("[ScreenshotTool::take_screenshot] Save screenshot error: ") + e.what());
@@ -372,10 +361,9 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath) {
 
     #ifndef __EMSCRIPTEN__
         try {
-            std::ofstream fi(filePath, std::ios::out | std::ios::binary);
             auto skData = out.detachAsData();
-            fi.write((const char*)skData->bytes(), skData->size());
-            fi.close();
+            if(!SDL_SaveFile(filePath.c_str(), skData->bytes(), skData->size()))
+                throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
             Logger::get().log("WORLDFATAL", std::string("[ScreenshotTool::take_screenshot] Save screenshot error: ") + e.what());
@@ -467,7 +455,7 @@ void ScreenshotTool::switch_tool(DrawingProgramToolType newTool) {
 void ScreenshotTool::tool_update() {
     if(controls.setToTakeScreenshot) {
         controls.setToTakeScreenshot = false;
-        take_screenshot(controls.screenshotSavePath);
+        take_screenshot(controls.screenshotSavePath, controls.screenshotSaveType);
     }
     if(controls.selectionMode == ScreenshotControls::SelectionMode::SELECTION_EXISTS)
         selection_exists_update();

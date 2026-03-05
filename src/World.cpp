@@ -440,7 +440,7 @@ void World::autosave_to_directory(const std::filesystem::path& directoryToSaveAt
 
 void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
     try {
-        filePath = force_extension_on_path(filePathToSaveAt, FILE_EXTENSION);
+        filePath = filePathToSaveAt;
 
         std::stringstream f;
         f.write(VersionConstants::CURRENT_SAVEFILE_HEADER.c_str(), VersionConstants::SAVEFILE_HEADER_LEN);
@@ -468,9 +468,8 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
                 f.view()
             );
         #else
-            std::ofstream fi(filePath, std::ios::out | std::ios::binary);
-            fi << f.view();
-            fi.close();
+            if(!SDL_SaveFile(filePath.c_str(), f.view().data(), f.view().size()))
+                throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         #endif
 
         Logger::get().log("USERINFO", "File saved");
@@ -489,7 +488,7 @@ void World::load_empty_canvas() {
 }
 
 void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer) {
-    filePath = force_extension_on_path(filePathToLoadFrom, FILE_EXTENSION);
+    filePath = filePathToLoadFrom;
 
     std::string byteDataFromFile;
 

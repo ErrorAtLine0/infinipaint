@@ -85,36 +85,17 @@ void ResourceManager::update() {
 }
 
 NetworkingObjects::NetObjTemporaryPtr<ResourceData> ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
-    // https://nullptr.org/cpp-read-file-into-string/
-    std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
-    if(!file.is_open()) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + filePath.string());
-        return {};
-    }
-
-    size_t resourcesize;
-
-    auto tellgResult = file.tellg();
-
-    if(tellgResult == -1) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] tellg failed for file " + filePath.string());
-        return {};
-    }
-
-    resourcesize = static_cast<size_t>(tellgResult);
-
-    file.seekg(0, std::ios_base::beg);
-
     ResourceData resource;
     resource.data = std::make_shared<std::string>();
     resource.name = std::filesystem::path(filePath).filename().string();
-    std::string& toPlaceIn = *resource.data;
 
-    toPlaceIn.resize(resourcesize);
-
-    file.read(toPlaceIn.data(), resourcesize);
-
-    file.close();
+    try {
+        *resource.data = read_file_to_string(filePath);
+    }
+    catch(...) {
+        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + filePath.string());
+        return {};
+    }
 
     Logger::get().log("INFO", "[ResourceManager::add_resource_file] Successfully read file " + filePath.string());
 
