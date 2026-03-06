@@ -160,6 +160,8 @@ bool InputManager::Text::is_accepting_input() {
     return !textBoxes.empty();
 }
 
+SDL_Rect r;
+
 void InputManager::Text::update_accepting_input(SDL_Window* window) {
     if(!textBoxes.empty()) {
         auto& textbox = textBoxes.front();
@@ -172,10 +174,14 @@ void InputManager::Text::update_accepting_input(SDL_Window* window) {
         SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, textbox.textInputProperties.autocorrect);
         SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN, textbox.textInputProperties.multiline);
         SDL_SetNumberProperty(propIDVal, SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER, (textbox.textInputProperties.androidInputType & ANDROIDTEXT_TYPE_CLASS_NUMBER) ? ANDROIDTEXT_TYPE_CLASS_TEXT : textbox.textInputProperties.androidInputType);
+        r = textBoxes.front().rect->get_sdl_rect();
+        SDL_SetTextInputArea(window, &r, 0);
         SDL_StartTextInputWithProperties(window, propIDVal);
     }
-    else
+    else {
         SDL_StopTextInput(window);
+        SDL_SetTextInputArea(window, nullptr, 0);
+    }
 }
 
 std::string InputManager::get_clipboard_str_SDL() {
@@ -1169,13 +1175,13 @@ void InputManager::update() {
         touch.touchEventType = Touch::ONE_FINGER_EVENT;
     }
     if(!text.textBoxes.empty()) {
-        auto& textbox = text.textBoxes.front();
-        if(textbox.rect) {
-            SDL_Rect r = textbox.rect->get_sdl_rect();
-            SDL_SetTextInputArea(main.window.sdlWindow, &r, textbox.cursor->pos.fTextByteIndex);
-        }
-        else
-            SDL_SetTextInputArea(main.window.sdlWindow, nullptr, textbox.cursor->pos.fTextByteIndex);
+        //auto& textbox = text.textBoxes.front();
+        //if(textbox.rect) {
+        //    SDL_Rect r = textbox.rect->get_sdl_rect();
+        //    //SDL_SetTextInputArea(main.window.sdlWindow, &r, textbox.cursor->pos.fTextByteIndex);
+        //}
+        //else
+        //    //SDL_SetTextInputArea(main.window.sdlWindow, nullptr, textbox.cursor->pos.fTextByteIndex);
     }
 }
 

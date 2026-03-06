@@ -58,6 +58,7 @@ void DrawCamera::scale_up(World& w, const WorldScalar& scaleUpAmount) {
     startZoomVal *= scaleUpAmount;
     startZoomMousePos *= scaleUpAmount;
     startZoomCameraPos *= scaleUpAmount;
+    touchInitialC.scale_about({0, 0}, scaleUpAmount, true);
     set_viewing_area(w.main.window.size.cast<float>());
 }
 
