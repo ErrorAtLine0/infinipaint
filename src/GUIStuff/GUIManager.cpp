@@ -334,14 +334,14 @@ bool GUIManager::radio_button(const char* id, bool val, const std::function<void
     RadioButton* e = insert_element<RadioButton>(); 
     e->update(*io, val, elemUpdate);
     pop_id();
-    return e->selection.tapped;
+    return e->selection.clicked;
 }
 
 void GUIManager::checkbox(const char* id, bool* val, const std::function<void()>& elemUpdate) {
     push_id(id);
     CheckBox* e = insert_element<CheckBox>(); 
     e->update(*io, *val, elemUpdate);
-    if(e->selection.tapped)
+    if(e->selection.clicked)
         *val = !(*val);
     pop_id();
 }
@@ -431,7 +431,8 @@ bool GUIManager::selectable_button(const char* id, const std::function<void(Sele
     push_id(id);
     SelectableButton* e = insert_element<SelectableButton>();
     e->update(*io, drawType, elemUpdate, isSelected);
-    bool toRet = onClick ? e->selection.clicked : e->selection.tapped;
+    //bool toRet = onClick ? e->selection.clicked : e->selection.tapped;
+    bool toRet = e->selection.clicked;
     pop_id();
     return toRet;
 }
@@ -856,7 +857,7 @@ bool GUIManager::rotate_wheel(const char* id, double* angle, float size, const s
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
         RotateWheel* e = insert_element<RotateWheel>();
         e->update(*io, angle, elemUpdate);
-        toRet = e->selection.tapped;
+        toRet = e->selection.clicked;
     }
     pop_id();
     return toRet;

@@ -49,6 +49,7 @@ namespace GUIStuff {
             if(hovered) {
                 held = true;
                 clicked = true;
+                selected = true;
                 timeClicked = std::chrono::steady_clock::now();
                 clickPos = cursorPos;
             }
@@ -56,10 +57,8 @@ namespace GUIStuff {
                 selected = false;
         }
         else if(!isLeftHeld) {
-            if(held && hovered && (std::chrono::steady_clock::now() - timeClicked) < std::chrono::milliseconds(250) && vec_distance_sqrd(clickPos, cursorPos) < (25 * 25)) {
-                selected = true;
+            if(held && hovered && (std::chrono::steady_clock::now() - timeClicked) < std::chrono::milliseconds(250) && vec_distance_sqrd(clickPos, cursorPos) < (25 * 25))
                 tapped = true;
-            }
             held = false;
         }
 
