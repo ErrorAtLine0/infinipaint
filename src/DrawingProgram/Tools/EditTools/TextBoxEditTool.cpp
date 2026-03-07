@@ -139,8 +139,6 @@ bool TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
         a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
     }
 
-
-
     t.gui.pop_id();
 
     if(a.textBox->inputChangedTextBox)
@@ -150,6 +148,42 @@ bool TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     bool oldInputChangedTextBox = a.textBox->inputChangedTextBox;
     a.textBox->inputChangedTextBox = false;
     return oldInputChangedTextBox;
+}
+
+void TextBoxEditTool::input_key_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::KeyCallbackArgs& key) {
+}
+
+void TextBoxEditTool::input_mouse_button_on_canvas_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::MouseButtonCallbackArgs& button, bool isDraggingPoint) {
+    if(button.button == InputManager::MouseButton::LEFT && !isDraggingPoint) {
+        auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
+
+        SCollision::ColliderCollection<float> mousePointCollection;
+        mousePointCollection.circle.emplace_back(button.pos, 1.0f);
+        mousePointCollection.recalculate_bounds();
+
+        InputManager& input = drawP.world.main.input;
+
+        bool collidesWithBox = comp->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
+
+        a.textBox->process_mouse_left_button(*a.cursor, a.get_mouse_pos(drawP), (button.down && button.clicks && collidesWithBox) ? button.clicks : 0, button.down, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+    }
+}
+
+void TextBoxEditTool::input_mouse_motion_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint) {
+    auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
+    a.init_text_box(drawP);
+
+    if(!isDraggingPoint) {
+        auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
+
+        SCollision::ColliderCollection<float> mousePointCollection;
+        mousePointCollection.circle.emplace_back(motion.pos, 1.0f);
+        mousePointCollection.recalculate_bounds();
+
+        InputManager& input = drawP.world.main.input;
+
+        a.textBox->process_mouse_left_button(*a.cursor, a.get_mouse_pos(drawP), 0, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+    }
 }
 
 bool TextBoxEditTool::right_click_popup_gui(CanvasComponentContainer::ObjInfo* comp, Vector2f popupPos) {
@@ -254,6 +288,7 @@ void TextBoxEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* com
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     a.d.editing = false;
     comp->obj->commit_update(drawP);
+    drawP.world.main.input.remove_rich_text_box_input(a.textBox);
 }
 
 TextBoxEditTool::TextBoxEditToolAllData TextBoxEditTool::get_all_data(const TextBoxCanvasComponent& a) {
@@ -267,6 +302,9 @@ void TextBoxEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::O
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     auto& cur = a.cursor;
     auto& textbox = a.textBox;
+
+    a.init_text_box(drawP);
+
     cur = std::make_shared<TextBox::Cursor>();
     Vector2f textSelectPos = a.get_mouse_pos(drawP);
     textbox->process_mouse_left_button(*cur, textSelectPos, 1, false, false);
@@ -280,23 +318,16 @@ void TextBoxEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::O
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 
     comp->obj->commit_update(drawP);
+
+    drawP.world.main.input.set_rich_text_box_input_back(a.textBox, a.cursor, true, nullptr, {
+        .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
+        .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+        .autocorrect = true,
+        .multiline = true,
+        .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
+    });
 }
 
 bool TextBoxEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
-    auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
-
-    SCollision::ColliderCollection<float> mousePointCollection;
-    mousePointCollection.circle.emplace_back(drawP.world.main.input.mouse.pos, 1.0f);
-    mousePointCollection.recalculate_bounds();
-
-    a.init_text_box(drawP);
-
-    InputManager& input = drawP.world.main.input;
-
-    bool collidesWithBox = comp->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
-
-    //input.text.set_rich_text_box_input_back(a.textBox, a.cursor, true, currentMods);
-    a.textBox->process_mouse_left_button(*a.cursor, a.get_mouse_pos(drawP), (drawP.controls.leftClick && collidesWithBox) ? drawP.world.main.input.mouse.leftClicks : 0, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
-
     return true;
 }

@@ -42,6 +42,113 @@ void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
         switch_tool(get_type());
 }
 
+void EditTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    drawP.selection.input_key_callback_modify_selection(key);
+}
+
+void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    drawP.selection.input_mouse_button_on_canvas_callback_modify_selection(button);
+    if(button.button == InputManager::MouseButton::LEFT) {
+        if(button.down) {
+            if(!objInfoBeingEdited) {
+                WorldVec mouseWorldPos = drawP.world.drawData.cam.c.from_space(button.pos);
+
+                SCollision::AABB<WorldScalar> mouseAABB{mouseWorldPos - WorldVec{0.5f, 0.5f}, mouseWorldPos + WorldVec{0.5f, 0.5f}};
+                SCollision::ColliderCollection<WorldScalar> cMouseAABB;
+                cMouseAABB.aabb.emplace_back(mouseAABB);
+                cMouseAABB.recalculate_bounds();
+
+                SCollision::AABB<float> camMouseAABB{drawP.world.main.input.mouse.pos - Vector2f{0.5f, 0.5f}, button.pos + Vector2f{0.5f, 0.5f}};
+                SCollision::ColliderCollection<float> camCMouseAABB;
+                camCMouseAABB.aabb.emplace_back(camMouseAABB);
+                camCMouseAABB.recalculate_bounds();
+
+                bool modifySelection = !drawP.selection.is_being_transformed();
+                if(button.clicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
+                    CanvasComponentContainer::ObjInfo* selectedObjectToEdit = drawP.selection.get_front_object_colliding_with_in_editing_layer(camCMouseAABB);
+
+                    if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
+                        drawP.selection.deselect_all();
+                        edit_start(selectedObjectToEdit);
+                        modifySelection = false;
+                    }
+                }
+                if(modifySelection) {
+                    if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
+                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
+                    else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
+                        drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
+                    else {
+                        drawP.selection.deselect_all();
+                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
+                    }
+                }
+            }
+            else {
+                SCollision::Circle<float> mouseCircle{button.pos, 1.0f};
+                SCollision::ColliderCollection<float> cMouseCircle;
+                cMouseCircle.circle.emplace_back(mouseCircle);
+                cMouseCircle.recalculate_bounds();
+
+                bool isMovingPoint = false;
+                bool clickedAway = false;
+
+                if(!pointDragging) {
+                    for(HandleData& h : pointHandles) {
+                        if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
+                            pointDragging = &h;
+                            isMovingPoint = true;
+                            break;
+                        }
+                    }
+                    if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
+                        clickedAway = true;
+                }
+
+                for(HandleData& h : pointHandles) {
+                    if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
+                        pointDragging = &h;
+                        isMovingPoint = true;
+                        break;
+                    }
+                }
+                if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
+                    clickedAway = true;
+
+                if(clickedAway)
+                    switch_tool(get_type());
+
+                if(objInfoBeingEdited)
+                    compEditTool->input_mouse_button_on_canvas_callback(objInfoBeingEdited, button, pointDragging);
+            }
+        }
+        else {
+            if(objInfoBeingEdited)
+                compEditTool->input_mouse_button_on_canvas_callback(objInfoBeingEdited, button, pointDragging);
+            if(pointDragging)
+                pointDragging = nullptr;
+        }
+    }
+}
+
+void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    if(objInfoBeingEdited) {
+        if(drawP.controls.leftClickHeld && pointDragging) {
+            Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
+            if(newPos != *pointDragging->p) {
+                if(pointDragging->min)
+                    newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
+                if(pointDragging->max)
+                    newPos = cwise_vec_min((*pointDragging->max - Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
+                *pointDragging->p = newPos;
+                objInfoBeingEdited->obj->commit_update(drawP);
+            }
+        }
+        compEditTool->input_mouse_motion_callback(objInfoBeingEdited, motion, pointDragging);
+    }
+    drawP.selection.input_mouse_motion_callback_modify_selection(motion);
+}
+
 bool EditTool::right_click_popup_gui(Vector2f popupPos) {
     if(objInfoBeingEdited)
         return compEditTool->right_click_popup_gui(objInfoBeingEdited, popupPos);
@@ -147,80 +254,10 @@ bool EditTool::is_editable(CanvasComponentContainer::ObjInfo* comp) {
 }
 
 void EditTool::tool_update() {
-    if(!objInfoBeingEdited) {
-        SCollision::AABB<WorldScalar> mouseAABB{drawP.world.get_mouse_world_pos() - WorldVec{0.5f, 0.5f}, drawP.world.get_mouse_world_pos() + WorldVec{0.5f, 0.5f}};
-        SCollision::ColliderCollection<WorldScalar> cMouseAABB;
-        cMouseAABB.aabb.emplace_back(mouseAABB);
-        cMouseAABB.recalculate_bounds();
-
-        SCollision::AABB<float> camMouseAABB{drawP.world.main.input.mouse.pos - Vector2f{0.5f, 0.5f}, drawP.world.main.input.mouse.pos + Vector2f{0.5f, 0.5f}};
-        SCollision::ColliderCollection<float> camCMouseAABB;
-        camCMouseAABB.aabb.emplace_back(camMouseAABB);
-        camCMouseAABB.recalculate_bounds();
-
-        if(drawP.controls.leftClick) {
-            bool modifySelection = !drawP.selection.is_being_transformed();
-            if(drawP.world.main.input.mouse.leftClicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                CanvasComponentContainer::ObjInfo* selectedObjectToEdit = drawP.selection.get_front_object_colliding_with_in_editing_layer(camCMouseAABB);
-
-                if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
-                    drawP.selection.deselect_all();
-                    edit_start(selectedObjectToEdit);
-                    modifySelection = false;
-                }
-            }
-            if(modifySelection) {
-                if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
-                    drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
-                else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                    drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
-                else {
-                    drawP.selection.deselect_all();
-                    drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
-                }
-            }
-        }
-    }
-    else {
-        SCollision::Circle<float> mouseCircle{drawP.world.main.input.mouse.pos, 1.0f};
-        SCollision::ColliderCollection<float> cMouseCircle;
-        cMouseCircle.circle.emplace_back(mouseCircle);
-        cMouseCircle.recalculate_bounds();
-
-        bool isMovingPoint = false;
-        bool clickedAway = false;
-        if(!pointDragging && drawP.controls.leftClick) {
-            for(HandleData& h : pointHandles) {
-                if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
-                    pointDragging = &h;
-                    isMovingPoint = true;
-                    break;
-                }
-            }
-            if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
-                clickedAway = true;
-        }
-        else if(pointDragging) {
-            if(drawP.controls.leftClickHeld) {
-                Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
-                if(newPos != *pointDragging->p) {
-                    if(pointDragging->min)
-                        newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
-                    if(pointDragging->max)
-                        newPos = cwise_vec_min((*pointDragging->max - Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
-                    *pointDragging->p = newPos;
-                    objInfoBeingEdited->obj->commit_update(drawP);
-                }
-                isMovingPoint = true;
-            }
-            else
-                pointDragging = nullptr;
-        }
-
+    if(objInfoBeingEdited) {
         objInfoBeingEdited->obj->send_comp_update(drawP, false);
-
         bool shouldNotReset = compEditTool->edit_update(objInfoBeingEdited);
-        if(!shouldNotReset || clickedAway)
+        if(!shouldNotReset)
             switch_tool(get_type());
     }
 }

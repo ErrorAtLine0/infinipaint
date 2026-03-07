@@ -60,11 +60,7 @@ bool ImageEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
                 );
             #endif
             t.open_file_selector("Download File", {{"Any File", "*"}}, [resourceData](const std::filesystem::path& p, const auto& e) {
-                std::ofstream f(p, std::ios::binary);
-                if(f.is_open()) {
-                    f << *resourceData->data;
-                    f.close();
-                }
+                SDL_SaveFile(p.c_str(), resourceData->data->c_str(), resourceData->data->size());
             }, resourceData->name, true);
         }
     }

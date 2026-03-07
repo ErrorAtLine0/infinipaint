@@ -15,6 +15,10 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         virtual bool edit_update(CanvasComponentContainer::ObjInfo* comp) override;
         virtual bool edit_gui(CanvasComponentContainer::ObjInfo* comp) override;
         virtual bool right_click_popup_gui(CanvasComponentContainer::ObjInfo* comp, Vector2f popupPos) override;
+
+        virtual void input_key_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::KeyCallbackArgs& key) override;
+        virtual void input_mouse_button_on_canvas_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::MouseButtonCallbackArgs& button, bool isDraggingPoint) override;
+        virtual void input_mouse_motion_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint) override;
     private:
         struct TextBoxEditToolAllData {
             TextBoxCanvasComponent::Data textboxData;

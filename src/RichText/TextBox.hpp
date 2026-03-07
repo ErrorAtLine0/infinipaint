@@ -144,6 +144,7 @@ class TextBox {
 
         void process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift);
         void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
+
         std::pair<std::string, TextData> process_copy(Cursor& cur);
         std::pair<std::string, TextData> process_cut(Cursor& cur);
         std::string get_text_between(TextPosition p1, TextPosition p2);
