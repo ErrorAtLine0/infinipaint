@@ -81,7 +81,7 @@ void ScreenshotTool::gui_toolbox() {
         if(t.gui.text_button_wide("Take Screenshot", "Take Screenshot")) {
             controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
             #ifdef __EMSCRIPTEN__
-                take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType]);
+                take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType], screenshotConfig.selectedType);
             #else
                 // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
                 Toolbar::ExtensionFilter setExtensionFilter;
@@ -343,8 +343,8 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, Scre
             std::string mimeTypeArray[] = {"image/jpeg", "image/png", "image/webp"};
             auto skData = out.detachAsData();
             emscripten_browser_file::download(
-                "screenshot" + controls.typeSelections[extType],
-                mimeTypeArray[extType],
+                "screenshot" + controls.typeSelections[screenshotType],
+                mimeTypeArray[screenshotType],
                 std::string_view((const char*)skData->bytes(), skData->size())
             );
         }

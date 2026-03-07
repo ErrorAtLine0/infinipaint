@@ -186,10 +186,16 @@ void InputManager::Text::update_accepting_input(SDL_Window* window) {
             SDL_SetTextInputArea(window, &r, 0);
         }
         SDL_StartTextInputWithProperties(window, propIDVal);
+        #ifdef __EMSCRIPTEN__
+            isAcceptingInputEmscripten = 1;
+        #endif
     }
     else {
         SDL_StopTextInput(window);
         SDL_SetTextInputArea(window, nullptr, 0);
+        #ifdef __EMSCRIPTEN__
+            isAcceptingInputEmscripten = 0;
+        #endif
     }
 }
 
@@ -1192,8 +1198,4 @@ void InputManager::frame_reset(const Vector2i& windowSize) {
 
     toggleFullscreen = false;
     hideCursor = false;
-
-#ifdef __EMSCRIPTEN__
-    isAcceptingInputEmscripten = text.acceptingInput ? 1 : 0;
-#endif
 }

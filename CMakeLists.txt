@@ -203,7 +203,7 @@ else()
     add_executable(main ${sources})
 endif()
 
-if((NOT ANDROID) AND (NOT EMSCRIPTEN))
+if(NOT ANDROID)
     set_target_properties(main PROPERTIES OUTPUT_NAME "infinipaint")
 endif()
 
