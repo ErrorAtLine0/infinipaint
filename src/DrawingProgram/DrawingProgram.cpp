@@ -443,9 +443,6 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 void DrawingProgram::update() {
     controls.cursorHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
 
-    controls.previousMouseWorldPos = controls.currentMouseWorldPos;
-    controls.currentMouseWorldPos = world.get_mouse_world_pos();
-
     if(addFileInNextFrame) {
         add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);
         addFileInNextFrame = false;
@@ -453,9 +450,6 @@ void DrawingProgram::update() {
 
     selection.update();
     drawTool->tool_update();
-
-    if(controls.leftClickReleased)
-        controls.leftClickReleased = false;
 
     update_downloading_dropped_files();
     check_updateable_components();

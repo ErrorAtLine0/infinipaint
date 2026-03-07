@@ -361,12 +361,6 @@ const InputManager::KeyData& InputManager::key(KeyCode kCode) {
 
 void InputManager::set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode) {
     auto& k = keys[kCode];
-    if(!k.held || (std::chrono::steady_clock::now() - k.lastPressTime) > std::chrono::milliseconds(500)) // Timer works around some systems that emit a keypress twice (a repeat and a press event)
-        k.repeat = true;
-    if(!k.held) { // We use if statements instead of setting booleans so that values arent forced to false
-        k.pressed = true;
-        k.lastPressTime = std::chrono::steady_clock::now();
-    }
     k.held = true;
 }
 
@@ -435,18 +429,13 @@ void InputManager::backend_mouse_button_down_update(const SDL_MouseButtonEvent& 
     Vector2f mousePos = {e.x * main.window.density, e.y * main.window.density};
     mouse.set_pos(mousePos);
 
-    if(e.button == 1) {
+    if(e.button == 1)
         mouse.leftDown = true;
-        mouse.leftClicks = e.clicks;
-    }
-    else if(e.button == 2) {
+    else if(e.button == 2)
         mouse.middleDown = true;
-        mouse.middleClicks = e.clicks;
-    }
-    else if(e.button == 3) {
+    else if(e.button == 3)
         mouse.rightDown = true;
-        mouse.rightClicks = e.clicks;
-    }
+
     MouseButtonCallbackArgs args{
         .deviceType = MouseDeviceType::MOUSE,
         .button = static_cast<MouseButton>(e.button),
@@ -477,8 +466,6 @@ void InputManager::backend_mouse_wheel_update(const SDL_MouseWheelEvent& e) {
     Vector2f mouseNewPos = {e.mouse_x * main.window.density, e.mouse_y * main.window.density};
     mouse.set_pos(mouseNewPos);
 
-    mouse.scrollAmount.x() += e.x;
-    mouse.scrollAmount.y() += e.y;
     main.input_mouse_wheel_callback({
         .mousePos = mouseNewPos,
         .amount = {e.x, e.y},
@@ -494,7 +481,6 @@ void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
 
     pen.previousPos = mouseNewPos;
     pen.buttons[e.button].held = true;
-    pen.buttons[e.button].pressed = true;
     pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 
     if(e.button == main.toolbar.tabletOptions.middleClickButton) {
@@ -571,7 +557,6 @@ void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
     if((std::chrono::steady_clock::now() - pen.lastPenLeftClickTime) > std::chrono::milliseconds(300))
         pen.leftClicksSaved = 0;
     pen.leftClicksSaved++;
-    mouse.leftClicks = pen.leftClicksSaved;
     pen.lastPenLeftClickTime = std::chrono::steady_clock::now();
     pen.isEraser = e.eraser;
 
@@ -579,7 +564,7 @@ void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
         .deviceType = MouseDeviceType::PEN,
         .button = MouseButton::LEFT,
         .down = e.down,
-        .clicks = mouse.leftClicks,
+        .clicks = pen.leftClicksSaved,
         .pos = mouseNewPos
     });
     main.input_pen_touch_callback({
@@ -680,13 +665,12 @@ void InputManager::touch_finger_do_mouse_down() {
         touch.leftClicksSaved = 0;
     touch.leftClicksSaved++;
     touch.lastLeftClickTime = std::chrono::steady_clock::now();
-    mouse.leftClicks = touch.leftClicksSaved;
 
     main.input_mouse_button_callback({
         .deviceType = MouseDeviceType::TOUCH,
         .button = MouseButton::LEFT,
         .down = true,
-        .clicks = mouse.leftClicks,
+        .clicks = touch.leftClicksSaved,
         .pos = mouseNewPos
     });
 }
@@ -871,46 +855,46 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
     switch(kPress) {
         case SDLK_UP:
             set_key_down(e, KEY_TEXT_UP);
-            if(textBox && key(KEY_TEXT_UP).repeat)
+            if(textBox)
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::UP, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
             break;
         case SDLK_DOWN:
             set_key_down(e, KEY_TEXT_DOWN);
-            if(textBox && key(KEY_TEXT_DOWN).repeat)
+            if(textBox)
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::DOWN, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
             break;
         case SDLK_LEFT:
             set_key_down(e, KEY_TEXT_LEFT);
-            if(textBox && key(KEY_TEXT_LEFT).repeat)
+            if(textBox)
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::LEFT, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
             break;
         case SDLK_RIGHT:
             set_key_down(e, KEY_TEXT_RIGHT);
-            if(textBox && key(KEY_TEXT_RIGHT).repeat)
+            if(textBox)
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::RIGHT, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
             break;
         case SDLK_BACKSPACE:
             set_key_down(e, KEY_TEXT_BACKSPACE);
-            if(textBox && key(KEY_TEXT_BACKSPACE).repeat)
+            if(textBox)
                 text.do_textbox_operation_with_undo([&]() {
                     textBox->process_key_input(*cursor, RichText::TextBox::InputKey::BACKSPACE, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
                 });
             break;
         case SDLK_DELETE:
             set_key_down(e, KEY_TEXT_DELETE);
-            if(textBox && key(KEY_TEXT_DELETE).repeat)
+            if(textBox)
                 text.do_textbox_operation_with_undo([&]() {
                     textBox->process_key_input(*cursor, RichText::TextBox::InputKey::DEL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
                 });
             break;
         case SDLK_HOME:
             set_key_down(e, KEY_TEXT_HOME);
-            if(textBox && key(KEY_TEXT_HOME).repeat)
+            if(textBox)
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::HOME, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
             break;
         case SDLK_END:
             set_key_down(e, KEY_TEXT_END);
-            if(textBox && key(KEY_TEXT_END).repeat)
+            if(textBox)
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::END, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
             break;
         case SDLK_LSHIFT:
@@ -930,48 +914,54 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             break;
         case SDLK_C:
             // Use either Ctrl or Meta (command for Mac) keys. We do either instead of checking, since checking can get complicated on Emscripten
-            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL)) {
                 set_key_down(e, KEY_TEXT_COPY);
-            if(textBox && key(KEY_TEXT_COPY).repeat)
-                set_clipboard_plain_and_richtext_pair(textBox->process_copy(*cursor));
+                if(textBox)
+                    set_clipboard_plain_and_richtext_pair(textBox->process_copy(*cursor));
+            }
             break;
         case SDLK_X:
-            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL)) {
                 set_key_down(e, KEY_TEXT_CUT);
-            if(textBox && key(KEY_TEXT_CUT).repeat)
-                text.do_textbox_operation_with_undo([&]() {
-                    set_clipboard_plain_and_richtext_pair(textBox->process_cut(*cursor));
-                });
+                if(textBox)
+                    text.do_textbox_operation_with_undo([&]() {
+                        set_clipboard_plain_and_richtext_pair(textBox->process_cut(*cursor));
+                    });
+            }
             break;
         case SDLK_V:
-            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL)) {
                 set_key_down(e, KEY_TEXT_PASTE);
-            if(textBox && key(KEY_TEXT_PASTE).repeat)
-                text.do_textbox_operation_with_undo([&]() {
-                    call_text_paste(true);
-                });
+                if(textBox)
+                    text.do_textbox_operation_with_undo([&]() {
+                        call_text_paste(true);
+                    });
+            }
             break;
         case SDLK_A:
-            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL)) {
                 set_key_down(e, KEY_TEXT_SELECTALL);
-            if(textBox && key(KEY_TEXT_SELECTALL).repeat)
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::SELECT_ALL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
+                if(textBox)
+                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::SELECT_ALL, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
+            }
             break;
         case SDLK_Z:
-            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL)) {
                 set_key_down(e, KEY_TEXT_UNDO);
-            if(textBox && key(KEY_TEXT_UNDO).repeat)
-                text.textBoxes.front().textboxUndo.undo();
+                if(textBox)
+                    text.textBoxes.front().textboxUndo.undo();
+            }
             break;
         case SDLK_R:
-            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
+            if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL)) {
                 set_key_down(e, KEY_TEXT_REDO);
-            if(textBox && key(KEY_TEXT_REDO).repeat)
-                text.textBoxes.front().textboxUndo.redo();
+                if(textBox)
+                    text.textBoxes.front().textboxUndo.redo();
+            }
             break;
         case SDLK_RETURN: {
             set_key_down(e, KEY_TEXT_ENTER);
-            if(textBox && key(KEY_TEXT_ENTER).repeat)
+            if(textBox)
                 text.do_textbox_operation_with_undo([&]() {
                     textBox->process_key_input(*cursor, RichText::TextBox::InputKey::ENTER, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
                 });
@@ -980,7 +970,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         }
         case SDLK_TAB: {
             set_key_down(e, KEY_TEXT_TAB);
-            if(textBox && key(KEY_TEXT_TAB).repeat)
+            if(textBox)
                 text.do_textbox_operation_with_undo([&]() {
                     textBox->process_key_input(*cursor, RichText::TextBox::InputKey::TAB, ctrl_or_meta_held(), key(KEY_GENERIC_LSHIFT).held, modMap);
                 });
@@ -1175,7 +1165,6 @@ void InputManager::stop_key_input() {
 
 void InputManager::Mouse::set_pos(const Vector2f& newPos) {
     pos = newPos;
-    move = newPos - lastPos;
 }
 
 void InputManager::update() {
@@ -1195,22 +1184,7 @@ void InputManager::update() {
 }
 
 void InputManager::frame_reset(const Vector2i& windowSize) {
-    mouse.lastPos = mouse.pos;
-    mouse.move = Vector2f({0.0f, 0.0f});
-    mouse.scrollAmount = Vector2f({0.0f, 0.0f});
-    mouse.leftClicks = 0;
-    mouse.rightClicks = 0;
-    mouse.middleClicks = 0;
-
     cursorIcon = SystemCursorType::DEFAULT;
-
-    for(auto& p : keys) {
-        p.pressed = false;
-        p.repeat = false;
-    }
-
-    for(auto& p : pen.buttons)
-        p.pressed = false;
 
     lastPressedKeybind = std::nullopt;
     if(stopKeyInput)

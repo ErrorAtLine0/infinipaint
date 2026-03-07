@@ -58,30 +58,21 @@ struct InputManager {
     bool toggleFullscreen = false;
 
     struct KeyData {
-        bool pressed = false;
         bool held = false;
-        bool repeat = false;
         std::chrono::steady_clock::time_point lastPressTime;
     };
 
     struct Mouse {
         void set_pos(const Vector2f& newPos);
-        Vector2f scrollAmount = {0, 0};
         Vector2f pos = {0, 0};
-        Vector2f previousPos = {0, 0};
-        Vector2f move = {0, 0};
         bool leftDown = false;
         bool rightDown = false;
         bool middleDown = false;
-        uint8_t leftClicks = 0;
-        uint8_t rightClicks = 0;
-        uint8_t middleClicks = 0;
-        Vector2f lastPos = {0, 0};
     } mouse;
 
     struct Touch {
-        int leftClicksSaved = 0;
-        int fingerTapsSaved = 0;
+        uint8_t leftClicksSaved = 0;
+        uint8_t fingerTapsSaved = 0;
         std::chrono::steady_clock::time_point lastLeftClickTime;
         std::chrono::steady_clock::time_point lastFingerTapTime;
         std::vector<SDL_TouchFingerEvent> fingers;
@@ -98,7 +89,7 @@ struct InputManager {
         bool isDown = false;
         bool isEraser = false;
         float pressure = 0.0f;
-        int leftClicksSaved = 0;
+        uint8_t leftClicksSaved = 0;
         Vector2f previousPos;
 
         std::chrono::steady_clock::time_point lastPenLeftClickTime;

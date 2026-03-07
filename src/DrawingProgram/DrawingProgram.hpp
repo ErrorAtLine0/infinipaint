@@ -107,14 +107,8 @@ class DrawingProgram {
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;
 
-            WorldVec previousMouseWorldPos = {0, 0};
-            WorldVec currentMouseWorldPos = {0, 0};
-            bool leftClick = false;
             bool leftClickHeld = false;
-            bool leftClickReleased = false;
-            bool middleClick = false;
             bool middleClickHeld = false;
-            bool middleClickReleased = false;
             bool cursorHoveringOverCanvas = false;
 
             DrawingProgramLayerManager::LayerSelector layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;

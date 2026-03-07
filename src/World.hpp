@@ -59,9 +59,6 @@ class World {
         void send_chat_message(const std::string& message);
         void add_chat_message(const std::string& name, const std::string& message, Toolbar::ChatMessage::Type type);
 
-        WorldVec get_mouse_world_pos();
-        WorldVec get_mouse_world_move();
-
         WorldScalar calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize);
 
         void focus_update();
@@ -130,8 +127,6 @@ class World {
         void connection_update();
 
         TimePoint timeToSendCameraData;
-        WorldVec mousePreviousWorldVec = {0, 0};
-        WorldVec mouseWorldMove = {0, 0};
 
         std::chrono::steady_clock::time_point lastKeepAliveSent;
 

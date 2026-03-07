@@ -77,19 +77,20 @@ void GridModifyTool::input_mouse_motion_callback(const InputManager::MouseMotion
     NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
     if(gLock) {
         WorldGrid& g = *gLock;
+        auto mouseWorldPos = drawP.world.drawData.cam.c.from_space(motion.pos);
         switch(selectionMode) {
             case 0:
                 break;
             case 1:
-                g.offset = drawP.world.get_mouse_world_pos();
+                g.offset = mouseWorldPos;
                 break;
             case 2:
-                g.size = std::max(FixedPoint::abs(drawP.world.get_mouse_world_pos().x() - g.offset.x()), WorldScalar(1));
+                g.size = std::max(FixedPoint::abs(mouseWorldPos.x() - g.offset.x()), WorldScalar(1));
                 break;
             case 3:
                 if(g.bounds.has_value()) {
                     auto& b = g.bounds.value();
-                    b.min = cwise_vec_min(drawP.world.get_mouse_world_pos(), b.max);
+                    b.min = cwise_vec_min(mouseWorldPos, b.max);
                 }
                 else
                     selectionMode = 0;
@@ -97,7 +98,7 @@ void GridModifyTool::input_mouse_motion_callback(const InputManager::MouseMotion
             case 4:
                 if(g.bounds.has_value()) {
                     auto& b = g.bounds.value();
-                    b.max = cwise_vec_max(drawP.world.get_mouse_world_pos(), b.min);
+                    b.max = cwise_vec_max(mouseWorldPos, b.min);
                 }
                 else
                     selectionMode = 0;
@@ -191,7 +192,8 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         }
         if(selectionMode == 0 || selectionMode == 2) {
             Vector2f gSizeScreenPos;
-            if(drawP.world.get_mouse_world_pos().x() < g.offset.x() && selectionMode == 2)
+            auto mouseWorldPos = drawP.world.drawData.cam.c.from_space(drawData.main->input.mouse.pos);
+            if(mouseWorldPos.x() < g.offset.x() && selectionMode == 2)
                 gSizeScreenPos = drawData.cam.c.to_space(g.offset - WorldVec{g.size, 0});
             else
                 gSizeScreenPos = drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});

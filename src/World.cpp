@@ -165,9 +165,6 @@ void World::init_client(const std::string& serverFullID) {
 }
 
 void World::focus_update() {
-    mousePreviousWorldVec = drawData.cam.c.from_space(main.input.mouse.pos);
-    mouseWorldMove = drawData.cam.c.from_space(main.input.mouse.move);
-
     connection_update();
     if(setToDestroy)
         return;
@@ -335,14 +332,6 @@ void World::add_chat_message(const std::string& name, const std::string& message
     chatMessages.emplace_front(Toolbar::ChatMessage{name, message, type});
     if(chatMessages.size() == CHAT_SIZE)
         chatMessages.pop_back();
-}
-
-WorldVec World::get_mouse_world_pos() {
-    return mousePreviousWorldVec;
-}
-
-WorldVec World::get_mouse_world_move() {
-    return mouseWorldMove;
 }
 
 void World::early_destroy() {
