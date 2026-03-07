@@ -158,8 +158,8 @@ struct InputManager {
         int androidInputType;
     };
 
-    void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
-    void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap = std::nullopt);
+    void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& nModMap = nullptr);
+    void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& nModMap = nullptr);
     void remove_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox);
     
     struct Text {
@@ -176,7 +176,7 @@ struct InputManager {
                 std::shared_ptr<RichText::TextBox> textBox;
                 std::shared_ptr<RichText::TextBox::Cursor> cursor;
                 std::shared_ptr<SCollision::AABB<float>> rect;
-                std::optional<RichText::TextStyleModifier::ModifierMap> modMap;
+                std::shared_ptr<RichText::TextStyleModifier::ModifierMap> modMap;
                 TextInputProperties textInputProperties;
                 UndoManager textboxUndo;
             };

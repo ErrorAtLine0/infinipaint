@@ -46,7 +46,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         std::unordered_map<std::string, std::pair<RichText::TextBox::Cursor, RichText::TextData>> undoHeldData;
 
-        RichText::TextStyleModifier::ModifierMap currentMods;
+        std::shared_ptr<RichText::TextStyleModifier::ModifierMap> currentModsPtr = std::make_shared<RichText::TextStyleModifier::ModifierMap>();
 
         std::vector<std::string> sortedFontList;
 

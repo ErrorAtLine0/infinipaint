@@ -30,6 +30,13 @@ extern "C" {
 
 #include "MainProgram.hpp"
 
+template <typename T> std::optional<T> shared_ptr_to_opt(const std::shared_ptr<T> o) {
+    if(o)
+        return *o;
+    else
+        return std::nullopt;
+}
+
 InputManager::InputManager(MainProgram& initMain):
     main(initMain) {
     frame_reset({0, 0});
@@ -88,7 +95,7 @@ InputManager::InputManager(MainProgram& initMain):
     keyAssignments = defaultKeyAssignments;
 }
 
-void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
+void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& nModMap) {
     Text::TextBoxInfo textBoxInfo;
     textBoxInfo.textBox = nTextBox;
     textBoxInfo.cursor = nCursor;
@@ -100,7 +107,7 @@ void InputManager::set_rich_text_box_input_front(const std::shared_ptr<RichText:
     text.update_accepting_input(main.window.sdlWindow);
 }
 
-void InputManager::set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::optional<RichText::TextStyleModifier::ModifierMap>& nModMap) {
+void InputManager::set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& nModMap) {
     Text::TextBoxInfo textBoxInfo;
     textBoxInfo.textBox = nTextBox;
     textBoxInfo.cursor = nCursor;
@@ -123,7 +130,7 @@ void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
     if(!textBoxes.empty() && !inputText.empty()) {
         auto& frontTextBox = textBoxes.front();
         do_textbox_operation_with_undo([&]() {
-            frontTextBox.textBox->process_text_input(*frontTextBox.cursor, inputText, frontTextBox.modMap);
+            frontTextBox.textBox->process_text_input(*frontTextBox.cursor, inputText, shared_ptr_to_opt(frontTextBox.modMap));
         });
     }
 }
@@ -859,7 +866,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
     std::shared_ptr<RichText::TextBox> textBox = text.textBoxes.empty() ? nullptr : text.textBoxes.front().textBox;
     std::shared_ptr<RichText::TextBox::Cursor> cursor = text.textBoxes.empty() ? nullptr : text.textBoxes.front().cursor;
-    std::optional<RichText::TextStyleModifier::ModifierMap> modMap = text.textBoxes.empty() ? std::nullopt : text.textBoxes.front().modMap;
+    std::optional<RichText::TextStyleModifier::ModifierMap> modMap = text.textBoxes.empty() ? shared_ptr_to_opt(text.textBoxes.front().modMap) : std::nullopt;
 
     switch(kPress) {
         case SDLK_UP:
@@ -1043,10 +1050,10 @@ void InputManager::process_text_paste(const std::string& plainClipboardStr) {
             if(lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(plainClipboardStr))
                 text.textBoxes.front().textBox->process_rich_text_input(*text.textBoxes.front().cursor, lastCopiedRichText.value());
             else
-                text.textBoxes.front().textBox->process_text_input(*text.textBoxes.front().cursor, plainClipboardStr, text.textBoxes.front().modMap);
+                text.textBoxes.front().textBox->process_text_input(*text.textBoxes.front().cursor, plainClipboardStr, shared_ptr_to_opt(text.textBoxes.front().modMap));
         }
         else
-            text.textBoxes.front().textBox->process_text_input(*text.textBoxes.front().cursor, plainClipboardStr, text.textBoxes.front().modMap);
+            text.textBoxes.front().textBox->process_text_input(*text.textBoxes.front().cursor, plainClipboardStr, shared_ptr_to_opt(text.textBoxes.front().modMap));
     }
 }
 

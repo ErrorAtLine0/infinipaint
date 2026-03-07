@@ -24,6 +24,8 @@ bool TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
 
+    auto& currentMods = *currentModsPtr;
+
     t.gui.push_id("edit tool text");
     t.gui.text_label_centered("Edit Text");
 
@@ -264,6 +266,8 @@ uint8_t TextBoxEditTool::get_new_decoration_value() {
 }
 
 void TextBoxEditTool::set_styles_at_selection(TextBoxCanvasComponent& a) {
+    auto& currentMods = *currentModsPtr;
+
     TextPosition start = std::min(a.cursor->selectionBeginPos, a.cursor->selectionEndPos);
     TextPosition end = std::max(a.cursor->selectionBeginPos, a.cursor->selectionEndPos);
     if(start == end)
@@ -325,7 +329,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::O
         .autocorrect = true,
         .multiline = true,
         .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
-    });
+    }, currentModsPtr);
 }
 
 bool TextBoxEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
