@@ -856,7 +856,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
     std::shared_ptr<RichText::TextBox> textBox = text.textBoxes.empty() ? nullptr : text.textBoxes.front().textBox;
     std::shared_ptr<RichText::TextBox::Cursor> cursor = text.textBoxes.empty() ? nullptr : text.textBoxes.front().cursor;
-    std::optional<RichText::TextStyleModifier::ModifierMap> modMap = text.textBoxes.empty() ? shared_ptr_to_opt(text.textBoxes.front().modMap) : std::nullopt;
+    std::optional<RichText::TextStyleModifier::ModifierMap> modMap = text.textBoxes.empty() ? std::nullopt : shared_ptr_to_opt(text.textBoxes.front().modMap);
 
     switch(kPress) {
         case SDLK_UP:
