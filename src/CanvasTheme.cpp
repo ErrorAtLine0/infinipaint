@@ -7,6 +7,32 @@
 
 using namespace NetworkingObjects;
 
+const char* visibleBlendModeCode = R"V(
+	vec4 main(vec4 src, vec4 dst) {
+        float value = max(max(dst.x, dst.y), dst.z) / dst.a;
+        vec4 actualSrc;
+        if(value > 0.6)
+            actualSrc = vec4(vec3(0.0), src.a);
+        else
+            actualSrc = vec4(src.a);
+        return actualSrc + (1.0 - actualSrc.a) * dst;
+    }
+)V";
+
+sk_sp<SkBlender> CanvasTheme::get_visible_blend_mode() {
+    static sk_sp<SkBlender> blender = nullptr;
+    if(!blender) {
+        auto effect = SkRuntimeEffect::MakeForBlender(SkString(visibleBlendModeCode));
+  	    if(!effect.effect) {
+            std::cout << "[CanvasTheme::get_visible_blend_mode] " << " blender construction error\n";
+            std::cout << effect.errorText.c_str() << std::endl;
+            throw std::runtime_error("Shader Compile Failure");
+        }
+        blender = effect.effect->makeBlender(nullptr);
+    }
+    return blender;
+}
+
 CanvasTheme::CanvasTheme(World& w):
     world(w)
 {}
@@ -37,13 +63,11 @@ void CanvasTheme::set_back_color(const Vector3f& newBackColor) {
 
 void CanvasTheme::set_tool_front_color(DrawingProgram& drawP) {
     Vector3f newHSV = rgb_to_hsv<Vector3f>(backColor->c);
-    SkColor4f oldToolFrontColor = toolFrontColor;
     if(newHSV.z() >= 0.6f)
         toolFrontColor = SkColor4f{0.0f, 0.0f, 0.0f, 1.0f};
     else
         toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
-    if(oldToolFrontColor != toolFrontColor)
-        drawP.drawCache.clear_own_cached_surfaces();
+    drawP.drawCache.clear_own_cached_surfaces();
 }
 
 void CanvasTheme::register_class() {

@@ -187,17 +187,21 @@ void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawP.world.main.input.isTouchDevice && drawData.main->world->drawProg.controls.cursorHoveringOverCanvas) {
         auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
         if(relativeWidthResult.first.has_value()) {
-            SkPaint linePaint;
-            linePaint.setColor4f(drawP.world.canvasTheme.get_tool_front_color());
-            linePaint.setStroke(true);
-            linePaint.setStrokeWidth(0.0f);
             float width = relativeWidthResult.first.value();
             if(objInfoBeingEdited)
                 width *= penWidth * 0.5f;
             else
                 width *= 0.5f;
+            width += 1.0f;
             Vector2f pos = drawData.main->input.mouse.pos;
-            canvas->drawCircle(pos.x(), pos.y(), width, linePaint);
+            SkPaint linePaint;
+            linePaint.setColor4f({1.0f, 1.0f, 1.0f, 1.0f});
+            linePaint.setStyle(SkPaint::kStroke_Style);
+            linePaint.setStrokeCap(SkPaint::kRound_Cap);
+            linePaint.setStrokeWidth(0.0f);
+            linePaint.setBlender(CanvasTheme::get_visible_blend_mode());
+            SkPath circ = SkPath::Circle(pos.x(), pos.y(), width);
+            canvas->drawPath(circ, linePaint);
         }
     }
 }
