@@ -82,7 +82,7 @@ void GUIManager::end() {
     });
 }
 
-void GUIManager::draw(SkCanvas* canvas) {
+void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
     canvas->save();
     canvas->translate(windowPos.x(), windowPos.y());
 
@@ -106,6 +106,7 @@ void GUIManager::draw(SkCanvas* canvas) {
                 );
 
                 SkPaint paint;
+                paint.setAntiAlias(skiaAA);
                 paint.setStyle(SkPaint::kFill_Style);
                 paint.setColor4f(convert_vec4<SkColor4f>(config->backgroundColor));
                 canvas->drawRRect(rrect, paint);
@@ -137,6 +138,7 @@ void GUIManager::draw(SkCanvas* canvas) {
                 SkPaint p;
                 p.setColor4f(convert_vec4<SkColor4f>(config->color));
                 p.setStyle(SkPaint::kStroke_Style);
+                p.setAntiAlias(skiaAA);
 
                 float halfLineWidth = 0.0f;
                 // Top Left corner
@@ -235,7 +237,7 @@ void GUIManager::draw(SkCanvas* canvas) {
             }
             case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
                 Element* customElement = (Element*)command->renderData.custom.customData;
-                customElement->clay_draw(canvas, *io, command);
+                customElement->clay_draw(canvas, *io, command, skiaAA);
                 break;
             }
             default:

@@ -83,6 +83,7 @@ void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, co
     SkRect clipR = SkRect::MakeLTRB(d.p1.x(), d.p1.y(), d.p2.x(), d.p2.y());
     if(d.editing) {
         SkPaint p;
+        p.setAntiAlias(drawData.skiaAA);
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.0f);
         p.setColor4f({0.5f, 0.5f, 0.5f, 1.0f});

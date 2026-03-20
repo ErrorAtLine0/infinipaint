@@ -184,6 +184,7 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             rectBoundsPaint.setColor4f(drawP.world.canvasTheme.get_tool_front_color());
             rectBoundsPaint.setStroke(true);
             rectBoundsPaint.setStrokeWidth(0.0f);
+            rectBoundsPaint.setAntiAlias(drawData.skiaAA);
             canvas->drawRect(SkRect::MakeLTRB(bMin.x(), bMin.y(), bMax.x(), bMax.y()), rectBoundsPaint);
             if(selectionMode == 0 || selectionMode == 4)
                 drawP.draw_drag_circle(canvas, bMax, {0.9f, 0.5f, 0.1f, 1.0f}, drawData);

@@ -53,6 +53,7 @@ std::optional<Vector4f> BrushStrokeCanvasComponent::get_stroke_color() const {
 void BrushStrokeCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
     SkPaint paint;
     paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
+    paint.setAntiAlias(drawData.skiaAA);
 
     unsigned mipmapLevel = compContainer ? compContainer->get_mipmap_level(drawData) : 0;
 

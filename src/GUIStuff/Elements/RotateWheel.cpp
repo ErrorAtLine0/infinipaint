@@ -51,17 +51,17 @@ float RotateWheel::wheel_end() {
     return bb.width() * 0.5f;
 }
 
-void RotateWheel::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void RotateWheel::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     bb = get_bb(command);
     canvas->save();
     canvas->translate(bb.center().x(), bb.center().y());
 
-    draw_rotate_wheel(canvas, io);
+    draw_rotate_wheel(canvas, io, skiaAA);
 
     canvas->restore();
 }
 
-void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
+void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io, bool skiaAA) {
     float wheelStart = wheel_start();
     float wheelEnd = wheel_end();
 
@@ -75,12 +75,14 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
         for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
             Vector2f lineDir{std::cos(snapPos), -std::sin(snapPos)};
             SkPaint p(snapPos == 0.0 ? io.theme->fillColor1 : io.theme->frontColor2);
+            p.setAntiAlias(skiaAA);
             p.setStrokeWidth(1.0f);
             canvas->drawLine(lineDir.x() * wheelStart, lineDir.y() * wheelStart, lineDir.x() * wheelEnd, lineDir.y() * wheelEnd, p);
         }
     }
 
     SkPaint rotateBarHolderFill;
+    rotateBarHolderFill.setAntiAlias(skiaAA);
     if(selection.held)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else if(selection.hovered)
@@ -91,11 +93,13 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io) {
     Vector2f rotateBarHolderPos{std::cos(rotateAngle) * rotateBarMiddleRadius, -std::sin(rotateAngle) * rotateBarMiddleRadius};
     canvas->drawCircle(rotateBarHolderPos.x(), rotateBarHolderPos.y(), rotateBarHolderRadius, rotateBarHolderFill);
     SkPaint rotateBarHolderOutline(io.theme->frontColor1);
+    rotateBarHolderOutline.setAntiAlias(skiaAA);
     rotateBarHolderOutline.setStroke(true);
     rotateBarHolderOutline.setStrokeWidth(2.0f);
     canvas->drawCircle(rotateBarHolderPos.x(), rotateBarHolderPos.y(), rotateBarHolderRadius, rotateBarHolderOutline);
 
     SkPaint rotateBarOutline(io.theme->frontColor2);
+    rotateBarOutline.setAntiAlias(skiaAA);
     rotateBarOutline.setStroke(true);
     rotateBarOutline.setStrokeWidth(1.0f);
     canvas->drawCircle(0.0f, 0.0f, wheelStart, rotateBarOutline);

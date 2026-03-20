@@ -41,7 +41,7 @@ class TreeListing : public Element {
         };
 
         void update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
     private:
         bool dragHoldSelected = false;
 

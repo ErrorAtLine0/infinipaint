@@ -36,7 +36,7 @@ class GUIManager {
         GUIManager();
         void begin();
         void end();
-        void draw(SkCanvas* canvas);
+        void draw(SkCanvas* canvas, bool skiaAA);
 
         Vector2f windowPos = Vector2f{0.0f, 0.0f};
         Vector2f windowSize = Vector2f{0.0f, 0.0f};

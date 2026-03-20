@@ -55,7 +55,7 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
     }
 }
 
-void SelectableButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void SelectableButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
 }
 
 }

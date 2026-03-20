@@ -21,7 +21,7 @@ void CheckBox::update(UpdateInputData& io, bool newIsTicked, const std::function
     }
 }
 
-void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     auto bb = get_bb(command);
 
     canvas->save();
@@ -30,6 +30,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
     canvas->translate(0.5f, 0.5f);
 
     SkPaint p;
+    p.setAntiAlias(skiaAA);
     if(isTicked) {
         SkRect checkBox = SkRect::MakeLTRB(-0.5f, -0.5f, 0.5f, 0.5f);
         p.setColor4f(convert_vec4<SkColor4f>(io.theme->fillColor1));
@@ -47,6 +48,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
 
     if(isTicked) {
         SkPaint checkP;
+        checkP.setAntiAlias(skiaAA);
         checkP.setColor4f(io.theme->backColor1);
         checkP.setStyle(SkPaint::kFill_Style);
         checkP.setStrokeWidth(0.12);

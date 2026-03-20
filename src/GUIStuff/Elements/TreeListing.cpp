@@ -275,7 +275,7 @@ void TreeListing::select_and_unselect_parents(const std::vector<NetworkingObject
     selectionData.objsSelected.emplace(newSelectedObj);
 }
 
-void TreeListing::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void TreeListing::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
 }
 
 }

@@ -197,8 +197,11 @@ void ImageResourceDisplay::load_thread_func(unsigned mipmapLevel) {
 }
 
 void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) {
-    if(!smallestMipmapLevelLoaded)
-        canvas->drawRect(imRect, SkPaint({0.5f, 0.5f, 0.5f, 0.5f}));
+    if(!smallestMipmapLevelLoaded) {
+        SkPaint p({0.5f, 0.5f, 0.5f, 0.5f});
+        p.setAntiAlias(drawData.skiaAA);
+        canvas->drawRect(imRect, p);
+    }
     else {
         SkRect imRectPixelSize = canvas->getLocalToDeviceAs3x3().mapRect(imRect);
         unsigned mipmapLevel = get_exact_mipmap_level_for_dimensions({imRectPixelSize.width(), imRectPixelSize.height()});

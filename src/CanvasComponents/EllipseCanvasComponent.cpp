@@ -35,6 +35,7 @@ std::optional<Vector4f> EllipseCanvasComponent::get_stroke_color() const {
 
 void EllipseCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
     SkPaint p;
+    p.setAntiAlias(drawData.skiaAA);
     if(d.fillStrokeMode == 0 || d.fillStrokeMode == 2) {
         p.setStyle(SkPaint::kFill_Style);
         p.setColor4f(convert_vec4<SkColor4f>(d.fillColor));

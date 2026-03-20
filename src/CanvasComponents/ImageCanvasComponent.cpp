@@ -65,6 +65,7 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
         p.setStrokeWidth(10.0f);
         p.setStrokeCap(SkPaint::kRound_Cap);
         p.setColor4f(drawData.main->toolbar.io->theme->fillColor1);
+        p.setAntiAlias(drawData.skiaAA);
         Vector2f center = (d.p1 + d.p2) * 0.5f;
 
         const float DOWNLOAD_ARC_RADIUS = 50.0f;
@@ -94,10 +95,12 @@ void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, cons
             canvas->saveLayerAlphaf(nullptr, 1.0f);
                 SkPaint rectPaint;
                 rectPaint.setColor4f(SkColor4f{0.0f, 0.0f, 0.0f, 0.5f});
+                rectPaint.setAntiAlias(drawData.skiaAA);
                 canvas->drawRect(rect_from_points(d.p1, d.p2), rectPaint);
                 SkPaint openingRectPaint;
                 openingRectPaint.setColor4f(SkColor4f{0.0f, 0.0f, 0.0f, 0.0f});
                 openingRectPaint.setBlendMode(SkBlendMode::kSrc);
+                openingRectPaint.setAntiAlias(drawData.skiaAA);
                 canvas->drawRect(get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2), openingRectPaint);
             canvas->restore();
         canvas->restore();
@@ -106,13 +109,16 @@ void ImageCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, cons
         bool isCropped = d.cropP1 != Vector2f{0.0f, 0.0f} || d.cropP2 != Vector2f{1.0f, 1.0f};
         if(isCropped) {
             canvas->save();
-            canvas->clipRect(get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2));
+            canvas->clipRect(get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2), drawData.skiaAA);
         }
 
         if(display)
             display->draw(canvas, drawData, rect_from_points(d.p1, d.p2));
-        else
-            canvas->drawRect(rect_from_points(d.p1, d.p2), SkPaint({0.5f, 0.5f, 0.5f, 0.5f}));
+        else {
+            SkPaint p(SkColor4f{0.5f, 0.5f, 0.5f, 0.5f});
+            p.setAntiAlias(drawData.skiaAA);
+            canvas->drawRect(rect_from_points(d.p1, d.p2), p);
+        }
 
         if(isCropped)
             canvas->restore();

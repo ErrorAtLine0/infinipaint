@@ -47,7 +47,7 @@ class Toolbar {
         void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
         void update();
-        void draw(SkCanvas* canvas);
+        void draw(SkCanvas* canvas, bool skiaAA);
         void color_selector_left(Vector4f* color);
         void color_selector_right(Vector4f* color);
         void paint_popup(Vector2f popupPos);

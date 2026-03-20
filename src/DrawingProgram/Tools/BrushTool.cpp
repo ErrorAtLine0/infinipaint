@@ -195,6 +195,7 @@ void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             width += 1.0f;
             Vector2f pos = drawData.main->input.mouse.pos;
             SkPaint linePaint;
+            linePaint.setAntiAlias(drawData.skiaAA);
             linePaint.setColor4f({1.0f, 1.0f, 1.0f, 1.0f});
             linePaint.setStyle(SkPaint::kStroke_Style);
             linePaint.setStrokeCap(SkPaint::kRound_Cap);

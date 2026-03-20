@@ -136,8 +136,6 @@ struct MainStruct {
     SkCanvas* canvas;
     sk_sp<SkSurface> surface;
 
-    sk_sp<SkSurface> intermediateSurface;
-    SkCanvas* intermediateCanvas;
 
     SDL_Surface* iconSurface = nullptr;
     std::string iconData;
@@ -312,13 +310,7 @@ void sdl_terminate(MainStruct& mS) {
 
 void resize_window(MainStruct& mS) {
     // Having intermediate surface allows for changing options more easily
-    mS.intermediateSurface = mS.m->create_native_surface(mS.m->window.size, true);
-    mS.intermediateCanvas = mS.intermediateSurface->getCanvas();
-
-    if(!mS.intermediateCanvas)
-        throw std::runtime_error("[resize_window] Could not create intermediate canvas");
-
-    mS.m->window.surface = mS.intermediateSurface;
+    mS.m->refresh_draw_surfaces();
 
 #ifdef USE_BACKEND_VULKAN
     mS.vulkanWindowContext->resize(mS.m->window.size.x(), mS.m->window.size.y());
@@ -446,8 +438,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.hiddenCursor = SDL_CreateCursor((Uint8 *)cursorData, (Uint8 *)cursorData, 8, 8, 4, 4);
 
         mS.m = std::make_unique<MainProgram>();
-        mS.m->window.defaultMSAASampleCount = 0;
-        mS.m->window.defaultMSAASurfaceProps = SkSurfaceProps(SkSurfaceProps::kDynamicMSAA_Flag, kUnknown_SkPixelGeometry);
         mS.m->logFile = &mS.logFile;
         mS.m->configPath = mS.configPath;
         mS.m->homePath = mS.homePath;
@@ -552,6 +542,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             SDL_SetWindowFullscreen(mS.window, true);
 #endif
 
+        mS.m->window.canCreateSurfaces = true;
         resize_window(mS);
 
         if(listOfFilesToOpenFromCommand.empty()) {
@@ -599,15 +590,15 @@ void attempt_redraw_and_swap_buffers(MainStruct& mS) {
         #endif
         mS.lastRenderTimePoint = std::chrono::steady_clock::now();
 
-        mS.intermediateCanvas->save();
-        mS.m->draw(mS.intermediateCanvas, mS.m->world, mS.m->world->drawData);
-        mS.intermediateCanvas->restore();
+        mS.m->window.intermediateCanvas->save();
+        mS.m->draw(mS.m->window.intermediateCanvas, mS.m->world, mS.m->world->drawData);
+        mS.m->window.intermediateCanvas->restore();
 
         #ifdef USE_BACKEND_VULKAN
             mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
             mS.ctx->flushAndSubmit();
         #elif USE_BACKEND_OPENGL
-            mS.canvas->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+            mS.canvas->drawImage(mS.m->window.intermediateSurface->makeTemporaryImage(), 0, 0);
             mS.ctx->flushAndSubmit();
         #endif
     }
@@ -616,16 +607,16 @@ void attempt_redraw_and_swap_buffers(MainStruct& mS) {
 void regular_draw(MainStruct& mS) {
     mS.lastRenderTimePoint = std::chrono::steady_clock::now();
 
-    mS.intermediateCanvas->save();
-    mS.m->draw(mS.intermediateCanvas, mS.m->world, mS.m->world->drawData);
-    mS.intermediateCanvas->restore();
+    mS.m->window.intermediateCanvas->save();
+    mS.m->draw(mS.m->window.intermediateCanvas, mS.m->world, mS.m->world->drawData);
+    mS.m->window.intermediateCanvas->restore();
 
     #ifdef USE_BACKEND_VULKAN
         mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
         mS.ctx->flushAndSubmit();
         mS.vulkanWindowContext->swapBuffers();
     #elif USE_BACKEND_OPENGL
-        mS.canvas->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
+        mS.canvas->drawImage(mS.m->window.intermediateSurface->makeTemporaryImage(), 0, 0);
         mS.ctx->flushAndSubmit();
         SDL_GL_SwapWindow(mS.window);
     #endif

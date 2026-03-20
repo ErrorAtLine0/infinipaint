@@ -8,7 +8,7 @@ namespace GUIStuff {
 class MovableTabList : public Element {
     public:
         void update(UpdateInputData& io, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         SelectionHelper selection;
     private:
         std::vector<std::pair<std::string, std::string>> oldTabNames;

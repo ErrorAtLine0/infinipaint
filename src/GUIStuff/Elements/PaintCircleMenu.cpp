@@ -64,27 +64,29 @@ void PaintCircleMenu::update(GUIManager& gui, const Data& data, const std::funct
     d = data;
 }
 
-void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     bb = get_bb(command);
     canvas->save();
     canvas->translate(bb.center().x(), bb.center().y());
 
-    draw_rotate_bar(canvas, io);
-    draw_palette_bar(canvas, io);
+    draw_rotate_bar(canvas, io, skiaAA);
+    draw_palette_bar(canvas, io, skiaAA);
     SkPaint p;
+    p.setAntiAlias(skiaAA);
     p.setColor4f(color_mul_alpha(io.theme->backColor1, 0.5f));
     canvas->drawCircle(0.0f, 0.0f, PALETTE_START, p);
 
     canvas->restore();
 }
 
-void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io) {
+void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA) {
     if(!d.newRotationAngle)
         return;
 
     double rotationAngle = d.currentRotationAngle;
     float rotateBarMiddleRadius = (CIRCLE_END + ROTATE_START) / 2.0f;
     SkPaint rotateBarFill(io.theme->backColor2);
+    rotateBarFill.setAntiAlias(skiaAA);
     rotateBarFill.setStroke(true);
     rotateBarFill.setStrokeWidth(CIRCLE_END - ROTATE_START);
     canvas->drawCircle(0.0f, 0.0f, rotateBarMiddleRadius, rotateBarFill);
@@ -93,12 +95,14 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io) {
         for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
             Vector2f lineDir{std::cos(snapPos), -std::sin(snapPos)};
             SkPaint p(snapPos == 0.0 ? io.theme->fillColor1 : io.theme->frontColor2);
+            p.setAntiAlias(skiaAA);
             p.setStrokeWidth(2.0f);
             canvas->drawLine(lineDir.x() * ROTATE_START, lineDir.y() * ROTATE_START, lineDir.x() * CIRCLE_END, lineDir.y() * CIRCLE_END, p);
         }
     }
 
     SkPaint rotateBarHolderFill;
+    rotateBarHolderFill.setAntiAlias(skiaAA);
     if(rotateBarSelect.held)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
     else if(rotateBarSelect.hovered)
@@ -109,18 +113,20 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io) {
     Vector2f rotateBarHolderPos{std::cos(rotationAngle) * rotateBarMiddleRadius, -std::sin(rotationAngle) * rotateBarMiddleRadius};
     canvas->drawCircle(rotateBarHolderPos.x(), rotateBarHolderPos.y(), rotateBarHolderRadius, rotateBarHolderFill);
     SkPaint rotateBarHolderOutline(io.theme->frontColor1);
+    rotateBarHolderOutline.setAntiAlias(skiaAA);
     rotateBarHolderOutline.setStroke(true);
     rotateBarHolderOutline.setStrokeWidth(2.0f);
     canvas->drawCircle(rotateBarHolderPos.x(), rotateBarHolderPos.y(), rotateBarHolderRadius, rotateBarHolderOutline);
 
     SkPaint rotateBarOutline(io.theme->frontColor2);
+    rotateBarOutline.setAntiAlias(skiaAA);
     rotateBarOutline.setStroke(true);
     rotateBarOutline.setStrokeWidth(2.0f);
     canvas->drawCircle(0.0f, 0.0f, ROTATE_START, rotateBarOutline);
     canvas->drawCircle(0.0f, 0.0f, CIRCLE_END, rotateBarOutline);
 }
 
-void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
+void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA) {
     if(d.palette.empty() || !d.selectedColor)
         return;
 
@@ -133,18 +139,21 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
         double angleEnd = (i + 1) * colorDistribution;
 
         SkPaint colorP(SkColor4f{d.palette[i].x(), d.palette[i].y(), d.palette[i].z(), 1.0f});
+        colorP.setAntiAlias(skiaAA);
         colorP.setStroke(true);
         colorP.setStrokeWidth(ROTATE_START - PALETTE_START);
         canvas->drawArc(colorOval, angleStart * 180.0 / std::numbers::pi, (angleEnd - angleStart) * 180.0 / std::numbers::pi, false, colorP);
 
         Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
         SkPaint lineP(io.theme->frontColor2);
+        lineP.setAntiAlias(skiaAA);
         lineP.setStrokeWidth(2.0f);
         lineP.setStroke(true);
         canvas->drawLine(lineDir1.x() * PALETTE_START, lineDir1.y() * PALETTE_START, lineDir1.x() * ROTATE_START, lineDir1.y() * ROTATE_START, lineP);
     }
 
     SkPaint barOutline(io.theme->frontColor2);
+    barOutline.setAntiAlias(skiaAA);
     barOutline.setStroke(true);
     barOutline.setStrokeWidth(2.0f);
     canvas->drawCircle(0.0f, 0.0f, PALETTE_START, barOutline);
@@ -159,6 +168,7 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
         Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
         Vector2f lineDir2{std::cos(angleEnd), std::sin(angleEnd)};
         SkPaint lineP(io.theme->fillColor1);
+        lineP.setAntiAlias(skiaAA);
         lineP.setStrokeWidth(5.0f);
         lineP.setStroke(true);
         lineP.setStrokeJoin(SkPaint::kRound_Join);
@@ -178,6 +188,7 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io) {
             Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
             Vector2f lineDir2{std::cos(angleEnd), std::sin(angleEnd)};
             SkPaint lineP(io.theme->fillColor1);
+            lineP.setAntiAlias(skiaAA);
             lineP.setStrokeWidth(5.0f);
             lineP.setStroke(true);
             lineP.setStrokeJoin(SkPaint::kRound_Join);

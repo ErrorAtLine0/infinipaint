@@ -61,7 +61,7 @@ template <typename T> class TextBox : public Element {
             return isUpdating;
         }
 
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override {
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override {
             if(!data || !textbox || !cur)
                 return;
 

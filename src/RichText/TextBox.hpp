@@ -98,6 +98,7 @@ class TextBox {
         struct PaintOpts {
             Vector3f cursorColor = {1, 0, 0};
             std::optional<Cursor> cursor;
+            bool skiaAA = false;
         };
 
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);

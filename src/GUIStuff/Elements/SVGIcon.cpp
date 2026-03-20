@@ -26,7 +26,7 @@ void SVGIcon::update(UpdateInputData& io, const std::string& newSvgPath, bool ne
     }
 }
 
-void SVGIcon::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void SVGIcon::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     if(!svgDom)
         return;
 

@@ -42,15 +42,15 @@ std::unique_ptr<CanvasComponent> RectangleCanvasComponent::get_data_copy() const
 }
 
 void RectangleCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const {
+    SkPaint p;
+    p.setAntiAlias(drawData.skiaAA);
     if(d.fillStrokeMode == 0 || d.fillStrokeMode == 2) {
-        SkPaint p;
         p.setStyle(SkPaint::kFill_Style);
         p.setStrokeCap(SkPaint::kRound_Cap);
         p.setColor4f(convert_vec4<SkColor4f>(d.fillColor));
         canvas->drawPath(rectPath, p);
     }
     if(d.fillStrokeMode == 1 || d.fillStrokeMode == 2) {
-        SkPaint p;
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeCap(SkPaint::kRound_Cap);
         p.setColor4f(convert_vec4<SkColor4f>(d.strokeColor));

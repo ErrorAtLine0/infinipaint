@@ -17,6 +17,7 @@ struct DrawData {
     bool clampDrawBetween = true;
     bool drawGrids = true;
     bool transparentBackground = false;
+    bool skiaAA = false;
     WorldScalar clampDrawMinimum;
     WorldScalar mipMapLevelOne;
     WorldScalar mipMapLevelTwo;

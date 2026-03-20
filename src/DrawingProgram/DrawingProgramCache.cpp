@@ -327,7 +327,6 @@ void DrawingProgramCache::refresh_draw_cache(const std::shared_ptr<DrawingProgra
 void DrawingProgramCache::allocate_window_cache_area() {
     const Vector2i& windowSize = drawP.world.main.window.size;
     windowCache.surface = drawP.world.main.create_native_surface(windowSize, true);
-    windowCache.size = windowSize;
 }
 
 void DrawingProgramCache::update_window_cache_invalid_bounds(const DrawData& drawData) {
@@ -366,7 +365,7 @@ void DrawingProgramCache::window_cache_complete_refresh(const DrawData& drawData
 }
 
 void DrawingProgramCache::update_and_draw_cached_canvas(SkCanvas* canvas, const DrawData& drawData) {
-    if(windowCache.surface == nullptr || drawData.main->window.size != windowCache.size) {
+    if(windowCache.surface == nullptr) {
         allocate_window_cache_area();
         refresh_all_draw_cache(drawData);
         window_cache_complete_refresh(drawData);

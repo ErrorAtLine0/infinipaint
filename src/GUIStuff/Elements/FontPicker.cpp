@@ -183,5 +183,5 @@ bool GUIStuff::FontPicker::update(UpdateInputData& io, std::string* fontName, GU
     return fontChangedFromSelection | fontChangedFromTextbox;
 }
 
-void GUIStuff::FontPicker::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void GUIStuff::FontPicker::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
 }

@@ -512,7 +512,7 @@ bool DrawingProgram::prevent_undo_or_redo() {
     return drawTool->prevent_undo_or_redo();
 }
 
-SkPaint DrawingProgram::select_tool_line_paint() {
+SkPaint DrawingProgram::select_tool_line_paint(const DrawData& drawData) {
     SkScalar intervals[] = {10, 5};
     float timeSinceEpoch = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now().time_since_epoch()).count();
     sk_sp<SkPathEffect> lassoLineDashEffect = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 50, 15));
@@ -523,6 +523,7 @@ SkPaint DrawingProgram::select_tool_line_paint() {
     selectLinePaint.setColor4f(world.canvasTheme.get_tool_front_color());
     selectLinePaint.setPathEffect(lassoLineDashEffect);
     selectLinePaint.setBlender(CanvasTheme::get_visible_blend_mode());
+    selectLinePaint.setAntiAlias(drawData.skiaAA);
 
     return selectLinePaint;
 }
@@ -648,6 +649,7 @@ void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, co
     SkPaint paintOutline(SkColor4f{0.95f, 0.95f, 0.95f, 1.0f});
     paintOutline.setStroke(true);
     paintOutline.setStrokeWidth(constantThickness);
+    paintOutline.setAntiAlias(drawData.skiaAA);
     canvas->drawCircle(sPos.x(), sPos.y(), constantRadius, paintOutline);
 }
 

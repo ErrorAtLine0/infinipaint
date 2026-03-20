@@ -13,7 +13,7 @@ class SelectableButton : public Element {
         };
 
         void update(UpdateInputData& io, DrawType drawType, const std::function<void(SelectionHelper&, bool)>& elemUpdate, bool isSelected);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         SelectionHelper selection;
 };
 

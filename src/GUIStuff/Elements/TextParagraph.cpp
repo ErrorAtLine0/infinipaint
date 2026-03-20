@@ -18,7 +18,7 @@ void TextParagraph::update(UpdateInputData& io, std::unique_ptr<skia::textlayout
     }
 }
 
-void TextParagraph::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void TextParagraph::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     bb = get_bb(command);
 
     if(data)

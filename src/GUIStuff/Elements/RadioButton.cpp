@@ -19,7 +19,7 @@ void RadioButton::update(UpdateInputData& io, bool newIsTicked, const std::funct
     }
 }
 
-void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     auto bb = get_bb(command);
 
     canvas->save();
@@ -29,11 +29,13 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
 
     if(isTicked) {
         SkPaint p;
+        p.setAntiAlias(skiaAA);
         p.setColor4f(convert_vec4<SkColor4f>(io.theme->fillColor1));
         p.setStyle(SkPaint::kFill_Style);
         canvas->drawCircle(0.0f, 0.0f, 0.5f, p);
 
         SkPaint innerCircleP;
+        innerCircleP.setAntiAlias(skiaAA);
         innerCircleP.setColor4f(convert_vec4<SkColor4f>(io.theme->backColor2));
         innerCircleP.setStyle(SkPaint::kFill_Style);
 
@@ -45,6 +47,7 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
     }
     else {
         SkPaint p;
+        p.setAntiAlias(skiaAA);
         p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->backColor2));
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.15f);

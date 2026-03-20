@@ -55,7 +55,6 @@ class DrawingProgramCache {
             sk_sp<SkSurface> surface;
             DrawingProgramCache* attachedDrawingProgramCache = nullptr;
             std::optional<SCollision::AABB<WorldScalar>> invalidBounds;
-            Vector2i size = {0, 0};
             CoordSpaceHelper coords;
         };
         static WindowCache windowCache;

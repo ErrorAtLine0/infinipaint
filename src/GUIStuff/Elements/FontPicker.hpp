@@ -7,7 +7,7 @@ namespace GUIStuff {
 class FontPicker : public Element {
     public:
         bool update(UpdateInputData& io, std::string* fontName, GUIManager* gui);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override;
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         SelectionHelper selection;
     private:
         std::vector<std::string> sortedFontList;

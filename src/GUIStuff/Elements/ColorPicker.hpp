@@ -77,20 +77,21 @@ template <typename T> class ColorPicker : public Element {
             return isChanged;
         }
         
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
             bb = get_bb(command);
         
             canvas->save();
             canvas->translate(bb.min.x(), bb.min.y());
             float svSelectionAreaSize = get_sv_selection_area_size();
             canvas->scale(svSelectionAreaSize, svSelectionAreaSize);
-            canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f));
+            canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f), skiaAA);
 
             SkPaint svSelectionAreaPaint;
             svSelectionAreaPaint.setShader(get_sv_selection_shader(savedHsv.x() / 360.0f));
             canvas->drawPaint(svSelectionAreaPaint);
 
             SkPaint selectionLinePaint({1.0f, 1.0f, 1.0f, 1.0f});
+            selectionLinePaint.setAntiAlias(skiaAA);
             selectionLinePaint.setStrokeWidth(2.0f / svSelectionAreaSize);
             canvas->drawLine(0.0f, 1.0f - savedHsv.z(), 1.0f, 1.0f - savedHsv.z(), selectionLinePaint);
             canvas->drawLine(savedHsv.y(), 0.0f, savedHsv.y(), 1.0f, selectionLinePaint);
@@ -104,7 +105,7 @@ template <typename T> class ColorPicker : public Element {
             canvas->save();
             canvas->translate(hueBarPos.x(), hueBarPos.y());
             canvas->scale(hueBarDim.x(), hueBarDim.y());
-            canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f));
+            canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f), skiaAA);
 
             SkPaint hueBarPaint;
             hueBarPaint.setShader(get_hue_shader());
@@ -117,7 +118,7 @@ template <typename T> class ColorPicker : public Element {
             Vector2f alphaBarDim = get_alpha_bar_dim();
             canvas->save();
             canvas->translate(alphaBarPos.x(), alphaBarPos.y());
-            canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, alphaBarDim.x(), alphaBarDim.y()));
+            canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, alphaBarDim.x(), alphaBarDim.y()), skiaAA);
 
             SkPaint alphaBarPaint;
             if(selectAlpha)

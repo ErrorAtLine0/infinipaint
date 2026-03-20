@@ -74,7 +74,7 @@ void MovableTabList::update(UpdateInputData& io, const std::vector<std::pair<std
     }
 }
 
-void MovableTabList::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) {
+void MovableTabList::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
 }
 
 }

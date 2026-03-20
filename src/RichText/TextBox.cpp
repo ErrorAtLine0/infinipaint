@@ -1249,6 +1249,7 @@ void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
     if(paintOpts.cursor.has_value()) {
         auto& cur = paintOpts.cursor.value();
         SkPaint selectionP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
+        selectionP.setAntiAlias(paintOpts.skiaAA);
         if(cur.selectionBeginPos != cur.selectionEndPos) {
             canvas->saveLayerAlphaf(nullptr, 0.5f);
             rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
@@ -1257,6 +1258,7 @@ void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
             canvas->restore();
         }
         SkPaint cursorP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
+        cursorP.setAntiAlias(paintOpts.skiaAA);
         canvas->drawRect(get_cursor_rect(cur.pos), cursorP);
     }
 }

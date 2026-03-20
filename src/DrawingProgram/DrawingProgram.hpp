@@ -85,7 +85,7 @@ class DrawingProgram {
 
         float drag_point_radius();
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);
-        SkPaint select_tool_line_paint();
+        SkPaint select_tool_line_paint(const DrawData& drawData);
         bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
         bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
 

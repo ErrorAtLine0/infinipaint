@@ -242,6 +242,8 @@ void MainProgram::load_config() {
     toolbar.load_licenses();
 
     NetLibrary::copy_default_p2p_config_to_path(configPath / "p2p.json");
+
+    refresh_draw_surfaces();
 }
 
 void MainProgram::set_vsync_value(int vsyncValue) {
@@ -269,30 +271,49 @@ float MainProgram::get_scale_and_density_factor_gui() {
     return window.scale * window.density;
 }
 
+void MainProgram::refresh_draw_surfaces() {
+    if(window.canCreateSurfaces) {
+        window.defaultMSAASampleCount = 0;
+        window.defaultMSAASurfaceProps = SkSurfaceProps(antialiasing == AntiAliasing::DYNAMIC_MSAA ? SkSurfaceProps::kDynamicMSAA_Flag : SkSurfaceProps::kDefault_Flag, kUnknown_SkPixelGeometry);
+        window.intermediateSurface = create_native_surface(window.size, true);
+        window.intermediateCanvas = window.intermediateSurface->getCanvas();
+
+        if(!window.intermediateCanvas)
+            throw std::runtime_error("[refresh_draw_surfaces] Could not create intermediate canvas");
+
+        DrawingProgramCache::delete_all_draw_cache();
+    }
+}
+
 void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData) {
     canvas->clear(drawData.transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : worldToDraw->canvasTheme.get_back_color());
-    worldToDraw->draw(canvas, drawData);
+    DrawData drawDataCopy = drawData;
+    drawDataCopy.skiaAA = antialiasing == AntiAliasing::SKIA;
+    worldToDraw->draw(canvas, drawDataCopy);
     if(!drawData.takingScreenshot)
-        toolbar.draw(canvas);
+        toolbar.draw(canvas, drawDataCopy.skiaAA);
 }
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {
-    #ifdef USE_BACKEND_OPENGLES_3_0
-        SkImageInfo imgInfo = SkImageInfo::Make(resolution.x(), resolution.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
-    #else
-        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(resolution.x(), resolution.y());
-    #endif
-    SkSurfaceProps defaultProps;
-    #ifdef USE_SKIA_BACKEND_GRAPHITE
-        auto surfaceToRet = SkSurfaces::RenderTarget(window.recorder(), imgInfo, skgpu::Mipmapped::kNo, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
-    #elif USE_SKIA_BACKEND_GANESH
-        auto surfaceToRet = SkSurfaces::RenderTarget(window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, isMSAA ? window.defaultMSAASampleCount : 0, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
-    #endif
+    if(window.canCreateSurfaces) {
+        #ifdef USE_BACKEND_OPENGLES_3_0
+            SkImageInfo imgInfo = SkImageInfo::Make(resolution.x(), resolution.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+        #else
+            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(resolution.x(), resolution.y());
+        #endif
+        SkSurfaceProps defaultProps;
+        #ifdef USE_SKIA_BACKEND_GRAPHITE
+            auto surfaceToRet = SkSurfaces::RenderTarget(window.recorder(), imgInfo, skgpu::Mipmapped::kNo, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
+        #elif USE_SKIA_BACKEND_GANESH
+            auto surfaceToRet = SkSurfaces::RenderTarget(window.ctx.get(), skgpu::Budgeted::kNo, imgInfo, isMSAA ? window.defaultMSAASampleCount : 0, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
+        #endif
 
-    if(!surfaceToRet)
-        throw std::runtime_error("[MainProgram::create_native_surface] Could not make native surface");
+        if(!surfaceToRet)
+            throw std::runtime_error("[MainProgram::create_native_surface] Could not make native surface");
 
-    return surfaceToRet;
+        return surfaceToRet;
+    }
+    return nullptr;
 }
 
 void MainProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {

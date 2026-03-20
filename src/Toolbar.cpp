@@ -306,6 +306,7 @@ nlohmann::json Toolbar::get_config_json() {
     debugJson["showPerformance"] = showPerformance;
     debugJson["fpsLimit"] = main.fpsLimit;
     debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
+    debugJson["antialiasing"] = main.antialiasing;
     debugJson["imageLoadMaxThreads"] = ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX;
     debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
     debugJson["maxCacheNodes"] = DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES;
@@ -378,6 +379,7 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
     try{j.at("debug").at("fpsLimit").get_to(main.fpsLimit);} catch(...) {}
     try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
+    try{j.at("debug").at("antialiasing").get_to(main.antialiasing);} catch(...) {}  
     try{j.at("debug").at("imageLoadMaxThreads").get_to(ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX);} catch(...) {}
     try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}
     try{j.at("debug").at("maxCacheNodes").get_to(DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES);} catch(...) {}
@@ -1907,6 +1909,13 @@ void Toolbar::options_menu() {
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
                                         gui.input_scalar_field<int>("image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
+                                        gui.text_label("Antialiasing:");
+                                        MainProgram::AntiAliasing aa = main.antialiasing;
+                                        if(gui.radio_button_field("AntiAliasing None", "None", aa == MainProgram::AntiAliasing::NONE)) { main.antialiasing = MainProgram::AntiAliasing::NONE; }
+                                        if(gui.radio_button_field("AntiAliasing Skia", "Skia", aa == MainProgram::AntiAliasing::SKIA)) { main.antialiasing = MainProgram::AntiAliasing::SKIA; }
+                                        if(gui.radio_button_field("AntiAliasing Dynamic MSAA", "Dynamic MSAA", aa == MainProgram::AntiAliasing::DYNAMIC_MSAA)) { main.antialiasing = MainProgram::AntiAliasing::DYNAMIC_MSAA; }
+                                        if(main.antialiasing != aa)
+                                            main.refresh_draw_surfaces();
                                         gui.text_label_light("Cache related settings");
                                         gui.input_scalar_field<size_t>("cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
                                         gui.input_scalar_field<size_t>("max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
@@ -2456,9 +2465,9 @@ void Toolbar::end_gui() {
     end_io();
 }
 
-void Toolbar::draw(SkCanvas* canvas) {
+void Toolbar::draw(SkCanvas* canvas, bool skiaAA) {
     canvas->save();
     canvas->scale(final_gui_scale(), final_gui_scale());
-    gui.draw(canvas);
+    gui.draw(canvas, skiaAA);
     canvas->restore();
 }

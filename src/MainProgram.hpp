@@ -60,9 +60,12 @@ class MainProgram {
             #elif USE_SKIA_BACKEND_GANESH
                 sk_sp<GrDirectContext> ctx;
             #endif
-            sk_sp<SkSurface> surface;
+
+            sk_sp<SkSurface> intermediateSurface;
+            SkCanvas* intermediateCanvas;
 
             SDL_Window* sdlWindow;
+            bool canCreateSurfaces = false;
         } window;
 
         struct Clipboard {
@@ -89,6 +92,12 @@ class MainProgram {
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
         bool setToQuit = false;
+
+        enum class AntiAliasing {
+            NONE,
+            SKIA,
+            DYNAMIC_MSAA
+        } antialiasing = AntiAliasing::DYNAMIC_MSAA;
         
         void early_destroy();
 
@@ -106,6 +115,8 @@ class MainProgram {
         void update_scale_and_density();
         float get_scale_and_density_factor_gui();
         bool app_close_requested();
+
+        void refresh_draw_surfaces();
 
         std::filesystem::path homePath;
         std::filesystem::path configPath;
@@ -148,3 +159,9 @@ class MainProgram {
         void gui();
         void draw_grid(SkCanvas* canvas);
 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(MainProgram::AntiAliasing, {
+    {MainProgram::AntiAliasing::NONE, "None"},
+    {MainProgram::AntiAliasing::SKIA, "Skia"},
+    {MainProgram::AntiAliasing::DYNAMIC_MSAA, "Dynamic MSAA"},
+})

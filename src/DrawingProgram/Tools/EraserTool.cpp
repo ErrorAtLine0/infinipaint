@@ -120,6 +120,7 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         if(relativeWidthResult.first.has_value()) {
             float width = relativeWidthResult.first.value() * 0.5f;
             SkPaint linePaint;
+            linePaint.setAntiAlias(drawData.skiaAA);
             linePaint.setColor4f({1.0f, 1.0f, 1.0f, 0.5f});
             linePaint.setStyle(SkPaint::kStroke_Style);
             linePaint.setStrokeCap(SkPaint::kRound_Cap);

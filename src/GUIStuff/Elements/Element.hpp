@@ -139,7 +139,7 @@ class SelectionHelper {
 
 class Element {
     public:
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) = 0;
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) = 0;
         virtual ~Element() = default;
 
     protected:

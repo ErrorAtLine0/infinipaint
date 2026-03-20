@@ -35,7 +35,7 @@ template <typename T> class NumberSlider : public Element {
             return isUpdating;
         }
 
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command) override {
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override {
             bb = get_bb(command);
 
             canvas->save();
@@ -59,10 +59,12 @@ template <typename T> class NumberSlider : public Element {
             SkRect barEmpty = SkRect::MakeXYWH(holderPos, yChange, bb.width() - holderPos, holderRadius);
 
             SkPaint barFullP;
+            barFullP.setAntiAlias(skiaAA);
             barFullP.setColor(convert_vec4<SkColor4f>(io.theme->fillColor1));
             canvas->drawRoundRect(barFull, 5.0f, 5.0f, barFullP);
 
             SkPaint barEmptyP;
+            barEmptyP.setAntiAlias(skiaAA);
             barEmptyP.setColor(convert_vec4<SkColor4f>(io.theme->backColor2));
             canvas->drawRoundRect(barEmpty, 5.0f, 5.0f, barEmptyP);
 
@@ -70,12 +72,14 @@ template <typename T> class NumberSlider : public Element {
 
             SkRect holderRect = SkRect::MakeLTRB(-holderRadius, -holderHeight, holderRadius, holderHeight);
             SkPaint holderBorderP;
+            holderBorderP.setAntiAlias(skiaAA);
             holderBorderP.setStyle(SkPaint::kStroke_Style);
             holderBorderP.setStrokeWidth(3.0f);
             holderBorderP.setColor(convert_vec4<SkColor4f>(io.theme->fillColor1));
             canvas->drawRoundRect(holderRect, holderRadius, holderRadius, holderBorderP);
 
             SkPaint holderP;
+            holderP.setAntiAlias(skiaAA);
             holderP.setColor(convert_vec4<SkColor4f>(io.theme->backColor2));
             canvas->drawRoundRect(holderRect, holderRadius, holderRadius, holderP);
             
