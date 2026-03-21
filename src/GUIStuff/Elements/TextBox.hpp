@@ -74,6 +74,7 @@ template <typename T> class TextBox : public Element {
             SkPaint outline(selection.selected ? io.theme->fillColor1 : io.theme->backColor2);
             outline.setStroke(true);
             outline.setStrokeWidth(2.0f);
+            outline.setAntiAlias(skiaAA);
             canvas->drawRoundRect(r, 2.0f, 2.0f, outline);
 
             canvas->clipRect(SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height()));
@@ -90,6 +91,7 @@ template <typename T> class TextBox : public Element {
             else
                 canvas->translate(bb.min.x() + 2.0f, bb.min.y() + yOffset);
             paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
+            paintOpts.skiaAA = skiaAA;
 
             skia::textlayout::TextStyle tStyle;
             tStyle.setFontFamilies(io.fonts->get_default_font_families());

@@ -89,13 +89,14 @@ void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, co
         p.setColor4f({0.5f, 0.5f, 0.5f, 1.0f});
         canvas->drawRect(clipR, p);
     }
-    canvas->clipRect(clipR);
+    canvas->clipRect(clipR, drawData.skiaAA);
     canvas->translate(d.p1.x() + TEXTBOX_PADDING, d.p1.y() + TEXTBOX_PADDING);
 
     TextBox::PaintOpts paintOpts;
     paintOpts.cursorColor = {0.7f, 0.7f, 1.0f};
     if(d.editing && cursor)
         paintOpts.cursor = *cursor;
+    paintOpts.skiaAA = drawData.skiaAA;
 
     textBox->paint(canvas, paintOpts);
 }
