@@ -284,6 +284,7 @@ nlohmann::json Toolbar::get_config_json() {
     toRet["applyDisplayScale"] = main.window.applyDisplayScale;
 #endif
     toRet["displayName"] = main.displayName;
+    toRet["antialiasing"] = main.antialiasing;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
     toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
     toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
@@ -306,7 +307,6 @@ nlohmann::json Toolbar::get_config_json() {
     debugJson["showPerformance"] = showPerformance;
     debugJson["fpsLimit"] = main.fpsLimit;
     debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
-    debugJson["antialiasing"] = main.antialiasing;
     debugJson["imageLoadMaxThreads"] = ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX;
     debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
     debugJson["maxCacheNodes"] = DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES;
@@ -367,6 +367,7 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
 #ifndef __EMSCRIPTEN__
     try{j.at("checkForUpdates").get_to(updateCheckerData.checkForUpdates);} catch(...) {}
 #endif
+    try{j.at("antialiasing").get_to(main.antialiasing);} catch(...) {}  
 
     try{j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);} catch(...) {}
     try{j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);} catch(...) {}
@@ -379,7 +380,6 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
     try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
     try{j.at("debug").at("fpsLimit").get_to(main.fpsLimit);} catch(...) {}
     try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
-    try{j.at("debug").at("antialiasing").get_to(main.antialiasing);} catch(...) {}  
     try{j.at("debug").at("imageLoadMaxThreads").get_to(ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX);} catch(...) {}
     try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}
     try{j.at("debug").at("maxCacheNodes").get_to(DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES);} catch(...) {}
@@ -1761,7 +1761,13 @@ void Toolbar::options_menu() {
                                         #endif
                                         gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
                                         gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, 1);
-
+                                        gui.text_label("Anti-aliasing:");
+                                        MainProgram::AntiAliasing aa = main.antialiasing;
+                                        if(gui.radio_button_field("AntiAliasing None", "None", aa == MainProgram::AntiAliasing::NONE)) { main.antialiasing = MainProgram::AntiAliasing::NONE; }
+                                        if(gui.radio_button_field("AntiAliasing Skia", "Skia", aa == MainProgram::AntiAliasing::SKIA)) { main.antialiasing = MainProgram::AntiAliasing::SKIA; }
+                                        if(gui.radio_button_field("AntiAliasing Dynamic MSAA", "Dynamic MSAA", aa == MainProgram::AntiAliasing::DYNAMIC_MSAA)) { main.antialiasing = MainProgram::AntiAliasing::DYNAMIC_MSAA; }
+                                        if(main.antialiasing != aa)
+                                            main.refresh_draw_surfaces();
                                         gui.text_label("VSync:");
                                         if(gui.radio_button_field("Vsync On", "On", main.window.vsyncValue == 1))
                                             main.set_vsync_value(1);
@@ -1909,13 +1915,6 @@ void Toolbar::options_menu() {
                                             gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
                                         #endif
                                         gui.input_scalar_field<int>("image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
-                                        gui.text_label("Antialiasing:");
-                                        MainProgram::AntiAliasing aa = main.antialiasing;
-                                        if(gui.radio_button_field("AntiAliasing None", "None", aa == MainProgram::AntiAliasing::NONE)) { main.antialiasing = MainProgram::AntiAliasing::NONE; }
-                                        if(gui.radio_button_field("AntiAliasing Skia", "Skia", aa == MainProgram::AntiAliasing::SKIA)) { main.antialiasing = MainProgram::AntiAliasing::SKIA; }
-                                        if(gui.radio_button_field("AntiAliasing Dynamic MSAA", "Dynamic MSAA", aa == MainProgram::AntiAliasing::DYNAMIC_MSAA)) { main.antialiasing = MainProgram::AntiAliasing::DYNAMIC_MSAA; }
-                                        if(main.antialiasing != aa)
-                                            main.refresh_draw_surfaces();
                                         gui.text_label_light("Cache related settings");
                                         gui.input_scalar_field<size_t>("cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
                                         gui.input_scalar_field<size_t>("max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
