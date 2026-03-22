@@ -825,14 +825,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 get_refresh_rate(mS);
                 break;
             }
-            case SDL_EVENT_SCREEN_KEYBOARD_SHOWN: {
-                Logger::get().log("INFO", "YAYYYYYYYYYYYYYYYYYYYYY! " + std::to_string(event->type));
+            case SDL_EVENT_SCREEN_KEYBOARD_SHOWN:
                 break;
-            }
-            case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN: {
-                Logger::get().log("INFO", "NOOOOOOOOOOOOOOOOOOOOOOO! " + std::to_string(event->type));
+            case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN:
                 break;
-            }
             default:
                 break;
         }
