@@ -79,7 +79,7 @@ void EraserTool::tool_update() {
             drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
                 if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                     erasedComponents.emplace(c);
-                    drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
+                    drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                     return true;
                 }
                 return false;

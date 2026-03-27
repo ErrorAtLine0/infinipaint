@@ -102,16 +102,14 @@ void CanvasComponentContainer::draw_with_predraw_data(SkCanvas* canvas, const Dr
 }
 
 void CanvasComponentContainer::commit_update(DrawingProgram& drawP) {
-    if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
-        drawP.preupdate_component(&(*objInfo));
+    drawP.preupdate_component(&(*objInfo));
     get_comp().initialize_draw_data(drawP);
     calculate_world_bounds();
     drawP.preupdate_component(&(*objInfo));
 }
 
 void CanvasComponentContainer::commit_transform(DrawingProgram& drawP) {
-    if(worldAABB.has_value()) // This is the only point where worldAABB could be nullopt
-        drawP.preupdate_component(&(*objInfo));
+    drawP.preupdate_component(&(*objInfo));
     calculate_world_bounds();
     drawP.preupdate_component(&(*objInfo));
 }
@@ -135,6 +133,8 @@ bool CanvasComponentContainer::collides_with_cam_coords(const CoordSpaceHelper& 
 
 // We could just send one of the checkAgainst colliders, since they represent the same thing, but sending both saves on redundant transformations, since we can save both of the versions on the executor side
 bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const {
+    if(!worldAABB.has_value())
+        return false;
     if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
         return false;
     else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY))
@@ -158,7 +158,7 @@ void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const Trans
 }
 
 bool CanvasComponentContainer::should_draw(const DrawData& drawData) const {
-    return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
+    return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && worldAABB.has_value() && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
 }
 
 CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predraw_data(const DrawData& drawData) const {
@@ -195,10 +195,13 @@ unsigned CanvasComponentContainer::get_mipmap_level(const DrawData& drawData) co
 
 void CanvasComponentContainer::calculate_world_bounds() {
     worldAABB = coords.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(get_comp().get_obj_coord_bounds());
+    WorldVec dim = worldAABB.value().dim();
+    if(dim.x() == WorldScalar(0) || dim.y() == WorldScalar(0))
+        worldAABB = std::nullopt;
 }
 
-SCollision::AABB<WorldScalar> CanvasComponentContainer::get_world_bounds() const {
-    return worldAABB.value();
+const std::optional<SCollision::AABB<WorldScalar>>& CanvasComponentContainer::get_world_bounds() const {
+    return worldAABB;
 }
 
 CanvasComponent& CanvasComponentContainer::get_comp() const {

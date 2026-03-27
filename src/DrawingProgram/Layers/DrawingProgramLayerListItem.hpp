@@ -66,6 +66,8 @@ class DrawingProgramLayerListItem {
         DrawingProgramLayerListItemMetaInfo get_metainfo() const;
 
         uint32_t get_component_count() const;
+
+        void erase_invalid_components();
     private:
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>& o, cereal::PortableBinaryOutputArchive& a);
         static void read_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c);

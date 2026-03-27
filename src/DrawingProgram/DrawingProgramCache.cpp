@@ -32,7 +32,7 @@ DrawingProgramCache::DrawingProgramCache(DrawingProgram& initDrawP):
 
 void DrawingProgramCache::add_component(CanvasComponentContainer::ObjInfo* c) {
     unsortedComponents.emplace_back(c);
-    invalidate_cache_at_aabb(c->obj->get_world_bounds());
+    invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
 }
 
 void DrawingProgramCache::erase_component(CanvasComponentContainer::ObjInfo* c) {
@@ -43,7 +43,12 @@ void DrawingProgramCache::erase_component(CanvasComponentContainer::ObjInfo* c) 
     }
     else
         std::erase(unsortedComponents, c);
-    invalidate_cache_at_aabb(c->obj->get_world_bounds());
+    invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
+}
+
+void DrawingProgramCache::invalidate_cache_at_optional_aabb(const std::optional<SCollision::AABB<WorldScalar>>& aabb) {
+    if(aabb.has_value())
+        invalidate_cache_at_aabb(aabb.value());
 }
 
 void DrawingProgramCache::invalidate_cache_at_aabb(const SCollision::AABB<WorldScalar>& aabb) {
@@ -97,11 +102,17 @@ void DrawingProgramCache::build(const std::unordered_set<CanvasComponentContaine
 }
 
 void DrawingProgramCache::internal_build(std::vector<CanvasComponentContainer::ObjInfo*> componentsToBuild, const std::unordered_set<CanvasComponentContainer::ObjInfo*>& objsToNotInclude) {
-    std::erase_if(componentsToBuild, [&objsToNotInclude](auto& c) {
-        return objsToNotInclude.contains(c);
-    });
     bvhRoot = std::make_shared<DrawingProgramCacheBVHNode>();
     unsortedComponents.clear();
+    std::erase_if(componentsToBuild, [&unsortedComponents = unsortedComponents, &objsToNotInclude](auto& c) {
+        if(objsToNotInclude.contains(c))
+            return true;
+        if(!c->obj->get_world_bounds().has_value()) {
+            unsortedComponents.emplace_back(c);
+            return true;
+        }
+        return false;
+    });
     clear_own_cached_surfaces();
     build_bvh_node(bvhRoot, componentsToBuild);
 }
@@ -156,16 +167,16 @@ void DrawingProgramCache::preupdate_component(CanvasComponentContainer::ObjInfo*
         std::erase(cacheParentBvhNodeLock->components, c);
         c->obj->cacheParentBvhNode.reset();
     }
-    invalidate_cache_at_aabb(c->obj->get_world_bounds());
+    invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
 }
 
 void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode, const std::vector<CanvasComponentContainer::ObjInfo*>& components) {
     if(components.empty())
         return;
 
-    bvhNode->bounds = components.front()->obj->get_world_bounds();
+    bvhNode->bounds = components.front()->obj->get_world_bounds().value();
     for(auto& c : components)
-        bvhNode->bounds.include_aabb_in_bounds(c->obj->get_world_bounds());
+        bvhNode->bounds.include_aabb_in_bounds(c->obj->get_world_bounds().value());
 
     build_bvh_node_coords_and_resolution(*bvhNode);
 
@@ -181,7 +192,7 @@ void DrawingProgramCache::build_bvh_node(const std::shared_ptr<DrawingProgramCac
     std::array<std::vector<CanvasComponentContainer::ObjInfo*>, 4> parts;
 
     for(auto& c : components) {
-        const auto& cAABB = c->obj->get_world_bounds();
+        const auto& cAABB = c->obj->get_world_bounds().value();
         if(cAABB.min.x() < boundsCenter.x() && cAABB.max.x() < boundsCenter.x() && cAABB.min.y() < boundsCenter.y() && cAABB.max.y() < boundsCenter.y())
             parts[0].emplace_back(c);
         else if(cAABB.min.x() > boundsCenter.x() && cAABB.max.x() > boundsCenter.x() && cAABB.min.y() < boundsCenter.y() && cAABB.max.y() < boundsCenter.y())
@@ -451,14 +462,14 @@ void DrawingProgramCache::recursive_draw_layer_item_to_canvas(const DrawingProgr
             std::vector<CanvasComponentContainer::ObjInfo*> compsToDraw;
             parallel_loop_container(nodesToDraw, [&](auto& node) {
                 std::for_each(node->components.begin(), node->components.end(), [&](auto& c) {
-                    if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())) && c->obj->should_draw(drawData))
+                    if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds().value())) && c->obj->should_draw(drawData))
                         c->obj->preDrawDataHolder = c->obj->calculate_predraw_data(drawData);
                     else
                         c->obj->preDrawDataHolder = std::nullopt;
                 });
             });
             parallel_loop_container(unsortedComponents, [&](auto& c) {
-                if(c->obj->parentLayer == &layerListItem && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds())) && c->obj->should_draw(drawData))
+                if(c->obj->parentLayer == &layerListItem && c->obj->get_world_bounds().has_value() && (!drawBounds.has_value() || SCollision::collide(drawBounds.value(), c->obj->get_world_bounds().value())) && c->obj->should_draw(drawData))
                     c->obj->preDrawDataHolder = c->obj->calculate_predraw_data(drawData);
                 else
                     c->obj->preDrawDataHolder = std::nullopt;

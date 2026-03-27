@@ -25,6 +25,7 @@ class DrawingProgramLayer {
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
 
         void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
+        void erase_invalid_components();
     private:
         std::function<void(const CanvasComponentContainer::ObjInfoIterator& c)> eraseCallback;
 };
