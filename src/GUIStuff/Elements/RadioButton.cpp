@@ -1,33 +1,44 @@
 #include "RadioButton.hpp"
+#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
-void RadioButton::update(UpdateInputData& io, bool newIsTicked, const std::function<void()>& elemUpdate) {
+RadioButton::RadioButton(GUIManager& gui):
+    Element(gui) {}
+
+void RadioButton::layout(const std::function<bool()>& isTicked, const std::function<void()>& onClick) {
+    this->onClick = onClick;
+    this->isTicked = isTicked;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
         },
         .custom = { .customData = this }
-    }) {
-        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
-        if(isTicked != newIsTicked) {
-            hoverAnimation2 = RADIOBUTTON_ANIMATION_TIME;
-            isTicked = newIsTicked;
-        }
-        if(elemUpdate)
-            elemUpdate();
-    }
+    }) {}
+}
+
+bool RadioButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+    isHovering = mouseHovering;
+    if(isHovering && button.button == InputManager::MouseButton::LEFT && button.down)
+        gui.set_post_callback_func([&] { if(onClick) onClick(); });
+    return Element::input_mouse_button_callback(button, mouseHovering);
+}
+
+bool RadioButton::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+    isHovering = mouseHovering;
+    return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
-    auto bb = get_bb(command);
+    auto& bb = boundingBox.value();
 
     canvas->save();
     canvas->translate(bb.min.x(), bb.min.y());
     canvas->scale(bb.width(), bb.height());
     canvas->translate(0.5f, 0.5f);
 
-    if(isTicked) {
+    if(isTicked()) {
         SkPaint p;
         p.setAntiAlias(skiaAA);
         p.setColor4f(convert_vec4<SkColor4f>(io.theme->fillColor1));
@@ -40,7 +51,7 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
         innerCircleP.setStyle(SkPaint::kFill_Style);
 
         static BezierEasing easeRadius(0.68, -2.55, 0.265, 3.55);
-        float lerpTime2 = easeRadius(smooth_two_way_time(hoverAnimation2, io.deltaTime, selection.hovered, RADIOBUTTON_ANIMATION_TIME));
+        float lerpTime2 = easeRadius(smooth_two_way_time(hoverAnimation2, io.deltaTime, isHovering, RADIOBUTTON_ANIMATION_TIME));
         float innerCircleRadius = lerp_vec(0.3f, 0.2f, lerpTime2);
 
         canvas->drawCircle(0.0f, 0.0f, innerCircleRadius, innerCircleP);
@@ -48,7 +59,7 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
     else {
         SkPaint p;
         p.setAntiAlias(skiaAA);
-        p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->backColor2));
+        p.setColor4f(convert_vec4<SkColor4f>(isHovering ? io.theme->fillColor1 : io.theme->backColor2));
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.15f);
         canvas->drawCircle(0.0f, 0.0f, 0.5f, p);

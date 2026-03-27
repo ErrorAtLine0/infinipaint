@@ -6,10 +6,10 @@ namespace GUIStuff {
 
 class TextParagraph : public Element {
     public:
-        void update(UpdateInputData& io, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate);
+        TextParagraph(GUIManager& gui);
+        void layout(std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
     private:
-        SCollision::AABB<float> bb = SCollision::AABB<float>({0.0f, 0.0f}, {0.0f, 0.0f});
         std::unique_ptr<skia::textlayout::Paragraph> data;
 };
 

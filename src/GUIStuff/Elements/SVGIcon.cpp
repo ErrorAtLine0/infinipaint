@@ -3,10 +3,15 @@
 #include <include/core/SkColorFilter.h>
 #include <include/core/SkColorSpace.h>
 #include <iostream>
+#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
-void SVGIcon::update(UpdateInputData& io, const std::string& newSvgPath, bool newIsHighlighted, const std::function<void()>& elemUpdate) {
+SVGIcon::SVGIcon(GUIManager& gui):
+    Element(gui) {}
+
+void SVGIcon::layout(const std::string& newSvgPath, bool newIsHighlighted) {
+    auto& io = *gui.io;
     auto findSVGData = io.svgData.find(newSvgPath);
     if(findSVGData == io.svgData.end())
         throw std::runtime_error("[SVGIcon::update] Could not load icon " + newSvgPath);
@@ -20,17 +25,14 @@ void SVGIcon::update(UpdateInputData& io, const std::string& newSvgPath, bool ne
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) }
         },
         .custom = { .customData = this }
-    }) {
-        if(elemUpdate)
-            elemUpdate();
-    }
+    }) {}
 }
 
 void SVGIcon::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     if(!svgDom)
         return;
 
-    auto bb = get_bb(command);
+    auto& bb = boundingBox.value();
 
     canvas->save();
     canvas->translate(bb.min.x(), bb.min.y());

@@ -1,0 +1,64 @@
+#include "Element.hpp"
+#include "Helpers/MathExtras.hpp"
+#include <chrono>
+
+namespace GUIStuff {
+    SkFont get_setup_skfont() {
+        SkFont font;
+        font.setLinearMetrics(true);
+        font.setHinting(SkFontHinting::kNormal);
+        //font.setForceAutoHinting(true);
+        font.setSubpixel(true);
+        font.setBaselineSnap(true);
+        font.setEdging(SkFont::Edging::kSubpixelAntiAlias);
+        //paint.setAntiAlias(true);
+        return font;
+    }
+
+    SkFont UpdateInputData::get_font(float fSize) const {
+        SkFont f = get_setup_skfont();
+        f.setTypeface(textTypeface);
+        f.setSize(fSize);
+        return f;
+    }
+
+    std::shared_ptr<Theme> get_default_dark_mode() {
+        std::shared_ptr<Theme> theme(std::make_shared<Theme>());
+        theme->fillColor1 = {0.65f, 0.64f, 1.0f, 1.0f};
+        theme->fillColor2 = {0.6f, 0.6f, 0.785f, 1.0f};
+        theme->backColor1 = {0.156f, 0.156f, 0.18f, 1.0f};
+        theme->backColor2 = {0.24f, 0.24f, 0.29f, 1.0f};
+        theme->frontColor1 = {0.87f, 0.87f, 0.87f, 1.0f};
+        theme->frontColor2 = {0.64f, 0.64f, 0.64f, 1.0f};
+        return theme;
+    }
+    
+    void SelectionHelper::update(bool isHovering, bool isLeftClick, bool isLeftHeld, const Vector2f& cursorPos) {
+        hovered = isHovering;
+    
+        clicked = false;
+        tapped = false;
+        justUnselected = false;
+        bool oldSelected = selected;
+    
+        if(isLeftClick) {
+            if(hovered) {
+                held = true;
+                clicked = true;
+                selected = true;
+                timeClicked = std::chrono::steady_clock::now();
+                clickPos = cursorPos;
+            }
+            else
+                selected = false;
+        }
+        else if(!isLeftHeld) {
+            if(held && hovered && (std::chrono::steady_clock::now() - timeClicked) < std::chrono::milliseconds(250) && vec_distance_sqrd(clickPos, cursorPos) < (25 * 25))
+                tapped = true;
+            held = false;
+        }
+
+        if(!selected && oldSelected)
+            justUnselected = true;
+    }
+}

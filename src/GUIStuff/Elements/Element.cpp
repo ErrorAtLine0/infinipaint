@@ -1,68 +1,37 @@
 #include "Element.hpp"
-#include "Helpers/MathExtras.hpp"
-#include <chrono>
 
 namespace GUIStuff {
-    SkFont get_setup_skfont() {
-        SkFont font;
-        font.setLinearMetrics(true);
-        font.setHinting(SkFontHinting::kNormal);
-        //font.setForceAutoHinting(true);
-        font.setSubpixel(true);
-        font.setBaselineSnap(true);
-        font.setEdging(SkFont::Edging::kSubpixelAntiAlias);
-        //paint.setAntiAlias(true);
-        return font;
+    Element::Element(GUIManager& initGUI):
+        gui(initGUI) {}
+
+    void Element::tick_update() {}
+
+    bool Element::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) { return mouseHovering; }
+    bool Element::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) { return mouseHovering; }
+    bool Element::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) { return mouseHovering; }
+    void Element::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
+
+    void Element::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {}
+
+    void Element::update_bounding_box(Clay_RenderCommand* command) {
+        boundingBox = get_bb_from_command(command);
     }
 
-    SkFont UpdateInputData::get_font(float fSize) const {
-        SkFont f = get_setup_skfont();
-        f.setTypeface(textTypeface);
-        f.setSize(fSize);
-        return f;
+    void Element::clear_bounding_box() {
+        boundingBox = std::nullopt;
     }
 
-    std::shared_ptr<Theme> get_default_dark_mode() {
-        std::shared_ptr<Theme> theme(std::make_shared<Theme>());
-        theme->fillColor1 = {0.65f, 0.64f, 1.0f, 1.0f};
-        theme->fillColor2 = {0.6f, 0.6f, 0.785f, 1.0f};
-        theme->backColor1 = {0.156f, 0.156f, 0.18f, 1.0f};
-        theme->backColor2 = {0.24f, 0.24f, 0.29f, 1.0f};
-        theme->frontColor1 = {0.87f, 0.87f, 0.87f, 1.0f};
-        theme->frontColor2 = {0.64f, 0.64f, 0.64f, 1.0f};
-        return theme;
+    const std::optional<SCollision::AABB<float>>& Element::get_bb() const {
+        return boundingBox;
     }
 
-    SCollision::AABB<float> Element::get_bb(Clay_RenderCommand* command) {
+    bool Element::collides_with_point(const Vector2f& p) const {
+        if(!boundingBox.has_value())
+            return false;
+        return SCollision::collide(p, boundingBox.value());
+    }
+
+    SCollision::AABB<float> Element::get_bb_from_command(Clay_RenderCommand* command) {
         return {{command->boundingBox.x, command->boundingBox.y}, {command->boundingBox.x + command->boundingBox.width, command->boundingBox.y + command->boundingBox.height}};
-    }
-    
-    void SelectionHelper::update(bool isHovering, bool isLeftClick, bool isLeftHeld, const Vector2f& cursorPos) {
-        hovered = isHovering;
-    
-        clicked = false;
-        tapped = false;
-        justUnselected = false;
-        bool oldSelected = selected;
-    
-        if(isLeftClick) {
-            if(hovered) {
-                held = true;
-                clicked = true;
-                selected = true;
-                timeClicked = std::chrono::steady_clock::now();
-                clickPos = cursorPos;
-            }
-            else
-                selected = false;
-        }
-        else if(!isLeftHeld) {
-            if(held && hovered && (std::chrono::steady_clock::now() - timeClicked) < std::chrono::milliseconds(250) && vec_distance_sqrd(clickPos, cursorPos) < (25 * 25))
-                tapped = true;
-            held = false;
-        }
-
-        if(!selected && oldSelected)
-            justUnselected = true;
     }
 }

@@ -1,15 +1,19 @@
 #pragma once
 #include "Element.hpp"
-#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
 class FontPicker : public Element {
     public:
-        bool update(UpdateInputData& io, std::string* fontName, GUIManager* gui);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        SelectionHelper selection;
+        struct Data {
+            std::string* fontName = nullptr;
+            std::function<void()> onFontChange;
+        };
+        FontPicker(GUIManager& gui);
+        void layout(const Data& data);
     private:
+        Data d;
+
         std::vector<std::string> sortedFontList;
         std::vector<std::string> sortedFontListLowercase;
         bool dropdownOpen = false;

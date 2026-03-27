@@ -35,7 +35,6 @@ GUIManager::GUIManager()
     clayArena = Clay_CreateArenaWithCapacityAndMemory(Clay_MinMemorySize(), malloc(Clay_MinMemorySize()));
     clayInstance = Clay_Initialize(clayArena, Clay_Dimensions(1.0f, 1.0f), (Clay_ErrorHandler)clay_error_handler);
     Clay_SetMeasureTextFunction(clay_skia_measure_text, this);
-    //Clay_SetDebugModeEnabled(true);
 }
 
 Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData) {
@@ -56,35 +55,9 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
     return Clay_Dimensions(p->getMaxIntrinsicWidth(), p->getHeight());
 }
 
-void GUIManager::begin() {
-    for(auto& [id, e] : elements)
-        e.isUsedThisFrame = false;
-
-    io->mouse.pos = io->mouse.globalPos - windowPos;
-    io->strArena = &strArena;
-    Clay_SetLayoutDimensions(Clay_Dimensions(windowSize.x(), windowSize.y()));
-    Clay_SetPointerState(Clay_Vector2((float)io->mouse.pos.x(), (float)io->mouse.pos.y()), io->mouse.leftHeld);
-    // NOTE: Using y scroll for x axis, since horizontal scrolling containers will just use the normal y scroll wheel as well
-    Clay_UpdateScrollContainers(false, Clay_Vector2(io->mouse.scroll.y() * 2.0f, io->mouse.scroll.y() * 2.0f), io->deltaTime);
-    Clay_SetCurrentContext(clayInstance);
-
-    strArena.reset();
-
-    Clay_BeginLayout();
-}
-
-void GUIManager::end() {
-    renderCommands = Clay_EndLayout();
-    if(!idStack.empty())
-        throw std::runtime_error("[GUIManager::end] ID Stack is not empty on end (push_id and pop_id calls not equal)");
-    std::erase_if(elements, [](auto& p) {
-        return !p.second.isUsedThisFrame;
-    });
-}
-
 void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
     canvas->save();
-    canvas->translate(windowPos.x(), windowPos.y());
+    canvas->translate(io->windowPos.x(), io->windowPos.y());
 
     for(size_t i = 0; i < static_cast<size_t>(renderCommands.length); i++) {
         Clay_RenderCommand* command = Clay_RenderCommandArray_Get(&renderCommands, i);
@@ -236,7 +209,7 @@ void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
-                Element* customElement = (Element*)command->renderData.custom.customData;
+                Element* customElement = static_cast<Element*>(command->renderData.custom.customData);
                 customElement->clay_draw(canvas, *io, command, skiaAA);
                 break;
             }
@@ -248,702 +221,70 @@ void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
     canvas->restore();
 }
 
-void GUIManager::top_to_bottom_window_popup_layout(const Clay_ElementId& windowLocalID, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate) {
-    CLAY(windowLocalID, {.layout = { 
-            .sizing = {.width = x, .height = y },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-    },
-    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-    .cornerRadius = CLAY_CORNER_RADIUS(10),
-    .floating = { .attachTo = CLAY_ATTACH_TO_PARENT },
-    .border = {.color = convert_vec4<Clay_Color>(io->theme->fillColor2), .width = CLAY_BORDER_OUTSIDE(1)}
-    }) {
-        obstructing_window(windowLocalID);
-        elemUpdate();
+void GUIManager::update_window(const Vector2f& windowPos, const Vector2f& windowSize, float guiScaleMultiplier) {
+    if(io->windowPos != windowPos || io->windowSize != windowSize || io->guiScaleMultiplier != guiScaleMultiplier)
+        set_to_layout();
+    io->windowPos = windowPos;
+    io->windowSize = windowSize;
+    io->guiScaleMultiplier = guiScaleMultiplier;
+}
+
+void GUIManager::set_to_layout() {
+    setToLayout = true;
+}
+
+void GUIManager::layout_if_necessary() {
+    if(setToLayout) {
+        layout();
+        setToLayout = false;
     }
 }
 
-void GUIManager::left_to_right_layout(Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& elemUpdate) {
-    CLAY_AUTO_ID({.layout = { 
-          .sizing = {.width = x, .height = y },
-          .childGap = io->theme->childGap1,
-          .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-          .layoutDirection = CLAY_LEFT_TO_RIGHT,
-    }
-    }) {
-        elemUpdate();
-    }
+void GUIManager::layout() {
+    constexpr int LAYOUT_RUN_COUNT = 2;
+    for(int i = 0; i < LAYOUT_RUN_COUNT; i++)
+        single_layout_run();
 }
 
-void GUIManager::left_to_right_line_layout(const std::function<void()>& elemUpdate) {
-    left_to_right_layout(CLAY_SIZING_GROW(0), CLAY_SIZING_FIT(0), elemUpdate);
+void GUIManager::layout_begin() {
+    for(auto& [id, e] : elements)
+        e.isUsedThisFrame = false;
+
+    io->strArena = &strArena;
+    Clay_SetLayoutDimensions(Clay_Dimensions(io->windowSize.x(), io->windowSize.y()));
+    Clay_SetCurrentContext(clayInstance);
+
+    strArena.reset();
+
+    Clay_BeginLayout();
 }
 
-void GUIManager::left_to_right_line_centered_layout(const std::function<void()>& elemUpdate) {
-    CLAY_AUTO_ID({.layout = { 
-          .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-          .childGap = io->theme->childGap1,
-          .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-          .layoutDirection = CLAY_LEFT_TO_RIGHT,
-    }
-    }) {
-        elemUpdate();
-    }
-}
-
-void GUIManager::text_label_size(std::string_view val, float modifier) {
-    CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = static_cast<uint16_t>(io->fontSize * modifier)}));
-}
-
-void GUIManager::text_label_color(std::string_view val, const SkColor4f& color) {
-    CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(color), .fontSize = io->fontSize }));
-}
-
-void GUIManager::text_label_light(std::string_view val) {
-    CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize }));
-}
-
-void GUIManager::text_label(std::string_view val) {
-    CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize }));
-}
-
-void GUIManager::text_label_centered(std::string_view val) {
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-        }
-    }) {
-        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor1), .fontSize = io->fontSize, .textAlignment = CLAY_TEXT_ALIGN_CENTER}));
-    }
-}
-
-void GUIManager::text_label_light_centered(std::string_view val) {
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-        }
-    }) {
-        CLAY_TEXT(strArena.std_str_to_clay_str(val), CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(io->theme->frontColor2), .fontSize = io->fontSize, .textAlignment = CLAY_TEXT_ALIGN_CENTER}));
-    }
-}
-
-bool GUIManager::radio_button(const char* id, bool val, const std::function<void()>& elemUpdate) {
-    push_id(id);
-    RadioButton* e = insert_element<RadioButton>(); 
-    e->update(*io, val, elemUpdate);
-    pop_id();
-    return e->selection.clicked;
-}
-
-void GUIManager::checkbox(const char* id, bool* val, const std::function<void()>& elemUpdate) {
-    push_id(id);
-    CheckBox* e = insert_element<CheckBox>(); 
-    e->update(*io, *val, elemUpdate);
-    if(e->selection.clicked)
-        *val = !(*val);
-    pop_id();
-}
-
-bool GUIManager::input_text_field(const char* id, std::string_view name, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
-    bool toRet = false;
-    left_to_right_line_layout([&]() {
-        text_label(name);
-        toRet = input_text(id, val, updateEveryEdit, elemUpdate);
+void GUIManager::layout_end() {
+    renderCommands = Clay_EndLayout();
+    if(!idStack.empty())
+        throw std::runtime_error("[GUIManager::end] ID Stack is not empty on end (push_id and pop_id calls not equal)");
+    std::erase_if(elements, [](auto& p) {
+        return !p.second.isUsedThisFrame;
     });
-    return toRet;
+    update_element_bounding_boxes();
 }
 
-void GUIManager::input_path_field(const char* id, std::string_view name, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
-    left_to_right_line_layout([&]() {
-        text_label(name);
-        input_path(id, val, fileTypeRestriction, elemUpdate);
-    });
-}
-
-void GUIManager::checkbox_field(const char* id, std::string_view name, bool* val, const std::function<void()>& elemUpdate) {
-    left_to_right_line_layout([&]() {
-        checkbox(id, val, elemUpdate);
-        text_label(name);
-    });
-}
-
-bool GUIManager::radio_button_field(const char* id, std::string_view name, bool val, const std::function<void()>& elemUpdate) {
-    bool toRet;
-    left_to_right_line_layout([&]() {
-        toRet = radio_button(id, val, elemUpdate);
-        text_label(name);
-    });
-    return toRet;
-}
-
-bool GUIManager::input_color_component_255(const char* id, float* val, const std::function<void(SelectionHelper&)>& elemUpdate) {
-    push_id(id);
-    bool isUpdating = insert_element<TextBox<float>>()->update(*io, val,
-        [&](const std::string& str) {
-            int roundTo255;
-            std::stringstream ss;
-            ss << str;
-            ss >> roundTo255;
-            return std::clamp<float>(static_cast<float>(roundTo255) / 255.0f, 0.0f, 1.0f);
-        },
-        [&](const float& colorFloat) {
-            int convertTo255 = colorFloat * 255;
-            std::stringstream ss;
-            ss << convertTo255;
-            return ss.str();
-        }, true, false, 
-        {
-            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
-            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
-            .autocorrect = false,
-            .multiline = false,
-            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_NUMBER
-        },
-    elemUpdate);
-    pop_id();
-    return isUpdating;
-}
-
-bool GUIManager::input_text(const char* id, std::string* val, bool updateEveryEdit, const std::function<void(SelectionHelper&)>& elemUpdate) {
-    push_id(id);
-    bool toRet = insert_element<TextBox<std::string>>()->update(*io, val,
-        [&](const std::string& str) {
-            return str;
-        },
-        [&](const std::string& str) {
-            return str;
-        }, true, updateEveryEdit, 
-        {
-            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
-            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
-            .autocorrect = false,
-            .multiline = false,
-            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
-        },
-    elemUpdate);
-    pop_id();
-    return toRet;
-}
-
-bool GUIManager::selectable_button(const char* id, const std::function<void(SelectionHelper&, bool)>& elemUpdate, GUIStuff::SelectableButton::DrawType drawType, bool isSelected, bool onClick) {
-    push_id(id);
-    SelectableButton* e = insert_element<SelectableButton>();
-    e->update(*io, drawType, elemUpdate, isSelected);
-    //bool toRet = onClick ? e->selection.clicked : e->selection.tapped;
-    bool toRet = e->selection.clicked;
-    pop_id();
-    return toRet;
-}
-
-void GUIManager::svg_icon(const char* id, const std::string& svgPath, bool isHighlighted, const std::function<void()>& elemUpdate) {
-    push_id(id);
-    insert_element<SVGIcon>()->update(*io, svgPath, isHighlighted, elemUpdate);
-    pop_id();
-}
-
-bool GUIManager::svg_icon_button(const char* id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    push_id(id);
-    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
-        toRet = selectable_button("0", [&](SelectionHelper& s, bool is) {
-            svg_icon("1", svgPath, is || s.held || s.hovered);
-            if(elemUpdate)
-                elemUpdate();
-        }, SelectableButton::DrawType::FILLED, isSelected);
-    }
-    pop_id();
-    return toRet;
-}
-
-bool GUIManager::svg_icon_button_transparent(const char* id, const std::string& svgPath, bool isSelected, float size, bool hasBorder, bool onClick, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    push_id(id);
-    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
-        toRet = selectable_button("0", [&](SelectionHelper& s, bool is) {
-            svg_icon("1", svgPath, is || s.held || s.hovered);
-            if(elemUpdate)
-                elemUpdate();
-        }, SelectableButton::DrawType::TRANSPARENT_ALL, isSelected, onClick);
-    }
-    pop_id();
-    return toRet;
-}
-
-bool GUIManager::text_button_sized(const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, bool isSelected, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    CLAY_AUTO_ID({.layout = {.sizing = {.width = x, .height = y } } }) {
-        toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            text_label(text);
-            if(elemUpdate)
-                elemUpdate();
-        }, SelectableButton::DrawType::FILLED, isSelected);
-    }
-    return toRet;
-}
-
-bool GUIManager::text_button(const char* id, std::string_view text, bool isSelected, bool onClick, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) } } }) {
-        toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            text_label(text);
-            if(elemUpdate)
-                elemUpdate();
-        }, SelectableButton::DrawType::FILLED, isSelected, onClick);
-    }
-    return toRet;
-}
-
-bool GUIManager::text_button_wide(const char* id, std::string_view text, bool isSelected, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-        }}) {
-        toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            text_label(text);
-            if(elemUpdate)
-                elemUpdate();
-        }, SelectableButton::DrawType::FILLED, isSelected);
-    }
-    return toRet;
-}
-
-bool GUIManager::text_button_left_transparent(const char* id, std::string_view text, bool isSelected, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-        }}) {
-        toRet = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                    .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
-                }}) {
-                text_label(text);
-                if(elemUpdate)
-                    elemUpdate();
-            }
-        }, SelectableButton::DrawType::TRANSPARENT_ALL, isSelected);
-    }
-    return toRet;
-}
-
-bool GUIManager::input_scalar(const char* id, uint8_t* val, uint8_t min, uint8_t max, int decimalPrecision, const std::function<void(SelectionHelper&)>& elemUpdate) {
-    bool isUpdating = false;
-    push_id(id);
-    isUpdating = insert_element<TextBox<uint8_t>>()->update(*io, val, 
-        [&](const std::string& a) {
-            if(a.empty())
-                return min;
-            uint32_t toRet;
-            std::stringstream ss;
-            ss << a;
-            ss >> toRet;
-            if(ss.fail())
-                return min;
-            return std::clamp<uint8_t>(toRet, min, max);
-        },
-        [&](const uint8_t& a) {
-            return std::to_string(static_cast<uint32_t>(a));
-        }, true, false,
-        {
-            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
-            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
-            .autocorrect = false,
-            .multiline = false,
-            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_NUMBER
-        },
-    elemUpdate);
-    pop_id();
-    return isUpdating;
-}
-
-void GUIManager::input_path(const char* id, std::filesystem::path* val, std::filesystem::file_type fileTypeRestriction, const std::function<void(SelectionHelper&)>& elemUpdate) {
-    push_id(id);
-    insert_element<TextBox<std::filesystem::path>>()->update(*io, val, 
-        [&](const std::string& a) {
-            std::filesystem::path toRet = std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(a.c_str()), a.length()));
-            if(fileTypeRestriction != std::filesystem::file_type::none && std::filesystem::status(toRet).type() != fileTypeRestriction)
-                return std::optional<std::filesystem::path>(std::nullopt);
-            return std::optional<std::filesystem::path>(toRet);
-        },
-        [&](const std::filesystem::path& a) {
-            return a.string();
-        }, true, false, 
-        {
-            .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
-            .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
-            .autocorrect = false,
-            .multiline = false,
-            .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
-        },
-        elemUpdate);
-    pop_id();
-}
-
-void GUIManager::tab_list(const char* id, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate) {
-    push_id(id);
-    insert_element<MovableTabList>()->update(*io, tabNames, selectedTab, closedTab, elemUpdate);
-    pop_id();
-}
-
-bool GUIManager::font_picker(const char* id, std::string* fontName) {
-    push_id(id);
-    bool toRet = insert_element<FontPicker>()->update(*io, fontName, this);
-    pop_id();
-    return toRet;
-}
-
-void GUIManager::dropdown_select(const char* id, size_t* val, const std::vector<std::string>& selections, float width, const std::function<void()>& hoverboxElemUpdate) {
-    push_id(id);
-    struct DropdownData {
-        bool isOpen = false;
-    };
-    DropdownData& dropdownData = insert_any_with_id<DropdownData>(0, {});
-    left_to_right_layout(CLAY_SIZING_FIXED(width), CLAY_SIZING_FIT(0), [&]() {
-        bool click = selectable_button(id, [&](SelectionHelper& s, bool iS) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
-                    .padding = {.left = 4, .right = 4},
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                }
-            }) {
-                text_label(selections[*val]);
-                CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIT(SMALL_BUTTON_SIZE)}
-                    }
-                }) {
-                    svg_icon("dropico", "data/icons/droparrow.svg", dropdownData.isOpen);
-                }
-            }
-        }, SelectableButton::DrawType::FILLED, dropdownData.isOpen);
-        if(dropdownData.isOpen) {
-            Clay_ElementId localID = CLAY_ID_LOCAL("DROPDOWN");
-            Clay_ElementData dropdownElemData = Clay_GetElementData(localID);
-            float calculatedDropdownMaxHeight = 0.0f;
-            if(dropdownElemData.found)
-                calculatedDropdownMaxHeight = std::max(windowSize.y() - dropdownElemData.boundingBox.y - 2.0f, 0.0f);
-            CLAY(localID, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIT(0, calculatedDropdownMaxHeight)},
-                    .childGap = 0
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(4),
-                .floating = {
-                    .offset = {
-                        .y = 4
-                    },
-                    .attachPoints = {
-                        .element = CLAY_ATTACH_POINT_LEFT_TOP,
-                        .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM
-                    },
-                    .attachTo = CLAY_ATTACH_TO_PARENT
-                },
-                .border = {
-                    .color = convert_vec4<Clay_Color>(io->theme->fillColor2),
-                    .width = CLAY_BORDER_OUTSIDE(1)
-                }
-            }) {
-                obstructing_window(localID);
-                scroll_bar_many_entries_area("dropdown scroll area", 18.0f, selections.size(), true, [&](size_t i, bool) {
-                    bool selectedEntry = *val == i;
-
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIXED(18)},
-                            .padding = CLAY_PADDING_ALL(0),
-                            .childGap = 0,
-                            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        }
-                    }) {
-                        SkColor4f entryColor;
-                        if(selectedEntry)
-                            entryColor = io->theme->backColor2;
-                        else if(Clay_Hovered())
-                            entryColor = io->theme->backColor2;
-                        else
-                            entryColor = io->theme->backColor1;
-                        CLAY_AUTO_ID({
-                            .layout = {
-                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                                .padding = {.left = 2, .right = 2, .top = 0, .bottom = 0},
-                                .childGap = 0,
-                                .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
-                            },
-                            .backgroundColor = convert_vec4<Clay_Color>(entryColor)
-                        }) {
-                            text_label(selections[i]);
-                            if(io->mouse.leftClick && Clay_Hovered()) {
-                                *val = i;
-                                dropdownData.isOpen = false;
-                            }
-                        }
-                    }
-                });
-                if(hoverboxElemUpdate)
-                    hoverboxElemUpdate();
-            }
+void GUIManager::update_element_bounding_boxes() {
+    for(auto& e : elements)
+        e.second.elem->clear_bounding_box();
+    for(size_t i = 0; i < static_cast<size_t>(renderCommands.length); i++) {
+        Clay_RenderCommand* command = Clay_RenderCommandArray_Get(&renderCommands, i);
+        if(command->commandType == CLAY_RENDER_COMMAND_TYPE_CUSTOM) {
+            Element* customElement = static_cast<Element*>(command->renderData.custom.customData);
+            customElement->update_bounding_box(command);
         }
-        if(click)
-            dropdownData.isOpen = !dropdownData.isOpen;
-    });
-    pop_id();
-}
-
-void GUIManager::scroll_bar_area(const char* id, bool clipHorizontal, const std::function<void(float, float, float&)>& elemUpdate, bool maxScrollBugWorkaround) {
-    push_id(id);
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        }
-    }) {
-        struct ScrollAreaData {
-            float currentScrollPos = 0.0f;
-            bool isMoving = false;
-
-            float scrollerStartPos;
-            float mouseStartPos;
-
-            float contentDimensions = 100.0f;
-            float containerDimensions = 100.0f;
-        };
-
-        ScrollAreaData& sD = insert_any_with_id<ScrollAreaData>(0, {});
-
-        Clay_ElementId localID = CLAY_ID_LOCAL("SCROLL_AREA");
-
-        CLAY(localID, {
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .clip = {.horizontal = clipHorizontal, .vertical = true, .childOffset = {.x = 0, .y = Clay_GetScrollOffset().y}}
-        }) {
-            push_id(1);
-            elemUpdate(sD.contentDimensions, sD.containerDimensions, sD.currentScrollPos);
-            pop_id();
-        }
-
-        // Make sure you are accessing this data after the element has been created
-        Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(localID);
-        Clay_BoundingBox scrollAreaBB = Clay_GetElementData(localID).boundingBox;
-
-        sD.contentDimensions = scrollData.contentDimensions.height;
-        sD.containerDimensions = scrollData.scrollContainerDimensions.height;
-
-        if(scrollData.contentDimensions.height > scrollData.scrollContainerDimensions.height) {
-            float sAreaDim = scrollData.scrollContainerDimensions.height;
-            float contDim = scrollData.contentDimensions.height;
-            float scrollerSize = (sAreaDim / contDim) * sAreaDim;
-            float scrollPosMax = (contDim - sAreaDim) + (maxScrollBugWorkaround ? 3.0f : 0.0f); //NOTE: Adding + 3.0f to prevent bug with scroller that pushes everything under it when its at the bottom of the scroll area. Only happens with some scroll areas
-            float scrollerPos = std::fabs(scrollData.scrollPosition->y / scrollPosMax);
-            float areaAboveScrollerSize = scrollerPos * (sAreaDim - scrollerSize);
-
-            sD.currentScrollPos = scrollData.scrollPosition->y;
-
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIXED(12), .height = CLAY_SIZING_GROW(0)},
-                    .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2)
-            }) {
-                SkColor4f scrollerColor;
-                if(sD.isMoving)
-                    scrollerColor = io->theme->fillColor1;
-                else if(Clay_Hovered())
-                    scrollerColor = io->theme->fillColor1;
-                else
-                    scrollerColor = io->theme->fillColor2;
-
-                bool isHoveringOverScroller = false;
-                CLAY_AUTO_ID({ 
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(areaAboveScrollerSize)}
-                    }
-                }) {}
-                CLAY_AUTO_ID({
-                    .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(scrollerSize)}},
-                    .backgroundColor = convert_vec4<Clay_Color>(scrollerColor),
-                    .cornerRadius = CLAY_CORNER_RADIUS(3),
-                }) {
-                    if(Clay_Hovered())
-                        isHoveringOverScroller = true;
-                }
-                CLAY_AUTO_ID({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                if(Clay_Hovered() && io->mouse.leftClick) {
-                    sD.isMoving = true;
-                    if(isHoveringOverScroller)
-                        sD.scrollerStartPos = scrollAreaBB.y + areaAboveScrollerSize + scrollerSize * 0.5f;
-                    else
-                        sD.scrollerStartPos = std::clamp(io->mouse.pos.y(), scrollAreaBB.y + scrollerSize * 0.5f, scrollAreaBB.y + scrollAreaBB.height - scrollerSize * 0.5f);
-                    sD.mouseStartPos = io->mouse.pos.y();
-                }
-                if(!io->mouse.leftHeld)
-                    sD.isMoving = false;
-                if(sD.isMoving) {
-                    float newScrollPosFrac;
-                    newScrollPosFrac = std::clamp((sD.scrollerStartPos - (sD.mouseStartPos - io->mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
-                    sD.currentScrollPos = newScrollPosFrac * (-scrollPosMax);
-                }
-                sD.currentScrollPos = std::clamp(sD.currentScrollPos, -scrollPosMax, 0.0f);
-                scrollData.scrollPosition->y = sD.currentScrollPos;
-            }
-        }
-        else
-            sD.currentScrollPos = 0.0f;
-    }
-    pop_id();
-}
-
-
-void GUIManager::scroll_bar_many_entries_area(const char* id, float entryHeight, size_t entryCount, bool clipHorizontal, const std::function<void(size_t, bool)>& entryUpdate, const std::function<void(float, float, float&)>& elemUpdate) {
-    push_id(id);
-    scroll_bar_area(id, clipHorizontal, [&](float scrollContentHeight, float containerHeight, float& scrollAmount) {
-        if(elemUpdate)
-            elemUpdate(scrollContentHeight, containerHeight, scrollAmount);
-
-        bool listHovered = Clay_Hovered();
-
-        float absScrollAmount = std::fabs(scrollAmount);
-        size_t startPoint = absScrollAmount / entryHeight;
-        size_t elementsContainable = (containerHeight / entryHeight) + 2; // Displaying 2 more elements ensures that there isn't any empty space in the container
-        size_t endPoint = std::min(entryCount, startPoint + elementsContainable);
-
-        if(startPoint != 0) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(startPoint * entryHeight)},
-                }
-            }) { }
-        }
-
-        for(size_t i = startPoint; i < endPoint; i++) {
-            push_id(i);
-            entryUpdate(i, listHovered);
-            pop_id();
-        }
-
-        if(endPoint != entryCount) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((entryCount - endPoint) * entryHeight)},
-                }
-            }) { }
-        }
-    });
-    pop_id();
-}
-
-bool GUIManager::rotate_wheel(const char* id, double* angle, float size, const std::function<void()>& elemUpdate) {
-    bool toRet = false;
-    push_id(id);
-    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size) } } }) {
-        RotateWheel* e = insert_element<RotateWheel>();
-        e->update(*io, angle, elemUpdate);
-        toRet = e->selection.clicked;
-    }
-    pop_id();
-    return toRet;
-}
-
-void GUIManager::text_paragraph(const char* id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width, const std::function<void()>& elemUpdate) {
-    push_id(id);
-    TextParagraph* e = insert_element<TextParagraph>();
-    e->update(*io, std::move(paragraph), width, elemUpdate);
-    pop_id();
-}
-
-void GUIManager::paint_circle_popup_menu(const char* id, const Vector2f& centerPos, const PaintCircleMenu::Data& val, const std::function<void()>& elemUpdate) {
-    float size = 300.0f;
-    push_id(id);
-    CLAY_AUTO_ID({.layout = { 
-            .sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size)}
-        },
-        .floating = {
-            .offset = {centerPos.x() - size * 0.5f, centerPos.y() - size * 0.5f},
-            .zIndex = -1,
-            .attachTo = CLAY_ATTACH_TO_ROOT
-        }
-    }) {
-        PaintCircleMenu* e = insert_element<PaintCircleMenu>();
-        e->update(*this, val, elemUpdate);
-    }
-    pop_id();
-}
-
-void GUIManager::list_popup_menu(const char* id, Vector2f popupPos, const std::function<void()>& elemUpdate) {
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
-        }
-    }) {
-        push_id(id);
-
-        Clay_ElementId localID = CLAY_ID_LOCAL("LIST_POPUP");
-
-        Clay_ElementData actionListElemData = Clay_GetElementData(localID);
-
-        if(actionListElemData.found) {
-            if((popupPos.y() + actionListElemData.boundingBox.height) > windowSize.y()) {
-                popupPos.y() -= actionListElemData.boundingBox.height;
-            }
-        }
-
-        CLAY(localID, {
-            .layout = { 
-                .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0)},
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                .childGap = 1,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-            .floating = {
-                .offset = {popupPos.x(), popupPos.y()},
-                .zIndex = -1,
-                .attachTo = CLAY_ATTACH_TO_ROOT
-            }
-        }) {
-            obstructing_window(localID);
-            push_id(1);
-            elemUpdate();
-            pop_id();
-        }
-        pop_id();
     }
 }
 
-void GUIManager::tree_listing(const char* id, NetworkingObjects::NetObjID rootObjID, const TreeListing::DisplayData& displayData, TreeListing::SelectionData& selectionData) {
-    push_id(id);
-    insert_element<TreeListing>()->update(*io, *this, rootObjID, displayData, selectionData);
-    pop_id();
-}
-
-void GUIManager::obstructing_window(const Clay_ElementId& elementID) {
-    if(Clay_Hovered())
-        io->hoverObstructed = true;
-    const Clay_ElementData& elemData = Clay_GetElementData(elementID);
-    io->hoverObstructingAABBs.emplace_back(SCollision::AABB<float>{Vector2f{elemData.boundingBox.x, elemData.boundingBox.y} + windowPos, Vector2f{elemData.boundingBox.x + elemData.boundingBox.width, elemData.boundingBox.y + elemData.boundingBox.height} + windowPos});
+void GUIManager::single_layout_run() {
+    layout_begin();
+    io->layoutRun();
+    layout_end();
 }
 
 void GUIManager::clay_error_handler(Clay_ErrorData errorData) {
@@ -960,6 +301,10 @@ void GUIManager::push_id(const char* id) {
 
 void GUIManager::pop_id() {
     idStack.pop_back();
+}
+
+void GUIManager::set_post_callback_func(const std::function<void()>& f) {
+    postCallbackFunc = f;
 }
 
 }

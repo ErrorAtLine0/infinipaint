@@ -3,26 +3,34 @@
 
 namespace GUIStuff {
 
-    class GUIManager;
-
 class PaintCircleMenu : public Element {
     public:
+        PaintCircleMenu(GUIManager& gui);
         struct Data {
-            double currentRotationAngle = 0.0;
-            double* newRotationAngle = nullptr;
+            double* rotationAngle = nullptr;
             Vector4f* selectedColor = nullptr;
             std::vector<Vector3f> palette;
+            std::function<void()> onRotate;
+            std::function<void()> onPaletteClick;
         };
-        void update(GUIManager& gui, const Data& data, const std::function<void()>& elemUpdate);
+        void layout(const Data& data, const std::function<void()>& onChange);
+        virtual bool collides_with_point(const Vector2f& p) const override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
+        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
     private:
         void draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA);
         void draw_palette_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA);
         Data d;
-        SCollision::AABB<float> bb;
-        SelectionHelper rotateBarSelect;
-        SelectionHelper colorBarSelect;
+        std::function<void()> onChange;
         unsigned colorSelectionIndex = 0;
+        bool isHovering = false;
+        bool isRotateBarHeld = false;
+        bool isRotateBarHovered = false;
+        bool isColorBarHovered = false;
+        bool isHeld = false;
+
+        void update_paint_circle_menu_mouse(const Vector2f& p, bool leftClicked);
 };
 
 }

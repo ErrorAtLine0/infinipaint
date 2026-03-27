@@ -1,30 +1,38 @@
 #include "SelectableButton.hpp"
 #include "Helpers/ConvertVec.hpp"
+#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
-void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std::function<void(SelectionHelper&, bool)>& elemUpdate, bool isSelected) {
+SelectableButton::SelectableButton(GUIManager& gui):
+    Element(gui) {}
+
+void SelectableButton::layout(const Data& d) {
+    auto& io = *gui.io;
+
     SkColor4f borderColor;
     SkColor4f backgroundColorHighlight;
     SkColor4f backgroundColor;
 
-    if(selection.held || ((isSelected || selection.hovered) && drawType == DrawType::TRANSPARENT_BORDER))
+    onClick = d.onClick;
+
+    if(isHeld || ((d.isSelected || isHovering) && d.drawType == DrawType::TRANSPARENT_BORDER))
         borderColor = io.theme->fillColor1;
-    else if(drawType == DrawType::TRANSPARENT_BORDER)
+    else if(d.drawType == DrawType::TRANSPARENT_BORDER)
         borderColor = io.theme->backColor2;
     else
         borderColor = SkColor4f{0.0f, 0.0f, 0.0f, 0.0f};
 
-    if(isSelected)
+    if(d.isSelected)
         backgroundColorHighlight = color_mul_alpha(io.theme->fillColor1, 0.4f);
-    else if(selection.hovered || selection.held)
+    else if(isHovering || isHeld)
         backgroundColorHighlight = color_mul_alpha(io.theme->fillColor1, 0.2f);
     else
         backgroundColorHighlight = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    if(drawType == DrawType::TRANSPARENT_ALL || drawType == DrawType::TRANSPARENT_BORDER)
+    if(d.drawType == DrawType::TRANSPARENT_ALL || d.drawType == DrawType::TRANSPARENT_BORDER)
         backgroundColor = {0.0f, 0.0f, 0.0f, 0.0f};
-    else if(drawType == DrawType::FILLED)
+    else if(d.drawType == DrawType::FILLED)
         backgroundColor = io.theme->backColor2;
     else
         backgroundColor = io.theme->fillColor2;
@@ -43,19 +51,38 @@ void SelectableButton::update(UpdateInputData& io, DrawType drawType, const std:
     }) {
         CLAY_AUTO_ID({.layout = { 
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                .padding = (drawType == DrawType::TRANSPARENT_BORDER) ? CLAY_PADDING_ALL(0) : CLAY_PADDING_ALL(4),
+                .padding = (d.drawType == DrawType::TRANSPARENT_BORDER) ? CLAY_PADDING_ALL(0) : CLAY_PADDING_ALL(4),
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
             },
             .backgroundColor = convert_vec4<Clay_Color>(backgroundColorHighlight),
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         }) {
-            selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
-            elemUpdate(selection, isSelected);
+            if(d.innerContent)
+                d.innerContent({.isSelected = d.isSelected, .isHovering = isHovering, .isHeld = isHeld});
         }
     }
 }
 
-void SelectableButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
+bool SelectableButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+    bool oldIsHovering = isHovering;
+    bool oldIsHeld = isHeld;
+    isHovering = mouseHovering;
+    isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+    if(isHeld) {
+        gui.set_post_callback_func([&]{onClick();});
+        gui.set_to_layout();
+    }
+    else if(isHovering != oldIsHovering || isHeld != oldIsHeld)
+        gui.set_to_layout();
+    return Element::input_mouse_button_callback(button, mouseHovering);
+}
+
+bool SelectableButton::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+    bool oldIsHovering = isHovering;
+    isHovering = mouseHovering;
+    if(isHovering != oldIsHovering)
+        gui.set_to_layout();
+    return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 }

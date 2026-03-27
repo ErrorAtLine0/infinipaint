@@ -47,6 +47,7 @@ class Toolbar {
         void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
         void update();
+        void layout_run();
         void draw(SkCanvas* canvas, bool skiaAA);
         void color_selector_left(Vector4f* color);
         void color_selector_right(Vector4f* color);
@@ -99,13 +100,12 @@ class Toolbar {
 
         bool app_close_requested();
     private:
-        void end_io();
-        void initialize_io();
         void calculate_final_gui_scale();
         float final_gui_scale_not_fit();
 
         static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
 
+        void text_button_wide(const char* id, const char* str, const std::function<void()>& onClick);
         void reload_theme_list();
         void player_list();
         void chat_box();
@@ -117,18 +117,22 @@ class Toolbar {
         void layer_menu(bool justOpened);
         void drawing_program_gui();
         void options_menu();
+        void file_picker_gui_refresh_entries();
+        void file_picker_gui_done();
         void file_picker_gui();
         void performance_metrics();
         bool color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
         void load_default_theme();
-        void about_menu_gui();
+        void about_menu_inner_gui();
         void web_version_welcome();
         void still_connecting_center_message();
         void no_layers_being_edited_message();
         void close_popup_gui();
         void add_world_to_close_popup_data(const std::shared_ptr<World>& w);
+        void general_settings_inner_gui();
+        void center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent);
 
         struct ClosePopupData {
             struct CloseWorldData {
@@ -229,7 +233,6 @@ class Toolbar {
             std::vector<ExtensionFilter> extensionFiltersComplete;
             std::vector<std::string> extensionFilters;
             std::vector<std::filesystem::path> entries;
-            bool refreshEntries = true;
             std::filesystem::path currentSearchPath;
             std::filesystem::path currentSelectedPath;
             std::string fileName;
@@ -250,9 +253,6 @@ class Toolbar {
         std::filesystem::path testing;
 
         std::unique_ptr<skia::textlayout::Paragraph> build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
-
-        void start_gui();
-        void end_gui();
 
         void load_icons_at(const std::filesystem::path& pathToLoad);
 

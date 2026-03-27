@@ -7,15 +7,15 @@ namespace GUIStuff {
 
 class MovableTabList : public Element {
     public:
-        void update(UpdateInputData& io, const std::vector<std::pair<std::string, std::string>>& tabNames, size_t& selectedTab, std::optional<size_t>& closedTab, const std::function<void()>& elemUpdate);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        SelectionHelper selection;
-    private:
-        std::vector<std::pair<std::string, std::string>> oldTabNames;
-        std::vector<SelectableButton> buttons;
-        std::vector<SelectableButton> closeButtons;
-        std::vector<SVGIcon> closeIcons;
-        std::vector<SVGIcon> tabIcons;
+        struct Data {
+            std::vector<std::pair<std::string, std::string>> tabNames;
+            size_t selectedTab = 0;
+            std::function<void(size_t)> changeSelectedTab;
+            std::function<void(size_t)> closeTab;
+        };
+
+        MovableTabList(GUIManager& gui);
+        void layout(const Data& d);
 };
 
 }

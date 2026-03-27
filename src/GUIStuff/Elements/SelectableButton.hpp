@@ -12,9 +12,28 @@ class SelectableButton : public Element {
             TRANSPARENT_BORDER
         };
 
-        void update(UpdateInputData& io, DrawType drawType, const std::function<void(SelectionHelper&, bool)>& elemUpdate, bool isSelected);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        SelectionHelper selection;
+        struct InnerContentCallbackParameters {
+            bool isSelected;
+            bool isHovering;
+            bool isHeld;
+        };
+
+        struct Data {
+            DrawType drawType = DrawType::TRANSPARENT_ALL;
+            bool isSelected = false;
+            std::function<void()> onClick;
+            std::function<void(const InnerContentCallbackParameters&)> innerContent;
+        };
+
+        SelectableButton(GUIManager& gui);
+        void layout(const Data& d);
+        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+
+    private:
+        bool isHovering = false;
+        bool isHeld = false;
+        std::function<void()> onClick;
 };
 
 }

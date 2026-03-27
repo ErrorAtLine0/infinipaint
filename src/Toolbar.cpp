@@ -2,14 +2,17 @@
 #include "DrawingProgram/Tools/DrawingProgramToolBase.hpp"
 #include "DrawingProgram/Tools/ScreenshotTool.hpp"
 #include "FileHelpers.hpp"
+#include "GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+#include "GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+#include "GUIStuff/ElementHelpers/PopupHelpers.hpp"
+#include "GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "GUIStuff/ElementHelpers/ScrollAreaHelpers.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "Helpers/FileDownloader.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp"
 #include "MainProgram.hpp"
-#include "GUIStuff/Elements/Element.hpp"
-#include "GUIStuff/GUIManager.hpp"
 #include "InputManager.hpp"
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "VersionConstants.hpp"
@@ -35,6 +38,19 @@
 #include <modules/svg/include/SkSVGNode.h>
 #include <include/core/SkStream.h>
 
+#include "GUIStuff/GUIManager.hpp"
+#include "GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+#include "GUIStuff/ElementHelpers/PopupHelpers.hpp"
+#include "GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
+#include "GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
+#include "GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
+#include "GUIStuff/Elements/ScrollArea.hpp"
+#include "GUIStuff/Elements/LayoutElement.hpp"
+#include "GUIStuff/Elements/DropDown.hpp"
+#include "GUIStuff/Elements/SVGIcon.hpp"
+
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
 #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
 
@@ -43,6 +59,9 @@
 #endif
 
 Toolbar::NativeFilePicker Toolbar::nativeFilePicker;
+
+using namespace GUIStuff;
+using namespace ElementHelpers;
 
 Toolbar::Toolbar(MainProgram& initMain):
     io(std::make_shared<GUIStuff::UpdateInputData>()),
@@ -392,16 +411,18 @@ void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
 }
 
 void Toolbar::update() {
+    calculate_final_gui_scale();
+}
+
+void Toolbar::layout_run() {
 #ifndef __EMSCRIPTEN__
     update_notification_check();
 #endif
 
-    start_gui();
-
     if(main.drawGui) {
         CLAY_AUTO_ID({
             .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(gui.windowSize.x()), .height = CLAY_SIZING_FIT(gui.windowSize.y())},
+                .sizing = {.width = CLAY_SIZING_FIT(gui.io->windowSize.x()), .height = CLAY_SIZING_FIT(gui.io->windowSize.y())},
                 .padding = CLAY_PADDING_ALL(io->theme->padding1),
                 .childGap = io->theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
@@ -442,19 +463,17 @@ void Toolbar::update() {
     }
 
     if(!main.world->clientStillConnecting) {
-        if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
-            rightClickPopupLocation = std::nullopt;
+        //if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
+        //    rightClickPopupLocation = std::nullopt;
 
-        if(rightClickPopupLocation.has_value()) {
-            if(!main.world->drawProg.right_click_popup_gui(rightClickPopupLocation.value()))
-                rightClickPopupLocation = std::nullopt;
-        }
+        //if(rightClickPopupLocation.has_value()) {
+        //    if(!main.world->drawProg.right_click_popup_gui(rightClickPopupLocation.value()))
+        //        rightClickPopupLocation = std::nullopt;
+        //}
 
-        if(io->hoverObstructed && io->mouse.rightClick) // This runs specifically if the paint popup has the cursor
-            rightClickPopupLocation = std::nullopt;
+        //if(io->hoverObstructed && io->mouse.rightClick) // This runs specifically if the paint popup has the cursor
+        //    rightClickPopupLocation = std::nullopt;
     }
-
-    end_gui();
 
     justAssignedColorLeft = false;
     justAssignedColorRight = false;
@@ -486,8 +505,7 @@ void Toolbar::close_popup_gui() {
     std::erase_if(closePopupData.worldsToClose, [](auto& wPair) {
         return wPair.w.expired();
     });
-    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CLOSE POPUP");
-    CLAY(localId, {
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0, 600) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -499,76 +517,89 @@ void Toolbar::close_popup_gui() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.zIndex = 1, .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window(localId);
         gui.push_id("Close single file popup gui");
-        gui.text_label("Files may contain unsaved changes");
-        gui.scroll_bar_area("close file popup gui scroll area", false, [&](float, float, float &) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                }
-            }) {
-                size_t i = 0;
-                for(auto& [w, setToSave] : closePopupData.worldsToClose) {
-                    auto wLock = w.lock();
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                            .childGap = io->theme->childGap1,
-                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                            .layoutDirection = CLAY_LEFT_TO_RIGHT
-                        },
-                        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2),
-                        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                    }) {
-                        gui.push_id(i);
-                        gui.checkbox("set to save checkbox", &setToSave);
+        text_label(gui, "Files may contain unsaved changes");
+        gui.element<ScrollArea>("close file popup gui scroll area", ScrollArea::Options{
+            .scrollVertical = true,
+            .clipVertical = true,
+            .showScrollbarY = true,
+            .innerContent = [&](const ScrollArea::InnerContentParameters&) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .childGap = io->theme->childGap1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    }
+                }) {
+                    size_t i = 0;
+                    for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+                        auto wLock = w.lock();
                         CLAY_AUTO_ID({
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                                .childGap = 0,
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                                .childGap = io->theme->childGap1,
                                 .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                                .layoutDirection = CLAY_TOP_TO_BOTTOM
-                            }
+                                .layoutDirection = CLAY_LEFT_TO_RIGHT
+                            },
+                            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2),
+                            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
                         }) {
-                            gui.text_label(wLock->name);
-                            gui.text_label_light(wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
+                            gui.push_id(i);
+                            checkbox_boolean(gui, "set to save checkbox", &setToSave);
+                            CLAY_AUTO_ID({
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                                    .childGap = 0,
+                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                                }
+                            }) {
+                                text_label(gui, wLock->name);
+                                text_label_light(gui, wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
+                            }
+                            gui.pop_id();
                         }
-                        gui.pop_id();
+                        ++i;
                     }
-                    ++i;
                 }
             }
         });
-        if(gui.text_button_wide("Save", "Save")) {
-            for(auto& [w, setToSave] : closePopupData.worldsToClose) {
-                auto wLock = w.lock();
-                if(setToSave) {
-                    if(wLock->filePath.empty())
-                        wLock->autosave_to_directory(main.documentsPath);
-                    else
-                        wLock->save_to_file(wLock->filePath);
+        text_button(gui, "Save", "Save", {
+            .wide = true,
+            .onClick = [&] {
+                for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+                    auto wLock = w.lock();
+                    if(setToSave) {
+                        if(wLock->filePath.empty())
+                            wLock->autosave_to_directory(main.documentsPath);
+                        else
+                            wLock->save_to_file(wLock->filePath);
+                    }
+                    main.set_tab_to_close(w);
                 }
-                main.set_tab_to_close(w);
+                closePopupData.worldsToClose.clear();
+                if(closePopupData.closeAppWhenDone)
+                    main.setToQuit = true;
             }
-            closePopupData.worldsToClose.clear();
-            if(closePopupData.closeAppWhenDone)
-                main.setToQuit = true;
-        }
-        if(gui.text_button_wide("Discard All", "Discard All")) {
-            for(auto& [w, setToSave] : closePopupData.worldsToClose)
-                main.set_tab_to_close(w);
-            closePopupData.worldsToClose.clear();
-            if(closePopupData.closeAppWhenDone)
-                main.setToQuit = true;
-        }
-        if(gui.text_button_wide("Cancel", "Cancel")) {
-            closePopupData.worldsToClose.clear();
-            closePopupData.closeAppWhenDone = false;
-        }
+        });
+        text_button(gui, "Discard All", "Discard All", {
+            .wide = true,
+            .onClick = [&] {
+                for(auto& [w, setToSave] : closePopupData.worldsToClose)
+                    main.set_tab_to_close(w);
+                closePopupData.worldsToClose.clear();
+                if(closePopupData.closeAppWhenDone)
+                    main.setToQuit = true;
+            }
+        });
+        text_button(gui, "Cancel", "Cancel", {
+            .wide = true,
+            .onClick = [&] {
+                closePopupData.worldsToClose.clear();
+                closePopupData.closeAppWhenDone = false;
+            }
+        });
         gui.pop_id();
     }
 }
@@ -595,20 +626,21 @@ void Toolbar::save_as_func() {
 
 void Toolbar::paint_popup(Vector2f popupPos) {
     double newRotationAngle = 0.0;
-    gui.paint_circle_popup_menu("paint circle popup", popupPos, {
-        .currentRotationAngle = main.world->drawData.cam.c.rotation,
-        .newRotationAngle = &newRotationAngle,
+    paint_circle_popup_menu(gui, "paint circle popup", popupPos, {
+        .rotationAngle = &main.world->drawData.cam.c.rotation,
         .selectedColor = main.world->drawProg.get_foreground_color_ptr(),
-        .palette = paletteData.palettes[paletteData.selectedPalette].colors
+        .palette = paletteData.palettes[paletteData.selectedPalette].colors,
+        .onRotate = [&] {
+            main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), newRotationAngle - main.world->drawData.cam.c.rotation);
+        },
+        .onPaletteClick = [&] {
+            gui.set_to_layout();
+        }
     });
-    if(newRotationAngle != main.world->drawData.cam.c.rotation) {
-        main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), newRotationAngle - main.world->drawData.cam.c.rotation);
-    }
 }
 
 void Toolbar::top_toolbar() {
-    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT TOP TOOLBAR");
-    CLAY(localId, {
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io->theme->padding1 / 2)),
@@ -619,54 +651,64 @@ void Toolbar::top_toolbar() {
         .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
     }) {
-        gui.obstructing_window(localId);
         gui.push_id("menu top toolbar");
         global_log();
         bool menuPopUpJustOpen = false;
         bool bookmarkMenuPopUpJustOpen = false;
         bool gridMenuPopUpJustOpen = false;
         bool layerMenuPopUpJustOpen = false;
-        if(gui.svg_icon_button_transparent("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
+        auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
+            svg_icon_button(gui, id, svgPath, {
+                .isSelected = isSelected,
+                .onClick = onClick
+            });
+        };
+        icon_button_top_toolbar("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen, [&] {
             if(menuPopUpOpen)
                 menuPopUpOpen = false;
             else {
                 menuPopUpOpen = true;
                 menuPopUpJustOpen = true;
             }
-        }
-        std::vector<std::pair<std::string, std::string>> tabNames;
-        for(size_t i = 0; i < main.worlds.size(); i++) {
-            auto& w = main.worlds[i];
-            bool shouldAddStarNextToName = w->should_ask_before_closing() && !w->netServer && !w->netClient;
-            tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
-        }
+        });
+        //std::vector<std::pair<std::string, std::string>> tabNames;
+        //for(size_t i = 0; i < main.worlds.size(); i++) {
+        //    auto& w = main.worlds[i];
+        //    bool shouldAddStarNextToName = w->should_ask_before_closing() && !w->netServer && !w->netClient;
+        //    tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
+        //}
 
-        std::optional<size_t> closedTab;
-        gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
-        if(closedTab) {
-            auto& closedWorldPtr = main.worlds[closedTab.value()];
-            if(closedWorldPtr->should_ask_before_closing())
-                add_world_to_close_popup_data(closedWorldPtr);
-            else
-                main.set_tab_to_close(closedWorldPtr);
-        }
+        //std::optional<size_t> closedTab;
+        //gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
+        //if(closedTab) {
+        //    auto& closedWorldPtr = main.worlds[closedTab.value()];
+        //    if(closedWorldPtr->should_ask_before_closing())
+        //        add_world_to_close_popup_data(closedWorldPtr);
+        //    else
+        //        main.set_tab_to_close(closedWorldPtr);
+        //}
 
         if(!main.world->clientStillConnecting) {
-            if(main.world->netObjMan.is_connected() && gui.svg_icon_button_transparent("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen))
-                playerMenuOpen = !playerMenuOpen;
-            if(gui.svg_icon_button_transparent("Menu Undo Button", "data/icons/undo.svg"))
+            if(main.world->netObjMan.is_connected()) {
+                icon_button_top_toolbar("Player List Toggle Button", "data/icons/list.svg", playerMenuOpen, [&] {
+                    playerMenuOpen = !playerMenuOpen;
+                });
+            }
+            icon_button_top_toolbar("Menu Undo Button", "data/icons/undo.svg", false, [&] {
                 main.world->undo_with_checks();
-            if(gui.svg_icon_button_transparent("Menu Redo Button", "data/icons/redo.svg"))
+            });
+            icon_button_top_toolbar("Menu Redo Button", "data/icons/redo.svg", false, [&] {
                 main.world->redo_with_checks();
-            if(gui.svg_icon_button_transparent("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
+            });
+            icon_button_top_toolbar("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen, [&] {
                 if(gridMenu.popupOpen)
                     stop_displaying_grid_menu();
                 else {
                     gridMenu.popupOpen = true;
                     gridMenuPopUpJustOpen = true;
                 }
-            }
-            if(gui.svg_icon_button_transparent("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
+            });
+            icon_button_top_toolbar("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen, [&] {
                 if(layerMenuPopupOpen) {
                     main.world->drawProg.layerMan.listGUI.refresh_gui_data();
                     layerMenuPopupOpen = false;
@@ -675,8 +717,8 @@ void Toolbar::top_toolbar() {
                     layerMenuPopupOpen = true;
                     layerMenuPopUpJustOpen = true;
                 }
-            }
-            if(gui.svg_icon_button_transparent("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen, GUIStuff::GUIManager::BIG_BUTTON_SIZE, true, true)) {
+            });
+            icon_button_top_toolbar("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen, [&] {
                 if(bookmarkMenuPopupOpen) {
                     main.world->bMan.refresh_gui_data();
                     bookmarkMenuPopupOpen = false;
@@ -685,7 +727,7 @@ void Toolbar::top_toolbar() {
                     bookmarkMenuPopupOpen = true;
                     bookmarkMenuPopUpJustOpen = true;
                 }
-            }
+            });
 
             if(gridMenu.popupOpen)
                 grid_menu(gridMenuPopUpJustOpen);
@@ -695,121 +737,115 @@ void Toolbar::top_toolbar() {
                 layer_menu(layerMenuPopUpJustOpen);
         }
         if(menuPopUpOpen) {
-            Clay_ElementId menuPopupId = CLAY_ID_LOCAL("Menu Popup");
-            CLAY(menuPopupId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = 1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-            }) {
-                gui.obstructing_window(menuPopupId);
-                if(gui.text_button_left_transparent("new file local", "New File")) {
-                    main.new_tab({
-                        .isClient = false
-                    }, true);
-                    menuPopUpOpen = false;
-                }
-                if(gui.text_button_left_transparent("open file", "Open")) {
-                    open_world_file(false, "", "");
-                    menuPopUpOpen = false;
-                }
-                if(!main.world->clientStillConnecting) {
-                    if(gui.text_button_left_transparent("save file", "Save")) {
-                        save_func();
-                        menuPopUpOpen = false;
-                    }
-                    if(gui.text_button_left_transparent("save as file", "Save As")) {
-                        save_as_func();
-                        menuPopUpOpen = false;
-                    }
-                    if(gui.text_button_left_transparent("screenshot", "Take Screenshot")) {
-                        main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
-                        menuPopUpOpen = false;
-                    }
-                    if(gui.text_button_left_transparent("add image or file to canvas", "Add Image/File to Canvas")) {
-                        #ifdef __EMSCRIPTEN__
-                            static std::weak_ptr<World> worldWeakPtr;
-                            worldWeakPtr = make_weak_ptr(main.world);
-                            emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
-                                if(!buffer.empty()) {
-                                    auto world = ((std::weak_ptr<World>*)callbackData)->lock();
-                                    if(world)
-                                        world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+            gui.element<LayoutElement>("main menu popup", [&] {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
+                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                        .childGap = 1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+                    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                }) {
+                    auto menu_popup_text_button = [&](const char* id, const char* str, const std::function<void()>& onClick) {
+                        text_button(gui, id, str, {
+                            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                            .wide = true,
+                            .onClick = [&]{
+                                onClick();
+                                menuPopUpOpen = false;
+                            }
+                        });
+                    };
+                    menu_popup_text_button("new file local", "New File", [&] {
+                        main.new_tab({
+                            .isClient = false
+                        }, true);
+                    });
+                    menu_popup_text_button("open file", "Open", [&] { open_world_file(false, "", ""); });
+                    if(!main.world->clientStillConnecting) {
+                        menu_popup_text_button("save file", "Save", [&] { save_func(); });
+                        menu_popup_text_button("save as file", "Save As", [&] { save_as_func(); });
+                        menu_popup_text_button("screenshot", "Screenshot", [&] { main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT); });
+                        menu_popup_text_button("add image or file to canvas", "Add Image/File to Canvas", [&] {
+                            #ifdef __EMSCRIPTEN__
+                                static std::weak_ptr<World> worldWeakPtr;
+                                worldWeakPtr = make_weak_ptr(main.world);
+                                emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
+                                    if(!buffer.empty()) {
+                                        auto world = ((std::weak_ptr<World>*)callbackData)->lock();
+                                        if(world)
+                                            world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                                        else
+                                            Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                    }
+                                }, &worldWeakPtr);
+                            #else
+                                open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
+                                    auto wLock = w.lock();
+                                    if(wLock)
+                                        wLock->drawProg.add_file_to_canvas_by_path(p, wLock->main.window.size.cast<float>() / 2.0f, false);
                                     else
                                         Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
-                                }
-                            }, &worldWeakPtr);
-                        #else
-                            open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
-                                auto wLock = w.lock();
-                                if(wLock)
-                                    wLock->drawProg.add_file_to_canvas_by_path(p, wLock->main.window.size.cast<float>() / 2.0f, false);
-                                else
-                                    Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                });
+                            #endif
+                        });
+                        if(main.world->netObjMan.is_connected()) {
+                            menu_popup_text_button("lobby info", "Lobby Info", [&] {
+                                optionsMenuOpen = true;
+                                optionsMenuType = LOBBY_INFO_MENU;
                             });
-                        #endif
-                        menuPopUpOpen = false;
-                    }
-                    if(main.world->netObjMan.is_connected()) {
-                        if(gui.text_button_left_transparent("lobby info", "Lobby Info")) {
-                            optionsMenuOpen = true;
-                            optionsMenuType = LOBBY_INFO_MENU;
-                            menuPopUpOpen = false;
                         }
+                        menu_popup_text_button("start hosting", "Host", [&] {
+                            serverLocalID = NetLibrary::get_random_server_local_id();
+                            serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+                            optionsMenuOpen = true;
+                            optionsMenuType = HOST_MENU;
+                        });
+                        menu_popup_text_button("canvas specific settings", "Canvas Settings", [&] {
+                            optionsMenuOpen = true;
+                            optionsMenuType = CANVAS_SETTINGS_MENU;
+                        });
                     }
-                    else if(gui.text_button_left_transparent("start hosting", "Host")) {
-                        serverLocalID = NetLibrary::get_random_server_local_id();
-                        serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+                    menu_popup_text_button("start connecting", "Connect", [&] {
+                        serverToConnectTo.clear();
                         optionsMenuOpen = true;
-                        optionsMenuType = HOST_MENU;
-                        menuPopUpOpen = false;
-                    }
-                    if(gui.text_button_left_transparent("canvas specific settings", "Canvas Settings")) {
+                        optionsMenuType = CONNECT_MENU;
+                    });
+                    menu_popup_text_button("open options", "Settings", [&] {
                         optionsMenuOpen = true;
-                        optionsMenuType = CANVAS_SETTINGS_MENU;
+                        optionsMenuType = GENERAL_SETTINGS_MENU;
+                    });
+                    menu_popup_text_button("about menu button", "About", [&] {
+                        optionsMenuOpen = true;
+                        optionsMenuType = ABOUT_MENU;
+                    });
+                    #ifndef __EMSCRIPTEN__
+                        menu_popup_text_button("quit button", "Quit", [&] {
+                            if(main.app_close_requested())
+                                main.setToQuit = true;
+                        });
+                    #endif
+                }
+            }, LayoutElement::Callbacks {
+                .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                    if(!mouseHovering && button.down) {
                         menuPopUpOpen = false;
+                        gui.set_to_layout();
                     }
+                    return mouseHovering;
                 }
-                if(gui.text_button_left_transparent("start connecting", "Connect")) {
-                    serverToConnectTo.clear();
-                    optionsMenuOpen = true;
-                    optionsMenuType = CONNECT_MENU;
-                    menuPopUpOpen = false;
-                }
-                if(gui.text_button_left_transparent("open options", "Settings")) {
-                    optionsMenuOpen = true;
-                    optionsMenuType = GENERAL_SETTINGS_MENU;
-                    menuPopUpOpen = false;
-                }
-                if(gui.text_button_left_transparent("about menu button", "About")) {
-                    optionsMenuOpen = true;
-                    optionsMenuType = ABOUT_MENU;
-                    menuPopUpOpen = false;
-                }
-                #ifndef __EMSCRIPTEN__
-                    if(gui.text_button_left_transparent("quit button", "Quit")) {
-                        if(main.app_close_requested())
-                            main.setToQuit = true;
-                        menuPopUpOpen = false;
-                    }
-                #endif
-                if(io->mouse.leftClick && !Clay_Hovered() && !menuPopUpJustOpen)
-                    menuPopUpOpen = false;
-            }
+            });
         }
         gui.pop_id();
     }
 }
 
 void Toolbar::web_version_welcome() {
-    Clay_ElementId localId = CLAY_ID_LOCAL("Web version welcome");
-    CLAY(localId, {
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -821,10 +857,9 @@ void Toolbar::web_version_welcome() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window(localId);
         gui.push_id("web version welcome gui");
-        gui.text_label_centered("Welcome to the web version of InfiniPaint!");
-        gui.text_label(
+        text_label_centered(gui, "Welcome to the web version of InfiniPaint!");
+        text_label(gui, 
 R"(This version contains more known issues than the native version of the app. This includes:
 - Rare crashes
 - If this browser tab is unfocused, or the window is minimized, any InfiniPaint tabs connected online (whether host or client) will be disconnected
@@ -833,8 +868,12 @@ R"(This version contains more known issues than the native version of the app. T
 - Can't access local fonts
 
 If you like this app, consider downloading the native version for your system)");
-        if(gui.text_button_wide("got it", "Got It"))
-            viewWebVersionWelcome = false;
+        text_button(gui, "got it", "Got It", {
+            .wide = true,
+            .onClick = [&] {
+                viewWebVersionWelcome = false;
+            }
+        });
         gui.pop_id();
     }
 }
@@ -852,7 +891,7 @@ void Toolbar::still_connecting_center_message() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.text_label("Connecting to server...");
+        text_label(gui, "Connecting to server...");
     }
 }
 
@@ -869,7 +908,7 @@ void Toolbar::no_layers_being_edited_message() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.text_label("Select a layer to edit");
+        text_label(gui, "Select a layer to edit");
     }
 }
 
@@ -918,8 +957,7 @@ void Toolbar::update_notification_check() {
 }
 
 void Toolbar::update_notification_gui() {
-    Clay_ElementId localId = CLAY_ID_LOCAL("UPDATE NOTIFICATION GUI");
-    CLAY(localId, {
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -931,19 +969,28 @@ void Toolbar::update_notification_gui() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window(localId);
         gui.push_id("update notification gui");
-        gui.text_label_centered("Update v" + updateCheckerData.newVersionStr + " available!");
-        if(gui.text_button_wide("download", "Open download page in web browser")) {
-            SDL_OpenURL(UPDATE_DOWNLOAD_URL);
-            updateCheckerData.showGui = false;
-        }
-        if(gui.text_button_wide("ignore forever", "Ignore and don't notify again (can be changed in settings)")) {
-            updateCheckerData.checkForUpdates = false;
-            updateCheckerData.showGui = false;
-        }
-        if(gui.text_button_wide("ignore for now", "Ignore for now"))
-           updateCheckerData.showGui = false;
+        text_label_centered(gui, "Update v" + updateCheckerData.newVersionStr + " available!");
+        text_button(gui, "download", "Open download page in web browser", {
+            .wide = true,
+            .onClick = [&]{
+                SDL_OpenURL(UPDATE_DOWNLOAD_URL);
+                updateCheckerData.showGui = false;
+            }
+        });
+        text_button(gui, "ignore forever", "Ignore and don't notify again (can be changed in settings)", {
+            .wide = true,
+            .onClick = [&]{
+                updateCheckerData.checkForUpdates = false;
+                updateCheckerData.showGui = false;
+            }
+        });
+        text_button(gui, "ignore for now", "Ignore for now", {
+            .wide = true,
+            .onClick = [&]{
+                updateCheckerData.showGui = false;
+            }
+        });
         gui.pop_id();
     }
 }
@@ -953,88 +1000,88 @@ void Toolbar::grid_menu(bool justOpened) {
     if(main.world->gridMan.grids) {
         gui.push_id("grid menu");
         Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT GRID MENU");
-        CLAY(localId, {
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                .childGap = io->theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-            .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-        }) {
-            gui.obstructing_window(localId);
-            gui.text_label_centered("Grids");
-            float entryHeight = 25.0f;
-            if(main.world->gridMan.grids->empty())
-                gui.text_label_centered("No grids yet...");
-            uint32_t toDelete = std::numeric_limits<uint32_t>::max();
-            gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.grids->size(), true, [&](size_t i, bool isListHovered) {
-                auto& grid = main.world->gridMan.grids->at(i)->obj;
-                bool selectedEntry = gridMenu.selectedGrid == i;
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
-                        .childGap = 2,
-                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT 
-                    },
-                    .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
-                }) {
-                    gui.text_label(grid->get_display_name());
-                    bool miniButtonClicked = false;
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                            .childGap = 1,
-                            .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
-                            .layoutDirection = CLAY_LEFT_TO_RIGHT
-                        }
-                    }) {
-                        if(gui.svg_icon_button_transparent("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
-                            miniButtonClicked = true;
-                            grid->visible = !grid->visible;
-                            NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
-                        }
-                        if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
-                            miniButtonClicked = true;
-                            main.world->drawProg.modify_grid(grid);
-                            stop_displaying_grid_menu();
-                        }
-                        if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
-                            miniButtonClicked = true;
-                            toDelete = i;
-                        }
-                    }
-                    if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
-                        gridMenu.selectedGrid = i;
-                        if(io->mouse.leftClick >= 2) {
-                            main.world->drawProg.modify_grid(grid);
-                            stop_displaying_grid_menu();
-                        }
-                    }
-                }
-            });
-            if(toDelete != std::numeric_limits<uint32_t>::max())
-                main.world->gridMan.remove_grid(toDelete);
-            gui.left_to_right_line_layout([&]() {
-                bool addByEnter = false;
-                gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
-                    addByEnter = s.selected && io->key.enter;
-                });
-                if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
-                    main.world->gridMan.add_default_grid(gridMenu.newName);
-                    main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
-                    stop_displaying_grid_menu();
-                }
-            });
+        //CLAY(localId, {
+        //    .layout = {
+        //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+        //        .padding = CLAY_PADDING_ALL(io->theme->padding1),
+        //        .childGap = io->theme->childGap1,
+        //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+        //        .layoutDirection = CLAY_TOP_TO_BOTTOM
+        //    },
+        //    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        //    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        //}) {
+        //    gui.obstructing_window(localId);
+        //    text_label_centered(gui, "Grids");
+        //    float entryHeight = 25.0f;
+        //    if(main.world->gridMan.grids->empty())
+        //        text_label_centered(gui, "No grids yet...");
+        //    uint32_t toDelete = std::numeric_limits<uint32_t>::max();
+        //    gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.grids->size(), true, [&](size_t i, bool isListHovered) {
+        //        auto& grid = main.world->gridMan.grids->at(i)->obj;
+        //        bool selectedEntry = gridMenu.selectedGrid == i;
+        //        CLAY_AUTO_ID({
+        //            .layout = {
+        //                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
+        //                .childGap = 2,
+        //                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+        //                .layoutDirection = CLAY_LEFT_TO_RIGHT 
+        //            },
+        //            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
+        //        }) {
+        //            text_label(gui, grid->get_display_name());
+        //            bool miniButtonClicked = false;
+        //            CLAY_AUTO_ID({
+        //                .layout = {
+        //                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+        //                    .childGap = 1,
+        //                    .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
+        //                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+        //                }
+        //            }) {
+        //                if(gui.svg_icon_button_transparent("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
+        //                    miniButtonClicked = true;
+        //                    grid->visible = !grid->visible;
+        //                    NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
+        //                }
+        //                if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
+        //                    miniButtonClicked = true;
+        //                    main.world->drawProg.modify_grid(grid);
+        //                    stop_displaying_grid_menu();
+        //                }
+        //                if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
+        //                    miniButtonClicked = true;
+        //                    toDelete = i;
+        //                }
+        //            }
+        //            if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
+        //                gridMenu.selectedGrid = i;
+        //                if(io->mouse.leftClick >= 2) {
+        //                    main.world->drawProg.modify_grid(grid);
+        //                    stop_displaying_grid_menu();
+        //                }
+        //            }
+        //        }
+        //    });
+        //    if(toDelete != std::numeric_limits<uint32_t>::max())
+        //        main.world->gridMan.remove_grid(toDelete);
+        //    gui.left_to_right_line_layout([&]() {
+        //        bool addByEnter = false;
+        //        gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
+        //            addByEnter = s.selected && io->key.enter;
+        //        });
+        //        if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
+        //            main.world->gridMan.add_default_grid(gridMenu.newName);
+        //            main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
+        //            stop_displaying_grid_menu();
+        //        }
+        //    });
 
-            bool dropdownHover = false;
-            if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
-                stop_displaying_grid_menu();
-        }
+        //    bool dropdownHover = false;
+        //    if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
+        //        stop_displaying_grid_menu();
+        //}
         gui.pop_id();
     }
 }
@@ -1047,54 +1094,54 @@ void Toolbar::stop_displaying_grid_menu() {
 
 void Toolbar::bookmark_menu(bool justOpened) {
     gui.push_id("bookmark menu");
-    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT BOOKMARK MENU");
-    CLAY(localId, {
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.obstructing_window(localId);
-        gui.text_label_centered("Bookmarks");
-        main.world->bMan.setup_list_gui("bookmark menu list");
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
-            bookmarkMenuPopupOpen = false;
-            main.world->bMan.refresh_gui_data();
-        }
-    }
+    //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT BOOKMARK MENU");
+    //CLAY(localId, {
+    //    .layout = {
+    //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+    //        .padding = CLAY_PADDING_ALL(io->theme->padding1),
+    //        .childGap = io->theme->childGap1,
+    //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+    //        .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //    },
+    //    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+    //    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //}) {
+    //    gui.obstructing_window(localId);
+    //    text_label_centered(gui, "Bookmarks");
+    //    main.world->bMan.setup_list_gui("bookmark menu list");
+    //    if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
+    //        bookmarkMenuPopupOpen = false;
+    //        main.world->bMan.refresh_gui_data();
+    //    }
+    //}
     gui.pop_id();
 }
 
 void Toolbar::layer_menu(bool justOpened) {
     gui.push_id("layer menu");
-    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT LAYER MENU");
-    CLAY(localId, {
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.obstructing_window(localId);
-        gui.text_label_centered("Layers");
-        bool hoveringOverDropdown = false;
-        main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list", hoveringOverDropdown);
-        if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !hoveringOverDropdown) {
-            layerMenuPopupOpen = false;
-            main.world->drawProg.layerMan.listGUI.refresh_gui_data();
-        }
-    }
+    //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT LAYER MENU");
+    //CLAY(localId, {
+    //    .layout = {
+    //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+    //        .padding = CLAY_PADDING_ALL(io->theme->padding1),
+    //        .childGap = io->theme->childGap1,
+    //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+    //        .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //    },
+    //    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+    //    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //}) {
+    //    gui.obstructing_window(localId);
+    //    text_label_centered(gui, "Layers");
+    //    bool hoveringOverDropdown = false;
+    //    main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list", hoveringOverDropdown);
+    //    if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !hoveringOverDropdown) {
+    //        layerMenuPopupOpen = false;
+    //        main.world->drawProg.layerMan.listGUI.refresh_gui_data();
+    //    }
+    //}
     gui.pop_id();
 }
 
@@ -1126,118 +1173,118 @@ std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_
 }
 
 void Toolbar::chat_box() {
-    constexpr float CHATBOX_WIDTH = 700;
-    if(main.world->netObjMan.is_connected()) {
-        Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN BUTTON");
-        CLAY(localId, {
-            .layout = {
-                .layoutDirection = CLAY_LEFT_TO_RIGHT
-            },
-            .floating = {.offset = {static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-        }) {
-            gui.obstructing_window(localId);
-            gui.push_id("chat box open button");
-            if(gui.svg_icon_button("Chat Open Button", "data/icons/chat.svg", chatBoxState != CHATBOXSTATE_CLOSE)) {
-                if(chatBoxState == CHATBOXSTATE_CLOSE)
-                    chatBoxState = CHATBOXSTATE_JUSTOPEN;
-                else
-                    chatBoxState = CHATBOXSTATE_CLOSE;
-            }
-            gui.pop_id();
-        }
-    }
-    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN");
-    CLAY(localId, {
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
-            .childGap = 0,
-            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .floating = {.offset = {60 + static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.obstructing_window(localId);
-        gui.push_id("chat box");
-        if(chatBoxState == CHATBOXSTATE_JUSTOPEN || chatBoxState == CHATBOXSTATE_OPEN) {
-            gui.push_id("messages");
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(0),
-                    .childGap = 0,
-                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1)
-            }) {
-                int id = 0;
-                for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
-                    gui.push_id(id);
-                    gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, 1.0f), CHATBOX_WIDTH);
-                    gui.pop_id();
-                    id++;
-                }
-            }
-            gui.pop_id();
+    //constexpr float CHATBOX_WIDTH = 700;
+    //if(main.world->netObjMan.is_connected()) {
+    //    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN BUTTON");
+    //    CLAY(localId, {
+    //        .layout = {
+    //            .layoutDirection = CLAY_LEFT_TO_RIGHT
+    //        },
+    //        .floating = {.offset = {static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //    }) {
+    //        gui.obstructing_window(localId);
+    //        gui.push_id("chat box open button");
+    //        if(gui.svg_icon_button("Chat Open Button", "data/icons/chat.svg", chatBoxState != CHATBOXSTATE_CLOSE)) {
+    //            if(chatBoxState == CHATBOXSTATE_CLOSE)
+    //                chatBoxState = CHATBOXSTATE_JUSTOPEN;
+    //            else
+    //                chatBoxState = CHATBOXSTATE_CLOSE;
+    //        }
+    //        gui.pop_id();
+    //    }
+    //}
+    //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN");
+    //CLAY(localId, {
+    //    .layout = {
+    //        .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
+    //        .childGap = 0,
+    //        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+    //        .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //    },
+    //    .floating = {.offset = {60 + static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //}) {
+    //    gui.obstructing_window(localId);
+    //    gui.push_id("chat box");
+    //    if(chatBoxState == CHATBOXSTATE_JUSTOPEN || chatBoxState == CHATBOXSTATE_OPEN) {
+    //        gui.push_id("messages");
+    //        CLAY_AUTO_ID({
+    //            .layout = {
+    //                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+    //                .padding = CLAY_PADDING_ALL(0),
+    //                .childGap = 0,
+    //                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+    //                .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //            },
+    //            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1)
+    //        }) {
+    //            int id = 0;
+    //            for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
+    //                gui.push_id(id);
+    //                gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, 1.0f), CHATBOX_WIDTH);
+    //                gui.pop_id();
+    //                id++;
+    //            }
+    //        }
+    //        gui.pop_id();
 
-            gui.left_to_right_line_layout([&]() {
-                gui.input_text("message input", &chatMessageInput);
-                if(gui.text_button("send button", "Send", false, true)) {
-                    if(!chatMessageInput.empty())
-                        main.world->send_chat_message(chatMessageInput);
-                }
-            });
-            gui.push_id("message input");
-            GUIStuff::GUIManager::ElementContainer& a = gui.elements[gui.idStack];
-            GUIStuff::TextBox<std::string>& t = *(GUIStuff::TextBox<std::string>*)a.elem.get();
-            gui.pop_id();
-            if(chatBoxState == CHATBOXSTATE_JUSTOPEN) {
-                t.selection.selected = true;
-                chatBoxState = CHATBOXSTATE_OPEN;
-            }
-            if(io->key.escape)
-                t.selection.selected = false;
-            if(io->key.enter) {
-                main.world->send_chat_message(chatMessageInput);
-                t.selection.selected = false;
-            }
-            if(!t.selection.selected) {
-                chatMessageInput.clear();
-                chatBoxState = CHATBOXSTATE_CLOSE;
-            }
-        }
-        else {
-            constexpr float DISPLAY_TIME = 8.0f;
-            constexpr float FADE_START_TIME = 7.0f;
-            gui.push_id("messages popup");
-            int id = 0;
-            for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
-                chatMessage.time.update_time_since();
-                if(chatMessage.time < DISPLAY_TIME) {
-                    float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
-                    Clay_ElementId elemId = CLAY_IDI_LOCAL("CHAT MESSAGE ID", id);
-                    CLAY(elemId, {
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                            .padding = CLAY_PADDING_ALL(0),
-                            .childGap = 0,
-                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        },
-                        .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
-                    }) {
-                        gui.push_id(id);
-                        gui.obstructing_window(elemId);
-                        gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, a), CHATBOX_WIDTH);
-                        gui.pop_id();
-                    }
-                }
-                id++;
-            }
-            gui.pop_id();
-        }
-        gui.pop_id();
-    }
+    //        gui.left_to_right_line_layout([&]() {
+    //            gui.input_text("message input", &chatMessageInput);
+    //            if(gui.text_button("send button", "Send", false, true)) {
+    //                if(!chatMessageInput.empty())
+    //                    main.world->send_chat_message(chatMessageInput);
+    //            }
+    //        });
+    //        gui.push_id("message input");
+    //        GUIStuff::GUIManager::ElementContainer& a = gui.elements[gui.idStack];
+    //        GUIStuff::TextBox<std::string>& t = *(GUIStuff::TextBox<std::string>*)a.elem.get();
+    //        gui.pop_id();
+    //        if(chatBoxState == CHATBOXSTATE_JUSTOPEN) {
+    //            t.selection.selected = true;
+    //            chatBoxState = CHATBOXSTATE_OPEN;
+    //        }
+    //        if(io->key.escape)
+    //            t.selection.selected = false;
+    //        if(io->key.enter) {
+    //            main.world->send_chat_message(chatMessageInput);
+    //            t.selection.selected = false;
+    //        }
+    //        if(!t.selection.selected) {
+    //            chatMessageInput.clear();
+    //            chatBoxState = CHATBOXSTATE_CLOSE;
+    //        }
+    //    }
+    //    else {
+    //        constexpr float DISPLAY_TIME = 8.0f;
+    //        constexpr float FADE_START_TIME = 7.0f;
+    //        gui.push_id("messages popup");
+    //        int id = 0;
+    //        for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
+    //            chatMessage.time.update_time_since();
+    //            if(chatMessage.time < DISPLAY_TIME) {
+    //                float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
+    //                Clay_ElementId elemId = CLAY_IDI_LOCAL("CHAT MESSAGE ID", id);
+    //                CLAY(elemId, {
+    //                    .layout = {
+    //                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+    //                        .padding = CLAY_PADDING_ALL(0),
+    //                        .childGap = 0,
+    //                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+    //                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //                    },
+    //                    .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
+    //                }) {
+    //                    gui.push_id(id);
+    //                    gui.obstructing_window(elemId);
+    //                    gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, a), CHATBOX_WIDTH);
+    //                    gui.pop_id();
+    //                }
+    //            }
+    //            id++;
+    //        }
+    //        gui.pop_id();
+    //    }
+    //    gui.pop_id();
+    //}
 }
 
 void Toolbar::global_log() {
@@ -1250,41 +1297,41 @@ void Toolbar::global_log() {
         },
         .floating = {.offset = {0, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        constexpr float DISPLAY_TIME = 8.0f;
-        constexpr float FADE_START_TIME = 7.0f;
-        int i = 0;
-        for(auto& logM : main.logMessages) {
-            logM.time.update_time_since();
-            if(logM.time < DISPLAY_TIME) {
-                float a = 1.0f - lerp_time<float>(logM.time, DISPLAY_TIME, FADE_START_TIME);
-                Clay_ElementId elemId = CLAY_IDI_LOCAL("GLOBAL LOG", i++);
-                CLAY(elemId, {
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
-                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                        .childGap = 0,
-                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-                    },
-                    .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
-                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
-                }) {
-                    gui.obstructing_window(elemId);
-                    SkColor4f c{0, 0, 0, 0};
-                    switch(logM.color) {
-                        case LogMessage::COLOR_NORMAL:
-                            c = io->theme->frontColor1;
-                            break;
-                        case LogMessage::COLOR_ERROR:
-                            c = io->theme->errorColor;
-                            break;
-                    }
-                    gui.text_label_color(logM.text, color_mul_alpha(c, a));
-                }
-            }
-            else
-                break;
-        }
+    //    constexpr float DISPLAY_TIME = 8.0f;
+    //    constexpr float FADE_START_TIME = 7.0f;
+    //    int i = 0;
+    //    for(auto& logM : main.logMessages) {
+    //        logM.time.update_time_since();
+    //        if(logM.time < DISPLAY_TIME) {
+    //            float a = 1.0f - lerp_time<float>(logM.time, DISPLAY_TIME, FADE_START_TIME);
+    //            Clay_ElementId elemId = CLAY_IDI_LOCAL("GLOBAL LOG", i++);
+    //            CLAY(elemId, {
+    //                .layout = {
+    //                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
+    //                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
+    //                    .childGap = 0,
+    //                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+    //                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //                },
+    //                .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
+    //                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+    //            }) {
+    //                gui.obstructing_window(elemId);
+    //                SkColor4f c{0, 0, 0, 0};
+    //                switch(logM.color) {
+    //                    case LogMessage::COLOR_NORMAL:
+    //                        c = io->theme->frontColor1;
+    //                        break;
+    //                    case LogMessage::COLOR_ERROR:
+    //                        c = io->theme->errorColor;
+    //                        break;
+    //                }
+    //                gui.text_label_color(logM.text, color_mul_alpha(c, a));
+    //            }
+    //        }
+    //        else
+    //            break;
+    //    }
     }
 }
 
@@ -1299,65 +1346,65 @@ void Toolbar::drawing_program_gui() {
     }) {
         main.world->drawProg.toolbar_gui();
         isUpdatingColorLeft = isUpdatingColorRight = false;
-        if(colorLeft) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .padding = {.top = 40, .bottom = 40}
-                }
-            }) {
-                auto localId = CLAY_ID_LOCAL("Drawing program gui color picker left");
-                CLAY(localId, {
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                        .childGap = io->theme->childGap1,
-                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-                    },
-                    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
-                }) {
-                    gui.obstructing_window(localId);
-                    isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io->theme->padding1 * 2.0f);
-                    bool hoveringOnDropdown = false;
-                    isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
-                    if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io->mouse.leftClick)
-                        colorLeft = nullptr;
-                }
-            }
-        }
+        //if(colorLeft) {
+        //    CLAY_AUTO_ID({
+        //        .layout = {
+        //            .padding = {.top = 40, .bottom = 40}
+        //        }
+        //    }) {
+        //        auto localId = CLAY_ID_LOCAL("Drawing program gui color picker left");
+        //        CLAY(localId, {
+        //            .layout = {
+        //                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+        //                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+        //                .childGap = io->theme->childGap1,
+        //                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+        //                .layoutDirection = CLAY_TOP_TO_BOTTOM
+        //            },
+        //            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        //            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+        //        }) {
+        //            gui.obstructing_window(localId);
+        //            isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io->theme->padding1 * 2.0f);
+        //            bool hoveringOnDropdown = false;
+        //            isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
+        //            if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io->mouse.leftClick)
+        //                colorLeft = nullptr;
+        //        }
+        //    }
+        //}
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
             }
         }) {}
-        if(colorRight) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .padding = {.top = 40, .bottom = 40}
-                }
-            }) {
-                auto localID = CLAY_ID_LOCAL("Drawing program gui color picker right");
-                CLAY(localID, {
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                        .childGap = io->theme->childGap1,
-                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-                    },
-                    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
-                }) {
-                    gui.obstructing_window(localID);
-                    isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io->theme->padding1 * 2.0f);
-                    bool hoveringOnDropdown = false;
-                    isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
-                    if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io->mouse.leftClick)
-                        colorRight = nullptr;
-                }
-            }
-        }
+        //if(colorRight) {
+        //    CLAY_AUTO_ID({
+        //        .layout = {
+        //            .padding = {.top = 40, .bottom = 40}
+        //        }
+        //    }) {
+        //        auto localID = CLAY_ID_LOCAL("Drawing program gui color picker right");
+        //        CLAY(localID, {
+        //            .layout = {
+        //                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+        //                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+        //                .childGap = io->theme->childGap1,
+        //                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+        //                .layoutDirection = CLAY_TOP_TO_BOTTOM
+        //            },
+        //            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+        //            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+        //        }) {
+        //            gui.obstructing_window(localID);
+        //            isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io->theme->padding1 * 2.0f);
+        //            bool hoveringOnDropdown = false;
+        //            isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
+        //            if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io->mouse.leftClick)
+        //                colorRight = nullptr;
+        //        }
+        //    }
+        //}
         main.world->drawProg.tool_options_gui();
     }
 }
@@ -1365,112 +1412,112 @@ void Toolbar::drawing_program_gui() {
 bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown) {
     bool isUpdating = false;
     gui.push_id(id);
-    auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
-    constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
+    //auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
+    //constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
 
-    size_t nextID = 0;
+    //size_t nextID = 0;
 
-    gui.scroll_bar_area("color palette scroll area", false, [&](float, float, float &) {
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                .childGap = io->theme->childGap1,
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            }
-        }) {
-            size_t i = 0;
-            while(i < palette.size()) {
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
-                        .childGap = io->theme->childGap1,
-                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT
-                    }
-                }) {
-                    while(i < palette.size()) {
-                        CLAY_AUTO_ID({
-                            .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)}
-                            }
-                        }) {
-                            Vector4f newC = {palette[i].x(), palette[i].y(), palette[i].z(), 1.0f};
-                            gui.push_id(nextID++);
-                            if(gui.color_button("c", &newC, (paletteData.selectedColor == (int)i))) {
-                                paletteData.selectedColor = (int)i;
-                                // We want to keep the old color's alpha
-                                color->x() = newC.x();
-                                color->y() = newC.y();
-                                color->z() = newC.z();
-                                isUpdating = true;
-                            }
-                            gui.pop_id();
-                            if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
-                                paletteData.selectedColor = -1;
-                        }
-                        i++;
-                        if(i % 6 == 0)
-                            break;
-                    }
-                }
-            }
-        }
-    });
+    //gui.scroll_bar_area("color palette scroll area", false, [&](float, float, float &) {
+    //    CLAY_AUTO_ID({
+    //        .layout = {
+    //            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+    //            .childGap = io->theme->childGap1,
+    //            .layoutDirection = CLAY_TOP_TO_BOTTOM
+    //        }
+    //    }) {
+    //        size_t i = 0;
+    //        while(i < palette.size()) {
+    //            CLAY_AUTO_ID({
+    //                .layout = {
+    //                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
+    //                    .childGap = io->theme->childGap1,
+    //                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+    //                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+    //                }
+    //            }) {
+    //                while(i < palette.size()) {
+    //                    CLAY_AUTO_ID({
+    //                        .layout = {
+    //                            .sizing = {.width = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)}
+    //                        }
+    //                    }) {
+    //                        Vector4f newC = {palette[i].x(), palette[i].y(), palette[i].z(), 1.0f};
+    //                        gui.push_id(nextID++);
+    //                        if(gui.color_button("c", &newC, (paletteData.selectedColor == (int)i))) {
+    //                            paletteData.selectedColor = (int)i;
+    //                            // We want to keep the old color's alpha
+    //                            color->x() = newC.x();
+    //                            color->y() = newC.y();
+    //                            color->z() = newC.z();
+    //                            isUpdating = true;
+    //                        }
+    //                        gui.pop_id();
+    //                        if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
+    //                            paletteData.selectedColor = -1;
+    //                    }
+    //                    i++;
+    //                    if(i % 6 == 0)
+    //                        break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //});
 
-    if(paletteData.selectedPalette != 0) {
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-                .padding = {.top = 3, .bottom = 3},
-                .childGap = io->theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                .layoutDirection = CLAY_LEFT_TO_RIGHT
-            }
-        }) {
-            if(gui.svg_icon_button("addcolor", "data/icons/plus.svg", false, COLOR_BUTTON_SIZE)) {
-                palette.emplace_back(color->x(), color->y(), color->z());
-                paletteData.selectedColor = palette.size() - 1;
-            }
-            if(gui.svg_icon_button("deletecolor", "data/icons/close.svg", false, COLOR_BUTTON_SIZE)) {
-                if(paletteData.selectedColor >= 0 && paletteData.selectedColor < (int)palette.size()) {
-                    palette.erase(palette.begin() + paletteData.selectedColor);
-                    paletteData.selectedColor = -1;
-                }
-            }
-        }
-    }
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-            .padding = {.top = 3, .bottom = 3},
-            .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        }
-    }) {
-        std::vector<std::string> paletteNames;
-        for(auto& p : paletteData.palettes)
-            paletteNames.emplace_back(p.name);
-        gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, [&]() {
-            hoveringOnDropdown = Clay_Hovered();
-        });
-        if(gui.svg_icon_button("paletteadd", "data/icons/plus.svg", paletteData.addingPalette, 25.0f)) paletteData.addingPalette = !paletteData.addingPalette;
-        if(paletteData.selectedPalette != 0) {
-            if(gui.svg_icon_button("paletteremove", "data/icons/close.svg", false, 25.0f)) {
-                paletteData.palettes.erase(paletteData.palettes.begin() + paletteData.selectedPalette);
-                paletteData.selectedPalette = 0;
-            }
-        }
-    }
-    if(paletteData.addingPalette) {
-        gui.input_text_field("paletteinputname", "Name", &paletteData.newPaletteStr);
-        if(gui.text_button_wide("addpalettebutton", "Create") && !paletteData.newPaletteStr.empty()) {
-            paletteData.palettes.emplace_back();
-            paletteData.palettes.back().name = paletteData.newPaletteStr;
-            paletteData.selectedPalette = paletteData.palettes.size() - 1;
-            paletteData.addingPalette = false;
-        }
-    }
+    //if(paletteData.selectedPalette != 0) {
+    //    CLAY_AUTO_ID({
+    //        .layout = {
+    //            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+    //            .padding = {.top = 3, .bottom = 3},
+    //            .childGap = io->theme->childGap1,
+    //            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+    //            .layoutDirection = CLAY_LEFT_TO_RIGHT
+    //        }
+    //    }) {
+    //        if(gui.svg_icon_button("addcolor", "data/icons/plus.svg", false, COLOR_BUTTON_SIZE)) {
+    //            palette.emplace_back(color->x(), color->y(), color->z());
+    //            paletteData.selectedColor = palette.size() - 1;
+    //        }
+    //        if(gui.svg_icon_button("deletecolor", "data/icons/close.svg", false, COLOR_BUTTON_SIZE)) {
+    //            if(paletteData.selectedColor >= 0 && paletteData.selectedColor < (int)palette.size()) {
+    //                palette.erase(palette.begin() + paletteData.selectedColor);
+    //                paletteData.selectedColor = -1;
+    //            }
+    //        }
+    //    }
+    //}
+    //CLAY_AUTO_ID({
+    //    .layout = {
+    //        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+    //        .padding = {.top = 3, .bottom = 3},
+    //        .childGap = io->theme->childGap1,
+    //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+    //        .layoutDirection = CLAY_LEFT_TO_RIGHT
+    //    }
+    //}) {
+    //    std::vector<std::string> paletteNames;
+    //    for(auto& p : paletteData.palettes)
+    //        paletteNames.emplace_back(p.name);
+    //    gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, [&]() {
+    //        hoveringOnDropdown = Clay_Hovered();
+    //    });
+    //    if(gui.svg_icon_button("paletteadd", "data/icons/plus.svg", paletteData.addingPalette, 25.0f)) paletteData.addingPalette = !paletteData.addingPalette;
+    //    if(paletteData.selectedPalette != 0) {
+    //        if(gui.svg_icon_button("paletteremove", "data/icons/close.svg", false, 25.0f)) {
+    //            paletteData.palettes.erase(paletteData.palettes.begin() + paletteData.selectedPalette);
+    //            paletteData.selectedPalette = 0;
+    //        }
+    //    }
+    //}
+    //if(paletteData.addingPalette) {
+    //    gui.input_text_field("paletteinputname", "Name", &paletteData.newPaletteStr);
+    //    if(gui.text_button_wide("addpalettebutton", "Create") && !paletteData.newPaletteStr.empty()) {
+    //        paletteData.palettes.emplace_back();
+    //        paletteData.palettes.back().name = paletteData.newPaletteStr;
+    //        paletteData.selectedPalette = paletteData.palettes.size() - 1;
+    //        paletteData.addingPalette = false;
+    //    }
+    //}
     gui.pop_id();
 
     return isUpdating;
@@ -1497,10 +1544,10 @@ void Toolbar::performance_metrics() {
             },
             .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, 0.7f)),
         }) {
-            gui.text_label("Undo queue");
+            text_label(gui, "Undo queue");
             std::vector<std::string> undoList = main.world->undo.get_front_undo_queue_names(10);
             for(const std::string& u : undoList)
-                gui.text_label(u);
+                text_label(gui, u);
         }
         CLAY_AUTO_ID({
             .layout = {
@@ -1514,24 +1561,23 @@ void Toolbar::performance_metrics() {
         }) {
             std::stringstream a;
             a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
-            gui.text_label(a.str());
-            gui.text_label("Item Count: " + std::to_string(main.world->drawProg.layerMan.total_component_count()));
+            text_label(gui, a.str());
+            text_label(gui, "Item Count: " + std::to_string(main.world->drawProg.layerMan.total_component_count()));
             std::stringstream b;
             b << "Coord: " << main.world->drawData.cam.c.pos.x().display_int_str(5) << ", " << main.world->drawData.cam.c.pos.y().display_int_str(5);
-            gui.text_label(b.str());
+            text_label(gui, b.str());
             std::stringstream c;
             c << "Zoom: " << main.world->drawData.cam.c.inverseScale.display_int_str(5);
-            gui.text_label(c.str());
+            text_label(gui, c.str());
             std::stringstream d;
             d << "Rotation: " << main.world->drawData.cam.c.rotation;
-            gui.text_label(d.str());
+            text_label(gui, d.str());
         }
     }
 }
 
 void Toolbar::player_list() {
-    Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT PLAYER LIST");
-    CLAY(elemId, {
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
@@ -1543,11 +1589,10 @@ void Toolbar::player_list() {
         .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-        gui.obstructing_window(elemId);
         gui.push_id("client list");
-        gui.text_label_centered("Player List");
+        text_label_centered(gui, "Player List");
         if(!main.world->clientStillConnecting) {
-            gui.left_to_right_line_layout([&]() {
+            left_to_right_line_layout(gui, [&]() {
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
@@ -1555,13 +1600,13 @@ void Toolbar::player_list() {
                     .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{main.world->ownClientData->get_cursor_color().x(), main.world->ownClientData->get_cursor_color().y(), main.world->ownClientData->get_cursor_color().z(), 1.0f}),
                     .cornerRadius = CLAY_CORNER_RADIUS(3)
                 }) {}
-                gui.text_label(main.world->ownClientData->get_display_name());
+                text_label(gui, main.world->ownClientData->get_display_name());
             });
             size_t num = 0;
             for(auto& client : main.world->clients->get_data()) {
                 if(client != main.world->ownClientData) {
                     gui.push_id(num++);
-                    gui.left_to_right_line_layout([&]() {
+                    left_to_right_line_layout(gui, [&]() {
                         CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
@@ -1569,17 +1614,19 @@ void Toolbar::player_list() {
                             .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{client->get_cursor_color().x(), client->get_cursor_color().y(), client->get_cursor_color().z(), 1.0f}),
                             .cornerRadius = CLAY_CORNER_RADIUS(3)
                         }) {}
-                        gui.text_label(client->get_display_name());
+                        text_label(gui, client->get_display_name());
                         CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-                        if(gui.text_button("teleport button", "Jump To"))
+                        text_button(gui, "teleport button", "Jump To", { .onClick = [&] {
                             main.world->drawData.cam.smooth_move_to(*main.world, client->get_cam_coords(), client->get_window_size());
+                        }});
                     });
                     gui.pop_id();
                 }
             }
         }
-        if(gui.text_button_wide("close list", "Done"))
+        text_button(gui, "close list", "Done", { .wide = true, .onClick = [&] {
             playerMenuOpen = false;
+        }});
         gui.pop_id();
     }
 }
@@ -1620,462 +1667,433 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
 #endif
 }
 
+void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent) {
+    gui.element<LayoutElement>(id, [&] {
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = x, .height = y },
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childGap = io->theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+            .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        }) {
+            innerContent();
+        }
+    });
+}
+
+void Toolbar::text_button_wide(const char* id, const char* str, const std::function<void()>& onClick) {
+    text_button(gui, id, str, {
+        .wide = true,
+        .onClick = onClick
+    });
+}
+
 void Toolbar::options_menu() {
     switch(optionsMenuType) {
-        case HOST_MENU:
+        case HOST_MENU: {
+            center_obstructing_window_gui("host menu", CLAY_SIZING_FIT(650), CLAY_SIZING_FIT(0), [&] {
+                input_text_field(gui, "lobby", "Lobby", &serverToConnectTo);
+                left_to_right_line_layout(gui, [&]() {
+                    text_button_wide("copy lobby address", "Copy Lobby Address", [&] {
+                        main.input.set_clipboard_str(serverToConnectTo);
+                    });
+                    text_button_wide("host file", "Host", [&] {
+                        main.world->start_hosting(serverToConnectTo, serverLocalID);
+                        optionsMenuOpen = false;
+                    });
+                    text_button_wide("cancel", "Cancel", [&] {
+                        optionsMenuOpen = false;
+                    });
+                });
+            });
+            break;
+        }
         case CONNECT_MENU: {
-            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT CONNECT MENU");
-            CLAY(elemId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(650), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-            }) {
-                gui.obstructing_window(elemId);
-                if(optionsMenuType == HOST_MENU) {
-                    gui.push_id("host menu");
-                    std::string oldS = serverToConnectTo;
-                    gui.input_text_field("lobby", "Lobby", &serverToConnectTo);
-                    serverToConnectTo = oldS;
-                    gui.left_to_right_line_layout([&]() {
-                        if(gui.text_button_wide("copy lobby address", "Copy Lobby Address"))
-                            main.input.set_clipboard_str(serverToConnectTo);
-                        if(gui.text_button_wide("host file", "Host")) {
-                            main.world->start_hosting(serverToConnectTo, serverLocalID);
+            center_obstructing_window_gui("connect menu", CLAY_SIZING_FIT(650), CLAY_SIZING_FIT(0), [&] {
+                input_text_field(gui, "lobby", "Lobby", &serverToConnectTo);
+                left_to_right_line_layout(gui, [&]() {
+                    text_button_wide("connect", "Connect", [&] {
+                        if(serverToConnectTo.length() != (NetLibrary::LOCALID_LEN + NetLibrary::GLOBALID_LEN))
+                            Logger::get().log("USERINFO", "Connect issue: Incorrect address length");
+                        else if(serverToConnectTo.substr(0, NetLibrary::GLOBALID_LEN) == NetLibrary::get_global_id())
+                            Logger::get().log("USERINFO", "Connect issue: Can't connect to your own address");
+                        else {
+                            main.new_tab({
+                                .isClient = true,
+                                .netSource = serverToConnectTo
+                            }, true);
                             optionsMenuOpen = false;
                         }
-                        if(gui.text_button_wide("cancel", "Cancel"))
-                            optionsMenuOpen = false;
                     });
-                    gui.pop_id();
-                }
-                else if(optionsMenuType == CONNECT_MENU) {
-                    gui.push_id("connect menu");
-                    gui.input_text_field("lobby", "Lobby", &serverToConnectTo);
-                    gui.left_to_right_line_layout([&]() {
-                        if(gui.text_button_wide("connect", "Connect")) {
-                            if(serverToConnectTo.length() != (NetLibrary::LOCALID_LEN + NetLibrary::GLOBALID_LEN))
-                                Logger::get().log("USERINFO", "Connect issue: Incorrect address length");
-                            else if(serverToConnectTo.substr(0, NetLibrary::GLOBALID_LEN) == NetLibrary::get_global_id())
-                                Logger::get().log("USERINFO", "Connect issue: Can't connect to your own address");
-                            else {
-                                main.new_tab({
-                                    .isClient = true,
-                                    .netSource = serverToConnectTo
-                                }, true);
-                                optionsMenuOpen = false;
-                            }
-                        }
-                        if(gui.text_button_wide("cancel", "Cancel"))
-                            optionsMenuOpen = false;
+                    text_button_wide("cancel", "Cancel", [&] {
+                        optionsMenuOpen = false;
                     });
-                    gui.pop_id();
-                }
-            }
+                });
+            });
             break;
         }
         case GENERAL_SETTINGS_MENU: {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIXED(600), .height = CLAY_SIZING_FIXED(500) },
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-            }) {
-                gui.push_id("gsettings");
-                Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT GENERAL SETTINGS MENU");
-                CLAY(elemId, {
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                        .childGap = io->theme->childGap1,
-                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT
-                    }
-                }) {
-                    gui.obstructing_window(elemId);
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_FIT(150), .height = CLAY_SIZING_GROW(0) },
-                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                            .childGap = 2,
-                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        }
-                    }) {
-                        auto oldOption = generalSettingsOptions;
-                        if(gui.text_button_left_transparent("Generalbutton", "General", generalSettingsOptions == GSETTINGS_GENERAL)) generalSettingsOptions = GSETTINGS_GENERAL;
-                        if(gui.text_button_left_transparent("Tabletbutton", "Tablet", generalSettingsOptions == GSETTINGS_TABLET)) generalSettingsOptions = GSETTINGS_TABLET;
-                        if(gui.text_button_left_transparent("Themebutton", "Theme", generalSettingsOptions == GSETTINGS_THEME)) generalSettingsOptions = GSETTINGS_THEME;
-                        if(gui.text_button_left_transparent("Keybindsbutton", "Keybinds", generalSettingsOptions == GSETTINGS_KEYBINDS)) generalSettingsOptions = GSETTINGS_KEYBINDS;
-                        if(gui.text_button_left_transparent("Debugbutton", "Debug", generalSettingsOptions == GSETTINGS_DEBUG)) generalSettingsOptions = GSETTINGS_DEBUG;
-                        if(oldOption != generalSettingsOptions) {
-                            load_theme();
-                            themeData.selectedThemeIndex = std::nullopt;
-                        }
-                    }
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
-                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        }
-                    }) {
-                        gui.scroll_bar_area("general settings scroll area", false, [&](float, float, float) {
-                            CLAY_AUTO_ID({
-                                .layout = {
-                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
-                                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                                    .childGap = io->theme->childGap1,
-                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                                }
-                            }) {
-                                switch(generalSettingsOptions) {
-                                    case GSETTINGS_GENERAL: {
-                                        gui.push_id("general settings");
-                                        gui.input_text_field("display name input", "Display name", &main.displayName);
-                                        main.update_display_names();
-                                        SkColor4f newBackColor{main.defaultCanvasBackgroundColor.x(), main.defaultCanvasBackgroundColor.y(), main.defaultCanvasBackgroundColor.z(), 1.0f};
-                                        gui.color_picker_button_field("defaultCanvasBackgroundColor", "Default canvas background color", &newBackColor, false);
-                                        main.defaultCanvasBackgroundColor = convert_vec3<Vector3f>(newBackColor);
-                                        #ifndef __EMSCRIPTEN__
-                                            gui.checkbox_field("native file pick", "Use native file picker", &useNativeFilePicker);
-                                            gui.checkbox_field("update notifications enable", "Check for updates on startup", &updateCheckerData.checkForUpdates);
-                                        #endif
-                                        gui.slider_scalar_field("drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, 3);
-                                        gui.slider_scalar_field("scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, 3);
-                                        gui.checkbox_field("flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
-                                        gui.checkbox_field("make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
-                                        #ifndef __EMSCRIPTEN__
-                                            gui.checkbox_field("disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.window.disableGraphicsDriverWorkarounds);
-                                        #endif
-                                        gui.input_scalar_field("jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, 2);
-                                        gui.input_scalar_field("Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, 1);
-                                        gui.text_label("Anti-aliasing:");
-                                        MainProgram::AntiAliasing aa = main.antialiasing;
-                                        if(gui.radio_button_field("AntiAliasing None", "None", aa == MainProgram::AntiAliasing::NONE)) { main.antialiasing = MainProgram::AntiAliasing::NONE; }
-                                        if(gui.radio_button_field("AntiAliasing Skia", "Skia", aa == MainProgram::AntiAliasing::SKIA)) { main.antialiasing = MainProgram::AntiAliasing::SKIA; }
-                                        if(gui.radio_button_field("AntiAliasing Dynamic MSAA", "Dynamic MSAA", aa == MainProgram::AntiAliasing::DYNAMIC_MSAA)) { main.antialiasing = MainProgram::AntiAliasing::DYNAMIC_MSAA; }
-                                        if(main.antialiasing != aa)
-                                            main.refresh_draw_surfaces();
-                                        gui.text_label("VSync:");
-                                        if(gui.radio_button_field("Vsync On", "On", main.window.vsyncValue == 1))
-                                            main.set_vsync_value(1);
-                                        if(gui.radio_button_field("Vsync Off", "Off", main.window.vsyncValue == 0))
-                                            main.set_vsync_value(0);
-                                        if(gui.radio_button_field("Vsync Adaptive", "Adaptive", main.window.vsyncValue == -1))
-                                            main.set_vsync_value(-1);
-
-                                        #ifndef __EMSCRIPTEN__
-                                        gui.checkbox_field("apply display scale", "Apply display scale", &main.window.applyDisplayScale);
-                                        #endif
-
-                                        gui.pop_id();
-                                        break;
-                                    }
-                                    case GSETTINGS_TABLET: {
-                                        gui.push_id("tablet settings");
-                                        gui.checkbox_field("pen pressure width", "Pen pressure affects brush size", &tabletOptions.pressureAffectsBrushWidth);
-                                        gui.slider_scalar_field("smoothing time", "Smoothing sampling time", &tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, 3);
-                                        gui.input_scalar_field<uint8_t>("middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
-                                        gui.input_scalar_field<uint8_t>("right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
-                                        gui.slider_scalar_field("tablet brush minimum size", "Brush relative minimum size", &tabletOptions.brushMinimumSize, 0.0f, 1.0f, 3);
-                                        gui.checkbox_field("tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &tabletOptions.zoomWhilePenDownAndButtonHeld);
-                                        #ifdef _WIN32
-                                            gui.checkbox_field("mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
-                                        #endif
-                                        gui.pop_id();
-                                        break;
-                                    }
-                                    case GSETTINGS_THEME: {
-                                        gui.push_id("theme");
-                                        if(!themeData.selectedThemeIndex)
-                                            reload_theme_list();
-
-                                        CLAY_AUTO_ID({.layout = { 
-                                              .childGap = io->theme->childGap1,
-                                              .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                                              .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                                        }
-                                        }) {
-                                            gui.text_label("Theme: ");
-                                            size_t changedVal = themeData.selectedThemeIndex.value();
-                                            gui.dropdown_select("dropdownSelectThemes", &themeData.selectedThemeIndex.value(), themeData.themeDirList);
-                                            if(changedVal != themeData.selectedThemeIndex.value()) {
-                                                themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                                reload_theme_list();
-                                            }
-                                        }
-                                        gui.left_to_right_line_layout([&]() {
-                                            if(themeData.selectedThemeIndex != 0 && gui.text_button_wide("savethemebutton", "Save")) {
-                                                themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                                save_theme();
-                                                reload_theme_list();
-                                            }
-                                            if(gui.text_button_wide("saveasthemebutton", "Save As", themeData.openedSaveAsMenu)) themeData.openedSaveAsMenu = !themeData.openedSaveAsMenu;
-                                            if(gui.text_button_wide("reloadthemebutton", "Reload")) {
-                                                themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                                reload_theme_list();
-                                            }
-                                            if(themeData.selectedThemeIndex != 0 && gui.text_button_wide("deletethemebutton", "Delete")) {
-                                                try { std::filesystem::remove(main.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
-                                                themeData.themeCurrentlyLoaded = "Default";
-                                                reload_theme_list();
-                                            }
-                                        });
-                                        if(themeData.openedSaveAsMenu) {
-                                            gui.left_to_right_line_layout([&]() {
-                                                gui.text_label("Theme name: ");
-                                                gui.input_text("saveasnewthemename", &themeData.themeCurrentlyLoaded);
-                                            });
-                                            gui.left_to_right_line_layout([&]() {
-                                                if(gui.text_button_wide("saveasdone", "Done")) {
-                                                    save_theme();
-                                                    reload_theme_list();
-                                                }
-                                                if(gui.text_button_wide("saveascancel", "Cancel"))
-                                                    themeData.openedSaveAsMenu = false;
-                                            });
-                                        }
-                                        gui.text_label("Edit theme:");
-                                        gui.text_label_light("Note: Changes only remain if theme is saved");
-                                        gui.color_picker_button_field("fillColor1", "Fill Color 1", &io->theme->fillColor1, true);
-                                        gui.color_picker_button_field("fillColor2", "Fill Color 2", &io->theme->fillColor2, true);
-                                        gui.color_picker_button_field("backColor1", "Back Color 1", &io->theme->backColor1, true);
-                                        gui.color_picker_button_field("backColor2", "Back Color 2", &io->theme->backColor2, true);
-                                        gui.color_picker_button_field("frontColor1", "Front Color 1", &io->theme->frontColor1, true);
-                                        gui.color_picker_button_field("frontColor2", "Front Color 2", &io->theme->frontColor2, true);
-                                        gui.color_picker_button_field("warningColor", "Warning Color", &io->theme->warningColor, true);
-                                        gui.color_picker_button_field("errorColor", "Error Color", &io->theme->errorColor, true);
-                                        //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io->theme->hoverExpandTime, 0.001f, 1.0f);
-                                        gui.input_scalar_field<uint16_t>("childGap1", "Gap between child elements", &io->theme->childGap1, 0, 30);
-                                        gui.input_scalar_field<uint16_t>("padding1", "Window padding", &io->theme->padding1, 0, 30);
-                                        gui.slider_scalar_field<float>("windowCorners1", "Window corner radius", &io->theme->windowCorners1, 0, 30);
-                                        gui.pop_id();
-                                        break;
-                                    }
-                                    case GSETTINGS_KEYBINDS: {
-                                        if(keybindWaiting.has_value()) {
-                                            main.input.stop_key_input();
-                                            if(main.input.lastPressedKeybind) {
-                                                unsigned v = keybindWaiting.value();
-
-                                                Vector2ui32 newKey = main.input.lastPressedKeybind.value();
-                                                main.input.keyAssignments.erase(newKey);
-                                                auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
-                                                    return p.second == v;
-                                                });
-                                                if(f != main.input.keyAssignments.end())
-                                                    main.input.keyAssignments.erase(f);
-                                                main.input.keyAssignments.emplace(newKey, v);
-                                                keybindWaiting = std::nullopt;
-                                            }
-                                        }
-
-                                        gui.push_id("keybind entries");
-                                        for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
-                                            gui.push_id(i);
-                                            CLAY_AUTO_ID({
-                                                .layout = {
-                                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                                    .padding = CLAY_PADDING_ALL(0),
-                                                    .childGap = io->theme->childGap1,
-                                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                                                    .layoutDirection = CLAY_LEFT_TO_RIGHT 
-                                                }
-                                            }) {
-                                                gui.text_label(std::string(nlohmann::json(static_cast<InputManager::KeyCodeEnum>(i))));
-                                                auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
-                                                    return p.second == i;
-                                                });
-                                                std::string assignedKeystrokeStr = f != main.input.keyAssignments.end() ? main.input.key_assignment_to_str(f->first) : "";
-                                                if(gui.text_button_wide("keybind button", assignedKeystrokeStr, keybindWaiting.has_value() && keybindWaiting.value() == i))
-                                                    keybindWaiting = i;
-                                            }
-                                            gui.pop_id();
-                                        }
-                                        gui.pop_id();
-                                        break;
-                                    }
-                                    case GSETTINGS_DEBUG: {
-                                        gui.push_id("debug settings menu");
-                                        gui.checkbox_field("show performance metrics", "Show metrics", &showPerformance);
-                                        gui.input_scalar_fields("jump transition easing", "Jump easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, 2);
-                                        #ifndef __EMSCRIPTEN__
-                                            gui.input_scalar_field("fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
-                                        #endif
-                                        gui.input_scalar_field<int>("image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
-                                        gui.text_label_light("Cache related settings");
-                                        gui.input_scalar_field<size_t>("cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
-                                        gui.input_scalar_field<size_t>("max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
-                                        size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
-                                                                           * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
-                                                                           * 4) // 4 Channels per pixel (RGBA)
-                                                                           / (1024 * 1024); // Bytes -> Megabytes conversion
-                                        gui.text_label_light("Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
-                                        gui.input_scalar_field<size_t>("max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
-                                        gui.input_scalar_field<size_t>("components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
-                                        gui.input_scalar_field<size_t>("maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
-                                        gui.input_scalar_field<size_t>("minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
-                                        gui.pop_id();
-                                        break;
-                                    }
-                                }
-                            }
-                        });
-                        if(gui.text_button_wide("done menu", "Done")) {
-                            main.save_config();
-                            load_theme();
-                            themeData.selectedThemeIndex = std::nullopt;
-                            optionsMenuOpen = false;
-                        }
-                    }
-                }
-                gui.pop_id();
-            }
+            center_obstructing_window_gui("gsettings", CLAY_SIZING_FIXED(600), CLAY_SIZING_FIXED(500), [&] {
+                general_settings_inner_gui();
+            });
             break;
         }
         case LOBBY_INFO_MENU: {
-            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT LOBBY INFO MENU");
-            CLAY(elemId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(650), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-            }) {
-                gui.push_id("lobby info menu");
-                gui.obstructing_window(elemId);
-                if(!main.world || !main.world->netObjMan.is_connected())
-                    optionsMenuOpen = false;
-                else {
-                    std::string oldS = main.world->netSource;
-                    gui.input_text_field("lobby", "Lobby", &main.world->netSource);
-                    main.world->netSource = oldS;
-                    gui.left_to_right_line_layout([&]() {
-                        if(gui.text_button_wide("copy lobby address", "Copy Lobby Address"))
-                            main.input.set_clipboard_str(main.world->netSource);
-                        if(gui.text_button_wide("done", "Done"))
-                            optionsMenuOpen = false;
+            center_obstructing_window_gui("lobby info menu", CLAY_SIZING_FIT(650), CLAY_SIZING_FIT(0), [&] {
+                input_text_field(gui, "lobby", "Lobby", &main.world->netSource);
+                left_to_right_line_layout(gui, [&]() {
+                    text_button_wide("copy lobby address", "Copy Lobby Address", [&] {
+                        main.input.set_clipboard_str(main.world->netSource);
                     });
-                }
-                gui.pop_id();
-            }
+                    text_button_wide("done", "Done", [&] {
+                        optionsMenuOpen = false;
+                    });
+                });
+            });
             break;
         }
         case CANVAS_SETTINGS_MENU: {
-            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT CANVAS SETTINGS MENU");
-            CLAY(elemId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-            }) {
-                gui.push_id("canvas settings menu");
-                gui.obstructing_window(elemId);
-                SkColor4f newColorToSet = main.world->canvasTheme.get_back_color();
-                gui.color_picker_button_field("canvasColor", "Canvas Color", &newColorToSet, false);
-                main.world->canvasTheme.set_back_color(convert_vec3<Vector3f>(newColorToSet));
-                if(gui.text_button_wide("done", "Done"))
+            center_obstructing_window_gui("canvas settings menu", CLAY_SIZING_FIT(500), CLAY_SIZING_FIT(0), [&] {
+                auto newColorToSet = std::make_shared<SkColor4f>(main.world->canvasTheme.get_back_color());
+                color_picker_button_field(gui, "canvasColor", "Canvas Color", newColorToSet.get(), {
+                    .hasAlpha = false,
+                    .onEdit = [&, newColorToSet] {
+                        main.world->canvasTheme.set_back_color(convert_vec3<Vector3f>(newColorToSet));
+                    }
+                });
+                text_button_wide("done", "Done", [&] {
                     optionsMenuOpen = false;
-                gui.pop_id();
-            }
+                });
+            });
             break;
         }
         case SET_DOWNLOAD_NAME: {
-            Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT DOWNLOAD NAME MENU");
-            CLAY(elemId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childGap = io->theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-            }) {
-                gui.push_id("set download name menu");
-                gui.obstructing_window(elemId);
-                if(!main.world)
-                    optionsMenuOpen = false;
-                gui.input_text_field("file name", "File Name", &downloadNameSet);
-                gui.left_to_right_line_layout([&]() {
-                    if(gui.text_button_wide("download save button", "Save")) {
+            center_obstructing_window_gui("set download name menu", CLAY_SIZING_FIT(500), CLAY_SIZING_FIT(0), [&] {
+                input_text_field(gui, "file name", "File Name", &downloadNameSet);
+                left_to_right_line_layout(gui, [&]() {
+                    text_button_wide("download save button", "Save", [&] {
                         main.world->save_to_file(downloadNameSet);
                         optionsMenuOpen = false;
-                    }
-                    if(gui.text_button_wide("cancel", "Cancel"))
+                    });
+                    text_button_wide("cancel", "Cancel", [&] {
                         optionsMenuOpen = false;
+                    });
                 });
-                gui.pop_id();
-            }
+            });
             break;
         }
         case ABOUT_MENU: {
-            about_menu_gui();
+            center_obstructing_window_gui("about menu", CLAY_SIZING_FIT(500), CLAY_SIZING_FIT(0), [&] {
+                about_menu_inner_gui();
+            });
             break;
         }
     }
 }
 
-void Toolbar::about_menu_gui() {
-    Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT ABOUT MENU");
-    CLAY(elemId, {
+void Toolbar::general_settings_inner_gui() {
+    CLAY_AUTO_ID({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(600) },
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
             .padding = CLAY_PADDING_ALL(io->theme->padding1),
             .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+            .layoutDirection = CLAY_LEFT_TO_RIGHT
+        }
     }) {
-        gui.push_id("about menu popup");
-        gui.obstructing_window(elemId);
-        gui.left_to_right_line_layout([&]() {
-            gui.push_id("Menu Selector");
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(150), .height = CLAY_SIZING_GROW(0) },
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childGap = 2,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }
+        }) {
+            auto category_button = [&](const char* id, const char* str, GeneralSettingsOptions opt) {
+                text_button(gui, id, str, {
+                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                    .isSelected = generalSettingsOptions == opt,
+                    .wide = true,
+                    .onClick = [&] {
+                        load_theme();
+                        themeData.selectedThemeIndex = std::nullopt;
+                        generalSettingsOptions = opt;
+                    }
+                });
+            };
+            category_button("Generalbutton", "General", GSETTINGS_GENERAL);
+            category_button("Tabletbutton", "Tablet", GSETTINGS_TABLET);
+            category_button("Themebutton", "Theme", GSETTINGS_THEME);
+            category_button("Keybindsbutton", "Keybinds", GSETTINGS_KEYBINDS);
+            category_button("Debugbutton", "Debug", GSETTINGS_DEBUG);
+        }
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
+                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }
+        }) {
+            gui.element<ScrollArea>("general settings scroll area", ScrollArea::Options{
+                .scrollVertical = true,
+                .clipHorizontal = true,
+                .clipVertical = true,
+                .showScrollbarY = true,
+                .innerContent = [&](const ScrollArea::InnerContentParameters&) {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
+                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                            .childGap = io->theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        }
+                    }) {
+                        switch(generalSettingsOptions) {
+                            case GSETTINGS_GENERAL: {
+                                gui.push_id("general settings");
+                                input_text_field(gui, "display name input", "Display name", &main.displayName);
+                                main.update_display_names();
+                                color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                                #ifndef __EMSCRIPTEN__
+                                    checkbox_boolean_field(gui, "native file pick", "Use native file picker", &useNativeFilePicker);
+                                    checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &updateCheckerData.checkForUpdates);
+                                #endif
+                                slider_scalar_field(gui, "drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
+                                slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
+                                checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
+                                checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                                #ifndef __EMSCRIPTEN__
+                                    checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.window.disableGraphicsDriverWorkarounds);
+                                #endif
+                                input_scalar_field(gui, "jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+                                input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, {.decimalPrecision = 1});
+                                text_label(gui, "Anti-aliasing:");
+                                radio_button_selector(gui, "Antialiasing selector", &main.antialiasing, {
+                                    {"None", MainProgram::AntiAliasing::NONE},
+                                    {"Skia", MainProgram::AntiAliasing::SKIA},
+                                    {"Dynamic MSAA", MainProgram::AntiAliasing::DYNAMIC_MSAA}
+                                }, [&] {
+                                    main.refresh_draw_surfaces();
+                                });
+                                text_label(gui, "VSync:");
+                                radio_button_selector(gui, "VSync selector", &main.window.vsyncValue, {
+                                    {"On", 1},
+                                    {"Off", 0},
+                                    {"Adaptive", -1}
+                                }, [&] {
+                                    main.set_vsync_value(main.window.vsyncValue);
+                                });
+
+                                #ifndef __EMSCRIPTEN__
+                                checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.window.applyDisplayScale);
+                                #endif
+
+                                gui.pop_id();
+                                break;
+                            }
+                            case GSETTINGS_TABLET: {
+                                gui.push_id("tablet settings");
+                                checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &tabletOptions.pressureAffectsBrushWidth);
+                                slider_scalar_field(gui, "smoothing time", "Smoothing sampling time", &tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, {.decimalPrecision = 3});
+                                input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
+                                input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
+                                slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
+                                checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &tabletOptions.zoomWhilePenDownAndButtonHeld);
+                                #ifdef _WIN32
+                                    checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
+                                #endif
+                                gui.pop_id();
+                                break;
+                            }
+                            case GSETTINGS_THEME: {
+                                gui.push_id("theme");
+                                if(!themeData.selectedThemeIndex)
+                                    reload_theme_list();
+
+                                CLAY_AUTO_ID({.layout = { 
+                                      .childGap = io->theme->childGap1,
+                                      .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                                      .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                                }
+                                }) {
+                                    text_label(gui, "Theme: ");
+                                    gui.element<DropDown<size_t>>("dropdownSelectThemes", &themeData.selectedThemeIndex.value(), themeData.themeDirList, DropdownOptions{
+                                        .onClick = [&]() {
+                                            themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                            reload_theme_list();
+                                        }
+                                    });
+                                }
+                                left_to_right_line_layout(gui, [&]() {
+                                    if(themeData.selectedThemeIndex != 0) {
+                                        text_button_wide("savethemebutton", "Save", [&] {
+                                            themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                            save_theme();
+                                            reload_theme_list();
+                                        });
+                                    }
+                                    text_button_wide("saveasthemebutton", "Save As", [&]() {
+                                        themeData.openedSaveAsMenu = !themeData.openedSaveAsMenu;
+                                    });
+                                    text_button_wide("reloadthemebutton", "Reload", [&] {
+                                        themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                        reload_theme_list();
+                                    });
+                                    if(themeData.selectedThemeIndex != 0) {
+                                        text_button_wide("deletethemebutton", "Delete", [&] {
+                                            try { std::filesystem::remove(main.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
+                                            themeData.themeCurrentlyLoaded = "Default";
+                                            reload_theme_list();
+                                        });
+                                    }
+                                });
+                                if(themeData.openedSaveAsMenu) {
+                                    input_text_field(gui, "Theme name:", "Theme name: ", &themeData.themeCurrentlyLoaded);
+                                    left_to_right_line_layout(gui, [&]() {
+                                        text_button_wide("saveasdone", "Done", [&] {
+                                            save_theme();
+                                            reload_theme_list();
+                                        });
+                                        text_button_wide("saveascancel", "Cancel", [&] {
+                                            themeData.openedSaveAsMenu = false;
+                                        });
+                                    });
+                                }
+                                text_label(gui, "Edit theme:");
+                                text_label_light(gui, "Note: Changes only remain if theme is saved");
+                                color_picker_button_field<SkColor4f>(gui, "fillColor1", "Fill Color 1", &io->theme->fillColor1);
+                                color_picker_button_field<SkColor4f>(gui, "fillColor2", "Fill Color 2", &io->theme->fillColor2);
+                                color_picker_button_field<SkColor4f>(gui, "backColor1", "Back Color 1", &io->theme->backColor1);
+                                color_picker_button_field<SkColor4f>(gui, "backColor2", "Back Color 2", &io->theme->backColor2);
+                                color_picker_button_field<SkColor4f>(gui, "frontColor1", "Front Color 1", &io->theme->frontColor1);
+                                color_picker_button_field<SkColor4f>(gui, "frontColor2", "Front Color 2", &io->theme->frontColor2);
+                                color_picker_button_field<SkColor4f>(gui, "warningColor", "Warning Color", &io->theme->warningColor);
+                                color_picker_button_field<SkColor4f>(gui, "errorColor", "Error Color", &io->theme->errorColor);
+                                //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io->theme->hoverExpandTime, 0.001f, 1.0f);
+                                input_scalar_field<uint16_t>(gui, "childGap1", "Gap between child elements", &io->theme->childGap1, 0, 30);
+                                input_scalar_field<uint16_t>(gui, "padding1", "Window padding", &io->theme->padding1, 0, 30);
+                                slider_scalar_field<float>(gui, "windowCorners1", "Window corner radius", &io->theme->windowCorners1, 0, 30);
+                                gui.pop_id();
+                                break;
+                            }
+                            case GSETTINGS_KEYBINDS: {
+                                if(keybindWaiting.has_value()) {
+                                    main.input.stop_key_input();
+                                    if(main.input.lastPressedKeybind) {
+                                        unsigned v = keybindWaiting.value();
+
+                                        Vector2ui32 newKey = main.input.lastPressedKeybind.value();
+                                        main.input.keyAssignments.erase(newKey);
+                                        auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
+                                            return p.second == v;
+                                        });
+                                        if(f != main.input.keyAssignments.end())
+                                            main.input.keyAssignments.erase(f);
+                                        main.input.keyAssignments.emplace(newKey, v);
+                                        keybindWaiting = std::nullopt;
+                                    }
+                                }
+
+                                gui.push_id("keybind entries");
+                                for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
+                                    gui.push_id(i);
+                                    CLAY_AUTO_ID({
+                                        .layout = {
+                                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                            .padding = CLAY_PADDING_ALL(0),
+                                            .childGap = io->theme->childGap1,
+                                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                            .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                                        }
+                                    }) {
+                                        text_label(gui, std::string(nlohmann::json(static_cast<InputManager::KeyCodeEnum>(i))));
+                                        auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
+                                            return p.second == i;
+                                        });
+                                        std::string assignedKeystrokeStr = f != main.input.keyAssignments.end() ? main.input.key_assignment_to_str(f->first) : "";
+                                        text_button(gui, "keybind button", assignedKeystrokeStr, {
+                                            .isSelected = keybindWaiting.has_value() && keybindWaiting.value() == i,
+                                            .wide = true,
+                                            .onClick = [&] {
+                                                keybindWaiting = i;
+                                            }
+                                        });
+                                    }
+                                    gui.pop_id();
+                                }
+                                gui.pop_id();
+                                break;
+                            }
+                            case GSETTINGS_DEBUG: {
+                                gui.push_id("debug settings menu");
+                                checkbox_boolean_field(gui, "show performance metrics", "Show metrics", &showPerformance);
+                                input_scalars_field(gui, "jump transition easing", "Jump easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
+                                #ifndef __EMSCRIPTEN__
+                                    input_scalar_field(gui, "fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
+                                #endif
+                                input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
+                                text_label_light(gui, "Cache related settings");
+                                input_scalar_field<size_t>(gui, "cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
+                                input_scalar_field<size_t>(gui, "max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
+                                size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
+                                                                   * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
+                                                                   * 4) // 4 Channels per pixel (RGBA)
+                                                                   / (1024 * 1024); // Bytes -> Megabytes conversion
+                                text_label_light(gui, "Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
+                                input_scalar_field<size_t>(gui, "max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
+                                input_scalar_field<size_t>(gui, "components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
+                                input_scalar_field<size_t>(gui, "maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
+                                input_scalar_field<size_t>(gui, "minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
+                                gui.pop_id();
+                                break;
+                            }
+                        }
+                    }
                 }
-            }) {
-                gui.scroll_bar_area("About Menu Selector Scroll Area", true, [&](float, float, float) {
+            });
+            text_button_wide("done menu", "Done", [&] {
+                main.save_config();
+                load_theme();
+                themeData.selectedThemeIndex = std::nullopt;
+                optionsMenuOpen = false;
+            });
+        }
+    }
+}
+
+void Toolbar::about_menu_inner_gui() {
+    left_to_right_line_layout(gui, [&]() {
+        gui.push_id("Menu Selector");
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0) },
+                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }
+        }) {
+            gui.element<ScrollArea>("About Menu Selector Scroll Area", ScrollArea::Options{
+                .innerContent = [&](const ScrollArea::InnerContentParameters&) {
                     CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
                         }
                     }) {
-                        if(gui.text_button_left_transparent("infinipaintnoticebutton", "InfiniPaint", selectedLicense == -1)) selectedLicense = -1;
+                        text_button(gui, "infinipaintnoticebutton", "InfiniPaint", {
+                            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                            .isSelected = selectedLicense == -1,
+                            .wide = true,
+                            .onClick = [&] { selectedLicense = -1; }
+                        });
                     }
-                    gui.text_label_light_centered("Third Party Components");
+                    text_label_light_centered(gui, "Third Party Components");
                     for(int i = 0; i < static_cast<int>(thirdPartyLicenses.size()); i++) {
                         CLAY_AUTO_ID({
                             .layout = {
@@ -2084,21 +2102,32 @@ void Toolbar::about_menu_gui() {
                             }
                         }) {
                             gui.push_id(i);
-                            if(gui.text_button_left_transparent("noticebutton", thirdPartyLicenses[i].first, selectedLicense == i)) selectedLicense = i;
-                            gui.pop_id();
+                            text_button(gui, "noticebutton", thirdPartyLicenses[i].first, {
+                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .isSelected = selectedLicense == i,
+                                .wide = true,
+                                .onClick = [&, i] { selectedLicense = i; }
+                            });
                         }
                     }
-                });
-            }
-            gui.pop_id();
-            gui.scroll_bar_area("About Menu Text Scroll Area", false, [&](float, float, float) {
-                gui.text_label_size((selectedLicense == -1) ? ownLicenseText : thirdPartyLicenses[selectedLicense].second, 0.8f);
+                }
             });
-        });
-        if(gui.text_button_wide("done", "Done"))
-            optionsMenuOpen = false;
+        }
         gui.pop_id();
-    }
+
+        gui.element<ScrollArea>("About Menu Text Scroll Area", ScrollArea::Options{
+            .scrollVertical = true,
+            .clipHorizontal = true,
+            .clipVertical = true,
+            .showScrollbarY = true,
+            .innerContent = [&](const ScrollArea::InnerContentParameters&) {
+                text_label_size(gui, (selectedLicense == -1) ? ownLicenseText : thirdPartyLicenses[selectedLicense].second, 0.8f);
+            }
+        });
+    });
+    text_button_wide("done", "Done", [&] {
+        optionsMenuOpen = false;
+    });
 }
 
 void Toolbar::reload_theme_list() {
@@ -2123,33 +2152,80 @@ void Toolbar::reload_theme_list() {
     themeData.openedSaveAsMenu = false;
 }
 
+void Toolbar::file_picker_gui_refresh_entries() {
+    filePicker.entries.clear();
+    for(;;) {
+        try {
+            for(const std::filesystem::path& entry : std::filesystem::directory_iterator(filePicker.currentSearchPath))
+                filePicker.entries.emplace_back(entry);
+            break;
+        }
+        catch(const std::exception& e) {
+            Logger::get().log("INFO", e.what());
+            if(filePicker.currentSearchPath == main.homePath) // The home path must exist. If we get errors on the home path, we have a real problem
+                throw e;
+            filePicker.currentSearchPath = main.homePath;
+        }
+    }
+
+    std::vector<std::string> extensionList = split_string_by_token(filePicker.extensionFilters[filePicker.extensionSelected], ";");
+    for(std::string& s : extensionList) {
+        std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+        s.insert(0, ".");
+    }
+
+    std::erase_if(filePicker.entries, [&](const std::filesystem::path& a) {
+        if(extensionList.empty())
+            return false;
+        if(extensionList[0] == ".*")
+            return false;
+        std::string fExtension;
+        if(a.has_extension()) {
+            fExtension = a.extension().string();
+            std::transform(fExtension.begin(), fExtension.end(), fExtension.begin(), ::tolower);
+        }
+        return std::filesystem::is_regular_file(a) && (fExtension.empty() || !std::ranges::contains(extensionList, fExtension));
+    });
+
+    std::sort(filePicker.entries.begin(), filePicker.entries.end(), [&](const std::filesystem::path& a, const std::filesystem::path& b) {
+        bool aDir = std::filesystem::is_directory(a);
+        bool bDir = std::filesystem::is_directory(b);
+        const std::string& aStr = a.string();
+        const std::string& bStr = b.string();
+        if(aDir && !bDir)
+            return true;
+        if(!aDir && bDir)
+            return false;
+        return std::lexicographical_compare(aStr.begin(), aStr.end(), bStr.begin(), bStr.end());
+    });
+
+    gui.set_to_layout();
+}
+
+void Toolbar::file_picker_gui_done() {
+    if(!filePicker.fileName.empty()) {
+        std::filesystem::path pathToRet = filePicker.currentSearchPath / filePicker.fileName;
+        filePicker.postSelectionFunc(force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions), filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
+    }
+    filePicker.isOpen = false;
+}
+
 void Toolbar::file_picker_gui() {
-    gui.push_id("filepicker");
-    Clay_ElementId elemId = CLAY_ID_LOCAL("INFINIPAINT FILE PICKER MENU");
     bool isDoneByDoubleClick = false;
-    CLAY(elemId, {
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIXED(500) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.obstructing_window(elemId);
-        gui.text_label_centered(filePicker.filePickerWindowName);
-        gui.left_to_right_line_layout([&]() {
-            if(gui.svg_icon_button("file picker back button", "data/icons/backarrow.svg", false, 30.0f)) {
-                filePicker.currentSearchPath = filePicker.currentSearchPath.parent_path();
-                filePicker.refreshEntries = true;
-            }
-            std::filesystem::path pathDiff = filePicker.currentSearchPath;
-            gui.input_path_field("file picker path", "Path", &filePicker.currentSearchPath, std::filesystem::file_type::directory);
-            if(pathDiff != filePicker.currentSearchPath)
-                filePicker.refreshEntries = true;
+    center_obstructing_window_gui("file picker gui window", CLAY_SIZING_FIXED(700), CLAY_SIZING_FIXED(500), [&] {
+        text_label_centered(gui, filePicker.filePickerWindowName);
+        left_to_right_line_layout(gui, [&]() {
+            svg_icon_button(gui, "file picker back button", "data/icons/backarrow.svg", {
+                .onClick = [&] {
+                    filePicker.currentSearchPath = filePicker.currentSearchPath.parent_path();
+                    file_picker_gui_refresh_entries();
+                }
+            });
+            input_path_field(gui, "file picker path", "Path", &filePicker.currentSearchPath, {
+                .onEdit = [&] {
+                    file_picker_gui_refresh_entries();
+                }
+            });
         });
         CLAY_AUTO_ID({
             .layout = {
@@ -2159,179 +2235,76 @@ void Toolbar::file_picker_gui() {
             },
             .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2)
         }) {
-            if(filePicker.refreshEntries) {
-                filePicker.entries.clear();
-                for(;;) {
-                    try {
-                        for(const std::filesystem::path& entry : std::filesystem::directory_iterator(filePicker.currentSearchPath))
-                            filePicker.entries.emplace_back(entry);
-                        break;
-                    }
-                    catch(const std::exception& e) {
-                        Logger::get().log("INFO", e.what());
-                        if(filePicker.currentSearchPath == main.homePath) // The home path must exist. If we get errors on the home path, we have a real problem
-                            throw e;
-                        filePicker.currentSearchPath = main.homePath;
-                    }
-                }
-
-                std::vector<std::string> extensionList = split_string_by_token(filePicker.extensionFilters[filePicker.extensionSelected], ";");
-                for(std::string& s : extensionList) {
-                    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-                    s.insert(0, ".");
-                }
-
-                std::erase_if(filePicker.entries, [&](const std::filesystem::path& a) {
-                    if(extensionList.empty())
-                        return false;
-                    if(extensionList[0] == ".*")
-                        return false;
-                    std::string fExtension;
-                    if(a.has_extension()) {
-                        fExtension = a.extension().string();
-                        std::transform(fExtension.begin(), fExtension.end(), fExtension.begin(), ::tolower);
-                    }
-                    return std::filesystem::is_regular_file(a) && (fExtension.empty() || !std::ranges::contains(extensionList, fExtension));
-                });
-
-                std::sort(filePicker.entries.begin(), filePicker.entries.end(), [&](const std::filesystem::path& a, const std::filesystem::path& b) {
-                    bool aDir = std::filesystem::is_directory(a);
-                    bool bDir = std::filesystem::is_directory(b);
-                    const std::string& aStr = a.string();
-                    const std::string& bStr = b.string();
-                    if(aDir && !bDir)
-                        return true;
-                    if(!aDir && bDir)
-                        return false;
-                    return std::lexicographical_compare(aStr.begin(), aStr.end(), bStr.begin(), bStr.end());
-                });
-                filePicker.refreshEntries = false;
-            }
-            float entryHeight = 25.0f;
-            gui.scroll_bar_many_entries_area("file picker entries", entryHeight, filePicker.entries.size(), true, [&](size_t i, bool isListHovered) {
-                const std::filesystem::path& entry = filePicker.entries[i];
-                bool selectedEntry = filePicker.currentSelectedPath == entry;
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
-                        .childGap = 1,
-                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT 
-                    },
-                    .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
-                }) {
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
-                        },
-                    }) {
-                        if(std::filesystem::is_directory(entry))
-                            gui.svg_icon("folder icon", "data/icons/folder.svg", selectedEntry);
-                        else
-                            gui.svg_icon("file icon", "data/icons/file.svg", selectedEntry);
-                    }
-                    gui.text_label(entry.filename().string());
-                    if(Clay_Hovered() && io->mouse.leftClick && isListHovered) {
-                        if(selectedEntry && io->mouse.leftClick >= 2) {
-                            if(std::filesystem::is_directory(entry)) {
-                                filePicker.currentSearchPath = entry;
-                                filePicker.refreshEntries = true;
+            constexpr float entryHeight = 25.0f;
+            scroll_area_many_entries(gui, "file picker entries", {
+                .entryHeight = entryHeight,
+                .entryCount = filePicker.entries.size(),
+                .clipHorizontal = true,
+                .elementContent = [&] (size_t i) {
+                    const std::filesystem::path& entry = filePicker.entries[i];
+                    bool selectedEntry = filePicker.currentSelectedPath == entry;
+                    gui.element<LayoutElement>("elem", [&] {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
+                                .childGap = 1,
+                                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                            },
+                            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
+                        }) {
+                            CLAY_AUTO_ID({
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
+                                },
+                            }) {
+                                if(std::filesystem::is_directory(entry))
+                                    gui.element<SVGIcon>("folder icon", "data/icons/folder.svg", selectedEntry);
+                                else
+                                    gui.element<SVGIcon>("file icon", "data/icons/file.svg", selectedEntry);
                             }
-                            else if(std::filesystem::is_regular_file(entry))
-                                isDoneByDoubleClick = true;
+                            text_label(gui, entry.filename().string());
                         }
-                        else {
-                            filePicker.currentSelectedPath = entry;
-                            if(std::filesystem::is_regular_file(entry))
-                                filePicker.fileName = entry.filename().string();
+                    }, LayoutElement::Callbacks {
+                        .mouseButton = [&, selectedEntry, entry](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                            if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
+                                gui.set_post_callback_func([&, button, selectedEntry, entry] {
+                                    if(selectedEntry && button.clicks >= 2) {
+                                        if(std::filesystem::is_directory(entry))
+                                            filePicker.currentSearchPath = entry;
+                                        else if(std::filesystem::is_regular_file(entry))
+                                            file_picker_gui_done();
+                                    }
+                                    else {
+                                        filePicker.currentSelectedPath = entry;
+                                        if(std::filesystem::is_regular_file(entry))
+                                            filePicker.fileName = entry.filename().string();
+                                    }
+                                });
+                                gui.set_to_layout();
+                            }
+                            return mouseHovering;
                         }
-                    }
+                    });
                 }
             });
         }
-        gui.left_to_right_line_layout([&]() {
-            gui.input_text("filepicker filename", &filePicker.fileName);
-            size_t oldExtensionSelected = filePicker.extensionSelected;
-            gui.dropdown_select("filepicker select type", &filePicker.extensionSelected, filePicker.extensionFilters);
-            if(oldExtensionSelected != filePicker.extensionSelected)
-                filePicker.refreshEntries = true;
+        left_to_right_line_layout(gui, [&]() {
+            input_text(gui, "filepicker filename", &filePicker.fileName);
+            gui.element<DropDown<size_t>>("filepicker select type", &filePicker.extensionSelected, filePicker.extensionFilters, DropdownOptions{
+                .onClick = [&] { file_picker_gui_refresh_entries(); }
+            });
         });
-        gui.left_to_right_line_layout([&]() {
-            std::filesystem::path pathToRet = std::filesystem::path();
-            if(gui.text_button_wide("filepicker done", "Done") || isDoneByDoubleClick) {
-                if(!filePicker.fileName.empty()) {
-                    pathToRet = filePicker.currentSearchPath / filePicker.fileName;
-                    filePicker.postSelectionFunc(force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions), filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
-                }
-                filePicker.isOpen = false;
-            }
-            if(gui.text_button_wide("filepicker cancel", "Cancel")) {
-                filePicker.isOpen = false;
-            }
+        left_to_right_line_layout(gui, [&]() {
+            text_button_wide("filepicker done", "Done", [&] { file_picker_gui_done(); });
+            text_button_wide("filepicker cancel", "Cancel", [&] { filePicker.isOpen = false; });
         });
-    }
-    gui.pop_id();
-}
-
-
-void Toolbar::initialize_io() {
-    io->deltaTime = main.deltaTime;
-    io->key.leftShift = main.input.key(InputManager::KEY_TEXT_SHIFT).held;
-    io->key.leftCtrl = main.input.key(InputManager::KEY_TEXT_CTRL).held;
-    io->previousRichTextBoxToEdit = io->richTextBoxToEdit;
-    io->richTextBoxToEditCursor = nullptr;
-    io->richTextBoxToEdit = nullptr;
-    io->richTextBoxToEditRectangle = nullptr;
-    io->guiScaleMultiplier = final_gui_scale();
-}
-
-void Toolbar::end_io() {
-    if(io->clipboard.textOut)
-        main.input.set_clipboard_str(*io->clipboard.textOut);
-    if(io->richTextBoxToEdit != io->previousRichTextBoxToEdit) {
-        if(io->richTextBoxToEdit)
-            main.input.set_rich_text_box_input_front(io->richTextBoxToEdit, io->richTextBoxToEditCursor, false, io->richTextBoxToEditRectangle, io->richTextInputProperties);
-        if(io->previousRichTextBoxToEdit)
-            main.input.remove_rich_text_box_input(io->previousRichTextBoxToEdit);
-    }
-    io->key.left = false;
-    io->key.right = false;
-    io->key.up = false;
-    io->key.down = false;
-    io->key.enter = false;
-    io->key.escape = false;
-    io->mouse.leftClick = 0;
-    io->mouse.rightClick = 0;
-    io->mouse.scroll = {0, 0};
+    });
 }
 
 void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     if(key.down) {
         switch(key.key) {
-            case InputManager::KEY_TEXT_LEFT: {
-                io->key.left = true;
-                break;
-            }
-            case InputManager::KEY_TEXT_RIGHT: {
-                io->key.right = true;
-                break;
-            }
-            case InputManager::KEY_TEXT_UP: {
-                io->key.up = true;
-                break;
-            }
-            case InputManager::KEY_TEXT_DOWN: {
-                io->key.down = true;
-                break;
-            }
-            case InputManager::KEY_TEXT_ENTER: {
-                io->key.enter = true;
-                break;
-            }
-            case InputManager::KEY_TEXT_ESCAPE: {
-                io->key.escape = true;
-                break;
-            }
             case InputManager::KEY_SAVE: {
                 save_func();
                 break;
@@ -2342,15 +2315,18 @@ void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
             }
             case InputManager::KEY_SHOW_METRICS: {
                 showPerformance = !showPerformance;
+                gui.set_to_layout();
                 break;
             }
             case InputManager::KEY_OPEN_CHAT: {
                 if(chatBoxState == CHATBOXSTATE_CLOSE)
                     chatBoxState = CHATBOXSTATE_JUSTOPEN;
+                gui.set_to_layout();
                 break;
             }
             case InputManager::KEY_SHOW_PLAYER_LIST: {
                 playerMenuOpen = !playerMenuOpen;
+                gui.set_to_layout();
                 break;
             }
         }
@@ -2358,39 +2334,38 @@ void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void Toolbar::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(button.deviceType != InputManager::MouseDeviceType::TOUCH) {
-        io->mouse.globalPos = button.pos / final_gui_scale();
-        if(button.down) {
-            switch(button.button) {
-                case InputManager::MouseButton::LEFT: {
-                    io->mouse.leftClick = std::max<int>(io->mouse.leftClick, button.clicks);
-                    io->mouse.leftHeld = true;
-                    break;
-                }
-                case InputManager::MouseButton::RIGHT: {
-                    io->mouse.rightClick = std::max<int>(io->mouse.rightClick, button.clicks);
-                    io->mouse.rightHeld = true;
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-        else {
-            switch(button.button) {
-                case InputManager::MouseButton::LEFT: {
-                    io->mouse.leftHeld = false;
-                    break;
-                }
-                case InputManager::MouseButton::RIGHT: {
-                    io->mouse.rightHeld = false;
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-    }
+    //if(button.deviceType != InputManager::MouseDeviceType::TOUCH) {
+    //    if(button.down) {
+    //        switch(button.button) {
+    //            case InputManager::MouseButton::LEFT: {
+    //                io->mouse.leftClick = std::max<int>(io->mouse.leftClick, button.clicks);
+    //                io->mouse.leftHeld = true;
+    //                break;
+    //            }
+    //            case InputManager::MouseButton::RIGHT: {
+    //                io->mouse.rightClick = std::max<int>(io->mouse.rightClick, button.clicks);
+    //                io->mouse.rightHeld = true;
+    //                break;
+    //            }
+    //            default:
+    //                break;
+    //        }
+    //    }
+    //    else {
+    //        switch(button.button) {
+    //            case InputManager::MouseButton::LEFT: {
+    //                io->mouse.leftHeld = false;
+    //                break;
+    //            }
+    //            case InputManager::MouseButton::RIGHT: {
+    //                io->mouse.rightHeld = false;
+    //                break;
+    //            }
+    //            default:
+    //                break;
+    //        }
+    //    }
+    //}
 }
 
 void Toolbar::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
@@ -2428,9 +2403,6 @@ void Toolbar::start_gui() {
     }
     initialize_io();
     gui.io = io;
-    io->hoverObstructed = false;
-    io->hoverObstructingAABBs.clear();
-    io->hoverObstructingCircles.clear();
     io->isTouch = main.input.isTouchDevice;
     gui.begin();
 }

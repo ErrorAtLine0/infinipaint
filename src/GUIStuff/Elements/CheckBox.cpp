@@ -1,28 +1,39 @@
 #include "CheckBox.hpp"
 #include <include/core/SkPath.h>
 #include <include/core/SkPathBuilder.h>
+#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
-void CheckBox::update(UpdateInputData& io, bool newIsTicked, const std::function<void()>& elemUpdate) {
+CheckBox::CheckBox(GUIManager& gui):
+    Element(gui) {}
+
+void CheckBox::layout(const std::function<bool()>& isTicked, const std::function<void()>& onClick) {
+    this->isTicked = isTicked;
+    this->onClick = onClick;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(15), .height = CLAY_SIZING_FIXED(15)}
         },
         .custom = { .customData = this }
-    }) {
-        selection.update(Clay_Hovered(), io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
-        if(isTicked != newIsTicked) {
-            hoverAnimation2 = selection.hovered ? CHECKBOX_ANIMATION_TIME : 0.0f;
-            isTicked = newIsTicked;
-        }
-        if(elemUpdate)
-            elemUpdate();
-    }
+    }) {}
+}
+
+bool CheckBox::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+    isHovering = mouseHovering;
+    if(isHovering && button.button == InputManager::MouseButton::LEFT && button.down)
+        gui.set_post_callback_func([&](){if(onClick) onClick();});
+    return Element::input_mouse_button_callback(button, mouseHovering);
+}
+
+bool CheckBox::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+    isHovering = mouseHovering;
+    return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
-    auto bb = get_bb(command);
+    auto& bb = boundingBox.value();
 
     canvas->save();
     canvas->translate(bb.min.x(), bb.min.y());
@@ -31,7 +42,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
 
     SkPaint p;
     p.setAntiAlias(skiaAA);
-    if(isTicked) {
+    if(isTicked()) {
         SkRect checkBox = SkRect::MakeLTRB(-0.5f, -0.5f, 0.5f, 0.5f);
         p.setColor4f(convert_vec4<SkColor4f>(io.theme->fillColor1));
         p.setStyle(SkPaint::kFill_Style);
@@ -39,14 +50,13 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
     }
     else {
         SkRect checkBox = SkRect::MakeLTRB(-0.45f, -0.45f, 0.45f, 0.45f);
-        p.setColor4f(convert_vec4<SkColor4f>(selection.hovered ? io.theme->fillColor1 : io.theme->fillColor2));
+        p.setColor4f(convert_vec4<SkColor4f>(isHovering ? io.theme->fillColor1 : io.theme->fillColor2));
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.15f);
         canvas->drawRoundRect(checkBox, 0.25f, 0.25f, p);
     }
 
-
-    if(isTicked) {
+    if(isTicked()) {
         SkPaint checkP;
         checkP.setAntiAlias(skiaAA);
         checkP.setColor4f(io.theme->backColor1);
@@ -67,7 +77,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
 
         static BezierEasing anim{0.445, -0.733, 0.575, 1.627};
 
-        float lerpTime2 = anim(smooth_two_way_time(hoverAnimation2, io.deltaTime, selection.hovered, CHECKBOX_ANIMATION_TIME));
+        float lerpTime2 = anim(smooth_two_way_time(hoverAnimation2, io.deltaTime, isHovering, CHECKBOX_ANIMATION_TIME));
 
         std::array<Vector2f, 5> points;
 

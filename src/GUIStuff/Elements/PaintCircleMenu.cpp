@@ -11,61 +11,84 @@ constexpr float CIRCLE_END = 150.0f;
 constexpr double ROTATE_BAR_SNAP_DISTANCE = 0.2;
 constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
 
-void PaintCircleMenu::update(GUIManager& gui, const Data& data, const std::function<void()>& elemUpdate) {
-    auto& io = *gui.io;
-    CLAY_AUTO_ID({.layout = { 
+PaintCircleMenu::PaintCircleMenu(GUIManager& gui):
+    Element(gui) {}
+
+void PaintCircleMenu::layout(const Data& data, const std::function<void()>& onChange) {
+    d = data;
+    this->onChange = onChange;
+
+    CLAY_AUTO_ID({
+        .layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },
         .custom = { .customData = this }
     }) {
-        bool isHoveredNoObstruction = Clay_Hovered() && !io.hoverObstructed;
-        Vector2f vecFromCenter = (io.mouse.pos - bb.center()).normalized();
-        float distFromCenter = vec_distance(io.mouse.pos, bb.center());
-        if(data.newRotationAngle) {
-            rotateBarSelect.update(isHoveredNoObstruction && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END, io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
-            if(rotateBarSelect.held) {
-                double& newRotationAngle = *data.newRotationAngle;
-                newRotationAngle = std::atan2(vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
-                if(rotateBarSelect.hovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
+    }
+}
+
+bool PaintCircleMenu::collides_with_point(const Vector2f& p) const {
+    return boundingBox.has_value() && SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), CIRCLE_END), p);
+}
+
+bool PaintCircleMenu::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+    isHovering = mouseHovering;
+    isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+    update_paint_circle_menu_mouse(button.pos, button.button == InputManager::MouseButton::LEFT && button.down);
+    return mouseHovering && collides_with_point(button.pos);
+}
+
+bool PaintCircleMenu::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+    update_paint_circle_menu_mouse(motion.pos, false);
+    return mouseHovering && collides_with_point(motion.pos);
+}
+
+void PaintCircleMenu::update_paint_circle_menu_mouse(const Vector2f& p, bool leftClicked) {
+    if(boundingBox.has_value()) {
+        Vector2f vecFromCenter = (p - boundingBox.value().center()).normalized();
+        float distFromCenter = vec_distance(p, boundingBox.value().center());
+        isRotateBarHovered = isHovering && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END;
+        isRotateBarHeld = isRotateBarHovered && isHeld;
+        isColorBarHovered = isHovering && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START;
+
+        if(isColorBarHovered) {
+            double selectionAngle = std::atan2(-vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
+            colorSelectionIndex = (selectionAngle / (std::numbers::pi * 2.0)) * d.palette.size();
+            colorSelectionIndex = std::clamp<unsigned>(colorSelectionIndex, 0, d.palette.size() - 1);
+        }
+
+        if(isRotateBarHeld) {
+            gui.set_post_callback_func([&, vecFromCenter] {
+                auto& rotationAngle = *d.rotationAngle;
+                rotationAngle = std::atan2(vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
+                if(isRotateBarHovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
                     for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0 + 0.001; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
-                        if(std::fabs(newRotationAngle - snapPos) < ROTATE_BAR_SNAP_DISTANCE) {
-                            newRotationAngle = snapPos;
-                            if(newRotationAngle >= std::numbers::pi * 2.0 - 0.001) // Set 2pi back to 0
-                                newRotationAngle = 0;
+                        if(std::fabs(rotationAngle - snapPos) < ROTATE_BAR_SNAP_DISTANCE) {
+                            rotationAngle = snapPos;
+                            if(rotationAngle >= std::numbers::pi * 2.0 - 0.001) // Set 2pi back to 0
+                                rotationAngle = 0;
                             break;
                         }
                     }
+                    d.onRotate();
                 }
-            }
-            else
-                *data.newRotationAngle = data.currentRotationAngle;
+            });
         }
-        if(!data.palette.empty() && data.selectedColor) {
-            colorBarSelect.update(isHoveredNoObstruction && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START, io.mouse.leftClick, io.mouse.leftHeld, io.mouse.pos);
-            if(colorBarSelect.hovered) {
-                Vector4f& selectedColor = *data.selectedColor;
-                double selectionAngle = std::atan2(-vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
-                colorSelectionIndex = (selectionAngle / (std::numbers::pi * 2.0)) * data.palette.size();
-                colorSelectionIndex = std::clamp<unsigned>(colorSelectionIndex, 0, data.palette.size() - 1);
-                if(colorBarSelect.clicked) {
-                    selectedColor.x() = data.palette[colorSelectionIndex].x();
-                    selectedColor.y() = data.palette[colorSelectionIndex].y();
-                    selectedColor.z() = data.palette[colorSelectionIndex].z();
-                }
-            }
+        else if(isColorBarHovered && leftClicked) {
+            gui.set_post_callback_func([&] {
+                Vector4f& selectedColor = *d.selectedColor;
+                selectedColor.x() = d.palette[colorSelectionIndex].x();
+                selectedColor.y() = d.palette[colorSelectionIndex].y();
+                selectedColor.z() = d.palette[colorSelectionIndex].z();
+                d.onPaletteClick();
+            });
         }
-        io.hoverObstructingCircles.emplace_back(bb.center() + gui.windowPos, CIRCLE_END);
-        if(SCollision::collide(io.hoverObstructingCircles.back(), io.mouse.pos))
-            io.hoverObstructed = true;
-        if(elemUpdate)
-            elemUpdate();
     }
-
-    d = data;
 }
 
 void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
-    bb = get_bb(command);
+    auto& bb = boundingBox.value();
+
     canvas->save();
     canvas->translate(bb.center().x(), bb.center().y());
 
@@ -80,10 +103,7 @@ void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_Rend
 }
 
 void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA) {
-    if(!d.newRotationAngle)
-        return;
-
-    double rotationAngle = d.currentRotationAngle;
+    double rotationAngle = *d.rotationAngle;
     float rotateBarMiddleRadius = (CIRCLE_END + ROTATE_START) / 2.0f;
     SkPaint rotateBarFill(io.theme->backColor2);
     rotateBarFill.setAntiAlias(skiaAA);
@@ -91,7 +111,7 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, boo
     rotateBarFill.setStrokeWidth(CIRCLE_END - ROTATE_START);
     canvas->drawCircle(0.0f, 0.0f, rotateBarMiddleRadius, rotateBarFill);
 
-    if(rotateBarSelect.hovered) {
+    if(isRotateBarHovered) {
         for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
             Vector2f lineDir{std::cos(snapPos), -std::sin(snapPos)};
             SkPaint p(snapPos == 0.0 ? io.theme->fillColor1 : io.theme->frontColor2);
@@ -103,9 +123,9 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, boo
 
     SkPaint rotateBarHolderFill;
     rotateBarHolderFill.setAntiAlias(skiaAA);
-    if(rotateBarSelect.held)
+    if(isRotateBarHeld)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
-    else if(rotateBarSelect.hovered)
+    else if(isRotateBarHovered)
         rotateBarHolderFill.setColor4f(io.theme->fillColor2);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor1);
@@ -161,7 +181,7 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io, bo
 
     SkRect startOval = SkRect::MakeLTRB(-PALETTE_START, -PALETTE_START, PALETTE_START, PALETTE_START);
     SkRect endOval = SkRect::MakeLTRB(-ROTATE_START, -ROTATE_START, ROTATE_START, ROTATE_START);
-    if(colorBarSelect.hovered) {
+    if(isColorBarHovered) {
         SkPathBuilder selectionPathBuilder;
         double angleStart = colorSelectionIndex * colorDistribution;
         double angleEnd = (colorSelectionIndex + 1) * colorDistribution;

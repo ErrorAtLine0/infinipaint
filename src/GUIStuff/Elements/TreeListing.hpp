@@ -40,8 +40,11 @@ class TreeListing : public Element {
             std::unordered_set<NetworkingObjects::NetObjID> objsSelected;
         };
 
-        void update(UpdateInputData& io, GUIManager& gui, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData);
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
+        TreeListing(GUIManager& gui);
+        void layout(NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData);
+        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+        virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
     private:
         bool dragHoldSelected = false;
 
