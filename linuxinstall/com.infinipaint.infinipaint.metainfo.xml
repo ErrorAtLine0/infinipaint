@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2025 Yousef Khadadeh -->
+<!-- Copyright 2026 Yousef Khadadeh -->
 <component type="desktop-application">
     <id>com.infinipaint.infinipaint</id>
     <name>Infinipaint</name>
@@ -67,6 +67,7 @@
                     <li>Fixed "Integer division by zero" error when loading some files</li>
                     <li>Brush, eraser, and selection tools change color depending on the objects behind them</li>
                     <li>Clamp brush pressure to stop incompatible drivers from breaking InfiniPaint</li>
+                    <li>Added limit to image crop bounds</li>
                 </ul>
             </description>
         </release>
