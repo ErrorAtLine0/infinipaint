@@ -60,6 +60,16 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.4.2" date="2026-03-28">
+            <description>
+                <p>Patch update:</p>
+                <ul>
+                    <li>Fixed "Integer division by zero" error when loading some files</li>
+                    <li>Brush, eraser, and selection tools change color depending on the objects behind them</li>
+                    <li>Clamp brush pressure to stop incompatible drivers from breaking InfiniPaint</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.4.1" date="2026-02-09">
             <description>
                 <p>Minor update:</p>
