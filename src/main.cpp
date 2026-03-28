@@ -757,7 +757,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
             case SDL_EVENT_PEN_AXIS: {
                 if(event->paxis.axis == SDL_PEN_AXIS_PRESSURE)
-                    mS.m->input.pen.pressure = event->paxis.value;
+                    mS.m->input.pen.pressure = std::clamp(event->paxis.value, 0.0f, 1.0f);
                 //mS.m->input.mouse.set_pos({event->paxis.x, event->paxis.y});
                 break;
             }
