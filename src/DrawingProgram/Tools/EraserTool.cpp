@@ -3,6 +3,7 @@
 #include "../../MainProgram.hpp"
 #include "../../DrawData.hpp"
 #include <include/core/SkPathBuilder.h>
+#include <include/core/SkBlendMode.h>
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -100,14 +101,13 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
         if(relativeWidthResult.first.has_value()) {
             float width = relativeWidthResult.first.value() * 0.5f;
-            SkColor4f c = drawP.world.canvasTheme.get_tool_front_color();
-            c.fA = 0.5f;
 
             SkPaint linePaint;
-            linePaint.setColor4f(c);
+            linePaint.setColor4f({1.0f, 1.0f, 1.0f, 0.5f});
             linePaint.setStyle(SkPaint::kStroke_Style);
             linePaint.setStrokeCap(SkPaint::kRound_Cap);
             linePaint.setStrokeWidth(width * 2.0f);
+            linePaint.setBlender(CanvasTheme::get_visible_blend_mode());
             SkPathBuilder erasePath;
             erasePath.moveTo(convert_vec2<SkPoint>(drawData.main->input.mouse.lastPos));
             erasePath.lineTo(convert_vec2<SkPoint>(drawData.main->input.mouse.pos));
