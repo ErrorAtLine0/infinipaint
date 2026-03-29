@@ -7,6 +7,9 @@
 #include "Helpers/Logger.hpp"
 #include "Tools/DrawingProgramToolBase.hpp"
 
+#include "../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+
 float& ToolConfiguration::get_stroke_size_relative_width_ref(DrawingProgramToolType toolType) {
     if(globalConf.useGlobalRelativeWidth)
         return globalConf.relativeWidth;
@@ -80,11 +83,14 @@ void ToolConfiguration::print_relative_width_fail_message(RelativeWidthFailCode 
 void ToolConfiguration::relative_width_gui(DrawingProgram& drawP, const char* label) {
     auto& gui = drawP.world.main.toolbar.gui;
     auto& lockedCameraScale = drawP.controls.lockedCameraScale;
-    gui.slider_scalar_field<float>("relstrokewidth", label, &get_stroke_size_relative_width_ref(drawP.drawTool->get_type()), 3.0f, 40.0f);
-    if(gui.text_button_wide("lock brush size", lockedCameraScale.has_value() ? "Unlock Size" : "Lock Size to Zoom")) {
-        if(lockedCameraScale.has_value())
-            lockedCameraScale = std::nullopt;
-        else
-            lockedCameraScale = drawP.world.drawData.cam.c.inverseScale;
-    }
+    GUIStuff::ElementHelpers::slider_scalar_field(gui, "relstrokewidth", label, &get_stroke_size_relative_width_ref(drawP.drawTool->get_type()), 3.0f, 40.0f);
+    GUIStuff::ElementHelpers::text_button(gui, "lock brush size", lockedCameraScale.has_value() ? "Unlock Size" : "Lock Size to Zoom", {
+        .wide = true,
+        .onClick = [&] {
+            if(lockedCameraScale.has_value())
+                lockedCameraScale = std::nullopt;
+            else
+                lockedCameraScale = drawP.world.drawData.cam.c.inverseScale;
+        }
+    });
 }

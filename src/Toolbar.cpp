@@ -220,7 +220,6 @@ void Toolbar::open_file_selector(const std::string& filePickerName, const std::v
     }
     else {
         filePicker.isOpen = true;
-        filePicker.refreshEntries = true;
         filePicker.extensionFiltersComplete = extensionFilters;
         filePicker.extensionFilters.clear();
         for(auto& [name, exList] : extensionFilters)
@@ -229,6 +228,7 @@ void Toolbar::open_file_selector(const std::string& filePickerName, const std::v
         filePicker.filePickerWindowName = filePickerName;
         filePicker.postSelectionFunc = postSelectionFunc;
         filePicker.fileName = "";
+        file_picker_gui_refresh_entries();
     }
 }
 
@@ -2369,56 +2369,19 @@ void Toolbar::input_mouse_button_callback(const InputManager::MouseButtonCallbac
 }
 
 void Toolbar::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(motion.deviceType != InputManager::MouseDeviceType::TOUCH)
-        io->mouse.globalPos = motion.pos / final_gui_scale();
 }
 
 void Toolbar::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
-    io->mouse.scroll = wheel.amount;
 }
 
 void Toolbar::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-    io->mouse.globalPos = touch.pos / final_gui_scale();
-    if(touch.down) {
-        io->mouse.leftClick = std::max<int>(io->mouse.leftClick, touch.fingerTapCount);
-        io->mouse.leftHeld = true;
-    }
-    else
-        io->mouse.leftHeld = false;
 }
 
 void Toolbar::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    io->mouse.globalPos = motion.pos / final_gui_scale();
-}
-
-void Toolbar::start_gui() {
-    SDL_Rect windowRect;
-    if(SDL_GetWindowSafeArea(main.window.sdlWindow, &windowRect)) {
-        io->windowPos = gui.windowPos = Vector2f{windowRect.x, windowRect.y} / final_gui_scale();
-        gui.windowSize = Vector2f{windowRect.w, windowRect.h} / final_gui_scale();
-    }
-    else {
-        io->windowPos = gui.windowPos = Vector2f{0.0f, 0.0f};
-        gui.windowSize = main.window.size.cast<float>() / final_gui_scale();
-    }
-    initialize_io();
-    gui.io = io;
-    io->isTouch = main.input.isTouchDevice;
-    gui.begin();
 }
 
 float Toolbar::final_gui_scale() {
     return finalCalculatedGuiScale;
-}
-
-bool Toolbar::check_if_position_isnt_obstructed(const Vector2f& pos) {
-    bool positionIsntObstructed = true;
-    Vector2f posGUI = pos / final_gui_scale();
-    for(auto& aabb : io->hoverObstructingAABBs)
-        positionIsntObstructed &= !SCollision::collide(posGUI, aabb);
-    for(auto& circle : io->hoverObstructingCircles)
-        positionIsntObstructed &= !SCollision::collide(posGUI, circle);
-    return positionIsntObstructed;
 }
 
 void Toolbar::calculate_final_gui_scale() {
@@ -2429,11 +2392,6 @@ void Toolbar::calculate_final_gui_scale() {
 
 float Toolbar::final_gui_scale_not_fit() {
     return guiScale * main.get_scale_and_density_factor_gui();
-}
-
-void Toolbar::end_gui() {
-    gui.end();
-    end_io();
 }
 
 void Toolbar::draw(SkCanvas* canvas, bool skiaAA) {

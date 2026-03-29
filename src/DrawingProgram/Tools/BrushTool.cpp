@@ -10,6 +10,9 @@
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include <chrono>
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+
 #define VEL_SMOOTH_MIN 0.6
 #define VEL_SMOOTH_MAX 1.0
 #define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
@@ -165,15 +168,18 @@ void BrushTool::commit_stroke() {
 }
 
 void BrushTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("brush tool");
-    t.gui.text_label_centered("Brush");
-    t.gui.checkbox_field("hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
+    text_label_centered(t.gui, "Brush");
+    checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
     drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
     t.gui.pop_id();
 }
 
-bool BrushTool::right_click_popup_gui(Vector2f popupPos) {
+void BrushTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
     return true;

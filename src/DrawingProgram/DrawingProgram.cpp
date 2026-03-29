@@ -36,6 +36,12 @@
 
 #include "Tools/EraserTool.hpp"
 
+#include "../GUIStuff/Elements/LayoutElement.hpp"
+#include "../GUIStuff/Elements/RotateWheel.hpp"
+#include "../GUIStuff/Elements/PositionAdjustingPopupMenu.hpp"
+#include "../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
     drawCache(*this),
@@ -320,118 +326,128 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
 }
 
 void DrawingProgram::toolbar_gui() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = world.main.toolbar;
     t.gui.push_id("Drawing Program Toolbar GUI");
-    Clay_ElementId localID = CLAY_ID_LOCAL("Drawing program toolbar GUI");
-    CLAY(localID, {
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
-            .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
-            .childGap = static_cast<uint16_t>(t.io->theme->childGap1 / 2), 
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
-    }) {
-        t.gui.obstructing_window(localID);
-        if(t.gui.svg_icon_button_transparent("Brush Toolbar Button", "data/icons/brush.svg", drawTool->get_type() == DrawingProgramToolType::BRUSH)) { switch_to_tool(DrawingProgramToolType::BRUSH); }
-        if(t.gui.svg_icon_button_transparent("Eraser Toolbar Button", "data/icons/eraser.svg", drawTool->get_type() == DrawingProgramToolType::ERASER)) { switch_to_tool(DrawingProgramToolType::ERASER); }
-        if(t.gui.svg_icon_button_transparent("Line Toolbar Button", "data/icons/line.svg", drawTool->get_type() == DrawingProgramToolType::LINE)) { switch_to_tool(DrawingProgramToolType::LINE); }
-        if(t.gui.svg_icon_button_transparent("Text Toolbar Button", "data/icons/text.svg", drawTool->get_type() == DrawingProgramToolType::TEXTBOX)) { switch_to_tool(DrawingProgramToolType::TEXTBOX); }
-        if(t.gui.svg_icon_button_transparent("Ellipse Toolbar Button", "data/icons/circle.svg", drawTool->get_type() == DrawingProgramToolType::ELLIPSE)) { switch_to_tool(DrawingProgramToolType::ELLIPSE); }
-        if(t.gui.svg_icon_button_transparent("Rect Toolbar Button", "data/icons/rectangle.svg", drawTool->get_type() == DrawingProgramToolType::RECTANGLE)) { switch_to_tool(DrawingProgramToolType::RECTANGLE); }
-        if(t.gui.svg_icon_button_transparent("RectSelect Toolbar Button", "data/icons/rectselect.svg", drawTool->get_type() == DrawingProgramToolType::RECTSELECT)) { switch_to_tool(DrawingProgramToolType::RECTSELECT); }
-        if(t.gui.svg_icon_button_transparent("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", drawTool->get_type() == DrawingProgramToolType::LASSOSELECT)) { switch_to_tool(DrawingProgramToolType::LASSOSELECT); }
-        if(t.gui.svg_icon_button_transparent("Edit Toolbar Button", "data/icons/cursor.svg", drawTool->get_type() == DrawingProgramToolType::EDIT)) { switch_to_tool(DrawingProgramToolType::EDIT); }
-        if(t.gui.svg_icon_button_transparent("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", drawTool->get_type() == DrawingProgramToolType::EYEDROPPER)) { switch_to_tool(DrawingProgramToolType::EYEDROPPER); }
-        if(t.gui.svg_icon_button_transparent("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", drawTool->get_type() == DrawingProgramToolType::ZOOM)) { switch_to_tool(DrawingProgramToolType::ZOOM); }
-        if(t.gui.svg_icon_button_transparent("Pan Canvas Toolbar Button", "data/icons/hand.svg", drawTool->get_type() == DrawingProgramToolType::PAN)) { switch_to_tool(DrawingProgramToolType::PAN); }
+    t.gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] {
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
+                .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
+                .childGap = static_cast<uint16_t>(t.io->theme->childGap1 / 2), 
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
+        }) {
 
-        double newRotationAngle = world.drawData.cam.c.rotation, oldRotationAngle = world.drawData.cam.c.rotation;
-        t.gui.rotate_wheel("Canvas Rotate Wheel", &newRotationAngle);
-        if(newRotationAngle != oldRotationAngle)
-            world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), newRotationAngle - oldRotationAngle);
+            auto tool_button = [&](const char* id, const std::string& svgPath, DrawingProgramToolType toolType) {
+                svg_icon_button(t.gui, id, svgPath, {
+                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                    .isSelected = drawTool->get_type() == toolType,
+                    .onClick = [&, toolType] {
+                        switch_to_tool(toolType);
+                    }
+                });
+            };
 
-        auto& globalConf = world.main.toolConfig.globalConf;
+            tool_button("Brush Toolbar Button", "data/icons/brush.svg", DrawingProgramToolType::BRUSH);
+            tool_button("Eraser Toolbar Button", "data/icons/eraser.svg", DrawingProgramToolType::ERASER);
+            tool_button("Line Toolbar Button", "data/icons/line.svg", DrawingProgramToolType::LINE);
+            tool_button("Text Toolbar Button", "data/icons/text.svg", DrawingProgramToolType::TEXTBOX);
+            tool_button("Ellipse Toolbar Button", "data/icons/circle.svg", DrawingProgramToolType::ELLIPSE);
+            tool_button("Rect Toolbar Button", "data/icons/rectangle.svg", DrawingProgramToolType::RECTANGLE);
+            tool_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", DrawingProgramToolType::RECTSELECT);
+            tool_button("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", DrawingProgramToolType::LASSOSELECT);
+            tool_button("Edit Toolbar Button", "data/icons/cursor.svg", DrawingProgramToolType::EDIT);
+            tool_button("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", DrawingProgramToolType::EYEDROPPER);
+            tool_button("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", DrawingProgramToolType::ZOOM);
+            tool_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", DrawingProgramToolType::PAN);
 
-        if(t.gui.big_color_button("Foreground Color", &globalConf.foregroundColor, &globalConf.foregroundColor == t.colorLeft))
-            t.color_selector_left(&globalConf.foregroundColor == t.colorLeft ? nullptr : &globalConf.foregroundColor);
-        if(t.gui.big_color_button("Background Color", &globalConf.backgroundColor, &globalConf.backgroundColor == t.colorLeft))
-            t.color_selector_left(&globalConf.backgroundColor == t.colorLeft ? nullptr : &globalConf.backgroundColor);
-    }
-    t.gui.pop_id();
+            std::shared_ptr<double> oldRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
+            t.gui.element<RotateWheel>("Canvas Rotate Wheel", &world.drawData.cam.c.rotation, [&, oldRotationAngle] {
+                world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), world.drawData.cam.c.rotation - *oldRotationAngle);
+                *oldRotationAngle = world.drawData.cam.c.rotation;
+            });
+        }
+    });
+}
+
+void DrawingProgram::popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick) {
+    GUIStuff::ElementHelpers::text_button(world.main.toolbar.gui, id, text, {
+        .drawType = GUIStuff::SelectableButton::DrawType::TRANSPARENT_ALL,
+        .wide = true,
+        .onClick = onClick
+    });
 }
 
 // Should only be used in selection allowing tools
-bool DrawingProgram::selection_action_menu(Vector2f popupPos) {
+void DrawingProgram::selection_action_menu(Vector2f popupPos) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = world.main.toolbar;
-    bool shouldClose = false;
-    t.gui.list_popup_menu("Selection popup menu", popupPos, [&]() {
-        t.gui.text_label_light("Selection menu");
-        if(t.gui.text_button_left_transparent("Paste", "Paste")) {
+    t.gui.element<PositionAdjustingPopupMenu>("Selection popup menu", popupPos, [&, popupPos] {
+        text_label_light(t.gui, "Selection menu");
+        popup_menu_action_button("Paste", "Paste", [&] {
             selection.deselect_all();
             selection.paste_clipboard(popupPos * t.final_gui_scale());
-            shouldClose = true;
-        }
-        if(t.gui.text_button_left_transparent("Paste Image", "Paste Image")) {
+        });
+        popup_menu_action_button("Paste Image", "Paste Image", [&] {
             selection.deselect_all();
             selection.paste_image(popupPos * t.final_gui_scale());
-            shouldClose = true;
-        }
+        });
         if(selection.is_something_selected()) {
-            if(t.gui.text_button_left_transparent("Copy", "Copy")) {
+            popup_menu_action_button("Copy", "Copy", [&] {
                 selection.selection_to_clipboard();
-                shouldClose = true;
-            }
-            if(t.gui.text_button_left_transparent("Cut", "Cut")) {
+            });
+            popup_menu_action_button("Cut", "Cut", [&] {
                 selection.selection_to_clipboard();
                 selection.delete_all();
-                shouldClose = true;
-            }
-            if(t.gui.text_button_left_transparent("Delete", "Delete")) {
+            });
+            popup_menu_action_button("Delete", "Delete", [&] {
                 selection.delete_all();
-                shouldClose = true;
-            }
-            if(t.gui.text_button_left_transparent("Bring to front of layer", "Bring to front of layer")) {
+            });
+            popup_menu_action_button("Bring to front of layer", "Bring to front of layer", [&] {
                 selection.push_selection_to_front();
-                shouldClose = true;
-            }
-            if(t.gui.text_button_left_transparent("Send to back of layer", "Send to back of layer")) {
+            });
+            popup_menu_action_button("Send to back of layer", "Send to back of layer", [&] {
                 selection.push_selection_to_back();
-                shouldClose = true;
-            }
+            });
         }
     });
-    return !shouldClose;
 }
 
-bool DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
+void DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = world.main.toolbar;
     t.gui.push_id("Drawing Program right click GUI");
-    bool toRet = drawTool->right_click_popup_gui(popupPos);
+    drawTool->right_click_popup_gui(popupPos);
     t.gui.pop_id();
-    return toRet;
 }
 
 void DrawingProgram::tool_options_gui() {
+    using namespace GUIStuff;
+
     Toolbar& t = world.main.toolbar;
     float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    Clay_ElementId localID = CLAY_ID_LOCAL("Drawing program tool options gui");
-    CLAY(localID, {
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
-            .padding = CLAY_PADDING_ALL(t.io->theme->padding1),
-            .childGap = t.io->theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
-    }) {
-        t.gui.obstructing_window(localID);
-        drawTool->gui_toolbox();
-    }
+    t.gui.element<LayoutElement>("Drawing program tool options gui", [&] {
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
+                .padding = CLAY_PADDING_ALL(t.io->theme->padding1),
+                .childGap = t.io->theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
+        }) {
+            drawTool->gui_toolbox();
+        }
+    });
 }
 
 void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& gridToModify) {
@@ -498,6 +514,7 @@ void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> 
     drawTool->switch_tool(newTool->get_type());
     drawTool = std::move(newTool);
     world.main.toolbar.rightClickPopupLocation = std::nullopt;
+    world.main.toolbar.gui.set_to_layout();
 }
 
 void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool force) {

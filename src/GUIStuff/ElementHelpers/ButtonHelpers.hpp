@@ -42,11 +42,11 @@ struct FixedSizeColorButtonOptions {
     std::function<void()> onClick;
 };
 
-void text_button(GUIManager& gui, const char* id, std::string_view text, const TextButtonOptions& options);
-void text_button_sized(GUIManager& gui, const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, const TextButtonOptions& options);
-void svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options);
+void text_button(GUIManager& gui, const char* id, std::string_view text, const TextButtonOptions& options = {});
+void text_button_sized(GUIManager& gui, const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, const TextButtonOptions& options = {});
+void svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options = {});
 
-template <typename T> void color_button(GUIManager& gui, const char* id, T* val, const FixedSizeColorButtonOptions& options) {
+template <typename T> void color_button(GUIManager& gui, const char* id, T* val, const FixedSizeColorButtonOptions& options = {}) {
     SelectableButton::Data d = selectable_button_options_to_data(options);
     d.innerContent = [&] (const SelectableButton::InnerContentCallbackParameters&) {
         gui.element<ColorRectangleDisplay>([val, hasAlpha = options.hasAlpha] {

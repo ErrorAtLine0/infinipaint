@@ -206,6 +206,10 @@ if((NOT EMSCRIPTEN) AND (NOT APPLE))
     find_package(TBB REQUIRED)
 endif()
 
+if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX AND (NOT NO_CONAN_BUILD))
+    find_package(egl)
+endif()
+
 find_package(zstd REQUIRED)
 
 message("Skia root: " ${SKIA_INCLUDE})
@@ -378,6 +382,10 @@ endif()
 
 if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX)
     target_link_libraries(main OpenGL::EGL)
+endif()
+
+if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX AND (NOT NO_CONAN_BUILD))
+    target_link_libraries(infinipaint egl::egl)
 endif()
 
 if(ANDROID)

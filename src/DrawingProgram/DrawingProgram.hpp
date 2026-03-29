@@ -27,7 +27,7 @@ class DrawingProgram {
         void server_init_no_file();
         void toolbar_gui();
         void tool_options_gui();
-        bool right_click_popup_gui(Vector2f popupPos);
+        void right_click_popup_gui(Vector2f popupPos);
         void update();
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
@@ -77,7 +77,8 @@ class DrawingProgram {
         void check_updateable_components();
         void update_downloading_dropped_files();
 
-        bool selection_action_menu(Vector2f popupPos);
+        void selection_action_menu(Vector2f popupPos);
+        void popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick);
         void rebuild_cache();
 
         std::atomic<bool> addFileInNextFrame = false;

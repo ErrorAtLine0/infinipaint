@@ -15,6 +15,8 @@
 #include "EditTools/EllipseDrawEditTool.hpp"
 #include "EditTools/BrushEditTool.hpp"
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 EditTool::EditTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -24,6 +26,9 @@ DrawingProgramToolType EditTool::get_type() {
 }
 
 void EditTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     if(objInfoBeingEdited) {
         bool editHappened = compEditTool->edit_gui(objInfoBeingEdited);
@@ -32,7 +37,7 @@ void EditTool::gui_toolbox() {
     }
     else {
         t.gui.push_id("edit tool");
-        t.gui.text_label_centered("Edit");
+        text_label_centered(t.gui, "Edit");
         t.gui.pop_id();
     }
 }
