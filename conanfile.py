@@ -90,6 +90,8 @@ class CompressorRecipe(ConanFile):
 
         
         if self.settings.os == "Linux":
+            self.requires("fontconfig/2.17.1")
+            self.requires("egl/system")
             self.requires("sdl/3.4.0", options = {
                 "wayland": False,
                 "x11": True,
