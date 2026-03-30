@@ -8,7 +8,7 @@ class EyeDropperTool : public DrawingProgramToolBase {
         EyeDropperTool(DrawingProgram& initDrawP);
         virtual DrawingProgramToolType get_type() override;
         virtual void gui_toolbox() override;
-        virtual bool right_click_popup_gui(Vector2f popupPos) override;
+        virtual void right_click_popup_gui(Vector2f popupPos) override;
         virtual void tool_update() override;
         virtual void erase_component(CanvasComponentContainer::ObjInfo* erasedComp) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;

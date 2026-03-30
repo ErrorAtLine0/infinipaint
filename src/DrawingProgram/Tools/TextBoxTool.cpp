@@ -11,6 +11,8 @@
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include "EditTool.hpp"
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 TextBoxTool::TextBoxTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -22,7 +24,7 @@ DrawingProgramToolType TextBoxTool::get_type() {
 void TextBoxTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("textbox tool");
-    t.gui.text_label_centered("Textbox");
+    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Zoom tool");
     t.gui.pop_id();
 }
 
@@ -74,10 +76,9 @@ void TextBoxTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp)
         objInfoBeingEdited = nullptr;
 }
 
-bool TextBoxTool::right_click_popup_gui(Vector2f popupPos) {
+void TextBoxTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void TextBoxTool::switch_tool(DrawingProgramToolType newTool) {

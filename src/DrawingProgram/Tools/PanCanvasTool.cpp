@@ -5,6 +5,8 @@
 #include "DrawingProgramToolBase.hpp"
 #include <Helpers/Logger.hpp>
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 PanCanvasTool::PanCanvasTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {
@@ -17,12 +19,12 @@ DrawingProgramToolType PanCanvasTool::get_type() {
 void PanCanvasTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("Pan canvas tool");
-    t.gui.text_label_centered("Pan tool");
+    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Pan tool");
     t.gui.pop_id();
 }
 
-bool PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {
-    return drawP.selection_action_menu(popupPos);
+void PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
 }
 
 void PanCanvasTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {

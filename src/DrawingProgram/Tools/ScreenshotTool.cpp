@@ -36,6 +36,11 @@
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
+#include "../../GUIStuff/Elements/DropDown.hpp"
+
 #define SECTION_SIZE 4000
 #define AA_LEVEL 4
 
@@ -48,26 +53,29 @@ DrawingProgramToolType ScreenshotTool::get_type() {
 }
 
 void ScreenshotTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
     t.gui.push_id("screenshot tool");
-    t.gui.text_label_centered("Screenshot");
+    text_label_centered(t.gui, "Screenshot");
     auto oldImgSize = controls.imageSize;
     if(controls.selectionMode == ScreenshotControls::SelectionMode::NO_SELECTION)
-        t.gui.text_label("Select an area on the canvas...");
+        text_label(t.gui, "Select an area on the canvas...");
     if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != SCREENSHOT_SVG)
-        t.gui.input_scalar_fields("Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
+        input_scalars_field(t.gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
     if(controls.selectionMode == ScreenshotControls::SelectionMode::SELECTION_EXISTS) {
-        t.gui.left_to_right_line_layout([&]() {
-            t.gui.text_label("Image Type");
-            t.gui.dropdown_select("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
+        left_to_right_line_layout(t.gui, [&]() {
+            text_label(t.gui, "Image Type");
+            t.gui.element<DropDown<size_t>>("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
         });
         if(screenshotConfig.selectedType != SCREENSHOT_SVG)
-            t.gui.checkbox_field("Display Grid", "Display Grid", &controls.displayGrid);
+            checkbox_boolean_field(t.gui, "Display Grid", "Display Grid", &controls.displayGrid);
         else
-            t.gui.text_label("Note: Screenshot will ignore blend\nmodes and layer alpha");
+            text_label(t.gui, "Note: Screenshot will ignore blend\nmodes and layer alpha");
         if(screenshotConfig.selectedType != 0)
-            t.gui.checkbox_field("Transparent Background", "Transparent Background", &controls.transparentBackground);
+            checkbox_boolean_field(t.gui, "Transparent Background", "Transparent Background", &controls.transparentBackground);
         if(controls.imageSize.x() != oldImgSize.x()) {
             screenshotConfig.setDimensionSize = controls.imageSize.x();
             screenshotConfig.setDimensionIsX = true;
@@ -78,46 +86,48 @@ void ScreenshotTool::gui_toolbox() {
             screenshotConfig.setDimensionIsX = false;
             controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
         }
-        if(t.gui.text_button_wide("Take Screenshot", "Take Screenshot")) {
-            controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
-            #ifdef __EMSCRIPTEN__
-                take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType], screenshotConfig.selectedType);
-            #else
-                // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
-                Toolbar::ExtensionFilter setExtensionFilter;
-                switch(screenshotConfig.selectedType) {
-                    case SCREENSHOT_JPG:
-                        setExtensionFilter = {"JPEG", "jpg;jpeg"};
-                        break;
-                    case SCREENSHOT_PNG:
-                        setExtensionFilter = {"PNG", "png"};
-                        break;
-                    case SCREENSHOT_WEBP:
-                        setExtensionFilter = {"WEBP", "webp"};
-                        break;
-                    case SCREENSHOT_SVG:
-                        setExtensionFilter = {"SVG", "svg"};
-                        break;
-                }
-                t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
-                    auto world = w.lock();
-                    if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
-                        ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
-                        screenshotTool->controls.screenshotSavePath = p;
-                        screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
-                        screenshotTool->controls.setToTakeScreenshot = true;
+        text_button(t.gui, "Take Screenshot", "Take Screenshot", {
+            .wide = true,
+            .onClick = [&] {
+                controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
+                #ifdef __EMSCRIPTEN__
+                    take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType], screenshotConfig.selectedType);
+                #else
+                    // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
+                    Toolbar::ExtensionFilter setExtensionFilter;
+                    switch(screenshotConfig.selectedType) {
+                        case SCREENSHOT_JPG:
+                            setExtensionFilter = {"JPEG", "jpg;jpeg"};
+                            break;
+                        case SCREENSHOT_PNG:
+                            setExtensionFilter = {"PNG", "png"};
+                            break;
+                        case SCREENSHOT_WEBP:
+                            setExtensionFilter = {"WEBP", "webp"};
+                            break;
+                        case SCREENSHOT_SVG:
+                            setExtensionFilter = {"SVG", "svg"};
+                            break;
                     }
-                }, "screenshot", true);
-            #endif
-        }
+                    t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
+                        auto world = w.lock();
+                        if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
+                            ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
+                            screenshotTool->controls.screenshotSavePath = p;
+                            screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
+                            screenshotTool->controls.setToTakeScreenshot = true;
+                        }
+                    }, "screenshot", true);
+                #endif
+            }
+        });
     }
     t.gui.pop_id();
 }
 
-bool ScreenshotTool::right_click_popup_gui(Vector2f popupPos) {
+void ScreenshotTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

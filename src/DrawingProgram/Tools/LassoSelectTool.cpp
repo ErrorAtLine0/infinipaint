@@ -11,6 +11,8 @@
 #include <earcut.hpp>
 #include <include/core/SkPathBuilder.h>
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 namespace mapbox {
 namespace util {
 
@@ -41,13 +43,13 @@ DrawingProgramToolType LassoSelectTool::get_type() {
 void LassoSelectTool::gui_toolbox() {
     auto& t = drawP.world.main.toolbar;
     t.gui.push_id("lasso select tool");
-    t.gui.text_label_centered("Lasso Select");
+    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Lasso Select");
     drawP.selection.selection_gui();
     t.gui.pop_id();
 }
 
-bool LassoSelectTool::right_click_popup_gui(Vector2f popupPos) {
-    return drawP.selection_action_menu(popupPos);
+void LassoSelectTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
 }
 
 void LassoSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {

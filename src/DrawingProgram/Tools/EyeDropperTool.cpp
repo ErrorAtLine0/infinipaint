@@ -14,6 +14,9 @@
 #include <include/core/SkSurface.h>
 #include <Helpers/Logger.hpp>
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+
 EyeDropperTool::EyeDropperTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {
@@ -24,19 +27,24 @@ DrawingProgramToolType EyeDropperTool::get_type() {
 }
 
 void EyeDropperTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
     t.gui.push_id("Color select tool");
-    t.gui.text_label_centered("Color Select");
-    if(t.gui.radio_button_field("Stroke Color", "Stroke Color", selectingStrokeColor)) selectingStrokeColor = true;
-    if(t.gui.radio_button_field("Fill Color", "Fill Color", !selectingStrokeColor)) selectingStrokeColor = false;
+    text_label_centered(t.gui, "Color Select");
+
+    radio_button_selector<bool>(t.gui, "Stroke type", &selectingStrokeColor, {
+        {"Stroke Color", true},
+        {"Fill Color", false}
+    });
     t.gui.pop_id();
 }
 
-bool EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
+void EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void EyeDropperTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

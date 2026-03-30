@@ -6,6 +6,10 @@
 #include "../../CanvasComponents/RectangleCanvasComponent.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+
 RectDrawTool::RectDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -15,16 +19,21 @@ DrawingProgramToolType RectDrawTool::get_type() {
 }
 
 void RectDrawTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
     auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
     t.gui.push_id("rect draw tool");
-    t.gui.text_label_centered("Draw Rectangle");
-    t.gui.slider_scalar_field("relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
-    if(t.gui.radio_button_field("fillonly", "Fill only", fillStrokeMode == 0)) fillStrokeMode = 0;
-    if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
-    if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
+    text_label_centered(t.gui, "Draw Rectangle");
+    slider_scalar_field(t.gui, "relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
+    radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
+        {"Fill only", 0},
+        {"Outline only", 1},
+        {"Fill and Outline", 2}
+    });
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
         toolConfig.relative_width_gui(drawP, "Outline Size");
     t.gui.pop_id();
@@ -88,10 +97,9 @@ void RectDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp
         objInfoBeingEdited = nullptr;
 }
 
-bool RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
+void RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {

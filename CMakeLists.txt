@@ -385,7 +385,7 @@ if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX)
 endif()
 
 if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX AND (NOT NO_CONAN_BUILD))
-    target_link_libraries(infinipaint egl::egl)
+    target_link_libraries(main egl::egl)
 endif()
 
 if(ANDROID)

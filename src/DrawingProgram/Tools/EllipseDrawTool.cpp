@@ -9,6 +9,9 @@
 #include "../../CanvasComponents/EllipseCanvasComponent.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 
+#include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 EllipseDrawTool::EllipseDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -18,14 +21,19 @@ DrawingProgramToolType EllipseDrawTool::get_type() {
 }
 
 void EllipseDrawTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.ellipseDraw.fillStrokeMode;
     t.gui.push_id("ellipse draw tool");
-    t.gui.text_label_centered("Draw Ellipse");
-    if(t.gui.radio_button_field("fillonly", "Fill only", fillStrokeMode == 0)) fillStrokeMode = 0;
-    if(t.gui.radio_button_field("outlineonly", "Outline only", fillStrokeMode == 1)) fillStrokeMode = 1;
-    if(t.gui.radio_button_field("filloutline", "Fill and Outline", fillStrokeMode == 2)) fillStrokeMode = 2;
+    text_label_centered(t.gui, "Draw Ellipse");
+    radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
+        {"Fill only", 0},
+        {"Outline only", 1},
+        {"Fill and Outline", 2}
+    });
     if(fillStrokeMode == 1 || fillStrokeMode == 2)
         toolConfig.relative_width_gui(drawP, "Outline Size");
     t.gui.pop_id();
@@ -85,10 +93,9 @@ void EllipseDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedC
         objInfoBeingEdited = nullptr;
 }
 
-bool EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
+void EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {

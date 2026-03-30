@@ -8,6 +8,9 @@
 #include "Helpers/MathExtras.hpp"
 #include <limits>
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.cpp"
+
 LineDrawTool::LineDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -17,12 +20,14 @@ DrawingProgramToolType LineDrawTool::get_type() {
 }
 
 void LineDrawTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
     Toolbar& t = drawP.world.main.toolbar;
     auto& toolConfig = drawP.world.main.toolConfig;
     t.gui.push_id("rect draw tool");
-    t.gui.text_label_centered("Draw Line");
+    text_label_centered(t.gui, "Draw Line");
     toolConfig.relative_width_gui(drawP, "Size");
-    t.gui.checkbox_field("hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
+    checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
     t.gui.pop_id();
 }
 
@@ -83,10 +88,9 @@ void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp
         objInfoBeingEdited = nullptr;
 }
 
-bool LineDrawTool::right_click_popup_gui(Vector2f popupPos) {
+void LineDrawTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {

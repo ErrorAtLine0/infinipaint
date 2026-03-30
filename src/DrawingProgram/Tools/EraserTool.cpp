@@ -5,6 +5,9 @@
 #include <include/core/SkBlendMode.h>
 #include <include/core/SkPathBuilder.h>
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -14,22 +17,24 @@ DrawingProgramToolType EraserTool::get_type() {
 }
 
 void EraserTool::gui_toolbox() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("eraser tool");
-    t.gui.text_label_centered("Eraser");
+    text_label_centered(t.gui, "Eraser");
     drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
-    t.gui.text_label("Erase from:");
-    if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
-        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
-    if(t.gui.radio_button_field("all visible", "All visible layers", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS))
-        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS;
+    text_label(t.gui, "Erase from:");
+    radio_button_selector(t.gui, "layer selector", &drawP.controls.layerSelector, {
+        {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
+        {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
+    });
     t.gui.pop_id();
 }
 
-bool EraserTool::right_click_popup_gui(Vector2f popupPos) {
+void EraserTool::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

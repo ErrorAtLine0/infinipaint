@@ -154,7 +154,7 @@ void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallba
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
 }
 
-bool EditTool::right_click_popup_gui(Vector2f popupPos) {
+void EditTool::right_click_popup_gui(Vector2f popupPos) {
     if(objInfoBeingEdited)
         return compEditTool->right_click_popup_gui(objInfoBeingEdited, popupPos);
     else

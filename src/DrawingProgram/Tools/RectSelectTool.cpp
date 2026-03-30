@@ -7,6 +7,8 @@
 #include "Helpers/SCollision.hpp"
 #include "../../CoordSpaceHelper.hpp"
 
+#include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+
 RectSelectTool::RectSelectTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {
@@ -19,7 +21,7 @@ DrawingProgramToolType RectSelectTool::get_type() {
 void RectSelectTool::gui_toolbox() {
     auto& t = drawP.world.main.toolbar;
     t.gui.push_id("rectangle select tool");
-    t.gui.text_label_centered("Rectangle Select");
+    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Rectangle Select");
     drawP.selection.selection_gui();
     t.gui.pop_id();
 }
@@ -70,8 +72,8 @@ void RectSelectTool::input_mouse_motion_callback(const InputManager::MouseMotion
 void RectSelectTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
-bool RectSelectTool::right_click_popup_gui(Vector2f popupPos) {
-    return drawP.selection_action_menu(popupPos);
+void RectSelectTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
 }
 
 void RectSelectTool::switch_tool(DrawingProgramToolType newTool) {
