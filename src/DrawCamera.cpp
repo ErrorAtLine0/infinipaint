@@ -178,7 +178,7 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
 }
 
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
-    if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y() && w.main.toolbar.check_if_position_isnt_obstructed(wheel.mousePos)) {
+    if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y()) {
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
         WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
 

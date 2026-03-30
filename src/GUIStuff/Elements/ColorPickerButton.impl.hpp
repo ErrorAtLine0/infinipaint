@@ -1,12 +1,13 @@
 #include "ColorPickerButton.decl.hpp"
-#include "../ElementHelpers/ColorPickerHelpers.hpp"
+#include "../ElementHelpers/ColorPickerItemsHelpers.hpp"
 #include "../ElementHelpers/ButtonHelpers.hpp"
+#include "../ElementHelpers/LayoutHelpers.hpp"
 
 namespace GUIStuff {
 
 template <typename T> ColorPickerButton<T>::ColorPickerButton(GUIManager& gui): Element(gui) {}
 
-template <typename T> void ColorPickerButton<T>::layout(T* val, ColorPickerButtonData& d) {
+template <typename T> void ColorPickerButton<T>::layout(T* val, const ColorPickerButtonData& d) {
     this->data = d;
 
     GUIStuff::ElementHelpers::color_button(gui, "Color Picker Button", val, {
@@ -17,7 +18,7 @@ template <typename T> void ColorPickerButton<T>::layout(T* val, ColorPickerButto
         }
     });
     if(isOpen) {
-        top_to_bottom_window_popup_layout("Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data]() {
+        ElementHelpers::top_to_bottom_window_popup_layout(gui, "Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data]() {
             ElementHelpers::color_picker_items(gui, "c", val, {
                 .hasAlpha = data.hasAlpha,
                 .onEdit = data.onEdit

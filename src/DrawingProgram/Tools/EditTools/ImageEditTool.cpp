@@ -10,6 +10,9 @@
 #include "Eigen/Geometry"
 #include <fstream>
 
+#include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
@@ -42,30 +45,35 @@ bool ImageEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
     return true;
 }
 
-bool ImageEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+void ImageEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     ImageCanvasComponent& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool image");
-    t.gui.text_label_centered("File Properties");
+    text_label_centered(t.gui, "File Properties");
     auto resourceData = drawP.world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(a.d.imageID);
 
     if(resourceData) {
-        t.gui.text_label("Name: " + resourceData->name);
-        if(t.gui.text_button_wide("file download", "Download file")) {
-            #ifdef __EMSCRIPTEN__
-                emscripten_browser_file::download(
-                    resourceData->name,
-                    "application/octet-binary",
-                    *resourceData->data
-                );
-            #endif
-            t.open_file_selector("Download File", {{"Any File", "*"}}, [resourceData](const std::filesystem::path& p, const auto& e) {
-                SDL_SaveFile(p.c_str(), resourceData->data->c_str(), resourceData->data->size());
-            }, resourceData->name, true);
-        }
+        text_label(t.gui, "Name: " + resourceData->name);
+        text_button(t.gui, "file download", "Download file", {
+            .wide = true,
+            .onClick = [&] {
+                #ifdef __EMSCRIPTEN__
+                    emscripten_browser_file::download(
+                        resourceData->name,
+                        "application/octet-binary",
+                        *resourceData->data
+                    );
+                #endif
+                t.open_file_selector("Download File", {{"Any File", "*"}}, [resourceData](const std::filesystem::path& p, const auto& e) {
+                    SDL_SaveFile(p.c_str(), resourceData->data->c_str(), resourceData->data->size());
+                }, resourceData->name, true);
+            }
+        });
     }
     else
-        t.gui.text_label_centered("Loading resource...");
+        text_label_centered(t.gui, "Loading resource...");
     t.gui.pop_id();
-    return false;
 }

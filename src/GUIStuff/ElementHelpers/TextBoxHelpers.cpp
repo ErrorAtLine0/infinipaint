@@ -1,5 +1,4 @@
 #include "TextBoxHelpers.hpp"
-#include "../Elements/TextBox.impl.hpp"
 #include "LayoutHelpers.hpp"
 
 namespace GUIStuff { namespace ElementHelpers {
@@ -29,7 +28,7 @@ void input_color_component_255(GUIManager& gui, const char* id, float* val, cons
         return ss.str();
     };
 
-    gui.element<TextBox<std::string>>(id, d);
+    gui.element<TextBox<float>>(id, d);
 }
 
 void input_text(GUIManager& gui, const char* id, std::string* val, const TextBoxOptions& options) {

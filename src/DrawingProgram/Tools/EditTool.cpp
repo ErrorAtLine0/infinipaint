@@ -30,11 +30,8 @@ void EditTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
-    if(objInfoBeingEdited) {
-        bool editHappened = compEditTool->edit_gui(objInfoBeingEdited);
-        if(editHappened)
-            objInfoBeingEdited->obj->commit_update(drawP);
-    }
+    if(objInfoBeingEdited)
+        compEditTool->edit_gui(objInfoBeingEdited);
     else {
         t.gui.push_id("edit tool");
         text_label_centered(t.gui, "Edit");

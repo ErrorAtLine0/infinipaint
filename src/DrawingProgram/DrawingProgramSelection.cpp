@@ -23,26 +23,33 @@
     #include <EmscriptenHelpers/emscripten_browser_clipboard.h>
 #endif
 
+#include "../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+
 DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
 void DrawingProgramSelection::selection_gui() {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     auto& t = drawP.world.main.toolbar;
     t.gui.push_id("general selection gui");
-    t.gui.text_label("Select from:");
-    if(t.gui.radio_button_field("layer edited", "Layer being edited", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED))
-        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
-    if(t.gui.radio_button_field("all visible", "All visible layers", drawP.controls.layerSelector == DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS))
-        drawP.controls.layerSelector = DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS;
+    text_label(t.gui, "Select from:");
+    radio_button_selector(t.gui, "layer selector", &drawP.controls.layerSelector, {
+        {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
+        {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
+    });
     if(is_something_selected()) {
-        t.gui.left_to_right_line_layout([&]() {
-            if(t.gui.color_button_big("Stroke Color Button", &strokeColorChangeData.newColor, &strokeColorChangeData.newColor == t.colorRight)) {
-                if(strokeColorChangeData.newColor.w() == 0.0f)
-                    strokeColorChangeData.newColor.w() = 1.0f;
-                t.color_selector_right(&strokeColorChangeData.newColor == t.colorRight ? nullptr : &strokeColorChangeData.newColor);
-            }
-            t.gui.text_label("Stroke Color");
+        left_to_right_line_layout(t.gui, [&]() {
+            //if(t.gui.color_button_big("Stroke Color Button", &strokeColorChangeData.newColor, &strokeColorChangeData.newColor == t.colorRight)) {
+            //    if(strokeColorChangeData.newColor.w() == 0.0f)
+            //        strokeColorChangeData.newColor.w() = 1.0f;
+            //    t.color_selector_right(&strokeColorChangeData.newColor == t.colorRight ? nullptr : &strokeColorChangeData.newColor);
+            //}
+            text_label(t.gui, "Stroke Color");
         });
         update_selection_stroke_color();
     }

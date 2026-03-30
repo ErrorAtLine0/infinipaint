@@ -999,7 +999,6 @@ void Toolbar::update_notification_gui() {
 void Toolbar::grid_menu(bool justOpened) {
     if(main.world->gridMan.grids) {
         gui.push_id("grid menu");
-        Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT GRID MENU");
         //CLAY(localId, {
         //    .layout = {
         //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
@@ -1763,7 +1762,7 @@ void Toolbar::options_menu() {
                 color_picker_button_field(gui, "canvasColor", "Canvas Color", newColorToSet.get(), {
                     .hasAlpha = false,
                     .onEdit = [&, newColorToSet] {
-                        main.world->canvasTheme.set_back_color(convert_vec3<Vector3f>(newColorToSet));
+                        main.world->canvasTheme.set_back_color(convert_vec3<Vector3f>(*newColorToSet));
                     }
                 });
                 text_button_wide("done", "Done", [&] {
@@ -2211,7 +2210,6 @@ void Toolbar::file_picker_gui_done() {
 }
 
 void Toolbar::file_picker_gui() {
-    bool isDoneByDoubleClick = false;
     center_obstructing_window_gui("file picker gui window", CLAY_SIZING_FIXED(700), CLAY_SIZING_FIXED(500), [&] {
         text_label_centered(gui, filePicker.filePickerWindowName);
         left_to_right_line_layout(gui, [&]() {

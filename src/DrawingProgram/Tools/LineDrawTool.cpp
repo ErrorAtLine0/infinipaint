@@ -9,7 +9,7 @@
 #include <limits>
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
-#include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.cpp"
+#include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 
 LineDrawTool::LineDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)

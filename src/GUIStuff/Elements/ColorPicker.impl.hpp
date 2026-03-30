@@ -4,9 +4,11 @@
 
 namespace GUIStuff {
 
+template <typename T> ColorPicker<T>::ColorPicker(GUIManager& gui): Element(gui) {}
+
 template <typename T> void ColorPicker<T>::layout(T* data, bool selectAlpha, const std::function<void()>& onChange) {
     this->data = data;
-    savedHsv = rgb_to_hsv<T>(*data);
+    savedHsv = rgb_to_hsv<Vector3f, T>(*data);
     this->selectAlpha = selectAlpha;
     this->onChange = onChange;
 
@@ -29,7 +31,7 @@ template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInp
     canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f), skiaAA);
 
     SkPaint svSelectionAreaPaint;
-    svSelectionAreaPaint.setShader(get_sv_selection_shader(savedHsv.x() / 360.0f));
+    svSelectionAreaPaint.setShader(ColorPickerShaders::get_sv_selection_shader(savedHsv.x() / 360.0f));
     canvas->drawPaint(svSelectionAreaPaint);
 
     SkPaint selectionLinePaint({1.0f, 1.0f, 1.0f, 1.0f});
@@ -50,7 +52,7 @@ template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInp
     canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f), skiaAA);
 
     SkPaint hueBarPaint;
-    hueBarPaint.setShader(get_hue_shader());
+    hueBarPaint.setShader(ColorPickerShaders::get_hue_shader());
     canvas->drawPaint(hueBarPaint);
     canvas->drawLine(0.0f, 1.0f - normalizedHue, 1.0f, 1.0f - normalizedHue, selectionLinePaint);
 
@@ -64,7 +66,7 @@ template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInp
 
     SkPaint alphaBarPaint;
     if(selectAlpha)
-        alphaBarPaint.setShader(get_alpha_bar_shader({(*data)[0], (*data)[1], (*data)[2]}, alphaBarDim.x()));
+        alphaBarPaint.setShader(ColorPickerShaders::get_alpha_bar_shader({(*data)[0], (*data)[1], (*data)[2]}, alphaBarDim.x()));
     else
         alphaBarPaint.setColor4f(SkColor4f{(*data)[0], (*data)[1], (*data)[2], 1.0f});
     canvas->drawPaint(alphaBarPaint);
@@ -103,7 +105,7 @@ template <typename T> bool ColorPicker<T>::input_mouse_button_callback(const Inp
 
 template <typename T> bool ColorPicker<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
     update_color_picker_pos(motion.pos);
-    return Element::input_mouse_button_callback(motion, mouseHovering);
+    return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2f& p) {
@@ -111,6 +113,8 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
         gui.set_post_callback_func([&, p]() {
             auto& bb = boundingBox.value();
             switch(held) {
+                case HeldBar::NONE:
+                    break;
                 case HeldBar::SV_HELD: {
                     float svSelectionAreaSize = bb.width() - (BAR_GAP + BAR_WIDTH);
                     Vector2f newSv = cwise_vec_clamp<Vector2f>((p - bb.min) / svSelectionAreaSize, Vector2f{0.0f, 0.0f}, Vector2f{1.0f, 1.0f});

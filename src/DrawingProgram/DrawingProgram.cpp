@@ -59,7 +59,7 @@ void DrawingProgram::on_tab_out() {
 }
 
 void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
-    if(world.main.toolbar.check_if_position_isnt_obstructed(drop.pos) && std::filesystem::is_regular_file(drop.data)) {
+    if(std::filesystem::is_regular_file(drop.data)) {
         #ifdef __EMSCRIPTEN_
             add_file_to_canvas_by_path(drop.data, world.main.input.mouse.pos, true);
         #else
@@ -69,7 +69,7 @@ void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackAr
 }
 
 void DrawingProgram::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
-    if(world.main.toolbar.check_if_position_isnt_obstructed(drop.pos) && is_valid_http_url(drop.data)) {
+    if(is_valid_http_url(drop.data)) {
         CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
         ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
         newContainer->coords = world.drawData.cam.c;
@@ -88,8 +88,7 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
         drawTool->input_mouse_button_on_canvas_callback(b);
     };
 
-    bool isHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(button.pos);
-    if(isHoveringOverCanvas && button.down) {
+    if(button.down) {
         if(button.button == InputManager::MouseButton::RIGHT) {
             if(!controls.middleClickHeld && !controls.leftClickHeld) {
                 if(world.main.toolbar.rightClickPopupLocation)
@@ -457,7 +456,7 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    controls.cursorHoveringOverCanvas = world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
+    controls.cursorHoveringOverCanvas = true; //world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
 
     if(addFileInNextFrame) {
         add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);

@@ -2,6 +2,8 @@
 
 namespace GUIStuff {
 
+sk_sp<SkRuntimeEffect> ColorRectangleDisplay::alphaBackgroundEffect;
+
 ColorRectangleDisplay::ColorRectangleDisplay(GUIManager& gui): Element(gui) {}
 
 void ColorRectangleDisplay::layout(const std::function<SkColor4f()>& colorFunc) {

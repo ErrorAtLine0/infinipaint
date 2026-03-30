@@ -4,25 +4,26 @@
 #include "../../../MainProgram.hpp"
 #include "../EditTool.hpp"
 
+#include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+
 BrushEditTool::BrushEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-bool BrushEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
-    auto& a = static_cast<BrushStrokeCanvasComponent&>(comp->obj->get_comp());
+void BrushEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool brush");
-    t.gui.text_label_centered("Edit Brush Stroke");
-    t.gui.left_to_right_line_layout([&]() {
-        if(t.gui.color_button_big("Outline Color", &a.d.color, &a.d.color == t.colorRight))
-            t.color_selector_right(&a.d.color == t.colorRight ? nullptr : &a.d.color);
-        t.gui.text_label("Outline Color");
+    text_label_centered(t.gui, "Edit Brush Stroke");
+    left_to_right_line_layout(t.gui, [&]() {
+        //if(t.gui.color_button_big("Outline Color", &a.d.color, &a.d.color == t.colorRight))
+        //    t.color_selector_right(&a.d.color == t.colorRight ? nullptr : &a.d.color);
+        text_label(t.gui, "Outline Color");
     });
     t.gui.pop_id();
-
-    bool editHappened = a.d.color != oldColor;
-    oldColor = a.d.color;
-    return editHappened;
 }
 
 void BrushEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {

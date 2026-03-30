@@ -15,7 +15,7 @@ void text_button(GUIManager& gui, const char* id, std::string_view text, const T
             .childAlignment = {.x = options.centered ? CLAY_ALIGN_X_CENTER : CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
         }
     }) {
-        gui.element<SelectableButton>(id, options);
+        gui.element<SelectableButton>(id, d);
     }
 }
 
@@ -30,7 +30,7 @@ void text_button_sized(GUIManager& gui, const char* id, std::string_view text, C
             .childAlignment = {.x = options.centered ? CLAY_ALIGN_X_CENTER : CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
         }
     }) {
-        gui.element<SelectableButton>(id, options);
+        gui.element<SelectableButton>(id, d);
     }
 }
 
@@ -40,7 +40,7 @@ void svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath
         gui.element<SVGIcon>("icon", svgPath, p.isSelected || p.isHovering || p.isHeld);
     };
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(options.size), .height = CLAY_SIZING_FIXED(options.size) } } }) {
-        gui.element<SelectableButton>(id, options);
+        gui.element<SelectableButton>(id, d);
     }
 }
 

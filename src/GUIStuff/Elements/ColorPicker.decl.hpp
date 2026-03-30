@@ -77,15 +77,6 @@ template <typename T> class ColorPicker : public Element {
         static constexpr float BAR_WIDTH = 30.0;
         static constexpr float BAR_GAP = 5.0;
 
-
-        static sk_sp<SkShader> hueBarShader;
-        static sk_sp<SkRuntimeEffect> svSelectionAreaEffect;
-        static sk_sp<SkRuntimeEffect> alphaBarEffect;
-
-        static sk_sp<SkShader> get_hue_shader();
-        static sk_sp<SkShader> get_sv_selection_shader(float hue);
-        static sk_sp<SkShader> get_alpha_bar_shader(const Vector3f& mainColor, float horizontalResolution);
-
         T* data;
         Vector3f savedHsv; // We save the HSV so that conversion doesnt ruin the UI
         std::function<void()> onChange;

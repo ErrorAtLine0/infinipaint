@@ -135,7 +135,7 @@ void GridModifyTool::gui_toolbox() {
         };
         left_to_right_line_layout(t.gui, [&]() {
             text_label(t.gui, "Type");
-            t.gui.element<DropDown<size_t>>("filepicker select type", &typeSelected, listOfGridTypes, 200.0f);
+            t.gui.element<DropDown<size_t>>("filepicker select type", &typeSelected, listOfGridTypes);
         });
         g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
         uint32_t sDiv = g.subdivisions;

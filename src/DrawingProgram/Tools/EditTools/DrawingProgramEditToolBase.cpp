@@ -5,10 +5,9 @@ DrawingProgramEditToolBase::DrawingProgramEditToolBase(DrawingProgram& initDrawP
     drawP(initDrawP)
 {}
 
-bool DrawingProgramEditToolBase::right_click_popup_gui(CanvasComponentContainer::ObjInfo* comp, Vector2f popupPos) {
+void DrawingProgramEditToolBase::right_click_popup_gui(CanvasComponentContainer::ObjInfo* comp, Vector2f popupPos) {
     Toolbar& t = drawP.world.main.toolbar;
     t.paint_popup(popupPos);
-    return true;
 }
 
 void DrawingProgramEditToolBase::input_key_callback(CanvasComponentContainer::ObjInfo* comp, const InputManager::KeyCallbackArgs& key) {}

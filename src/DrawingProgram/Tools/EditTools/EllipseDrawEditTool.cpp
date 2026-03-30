@@ -7,39 +7,45 @@
 #include <memory>
 #include "../EditTool.hpp"
 
+#include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "../../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+#include "../../../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
+
 EllipseDrawEditTool::EllipseDrawEditTool(DrawingProgram& initDrawP):
     DrawingProgramEditToolBase(initDrawP)
 {}
 
-bool EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+void EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
 
     Toolbar& t = drawP.world.main.toolbar;
     t.gui.push_id("edit tool ellipse");
-    t.gui.text_label_centered("Edit Ellipse");
-    if(t.gui.radio_button_field("fillonly", "Fill only", a.d.fillStrokeMode == 0)) a.d.fillStrokeMode = 0;
-    if(t.gui.radio_button_field("outlineonly", "Outline only", a.d.fillStrokeMode == 1)) a.d.fillStrokeMode = 1;
-    if(t.gui.radio_button_field("filloutline", "Fill and Outline", a.d.fillStrokeMode == 2)) a.d.fillStrokeMode = 2;
+    text_label_centered(t.gui, "Edit Ellipse");
+    radio_button_selector(t.gui, "Fill selector", &a.d.fillStrokeMode, {
+        {"Fill only", 0},
+        {"Outline only", 1},
+        {"Fill and outline", 2}
+    });
     if(a.d.fillStrokeMode == 0 || a.d.fillStrokeMode == 2) {
-        t.gui.left_to_right_line_layout([&]() {
-            if(t.gui.color_button_big("Fill Color", &a.d.fillColor, &a.d.fillColor == t.colorRight))
-                t.color_selector_right(&a.d.fillColor == t.colorRight ? nullptr : &a.d.fillColor);
-            t.gui.text_label("Fill Color");
+        left_to_right_line_layout(t.gui, [&] {
+            //if(t.gui.color_button_big("Fill Color", &a.d.fillColor, &a.d.fillColor == t.colorRight))
+            //    t.color_selector_right(&a.d.fillColor == t.colorRight ? nullptr : &a.d.fillColor);
+            text_label(t.gui, "Fill Color");
         });
     }
     if(a.d.fillStrokeMode == 1 || a.d.fillStrokeMode == 2) {
-        t.gui.slider_scalar_field("relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f);
-        t.gui.left_to_right_line_layout([&]() {
-            if(t.gui.color_button_big("Outline Color", &a.d.strokeColor, &a.d.strokeColor == t.colorRight))
-                t.color_selector_right(&a.d.strokeColor == t.colorRight ? nullptr : &a.d.strokeColor);
-            t.gui.text_label("Outline Color");
+        slider_scalar_field(t.gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f);
+        left_to_right_line_layout(t.gui, [&] {
+            //if(t.gui.color_button_big("Outline Color", &a.d.strokeColor, &a.d.strokeColor == t.colorRight))
+            //    t.color_selector_right(&a.d.strokeColor == t.colorRight ? nullptr : &a.d.strokeColor);
+            text_label(t.gui, "Outline Color");
         });
     }
     t.gui.pop_id();
- 
-    bool editHappened = (!oldData.has_value()) || (a.d != oldData);
-    oldData = a.d;
-    return editHappened;   
 }
 
 void EllipseDrawEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {

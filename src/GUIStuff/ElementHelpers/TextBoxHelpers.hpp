@@ -1,6 +1,6 @@
 #pragma once
 #include "../GUIManager.hpp"
-#include "../Elements/TextBox.decl.hpp"
+#include "../Elements/TextBox.hpp"
 #include "TextLabelHelpers.hpp"
 #include "LayoutHelpers.hpp"
 
@@ -83,10 +83,10 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
         std::stringstream ss;
         if(std::is_floating_point<T>()) {
             ss.precision(decimalPrecision);
-            ss << std::fixed << *a;
+            ss << std::fixed << a;
         }
         else
-            ss << *a;
+            ss << a;
         return ss.str();
     };
 
@@ -95,7 +95,7 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
 
 template <typename TContainer, typename T> void input_scalars_field(GUIManager& gui, const char* id, std::string_view name, TContainer* val, size_t elemCount, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
     gui.push_id(id);
-    left_to_right_line_layout([&]() {
+    left_to_right_line_layout(gui, [&]() {
         text_label(gui, name);
         for(size_t i = 0; i < elemCount; i++) {
             gui.push_id(i);
@@ -107,7 +107,7 @@ template <typename TContainer, typename T> void input_scalars_field(GUIManager& 
 }
 
 template <typename T> void input_scalar_field(GUIManager& gui, const char* id, std::string_view name, T* val, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
-    left_to_right_line_layout([&]() {
+    left_to_right_line_layout(gui, [&]() {
         text_label(gui, name);
         input_scalar<T>(gui, id, val, minVal, maxVal, options);
     });
@@ -125,7 +125,12 @@ template <typename T> void input_color_hex(GUIManager& gui, const char* id, T* v
     TextBoxData<T> d = textbox_options_to_data<T>(options);
     d.textInputProps = textInputProps;
     d.fromStr = [hasAlpha = options.hasAlpha](const std::string& a) {
-        T def = {0.0f, 0.0f, 0.0f, 1.0f};
+        T def;
+        def[0] = 0.0f;
+        def[1] = 0.0f;
+        def[2] = 0.0f;
+        if(hasAlpha)
+            def[3] = 1.0f;
         unsigned startIndex = 0;
         if(a.empty())
             return def;

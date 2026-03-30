@@ -3,12 +3,14 @@
 
 namespace GUIStuff {
 
+template <typename T> TextBox<T>::TextBox(GUIManager& gui): Element(gui) {}
+
 template <typename T> void TextBox<T>::layout(const TextBoxData<T>& userInfo) {
     auto& io = *gui.io;
     this->userInfo = userInfo;
     textbox->onUserTextEdit = [&] {
         if(userInfo.immutable)
-            cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, toStr(*userInfo.data));
+            cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
         else {
             if(update_data() && userInfo.onEdit)
                 gui.set_post_callback_func(userInfo.onEdit);
@@ -79,7 +81,7 @@ template <typename T> bool TextBox<T>::input_mouse_button_callback(const InputMa
                 gui.io->input->remove_rich_text_box_input(textbox);
                 if(update_data())
                     gui.set_post_callback_func(userInfo.onEdit);
-                update_textbox(io);
+                init_textbox(*gui.io);
                 isSelected = false;
             }
         }
@@ -115,7 +117,7 @@ template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
     cur = std::make_shared<RichText::TextBox::Cursor>();
     rect = std::make_shared<SCollision::AABB<float>>();
 
-    cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, toStr(*userInfo.data));
+    cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
 }
 
 template <typename T> bool TextBox<T>::update_data() {
