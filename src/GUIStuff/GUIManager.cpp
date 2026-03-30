@@ -237,7 +237,7 @@ void GUIManager::set_to_layout() {
 void GUIManager::layout_if_necessary() {
     if(setToLayout) {
         layout();
-        setToLayout = false;
+        setToLayout = true;
     }
 }
 

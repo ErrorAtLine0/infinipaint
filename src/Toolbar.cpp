@@ -667,6 +667,7 @@ void Toolbar::top_toolbar() {
             bool layerMenuPopUpJustOpen = false;
             auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
                 svg_icon_button(gui, id, svgPath, {
+                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                     .isSelected = isSelected,
                     .onClick = onClick
                 });
@@ -679,6 +680,16 @@ void Toolbar::top_toolbar() {
                     menuPopUpJustOpen = true;
                 }
             });
+
+
+            // Temporary gap between buttons while tab list is being fixed
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                }
+            }) { }
+
+
             //std::vector<std::pair<std::string, std::string>> tabNames;
             //for(size_t i = 0; i < main.worlds.size(); i++) {
             //    auto& w = main.worlds[i];

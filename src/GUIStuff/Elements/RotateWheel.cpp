@@ -20,6 +20,7 @@ void RotateWheel::layout(double* rotateAngle, const std::function<void()>& onCha
         .layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },
+        .aspectRatio = {1.0f},
         .custom = { .customData = this }
     }) {
     }
