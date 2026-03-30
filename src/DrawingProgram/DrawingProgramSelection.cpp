@@ -36,24 +36,24 @@ void DrawingProgramSelection::selection_gui() {
     using namespace ElementHelpers;
 
     auto& t = drawP.world.main.toolbar;
-    t.gui.push_id("general selection gui");
-    text_label(t.gui, "Select from:");
-    radio_button_selector(t.gui, "layer selector", &drawP.controls.layerSelector, {
-        {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
-        {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
-    });
-    if(is_something_selected()) {
-        left_to_right_line_layout(t.gui, [&]() {
-            //if(t.gui.color_button_big("Stroke Color Button", &strokeColorChangeData.newColor, &strokeColorChangeData.newColor == t.colorRight)) {
-            //    if(strokeColorChangeData.newColor.w() == 0.0f)
-            //        strokeColorChangeData.newColor.w() = 1.0f;
-            //    t.color_selector_right(&strokeColorChangeData.newColor == t.colorRight ? nullptr : &strokeColorChangeData.newColor);
-            //}
-            text_label(t.gui, "Stroke Color");
+    t.gui.new_id("general selection gui", [&] {
+        text_label(t.gui, "Select from:");
+        radio_button_selector(t.gui, "layer selector", &drawP.controls.layerSelector, {
+            {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
+            {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
         });
-        update_selection_stroke_color();
-    }
-    t.gui.pop_id();
+        if(is_something_selected()) {
+            left_to_right_line_layout(t.gui, [&]() {
+                //if(t.gui.color_button_big("Stroke Color Button", &strokeColorChangeData.newColor, &strokeColorChangeData.newColor == t.colorRight)) {
+                //    if(strokeColorChangeData.newColor.w() == 0.0f)
+                //        strokeColorChangeData.newColor.w() = 1.0f;
+                //    t.color_selector_right(&strokeColorChangeData.newColor == t.colorRight ? nullptr : &strokeColorChangeData.newColor);
+                //}
+                text_label(t.gui, "Stroke Color");
+            });
+            update_selection_stroke_color();
+        }
+    });
 }
 
 void DrawingProgramSelection::update_selection_stroke_color() {

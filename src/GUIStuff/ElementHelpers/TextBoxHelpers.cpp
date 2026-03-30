@@ -13,6 +13,7 @@ void input_color_component_255(GUIManager& gui, const char* id, float* val, cons
     };
 
     TextBoxData<float> d = textbox_options_to_data<float>(options);
+    d.data = val;
     d.textInputProps = textInputProps;
     d.fromStr = [](const std::string& str) {
         int roundTo255;
@@ -41,6 +42,7 @@ void input_text(GUIManager& gui, const char* id, std::string* val, const TextBox
     };
 
     TextBoxData<std::string> d = textbox_options_to_data<std::string>(options);
+    d.data = val;
     d.textInputProps = textInputProps;
     d.fromStr = [](const std::string& a) {
         return a;
@@ -69,6 +71,7 @@ void input_scalar(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal,
     };
 
     TextBoxData<uint8_t> d = textbox_options_to_data<uint8_t>(options);
+    d.data = val;
     d.textInputProps = textInputProps;
     d.fromStr = [minVal, maxVal](const std::string& a) {
         if(a.empty())
@@ -98,6 +101,7 @@ void input_path(GUIManager& gui, const char* id, std::filesystem::path* val, con
     };
 
     TextBoxData<std::filesystem::path> d = textbox_options_to_data<std::filesystem::path>(options);
+    d.data = val;
     d.textInputProps = textInputProps;
     d.fromStr = [fileTypeRestriction = options.fileTypeRestriction](const std::string& a) {
         std::filesystem::path toRet = std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(a.c_str()), a.length()));

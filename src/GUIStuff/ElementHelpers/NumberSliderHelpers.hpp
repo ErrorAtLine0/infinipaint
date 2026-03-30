@@ -5,16 +5,16 @@
 
 namespace GUIStuff { namespace ElementHelpers {
     template <typename T> void slider_scalar_field(GUIManager& gui, const char* id, std::string_view name, T* val, T min, T max, TextBoxScalarOptions options = {}) {
-        gui.push_id(id);
-        options.onEdit = [&, oE = options.onEdit] {
-            oE();
-            gui.set_to_layout();
-        };
-        left_to_right_line_layout(gui, [&]() {
-            text_label(gui, name);
-            input_scalar(gui, "textbox", val, min, max, options);
+        gui.new_id(id, [&] {
+            options.onEdit = [&, oE = options.onEdit] {
+                oE();
+                gui.set_to_layout();
+            };
+            left_to_right_line_layout(gui, [&]() {
+                text_label(gui, name);
+                input_scalar(gui, "textbox", val, min, max, options);
+            });
+            gui.element<NumberSlider<T>>("slider", val, min, max, options.onEdit);
         });
-        gui.element<NumberSlider<T>>("slider", val, min, max, options.onEdit);
-        gui.pop_id();
     }
 }}

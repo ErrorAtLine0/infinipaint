@@ -18,9 +18,9 @@ DrawingProgramToolType ZoomCanvasTool::get_type() {
 
 void ZoomCanvasTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("Zoom canvas tool");
-    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Zoom tool");
-    t.gui.pop_id();
+    t.gui.new_id("Zoom canvas tool", [&] {
+        GUIStuff::ElementHelpers::text_label_centered(t.gui, "Zoom tool");
+    });
 }
 
 void ZoomCanvasTool::right_click_popup_gui(Vector2f popupPos) {

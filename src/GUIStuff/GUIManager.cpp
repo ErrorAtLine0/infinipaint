@@ -35,6 +35,7 @@ GUIManager::GUIManager()
     clayArena = Clay_CreateArenaWithCapacityAndMemory(Clay_MinMemorySize(), malloc(Clay_MinMemorySize()));
     clayInstance = Clay_Initialize(clayArena, Clay_Dimensions(1.0f, 1.0f), (Clay_ErrorHandler)clay_error_handler);
     Clay_SetMeasureTextFunction(clay_skia_measure_text, this);
+    setToLayout = true;
 }
 
 Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData) {
@@ -289,6 +290,18 @@ void GUIManager::single_layout_run() {
 
 void GUIManager::clay_error_handler(Clay_ErrorData errorData) {
     Logger::get().log("INFO", "[Clay Error] " + std::string(errorData.errorText.chars));
+}
+
+void GUIManager::new_id(const char* id, const std::function<void()>& f) {
+    push_id(id);
+    f();
+    pop_id();
+}
+
+void GUIManager::new_id(int64_t id, const std::function<void()>& f) {
+    push_id(id);
+    f();
+    pop_id();
 }
 
 void GUIManager::push_id(int64_t id) {

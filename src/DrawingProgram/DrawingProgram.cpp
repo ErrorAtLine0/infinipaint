@@ -329,49 +329,50 @@ void DrawingProgram::toolbar_gui() {
     using namespace ElementHelpers;
 
     Toolbar& t = world.main.toolbar;
-    t.gui.push_id("Drawing Program Toolbar GUI");
-    t.gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] {
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
-                .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
-                .childGap = static_cast<uint16_t>(t.io->theme->childGap1 / 2), 
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
-        }) {
+    t.gui.new_id("Drawing Program Toolbar GUI", [&] {
+        t.gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] {
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
+                    .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
+                    .childGap = static_cast<uint16_t>(t.io->theme->childGap1 / 2), 
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
+            }) {
 
-            auto tool_button = [&](const char* id, const std::string& svgPath, DrawingProgramToolType toolType) {
-                svg_icon_button(t.gui, id, svgPath, {
-                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                    .isSelected = drawTool->get_type() == toolType,
-                    .onClick = [&, toolType] {
-                        switch_to_tool(toolType);
-                    }
+                auto tool_button = [&](const char* id, const std::string& svgPath, DrawingProgramToolType toolType) {
+                    svg_icon_button(t.gui, id, svgPath, {
+                        .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                        .isSelected = drawTool->get_type() == toolType,
+                        .onClick = [&, toolType] {
+                            switch_to_tool(toolType);
+                        }
+                    });
+                };
+
+                tool_button("Brush Toolbar Button", "data/icons/brush.svg", DrawingProgramToolType::BRUSH);
+                tool_button("Eraser Toolbar Button", "data/icons/eraser.svg", DrawingProgramToolType::ERASER);
+                tool_button("Line Toolbar Button", "data/icons/line.svg", DrawingProgramToolType::LINE);
+                tool_button("Text Toolbar Button", "data/icons/text.svg", DrawingProgramToolType::TEXTBOX);
+                tool_button("Ellipse Toolbar Button", "data/icons/circle.svg", DrawingProgramToolType::ELLIPSE);
+                tool_button("Rect Toolbar Button", "data/icons/rectangle.svg", DrawingProgramToolType::RECTANGLE);
+                tool_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", DrawingProgramToolType::RECTSELECT);
+                tool_button("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", DrawingProgramToolType::LASSOSELECT);
+                tool_button("Edit Toolbar Button", "data/icons/cursor.svg", DrawingProgramToolType::EDIT);
+                tool_button("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", DrawingProgramToolType::EYEDROPPER);
+                tool_button("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", DrawingProgramToolType::ZOOM);
+                tool_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", DrawingProgramToolType::PAN);
+
+                std::shared_ptr<double> oldRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
+                t.gui.element<RotateWheel>("Canvas Rotate Wheel", &world.drawData.cam.c.rotation, [&, oldRotationAngle] {
+                    world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), world.drawData.cam.c.rotation - *oldRotationAngle);
+                    *oldRotationAngle = world.drawData.cam.c.rotation;
                 });
-            };
-
-            tool_button("Brush Toolbar Button", "data/icons/brush.svg", DrawingProgramToolType::BRUSH);
-            tool_button("Eraser Toolbar Button", "data/icons/eraser.svg", DrawingProgramToolType::ERASER);
-            tool_button("Line Toolbar Button", "data/icons/line.svg", DrawingProgramToolType::LINE);
-            tool_button("Text Toolbar Button", "data/icons/text.svg", DrawingProgramToolType::TEXTBOX);
-            tool_button("Ellipse Toolbar Button", "data/icons/circle.svg", DrawingProgramToolType::ELLIPSE);
-            tool_button("Rect Toolbar Button", "data/icons/rectangle.svg", DrawingProgramToolType::RECTANGLE);
-            tool_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", DrawingProgramToolType::RECTSELECT);
-            tool_button("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", DrawingProgramToolType::LASSOSELECT);
-            tool_button("Edit Toolbar Button", "data/icons/cursor.svg", DrawingProgramToolType::EDIT);
-            tool_button("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", DrawingProgramToolType::EYEDROPPER);
-            tool_button("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", DrawingProgramToolType::ZOOM);
-            tool_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", DrawingProgramToolType::PAN);
-
-            std::shared_ptr<double> oldRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
-            t.gui.element<RotateWheel>("Canvas Rotate Wheel", &world.drawData.cam.c.rotation, [&, oldRotationAngle] {
-                world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), world.drawData.cam.c.rotation - *oldRotationAngle);
-                *oldRotationAngle = world.drawData.cam.c.rotation;
-            });
-        }
+            }
+        });
     });
 }
 
@@ -422,9 +423,9 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
 
 void DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = world.main.toolbar;
-    t.gui.push_id("Drawing Program right click GUI");
-    drawTool->right_click_popup_gui(popupPos);
-    t.gui.pop_id();
+    t.gui.new_id("Drawing Program right click GUI", [&] {
+        drawTool->right_click_popup_gui(popupPos);
+    });
 }
 
 void DrawingProgram::tool_options_gui() {

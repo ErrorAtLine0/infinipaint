@@ -25,11 +25,8 @@ void scroll_area_many_entries(GUIManager& gui, const char* id, const ScrollBarMa
                 }) { }
             }
 
-            for(size_t i = startPoint; i < endPoint; i++) {
-                gui.push_id(i);
-                options.elementContent(i);
-                gui.pop_id();
-            }
+            for(size_t i = startPoint; i < endPoint; i++)
+                gui.new_id(i, [&] { options.elementContent(i); });
 
             if(endPoint != options.entryCount) {
                 CLAY_AUTO_ID({

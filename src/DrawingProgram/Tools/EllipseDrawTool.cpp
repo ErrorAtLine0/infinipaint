@@ -27,16 +27,16 @@ void EllipseDrawTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.ellipseDraw.fillStrokeMode;
-    t.gui.push_id("ellipse draw tool");
-    text_label_centered(t.gui, "Draw Ellipse");
-    radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
-        {"Fill only", 0},
-        {"Outline only", 1},
-        {"Fill and Outline", 2}
+    t.gui.new_id("ellipse draw tool", [&] {
+        text_label_centered(t.gui, "Draw Ellipse");
+        radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
+            {"Fill only", 0},
+            {"Outline only", 1},
+            {"Fill and Outline", 2}
+        });
+        if(fillStrokeMode == 1 || fillStrokeMode == 2)
+            toolConfig.relative_width_gui(drawP, "Outline Size");
     });
-    if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        toolConfig.relative_width_gui(drawP, "Outline Size");
-    t.gui.pop_id();
 }
 
 void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

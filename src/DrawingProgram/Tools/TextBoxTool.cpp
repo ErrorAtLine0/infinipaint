@@ -23,9 +23,9 @@ DrawingProgramToolType TextBoxTool::get_type() {
 
 void TextBoxTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("textbox tool");
-    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Zoom tool");
-    t.gui.pop_id();
+    t.gui.new_id("textbox tool", [&] {
+        GUIStuff::ElementHelpers::text_label_centered(t.gui, "Zoom tool");
+    });
 }
 
 void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

@@ -67,6 +67,7 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
         textInputProps.androidInputType |= InputManager::AndroidInputType::ANDROIDTEXT_TYPE_NUMBER_FLAG_DECIMAL;
 
     TextBoxData<T> d = textbox_options_to_data<T>(options);
+    d.data = val;
     d.textInputProps = textInputProps;
     d.fromStr = [minVal, maxVal](const std::string& a) {
         if(a.empty())
@@ -94,16 +95,13 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
 }
 
 template <typename TContainer, typename T> void input_scalars_field(GUIManager& gui, const char* id, std::string_view name, TContainer* val, size_t elemCount, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
-    gui.push_id(id);
-    left_to_right_line_layout(gui, [&]() {
-        text_label(gui, name);
-        for(size_t i = 0; i < elemCount; i++) {
-            gui.push_id(i);
-            input_scalar<T>(gui, "field", &(*val)[i], minVal, maxVal, options);
-            gui.pop_id();
-        }
+    gui.new_id(id, [&] {
+        left_to_right_line_layout(gui, [&]() {
+            text_label(gui, name);
+            for(size_t i = 0; i < elemCount; i++)
+                gui.new_id(i, [&] { input_scalar<T>(gui, "field", &(*val)[i], minVal, maxVal, options); });
+        });
     });
-    gui.pop_id();
 }
 
 template <typename T> void input_scalar_field(GUIManager& gui, const char* id, std::string_view name, T* val, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
@@ -123,6 +121,7 @@ template <typename T> void input_color_hex(GUIManager& gui, const char* id, T* v
     };
 
     TextBoxData<T> d = textbox_options_to_data<T>(options);
+    d.data = val;
     d.textInputProps = textInputProps;
     d.fromStr = [hasAlpha = options.hasAlpha](const std::string& a) {
         T def;

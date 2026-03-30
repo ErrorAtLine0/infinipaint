@@ -172,11 +172,11 @@ void BrushTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("brush tool");
-    text_label_centered(t.gui, "Brush");
-    checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
-    drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
-    t.gui.pop_id();
+    t.gui.new_id("brush tool", [&] {
+        text_label_centered(t.gui, "Brush");
+        checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
+        drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
+    });
 }
 
 void BrushTool::right_click_popup_gui(Vector2f popupPos) {

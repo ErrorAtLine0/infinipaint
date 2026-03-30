@@ -8,14 +8,6 @@ template <typename T> TextBox<T>::TextBox(GUIManager& gui): Element(gui) {}
 template <typename T> void TextBox<T>::layout(const TextBoxData<T>& userInfo) {
     auto& io = *gui.io;
     this->userInfo = userInfo;
-    textbox->onUserTextEdit = [&] {
-        if(userInfo.immutable)
-            cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
-        else {
-            if(update_data() && userInfo.onEdit)
-                gui.set_post_callback_func(userInfo.onEdit);
-        }
-    };
     init_textbox(io);
     CLAY_AUTO_ID({
         .layout = {
@@ -118,6 +110,14 @@ template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
     rect = std::make_shared<SCollision::AABB<float>>();
 
     cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
+    textbox->onUserTextEdit = [&] {
+        if(userInfo.immutable)
+            cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
+        else {
+            if(update_data() && userInfo.onEdit)
+                gui.set_post_callback_func(userInfo.onEdit);
+        }
+    };
 }
 
 template <typename T> bool TextBox<T>::update_data() {

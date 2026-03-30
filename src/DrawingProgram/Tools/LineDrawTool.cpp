@@ -24,11 +24,11 @@ void LineDrawTool::gui_toolbox() {
     using namespace ElementHelpers;
     Toolbar& t = drawP.world.main.toolbar;
     auto& toolConfig = drawP.world.main.toolConfig;
-    t.gui.push_id("rect draw tool");
-    text_label_centered(t.gui, "Draw Line");
-    toolConfig.relative_width_gui(drawP, "Size");
-    checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
-    t.gui.pop_id();
+    t.gui.new_id("rect draw tool", [&] {
+        text_label_centered(t.gui, "Draw Line");
+        toolConfig.relative_width_gui(drawP, "Size");
+        checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
+    });
 }
 
 void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

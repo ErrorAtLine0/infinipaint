@@ -32,14 +32,14 @@ void EyeDropperTool::gui_toolbox() {
 
     Toolbar& t = drawP.world.main.toolbar;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
-    t.gui.push_id("Color select tool");
-    text_label_centered(t.gui, "Color Select");
+    t.gui.new_id("Color select tool", [&] {
+        text_label_centered(t.gui, "Color Select");
 
-    radio_button_selector<bool>(t.gui, "Stroke type", &selectingStrokeColor, {
-        {"Stroke Color", true},
-        {"Fill Color", false}
+        radio_button_selector<bool>(t.gui, "Stroke type", &selectingStrokeColor, {
+            {"Stroke Color", true},
+            {"Fill Color", false}
+        });
     });
-    t.gui.pop_id();
 }
 
 void EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {

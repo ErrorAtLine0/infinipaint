@@ -26,17 +26,17 @@ void RectDrawTool::gui_toolbox() {
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
     auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
-    t.gui.push_id("rect draw tool");
-    text_label_centered(t.gui, "Draw Rectangle");
-    slider_scalar_field(t.gui, "relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
-    radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
-        {"Fill only", 0},
-        {"Outline only", 1},
-        {"Fill and Outline", 2}
+    t.gui.new_id("rect draw tool", [&] {
+        text_label_centered(t.gui, "Draw Rectangle");
+        slider_scalar_field(t.gui, "relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
+        radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
+            {"Fill only", 0},
+            {"Outline only", 1},
+            {"Fill and Outline", 2}
+        });
+        if(fillStrokeMode == 1 || fillStrokeMode == 2)
+            toolConfig.relative_width_gui(drawP, "Outline Size");
     });
-    if(fillStrokeMode == 1 || fillStrokeMode == 2)
-        toolConfig.relative_width_gui(drawP, "Outline Size");
-    t.gui.pop_id();
 }
 
 void RectDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

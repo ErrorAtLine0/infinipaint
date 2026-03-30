@@ -118,51 +118,51 @@ void GridModifyTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("Grid modify tool");
-    text_label_centered(t.gui, "Edit Grid");
-    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
-    if(gLock) {
-        WorldGrid& g = *gLock;
-        input_text_field(t.gui, "grid name", "Name", &g.name);
-        checkbox_boolean_field(t.gui, "Visible", "Visible", &g.visible);
-        checkbox_boolean_field(t.gui, "Display in Front", "Display in front of canvas", &g.displayInFront);
-        size_t typeSelected = static_cast<size_t>(g.gridType);
-        std::vector<std::string> listOfGridTypes = {
-            "Circle Points",
-            "Square Points",
-            "Square Lines",
-            "Horizontal Lines"
-        };
-        left_to_right_line_layout(t.gui, [&]() {
-            text_label(t.gui, "Type");
-            t.gui.element<DropDown<size_t>>("filepicker select type", &typeSelected, listOfGridTypes);
-        });
-        g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
-        uint32_t sDiv = g.subdivisions;
-        input_scalar_field<uint32_t>(t.gui, "Subdivisions", "Subdivisions", &sDiv, 1, 10);
-        g.set_subdivisions(sDiv);
-        bool divOut = g.removeDivisionsOutwards;
-        checkbox_boolean_field(t.gui, "Subdivide outwards", "Subdivide when zooming out", &divOut);
-        g.set_remove_divisions_outwards(divOut);
-        left_to_right_line_layout(t.gui, [&]() {
-            //if(t.gui.color_button_big("Grid Color", &g.color, &g.color == t.colorRight))
-            //    t.color_selector_right(&g.color == t.colorRight ? nullptr : &g.color);
-            text_label(t.gui, "Grid Color");
-        });
-        bool bounded = g.bounds.has_value();
-        bool prevBoundedValue = bounded;
-        checkbox_boolean_field(t.gui, "Bounded", "Bounded", &bounded);
-        if(bounded && !prevBoundedValue) {
-            SCollision::AABB<WorldScalar> newBounds;
-            newBounds.min = g.offset - drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
-            newBounds.max = g.offset + drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
-            g.bounds = newBounds;
+    t.gui.new_id("Grid modify tool", [&] {
+        text_label_centered(t.gui, "Edit Grid");
+        NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+        if(gLock) {
+            WorldGrid& g = *gLock;
+            input_text_field(t.gui, "grid name", "Name", &g.name);
+            checkbox_boolean_field(t.gui, "Visible", "Visible", &g.visible);
+            checkbox_boolean_field(t.gui, "Display in Front", "Display in front of canvas", &g.displayInFront);
+            size_t typeSelected = static_cast<size_t>(g.gridType);
+            std::vector<std::string> listOfGridTypes = {
+                "Circle Points",
+                "Square Points",
+                "Square Lines",
+                "Horizontal Lines"
+            };
+            left_to_right_line_layout(t.gui, [&]() {
+                text_label(t.gui, "Type");
+                t.gui.element<DropDown<size_t>>("filepicker select type", &typeSelected, listOfGridTypes);
+            });
+            g.gridType = static_cast<WorldGrid::GridType>(typeSelected);
+            uint32_t sDiv = g.subdivisions;
+            input_scalar_field<uint32_t>(t.gui, "Subdivisions", "Subdivisions", &sDiv, 1, 10);
+            g.set_subdivisions(sDiv);
+            bool divOut = g.removeDivisionsOutwards;
+            checkbox_boolean_field(t.gui, "Subdivide outwards", "Subdivide when zooming out", &divOut);
+            g.set_remove_divisions_outwards(divOut);
+            left_to_right_line_layout(t.gui, [&]() {
+                //if(t.gui.color_button_big("Grid Color", &g.color, &g.color == t.colorRight))
+                //    t.color_selector_right(&g.color == t.colorRight ? nullptr : &g.color);
+                text_label(t.gui, "Grid Color");
+            });
+            bool bounded = g.bounds.has_value();
+            bool prevBoundedValue = bounded;
+            checkbox_boolean_field(t.gui, "Bounded", "Bounded", &bounded);
+            if(bounded && !prevBoundedValue) {
+                SCollision::AABB<WorldScalar> newBounds;
+                newBounds.min = g.offset - drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
+                newBounds.max = g.offset + drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
+                g.bounds = newBounds;
+            }
+            else if(!bounded && prevBoundedValue)
+                g.bounds = std::nullopt;
+            checkbox_boolean_field(t.gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
         }
-        else if(!bounded && prevBoundedValue)
-            g.bounds = std::nullopt;
-        checkbox_boolean_field(t.gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
-    }
-    t.gui.pop_id();
+    });
 }
 
 void GridModifyTool::right_click_popup_gui(Vector2f popupPos) {

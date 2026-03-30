@@ -18,9 +18,9 @@ DrawingProgramToolType PanCanvasTool::get_type() {
 
 void PanCanvasTool::gui_toolbox() {
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("Pan canvas tool");
-    GUIStuff::ElementHelpers::text_label_centered(t.gui, "Pan tool");
-    t.gui.pop_id();
+    t.gui.new_id("Pan canvas tool", [&] {
+        GUIStuff::ElementHelpers::text_label_centered(t.gui, "Pan tool");
+    });
 }
 
 void PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {

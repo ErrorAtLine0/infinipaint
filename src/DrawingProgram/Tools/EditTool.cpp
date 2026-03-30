@@ -33,9 +33,9 @@ void EditTool::gui_toolbox() {
     if(objInfoBeingEdited)
         compEditTool->edit_gui(objInfoBeingEdited);
     else {
-        t.gui.push_id("edit tool");
-        text_label_centered(t.gui, "Edit");
-        t.gui.pop_id();
+        t.gui.new_id("edit tool", [&] {
+            text_label_centered(t.gui, "Edit");
+        });
     }
 }
 

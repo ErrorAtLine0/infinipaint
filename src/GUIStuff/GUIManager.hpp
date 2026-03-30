@@ -28,9 +28,8 @@ class GUIManager {
         GUIManagerIDStack idStack;
         std::unordered_map<GUIManagerIDStack, ElementContainer> elements;
 
-        void push_id(int64_t id);
-        void push_id(const char* id);
-        void pop_id();
+        void new_id(const char* id, const std::function<void()>& f);
+        void new_id(int64_t id, const std::function<void()>& f);
 
         void set_post_callback_func(const std::function<void()>& f);
 
@@ -64,6 +63,10 @@ class GUIManager {
 
         static void clay_error_handler(Clay_ErrorData errorData);
         static Clay_Dimensions clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData);
+
+        void push_id(int64_t id);
+        void push_id(const char* id);
+        void pop_id();
 
         std::function<void()> postCallbackFunc;
         Clay_Context* clayInstance;

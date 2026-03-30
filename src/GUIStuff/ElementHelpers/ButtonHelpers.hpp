@@ -47,20 +47,20 @@ void text_button_sized(GUIManager& gui, const char* id, std::string_view text, C
 void svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options = {});
 
 template <typename T> void color_button(GUIManager& gui, const char* id, T* val, const FixedSizeColorButtonOptions& options = {}) {
-    gui.push_id(id);
-    SelectableButton::Data d = selectable_button_options_to_data(options);
-    d.innerContent = [&] (const SelectableButton::InnerContentCallbackParameters&) {
-        gui.element<ColorRectangleDisplay>("color display", [val, hasAlpha = options.hasAlpha] {
-            if(hasAlpha)
-                return SkColor4f{(*val)[0], (*val)[1], (*val)[2], 1.0f};
-            else
-                return SkColor4f{(*val)[0], (*val)[1], (*val)[2], (*val)[3]};
-        });
-    };
-    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(options.size), .height = CLAY_SIZING_FIXED(options.size) } } }) {
-        gui.element<SelectableButton>("button", d);
-    }
-    gui.pop_id();
+    gui.new_id(id, [&] {
+        SelectableButton::Data d = selectable_button_options_to_data(options);
+        d.innerContent = [&] (const SelectableButton::InnerContentCallbackParameters&) {
+            gui.element<ColorRectangleDisplay>("color display", [val, hasAlpha = options.hasAlpha] {
+                if(hasAlpha)
+                    return SkColor4f{(*val)[0], (*val)[1], (*val)[2], 1.0f};
+                else
+                    return SkColor4f{(*val)[0], (*val)[1], (*val)[2], (*val)[3]};
+            });
+        };
+        CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(options.size), .height = CLAY_SIZING_FIXED(options.size) } } }) {
+            gui.element<SelectableButton>("button", d);
+        }
+    });
 }
 
 }}

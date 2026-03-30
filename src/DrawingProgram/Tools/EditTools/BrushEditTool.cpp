@@ -16,14 +16,14 @@ void BrushEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.push_id("edit tool brush");
-    text_label_centered(t.gui, "Edit Brush Stroke");
-    left_to_right_line_layout(t.gui, [&]() {
-        //if(t.gui.color_button_big("Outline Color", &a.d.color, &a.d.color == t.colorRight))
-        //    t.color_selector_right(&a.d.color == t.colorRight ? nullptr : &a.d.color);
-        text_label(t.gui, "Outline Color");
+    t.gui.new_id("edit tool brush", [&] {
+        text_label_centered(t.gui, "Edit Brush Stroke");
+        left_to_right_line_layout(t.gui, [&]() {
+            //if(t.gui.color_button_big("Outline Color", &a.d.color, &a.d.color == t.colorRight))
+            //    t.color_selector_right(&a.d.color == t.colorRight ? nullptr : &a.d.color);
+            text_label(t.gui, "Outline Color");
+        });
     });
-    t.gui.pop_id();
 }
 
 void BrushEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
