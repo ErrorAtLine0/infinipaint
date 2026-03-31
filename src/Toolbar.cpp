@@ -64,94 +64,11 @@ using namespace GUIStuff;
 using namespace ElementHelpers;
 
 Toolbar::Toolbar(MainProgram& initMain):
-    io(std::make_shared<GUIStuff::UpdateInputData>()),
     main(initMain)
 {
-    io->textTypeface = main.fonts->map["Roboto"];
-    io->fonts = main.fonts;
-    io->layoutRun = [&] {
-        layout_run();
-    };
-    io->input = &main.input;
-    gui.io = io;
-
-    // NOTE: On windows, when the native file picker is open, any call to MakeFromFile fails
-    // So, it's better to load the icons at the beginning of the program so that the icon loading doesn't fail later
-    load_icons_at("data/icons");
-
-#ifdef __ANDROID__
-    load_icons_at("data/icons/RemixIcon"); // SDL_GlobDirectory doesn't work recursively on Android
-#endif
-    
     load_default_palette();
-    load_default_theme();
 }
 
-void Toolbar::load_icons_at(const std::filesystem::path& pathToLoad) {
-    int globCount;
-    char** filesInPath = SDL_GlobDirectory(pathToLoad.c_str(), nullptr, 0, &globCount);
-    if(filesInPath) {
-        for(int i = 0; i < globCount; i++) {
-            std::filesystem::path filePath = pathToLoad / std::filesystem::path(filesInPath[i]);
-            SDL_PathInfo fileInfo;
-            if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
-                std::string iconRelativePath = filePath.relative_path().string();
-                std::replace(iconRelativePath.begin(), iconRelativePath.end(), '\\', '/');
-                std::string iconData = read_file_to_string(iconRelativePath);
-                auto stream = SkMemoryStream(iconData.c_str(), iconData.size(), false);
-                auto svgDom = SkSVGDOM::Builder().make(stream);
-                if(!svgDom)
-                    throw std::runtime_error("[Toolbar::Toolbar] Could not parse SVG " + iconRelativePath);
-                else {
-                    if(svgDom->containerSize().width() == 0 || svgDom->containerSize().height() == 0)
-                        svgDom->setContainerSize({1000, 1000});
-                    io->svgData[iconRelativePath] = svgDom;
-                }
-            }
-        }
-        SDL_free(filesInPath);
-    }
-}
-
-void Toolbar::load_default_theme() {
-    io->theme = GUIStuff::get_default_dark_mode();
-    themeData.themeCurrentlyLoaded = "Default";
-}
-
-void Toolbar::save_theme() {
-    std::filesystem::create_directory(main.configPath / "themes");
-    std::ofstream f(main.configPath / "themes" / (themeData.themeCurrentlyLoaded + ".json"));
-    if(f.is_open()) {
-        using json = nlohmann::json;
-        json j;
-        j = *io->theme;
-        f << j;
-        f.close();
-    }
-}
-
-bool Toolbar::load_theme() {
-    std::filesystem::path themeDir = main.configPath / "themes";
-    bool successfullyLoaded = false;
-    if(std::filesystem::exists(themeDir) && std::filesystem::is_directory(themeDir)) {
-        std::ifstream f(themeDir / (themeData.themeCurrentlyLoaded + ".json"));
-        if(f.is_open()) {
-            using json = nlohmann::json;
-            try {
-                json j;
-                f >> j;
-                auto theme(std::make_shared<GUIStuff::Theme>());
-                j.get_to(*theme);
-                io->theme = theme;
-                successfullyLoaded = true;
-            } catch(...) {}
-            f.close();
-        }
-    }
-    if(!successfullyLoaded)
-        load_default_theme();
-    return successfullyLoaded;
-}
 
 void Toolbar::load_default_palette() {
     paletteData.palettes.clear();
@@ -210,7 +127,7 @@ void Toolbar::sdl_open_file_dialog_callback(void* userData, const char * const *
 }
 
 void Toolbar::open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
-    if(useNativeFilePicker) {
+    if(main.conf.useNativeFilePicker) {
         if(!nativeFilePicker.isOpen) {
             nativeFilePicker.postSelectionFunc = postSelectionFunc;
             nativeFilePicker.extensionFiltersComplete = extensionFilters;
@@ -285,144 +202,20 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 )";
 }
 
-nlohmann::json Toolbar::get_config_json() {
-    using json = nlohmann::json;
-    json toRet;
-
-    json jKeybinds;
-    for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
-        auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
-            return p.second == i;
-        });
-        if(f != main.input.keyAssignments.end())
-            jKeybinds[json(static_cast<InputManager::KeyCodeEnum>(i))] = main.input.key_assignment_to_str(f->first);
-    }
-    toRet["keybinds"] = jKeybinds;
-    toRet["guiScale"] = guiScale;
-    toRet["jumpTransitionTime"] = jumpTransitionTime;
-    toRet["disableGraphicsDriverWorkarounds"] = main.window.disableGraphicsDriverWorkarounds;
-    toRet["dragZoomSpeed"] = dragZoomSpeed;
-    toRet["scrollZoomSpeed"] = scrollZoomSpeed;
-    toRet["vsync"] = main.window.vsyncValue;
-#ifndef __EMSCRIPTEN__
-    toRet["applyDisplayScale"] = main.window.applyDisplayScale;
-#endif
-    toRet["displayName"] = main.displayName;
-    toRet["antialiasing"] = main.antialiasing;
-    toRet["useNativeFilePicker"] = useNativeFilePicker;
-    toRet["themeInUse"] = themeData.themeCurrentlyLoaded;
-    toRet["defaultCanvasBackgroundColor"] = main.defaultCanvasBackgroundColor;
-    toRet["flipZoomToolDirection"] = flipZoomToolDirection;
-#ifndef __EMSCRIPTEN__
-    toRet["checkForUpdates"] = updateCheckerData.checkForUpdates;
-#endif
-
-    json tablet;
-    tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
-    tablet["smoothingSamplingTime"] = tabletOptions.smoothingSamplingTime;
-    tablet["middleClickButton"] = tabletOptions.middleClickButton;
-    tablet["rightClickButton"] = tabletOptions.rightClickButton;
-    tablet["ignoreMouseMovementWhenPenInProximity"] = tabletOptions.ignoreMouseMovementWhenPenInProximity;
-    tablet["brushMinimumSize"] = tabletOptions.brushMinimumSize;
-    tablet["zoomWhilePenDownAndButtonHeld"] = tabletOptions.zoomWhilePenDownAndButtonHeld;
-    toRet["tablet"] = tablet;
-
-    json debugJson;
-    debugJson["showPerformance"] = showPerformance;
-    debugJson["fpsLimit"] = main.fpsLimit;
-    debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
-    debugJson["imageLoadMaxThreads"] = ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX;
-    debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
-    debugJson["maxCacheNodes"] = DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES;
-    debugJson["maxComponentsInNode"] = DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE;
-    debugJson["componentCountToForceCacheRebuild"] = DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD;
-    debugJson["maximumFrameTimeToForceCacheRebuild"] = DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH;
-    debugJson["millisecondMinimumTimeToCheckForCacheRebuild"] = DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH;
-    toRet["debug"] = debugJson;
-
-    return toRet;
-}
-
-void Toolbar::set_config_json(const nlohmann::json& j, VersionNumber version) {
-    using json = nlohmann::json;
-    main.input.keyAssignments.clear();
-    try {
-        const json& jKeybinds = j.at("keybinds");
-        for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
-            try {
-                Vector2ui32 a = main.input.key_assignment_from_str(jKeybinds.at(json(static_cast<InputManager::KeyCodeEnum>(i))));
-                if(a != Vector2ui32{0, 0})
-                    main.input.keyAssignments.emplace(a, i);
-                else
-                    throw;
-            }
-            catch(...) {
-                auto f = std::find_if(main.input.defaultKeyAssignments.begin(), main.input.defaultKeyAssignments.end(), [&](auto& p) {
-                    return p.second == i;
-                });
-                main.input.keyAssignments.emplace(f->first, i);
-            }
-        }
-    }
-    catch(...) {
-        main.input.keyAssignments = main.input.defaultKeyAssignments;
-    }
-    try{j.at("displayName").get_to(main.displayName);} catch(...) {}
-    try{j.at("dragZoomSpeed").get_to(dragZoomSpeed);} catch(...) {}
-    try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
-    try {
-        j.at("vsync").get_to(main.window.vsyncValue);
-        main.set_vsync_value(main.window.vsyncValue);
-    }
-    catch(...) {
-        main.set_vsync_value(1);
-    }
-#ifndef __EMSCRIPTEN__
-    try{j.at("applyDisplayScale").get_to(main.window.applyDisplayScale);} catch(...) {}
-#endif
-    try{j.at("guiScale").get_to(guiScale);} catch(...) {}
-    try{j.at("jumpTransitionTime").get_to(jumpTransitionTime);} catch(...) {}
-    try{j.at("disableGraphicsDriverWorkarounds").get_to(main.window.disableGraphicsDriverWorkarounds);} catch(...) {}
-    try{j.at("useNativeFilePicker").get_to(useNativeFilePicker);} catch(...) {}
-    try{j.at("themeInUse").get_to(themeData.themeCurrentlyLoaded);} catch(...) {}
-    if(version >= VersionNumber(0, 3, 0))
-        try{j.at("defaultCanvasBackgroundColor").get_to(main.defaultCanvasBackgroundColor);} catch(...) {}
-    try{j.at("flipZoomToolDirection").get_to(flipZoomToolDirection);} catch(...) {}
-#ifndef __EMSCRIPTEN__
-    try{j.at("checkForUpdates").get_to(updateCheckerData.checkForUpdates);} catch(...) {}
-#endif
-    try{j.at("antialiasing").get_to(main.antialiasing);} catch(...) {}  
-
-    try{j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);} catch(...) {}
-    try{j.at("tablet").at("smoothingSamplingTime").get_to(tabletOptions.smoothingSamplingTime);} catch(...) {}
-    try{j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);} catch(...) {}
-    try{j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);} catch(...) {}
-    try{j.at("tablet").at("ignoreMouseMovementWhenPenInProximity").get_to(tabletOptions.ignoreMouseMovementWhenPenInProximity);} catch(...) {}
-    try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
-    try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
-
-    try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
-    try{j.at("debug").at("fpsLimit").get_to(main.fpsLimit);} catch(...) {}
-    try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
-    try{j.at("debug").at("imageLoadMaxThreads").get_to(ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX);} catch(...) {}
-    try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}
-    try{j.at("debug").at("maxCacheNodes").get_to(DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES);} catch(...) {}
-    try{j.at("debug").at("maxComponentsInNode").get_to(DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE);} catch(...) {}
-    try{j.at("debug").at("componentCountToForceCacheRebuild").get_to(DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD);} catch(...) {}
-    try{j.at("debug").at("maximumFrameTimeToForceCacheRebuild").get_to(DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH);} catch(...) {}
-    try{j.at("debug").at("millisecondMinimumTimeToCheckForCacheRebuild").get_to(DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH);} catch(...) {}
-
-    main.update_display_names();
-}
-
 void Toolbar::update() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     calculate_final_gui_scale();
-    io->windowSize = main.window.size.cast<float>();
-    io->windowPos = {0, 0};
+    io.windowSize = main.window.size.cast<float>();
+    io.windowPos = {0, 0};
     gui.layout_if_necessary();
 }
 
 void Toolbar::layout_run() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
 #ifndef __EMSCRIPTEN__
     update_notification_check();
 #endif
@@ -430,9 +223,9 @@ void Toolbar::layout_run() {
     if(main.drawGui) {
         CLAY_AUTO_ID({
             .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(gui.io->windowSize.x()), .height = CLAY_SIZING_FIT(gui.io->windowSize.y())},
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                .childGap = io->theme->childGap1,
+                .sizing = {.width = CLAY_SIZING_FIT(gui.io.windowSize.x()), .height = CLAY_SIZING_FIT(gui.io.windowSize.y())},
+                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                .childGap = io.theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             }
@@ -442,7 +235,7 @@ void Toolbar::layout_run() {
                 drawing_program_gui();
             if(!closePopupData.worldsToClose.empty())
                 close_popup_gui();
-            if(viewWebVersionWelcome)
+            if(main.conf.viewWebVersionWelcome)
                 web_version_welcome();
 #ifndef __EMSCRIPTEN__
             else if(updateCheckerData.showGui)
@@ -471,7 +264,7 @@ void Toolbar::layout_run() {
     }
 
     if(!main.world->clientStillConnecting) {
-        //if(io->hoverObstructed && (io->mouse.leftClick || io->mouse.rightClick))
+        //if(io.hoverObstructed && (io.mouse.leftClick || io.mouse.rightClick))
         //    rightClickPopupLocation = std::nullopt;
 
         //if(rightClickPopupLocation.has_value()) {
@@ -479,7 +272,7 @@ void Toolbar::layout_run() {
         //        rightClickPopupLocation = std::nullopt;
         //}
 
-        //if(io->hoverObstructed && io->mouse.rightClick) // This runs specifically if the paint popup has the cursor
+        //if(io.hoverObstructed && io.mouse.rightClick) // This runs specifically if the paint popup has the cursor
         //    rightClickPopupLocation = std::nullopt;
     }
 
@@ -510,19 +303,22 @@ void Toolbar::add_world_to_close_popup_data(const std::shared_ptr<World>& w) {
 }
 
 void Toolbar::close_popup_gui() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     std::erase_if(closePopupData.worldsToClose, [](auto& wPair) {
         return wPair.w.expired();
     });
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0, 600) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
         .floating = {.zIndex = 1, .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.new_id("Close single file popup gui", [&] {
@@ -534,7 +330,7 @@ void Toolbar::close_popup_gui() {
                 .innerContent = [&](const ScrollArea::InnerContentParameters&) {
                     CLAY_AUTO_ID({
                         .layout = {
-                            .childGap = io->theme->childGap1,
+                            .childGap = io.theme->childGap1,
                             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                             .layoutDirection = CLAY_TOP_TO_BOTTOM
                         }
@@ -545,13 +341,13 @@ void Toolbar::close_popup_gui() {
                             CLAY_AUTO_ID({
                                 .layout = {
                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                                    .childGap = io->theme->childGap1,
+                                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                    .childGap = io.theme->childGap1,
                                     .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                                 },
-                                .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2),
-                                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+                                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2),
+                                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
                             }) {
                                 gui.new_id(i, [&] {
                                     checkbox_boolean(gui, "set to save checkbox", &setToSave);
@@ -633,6 +429,9 @@ void Toolbar::save_as_func() {
 }
 
 void Toolbar::paint_popup(Vector2f popupPos) {
+    auto& gui = main.g.gui;
+    auto& io = main.g.gui.io;
+
     double newRotationAngle = 0.0;
     paint_circle_popup_menu(gui, "paint circle popup", popupPos, {
         .rotationAngle = &main.world->drawData.cam.c.rotation,
@@ -648,16 +447,19 @@ void Toolbar::paint_popup(Vector2f popupPos) {
 }
 
 void Toolbar::top_toolbar() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io->theme->padding1 / 2)),
-            .childGap = static_cast<uint16_t>(io->theme->childGap1 / 2),
+            .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io.theme->padding1 / 2)),
+            .childGap = static_cast<uint16_t>(io.theme->childGap1 / 2),
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
     }) {
         gui.new_id("menu top toolbar", [&] {
             global_log();
@@ -760,14 +562,14 @@ void Toolbar::top_toolbar() {
                     CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
-                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
                             .childGap = 1,
                             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                             .layoutDirection = CLAY_TOP_TO_BOTTOM
                         },
-                        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-                        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
                     }) {
                         auto menu_popup_text_button = [&](const char* id, const char* str, const std::function<void()>& onClick) {
                             text_button(gui, id, str, {
@@ -864,16 +666,19 @@ void Toolbar::top_toolbar() {
 }
 
 void Toolbar::web_version_welcome() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.new_id("web version welcome gui", [&] {
@@ -890,7 +695,7 @@ If you like this app, consider downloading the native version for your system)")
             text_button(gui, "got it", "Got It", {
                 .wide = true,
                 .onClick = [&] {
-                    viewWebVersionWelcome = false;
+                    main.conf.viewWebVersionWelcome = false;
                 }
             });
         });
@@ -898,16 +703,19 @@ If you like this app, consider downloading the native version for your system)")
 }
 
 void Toolbar::still_connecting_center_message() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         text_label(gui, "Connecting to server...");
@@ -915,16 +723,19 @@ void Toolbar::still_connecting_center_message() {
 }
 
 void Toolbar::no_layers_being_edited_message() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         text_label(gui, "Select a layer to edit");
@@ -934,7 +745,7 @@ void Toolbar::no_layers_being_edited_message() {
 #ifndef __EMSCRIPTEN__
 void Toolbar::update_notification_check() {
     if(!updateCheckerData.updateCheckDone) {
-        if(updateCheckerData.checkForUpdates) {
+        if(main.conf.checkForUpdates) {
             if(!updateCheckerData.versionFile)
                 updateCheckerData.versionFile = FileDownloader::download_data_from_url(UPDATE_NOTIFICATION_URL);
             else {
@@ -976,16 +787,19 @@ void Toolbar::update_notification_check() {
 }
 
 void Toolbar::update_notification_gui() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.new_id("update notification gui", [&] {
@@ -1000,7 +814,7 @@ void Toolbar::update_notification_gui() {
             text_button(gui, "ignore forever", "Ignore and don't notify again (can be changed in settings)", {
                 .wide = true,
                 .onClick = [&]{
-                    updateCheckerData.checkForUpdates = false;
+                    main.conf.checkForUpdates = false;
                     updateCheckerData.showGui = false;
                 }
             });
@@ -1016,19 +830,22 @@ void Toolbar::update_notification_gui() {
 #endif
 
 void Toolbar::grid_menu(bool justOpened) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     if(main.world->gridMan.grids) {
         gui.new_id("grid menu", [&] {
         //CLAY(localId, {
         //    .layout = {
         //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-        //        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-        //        .childGap = io->theme->childGap1,
+        //        .padding = CLAY_PADDING_ALL(io.theme->padding1),
+        //        .childGap = io.theme->childGap1,
         //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
         //        .layoutDirection = CLAY_TOP_TO_BOTTOM
         //    },
-        //    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        //    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-        //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        //    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        //    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+        //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
         //}) {
         //    gui.obstructing_window(localId);
         //    text_label_centered(gui, "Grids");
@@ -1046,7 +863,7 @@ void Toolbar::grid_menu(bool justOpened) {
         //                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
         //                .layoutDirection = CLAY_LEFT_TO_RIGHT 
         //            },
-        //            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
+        //            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io.theme->backColor1) : convert_vec4<Clay_Color>(io.theme->backColor2)
         //        }) {
         //            text_label(gui, grid->get_display_name());
         //            bool miniButtonClicked = false;
@@ -1073,9 +890,9 @@ void Toolbar::grid_menu(bool justOpened) {
         //                    toDelete = i;
         //                }
         //            }
-        //            if(Clay_Hovered() && io->mouse.leftClick && isListHovered && !miniButtonClicked) {
+        //            if(Clay_Hovered() && io.mouse.leftClick && isListHovered && !miniButtonClicked) {
         //                gridMenu.selectedGrid = i;
-        //                if(io->mouse.leftClick >= 2) {
+        //                if(io.mouse.leftClick >= 2) {
         //                    main.world->drawProg.modify_grid(grid);
         //                    stop_displaying_grid_menu();
         //                }
@@ -1087,7 +904,7 @@ void Toolbar::grid_menu(bool justOpened) {
         //    gui.left_to_right_line_layout([&]() {
         //        bool addByEnter = false;
         //        gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
-        //            addByEnter = s.selected && io->key.enter;
+        //            addByEnter = s.selected && io.key.enter;
         //        });
         //        if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
         //            main.world->gridMan.add_default_grid(gridMenu.newName);
@@ -1097,7 +914,7 @@ void Toolbar::grid_menu(bool justOpened) {
         //    });
 
         //    bool dropdownHover = false;
-        //    if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
+        //    if(io.mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
         //        stop_displaying_grid_menu();
         //}
         });
@@ -1111,24 +928,27 @@ void Toolbar::stop_displaying_grid_menu() {
 }
 
 void Toolbar::bookmark_menu(bool justOpened) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     gui.new_id("bookmark menu", [&] {
     //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT BOOKMARK MENU");
     //CLAY(localId, {
     //    .layout = {
     //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-    //        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-    //        .childGap = io->theme->childGap1,
+    //        .padding = CLAY_PADDING_ALL(io.theme->padding1),
+    //        .childGap = io.theme->childGap1,
     //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
     //        .layoutDirection = CLAY_TOP_TO_BOTTOM
     //    },
-    //    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-    //    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+    //    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     //}) {
     //    gui.obstructing_window(localId);
     //    text_label_centered(gui, "Bookmarks");
     //    main.world->bMan.setup_list_gui("bookmark menu list");
-    //    if(io->mouse.leftClick && !Clay_Hovered() && !justOpened) {
+    //    if(io.mouse.leftClick && !Clay_Hovered() && !justOpened) {
     //        bookmarkMenuPopupOpen = false;
     //        main.world->bMan.refresh_gui_data();
     //    }
@@ -1137,25 +957,28 @@ void Toolbar::bookmark_menu(bool justOpened) {
 }
 
 void Toolbar::layer_menu(bool justOpened) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     gui.new_id("layer menu", [&] {
     //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT LAYER MENU");
     //CLAY(localId, {
     //    .layout = {
     //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-    //        .padding = CLAY_PADDING_ALL(io->theme->padding1),
-    //        .childGap = io->theme->childGap1,
+    //        .padding = CLAY_PADDING_ALL(io.theme->padding1),
+    //        .childGap = io.theme->childGap1,
     //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
     //        .layoutDirection = CLAY_TOP_TO_BOTTOM
     //    },
-    //    .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-    //    .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
-    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+    //    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     //}) {
     //    gui.obstructing_window(localId);
     //    text_label_centered(gui, "Layers");
     //    bool hoveringOverDropdown = false;
     //    main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list", hoveringOverDropdown);
-    //    if(io->mouse.leftClick && !Clay_Hovered() && !justOpened && !hoveringOverDropdown) {
+    //    if(io.mouse.leftClick && !Clay_Hovered() && !justOpened && !hoveringOverDropdown) {
     //        layerMenuPopupOpen = false;
     //        main.world->drawProg.layerMan.listGUI.refresh_gui_data();
     //    }
@@ -1164,16 +987,19 @@ void Toolbar::layer_menu(bool justOpened) {
 }
 
 std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_message(const ChatMessage& message, float alpha) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     skia::textlayout::ParagraphStyle pStyle;
     pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
     skia::textlayout::TextStyle tStyle;
-    tStyle.setFontSize(io->fontSize);
+    tStyle.setFontSize(io.fontSize);
     tStyle.setFontFamilies(main.fonts->get_default_font_families());
     tStyle.setFontStyle(SkFontStyle::Bold());
-    tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io->theme->warningColor : io->theme->frontColor1, alpha)});
+    tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io.theme->warningColor : io.theme->frontColor1, alpha)});
     pStyle.setTextStyle(tStyle);
 
-    skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fonts->collection, SkUnicodes::ICU::Make());
+    skia::textlayout::ParagraphBuilderImpl a(pStyle, io.fonts->collection, SkUnicodes::ICU::Make());
     if(message.type == ChatMessage::JOIN) {
         std::string messageName = message.name + " ";
         a.addText(messageName.c_str(), messageName.length());
@@ -1198,7 +1024,7 @@ void Toolbar::chat_box() {
     //        .layout = {
     //            .layoutDirection = CLAY_LEFT_TO_RIGHT
     //        },
-    //        .floating = {.offset = {static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //        .floating = {.offset = {static_cast<float>(io.theme->padding1), -static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     //    }) {
     //        gui.obstructing_window(localId);
     //        gui.push_id("chat box open button");
@@ -1219,7 +1045,7 @@ void Toolbar::chat_box() {
     //        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
     //        .layoutDirection = CLAY_TOP_TO_BOTTOM
     //    },
-    //    .floating = {.offset = {60 + static_cast<float>(io->theme->padding1), -static_cast<float>(io->theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+    //    .floating = {.offset = {60 + static_cast<float>(io.theme->padding1), -static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     //}) {
     //    gui.obstructing_window(localId);
     //    gui.push_id("chat box");
@@ -1233,7 +1059,7 @@ void Toolbar::chat_box() {
     //                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
     //                .layoutDirection = CLAY_TOP_TO_BOTTOM
     //            },
-    //            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1)
+    //            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1)
     //        }) {
     //            int id = 0;
     //            for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
@@ -1260,9 +1086,9 @@ void Toolbar::chat_box() {
     //            t.selection.selected = true;
     //            chatBoxState = CHATBOXSTATE_OPEN;
     //        }
-    //        if(io->key.escape)
+    //        if(io.key.escape)
     //            t.selection.selected = false;
-    //        if(io->key.enter) {
+    //        if(io.key.enter) {
     //            main.world->send_chat_message(chatMessageInput);
     //            t.selection.selected = false;
     //        }
@@ -1289,7 +1115,7 @@ void Toolbar::chat_box() {
     //                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
     //                        .layoutDirection = CLAY_TOP_TO_BOTTOM
     //                    },
-    //                    .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
+    //                    .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
     //                }) {
     //                    gui.push_id(id);
     //                    gui.obstructing_window(elemId);
@@ -1306,10 +1132,13 @@ void Toolbar::chat_box() {
 }
 
 void Toolbar::global_log() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(300), .height = CLAY_SIZING_FIT(0) },
-            .childGap = io->theme->childGap1,
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
@@ -1326,22 +1155,22 @@ void Toolbar::global_log() {
     //            CLAY(elemId, {
     //                .layout = {
     //                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
-    //                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
+    //                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
     //                    .childGap = 0,
     //                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
     //                    .layoutDirection = CLAY_TOP_TO_BOTTOM
     //                },
-    //                .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, a)),
-    //                .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+    //                .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
+    //                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
     //            }) {
     //                gui.obstructing_window(elemId);
     //                SkColor4f c{0, 0, 0, 0};
     //                switch(logM.color) {
     //                    case LogMessage::COLOR_NORMAL:
-    //                        c = io->theme->frontColor1;
+    //                        c = io.theme->frontColor1;
     //                        break;
     //                    case LogMessage::COLOR_ERROR:
-    //                        c = io->theme->errorColor;
+    //                        c = io.theme->errorColor;
     //                        break;
     //                }
     //                gui.text_label_color(logM.text, color_mul_alpha(c, a));
@@ -1354,10 +1183,13 @@ void Toolbar::global_log() {
 }
 
 void Toolbar::drawing_program_gui() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
-            .childGap = io->theme->childGap1,
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
@@ -1374,19 +1206,19 @@ void Toolbar::drawing_program_gui() {
         //        CLAY(localId, {
         //            .layout = {
         //                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-        //                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-        //                .childGap = io->theme->childGap1,
+        //                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+        //                .childGap = io.theme->childGap1,
         //                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
         //                .layoutDirection = CLAY_TOP_TO_BOTTOM
         //            },
-        //            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        //            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+        //            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        //            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
         //        }) {
         //            gui.obstructing_window(localId);
-        //            isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io->theme->padding1 * 2.0f);
+        //            isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io.theme->padding1 * 2.0f);
         //            bool hoveringOnDropdown = false;
         //            isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
-        //            if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io->mouse.leftClick)
+        //            if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io.mouse.leftClick)
         //                colorLeft = nullptr;
         //        }
         //    }
@@ -1406,19 +1238,19 @@ void Toolbar::drawing_program_gui() {
         //        CLAY(localID, {
         //            .layout = {
         //                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-        //                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-        //                .childGap = io->theme->childGap1,
+        //                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+        //                .childGap = io.theme->childGap1,
         //                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
         //                .layoutDirection = CLAY_TOP_TO_BOTTOM
         //            },
-        //            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        //            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1)
+        //            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        //            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
         //        }) {
         //            gui.obstructing_window(localID);
-        //            isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io->theme->padding1 * 2.0f);
+        //            isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io.theme->padding1 * 2.0f);
         //            bool hoveringOnDropdown = false;
         //            isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
-        //            if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io->mouse.leftClick)
+        //            if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io.mouse.leftClick)
         //                colorRight = nullptr;
         //        }
         //    }
@@ -1428,6 +1260,9 @@ void Toolbar::drawing_program_gui() {
 }
 
 bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     bool isUpdating = false;
     gui.new_id(id, [&] {
     //auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
@@ -1439,7 +1274,7 @@ bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDro
     //    CLAY_AUTO_ID({
     //        .layout = {
     //            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-    //            .childGap = io->theme->childGap1,
+    //            .childGap = io.theme->childGap1,
     //            .layoutDirection = CLAY_TOP_TO_BOTTOM
     //        }
     //    }) {
@@ -1448,7 +1283,7 @@ bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDro
     //            CLAY_AUTO_ID({
     //                .layout = {
     //                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
-    //                    .childGap = io->theme->childGap1,
+    //                    .childGap = io.theme->childGap1,
     //                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
     //                    .layoutDirection = CLAY_LEFT_TO_RIGHT
     //                }
@@ -1487,7 +1322,7 @@ bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDro
     //        .layout = {
     //            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
     //            .padding = {.top = 3, .bottom = 3},
-    //            .childGap = io->theme->childGap1,
+    //            .childGap = io.theme->childGap1,
     //            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
     //            .layoutDirection = CLAY_LEFT_TO_RIGHT
     //        }
@@ -1508,7 +1343,7 @@ bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDro
     //    .layout = {
     //        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
     //        .padding = {.top = 3, .bottom = 3},
-    //        .childGap = io->theme->childGap1,
+    //        .childGap = io.theme->childGap1,
     //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
     //        .layoutDirection = CLAY_LEFT_TO_RIGHT
     //    }
@@ -1542,11 +1377,14 @@ bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDro
 }
 
 void Toolbar::performance_metrics() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
@@ -1555,12 +1393,12 @@ void Toolbar::performance_metrics() {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                .childGap = io->theme->childGap1,
+                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                .childGap = io.theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, 0.7f)),
+            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, 0.7f)),
         }) {
             text_label(gui, "Undo queue");
             std::vector<std::string> undoList = main.world->undo.get_front_undo_queue_names(10);
@@ -1570,12 +1408,12 @@ void Toolbar::performance_metrics() {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                .childGap = io->theme->childGap1,
+                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                .childGap = io.theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io->theme->backColor1, 0.7f)),
+            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, 0.7f)),
         }) {
             std::stringstream a;
             a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
@@ -1595,16 +1433,19 @@ void Toolbar::performance_metrics() {
 }
 
 void Toolbar::player_list() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
         .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
         gui.new_id("client list", [&] {
@@ -1686,17 +1527,20 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
 }
 
 void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     gui.element<LayoutElement>(id, [&] {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = x, .height = y },
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                .childGap = io->theme->childGap1,
+                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                .childGap = io.theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(io->theme->windowCorners1),
+            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
             .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
         }) {
             innerContent();
@@ -1705,6 +1549,9 @@ void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, C
 }
 
 void Toolbar::text_button_wide(const char* id, const char* str, const std::function<void()>& onClick) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     text_button(gui, id, str, {
         .wide = true,
         .onClick = onClick
@@ -1712,6 +1559,9 @@ void Toolbar::text_button_wide(const char* id, const char* str, const std::funct
 }
 
 void Toolbar::options_menu() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     switch(optionsMenuType) {
         case HOST_MENU: {
             center_obstructing_window_gui("host menu", CLAY_SIZING_FIT(650), CLAY_SIZING_FIT(0), [&] {
@@ -1815,11 +1665,14 @@ void Toolbar::options_menu() {
 }
 
 void Toolbar::general_settings_inner_gui() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-            .childGap = io->theme->childGap1,
+            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+            .childGap = io.theme->childGap1,
             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         }
@@ -1827,7 +1680,7 @@ void Toolbar::general_settings_inner_gui() {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(150), .height = CLAY_SIZING_GROW(0) },
-                .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                .padding = CLAY_PADDING_ALL(io.theme->padding1),
                 .childGap = 2,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
@@ -1839,7 +1692,7 @@ void Toolbar::general_settings_inner_gui() {
                     .isSelected = generalSettingsOptions == opt,
                     .wide = true,
                     .onClick = [&] {
-                        load_theme();
+                        main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                         themeData.selectedThemeIndex = std::nullopt;
                         generalSettingsOptions = opt;
                     }
@@ -1867,8 +1720,8 @@ void Toolbar::general_settings_inner_gui() {
                     CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
-                            .padding = CLAY_PADDING_ALL(io->theme->padding1),
-                            .childGap = io->theme->childGap1,
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
                             .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
                             .layoutDirection = CLAY_TOP_TO_BOTTOM
                         }
@@ -1876,53 +1729,53 @@ void Toolbar::general_settings_inner_gui() {
                         switch(generalSettingsOptions) {
                             case GSETTINGS_GENERAL: {
                                 gui.new_id("general settings", [&] {
-                                    input_text_field(gui, "display name input", "Display name", &main.displayName);
+                                    input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
                                     main.update_display_names();
-                                    color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                                    color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
                                     #ifndef __EMSCRIPTEN__
-                                        checkbox_boolean_field(gui, "native file pick", "Use native file picker", &useNativeFilePicker);
-                                        checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &updateCheckerData.checkForUpdates);
+                                        checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);
+                                        checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
                                     #endif
-                                    slider_scalar_field(gui, "drag zoom slider", "Drag zoom speed", &dragZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
-                                    slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
-                                    checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &flipZoomToolDirection);
+                                    slider_scalar_field(gui, "drag zoom slider", "Drag zoom speed", &main.conf.dragZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
+                                    slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &main.conf.scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
+                                    checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &main.conf.flipZoomToolDirection);
                                     checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
                                     #ifndef __EMSCRIPTEN__
-                                        checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.window.disableGraphicsDriverWorkarounds);
+                                        checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
                                     #endif
-                                    input_scalar_field(gui, "jump transition time", "Jump transition time", &jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
-                                    input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &guiScale, 0.5f, 5.0f, {.decimalPrecision = 1});
+                                    input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+                                    input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {.decimalPrecision = 1});
                                     text_label(gui, "Anti-aliasing:");
-                                    radio_button_selector(gui, "Antialiasing selector", &main.antialiasing, {
-                                        {"None", MainProgram::AntiAliasing::NONE},
-                                        {"Skia", MainProgram::AntiAliasing::SKIA},
-                                        {"Dynamic MSAA", MainProgram::AntiAliasing::DYNAMIC_MSAA}
+                                    radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
+                                        {"None", GlobalConfig::AntiAliasing::NONE},
+                                        {"Skia", GlobalConfig::AntiAliasing::SKIA},
+                                        {"Dynamic MSAA", GlobalConfig::AntiAliasing::DYNAMIC_MSAA}
                                     }, [&] {
                                         main.refresh_draw_surfaces();
                                     });
                                     text_label(gui, "VSync:");
-                                    radio_button_selector(gui, "VSync selector", &main.window.vsyncValue, {
+                                    radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
                                         {"On", 1},
                                         {"Off", 0},
                                         {"Adaptive", -1}
                                     }, [&] {
-                                        main.set_vsync_value(main.window.vsyncValue);
+                                        main.set_vsync_value(main.conf.vsyncValue);
                                     });
 
                                     #ifndef __EMSCRIPTEN__
-                                    checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.window.applyDisplayScale);
+                                    checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
                                     #endif
                                 });
                                 break;
                             }
                             case GSETTINGS_TABLET: {
                                 gui.new_id("tablet settings", [&] {
-                                    checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &tabletOptions.pressureAffectsBrushWidth);
-                                    slider_scalar_field(gui, "smoothing time", "Smoothing sampling time", &tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, {.decimalPrecision = 3});
-                                    input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &tabletOptions.middleClickButton, 1, 255);
-                                    input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &tabletOptions.rightClickButton, 1, 255);
-                                    slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
-                                    checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &tabletOptions.zoomWhilePenDownAndButtonHeld);
+                                    checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
+                                    slider_scalar_field(gui, "smoothing time", "Smoothing sampling time", &main.conf.tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, {.decimalPrecision = 3});
+                                    input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &main.conf.tabletOptions.middleClickButton, 1, 255);
+                                    input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &main.conf.tabletOptions.rightClickButton, 1, 255);
+                                    slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
+                                    checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld);
                                     #ifdef _WIN32
                                         checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
                                     #endif
@@ -1935,7 +1788,7 @@ void Toolbar::general_settings_inner_gui() {
                                         reload_theme_list();
 
                                     CLAY_AUTO_ID({.layout = { 
-                                          .childGap = io->theme->childGap1,
+                                          .childGap = io.theme->childGap1,
                                           .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
                                           .layoutDirection = CLAY_LEFT_TO_RIGHT,
                                     }
@@ -1943,7 +1796,7 @@ void Toolbar::general_settings_inner_gui() {
                                         text_label(gui, "Theme: ");
                                         gui.element<DropDown<size_t>>("dropdownSelectThemes", &themeData.selectedThemeIndex.value(), themeData.themeDirList, DropdownOptions{
                                             .onClick = [&]() {
-                                                themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                                main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
                                                 reload_theme_list();
                                             }
                                         });
@@ -1951,8 +1804,8 @@ void Toolbar::general_settings_inner_gui() {
                                     left_to_right_line_layout(gui, [&]() {
                                         if(themeData.selectedThemeIndex != 0) {
                                             text_button_wide("savethemebutton", "Save", [&] {
-                                                themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                                save_theme();
+                                                main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                                main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                                                 reload_theme_list();
                                             });
                                         }
@@ -1960,22 +1813,22 @@ void Toolbar::general_settings_inner_gui() {
                                             themeData.openedSaveAsMenu = !themeData.openedSaveAsMenu;
                                         });
                                         text_button_wide("reloadthemebutton", "Reload", [&] {
-                                            themeData.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                            main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
                                             reload_theme_list();
                                         });
                                         if(themeData.selectedThemeIndex != 0) {
                                             text_button_wide("deletethemebutton", "Delete", [&] {
                                                 try { std::filesystem::remove(main.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
-                                                themeData.themeCurrentlyLoaded = "Default";
+                                                main.conf.themeCurrentlyLoaded = "Default";
                                                 reload_theme_list();
                                             });
                                         }
                                     });
                                     if(themeData.openedSaveAsMenu) {
-                                        input_text_field(gui, "Theme name:", "Theme name: ", &themeData.themeCurrentlyLoaded);
+                                        input_text_field(gui, "Theme name:", "Theme name: ", &main.conf.themeCurrentlyLoaded);
                                         left_to_right_line_layout(gui, [&]() {
                                             text_button_wide("saveasdone", "Done", [&] {
-                                                save_theme();
+                                                main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                                                 reload_theme_list();
                                             });
                                             text_button_wide("saveascancel", "Cancel", [&] {
@@ -1985,18 +1838,18 @@ void Toolbar::general_settings_inner_gui() {
                                     }
                                     text_label(gui, "Edit theme:");
                                     text_label_light(gui, "Note: Changes only remain if theme is saved");
-                                    color_picker_button_field<SkColor4f>(gui, "fillColor1", "Fill Color 1", &io->theme->fillColor1);
-                                    color_picker_button_field<SkColor4f>(gui, "fillColor2", "Fill Color 2", &io->theme->fillColor2);
-                                    color_picker_button_field<SkColor4f>(gui, "backColor1", "Back Color 1", &io->theme->backColor1);
-                                    color_picker_button_field<SkColor4f>(gui, "backColor2", "Back Color 2", &io->theme->backColor2);
-                                    color_picker_button_field<SkColor4f>(gui, "frontColor1", "Front Color 1", &io->theme->frontColor1);
-                                    color_picker_button_field<SkColor4f>(gui, "frontColor2", "Front Color 2", &io->theme->frontColor2);
-                                    color_picker_button_field<SkColor4f>(gui, "warningColor", "Warning Color", &io->theme->warningColor);
-                                    color_picker_button_field<SkColor4f>(gui, "errorColor", "Error Color", &io->theme->errorColor);
-                                    //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io->theme->hoverExpandTime, 0.001f, 1.0f);
-                                    input_scalar_field<uint16_t>(gui, "childGap1", "Gap between child elements", &io->theme->childGap1, 0, 30);
-                                    input_scalar_field<uint16_t>(gui, "padding1", "Window padding", &io->theme->padding1, 0, 30);
-                                    slider_scalar_field<float>(gui, "windowCorners1", "Window corner radius", &io->theme->windowCorners1, 0, 30);
+                                    color_picker_button_field<SkColor4f>(gui, "fillColor1", "Fill Color 1", &io.theme->fillColor1);
+                                    color_picker_button_field<SkColor4f>(gui, "fillColor2", "Fill Color 2", &io.theme->fillColor2);
+                                    color_picker_button_field<SkColor4f>(gui, "backColor1", "Back Color 1", &io.theme->backColor1);
+                                    color_picker_button_field<SkColor4f>(gui, "backColor2", "Back Color 2", &io.theme->backColor2);
+                                    color_picker_button_field<SkColor4f>(gui, "frontColor1", "Front Color 1", &io.theme->frontColor1);
+                                    color_picker_button_field<SkColor4f>(gui, "frontColor2", "Front Color 2", &io.theme->frontColor2);
+                                    color_picker_button_field<SkColor4f>(gui, "warningColor", "Warning Color", &io.theme->warningColor);
+                                    color_picker_button_field<SkColor4f>(gui, "errorColor", "Error Color", &io.theme->errorColor);
+                                    //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io.theme->hoverExpandTime, 0.001f, 1.0f);
+                                    input_scalar_field<uint16_t>(gui, "childGap1", "Gap between child elements", &io.theme->childGap1, 0, 30);
+                                    input_scalar_field<uint16_t>(gui, "padding1", "Window padding", &io.theme->padding1, 0, 30);
+                                    slider_scalar_field<float>(gui, "windowCorners1", "Window corner radius", &io.theme->windowCorners1, 0, 30);
                                 });
                                 break;
                             }
@@ -2025,7 +1878,7 @@ void Toolbar::general_settings_inner_gui() {
                                                 .layout = {
                                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                                                     .padding = CLAY_PADDING_ALL(0),
-                                                    .childGap = io->theme->childGap1,
+                                                    .childGap = io.theme->childGap1,
                                                     .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                                                     .layoutDirection = CLAY_LEFT_TO_RIGHT 
                                                 }
@@ -2051,9 +1904,9 @@ void Toolbar::general_settings_inner_gui() {
                             case GSETTINGS_DEBUG: {
                                 gui.new_id("debug settings menu", [&] {
                                     checkbox_boolean_field(gui, "show performance metrics", "Show metrics", &showPerformance);
-                                    input_scalars_field(gui, "jump transition easing", "Jump easing", &jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
+                                    input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
                                     #ifndef __EMSCRIPTEN__
-                                        input_scalar_field(gui, "fps cap slider", "FPS cap", &main.fpsLimit, 3.0f, 10000.0f);
+                                        input_scalar_field(gui, "fps cap slider", "FPS cap", &main.conf.fpsLimit, 3.0f, 10000.0f);
                                     #endif
                                     input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
                                     text_label_light(gui, "Cache related settings");
@@ -2077,7 +1930,7 @@ void Toolbar::general_settings_inner_gui() {
             });
             text_button_wide("done menu", "Done", [&] {
                 main.save_config();
-                load_theme();
+                main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                 themeData.selectedThemeIndex = std::nullopt;
                 optionsMenuOpen = false;
             });
@@ -2086,12 +1939,15 @@ void Toolbar::general_settings_inner_gui() {
 }
 
 void Toolbar::about_menu_inner_gui() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     left_to_right_line_layout(gui, [&]() {
         gui.new_id("Menu Selector", [&] {
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0) },
-                    .padding = CLAY_PADDING_ALL(io->theme->padding1),
+                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 }
@@ -2159,18 +2015,20 @@ void Toolbar::reload_theme_list() {
             std::string name = theme.path().stem().string();
             if(name != "Default") {
                 themeData.themeDirList.emplace_back(name);
-                if(name == themeData.themeCurrentlyLoaded)
+                if(name == main.conf.themeCurrentlyLoaded)
                     themeData.selectedThemeIndex = themeData.themeDirList.size() - 1;
             }
         }
     }
-    if(!load_theme())
+    if(!main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded))
         themeData.selectedThemeIndex = 0;
 
     themeData.openedSaveAsMenu = false;
 }
 
 void Toolbar::file_picker_gui_refresh_entries() {
+    auto& gui = main.g.gui;
+
     filePicker.entries.clear();
     for(;;) {
         try {
@@ -2229,6 +2087,9 @@ void Toolbar::file_picker_gui_done() {
 }
 
 void Toolbar::file_picker_gui() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
     center_obstructing_window_gui("file picker gui window", CLAY_SIZING_FIXED(700), CLAY_SIZING_FIXED(500), [&] {
         text_label_centered(gui, filePicker.filePickerWindowName);
         left_to_right_line_layout(gui, [&]() {
@@ -2250,7 +2111,7 @@ void Toolbar::file_picker_gui() {
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2)
+            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2)
         }) {
             constexpr float entryHeight = 25.0f;
             scroll_area_many_entries(gui, "file picker entries", {
@@ -2268,7 +2129,7 @@ void Toolbar::file_picker_gui() {
                                 .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                                 .layoutDirection = CLAY_LEFT_TO_RIGHT 
                             },
-                            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io->theme->backColor1) : convert_vec4<Clay_Color>(io->theme->backColor2)
+                            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io.theme->backColor1) : convert_vec4<Clay_Color>(io.theme->backColor2)
                         }) {
                             CLAY_AUTO_ID({
                                 .layout = {
@@ -2319,84 +2180,6 @@ void Toolbar::file_picker_gui() {
     });
 }
 
-void Toolbar::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-    if(key.down) {
-        switch(key.key) {
-            case InputManager::KEY_SAVE: {
-                save_func();
-                break;
-            }
-            case InputManager::KEY_SAVE_AS: {
-                save_as_func();
-                break;
-            }
-            case InputManager::KEY_SHOW_METRICS: {
-                showPerformance = !showPerformance;
-                gui.set_to_layout();
-                break;
-            }
-            case InputManager::KEY_OPEN_CHAT: {
-                if(chatBoxState == CHATBOXSTATE_CLOSE)
-                    chatBoxState = CHATBOXSTATE_JUSTOPEN;
-                gui.set_to_layout();
-                break;
-            }
-            case InputManager::KEY_SHOW_PLAYER_LIST: {
-                playerMenuOpen = !playerMenuOpen;
-                gui.set_to_layout();
-                break;
-            }
-        }
-    }
-}
-
-void Toolbar::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    //if(button.deviceType != InputManager::MouseDeviceType::TOUCH) {
-    //    if(button.down) {
-    //        switch(button.button) {
-    //            case InputManager::MouseButton::LEFT: {
-    //                io->mouse.leftClick = std::max<int>(io->mouse.leftClick, button.clicks);
-    //                io->mouse.leftHeld = true;
-    //                break;
-    //            }
-    //            case InputManager::MouseButton::RIGHT: {
-    //                io->mouse.rightClick = std::max<int>(io->mouse.rightClick, button.clicks);
-    //                io->mouse.rightHeld = true;
-    //                break;
-    //            }
-    //            default:
-    //                break;
-    //        }
-    //    }
-    //    else {
-    //        switch(button.button) {
-    //            case InputManager::MouseButton::LEFT: {
-    //                io->mouse.leftHeld = false;
-    //                break;
-    //            }
-    //            case InputManager::MouseButton::RIGHT: {
-    //                io->mouse.rightHeld = false;
-    //                break;
-    //            }
-    //            default:
-    //                break;
-    //        }
-    //    }
-    //}
-}
-
-void Toolbar::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-}
-
-void Toolbar::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
-}
-
-void Toolbar::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-}
-
-void Toolbar::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-}
-
 float Toolbar::final_gui_scale() {
     return finalCalculatedGuiScale;
 }
@@ -2408,12 +2191,5 @@ void Toolbar::calculate_final_gui_scale() {
 }
 
 float Toolbar::final_gui_scale_not_fit() {
-    return guiScale * main.get_scale_and_density_factor_gui();
-}
-
-void Toolbar::draw(SkCanvas* canvas, bool skiaAA) {
-    canvas->save();
-    canvas->scale(final_gui_scale(), final_gui_scale());
-    gui.draw(canvas, skiaAA);
-    canvas->restore();
+    return main.conf.guiScale * main.get_scale_and_density_factor_gui();
 }

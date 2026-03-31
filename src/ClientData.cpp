@@ -199,7 +199,7 @@ void ClientData::draw_cursor(SkCanvas* canvas, const DrawData& drawData) const {
         p.setColor4f({cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.7f});
         canvas->drawCircle(0.0f, 0.0f, 5.0f, p);
 
-        SkFont f = drawData.main->toolbar.io->get_font(18.0f);
+        SkFont f = drawData.main->g.gui.io.get_font(18.0f);
         SkFontMetrics metrics;
         f.getMetrics(&metrics);
 
@@ -209,7 +209,7 @@ void ClientData::draw_cursor(SkCanvas* canvas, const DrawData& drawData) const {
         SkPaint p2(SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.5f});
         canvas->drawSimpleText(displayName.c_str(), displayName.length(), SkTextEncoding::kUTF8, 6.0f, -metrics.fDescent, f, p2);
 
-        SkPaint p3(color_mul_alpha(drawData.main->toolbar.io->theme->backColor1, 0.5f));
+        SkPaint p3(color_mul_alpha(drawData.main->g.gui.io.theme->backColor1, 0.5f));
         canvas->drawRoundRect(SkRect::MakeXYWH(6.0f, -bounds.y(), bounds.x(), bounds.y()), 3.0f, 3.0f, p3);
 
         canvas->restore();

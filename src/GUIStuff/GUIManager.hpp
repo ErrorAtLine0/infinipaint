@@ -23,7 +23,7 @@ class GUIManager {
 
         void update_window(const Vector2f& windowPos, const Vector2f& windowSize, float guiScaleMultiplier);
 
-        std::shared_ptr<UpdateInputData> io;
+        UpdateInputData io;
 
         GUIManagerIDStack idStack;
         std::unordered_map<GUIManagerIDStack, ElementContainer> elements;

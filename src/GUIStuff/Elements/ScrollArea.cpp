@@ -46,15 +46,15 @@ void ScrollArea::layout(const Options& options) {
         //            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
         //            .layoutDirection = CLAY_TOP_TO_BOTTOM
         //        },
-        //        .backgroundColor = convert_vec4<Clay_Color>(io->theme->backColor2)
+        //        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2)
         //    }) {
         //        SkColor4f scrollerColor;
         //        if(sD.isMoving)
-        //            scrollerColor = io->theme->fillColor1;
+        //            scrollerColor = io.theme->fillColor1;
         //        else if(Clay_Hovered())
-        //            scrollerColor = io->theme->fillColor1;
+        //            scrollerColor = io.theme->fillColor1;
         //        else
-        //            scrollerColor = io->theme->fillColor2;
+        //            scrollerColor = io.theme->fillColor2;
 
         //        bool isHoveringOverScroller = false;
         //        CLAY_AUTO_ID({ 
@@ -71,19 +71,19 @@ void ScrollArea::layout(const Options& options) {
         //                isHoveringOverScroller = true;
         //        }
         //        CLAY_AUTO_ID({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-        //        if(Clay_Hovered() && io->mouse.leftClick) {
+        //        if(Clay_Hovered() && io.mouse.leftClick) {
         //            isMoving = true;
         //            if(isHoveringOverScroller)
         //                scrollerStartPos = scrollAreaBB.y + areaAboveScrollerSize + scrollerSize * 0.5f;
         //            else
-        //                scrollerStartPos = std::clamp(io->mouse.pos.y(), scrollAreaBB.y + scrollerSize * 0.5f, scrollAreaBB.y + scrollAreaBB.height - scrollerSize * 0.5f);
-        //            mouseStartPos = io->mouse.pos.y();
+        //                scrollerStartPos = std::clamp(io.mouse.pos.y(), scrollAreaBB.y + scrollerSize * 0.5f, scrollAreaBB.y + scrollAreaBB.height - scrollerSize * 0.5f);
+        //            mouseStartPos = io.mouse.pos.y();
         //        }
-        //        if(!io->mouse.leftHeld)
+        //        if(!io.mouse.leftHeld)
         //            isMoving = false;
         //        if(isMoving) {
         //            float newScrollPosFrac;
-        //            newScrollPosFrac = std::clamp((scrollerStartPos - (mouseStartPos - io->mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
+        //            newScrollPosFrac = std::clamp((scrollerStartPos - (mouseStartPos - io.mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
         //            currentScrollPos = newScrollPosFrac * (-scrollPosMax);
         //        }
         //        currentScrollPos = std::clamp(currentScrollPos, -scrollPosMax, 0.0f);

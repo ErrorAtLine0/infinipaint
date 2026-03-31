@@ -40,8 +40,6 @@ MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),
     toolbar(*this)
 {
-    displayName = Random::get().alphanumeric_str(10);
-
     Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
         std::cout << "[WORLDFATAL] " << text << std::endl;
@@ -65,7 +63,7 @@ MainProgram::MainProgram():
 }
 
 void MainProgram::update() {
-    while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / fpsLimit);
+    while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / conf.fpsLimit);
     lastFrameTime = std::chrono::steady_clock::now();
 
     input.update();
@@ -120,7 +118,7 @@ bool MainProgram::app_close_requested() {
 void MainProgram::update_display_names() {
     for(auto& w : worlds) {
         if(!w->netObjMan.is_connected())
-            w->ownClientData->set_display_name(displayName);
+            w->ownClientData->set_display_name(conf.displayName);
     }
 }
 
@@ -160,7 +158,7 @@ void MainProgram::save_config() {
         json j;
 
         j["version"] = VersionConstants::CURRENT_VERSION_STRING;
-        j["settings"] = toolbar.get_config_json();
+        j["settings"] = conf.get_config_json(input);
         j["window"]["pos"] = window.writtenPos;
         j["window"]["size"] = window.writtenSize;
         j["window"]["maximized"] = window.maximized;
@@ -206,7 +204,7 @@ void MainProgram::load_config() {
             catch(...) {}
 
             try {
-                toolbar.set_config_json(j["settings"], version);
+                conf.set_config_json(input, j["settings"], version);
             }
             catch(...) {}
 #ifndef __EMSCRIPTEN__
@@ -238,11 +236,13 @@ void MainProgram::load_config() {
         toolbar.viewWebVersionWelcome = true;
 #endif
     toolbar.load_palettes();
-    toolbar.load_theme();
+    g.load_theme(configPath, conf.themeCurrentlyLoaded);
     toolbar.load_licenses();
 
     NetLibrary::copy_default_p2p_config_to_path(configPath / "p2p.json");
 
+    update_display_names();
+    set_vsync_value(conf.vsyncValue);
     refresh_draw_surfaces();
 }
 
@@ -255,14 +255,14 @@ void MainProgram::set_vsync_value(int vsyncValue) {
         }
         SDL_GL_SetSwapInterval(1);
     }
-    window.vsyncValue = vsyncValue;
+    conf.vsyncValue = vsyncValue;
 }
 
 void MainProgram::update_scale_and_density() {
 #ifdef __EMSCRIPTEN__
     window.scale = 1.0f;
 #else
-    window.scale = window.applyDisplayScale ? SDL_GetWindowDisplayScale(window.sdlWindow) : 1.0f;
+    window.scale = conf.applyDisplayScale ? SDL_GetWindowDisplayScale(window.sdlWindow) : 1.0f;
 #endif
     window.density = SDL_GetWindowPixelDensity(window.sdlWindow);
 }
@@ -274,7 +274,7 @@ float MainProgram::get_scale_and_density_factor_gui() {
 void MainProgram::refresh_draw_surfaces() {
     if(window.canCreateSurfaces) {
         window.defaultMSAASampleCount = 0;
-        window.defaultMSAASurfaceProps = SkSurfaceProps(antialiasing == AntiAliasing::DYNAMIC_MSAA ? SkSurfaceProps::kDynamicMSAA_Flag : SkSurfaceProps::kDefault_Flag, kUnknown_SkPixelGeometry);
+        window.defaultMSAASurfaceProps = SkSurfaceProps(conf.antialiasing == GlobalConfig::AntiAliasing::DYNAMIC_MSAA ? SkSurfaceProps::kDynamicMSAA_Flag : SkSurfaceProps::kDefault_Flag, kUnknown_SkPixelGeometry);
         window.intermediateSurface = create_native_surface(window.size, true);
         window.intermediateCanvas = window.intermediateSurface->getCanvas();
 
@@ -288,10 +288,8 @@ void MainProgram::refresh_draw_surfaces() {
 void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData) {
     canvas->clear(drawData.transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : worldToDraw->canvasTheme.get_back_color());
     DrawData drawDataCopy = drawData;
-    drawDataCopy.skiaAA = antialiasing == AntiAliasing::SKIA;
+    drawDataCopy.skiaAA = conf.antialiasing == GlobalConfig::AntiAliasing::SKIA;
     worldToDraw->draw(canvas, drawDataCopy);
-    if(!drawData.takingScreenshot)
-        toolbar.draw(canvas, drawDataCopy.skiaAA);
 }
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {
@@ -348,25 +346,21 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
                 drawGui = !drawGui;
         }
     }
-    toolbar.input_key_callback(key);
     if(world)
         world->input_key_callback(key);
 }
 
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    toolbar.input_mouse_button_callback(button);
     if(world)
         world->input_mouse_button_callback(button);
 }
 
 void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    toolbar.input_mouse_motion_callback(motion);
     if(world)
         world->input_mouse_motion_callback(motion);
 }
 
 void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
-    toolbar.input_mouse_wheel_callback(wheel);
     if(world)
         world->input_mouse_wheel_callback(wheel);
 }
@@ -402,11 +396,9 @@ void MainProgram::input_multi_finger_motion_callback(const InputManager::MultiFi
 }
 
 void MainProgram::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-    toolbar.input_finger_touch_callback(touch);
 }
 
 void MainProgram::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    toolbar.input_finger_motion_callback(motion);
 }
 
 bool MainProgram::network_being_used() {

@@ -30,43 +30,44 @@ void TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
 
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
 
     auto& currentMods = *currentModsPtr;
 
-    t.gui.new_id("edit tool text", [&] {
-        text_label_centered(t.gui, "Edit Text");
+    gui.new_id("edit tool text", [&] {
+        text_label_centered(gui, "Edit Text");
 
-        left_to_right_line_layout(t.gui, [&] {
-            text_label(t.gui, "Font");
-            //if(t.gui.font_picker("font picker", &newFontName)) {
+        left_to_right_line_layout(gui, [&] {
+            text_label(gui, "Font");
+            //if(gui.font_picker("font picker", &newFontName)) {
             //    currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES] = std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{newFontName.c_str(), newFontName.size()}});
             //    add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES]);});
             //}
         });
         
-        //left_to_right_line_centered_layout(t.gui, [&] {
+        //left_to_right_line_centered_layout(gui, [&] {
         //    if(svg_icon_button("Bold button", "data/icons/RemixIcon/bold.svg", newIsBold)) {
         //        newIsBold = !newIsBold;
         //        currentMods[TextStyleModifier::ModifierType::WEIGHT] = std::make_shared<WeightTextStyleModifier>(newIsBold ? SkFontStyle::Weight::kBold_Weight : SkFontStyle::Weight::kNormal_Weight);
         //        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::WEIGHT]);});
         //    }
 
-        //    if(t.gui.svg_icon_button("Italic button", "data/icons/RemixIcon/italic.svg", newIsItalic)) {
+        //    if(gui.svg_icon_button("Italic button", "data/icons/RemixIcon/italic.svg", newIsItalic)) {
         //        newIsItalic = !newIsItalic;
         //        currentMods[TextStyleModifier::ModifierType::SLANT] = std::make_shared<SlantTextStyleModifier>(newIsItalic ? SkFontStyle::Slant::kItalic_Slant : SkFontStyle::Slant::kUpright_Slant);
         //        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SLANT]);});
         //    }
 
         //    bool decorationEdited = false;
-        //    if(t.gui.svg_icon_button("Underline button", "data/icons/RemixIcon/underline.svg", newIsUnderlined)) {
+        //    if(gui.svg_icon_button("Underline button", "data/icons/RemixIcon/underline.svg", newIsUnderlined)) {
         //        newIsUnderlined = !newIsUnderlined;
         //        decorationEdited = true;
         //    }
-        //    if(t.gui.svg_icon_button("Strikethrough button", "data/icons/RemixIcon/strikethrough.svg", newIsLinethrough)) {
+        //    if(gui.svg_icon_button("Strikethrough button", "data/icons/RemixIcon/strikethrough.svg", newIsLinethrough)) {
         //        newIsLinethrough = !newIsLinethrough;
         //        decorationEdited = true;
         //    }
-        //    if(t.gui.svg_icon_button("Overline button", "data/icons/RemixIcon/overline.svg", newIsOverline)) {
+        //    if(gui.svg_icon_button("Overline button", "data/icons/RemixIcon/overline.svg", newIsOverline)) {
         //        newIsOverline = !newIsOverline;
         //        decorationEdited = true;
         //    }
@@ -76,22 +77,22 @@ void TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
         //    }
         //});
 
-        //t.gui.left_to_right_line_centered_layout([&]() {
-        //    if(t.gui.svg_icon_button("Align left button", "data/icons/RemixIcon/align-left.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kLeft))
+        //gui.left_to_right_line_centered_layout([&]() {
+        //    if(gui.svg_icon_button("Align left button", "data/icons/RemixIcon/align-left.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kLeft))
         //        add_undo([&](){a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kLeft);});
-        //    if(t.gui.svg_icon_button("Align center button", "data/icons/RemixIcon/align-center.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kCenter))
+        //    if(gui.svg_icon_button("Align center button", "data/icons/RemixIcon/align-center.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kCenter))
         //        add_undo([&](){a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kCenter);});
-        //    if(t.gui.svg_icon_button("Align right button", "data/icons/RemixIcon/align-right.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kRight))
+        //    if(gui.svg_icon_button("Align right button", "data/icons/RemixIcon/align-right.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kRight))
         //        add_undo([&](){a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kRight);});
-        //    if(t.gui.svg_icon_button("Align justify button", "data/icons/RemixIcon/align-justify.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kJustify))
+        //    if(gui.svg_icon_button("Align justify button", "data/icons/RemixIcon/align-justify.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kJustify))
         //        add_undo([&](){a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kJustify);});
-        //    if(t.gui.svg_icon_button("Text direction left", "data/icons/RemixIcon/text-direction-l.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kLtr))
+        //    if(gui.svg_icon_button("Text direction left", "data/icons/RemixIcon/text-direction-l.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kLtr))
         //        add_undo([&](){a.textBox->set_text_direction_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kLtr);});
-        //    if(t.gui.svg_icon_button("Text direction right", "data/icons/RemixIcon/text-direction-r.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kRtl))
+        //    if(gui.svg_icon_button("Text direction right", "data/icons/RemixIcon/text-direction-r.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kRtl))
         //        add_undo([&](){a.textBox->set_text_direction_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kRtl);});
         //});
 
-        //if(t.gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100)) {
+        //if(gui.slider_scalar_field<uint32_t>("Font Size Slider", "Font Size", &newFontSize, 3, 100)) {
         //    hold_undo_data("Font Size", a);
         //    currentMods[TextStyleModifier::ModifierType::SIZE] = std::make_shared<SizeTextStyleModifier>(newFontSize);
         //    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SIZE]);
@@ -100,10 +101,10 @@ void TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
         //    release_undo_data("Font Size");
 
         //// Text color
-        //t.gui.left_to_right_line_layout([&]() {
-        //    if(t.gui.color_button_big("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
+        //gui.left_to_right_line_layout([&]() {
+        //    if(gui.color_button_big("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
         //        t.color_selector_right(&newTextColor == t.colorRight ? nullptr : &newTextColor);
-        //    t.gui.text_label("Text Color");
+        //    gui.text_label("Text Color");
         //});
 
         //if(&newTextColor == t.colorRight)
@@ -119,8 +120,8 @@ void TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
 
 
         //// Highlight color
-        //t.gui.left_to_right_line_layout([&]() {
-        //    if(t.gui.color_button_big("Highlight Color", &newHighlightColor, &newHighlightColor == t.colorRight)) {
+        //gui.left_to_right_line_layout([&]() {
+        //    if(gui.color_button_big("Highlight Color", &newHighlightColor, &newHighlightColor == t.colorRight)) {
         //        if(newHighlightColor.w() == 0.0f) { // Make highlight appear when the button is pressed
         //            newHighlightColor.w() = 1.0f;
         //            currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
@@ -129,13 +130,13 @@ void TextBoxEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
         //        t.color_selector_right(&newHighlightColor == t.colorRight ? nullptr : &newHighlightColor);
         //    }
         //    if(newHighlightColor.w() != 0.0f) {
-        //        if(t.gui.svg_icon_button("Remove Highlight Color", "data/icons/close.svg")) {
+        //        if(gui.svg_icon_button("Remove Highlight Color", "data/icons/close.svg")) {
         //            newHighlightColor = {0.0f, 0.0f, 0.0f, 0.0f};
         //            currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
         //            add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
         //        }
         //    }
-        //    t.gui.text_label("Highlight Color");
+        //    gui.text_label("Highlight Color");
         //});
 
         //if(&newHighlightColor == t.colorRight)
@@ -200,10 +201,11 @@ void TextBoxEditTool::right_click_popup_gui(CanvasComponentContainer::ObjInfo* c
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
 
-    t.gui.element<PositionAdjustingPopupMenu>("Text popup menu", popupPos, [&, popupPos] {
-        text_label_light(t.gui, "Text menu");
+    gui.element<PositionAdjustingPopupMenu>("Text popup menu", popupPos, [&, popupPos] {
+        text_label_light(gui, "Text menu");
         InputManager& input = drawP.world.main.input;
         drawP.popup_menu_action_button("Paste", "Paste", [&] {
             input.call_text_paste(true);

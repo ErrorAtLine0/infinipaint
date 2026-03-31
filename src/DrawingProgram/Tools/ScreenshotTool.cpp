@@ -57,25 +57,26 @@ void ScreenshotTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
     auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
-    t.gui.new_id("screenshot tool", [&] {
-        text_label_centered(t.gui, "Screenshot");
+    gui.new_id("screenshot tool", [&] {
+        text_label_centered(gui, "Screenshot");
         auto oldImgSize = controls.imageSize;
         if(controls.selectionMode == ScreenshotControls::SelectionMode::NO_SELECTION)
-            text_label(t.gui, "Select an area on the canvas...");
+            text_label(gui, "Select an area on the canvas...");
         if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != SCREENSHOT_SVG)
-            input_scalars_field(t.gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
+            input_scalars_field(gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
         if(controls.selectionMode == ScreenshotControls::SelectionMode::SELECTION_EXISTS) {
-            left_to_right_line_layout(t.gui, [&]() {
-                text_label(t.gui, "Image Type");
-                t.gui.element<DropDown<size_t>>("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
+            left_to_right_line_layout(gui, [&]() {
+                text_label(gui, "Image Type");
+                gui.element<DropDown<size_t>>("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
             });
             if(screenshotConfig.selectedType != SCREENSHOT_SVG)
-                checkbox_boolean_field(t.gui, "Display Grid", "Display Grid", &controls.displayGrid);
+                checkbox_boolean_field(gui, "Display Grid", "Display Grid", &controls.displayGrid);
             else
-                text_label(t.gui, "Note: Screenshot will ignore blend\nmodes and layer alpha");
+                text_label(gui, "Note: Screenshot will ignore blend\nmodes and layer alpha");
             if(screenshotConfig.selectedType != 0)
-                checkbox_boolean_field(t.gui, "Transparent Background", "Transparent Background", &controls.transparentBackground);
+                checkbox_boolean_field(gui, "Transparent Background", "Transparent Background", &controls.transparentBackground);
             if(controls.imageSize.x() != oldImgSize.x()) {
                 screenshotConfig.setDimensionSize = controls.imageSize.x();
                 screenshotConfig.setDimensionIsX = true;
@@ -86,7 +87,7 @@ void ScreenshotTool::gui_toolbox() {
                 screenshotConfig.setDimensionIsX = false;
                 controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
             }
-            text_button(t.gui, "Take Screenshot", "Take Screenshot", {
+            text_button(gui, "Take Screenshot", "Take Screenshot", {
                 .wide = true,
                 .onClick = [&] {
                     controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;

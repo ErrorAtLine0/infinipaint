@@ -38,13 +38,13 @@ CanvasTheme::CanvasTheme(World& w):
 {}
 
 void CanvasTheme::server_init_no_file() {
-    backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.defaultCanvasBackgroundColor);
+    backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.conf.defaultCanvasBackgroundColor);
     set_tool_front_color(world.drawProg);
 }
 
 SkColor4f CanvasTheme::get_back_color() const {
     if(!backColor)
-        return SkColor4f{world.main.defaultCanvasBackgroundColor.x(), world.main.defaultCanvasBackgroundColor.y(), world.main.defaultCanvasBackgroundColor.z(), 1.0f};
+        return SkColor4f{world.main.conf.defaultCanvasBackgroundColor.x(), world.main.conf.defaultCanvasBackgroundColor.y(), world.main.conf.defaultCanvasBackgroundColor.z(), 1.0f};
     else
         return SkColor4f{backColor->c.x(), backColor->c.y(), backColor->c.z(), 1.0f};
 }
@@ -91,7 +91,7 @@ void CanvasTheme::save_file(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void CanvasTheme::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.defaultCanvasBackgroundColor);
+    backColor = world.netObjMan.make_obj_direct<BackColor>(world.main.conf.defaultCanvasBackgroundColor);
     set_tool_front_color(world.drawProg);
 
     if(version < VersionNumber(0, 1, 0))

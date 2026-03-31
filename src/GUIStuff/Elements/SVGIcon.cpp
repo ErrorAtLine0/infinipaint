@@ -11,7 +11,7 @@ SVGIcon::SVGIcon(GUIManager& gui):
     Element(gui) {}
 
 void SVGIcon::layout(const std::string& newSvgPath, bool newIsHighlighted) {
-    auto& io = *gui.io;
+    auto& io = gui.io;
     auto findSVGData = io.svgData.find(newSvgPath);
     if(findSVGData == io.svgData.end())
         throw std::runtime_error("[SVGIcon::update] Could not load icon " + newSvgPath);

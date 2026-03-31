@@ -25,11 +25,12 @@ void EllipseDrawTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.ellipseDraw.fillStrokeMode;
-    t.gui.new_id("ellipse draw tool", [&] {
-        text_label_centered(t.gui, "Draw Ellipse");
-        radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
+    gui.new_id("ellipse draw tool", [&] {
+        text_label_centered(gui, "Draw Ellipse");
+        radio_button_selector(gui, "fill type", &fillStrokeMode, {
             {"Fill only", 0},
             {"Outline only", 1},
             {"Fill and Outline", 2}

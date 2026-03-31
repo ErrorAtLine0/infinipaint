@@ -41,7 +41,7 @@ void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseB
             if(drawP.world.main.input.pen.isDown) {
                 penWidth = drawP.world.main.input.pen.pressure;
                 if(penWidth != 0.0f) {
-                    float brushMinSize = drawP.world.main.toolbar.tabletOptions.brushMinimumSize;
+                    float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
                     penWidth = brushMinSize + penWidth * (1.0f - brushMinSize);
                 }
             }
@@ -124,7 +124,7 @@ void BrushTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs&
     if(axis.axis == SDL_PEN_AXIS_PRESSURE) {
         penWidth = axis.value;
         if(penWidth != 0.0f) {
-            float brushMinSize = drawP.world.main.toolbar.tabletOptions.brushMinimumSize;
+            float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
             penWidth = brushMinSize + penWidth * (1.0f - brushMinSize);
         }
     }
@@ -172,9 +172,11 @@ void BrushTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.new_id("brush tool", [&] {
-        text_label_centered(t.gui, "Brush");
-        checkbox_boolean_field(t.gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
+    auto& gui = drawP.world.main.g.gui;
+
+    gui.new_id("brush tool", [&] {
+        text_label_centered(gui, "Brush");
+        checkbox_boolean_field(gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
         drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
     });
 }

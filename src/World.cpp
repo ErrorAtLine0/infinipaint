@@ -80,7 +80,7 @@ void World::init_client_data_list() {
     clients = netObjMan.make_obj<NetworkingObjects::NetObjUnorderedSet<ClientData>>();
     ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{
         .cursorColor = get_random_cursor_color(),
-        .displayName = main.displayName
+        .displayName = main.conf.displayName
     });
     init_client_data_list_callbacks();
 }
@@ -161,7 +161,7 @@ void World::init_client(const std::string& serverFullID) {
     netClient->add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
 
-    netClient->send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, main.displayName);
+    netClient->send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, main.conf.displayName);
 }
 
 void World::focus_update() {

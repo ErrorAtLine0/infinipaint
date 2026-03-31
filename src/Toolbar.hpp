@@ -40,15 +40,8 @@ class Toolbar {
         std::string chatMessageInput;
 
         Toolbar(MainProgram& initMain);
-        void input_key_callback(const InputManager::KeyCallbackArgs& key);
-        void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
-        void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
-        void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
-        void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
-        void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
         void update();
         void layout_run();
-        void draw(SkCanvas* canvas, bool skiaAA);
         void color_selector_left(Vector4f* color);
         void color_selector_right(Vector4f* color);
         void paint_popup(Vector2f popupPos);
@@ -58,33 +51,10 @@ class Toolbar {
         void save_func();
         void save_as_func();
         std::filesystem::path& file_selector_path();
-        std::shared_ptr<GUIStuff::UpdateInputData> io;
-        GUIStuff::GUIManager gui;
-
-        nlohmann::json get_config_json();
-        void set_config_json(const nlohmann::json& j, VersionNumber version);
 
         void save_palettes();
         void load_palettes();
-        void save_theme();
-        bool load_theme();
         void load_licenses();
-
-        double dragZoomSpeed = 0.02;
-        double scrollZoomSpeed = 0.4;
-        float jumpTransitionTime = 0.5f;
-        Vector4f jumpTransitionEasing{0.75, 0.25, 0.25, 0.75};
-        bool viewWebVersionWelcome = false;
-
-        struct TabletOptions {
-            bool pressureAffectsBrushWidth = true;
-            float smoothingSamplingTime = 0.04f;
-            uint8_t middleClickButton = 1;
-            uint8_t rightClickButton = 2;
-            bool ignoreMouseMovementWhenPenInProximity = false;
-            float brushMinimumSize = 0.0f;
-            bool zoomWhilePenDownAndButtonHeld = true;
-        } tabletOptions;
 
         Vector4f* colorLeft = nullptr;
         Vector4f* colorRight = nullptr;
@@ -93,7 +63,6 @@ class Toolbar {
 
         std::optional<Vector2f> rightClickPopupLocation;
 
-        bool flipZoomToolDirection = false;
 
         float final_gui_scale();
 
@@ -146,7 +115,6 @@ class Toolbar {
         void update_notification_gui();
         void update_notification_check();
         struct UpdateCheckerData {
-            bool checkForUpdates = true;
             bool showGui = false;
             bool updateCheckDone = false;
             std::string newVersionStr;
@@ -177,7 +145,6 @@ class Toolbar {
         struct ThemeData {
             std::vector<std::string> themeDirList;
             std::optional<size_t> selectedThemeIndex;
-            std::string themeCurrentlyLoaded = "Default";
             bool openedSaveAsMenu = false;
         } themeData;
 
@@ -190,7 +157,6 @@ class Toolbar {
         bool optionsMenuOpen = false;
         bool playerMenuOpen = false;
 
-        float guiScale = 1.0f;
         float finalCalculatedGuiScale = 1.0f;
 
         enum {
@@ -225,7 +191,6 @@ class Toolbar {
             uint32_t selectedGrid = std::numeric_limits<uint32_t>::max();
         } gridMenu;
 
-        bool useNativeFilePicker = true;
         struct FilePicker {
             bool isOpen = false;
             std::string filePickerWindowName;
@@ -248,8 +213,6 @@ class Toolbar {
         static NativeFilePicker nativeFilePicker;
 
         std::optional<unsigned> keybindWaiting;
-
-        std::filesystem::path testing;
 
         std::unique_ptr<skia::textlayout::Paragraph> build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
 

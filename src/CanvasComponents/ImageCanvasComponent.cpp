@@ -64,7 +64,7 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
         p.setStroke(true);
         p.setStrokeWidth(10.0f);
         p.setStrokeCap(SkPaint::kRound_Cap);
-        p.setColor4f(drawData.main->toolbar.io->theme->fillColor1);
+        p.setColor4f(drawData.main->g.gui.io.theme->fillColor1);
         p.setAntiAlias(drawData.skiaAA);
         Vector2f center = (d.p1 + d.p2) * 0.5f;
 

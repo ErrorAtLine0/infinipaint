@@ -21,11 +21,12 @@ void EraserTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
-    t.gui.new_id("eraser tool", [&] {
-        text_label_centered(t.gui, "Eraser");
+    auto& gui = drawP.world.main.g.gui;
+    gui.new_id("eraser tool", [&] {
+        text_label_centered(gui, "Eraser");
         drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
-        text_label(t.gui, "Erase from:");
-        radio_button_selector(t.gui, "layer selector", &drawP.controls.layerSelector, {
+        text_label(gui, "Erase from:");
+        radio_button_selector(gui, "layer selector", &drawP.controls.layerSelector, {
             {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
             {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
         });

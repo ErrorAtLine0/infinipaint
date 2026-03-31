@@ -19,8 +19,6 @@ class MainProgram;
 
 //#define ENABLE_ORDERED_LIST_TEST
 
-#define DEFAULT_CANVAS_BACKGROUND_COLOR Vector3f{0.07f, 0.07f, 0.07f}
-
 class World {
     public:
         static constexpr std::string FILE_EXTENSION = "infpnt";

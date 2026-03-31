@@ -45,10 +45,10 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
     pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
     skia::textlayout::TextStyle tStyle;
     tStyle.setFontSize(config->fontSize);
-    tStyle.setFontFamilies(window->io->fonts->get_default_font_families());
+    tStyle.setFontFamilies(window->io.fonts->get_default_font_families());
     pStyle.setTextStyle(tStyle);
 
-    skia::textlayout::ParagraphBuilderImpl a(pStyle, window->io->fonts->collection, SkUnicodes::ICU::Make());
+    skia::textlayout::ParagraphBuilderImpl a(pStyle, window->io.fonts->collection, SkUnicodes::ICU::Make());
     a.addText(str.chars, str.length);
     std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
     p->layout(std::numeric_limits<float>::max());
@@ -58,7 +58,7 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
 
 void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
     canvas->save();
-    canvas->translate(io->windowPos.x(), io->windowPos.y());
+    canvas->translate(io.windowPos.x(), io.windowPos.y());
 
     for(size_t i = 0; i < static_cast<size_t>(renderCommands.length); i++) {
         Clay_RenderCommand* command = Clay_RenderCommandArray_Get(&renderCommands, i);
@@ -94,11 +94,11 @@ void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
                 pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
                 skia::textlayout::TextStyle tStyle;
                 tStyle.setFontSize(config->fontSize);
-                tStyle.setFontFamilies(io->fonts->get_default_font_families());
+                tStyle.setFontFamilies(io.fonts->get_default_font_families());
                 tStyle.setColor(convert_vec4<SkColor4f>(config->textColor).toSkColor());
                 pStyle.setTextStyle(tStyle);
 
-                skia::textlayout::ParagraphBuilderImpl a(pStyle, io->fonts->collection, SkUnicodes::ICU::Make());
+                skia::textlayout::ParagraphBuilderImpl a(pStyle, io.fonts->collection, SkUnicodes::ICU::Make());
                 a.addText(config->stringContents.chars, config->stringContents.length);
                 std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
                 p->layout(std::numeric_limits<float>::max());
@@ -211,7 +211,7 @@ void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
             }
             case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
                 Element* customElement = static_cast<Element*>(command->renderData.custom.customData);
-                customElement->clay_draw(canvas, *io, command, skiaAA);
+                customElement->clay_draw(canvas, io, command, skiaAA);
                 break;
             }
             default:
@@ -223,11 +223,11 @@ void GUIManager::draw(SkCanvas* canvas, bool skiaAA) {
 }
 
 void GUIManager::update_window(const Vector2f& windowPos, const Vector2f& windowSize, float guiScaleMultiplier) {
-    if(io->windowPos != windowPos || io->windowSize != windowSize || io->guiScaleMultiplier != guiScaleMultiplier)
+    if(io.windowPos != windowPos || io.windowSize != windowSize || io.guiScaleMultiplier != guiScaleMultiplier)
         set_to_layout();
-    io->windowPos = windowPos;
-    io->windowSize = windowSize;
-    io->guiScaleMultiplier = guiScaleMultiplier;
+    io.windowPos = windowPos;
+    io.windowSize = windowSize;
+    io.guiScaleMultiplier = guiScaleMultiplier;
 }
 
 void GUIManager::set_to_layout() {
@@ -251,8 +251,7 @@ void GUIManager::layout_begin() {
     for(auto& [id, e] : elements)
         e.isUsedThisFrame = false;
 
-    io->strArena = &strArena;
-    Clay_SetLayoutDimensions(Clay_Dimensions(io->windowSize.x(), io->windowSize.y()));
+    Clay_SetLayoutDimensions(Clay_Dimensions(io.windowSize.x(), io.windowSize.y()));
     Clay_SetCurrentContext(clayInstance);
 
     strArena.reset();
@@ -284,7 +283,7 @@ void GUIManager::update_element_bounding_boxes() {
 
 void GUIManager::single_layout_run() {
     layout_begin();
-    io->layoutRun();
+    io.layoutRun();
     layout_end();
 }
 

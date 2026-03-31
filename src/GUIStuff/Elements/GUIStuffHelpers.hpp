@@ -68,7 +68,7 @@ struct Theme {
 std::shared_ptr<Theme> get_default_dark_mode();
 
 struct UpdateInputData {
-    InputManager* input;
+    InputManager* input = nullptr;
     std::function<void()> layoutRun;
 
     SkFont get_font(float fSize) const;
@@ -84,7 +84,6 @@ struct UpdateInputData {
     std::shared_ptr<FontData> fonts;
     sk_sp<SkTypeface> textTypeface;
 
-    DefaultStringArena* strArena;
     std::shared_ptr<Theme> theme;
     std::unordered_map<std::string, sk_sp<SkSVGDOM>> svgData;
 };

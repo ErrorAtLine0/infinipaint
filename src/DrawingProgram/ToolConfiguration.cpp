@@ -81,7 +81,7 @@ void ToolConfiguration::print_relative_width_fail_message(RelativeWidthFailCode 
 }
 
 void ToolConfiguration::relative_width_gui(DrawingProgram& drawP, const char* label) {
-    auto& gui = drawP.world.main.toolbar.gui;
+    auto& gui = drawP.world.main.g.gui;
     auto& lockedCameraScale = drawP.controls.lockedCameraScale;
     GUIStuff::ElementHelpers::slider_scalar_field(gui, "relstrokewidth", label, &get_stroke_size_relative_width_ref(drawP.drawTool->get_type()), 3.0f, 40.0f);
     GUIStuff::ElementHelpers::text_button(gui, "lock brush size", lockedCameraScale.has_value() ? "Unlock Size" : "Lock Size to Zoom", {

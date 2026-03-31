@@ -31,11 +31,12 @@ void EyeDropperTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
-    t.gui.new_id("Color select tool", [&] {
-        text_label_centered(t.gui, "Color Select");
+    gui.new_id("Color select tool", [&] {
+        text_label_centered(gui, "Color Select");
 
-        radio_button_selector<bool>(t.gui, "Stroke type", &selectingStrokeColor, {
+        radio_button_selector<bool>(gui, "Stroke type", &selectingStrokeColor, {
             {"Stroke Color", true},
             {"Fill Color", false}
         });

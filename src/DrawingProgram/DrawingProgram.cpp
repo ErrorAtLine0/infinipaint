@@ -328,23 +328,25 @@ void DrawingProgram::toolbar_gui() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = world.main.toolbar;
-    t.gui.new_id("Drawing Program Toolbar GUI", [&] {
-        t.gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] {
+    GUIManager& gui = world.main.g.gui;
+    auto& io = gui.io;
+
+    gui.new_id("Drawing Program Toolbar GUI", [&] {
+        gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] {
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
-                    .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(t.io->theme->padding1 / 2)),
-                    .childGap = static_cast<uint16_t>(t.io->theme->childGap1 / 2), 
+                    .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io.theme->padding1 / 2)),
+                    .childGap = static_cast<uint16_t>(io.theme->childGap1 / 2), 
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 },
-                .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
+                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
             }) {
 
                 auto tool_button = [&](const char* id, const std::string& svgPath, DrawingProgramToolType toolType) {
-                    svg_icon_button(t.gui, id, svgPath, {
+                    svg_icon_button(gui, id, svgPath, {
                         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                         .isSelected = drawTool->get_type() == toolType,
                         .onClick = [&, toolType] {
@@ -367,7 +369,7 @@ void DrawingProgram::toolbar_gui() {
                 tool_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", DrawingProgramToolType::PAN);
 
                 std::shared_ptr<double> oldRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
-                t.gui.element<RotateWheel>("Canvas Rotate Wheel", &world.drawData.cam.c.rotation, [&, oldRotationAngle] {
+                gui.element<RotateWheel>("Canvas Rotate Wheel", &world.drawData.cam.c.rotation, [&, oldRotationAngle] {
                     world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), world.drawData.cam.c.rotation - *oldRotationAngle);
                     *oldRotationAngle = world.drawData.cam.c.rotation;
                 });
@@ -377,7 +379,9 @@ void DrawingProgram::toolbar_gui() {
 }
 
 void DrawingProgram::popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick) {
-    GUIStuff::ElementHelpers::text_button(world.main.toolbar.gui, id, text, {
+    GUIStuff::GUIManager& gui = world.main.g.gui;
+
+    GUIStuff::ElementHelpers::text_button(gui, id, text, {
         .drawType = GUIStuff::SelectableButton::DrawType::TRANSPARENT_ALL,
         .wide = true,
         .onClick = onClick
@@ -390,8 +394,11 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
     using namespace ElementHelpers;
 
     Toolbar& t = world.main.toolbar;
-    t.gui.element<PositionAdjustingPopupMenu>("Selection popup menu", popupPos, [&, popupPos] {
-        text_label_light(t.gui, "Selection menu");
+    GUIStuff::GUIManager& gui = world.main.g.gui;
+    auto& io = gui.io;
+
+    gui.element<PositionAdjustingPopupMenu>("Selection popup menu", popupPos, [&, popupPos] {
+        text_label_light(gui, "Selection menu");
         popup_menu_action_button("Paste", "Paste", [&] {
             selection.deselect_all();
             selection.paste_clipboard(popupPos * t.final_gui_scale());
@@ -423,7 +430,10 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
 
 void DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
     Toolbar& t = world.main.toolbar;
-    t.gui.new_id("Drawing Program right click GUI", [&] {
+    GUIStuff::GUIManager& gui = world.main.g.gui;
+    auto& io = gui.io;
+
+    gui.new_id("Drawing Program right click GUI", [&] {
         drawTool->right_click_popup_gui(popupPos);
     });
 }
@@ -432,18 +442,21 @@ void DrawingProgram::tool_options_gui() {
     using namespace GUIStuff;
 
     Toolbar& t = world.main.toolbar;
+    GUIStuff::GUIManager& gui = world.main.g.gui;
+    auto& io = gui.io;
+
     float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    t.gui.element<LayoutElement>("Drawing program tool options gui", [&] {
+    gui.element<LayoutElement>("Drawing program tool options gui", [&] {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
-                .padding = CLAY_PADDING_ALL(t.io->theme->padding1),
-                .childGap = t.io->theme->childGap1,
+                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                .childGap = io.theme->childGap1,
                 .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .backgroundColor = convert_vec4<Clay_Color>(t.io->theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(t.io->theme->windowCorners1)
+            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
         }) {
             drawTool->gui_toolbox();
         }
@@ -514,7 +527,7 @@ void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> 
     drawTool->switch_tool(newTool->get_type());
     drawTool = std::move(newTool);
     world.main.toolbar.rightClickPopupLocation = std::nullopt;
-    world.main.toolbar.gui.set_to_layout();
+    world.main.g.gui.set_to_layout();
 }
 
 void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool force) {

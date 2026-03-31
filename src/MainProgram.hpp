@@ -12,6 +12,8 @@
 #include "Toolbar.hpp"
 #include "World.hpp"
 #include "DrawingProgram/ToolConfiguration.hpp"
+#include "GUIHolder.hpp"
+#include "GlobalConfig.hpp"
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include "include/gpu/graphite/Recorder.h"
@@ -28,7 +30,6 @@ class MainProgram {
         InputManager input;
 
         std::chrono::steady_clock::time_point lastFrameTime = std::chrono::steady_clock::now();
-        float fpsLimit = 10000.0f;
 
         Vector3f userColor;
 
@@ -42,15 +43,9 @@ class MainProgram {
             bool fullscreen = false;
             SkColorType defaultColorType;
             SkAlphaType defaultAlphaType;
-            int vsyncValue = 1;
 
             float density = 1.0f;
             float scale = 1.0f;
-            #ifndef __EMSCRIPTEN__
-                bool applyDisplayScale = true;
-            #endif
-
-            bool disableGraphicsDriverWorkarounds = false;
 
             int defaultMSAASampleCount = 0;
             SkSurfaceProps defaultMSAASurfaceProps;
@@ -92,12 +87,6 @@ class MainProgram {
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
         bool setToQuit = false;
-
-        enum class AntiAliasing {
-            NONE,
-            SKIA,
-            DYNAMIC_MSAA
-        } antialiasing = AntiAliasing::DYNAMIC_MSAA;
         
         void early_destroy();
 
@@ -124,12 +113,11 @@ class MainProgram {
 
         bool drawGui = true;
 
-        Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;
-
         size_t worldIndex = 0;
         std::vector<std::shared_ptr<World>> worlds;
 
-        std::string displayName;
+        GUIHolder g;
+        GlobalConfig conf;
 
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
@@ -159,9 +147,3 @@ class MainProgram {
         void gui();
         void draw_grid(SkCanvas* canvas);
 };
-
-NLOHMANN_JSON_SERIALIZE_ENUM(MainProgram::AntiAliasing, {
-    {MainProgram::AntiAliasing::NONE, "None"},
-    {MainProgram::AntiAliasing::SKIA, "Skia"},
-    {MainProgram::AntiAliasing::DYNAMIC_MSAA, "Dynamic MSAA"},
-})

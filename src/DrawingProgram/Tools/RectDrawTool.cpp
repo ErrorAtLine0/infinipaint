@@ -23,13 +23,14 @@ void RectDrawTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
     auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
-    t.gui.new_id("rect draw tool", [&] {
-        text_label_centered(t.gui, "Draw Rectangle");
-        slider_scalar_field(t.gui, "relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
-        radio_button_selector(t.gui, "fill type", &fillStrokeMode, {
+    gui.new_id("rect draw tool", [&] {
+        text_label_centered(gui, "Draw Rectangle");
+        slider_scalar_field(gui, "relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
+        radio_button_selector(gui, "fill type", &fillStrokeMode, {
             {"Fill only", 0},
             {"Outline only", 1},
             {"Fill and Outline", 2}

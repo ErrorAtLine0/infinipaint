@@ -32,7 +32,7 @@ template <typename T> class DropDown : public Element {
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
                                 .padding = {.left = 4, .right = 4},
-                                .childGap = gui.io->theme->childGap1,
+                                .childGap = gui.io.theme->childGap1,
                                 .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                             }
@@ -55,13 +55,13 @@ template <typename T> class DropDown : public Element {
                     Clay_ElementData dropdownElemData = Clay_GetElementData(localID);
                     float calculatedDropdownMaxHeight = 0.0f;
                     if(dropdownElemData.found)
-                        calculatedDropdownMaxHeight = std::max(gui.io->windowSize.y() - dropdownElemData.boundingBox.y - 2.0f, 0.0f);
+                        calculatedDropdownMaxHeight = std::max(gui.io.windowSize.y() - dropdownElemData.boundingBox.y - 2.0f, 0.0f);
                     CLAY(localID, {
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIXED(opts.width), .height = CLAY_SIZING_FIT(0, calculatedDropdownMaxHeight)},
                             .childGap = 0
                         },
-                        .backgroundColor = convert_vec4<Clay_Color>(gui.io->theme->backColor1),
+                        .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
                         .cornerRadius = CLAY_CORNER_RADIUS(4),
                         .floating = {
                             .offset = {
@@ -74,7 +74,7 @@ template <typename T> class DropDown : public Element {
                             .attachTo = CLAY_ATTACH_TO_PARENT
                         },
                         .border = {
-                            .color = convert_vec4<Clay_Color>(gui.io->theme->fillColor2),
+                            .color = convert_vec4<Clay_Color>(gui.io.theme->fillColor2),
                             .width = CLAY_BORDER_OUTSIDE(1)
                         }
                     }) {
@@ -96,11 +96,11 @@ template <typename T> class DropDown : public Element {
                                     }) {
                                         SkColor4f entryColor;
                                         if(selectedEntry)
-                                            entryColor = gui.io->theme->backColor2;
+                                            entryColor = gui.io.theme->backColor2;
                                         else if(hoveringOver.has_value() && hoveringOver.value() == i)
-                                            entryColor = gui.io->theme->backColor2;
+                                            entryColor = gui.io.theme->backColor2;
                                         else
-                                            entryColor = gui.io->theme->backColor1;
+                                            entryColor = gui.io.theme->backColor1;
                                         CLAY_AUTO_ID({
                                             .layout = {
                                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},

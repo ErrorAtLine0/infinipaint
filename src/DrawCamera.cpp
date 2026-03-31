@@ -49,7 +49,7 @@ void DrawCamera::smooth_move_to(World& w, const CoordSpaceHelper& newCoords, Vec
     smoothMove.endUniformZoom = std::max(smoothMove.end.inverseScale.multiply_double((a1 < a2) ? a1 : a2), WorldScalar(1));
 
     smoothMove.occurring = true;
-    smoothMove.moveTime = (instantJump || w.main.toolbar.jumpTransitionTime <= 0.01f) ? w.main.toolbar.jumpTransitionTime : 0.0f;
+    smoothMove.moveTime = (instantJump || w.main.conf.jumpTransitionTime <= 0.01f) ? w.main.conf.jumpTransitionTime : 0.0f;
 }
 
 void DrawCamera::scale_up(World& w, const WorldScalar& scaleUpAmount) {
@@ -64,8 +64,8 @@ void DrawCamera::scale_up(World& w, const WorldScalar& scaleUpAmount) {
 
 void DrawCamera::update_main(World& w) {
     if(smoothMove.occurring) {
-        BezierEasing zoomAnim{w.main.toolbar.jumpTransitionEasing};
-        float smoothTime = smooth_two_way_time(smoothMove.moveTime, w.main.deltaTime, true, w.main.toolbar.jumpTransitionTime);
+        BezierEasing zoomAnim{w.main.conf.jumpTransitionEasing};
+        float smoothTime = smooth_two_way_time(smoothMove.moveTime, w.main.deltaTime, true, w.main.conf.jumpTransitionTime);
         float lerpTime;
         float rotationLerpTime = zoomAnim(smoothTime);
         lerpTime = zoomAnim(smoothTime);
@@ -142,7 +142,7 @@ void DrawCamera::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 
 void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
     if(!smoothMove.occurring && !isTouchTransforming) {
-        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.toolbar.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
+        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
                                     (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
                                     (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
         if(newIsAccurateZooming && !isAccurateZooming) {
@@ -159,7 +159,7 @@ void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputMana
 void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
     if(!smoothMove.occurring && !isTouchTransforming) {
         if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
-            WorldScalar zoomFactor(std::pow(1.0 + w.main.toolbar.dragZoomSpeed, w.main.toolbar.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
+            WorldScalar zoomFactor(std::pow(1.0 + w.main.conf.dragZoomSpeed, w.main.conf.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
             if(zoomFactor < WorldScalar(0.000001))
                 zoomFactor = WorldScalar(0.000001);
 
@@ -180,7 +180,7 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
     if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y()) {
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
-        WorldScalar zoomFactor(1.0 + w.main.toolbar.scrollZoomSpeed);
+        WorldScalar zoomFactor(1.0 + w.main.conf.scrollZoomSpeed);
 
         if(zoomFactor < WorldScalar(0.000001))
             zoomFactor = WorldScalar(0.000001);

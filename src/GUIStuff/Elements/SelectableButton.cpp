@@ -8,7 +8,7 @@ SelectableButton::SelectableButton(GUIManager& gui):
     Element(gui) {}
 
 void SelectableButton::layout(const Data& d) {
-    auto& io = *gui.io;
+    auto& io = gui.io;
 
     SkColor4f borderColor;
     SkColor4f backgroundColorHighlight;

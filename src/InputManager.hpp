@@ -302,8 +302,8 @@ struct InputManager {
 
     std::optional<RichText::TextData> lastCopiedRichText;
 
-    std::string key_assignment_to_str(const Vector2ui32& k);
-    Vector2ui32 key_assignment_from_str(const std::string& s);
+    std::string key_assignment_to_str(const Vector2ui32& k) const;
+    Vector2ui32 key_assignment_from_str(const std::string& s) const;
 
     const KeyData& key(KeyCode kCode);
 

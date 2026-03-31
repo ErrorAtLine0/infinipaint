@@ -6,7 +6,7 @@ namespace GUIStuff {
 template <typename T> TextBox<T>::TextBox(GUIManager& gui): Element(gui) {}
 
 template <typename T> void TextBox<T>::layout(const TextBoxData<T>& userInfo) {
-    auto& io = *gui.io;
+    auto& io = gui.io;
     this->userInfo = userInfo;
     init_textbox(io);
     CLAY_AUTO_ID({
@@ -59,26 +59,26 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
 }
 
 template <typename T> bool TextBox<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-    auto& io = *gui.io;
+    auto& io = gui.io;
 
     if(button.button == InputManager::MouseButton::LEFT && boundingBox.has_value()) {
         if(button.down) {
             if(mouseHovering) {
                 *rect = {(boundingBox.value().min + io.windowPos) * io.guiScaleMultiplier, (boundingBox.value().max + io.windowPos) * io.guiScaleMultiplier};
-                gui.io->input->set_rich_text_box_input_front(textbox, cur, false, rect, userInfo.textInputProps, nullptr);
-                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io->input->key(InputManager::KEY_TEXT_SHIFT).held);
+                gui.io.input->set_rich_text_box_input_front(textbox, cur, false, rect, userInfo.textInputProps, nullptr);
+                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
                 isSelected = true;
             }
             else {
-                gui.io->input->remove_rich_text_box_input(textbox);
+                gui.io.input->remove_rich_text_box_input(textbox);
                 if(update_data())
                     gui.set_post_callback_func(userInfo.onEdit);
-                init_textbox(*gui.io);
+                init_textbox(gui.io);
                 isSelected = false;
             }
         }
         else {
-            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io->input->key(InputManager::KEY_TEXT_SHIFT).held);
+            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
         }
     }
     return Element::input_mouse_button_callback(button, mouseHovering);
@@ -86,7 +86,7 @@ template <typename T> bool TextBox<T>::input_mouse_button_callback(const InputMa
 
 template <typename T> bool TextBox<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
     if(boundingBox.has_value())
-        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, gui.io->input->mouse.leftDown, gui.io->input->key(InputManager::KEY_TEXT_SHIFT).held);
+        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, gui.io.input->mouse.leftDown, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
     return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
@@ -130,7 +130,7 @@ template <typename T> bool TextBox<T>::update_data() {
 }
 
 template <typename T> TextBox<T>::~TextBox() {
-    gui.io->input->remove_rich_text_box_input(textbox);
+    gui.io.input->remove_rich_text_box_input(textbox);
 }
 
 }

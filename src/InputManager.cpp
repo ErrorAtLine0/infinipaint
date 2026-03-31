@@ -326,7 +326,7 @@ void InputManager::set_clipboard_plain_and_richtext_pair(const std::pair<std::st
     lastCopiedRichText = plainAndRichtextPair.second;
 }
 
-std::string InputManager::key_assignment_to_str(const Vector2ui32& k) {
+std::string InputManager::key_assignment_to_str(const Vector2ui32& k) const {
     std::string toRet;
     if(k.x() & SDL_KMOD_CTRL)
         toRet += "CTRL+";
@@ -340,7 +340,7 @@ std::string InputManager::key_assignment_to_str(const Vector2ui32& k) {
     return toRet;
 }
 
-Vector2ui32 InputManager::key_assignment_from_str(const std::string& s) {
+Vector2ui32 InputManager::key_assignment_from_str(const std::string& s) const {
     Vector2ui32 toRet = {0, 0};
     if(s.find("CTRL+") != std::string::npos)
         toRet.x() |= SDL_KMOD_CTRL;
@@ -489,7 +489,7 @@ void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
     pen.buttons[e.button].held = true;
     pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 
-    if(e.button == main.toolbar.tabletOptions.middleClickButton) {
+    if(e.button == main.conf.tabletOptions.middleClickButton) {
         main.input_mouse_button_callback({
             .deviceType = MouseDeviceType::PEN,
             .button = MouseButton::MIDDLE,
@@ -498,7 +498,7 @@ void InputManager::backend_pen_button_down_update(const SDL_PenButtonEvent& e) {
             .pos = mouseNewPos
         });
     }
-    else if(e.button == main.toolbar.tabletOptions.rightClickButton) {
+    else if(e.button == main.conf.tabletOptions.rightClickButton) {
         main.input_mouse_button_callback({
             .deviceType = MouseDeviceType::PEN,
             .button = MouseButton::RIGHT,
@@ -525,7 +525,7 @@ void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
     pen.buttons[e.button].held = false;
     pen.isEraser = e.pen_state & SDL_PEN_INPUT_ERASER_TIP;
 
-    if(e.button == main.toolbar.tabletOptions.middleClickButton) {
+    if(e.button == main.conf.tabletOptions.middleClickButton) {
         main.input_mouse_button_callback({
             .deviceType = MouseDeviceType::PEN,
             .button = MouseButton::MIDDLE,
@@ -534,7 +534,7 @@ void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
             .pos = mouseNewPos
         });
     }
-    else if(e.button == main.toolbar.tabletOptions.rightClickButton) {
+    else if(e.button == main.conf.tabletOptions.rightClickButton) {
         main.input_mouse_button_callback({
             .deviceType = MouseDeviceType::PEN,
             .button = MouseButton::RIGHT,

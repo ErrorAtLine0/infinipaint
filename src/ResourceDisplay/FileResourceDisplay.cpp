@@ -23,10 +23,10 @@ bool FileResourceDisplay::load(ResourceManager& rMan, const std::string& fileNam
 }
 
 void FileResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, const SkRect& imRect) {
-    std::shared_ptr<GUIStuff::UpdateInputData>& io = drawData.main->toolbar.io;
-    auto findSVGData = io->svgData.find(FILE_ICON_PATH);
+    GUIStuff::UpdateInputData& io = drawData.main->g.gui.io;
+    auto findSVGData = io.svgData.find(FILE_ICON_PATH);
     sk_sp<SkSVGDOM> svgDom;
-    if(findSVGData == io->svgData.end())
+    if(findSVGData == io.svgData.end())
         throw std::runtime_error("[FileResourceDisplay::draw] Could not load icon " + FILE_ICON_PATH);
     else
         svgDom = findSVGData->second;

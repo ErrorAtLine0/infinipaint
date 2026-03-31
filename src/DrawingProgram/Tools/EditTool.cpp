@@ -30,11 +30,13 @@ void EditTool::gui_toolbox() {
     using namespace ElementHelpers;
 
     Toolbar& t = drawP.world.main.toolbar;
+    auto& gui = drawP.world.main.g.gui;
+
     if(objInfoBeingEdited)
         compEditTool->edit_gui(objInfoBeingEdited);
     else {
-        t.gui.new_id("edit tool", [&] {
-            text_label_centered(t.gui, "Edit");
+        gui.new_id("edit tool", [&] {
+            text_label_centered(gui, "Edit");
         });
     }
 }
