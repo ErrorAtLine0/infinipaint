@@ -743,7 +743,7 @@ void DrawingProgramSelection::rebuild_cam_space() {
 }
 
 Vector2f DrawingProgramSelection::get_rotation_point_pos_from_angle(double angle) {
-    return Vector2f{rotateData.centerHandlePoint + ROTATION_POINTS_DISTANCE * drawP.world.main.toolbar.final_gui_scale() * Vector2f{std::cos(angle), std::sin(angle)}};
+    return Vector2f{rotateData.centerHandlePoint + ROTATION_POINTS_DISTANCE * drawP.world.main.g.final_gui_scale() * Vector2f{std::cos(angle), std::sin(angle)}};
 }
 
 void DrawingProgramSelection::draw_components(SkCanvas* canvas, const DrawData& drawData) {

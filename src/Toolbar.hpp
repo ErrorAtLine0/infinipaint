@@ -40,7 +40,6 @@ class Toolbar {
         std::string chatMessageInput;
 
         Toolbar(MainProgram& initMain);
-        void update();
         void layout_run();
         void color_selector_left(Vector4f* color);
         void color_selector_right(Vector4f* color);
@@ -63,14 +62,8 @@ class Toolbar {
 
         std::optional<Vector2f> rightClickPopupLocation;
 
-
-        float final_gui_scale();
-
         bool app_close_requested();
     private:
-        void calculate_final_gui_scale();
-        float final_gui_scale_not_fit();
-
         static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
 
         void text_button_wide(const char* id, const char* str, const std::function<void()>& onClick);

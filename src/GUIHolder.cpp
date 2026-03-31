@@ -1,10 +1,20 @@
 #include "GUIHolder.hpp"
 #include <filesystem>
 #include <fstream>
+#include "MainProgram.hpp"
 
 #include <include/core/SkStream.h>
 
-GUIHolder::GUIHolder() {
+GUIHolder::GUIHolder(MainProgram& m):
+    main(m)
+{
+    gui.io.textTypeface = main.fonts->map["Roboto"];
+    gui.io.fonts = main.fonts;
+    gui.io.layoutRun = [&] {
+        main.toolbar.layout_run();
+    };
+    gui.io.input = &main.input;
+
     // NOTE: On windows, when the native file picker is open, any call to MakeFromFile fails
     // So, it's better to load the icons at the beginning of the program so that the icon loading doesn't fail later
     load_icons_at("data/icons");
@@ -82,9 +92,31 @@ bool GUIHolder::load_theme(const std::filesystem::path& configPath, const std::s
 }
 
 void GUIHolder::update() {
+    gui.io.windowSize = main.window.size.cast<float>();
+    gui.io.windowPos = {0, 0};
+    calculate_final_gui_scale();
+    gui.layout_if_necessary();
 }
 
-void GUIHolder::draw(SkCanvas* canvas) {
+float GUIHolder::final_gui_scale() {
+    return finalCalculatedGuiScale;
+}
+
+void GUIHolder::calculate_final_gui_scale() {
+    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{700.0f, 700.0f};
+    Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
+    finalCalculatedGuiScale = final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
+}
+
+float GUIHolder::final_gui_scale_not_fit() {
+    return main.conf.guiScale * main.get_scale_and_density_factor_gui();
+}
+
+void GUIHolder::draw(SkCanvas* canvas, bool skiaAA) {
+    canvas->save();
+    canvas->scale(final_gui_scale(), final_gui_scale());
+    gui.draw(canvas, skiaAA);
+    canvas->restore();
 }
 
 void GUIHolder::input_key_callback(const InputManager::KeyCallbackArgs& key) {

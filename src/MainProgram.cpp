@@ -38,7 +38,8 @@
 MainProgram::MainProgram():
     input(*this),
     fonts(std::make_shared<FontData>()),
-    toolbar(*this)
+    toolbar(*this),
+    g(*this)
 {
     Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
@@ -99,7 +100,7 @@ void MainProgram::update() {
             w->unfocus_update();
     }
 
-    toolbar.update(); // GUI should be setup after the world data has been fully updated for this frame, so that the GUI reflects the current state of the world data
+    g.update();
 
     NetLibrary::update();
 
@@ -290,6 +291,8 @@ void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, con
     DrawData drawDataCopy = drawData;
     drawDataCopy.skiaAA = conf.antialiasing == GlobalConfig::AntiAliasing::SKIA;
     worldToDraw->draw(canvas, drawDataCopy);
+    if(drawGui)
+        g.draw(canvas, drawDataCopy.skiaAA);
 }
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {

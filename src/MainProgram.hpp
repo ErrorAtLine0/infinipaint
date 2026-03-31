@@ -73,6 +73,7 @@ class MainProgram {
         std::shared_ptr<FontData> fonts;
         TimePoint deltaTime;
         Toolbar toolbar;
+        GUIHolder g;
         std::shared_ptr<World> world;
         ToolConfiguration toolConfig;
 
@@ -116,7 +117,6 @@ class MainProgram {
         size_t worldIndex = 0;
         std::vector<std::shared_ptr<World>> worlds;
 
-        GUIHolder g;
         GlobalConfig conf;
 
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);

@@ -202,16 +202,6 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 )";
 }
 
-void Toolbar::update() {
-    auto& gui = main.g.gui;
-    auto& io = gui.io;
-
-    calculate_final_gui_scale();
-    io.windowSize = main.window.size.cast<float>();
-    io.windowPos = {0, 0};
-    gui.layout_if_necessary();
-}
-
 void Toolbar::layout_run() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
@@ -281,8 +271,6 @@ void Toolbar::layout_run() {
 
     if(!optionsMenuOpen || generalSettingsOptions != GSETTINGS_KEYBINDS)
         keybindWaiting = std::nullopt;
-
-    calculate_final_gui_scale();
 }
 
 bool Toolbar::app_close_requested() {
@@ -2178,18 +2166,4 @@ void Toolbar::file_picker_gui() {
             text_button_wide("filepicker cancel", "Cancel", [&] { filePicker.isOpen = false; });
         });
     });
-}
-
-float Toolbar::final_gui_scale() {
-    return finalCalculatedGuiScale;
-}
-
-void Toolbar::calculate_final_gui_scale() {
-    Vector2f maxWindowSizeBeforeForcedFit = final_gui_scale_not_fit() * Vector2f{700.0f, 700.0f};
-    Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
-    finalCalculatedGuiScale = final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
-}
-
-float Toolbar::final_gui_scale_not_fit() {
-    return main.conf.guiScale * main.get_scale_and_density_factor_gui();
 }

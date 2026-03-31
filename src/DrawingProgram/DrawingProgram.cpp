@@ -94,7 +94,7 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
                 if(world.main.toolbar.rightClickPopupLocation)
                     world.main.toolbar.rightClickPopupLocation = std::nullopt;
                 else
-                    world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.toolbar.final_gui_scale();
+                    world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.g.final_gui_scale();
             }
         }
         else {
@@ -401,11 +401,11 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
         text_label_light(gui, "Selection menu");
         popup_menu_action_button("Paste", "Paste", [&] {
             selection.deselect_all();
-            selection.paste_clipboard(popupPos * t.final_gui_scale());
+            selection.paste_clipboard(popupPos * world.main.g.final_gui_scale());
         });
         popup_menu_action_button("Paste Image", "Paste Image", [&] {
             selection.deselect_all();
-            selection.paste_image(popupPos * t.final_gui_scale());
+            selection.paste_image(popupPos * world.main.g.final_gui_scale());
         });
         if(selection.is_something_selected()) {
             popup_menu_action_button("Copy", "Copy", [&] {
@@ -669,7 +669,7 @@ CanvasComponentContainer::ObjInfo* DrawingProgram::add_file_to_canvas_by_data(co
 }
 
 float DrawingProgram::drag_point_radius() {
-    return 8.0f * world.main.toolbar.final_gui_scale();
+    return 8.0f * world.main.g.final_gui_scale();
 }
 
 void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier) {
