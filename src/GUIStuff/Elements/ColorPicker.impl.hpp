@@ -6,13 +6,13 @@ namespace GUIStuff {
 
 template <typename T> ColorPicker<T>::ColorPicker(GUIManager& gui): Element(gui) {}
 
-template <typename T> void ColorPicker<T>::layout(T* data, bool selectAlpha, const std::function<void()>& onChange) {
+template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* data, bool selectAlpha, const std::function<void()>& onChange) {
     this->data = data;
     savedHsv = rgb_to_hsv<Vector3f, T>(*data);
     this->selectAlpha = selectAlpha;
     this->onChange = onChange;
 
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) }
         },

@@ -4,8 +4,8 @@
 namespace GUIStuff { namespace ElementHelpers {
 
 void top_to_bottom_window_popup_layout(GUIManager& gui, const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent, const LayoutElement::Callbacks& callbacks) {
-    gui.element<LayoutElement>(id, [&] {
-        CLAY_AUTO_ID({
+    gui.element<LayoutElement>(id, [&] (const Clay_ElementId& lId) {
+        CLAY(lId, {
             .layout = { 
                 .sizing = {.width = x, .height = y },
                 .padding = CLAY_PADDING_ALL(gui.io.theme->padding1),

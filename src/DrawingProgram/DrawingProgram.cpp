@@ -332,8 +332,8 @@ void DrawingProgram::toolbar_gui() {
     auto& io = gui.io;
 
     gui.new_id("Drawing Program Toolbar GUI", [&] {
-        gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] {
-            CLAY_AUTO_ID({
+        gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] (const Clay_ElementId& lId) {
+            CLAY(lId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
                     .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io.theme->padding1 / 2)),
@@ -446,8 +446,8 @@ void DrawingProgram::tool_options_gui() {
     auto& io = gui.io;
 
     float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    gui.element<LayoutElement>("Drawing program tool options gui", [&] {
-        CLAY_AUTO_ID({
+    gui.element<LayoutElement>("Drawing program tool options gui", [&] (const Clay_ElementId& lId) {
+        CLAY(lId, {
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
                 .padding = CLAY_PADDING_ALL(io.theme->padding1),
@@ -470,7 +470,7 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    controls.cursorHoveringOverCanvas = true; //world.main.toolbar.check_if_position_isnt_obstructed(world.main.input.mouse.pos);
+    controls.cursorHoveringOverCanvas = !world.main.g.gui.cursor_obstructed();
 
     if(addFileInNextFrame) {
         add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);

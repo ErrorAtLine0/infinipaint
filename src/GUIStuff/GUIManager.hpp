@@ -25,31 +25,42 @@ class GUIManager {
 
         UpdateInputData io;
 
-        GUIManagerIDStack idStack;
-        std::unordered_map<GUIManagerIDStack, ElementContainer> elements;
-
         void new_id(const char* id, const std::function<void()>& f);
         void new_id(int64_t id, const std::function<void()>& f);
 
         void set_post_callback_func(const std::function<void()>& f);
+        void run_post_callback_func();
 
         int16_t zIndex = 0;
         template <typename ElementType, typename... Args> ElementType* element(const char* id, const Args&... a) {
             push_id(id);
             ElementType* elem = insert_element<ElementType>();
-            elem->layout(a...);
+            Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
+            elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
+            elem->layout(clayId, a...);
             pop_id();
             return elem;
         }
 
         DefaultStringArena strArena;
 
+        void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button);
+        void input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion);
+        void input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel);
+
+        bool cursor_obstructed() const;
     private:
         void layout();
-        void update_element_bounding_boxes();
         void layout_begin();
         void layout_end();
         void single_layout_run();
+
+        void mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*, bool)>& f);
+
+        GUIManagerIDStack idStack;
+        std::vector<ElementContainer*> orderedElements;
+        std::unordered_map<GUIManagerIDStack, ElementContainer> elements;
 
         template <typename NewElement> NewElement* insert_element() {
             auto [it, inserted] = elements.emplace(idStack, ElementContainer());
@@ -57,6 +68,7 @@ class GUIManager {
             if(inserted)
                 container = {std::make_unique<NewElement>(*this)};
             container.elem->zIndex = zIndex;
+            orderedElements.emplace_back(&container);
             container.isUsedThisFrame = true;
             return static_cast<NewElement*>(it->second.elem.get());
         }
@@ -73,6 +85,7 @@ class GUIManager {
         Clay_Arena clayArena;
         Clay_RenderCommandArray renderCommands;
         bool setToLayout;
+        bool cursorObstructed;
 };
 
 }

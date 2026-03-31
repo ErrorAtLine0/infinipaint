@@ -92,9 +92,8 @@ bool GUIHolder::load_theme(const std::filesystem::path& configPath, const std::s
 }
 
 void GUIHolder::update() {
-    gui.io.windowSize = main.window.size.cast<float>();
-    gui.io.windowPos = {0, 0};
     calculate_final_gui_scale();
+    gui.update_window({0, 0}, main.window.size.cast<float>(), final_gui_scale());
     gui.layout_if_necessary();
 }
 
@@ -120,15 +119,19 @@ void GUIHolder::draw(SkCanvas* canvas, bool skiaAA) {
 }
 
 void GUIHolder::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    gui.input_key_callback(key);
 }
 
 void GUIHolder::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    gui.input_mouse_button_callback(button);
 }
 
 void GUIHolder::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    gui.input_mouse_motion_callback(motion);
 }
 
 void GUIHolder::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+    gui.input_mouse_wheel_callback(wheel);
 }
 
 void GUIHolder::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {

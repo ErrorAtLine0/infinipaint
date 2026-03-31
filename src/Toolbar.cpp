@@ -546,8 +546,8 @@ void Toolbar::top_toolbar() {
                     layer_menu(layerMenuPopUpJustOpen);
             }
             if(menuPopUpOpen) {
-                gui.element<LayoutElement>("main menu popup", [&] {
-                    CLAY_AUTO_ID({
+                gui.element<LayoutElement>("main menu popup", [&] (const Clay_ElementId& id) {
+                    CLAY(id, {
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
                             .padding = CLAY_PADDING_ALL(io.theme->padding1),
@@ -1518,8 +1518,8 @@ void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, C
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    gui.element<LayoutElement>(id, [&] {
-        CLAY_AUTO_ID({
+    gui.element<LayoutElement>(id, [&] (const Clay_ElementId& id) {
+        CLAY(id, {
             .layout = {
                 .sizing = {.width = x, .height = y },
                 .padding = CLAY_PADDING_ALL(io.theme->padding1),
@@ -2109,8 +2109,8 @@ void Toolbar::file_picker_gui() {
                 .elementContent = [&] (size_t i) {
                     const std::filesystem::path& entry = filePicker.entries[i];
                     bool selectedEntry = filePicker.currentSelectedPath == entry;
-                    gui.element<LayoutElement>("elem", [&] {
-                        CLAY_AUTO_ID({
+                    gui.element<LayoutElement>("elem", [&] (const Clay_ElementId& lId) {
+                        CLAY(lId, {
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
                                 .childGap = 1,

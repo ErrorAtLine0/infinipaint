@@ -17,7 +17,7 @@ struct DropdownOptions {
 template <typename T> class DropDown : public Element {
     public:
         DropDown(GUIManager& gui): Element(gui) {}
-        void layout(T* data, const std::vector<std::string>& selections, const DropdownOptions& options = {}) {
+        void layout(const Clay_ElementId& id, T* data, const std::vector<std::string>& selections, const DropdownOptions& options = {}) {
             opts = options;
             ElementHelpers::left_to_right_layout(gui, CLAY_SIZING_FIXED(opts.width), CLAY_SIZING_FIT(0), [&] {
                 gui.element<SelectableButton>("dropdown", SelectableButton::Data{
@@ -84,8 +84,8 @@ template <typename T> class DropDown : public Element {
                             .clipHorizontal = true,
                             .elementContent = [&](size_t i) {
                                 bool selectedEntry = static_cast<size_t>(*data) == i;
-                                gui.element<LayoutElement>("elem", [&] {
-                                    CLAY_AUTO_ID({
+                                gui.element<LayoutElement>("elem", [&] (const Clay_ElementId& lId) {
+                                    CLAY(lId, {
                                         .layout = {
                                             .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIXED(18)},
                                             .padding = CLAY_PADDING_ALL(0),

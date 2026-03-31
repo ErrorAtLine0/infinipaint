@@ -15,7 +15,7 @@ class MovableTabList : public Element {
         };
 
         MovableTabList(GUIManager& gui);
-        void layout(const Data& d);
+        void layout(const Clay_ElementId& id, const Data& d);
 };
 
 }

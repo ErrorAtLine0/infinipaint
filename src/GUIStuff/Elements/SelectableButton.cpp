@@ -7,7 +7,7 @@ namespace GUIStuff {
 SelectableButton::SelectableButton(GUIManager& gui):
     Element(gui) {}
 
-void SelectableButton::layout(const Data& d) {
+void SelectableButton::layout(const Clay_ElementId& id, const Data& d) {
     auto& io = gui.io;
 
     SkColor4f borderColor;
@@ -37,7 +37,7 @@ void SelectableButton::layout(const Data& d) {
     else
         backgroundColor = io.theme->fillColor2;
 
-    CLAY_AUTO_ID({.layout = { 
+    CLAY(id, {.layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
             .childGap = 0,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }

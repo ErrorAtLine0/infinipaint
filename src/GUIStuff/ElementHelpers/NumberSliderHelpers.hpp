@@ -7,7 +7,7 @@ namespace GUIStuff { namespace ElementHelpers {
     template <typename T> void slider_scalar_field(GUIManager& gui, const char* id, std::string_view name, T* val, T min, T max, TextBoxScalarOptions options = {}) {
         gui.new_id(id, [&] {
             options.onEdit = [&, oE = options.onEdit] {
-                oE();
+                if(oE) oE();
                 gui.set_to_layout();
             };
             left_to_right_line_layout(gui, [&]() {

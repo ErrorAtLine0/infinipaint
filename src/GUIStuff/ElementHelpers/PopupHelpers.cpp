@@ -5,8 +5,8 @@ namespace GUIStuff { namespace ElementHelpers {
 
 void paint_circle_popup_menu(GUIManager& gui, const char* id, const Vector2f& centerPos, const PaintCircleMenu::Data& val) {
     constexpr float size = 300.0f;
-    gui.element<LayoutElement>(id, [&] {
-        CLAY_AUTO_ID({.layout = { 
+    gui.element<LayoutElement>(id, [&] (const Clay_ElementId& lId) {
+        CLAY(lId, {.layout = { 
                 .sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size)}
             },
             .floating = {

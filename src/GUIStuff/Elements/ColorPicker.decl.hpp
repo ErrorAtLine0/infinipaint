@@ -61,7 +61,7 @@ namespace ColorPickerShaders {
 template <typename T> class ColorPicker : public Element {
     public:
         ColorPicker(GUIManager& gui);
-        void layout(T* data, bool selectAlpha, const std::function<void()>& onChange);
+        void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const std::function<void()>& onChange);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA);
         bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
         bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;

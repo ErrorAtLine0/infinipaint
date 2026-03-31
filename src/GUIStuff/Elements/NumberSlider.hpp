@@ -9,13 +9,13 @@ template <typename T> class NumberSlider : public Element {
         NumberSlider(GUIManager& gui):
             Element(gui) {}
 
-        void layout(T* data, T minData, T maxData, const std::function<void()>& onChange) {
+        void layout(const Clay_ElementId& id, T* data, T minData, T maxData, const std::function<void()>& onChange) {
             this->data = data;
             this->minData = minData;
             this->maxData = maxData;
             this->onChange = onChange;
 
-            CLAY_AUTO_ID({
+            CLAY(id, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(100), .height = CLAY_SIZING_FIXED(10)}
                 },
@@ -76,23 +76,21 @@ template <typename T> class NumberSlider : public Element {
         virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override {
             isHovering = mouseHovering;
             isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
-            update_slider_pos(button.pos);
+            if(isHeld && boundingBox.has_value())
+                update_slider_pos(button.pos);
             return Element::input_mouse_button_callback(button, mouseHovering);
         }
 
         virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override {
-            update_slider_pos(motion.pos);
             return Element::input_mouse_motion_callback(motion, mouseHovering);
         }
 
     private:
         void update_slider_pos(const Vector2f& p) {
             gui.set_post_callback_func([&, p] {
-                if(isHeld && boundingBox.has_value()) {
-                    float fracPosOnSlider = (p.x() - boundingBox.value().min.x()) / boundingBox.value().width();
-                    *data = static_cast<T>(std::clamp<double>(std::lerp<double>(minData, maxData, fracPosOnSlider), minData, maxData)); // Clamp as double then cast so that unsigned types dont wrap on clamp
-                    onChange();
-                }
+                float fracPosOnSlider = (p.x() - boundingBox.value().min.x()) / boundingBox.value().width();
+                *data = static_cast<T>(std::clamp<double>(std::lerp<double>(minData, maxData, fracPosOnSlider), minData, maxData)); // Clamp as double then cast so that unsigned types dont wrap on clamp
+                if(onChange) onChange();
             });
         }
 

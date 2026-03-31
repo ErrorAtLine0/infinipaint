@@ -6,11 +6,11 @@ namespace GUIStuff {
 RadioButton::RadioButton(GUIManager& gui):
     Element(gui) {}
 
-void RadioButton::layout(const std::function<bool()>& isTicked, const std::function<void()>& onClick) {
+void RadioButton::layout(const Clay_ElementId& id, const std::function<bool()>& isTicked, const std::function<void()>& onClick) {
     this->onClick = onClick;
     this->isTicked = isTicked;
 
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
         },

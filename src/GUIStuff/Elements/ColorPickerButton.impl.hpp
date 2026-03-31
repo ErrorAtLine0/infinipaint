@@ -7,7 +7,7 @@ namespace GUIStuff {
 
 template <typename T> ColorPickerButton<T>::ColorPickerButton(GUIManager& gui): Element(gui) {}
 
-template <typename T> void ColorPickerButton<T>::layout(T* val, const ColorPickerButtonData& d) {
+template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id, T* val, const ColorPickerButtonData& d) {
     this->data = d;
 
     GUIStuff::ElementHelpers::color_button(gui, "Color Picker Button", val, {

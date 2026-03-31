@@ -12,7 +12,7 @@ namespace GUIStuff {
 
 FontPicker::FontPicker(GUIManager& gui): Element(gui) {}
 
-void FontPicker::layout(const Data& data) {
+void FontPicker::layout(const Clay_ElementId& id, const Data& data) {
     d = data;
     //auto& io = *gui.io;
 

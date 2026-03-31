@@ -11,8 +11,7 @@ namespace GUIStuff {
             virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA);
             virtual bool collides_with_point(const Vector2f& p) const;
 
-            void update_bounding_box(Clay_RenderCommand* command);
-            void clear_bounding_box();
+            void set_bounding_box_from_elem_data(const Clay_ElementData& elemData);
             const std::optional<SCollision::AABB<float>>& get_bb() const;
             virtual ~Element() = default;
 

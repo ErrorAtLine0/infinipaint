@@ -13,7 +13,7 @@ struct ColorPickerItemsOptions {
 template <typename T> void color_picker_items(GUIManager& gui, const char* id, T* val, const ColorPickerItemsOptions& options = {}) {
     gui.new_id(id, [&] {
         auto fullOnEdit = [&gui, oE = options.onEdit, val]() {
-            oE();
+            if(oE) oE();
             gui.set_to_layout();
         };
         gui.element<ColorPicker<T>>("c", val, options.hasAlpha, fullOnEdit);

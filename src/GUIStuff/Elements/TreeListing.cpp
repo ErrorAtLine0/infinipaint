@@ -12,7 +12,7 @@ namespace GUIStuff {
 TreeListing::TreeListing(GUIManager& gui):
     Element(gui) {}
 
-void TreeListing::layout(NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData) {
+void TreeListing::layout(const Clay_ElementId& id, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData) {
     //auto& io = *gui.io;
 
     //if(!io.mouse.leftHeld)

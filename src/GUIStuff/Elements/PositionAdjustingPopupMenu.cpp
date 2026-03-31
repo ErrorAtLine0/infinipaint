@@ -1,11 +1,12 @@
 #include "PositionAdjustingPopupMenu.hpp"
 #include "../GUIManager.hpp"
+#include "Helpers/ConvertVec.hpp"
 
 namespace GUIStuff {
 
 PositionAdjustingPopupMenu::PositionAdjustingPopupMenu(GUIManager& gui): Element(gui) {}
 
-void PositionAdjustingPopupMenu::layout(Vector2f popupPos, const std::function<void()>& innerContent) {
+void PositionAdjustingPopupMenu::layout(const Clay_ElementId& id, Vector2f popupPos, const std::function<void()>& innerContent) {
     if(layoutElement && layoutElement->get_bb().has_value()) {
         auto& bb = layoutElement->get_bb().value();
         if((popupPos.y() + bb.height()) > gui.io.windowSize.y())
@@ -14,8 +15,8 @@ void PositionAdjustingPopupMenu::layout(Vector2f popupPos, const std::function<v
             popupPos.x() -= bb.width();
     }
 
-    layoutElement = gui.element<LayoutElement>("popup", [&]{
-        CLAY_AUTO_ID({
+    layoutElement = gui.element<LayoutElement>("popup", [&] (const Clay_ElementId& lId) {
+        CLAY(lId, {
             .layout = { 
                 .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0)},
                 .padding = CLAY_PADDING_ALL(gui.io.theme->padding1),

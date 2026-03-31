@@ -8,11 +8,11 @@ namespace GUIStuff {
 CheckBox::CheckBox(GUIManager& gui):
     Element(gui) {}
 
-void CheckBox::layout(const std::function<bool()>& isTicked, const std::function<void()>& onClick) {
+void CheckBox::layout(const Clay_ElementId& id, const std::function<bool()>& isTicked, const std::function<void()>& onClick) {
     this->isTicked = isTicked;
     this->onClick = onClick;
 
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(15), .height = CLAY_SIZING_FIXED(15)}
         },

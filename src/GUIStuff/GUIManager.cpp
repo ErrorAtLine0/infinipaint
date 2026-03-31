@@ -256,6 +256,8 @@ void GUIManager::layout_begin() {
 
     strArena.reset();
 
+    orderedElements.clear();
+
     Clay_BeginLayout();
 }
 
@@ -266,19 +268,9 @@ void GUIManager::layout_end() {
     std::erase_if(elements, [](auto& p) {
         return !p.second.isUsedThisFrame;
     });
-    update_element_bounding_boxes();
-}
-
-void GUIManager::update_element_bounding_boxes() {
-    for(auto& e : elements)
-        e.second.elem->clear_bounding_box();
-    for(size_t i = 0; i < static_cast<size_t>(renderCommands.length); i++) {
-        Clay_RenderCommand* command = Clay_RenderCommandArray_Get(&renderCommands, i);
-        if(command->commandType == CLAY_RENDER_COMMAND_TYPE_CUSTOM) {
-            Element* customElement = static_cast<Element*>(command->renderData.custom.customData);
-            customElement->update_bounding_box(command);
-        }
-    }
+    std::stable_sort(orderedElements.begin(), orderedElements.end(), [](ElementContainer* a, ElementContainer* b) {
+        return b->elem->zIndex < a->elem->zIndex; // Order from highest to lowest zIndex
+    });
 }
 
 void GUIManager::single_layout_run() {
@@ -317,6 +309,53 @@ void GUIManager::pop_id() {
 
 void GUIManager::set_post_callback_func(const std::function<void()>& f) {
     postCallbackFunc = f;
+}
+
+void GUIManager::run_post_callback_func() {
+    if(postCallbackFunc) {
+        postCallbackFunc();
+        postCallbackFunc = nullptr;
+    }
+}
+
+bool GUIManager::cursor_obstructed() const {
+    return cursorObstructed;
+}
+
+void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    for(ElementContainer* e : orderedElements)
+        e->elem->input_key_callback(key);
+    run_post_callback_func();
+}
+
+void GUIManager::input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button) {
+    button.pos *= io.guiScaleMultiplier;
+    mouse_callback(button.pos, [&button] (ElementContainer* e, bool mouseHovering) { e->elem->input_mouse_button_callback(button, mouseHovering); });
+}
+
+void GUIManager::input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion) {
+    motion.pos *= io.guiScaleMultiplier;
+    mouse_callback(motion.pos, [&motion] (ElementContainer* e, bool mouseHovering) { e->elem->input_mouse_motion_callback(motion, mouseHovering); });
+}
+
+void GUIManager::input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel) {
+    wheel.mousePos *= io.guiScaleMultiplier;
+    mouse_callback(wheel.mousePos, [&wheel] (ElementContainer* e, bool mouseHovering) { e->elem->input_mouse_wheel_callback(wheel, mouseHovering); });
+}
+
+void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*, bool)>& f) {
+    cursorObstructed = false;
+    int16_t zIndexObstructed = 0;
+    for(ElementContainer* e : orderedElements) {
+        if((!cursorObstructed || zIndexObstructed == e->elem->zIndex) && e->elem->get_bb().has_value() && SCollision::collide(e->elem->get_bb().value(), mousePos)) {
+            zIndexObstructed = e->elem->zIndex;
+            cursorObstructed = true;
+            f(e, true);
+        }
+        else
+            f(e, false);
+    }
+    run_post_callback_func();
 }
 
 }

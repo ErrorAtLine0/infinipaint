@@ -13,7 +13,7 @@ class PaintCircleMenu : public Element {
             std::function<void()> onRotate;
             std::function<void()> onPaletteClick;
         };
-        void layout(const Data& data);
+        void layout(const Clay_ElementId& id, const Data& data);
         virtual bool collides_with_point(const Vector2f& p) const override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;

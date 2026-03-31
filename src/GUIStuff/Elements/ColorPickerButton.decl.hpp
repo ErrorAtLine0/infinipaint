@@ -11,7 +11,7 @@ struct ColorPickerButtonData {
 template <typename T> class ColorPickerButton : public Element {
     public:
         ColorPickerButton(GUIManager& gui);
-        void layout(T* val, const ColorPickerButtonData& d);
+        void layout(const Clay_ElementId& id, T* val, const ColorPickerButtonData& d);
     private:
         ColorPickerButtonData data;
         bool isOpen = false;

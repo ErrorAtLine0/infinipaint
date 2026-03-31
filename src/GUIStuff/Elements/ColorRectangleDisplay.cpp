@@ -6,8 +6,12 @@ sk_sp<SkRuntimeEffect> ColorRectangleDisplay::alphaBackgroundEffect;
 
 ColorRectangleDisplay::ColorRectangleDisplay(GUIManager& gui): Element(gui) {}
 
-void ColorRectangleDisplay::layout(const std::function<SkColor4f()>& colorFunc) {
+void ColorRectangleDisplay::layout(const Clay_ElementId& id, const std::function<SkColor4f()>& colorFunc) {
     this->colorFunc = colorFunc;
+    CLAY(id, {
+        .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}},
+        .custom = {this}
+    }) {}
 }
 
 void ColorRectangleDisplay::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {

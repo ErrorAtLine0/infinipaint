@@ -10,7 +10,7 @@ namespace GUIStuff {
 SVGIcon::SVGIcon(GUIManager& gui):
     Element(gui) {}
 
-void SVGIcon::layout(const std::string& newSvgPath, bool newIsHighlighted) {
+void SVGIcon::layout(const Clay_ElementId& id, const std::string& newSvgPath, bool newIsHighlighted) {
     auto& io = gui.io;
     auto findSVGData = io.svgData.find(newSvgPath);
     if(findSVGData == io.svgData.end())
@@ -20,7 +20,7 @@ void SVGIcon::layout(const std::string& newSvgPath, bool newIsHighlighted) {
 
     highlighted = newIsHighlighted;
 
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) }
         },

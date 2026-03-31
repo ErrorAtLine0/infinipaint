@@ -5,9 +5,9 @@ namespace GUIStuff {
 
 ScrollArea::ScrollArea(GUIManager& gui): Element(gui) {}
 
-void ScrollArea::layout(const Options& options) {
+void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
     opts = options;
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
     }) {
         Clay_ElementId localID = CLAY_ID_LOCAL("SCROLL_AREA");

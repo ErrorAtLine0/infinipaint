@@ -5,11 +5,11 @@ namespace GUIStuff {
 
 template <typename T> TextBox<T>::TextBox(GUIManager& gui): Element(gui) {}
 
-template <typename T> void TextBox<T>::layout(const TextBoxData<T>& userInfo) {
+template <typename T> void TextBox<T>::layout(const Clay_ElementId& id, const TextBoxData<T>& userInfo) {
     auto& io = gui.io;
     this->userInfo = userInfo;
     init_textbox(io);
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_FIXED(static_cast<float>(io.fontSize * 1.25f))}
         },

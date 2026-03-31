@@ -11,7 +11,7 @@ class CheckBox : public Element {
         virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
         virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
 
-        void layout(const std::function<bool()>& isTicked, const std::function<void()>& onClick);
+        void layout(const Clay_ElementId& id, const std::function<bool()>& isTicked, const std::function<void()>& onClick);
     private:
         static constexpr float CHECKBOX_ANIMATION_TIME = 0.3;
         bool isHovering = false;

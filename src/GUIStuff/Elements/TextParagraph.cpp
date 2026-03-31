@@ -7,10 +7,10 @@ namespace GUIStuff {
 TextParagraph::TextParagraph(GUIManager& gui):
     Element(gui) {}
 
-void TextParagraph::layout(std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width) {
+void TextParagraph::layout(const Clay_ElementId& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width) {
     data = std::move(paragraph);
     data->layout(width);
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIXED(data->getHeight())}
         },

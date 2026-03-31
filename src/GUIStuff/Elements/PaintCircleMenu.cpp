@@ -14,10 +14,10 @@ constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
 PaintCircleMenu::PaintCircleMenu(GUIManager& gui):
     Element(gui) {}
 
-void PaintCircleMenu::layout(const Data& data) {
+void PaintCircleMenu::layout(const Clay_ElementId& id, const Data& data) {
     d = data;
 
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },

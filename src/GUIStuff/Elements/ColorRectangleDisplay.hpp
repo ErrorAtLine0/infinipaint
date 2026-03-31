@@ -7,7 +7,7 @@ namespace GUIStuff {
 class ColorRectangleDisplay : public Element {
     public:
         ColorRectangleDisplay(GUIManager& gui);
-        void layout(const std::function<SkColor4f()>& colorFunc);
+        void layout(const Clay_ElementId& id, const std::function<SkColor4f()>& colorFunc);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
     private:
         static constexpr const char* alphaBackgroundSksl = 

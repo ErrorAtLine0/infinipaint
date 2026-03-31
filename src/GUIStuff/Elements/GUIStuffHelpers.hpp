@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 #include "../../RichText/TextBox.hpp"
 #include "../../InputManager.hpp"
+#include "../GUIManagerID.hpp"
 
 using namespace Eigen;
 
@@ -36,6 +37,18 @@ template <size_t S> class StringArena {
         }
         Clay_String std_str_to_clay_str(std::string_view str) {
             return Clay_String{.length = static_cast<int32_t>(str.size()), .chars = insert_string_into_arena(str)};
+        }
+        Clay_ElementId elem_id_from_id_stack(const GUIManagerIDStack& idStack) {
+            std::string strToAdd;
+            for(const GUIManagerID& id : idStack) {
+                if(id.idIsStr)
+                    strToAdd += reinterpret_cast<const char*>(id.idNum);
+                else
+                    strToAdd += std::to_string(id.idNum);
+                strToAdd += '~';
+            }
+            Clay_String strForId = std_str_to_clay_str(strToAdd);
+            return CLAY_SID(strForId);
         }
     private:
         std::array<char, S> stringArena;

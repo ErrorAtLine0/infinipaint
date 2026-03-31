@@ -7,7 +7,7 @@ namespace GUIStuff {
 
 MovableTabList::MovableTabList(GUIManager& gui): Element(gui) {}
 
-void MovableTabList::layout(const Data& d) {
+void MovableTabList::layout(const Clay_ElementId& id, const Data& d) {
     //CLAY_AUTO_ID({.layout = { 
     //        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(GUIStuff::GUIManager::BIG_BUTTON_SIZE)},
     //        .padding = CLAY_PADDING_ALL(0),

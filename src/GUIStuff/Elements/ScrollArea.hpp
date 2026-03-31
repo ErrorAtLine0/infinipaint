@@ -25,7 +25,7 @@ class ScrollArea : public Element {
             std::function<void(const InnerContentParameters&)> innerContent;
         };
 
-        void layout(const Options& options);
+        void layout(const Clay_ElementId& id, const Options& options);
 
         virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
         virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;

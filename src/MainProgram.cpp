@@ -349,21 +349,25 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
                 drawGui = !drawGui;
         }
     }
+    g.input_key_callback(key);
     if(world)
         world->input_key_callback(key);
 }
 
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    g.input_mouse_button_callback(button);
     if(world)
         world->input_mouse_button_callback(button);
 }
 
 void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    g.input_mouse_motion_callback(motion);
     if(world)
         world->input_mouse_motion_callback(motion);
 }
 
 void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+    g.input_mouse_wheel_callback(wheel);
     if(world)
         world->input_mouse_wheel_callback(wheel);
 }

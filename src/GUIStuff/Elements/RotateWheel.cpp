@@ -12,11 +12,11 @@ constexpr double ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
 RotateWheel::RotateWheel(GUIManager& gui):
     Element(gui) {}
 
-void RotateWheel::layout(double* rotateAngle, const std::function<void()>& onChange) {
+void RotateWheel::layout(const Clay_ElementId& id, double* rotateAngle, const std::function<void()>& onChange) {
     this->rotateAngle = rotateAngle;
     this->onChange = onChange;
 
-    CLAY_AUTO_ID({
+    CLAY(id, {
         .layout = { 
             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
         },

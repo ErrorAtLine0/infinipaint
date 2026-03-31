@@ -1,12 +1,13 @@
 #include "LayoutElement.hpp"
+#include "Helpers/ConvertVec.hpp"
 
 namespace GUIStuff {
 
 LayoutElement::LayoutElement(GUIManager& gui): Element(gui) {}
 
-void LayoutElement::layout(const std::function<void()>& layout, const Callbacks& c) {
+void LayoutElement::layout(const Clay_ElementId& id, const std::function<void(const Clay_ElementId&)>& layout, const Callbacks& c) {
     this->c = c;
-    layout();
+    layout(id);
 }
 
 bool LayoutElement::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {

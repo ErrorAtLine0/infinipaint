@@ -12,7 +12,7 @@ class LayoutElement : public Element {
             std::function<bool(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering)> mouseWheel;
             std::function<void(const InputManager::KeyCallbackArgs& key)> key;
         };
-        void layout(const std::function<void()>& layout, const Callbacks& c = {});
+        void layout(const Clay_ElementId& id, const std::function<void(const Clay_ElementId&)>& layout, const Callbacks& c = {});
         virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
         virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
         virtual bool input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) override;

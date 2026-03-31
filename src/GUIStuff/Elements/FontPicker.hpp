@@ -10,7 +10,7 @@ class FontPicker : public Element {
             std::function<void()> onFontChange;
         };
         FontPicker(GUIManager& gui);
-        void layout(const Data& data);
+        void layout(const Clay_ElementId& id, const Data& data);
     private:
         Data d;
 
