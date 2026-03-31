@@ -46,7 +46,7 @@ void GridModifyTool::input_mouse_button_on_canvas_callback(const InputManager::M
     if(button.button == InputManager::MouseButton::LEFT) {
         switch(selectionMode) {
             case 0:
-                if(button.down) {
+                if(button.down && !drawP.world.main.g.gui.cursor_obstructed()) {
                     NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
                     if(gLock) {
                         WorldGrid& g = *gLock;

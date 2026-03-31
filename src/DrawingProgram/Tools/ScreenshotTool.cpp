@@ -135,7 +135,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
     if(button.button == InputManager::MouseButton::LEFT) {
         switch(controls.selectionMode) {
             case ScreenshotControls::SelectionMode::NO_SELECTION: {
-                if(button.down) {
+                if(button.down && !drawP.world.main.g.gui.cursor_obstructed()) {
                     controls.rectX1 = controls.rectX2 = button.pos.x();
                     controls.rectY1 = controls.rectY2 = button.pos.y();
                     controls.coords = drawP.world.drawData.cam.c;
@@ -152,7 +152,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
                 break;
             }
             case ScreenshotControls::SelectionMode::SELECTION_EXISTS: {
-                if(button.down && selection_exists_update()) {
+                if(button.down && selection_exists_update() && !drawP.world.main.g.gui.cursor_obstructed()) {
                     for(int i = 0; i < 8; i++)
                         if(SCollision::collide(controls.circles[i], drawP.world.main.input.mouse.pos))
                             controls.dragType = i;

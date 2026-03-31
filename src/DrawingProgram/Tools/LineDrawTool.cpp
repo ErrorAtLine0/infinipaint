@@ -35,7 +35,7 @@ void LineDrawTool::gui_toolbox() {
 void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             if(!relativeWidthResult.first.has_value()) {
                 drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);

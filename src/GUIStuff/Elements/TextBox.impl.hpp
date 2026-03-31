@@ -69,7 +69,7 @@ template <typename T> bool TextBox<T>::input_mouse_button_callback(const InputMa
                 textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
                 isSelected = true;
             }
-            else {
+            else if(isSelected) {
                 gui.io.input->remove_rich_text_box_input(textbox);
                 if(update_data())
                     gui.set_post_callback_func(userInfo.onEdit);

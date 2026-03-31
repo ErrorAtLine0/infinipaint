@@ -470,8 +470,6 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    controls.cursorHoveringOverCanvas = !world.main.g.gui.cursor_obstructed();
-
     if(addFileInNextFrame) {
         add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);
         addFileInNextFrame = false;

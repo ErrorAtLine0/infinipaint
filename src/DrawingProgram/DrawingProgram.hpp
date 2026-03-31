@@ -110,7 +110,6 @@ class DrawingProgram {
 
             bool leftClickHeld = false;
             bool middleClickHeld = false;
-            bool cursorHoveringOverCanvas = false;
 
             DrawingProgramLayerManager::LayerSelector layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
 

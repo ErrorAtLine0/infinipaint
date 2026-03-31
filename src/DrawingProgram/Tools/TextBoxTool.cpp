@@ -31,7 +31,7 @@ void TextBoxTool::gui_toolbox() {
 
 void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
             startAt = button.pos;
             endAt = startAt;
 

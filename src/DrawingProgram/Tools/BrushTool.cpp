@@ -37,7 +37,7 @@ void BrushTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
             if(drawP.world.main.input.pen.isDown) {
                 penWidth = drawP.world.main.input.pen.pressure;
                 if(penWidth != 0.0f) {
@@ -153,7 +153,7 @@ bool BrushTool::extensive_point_checking_back(const BrushStrokeCanvasComponent& 
 }
 
 void BrushTool::tool_update() {
-    if(drawP.controls.cursorHoveringOverCanvas)
+    if(!drawP.world.main.g.gui.cursor_obstructed())
         drawP.world.main.input.hideCursor = true;
 }
 
@@ -191,7 +191,7 @@ bool BrushTool::prevent_undo_or_redo() {
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawP.world.main.input.isTouchDevice && drawData.main->world->drawProg.controls.cursorHoveringOverCanvas) {
+    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed()) {
         auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
         if(relativeWidthResult.first.has_value()) {
             float width = relativeWidthResult.first.value();

@@ -53,7 +53,7 @@ void EditTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     drawP.selection.input_mouse_button_on_canvas_callback_modify_selection(button);
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down) {
+        if(button.down && !drawP.world.main.g.gui.cursor_obstructed()) {
             if(!objInfoBeingEdited) {
                 WorldVec mouseWorldPos = drawP.world.drawData.cam.c.from_space(button.pos);
 

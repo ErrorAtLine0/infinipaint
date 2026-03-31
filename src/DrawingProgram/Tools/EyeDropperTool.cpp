@@ -52,7 +52,7 @@ void EyeDropperTool::input_mouse_button_on_canvas_callback(const InputManager::M
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
 
-    if(button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed()) {
+    if(button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed() && !drawP.world.main.g.gui.cursor_obstructed()) {
         auto& surface = drawP.world.main.window.intermediateSurface;
 
         int xPos = std::clamp<int>(button.pos.x(), 0, drawP.world.main.window.size.x() - 1);

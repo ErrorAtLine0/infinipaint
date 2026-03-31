@@ -33,7 +33,7 @@ void RectSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key
 
 void RectSelectTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     drawP.selection.input_mouse_button_on_canvas_callback_modify_selection(button);
-    if(!controls.isSelecting && button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed()) {
+    if(!controls.isSelecting && button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed() && !drawP.world.main.g.gui.cursor_obstructed()) {
         controls = RectSelectControls();
         controls.coords = drawP.world.drawData.cam.c;
         controls.selectStartAt = controls.selectEndAt = button.pos;

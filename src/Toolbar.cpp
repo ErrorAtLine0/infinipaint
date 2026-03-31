@@ -297,103 +297,90 @@ void Toolbar::close_popup_gui() {
     std::erase_if(closePopupData.worldsToClose, [](auto& wPair) {
         return wPair.w.expired();
     });
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0, 600) },
-            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-            .childGap = io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-        .floating = {.zIndex = 1, .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.new_id("Close single file popup gui", [&] {
-            text_label(gui, "Files may contain unsaved changes");
-            gui.element<ScrollArea>("close file popup gui scroll area", ScrollArea::Options{
-                .scrollVertical = true,
-                .clipVertical = true,
-                .showScrollbarY = true,
-                .innerContent = [&](const ScrollArea::InnerContentParameters&) {
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .childGap = io.theme->childGap1,
-                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        }
-                    }) {
-                        size_t i = 0;
-                        for(auto& [w, setToSave] : closePopupData.worldsToClose) {
-                            auto wLock = w.lock();
-                            CLAY_AUTO_ID({
-                                .layout = {
-                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                                    .childGap = io.theme->childGap1,
-                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                                    .layoutDirection = CLAY_LEFT_TO_RIGHT
-                                },
-                                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2),
-                                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-                            }) {
-                                gui.new_id(i, [&] {
-                                    checkbox_boolean(gui, "set to save checkbox", &setToSave);
-                                    CLAY_AUTO_ID({
-                                        .layout = {
-                                            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                                            .childGap = 0,
-                                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                                        }
-                                    }) {
-                                        text_label(gui, wLock->name);
-                                        text_label_light(gui, wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
-                                    }
-                                });
-                            }
-                            ++i;
-                        }
+    center_obstructing_window_gui("Close program popup GUI", CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0, 600), [&] {
+        text_label(gui, "Files may contain unsaved changes");
+        gui.element<ScrollArea>("close file popup gui scroll area", ScrollArea::Options{
+            .scrollVertical = true,
+            .clipVertical = true,
+            .showScrollbarY = true,
+            .innerContent = [&](const ScrollArea::InnerContentParameters&) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .childGap = io.theme->childGap1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
                     }
-                }
-            });
-            text_button(gui, "Save", "Save", {
-                .wide = true,
-                .onClick = [&] {
+                }) {
+                    size_t i = 0;
                     for(auto& [w, setToSave] : closePopupData.worldsToClose) {
                         auto wLock = w.lock();
-                        if(setToSave) {
-                            if(wLock->filePath.empty())
-                                wLock->autosave_to_directory(main.documentsPath);
-                            else
-                                wLock->save_to_file(wLock->filePath);
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                .childGap = io.theme->childGap1,
+                                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                .layoutDirection = CLAY_LEFT_TO_RIGHT
+                            },
+                            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2),
+                            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        }) {
+                            gui.new_id(i, [&] {
+                                checkbox_boolean(gui, "set to save checkbox", &setToSave);
+                                CLAY_AUTO_ID({
+                                    .layout = {
+                                        .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                                        .childGap = 0,
+                                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                                    }
+                                }) {
+                                    text_label(gui, wLock->name);
+                                    text_label_light(gui, wLock->filePath.empty() ? "Autosave in " + main.documentsPath.string() : wLock->filePath.string());
+                                }
+                            });
                         }
-                        main.set_tab_to_close(w);
+                        ++i;
                     }
-                    closePopupData.worldsToClose.clear();
-                    if(closePopupData.closeAppWhenDone)
-                        main.setToQuit = true;
                 }
-            });
-            text_button(gui, "Discard All", "Discard All", {
-                .wide = true,
-                .onClick = [&] {
-                    for(auto& [w, setToSave] : closePopupData.worldsToClose)
-                        main.set_tab_to_close(w);
-                    closePopupData.worldsToClose.clear();
-                    if(closePopupData.closeAppWhenDone)
-                        main.setToQuit = true;
-                }
-            });
-            text_button(gui, "Cancel", "Cancel", {
-                .wide = true,
-                .onClick = [&] {
-                    closePopupData.worldsToClose.clear();
-                    closePopupData.closeAppWhenDone = false;
-                }
-            });
+            }
         });
-    }
+        text_button(gui, "Save", "Save", {
+            .wide = true,
+            .onClick = [&] {
+                for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+                    auto wLock = w.lock();
+                    if(setToSave) {
+                        if(wLock->filePath.empty())
+                            wLock->autosave_to_directory(main.documentsPath);
+                        else
+                            wLock->save_to_file(wLock->filePath);
+                    }
+                    main.set_tab_to_close(w);
+                }
+                closePopupData.worldsToClose.clear();
+                if(closePopupData.closeAppWhenDone)
+                    main.setToQuit = true;
+            }
+        });
+        text_button(gui, "Discard All", "Discard All", {
+            .wide = true,
+            .onClick = [&] {
+                for(auto& [w, setToSave] : closePopupData.worldsToClose)
+                    main.set_tab_to_close(w);
+                closePopupData.worldsToClose.clear();
+                if(closePopupData.closeAppWhenDone)
+                    main.setToQuit = true;
+            }
+        });
+        text_button(gui, "Cancel", "Cancel", {
+            .wide = true,
+            .onClick = [&] {
+                closePopupData.worldsToClose.clear();
+                closePopupData.closeAppWhenDone = false;
+            }
+        });
+    });
 }
 
 void Toolbar::save_func() {
@@ -451,10 +438,10 @@ void Toolbar::top_toolbar() {
     }) {
         gui.new_id("menu top toolbar", [&] {
             global_log();
-            bool menuPopUpJustOpen = false;
             bool bookmarkMenuPopUpJustOpen = false;
             bool gridMenuPopUpJustOpen = false;
             bool layerMenuPopUpJustOpen = false;
+
             auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
                 svg_icon_button(gui, id, svgPath, {
                     .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
@@ -462,12 +449,12 @@ void Toolbar::top_toolbar() {
                     .onClick = onClick
                 });
             };
+
+            menuPopupOpenFlipped = false;
             icon_button_top_toolbar("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen, [&] {
-                if(menuPopUpOpen)
-                    menuPopUpOpen = false;
-                else {
-                    menuPopUpOpen = true;
-                    menuPopUpJustOpen = true;
+                if(!menuPopupOpenFlipped) {
+                    menuPopUpOpen = !menuPopUpOpen;
+                    menuPopupOpenFlipped = false;
                 }
             });
 
@@ -563,6 +550,7 @@ void Toolbar::top_toolbar() {
                             text_button(gui, id, str, {
                                 .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                                 .wide = true,
+                                .centered = false,
                                 .onClick = [&]{
                                     onClick();
                                     menuPopUpOpen = false;
@@ -641,8 +629,9 @@ void Toolbar::top_toolbar() {
                     }
                 }, LayoutElement::Callbacks {
                     .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                        if(!mouseHovering && button.down) {
+                        if(!mouseHovering && button.down && !menuPopupOpenFlipped) {
                             menuPopUpOpen = false;
+                            menuPopupOpenFlipped = true;
                             gui.set_to_layout();
                         }
                         return mouseHovering;
@@ -749,8 +738,10 @@ void Toolbar::update_notification_check() {
                             VersionNumber& currentV = currentVersion.value();
                             updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
                             Logger::get().log("INFO", "Latest online version is v" + updateCheckerData.newVersionStr);
-                            if(newV > currentV)
+                            if(newV > currentV) {
                                 updateCheckerData.showGui = true;
+                                main.g.gui.set_to_layout();
+                            }
                             else if(newV == currentV)
                                 Logger::get().log("INFO", "Current version is up to date");
                             else
@@ -776,20 +767,8 @@ void Toolbar::update_notification_check() {
 
 void Toolbar::update_notification_gui() {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
 
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-            .childGap = io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
+    center_obstructing_window_gui("Update notifications GUI", CLAY_SIZING_FIXED(700), CLAY_SIZING_FIT(0), [&] {
         gui.new_id("update notification gui", [&] {
             text_label_centered(gui, "Update v" + updateCheckerData.newVersionStr + " available!");
             text_button(gui, "download", "Open download page in web browser", {
@@ -813,7 +792,7 @@ void Toolbar::update_notification_gui() {
                 }
             });
         });
-    }
+    });
 }
 #endif
 

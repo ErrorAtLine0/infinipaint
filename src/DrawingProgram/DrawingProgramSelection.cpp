@@ -432,7 +432,7 @@ void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selec
     if(button.button == InputManager::MouseButton::LEFT && is_something_selected()) {
         switch(transformOpHappening) {
             case TransformOperation::NONE: {
-                if(button.down && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
+                if(button.down && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held && !drawP.world.main.g.gui.cursor_obstructed()) {
                     if(mouse_collided_with_scale_point()) {
                         scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
                         scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());

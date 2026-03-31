@@ -42,7 +42,7 @@ void EllipseDrawTool::gui_toolbox() {
 
 void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
             auto& toolConfig = drawP.world.main.toolConfig;
 
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);

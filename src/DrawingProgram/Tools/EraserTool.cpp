@@ -40,7 +40,7 @@ void EraserTool::right_click_popup_gui(Vector2f popupPos) {
 
 void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && !isErasing) {
+        if(button.down && !isErasing && !drawP.world.main.g.gui.cursor_obstructed()) {
             isErasing = true;
             erase_between_points(button.pos, button.pos);
         }
@@ -108,7 +108,7 @@ void EraserTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void EraserTool::tool_update() {
-    if(drawP.controls.cursorHoveringOverCanvas)
+    if(!drawP.world.main.g.gui.cursor_obstructed())
         drawP.world.main.input.hideCursor = true;
 }
 
@@ -117,7 +117,7 @@ bool EraserTool::prevent_undo_or_redo() {
 }
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawP.world.main.input.isTouchDevice && drawData.main->world->drawProg.controls.cursorHoveringOverCanvas) {
+    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed()) {
         if(!lastPosOpt.has_value())
             lastPosOpt = drawData.main->input.mouse.pos;
         auto& lastPos = lastPosOpt.value();

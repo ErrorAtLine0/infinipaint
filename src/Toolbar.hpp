@@ -147,6 +147,7 @@ class Toolbar {
         bool showPerformance = false;
 
         bool menuPopUpOpen = false;
+        bool menuPopupOpenFlipped = false;
         bool optionsMenuOpen = false;
         bool playerMenuOpen = false;
 

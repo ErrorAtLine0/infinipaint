@@ -141,7 +141,7 @@ void DrawCamera::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
-    if(!smoothMove.occurring && !isTouchTransforming) {
+    if(!smoothMove.occurring && !isTouchTransforming && !w.main.g.gui.cursor_obstructed()) {
         bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
                                     (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
                                     (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
@@ -178,7 +178,7 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
 }
 
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
-    if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y()) {
+    if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y() && !w.main.g.gui.cursor_obstructed()) {
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
         WorldScalar zoomFactor(1.0 + w.main.conf.scrollZoomSpeed);
 
