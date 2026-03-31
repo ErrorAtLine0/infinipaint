@@ -346,7 +346,7 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
         }
         case InputManager::KEY_FULLSCREEN: {
             if(key.down && !key.repeat)
-                drawGui = !drawGui;
+                input.toggleFullscreen = true;
         }
     }
     g.input_key_callback(key);

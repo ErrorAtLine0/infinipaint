@@ -1623,7 +1623,7 @@ void Toolbar::options_menu() {
             break;
         }
         case ABOUT_MENU: {
-            center_obstructing_window_gui("about menu", CLAY_SIZING_FIT(500), CLAY_SIZING_FIT(0), [&] {
+            center_obstructing_window_gui("about menu", CLAY_SIZING_FIXED(650), CLAY_SIZING_FIXED(500), [&] {
                 about_menu_inner_gui();
             });
             break;
@@ -1681,7 +1681,7 @@ void Toolbar::general_settings_inner_gui() {
         }) {
             gui.element<ScrollArea>("general settings scroll area", ScrollArea::Options{
                 .scrollVertical = true,
-                .clipHorizontal = true,
+                .clipHorizontal = false,
                 .clipVertical = true,
                 .showScrollbarY = true,
                 .innerContent = [&](const ScrollArea::InnerContentParameters&) {
@@ -1921,6 +1921,10 @@ void Toolbar::about_menu_inner_gui() {
                 }
             }) {
                 gui.element<ScrollArea>("About Menu Selector Scroll Area", ScrollArea::Options{
+                    .scrollVertical = true,
+                    .clipHorizontal = false,
+                    .clipVertical = true,
+                    .showScrollbarY = true,
                     .innerContent = [&](const ScrollArea::InnerContentParameters&) {
                         CLAY_AUTO_ID({
                             .layout = {
@@ -1931,6 +1935,7 @@ void Toolbar::about_menu_inner_gui() {
                                 .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                                 .isSelected = selectedLicense == -1,
                                 .wide = true,
+                                .centered = false,
                                 .onClick = [&] { selectedLicense = -1; }
                             });
                         }
@@ -1947,6 +1952,7 @@ void Toolbar::about_menu_inner_gui() {
                                         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                                         .isSelected = selectedLicense == i,
                                         .wide = true,
+                                        .centered = false,
                                         .onClick = [&, i] { selectedLicense = i; }
                                     });
                                 });
@@ -1959,7 +1965,7 @@ void Toolbar::about_menu_inner_gui() {
 
         gui.element<ScrollArea>("About Menu Text Scroll Area", ScrollArea::Options{
             .scrollVertical = true,
-            .clipHorizontal = true,
+            .clipHorizontal = false,
             .clipVertical = true,
             .showScrollbarY = true,
             .innerContent = [&](const ScrollArea::InnerContentParameters&) {
@@ -2085,7 +2091,7 @@ void Toolbar::file_picker_gui() {
             scroll_area_many_entries(gui, "file picker entries", {
                 .entryHeight = entryHeight,
                 .entryCount = filePicker.entries.size(),
-                .clipHorizontal = true,
+                .clipHorizontal = false,
                 .elementContent = [&] (size_t i) {
                     const std::filesystem::path& entry = filePicker.entries[i];
                     bool selectedEntry = filePicker.currentSelectedPath == entry;
