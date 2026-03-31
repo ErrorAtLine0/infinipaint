@@ -37,21 +37,22 @@ float RotateWheel::wheel_end() {
 bool RotateWheel::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
     isHovering = mouseHovering;
     isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
-    update_paint_circle_menu_mouse(button.pos, button.button == InputManager::MouseButton::LEFT && button.down);
+    isRotateBarHeld = isRotateBarHovered && isHeld;
+    update_paint_circle_menu_mouse(button.pos);
     return Element::input_mouse_button_callback(button, mouseHovering);
 }
 
 bool RotateWheel::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-    update_paint_circle_menu_mouse(motion.pos, false);
+    isHovering = mouseHovering;
+    update_paint_circle_menu_mouse(motion.pos);
     return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
-void RotateWheel::update_paint_circle_menu_mouse(const Vector2f& p, bool leftClicked) {
+void RotateWheel::update_paint_circle_menu_mouse(const Vector2f& p) {
     if(boundingBox.has_value()) {
         Vector2f vecFromCenter = (p - boundingBox.value().center()).normalized();
         float distFromCenter = vec_distance(p, boundingBox.value().center());
         isRotateBarHovered = isHovering && distFromCenter > wheel_start() && distFromCenter < wheel_end();
-        isRotateBarHeld = isRotateBarHovered && isHeld;
 
         if(isRotateBarHeld) {
             gui.set_post_callback_func([&, vecFromCenter] {
@@ -67,6 +68,7 @@ void RotateWheel::update_paint_circle_menu_mouse(const Vector2f& p, bool leftCli
                         }
                     }
                 }
+                onChange();
             });
         }
     }
@@ -105,9 +107,9 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io, bool 
 
     SkPaint rotateBarHolderFill;
     rotateBarHolderFill.setAntiAlias(skiaAA);
-    if(selection.held)
+    if(isRotateBarHeld)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
-    else if(selection.hovered)
+    else if(isRotateBarHovered)
         rotateBarHolderFill.setColor4f(io.theme->fillColor2);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor2);

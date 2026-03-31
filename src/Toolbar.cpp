@@ -425,18 +425,18 @@ void Toolbar::top_toolbar() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io.theme->padding1 / 2)),
-            .childGap = static_cast<uint16_t>(io.theme->childGap1 / 2),
-            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-    }) {
-        gui.new_id("menu top toolbar", [&] {
+    gui.element<LayoutElement>("top menu bar", [&] (const Clay_ElementId& lId) {
+        CLAY(lId, {
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io.theme->padding1 / 2)),
+                .childGap = static_cast<uint16_t>(io.theme->childGap1 / 2),
+                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+        }) {
             global_log();
             bool bookmarkMenuPopUpJustOpen = false;
             bool gridMenuPopUpJustOpen = false;
@@ -551,7 +551,7 @@ void Toolbar::top_toolbar() {
                                 .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                                 .wide = true,
                                 .centered = false,
-                                .onClick = [&]{
+                                .onClick = [&, onClick]{
                                     onClick();
                                     menuPopUpOpen = false;
                                 }
@@ -638,8 +638,8 @@ void Toolbar::top_toolbar() {
                     }
                 });
             }
-        });
-    }
+        }
+    });
 }
 
 void Toolbar::web_version_welcome() {
@@ -1658,7 +1658,8 @@ void Toolbar::general_settings_inner_gui() {
                     .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                     .isSelected = generalSettingsOptions == opt,
                     .wide = true,
-                    .onClick = [&] {
+                    .centered = false,
+                    .onClick = [&, opt] {
                         main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                         themeData.selectedThemeIndex = std::nullopt;
                         generalSettingsOptions = opt;

@@ -19,6 +19,8 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
             containerDimensions = {scrollData.scrollContainerDimensions.width, scrollData.scrollContainerDimensions.height};
         }
 
+        clamp_scroll();
+
         CLAY(localID, {
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -103,12 +105,18 @@ bool ScrollArea::input_mouse_motion_callback(const InputManager::MouseMotionCall
     return Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
+void ScrollArea::clamp_scroll() {
+    scrollOffset.x() = std::clamp(scrollOffset.x(), -std::max(0.0f, contentDimensions.x() - containerDimensions.x()), 0.0f);
+    scrollOffset.y() = std::clamp(scrollOffset.y(), -std::max(0.0f, contentDimensions.y() - containerDimensions.y()), 0.0f);
+}
+
 bool ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) {
     if(mouseHovering) {
         if(opts.scrollVertical)
-            scrollOffset.y() += wheel.amount.y();
+            scrollOffset.y() = scrollOffset.y() + wheel.amount.y() * 10.0f;
         if(opts.scrollHorizontal)
-            scrollOffset.x() += wheel.amount.x();
+            scrollOffset.y() = scrollOffset.x() + wheel.amount.x() * 10.0f;
+        clamp_scroll();
         gui.set_to_layout();
     }
     return Element::input_mouse_wheel_callback(wheel, mouseHovering);

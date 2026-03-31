@@ -14,7 +14,7 @@ void top_to_bottom_window_popup_layout(GUIManager& gui, const char* id, Clay_Siz
             },
             .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
             .cornerRadius = CLAY_CORNER_RADIUS(10),
-            .floating = { .attachTo = CLAY_ATTACH_TO_PARENT },
+            .floating = { .zIndex = gui.zIndex, .attachTo = CLAY_ATTACH_TO_PARENT },
             .border = {.color = convert_vec4<Clay_Color>(gui.io.theme->fillColor2), .width = CLAY_BORDER_OUTSIDE(1)}
         }) {
             innerContent();

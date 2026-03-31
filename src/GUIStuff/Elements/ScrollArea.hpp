@@ -37,6 +37,7 @@ class ScrollArea : public Element {
         Vector2f contentDimensions = {0.0f, 0.0f};
         Vector2f containerDimensions = {0.0f, 0.0f};
         Vector2f scrollOffset = {0.0f, 0.0f};
+        void clamp_scroll();
 };
 
 }

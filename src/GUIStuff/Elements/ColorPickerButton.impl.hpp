@@ -18,6 +18,7 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
         }
     });
     if(isOpen) {
+        gui.zIndex++;
         ElementHelpers::top_to_bottom_window_popup_layout(gui, "Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data]() {
             ElementHelpers::color_picker_items(gui, "c", val, {
                 .hasAlpha = data.hasAlpha,
@@ -25,11 +26,14 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
             });
         }, {
             .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                if(!mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down)
+                if(!mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
                     isOpen = false;
+                    gui.set_to_layout();
+                }
                 return mouseHovering;
             }
         });
+        gui.zIndex--;
     }
 }
 

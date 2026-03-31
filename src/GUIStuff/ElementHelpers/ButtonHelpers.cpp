@@ -18,7 +18,8 @@ void text_button(GUIManager& gui, const char* id, std::string_view text, const T
     };
     CLAY_AUTO_ID({
         .layout = {
-            .sizing = {.width = options.wide ? CLAY_SIZING_GROW(0) : CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) }
+            .sizing = {.width = options.wide ? CLAY_SIZING_GROW(0) : CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .childAlignment = {.x = options.centered ? CLAY_ALIGN_X_CENTER : CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
         }
     }) {
         gui.element<SelectableButton>(id, d);

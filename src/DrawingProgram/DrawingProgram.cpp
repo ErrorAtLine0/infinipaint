@@ -368,10 +368,10 @@ void DrawingProgram::toolbar_gui() {
                 tool_button("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", DrawingProgramToolType::ZOOM);
                 tool_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", DrawingProgramToolType::PAN);
 
-                std::shared_ptr<double> oldRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
-                gui.element<RotateWheel>("Canvas Rotate Wheel", &world.drawData.cam.c.rotation, [&, oldRotationAngle] {
-                    world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), world.drawData.cam.c.rotation - *oldRotationAngle);
-                    *oldRotationAngle = world.drawData.cam.c.rotation;
+                std::shared_ptr<double> newRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
+                gui.element<RotateWheel>("Canvas Rotate Wheel", newRotationAngle.get(), [&, newRotationAngle] {
+                    world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), *newRotationAngle - world.drawData.cam.c.rotation);
+                    *newRotationAngle = world.drawData.cam.c.rotation;
                 });
             }
         });
