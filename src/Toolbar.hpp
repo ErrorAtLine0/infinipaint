@@ -193,7 +193,8 @@ class Toolbar {
             std::vector<std::filesystem::path> entries;
             std::filesystem::path currentSearchPath;
             std::filesystem::path currentSelectedPath;
-            std::string fileName;
+            std::string fileName = "";
+            bool isSaving = false;
             size_t extensionSelected;
             OpenFileSelectorCallback postSelectionFunc;
         } filePicker;

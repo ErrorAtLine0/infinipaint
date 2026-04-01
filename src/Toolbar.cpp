@@ -150,6 +150,7 @@ void Toolbar::open_file_selector(const std::string& filePickerName, const std::v
         filePicker.filePickerWindowName = filePickerName;
         filePicker.postSelectionFunc = postSelectionFunc;
         filePicker.fileName = "";
+        filePicker.isSaving = isSaving;
         file_picker_gui_refresh_entries();
     }
 }
@@ -299,7 +300,7 @@ void Toolbar::close_popup_gui() {
     });
     center_obstructing_window_gui("Close program popup GUI", CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0, 600), [&] {
         text_label(gui, "Files may contain unsaved changes");
-        gui.element<ScrollArea>("close file popup gui scroll area", ScrollArea::Options{
+        gui.clipping_element<ScrollArea>("close file popup gui scroll area", ScrollArea::Options{
             .scrollVertical = true,
             .clipVertical = true,
             .showScrollbarY = true,
@@ -1680,7 +1681,7 @@ void Toolbar::general_settings_inner_gui() {
             }
         }) {
             auto general_scroll_area = [&](const char* id, const std::function<void()>& innerContent) {
-                gui.element<ScrollArea>("general settings scroll area", ScrollArea::Options{
+                gui.clipping_element<ScrollArea>("general settings scroll area", ScrollArea::Options{
                     .scrollVertical = true,
                     .clipHorizontal = false,
                     .clipVertical = true,
@@ -1925,7 +1926,7 @@ void Toolbar::about_menu_inner_gui() {
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 }
             }) {
-                gui.element<ScrollArea>("About Menu Selector Scroll Area", ScrollArea::Options{
+                gui.clipping_element<ScrollArea>("About Menu Selector Scroll Area", ScrollArea::Options{
                     .scrollVertical = true,
                     .clipHorizontal = false,
                     .clipVertical = true,
@@ -1968,7 +1969,7 @@ void Toolbar::about_menu_inner_gui() {
             }
         });
 
-        gui.element<ScrollArea>("About Menu Text Scroll Area", ScrollArea::Options{
+        gui.clipping_element<ScrollArea>("About Menu Text Scroll Area", ScrollArea::Options{
             .scrollVertical = true,
             .clipHorizontal = false,
             .clipVertical = true,
@@ -2060,7 +2061,9 @@ void Toolbar::file_picker_gui_refresh_entries() {
 void Toolbar::file_picker_gui_done() {
     if(!filePicker.fileName.empty()) {
         std::filesystem::path pathToRet = filePicker.currentSearchPath / filePicker.fileName;
-        filePicker.postSelectionFunc(force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions), filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
+        if(filePicker.isSaving)
+            pathToRet = force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions);
+        filePicker.postSelectionFunc(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
     }
     filePicker.isOpen = false;
 }
@@ -2127,8 +2130,10 @@ void Toolbar::file_picker_gui() {
                             if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
                                 gui.set_post_callback_func([&, button, selectedEntry, entry] {
                                     if(selectedEntry && button.clicks >= 2) {
-                                        if(std::filesystem::is_directory(entry))
+                                        if(std::filesystem::is_directory(entry)) {
                                             filePicker.currentSearchPath = entry;
+                                            file_picker_gui_refresh_entries();
+                                        }
                                         else if(std::filesystem::is_regular_file(entry))
                                             file_picker_gui_done();
                                     }

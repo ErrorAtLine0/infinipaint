@@ -39,8 +39,28 @@ class GUIManager {
             push_id(id);
             ElementType* elem = insert_element<ElementType>();
             Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
+            elem->set_parent_clipping_region(clippingRegion);
             elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
             elem->layout(clayId, a...);
+            pop_id();
+            return elem;
+        }
+
+        template <typename ElementType, typename... Args> ElementType* clipping_element(const char* id, const Args&... a) {
+            push_id(id);
+            ElementType* elem = insert_element<ElementType>();
+            Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
+            elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
+            elem->set_parent_clipping_region(clippingRegion);
+            auto oldClippingRegion = clippingRegion;
+            if(elem->get_bb().has_value()) {
+                if(clippingRegion.has_value())
+                    clippingRegion = clippingRegion.value().get_intersection_between_aabbs(elem->get_bb().value());
+                else
+                    clippingRegion = elem->get_bb();
+            }
+            elem->layout(clayId, a...);
+            clippingRegion = oldClippingRegion;
             pop_id();
             return elem;
         }
@@ -84,6 +104,8 @@ class GUIManager {
         void pop_id();
 
         int16_t zIndex = 0;
+        std::optional<SCollision::AABB<float>> clippingRegion;
+
         std::function<void()> postCallbackFunc;
         bool postCallbackFuncIsHighPriority;
         Clay_Context* clayInstance;

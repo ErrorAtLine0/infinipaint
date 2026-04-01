@@ -243,7 +243,7 @@ void GUIManager::layout_if_necessary() {
 }
 
 void GUIManager::layout() {
-    constexpr int LAYOUT_RUN_COUNT = 3;
+    constexpr int LAYOUT_RUN_COUNT = 4;
     for(int i = 0; i < LAYOUT_RUN_COUNT; i++)
         single_layout_run();
 }
@@ -297,10 +297,13 @@ void GUIManager::new_id(int64_t id, const std::function<void()>& f) {
 }
 
 void GUIManager::set_z_index(int16_t z, const std::function<void()>& f) {
+    auto oldClippingRegion = clippingRegion;
+    clippingRegion = std::nullopt;
     int16_t oldZIndex = zIndex;
     zIndex = z;
     f();
     zIndex = oldZIndex;
+    clippingRegion = oldClippingRegion;
 }
 
 int16_t GUIManager::get_z_index() {
@@ -333,8 +336,8 @@ void GUIManager::run_post_callback_func() {
     if(postCallbackFunc) {
         postCallbackFunc();
         postCallbackFunc = nullptr;
-        postCallbackFuncIsHighPriority = false;
     }
+    postCallbackFuncIsHighPriority = false;
 }
 
 bool GUIManager::cursor_obstructed() const {
@@ -366,7 +369,7 @@ void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<vo
     cursorObstructed = false;
     int16_t zIndexObstructed = 0;
     for(ElementContainer* e : orderedElements) {
-        if((!cursorObstructed || zIndexObstructed == e->elem->zIndex) && e->elem->get_bb().has_value() && SCollision::collide(e->elem->get_bb().value(), mousePos)) {
+        if((!cursorObstructed || zIndexObstructed == e->elem->zIndex) && e->elem->collides_with_point(mousePos)) {
             zIndexObstructed = e->elem->zIndex;
             cursorObstructed = true;
             f(e, true);

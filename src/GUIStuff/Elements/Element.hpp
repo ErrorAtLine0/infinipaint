@@ -12,6 +12,7 @@ namespace GUIStuff {
             virtual bool collides_with_point(const Vector2f& p) const;
 
             void set_bounding_box_from_elem_data(const Clay_ElementData& elemData);
+            void set_parent_clipping_region(const std::optional<SCollision::AABB<float>>& bb);
             const std::optional<SCollision::AABB<float>>& get_bb() const;
             virtual ~Element() = default;
 
@@ -27,6 +28,7 @@ namespace GUIStuff {
         protected:
             static SCollision::AABB<float> get_bb_from_command(Clay_RenderCommand* command);
             std::optional<SCollision::AABB<float>> boundingBox;
+            std::optional<SCollision::AABB<float>> parentClippingRegion;
 
             GUIManager& gui;
     };

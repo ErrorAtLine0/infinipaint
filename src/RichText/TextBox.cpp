@@ -477,6 +477,7 @@ void TextBox::clear_text() {
     paragraphs.clear();
     tStyleMods.clear();
     paragraphs.emplace_back();
+    needsRebuild = true;
 }
 
 void TextBox::set_string(const std::string& str) {

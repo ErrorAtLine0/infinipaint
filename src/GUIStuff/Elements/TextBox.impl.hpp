@@ -8,7 +8,10 @@ template <typename T> TextBox<T>::TextBox(GUIManager& gui): Element(gui) {}
 template <typename T> void TextBox<T>::layout(const Clay_ElementId& id, const TextBoxData<T>& userInfo) {
     auto& io = gui.io;
     this->userInfo = userInfo;
-    init_textbox(io, false);
+    init_textbox(io);
+    if(!oldData.has_value() || oldData.value() != *userInfo.data)
+        reset_textbox_text();
+
     CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_GROW(static_cast<float>(io.fontSize * 2)), .height = CLAY_SIZING_FIXED(static_cast<float>(io.fontSize * 1.25f))}
@@ -73,7 +76,7 @@ template <typename T> bool TextBox<T>::input_mouse_button_callback(const InputMa
                 gui.io.input->remove_rich_text_box_input(textbox);
                 if(update_data())
                     gui.set_post_callback_func_high_priority(userInfo.onEdit);
-                init_textbox(gui.io, true);
+                reset_textbox_text();
                 isSelected = false;
             }
         }
@@ -96,12 +99,12 @@ template <typename T> void TextBox<T>::input_key_callback(const InputManager::Ke
         gui.set_post_callback_func_high_priority([&, success] {
             if(success && userInfo.onEdit) userInfo.onEdit();
             if(userInfo.onEnter) userInfo.onEnter();
-            init_textbox(gui.io, true);
+            reset_textbox_text();
         });
     }
 }
 
-template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io, bool forceTextUpdate) {
+template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
     if(!textbox) {
         textbox = std::make_shared<RichText::TextBox>();
         textbox->set_width(std::numeric_limits<float>::max());
@@ -109,11 +112,6 @@ template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io, bool fo
         textbox->set_allow_newlines(false);
         cur = std::make_shared<RichText::TextBox::Cursor>();
         rect = std::make_shared<SCollision::AABB<float>>();
-    }
-
-    if(forceTextUpdate || !oldData.has_value() || oldData.value() != *userInfo.data) {
-        textbox->clear_text();
-        cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
     }
 
     textbox->onUserTextEdit = [&] {
@@ -124,6 +122,11 @@ template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io, bool fo
                 gui.set_post_callback_func_high_priority(userInfo.onEdit);
         }
     };
+}
+
+template <typename T> void TextBox<T>::reset_textbox_text() {
+    textbox->set_string(userInfo.toStr(*userInfo.data));
+    cur->pos = cur->selectionBeginPos = cur->selectionEndPos = {0, 0};
 }
 
 template <typename T> bool TextBox<T>::update_data() {

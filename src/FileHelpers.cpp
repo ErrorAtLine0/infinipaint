@@ -4,6 +4,9 @@
 
 std::filesystem::path force_extension_on_path(std::filesystem::path p, const std::string& extensions) {
     std::vector<std::string> extensionList = split_string_by_token(extensions, ";");
+    std::erase(extensionList, "*");
+    if(extensionList.empty())
+        return p;
     for(std::string& s : extensionList) {
         std::transform(s.begin(), s.end(), s.begin(), ::tolower);
         s.insert(0, ".");

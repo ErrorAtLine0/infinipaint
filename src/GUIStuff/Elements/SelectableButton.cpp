@@ -69,7 +69,7 @@ bool SelectableButton::input_mouse_button_callback(const InputManager::MouseButt
     isHovering = mouseHovering;
     isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
     if(isHeld) {
-        gui.set_post_callback_func([&]{onClick();});
+        gui.set_post_callback_func([&]{ if(onClick) onClick(); });
         gui.set_to_layout();
     }
     else if(isHovering != oldIsHovering || isHeld != oldIsHeld)

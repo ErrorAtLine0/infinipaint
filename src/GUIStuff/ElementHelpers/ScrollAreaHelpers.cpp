@@ -4,7 +4,7 @@
 namespace GUIStuff { namespace ElementHelpers {
 
 void scroll_area_many_entries(GUIManager& gui, const char* id, const ScrollBarManyEntriesOptions& options) {
-    gui.element<ScrollArea>(id, ScrollArea::Options{
+    gui.clipping_element<ScrollArea>(id, ScrollArea::Options{
         .scrollVertical = true,
         .clipHorizontal = options.clipHorizontal,
         .clipVertical = true,

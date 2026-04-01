@@ -20,6 +20,10 @@ namespace GUIStuff {
             boundingBox = std::nullopt;
     }
 
+    void Element::set_parent_clipping_region(const std::optional<SCollision::AABB<float>>& bb) {
+        parentClippingRegion = bb;
+    }
+
     const std::optional<SCollision::AABB<float>>& Element::get_bb() const {
         return boundingBox;
     }
@@ -27,7 +31,8 @@ namespace GUIStuff {
     bool Element::collides_with_point(const Vector2f& p) const {
         if(!boundingBox.has_value())
             return false;
-        return SCollision::collide(p, boundingBox.value());
+        bool inClippingRegion = !parentClippingRegion.has_value() || SCollision::collide(p, parentClippingRegion.value());
+        return inClippingRegion && SCollision::collide(p, boundingBox.value());
     }
 
     SCollision::AABB<float> Element::get_bb_from_command(Clay_RenderCommand* command) {
