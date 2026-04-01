@@ -94,6 +94,7 @@ bool GUIHolder::load_theme(const std::filesystem::path& configPath, const std::s
 void GUIHolder::update() {
     calculate_final_gui_scale();
     gui.update_window({0, 0}, main.window.size.cast<float>(), final_gui_scale());
+    gui.io.deltaTime = main.deltaTime;
     gui.layout_if_necessary();
 }
 

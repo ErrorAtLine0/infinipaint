@@ -11,7 +11,7 @@ void paint_circle_popup_menu(GUIManager& gui, const char* id, const Vector2f& ce
             },
             .floating = {
                 .offset = {centerPos.x() - size * 0.5f, centerPos.y() - size * 0.5f},
-                .zIndex = gui.zIndex,
+                .zIndex = gui.get_z_index(),
                 .attachTo = CLAY_ATTACH_TO_ROOT
             }
         }) {

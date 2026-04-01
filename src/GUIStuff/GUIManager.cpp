@@ -36,6 +36,7 @@ GUIManager::GUIManager()
     clayInstance = Clay_Initialize(clayArena, Clay_Dimensions(1.0f, 1.0f), (Clay_ErrorHandler)clay_error_handler);
     Clay_SetMeasureTextFunction(clay_skia_measure_text, this);
     setToLayout = true;
+    postCallbackFuncIsHighPriority = false;
 }
 
 Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData) {
@@ -295,6 +296,17 @@ void GUIManager::new_id(int64_t id, const std::function<void()>& f) {
     pop_id();
 }
 
+void GUIManager::set_z_index(int16_t z, const std::function<void()>& f) {
+    int16_t oldZIndex = zIndex;
+    zIndex = z;
+    f();
+    zIndex = oldZIndex;
+}
+
+int16_t GUIManager::get_z_index() {
+    return zIndex;
+}
+
 void GUIManager::push_id(int64_t id) {
     idStack.emplace_back(id);
 }
@@ -308,6 +320,12 @@ void GUIManager::pop_id() {
 }
 
 void GUIManager::set_post_callback_func(const std::function<void()>& f) {
+    if(!postCallbackFuncIsHighPriority)
+        postCallbackFunc = f;
+}
+
+void GUIManager::set_post_callback_func_high_priority(const std::function<void()>& f) {
+    postCallbackFuncIsHighPriority = true;
     postCallbackFunc = f;
 }
 
@@ -315,6 +333,7 @@ void GUIManager::run_post_callback_func() {
     if(postCallbackFunc) {
         postCallbackFunc();
         postCallbackFunc = nullptr;
+        postCallbackFuncIsHighPriority = false;
     }
 }
 

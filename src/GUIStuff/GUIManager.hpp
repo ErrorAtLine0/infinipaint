@@ -28,10 +28,13 @@ class GUIManager {
         void new_id(const char* id, const std::function<void()>& f);
         void new_id(int64_t id, const std::function<void()>& f);
 
+        void set_z_index(int16_t z, const std::function<void()>& f);
+        int16_t get_z_index();
+
         void set_post_callback_func(const std::function<void()>& f);
+        void set_post_callback_func_high_priority(const std::function<void()>& f);
         void run_post_callback_func();
 
-        int16_t zIndex = 0;
         template <typename ElementType, typename... Args> ElementType* element(const char* id, const Args&... a) {
             push_id(id);
             ElementType* elem = insert_element<ElementType>();
@@ -80,7 +83,9 @@ class GUIManager {
         void push_id(const char* id);
         void pop_id();
 
+        int16_t zIndex = 0;
         std::function<void()> postCallbackFunc;
+        bool postCallbackFuncIsHighPriority;
         Clay_Context* clayInstance;
         Clay_Arena clayArena;
         Clay_RenderCommandArray renderCommands;

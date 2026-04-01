@@ -225,10 +225,12 @@ void ImageResourceDisplay::draw(SkCanvas* canvas, const DrawData& drawData, cons
             }
         }
         else {
+            SkPaint p;
+            p.setAntiAlias(drawData.skiaAA);
             if(closestMipmapLevel == get_smallest_mipmap_level())
-                canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear});
+                canvas->drawImageRect(frame.smallestMipmapLevel, imRect, {SkFilterMode::kLinear, SkMipmapMode::kLinear}, &p);
             else
-                canvas->drawImageRect(frame.mipmapLevels[closestMipmapLevel], imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone});
+                canvas->drawImageRect(frame.mipmapLevels[closestMipmapLevel], imRect, {SkFilterMode::kLinear, SkMipmapMode::kNone}, &p);
         }
     }
 }

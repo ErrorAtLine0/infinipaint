@@ -28,7 +28,7 @@ void PositionAdjustingPopupMenu::layout(const Clay_ElementId& id, Vector2f popup
             .cornerRadius = CLAY_CORNER_RADIUS(gui.io.theme->windowCorners1),
             .floating = {
                 .offset = {popupPos.x(), popupPos.y()},
-                .zIndex = gui.zIndex,
+                .zIndex = gui.get_z_index(),
                 .attachTo = CLAY_ATTACH_TO_ROOT
             }
         }) {

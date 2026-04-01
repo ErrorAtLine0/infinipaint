@@ -9,8 +9,8 @@ void scroll_area_many_entries(GUIManager& gui, const char* id, const ScrollBarMa
         .clipHorizontal = options.clipHorizontal,
         .clipVertical = true,
         .showScrollbarY = true,
-        .innerContent = [&, options](const ScrollArea::InnerContentParameters& params) {
-            options.innerContentExtraCallback(params);
+        .innerContent = [&](const ScrollArea::InnerContentParameters& params) {
+            if(options.innerContentExtraCallback) options.innerContentExtraCallback(params);
 
             float absScrollAmount = std::fabs(params.scrollOffset.y());
             size_t startPoint = absScrollAmount / options.entryHeight;

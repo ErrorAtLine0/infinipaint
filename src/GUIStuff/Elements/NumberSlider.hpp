@@ -82,6 +82,9 @@ template <typename T> class NumberSlider : public Element {
         }
 
         virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override {
+            isHovering = mouseHovering;
+            if(isHeld && boundingBox.has_value())
+                update_slider_pos(motion.pos);
             return Element::input_mouse_motion_callback(motion, mouseHovering);
         }
 
