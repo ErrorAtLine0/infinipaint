@@ -151,6 +151,7 @@ void Toolbar::open_file_selector(const std::string& filePickerName, const std::v
         filePicker.postSelectionFunc = postSelectionFunc;
         filePicker.fileName = "";
         filePicker.isSaving = isSaving;
+        filePicker.entriesScrollArea = nullptr;
         file_picker_gui_refresh_entries();
     }
 }
@@ -2055,6 +2056,9 @@ void Toolbar::file_picker_gui_refresh_entries() {
         return std::lexicographical_compare(aStr.begin(), aStr.end(), bStr.begin(), bStr.end());
     });
 
+    if(filePicker.entriesScrollArea)
+        filePicker.entriesScrollArea->reset_scroll();
+
     gui.set_to_layout();
 }
 
@@ -2065,6 +2069,7 @@ void Toolbar::file_picker_gui_done() {
             pathToRet = force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions);
         filePicker.postSelectionFunc(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
     }
+    filePicker.entriesScrollArea = nullptr;
     filePicker.isOpen = false;
 }
 
@@ -2096,7 +2101,7 @@ void Toolbar::file_picker_gui() {
             .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2)
         }) {
             constexpr float entryHeight = 25.0f;
-            scroll_area_many_entries(gui, "file picker entries", {
+            filePicker.entriesScrollArea = scroll_area_many_entries(gui, "file picker entries", {
                 .entryHeight = entryHeight,
                 .entryCount = filePicker.entries.size(),
                 .clipHorizontal = false,

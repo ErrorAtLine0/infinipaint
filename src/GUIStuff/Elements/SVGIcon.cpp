@@ -4,6 +4,7 @@
 #include <include/core/SkColorSpace.h>
 #include <iostream>
 #include "../GUIManager.hpp"
+#include "Helpers/MathExtras.hpp"
 
 namespace GUIStuff {
 

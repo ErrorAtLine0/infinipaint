@@ -26,6 +26,7 @@ class ScrollArea : public Element {
         };
 
         void layout(const Clay_ElementId& id, const Options& options);
+        void reset_scroll();
 
         virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
         virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;

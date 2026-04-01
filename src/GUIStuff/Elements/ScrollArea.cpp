@@ -138,6 +138,10 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
     }
 }
 
+void ScrollArea::reset_scroll() {
+    scrollOffset = {0.0f, 0.0f};
+}
+
 bool ScrollArea::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
     return Element::input_mouse_button_callback(button, mouseHovering);
 }

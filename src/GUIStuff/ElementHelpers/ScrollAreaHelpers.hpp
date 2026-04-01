@@ -11,6 +11,6 @@ struct ScrollBarManyEntriesOptions {
     std::function<void(const ScrollArea::InnerContentParameters&)> innerContentExtraCallback;
 };
 
-void scroll_area_many_entries(GUIManager& gui, const char* id, const ScrollBarManyEntriesOptions& options);
+ScrollArea* scroll_area_many_entries(GUIManager& gui, const char* id, const ScrollBarManyEntriesOptions& options);
 
 }}

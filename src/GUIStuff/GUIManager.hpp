@@ -40,8 +40,8 @@ class GUIManager {
             ElementType* elem = insert_element<ElementType>();
             Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
             elem->set_parent_clipping_region(clippingRegion);
-            elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
             elem->layout(clayId, a...);
+            elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId)); // Setting bounding box after layout ensures that the element will have its bounding box set if it's set to be drawn.
             pop_id();
             return elem;
         }
@@ -50,7 +50,6 @@ class GUIManager {
             push_id(id);
             ElementType* elem = insert_element<ElementType>();
             Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
-            elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
             elem->set_parent_clipping_region(clippingRegion);
             auto oldClippingRegion = clippingRegion;
             if(elem->get_bb().has_value()) {
@@ -60,6 +59,7 @@ class GUIManager {
                     clippingRegion = elem->get_bb();
             }
             elem->layout(clayId, a...);
+            elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
             clippingRegion = oldClippingRegion;
             pop_id();
             return elem;

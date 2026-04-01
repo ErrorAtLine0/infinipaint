@@ -1,4 +1,5 @@
 #pragma once
+#include "GUIStuff/Elements/ScrollArea.hpp"
 #include "GUIStuff/GUIManager.hpp"
 #include "DrawData.hpp"
 #include "Helpers/FileDownloader.hpp"
@@ -196,6 +197,7 @@ class Toolbar {
             std::string fileName = "";
             bool isSaving = false;
             size_t extensionSelected;
+            GUIStuff::ScrollArea* entriesScrollArea = nullptr;
             OpenFileSelectorCallback postSelectionFunc;
         } filePicker;
 
