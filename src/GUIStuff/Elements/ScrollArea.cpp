@@ -1,5 +1,6 @@
 #include "ScrollArea.hpp"
 #include "../GUIManager.hpp"
+#include "LayoutElement.hpp"
 
 namespace GUIStuff {
 
@@ -13,11 +14,17 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
         Clay_ElementId localID = CLAY_ID_LOCAL("SCROLL_AREA");
 
         Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(localID);
+        Clay_ElementData elemData = Clay_GetElementData(localID);
+
+        Vector2f bbPos = {0.0f, 0.0f};
 
         if(scrollData.found) {
             contentDimensions = {scrollData.contentDimensions.width, scrollData.contentDimensions.height};
             containerDimensions = {scrollData.scrollContainerDimensions.width, scrollData.scrollContainerDimensions.height};
         }
+
+        if(elemData.found)
+            bbPos = {elemData.boundingBox.x, elemData.boundingBox.y};
 
         clamp_scroll();
 
@@ -32,68 +39,98 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
             opts.innerContent({.contentDimensions = contentDimensions, .containerDimensions = containerDimensions, .scrollOffset = scrollOffset});
         }
 
-        //if(scrollData.contentDimensions.height > scrollData.scrollContainerDimensions.height) {
-        //    float sAreaDim = scrollData.scrollContainerDimensions.height;
-        //    float contDim = scrollData.contentDimensions.height;
-        //    float scrollerSize = (sAreaDim / contDim) * sAreaDim;
-        //    float scrollPosMax = contDim - sAreaDim; 
-        //    float scrollerPos = std::fabs(scrollData.scrollPosition->y / scrollPosMax);
-        //    float areaAboveScrollerSize = scrollerPos * (sAreaDim - scrollerSize);
+        if(scrollData.contentDimensions.height > scrollData.scrollContainerDimensions.height) {
+            float sAreaDim = containerDimensions.y();
+            float sAreaStart = bbPos.y();
+            float contDim = contentDimensions.y();
+            float scrollerSize = (sAreaDim / contDim) * sAreaDim;
+            float scrollPosMax = contDim - sAreaDim; 
+            float scrollerPos = std::fabs(scrollOffset.y() / scrollPosMax);
+            float areaAboveScrollerSize = scrollerPos * (sAreaDim - scrollerSize);
 
-        //    currentScrollPos = scrollData.scrollPosition->y;
+            gui.element<LayoutElement>("scroll bar", [&] (const Clay_ElementId& lId) {
+                CLAY(lId, {
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIXED(12), .height = CLAY_SIZING_GROW(0)},
+                        .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor2)
+                }) {
+                    SkColor4f scrollerColor;
+                    if(isScrollbarHeldY)
+                        scrollerColor = gui.io.theme->fillColor1;
+                    else if(isScrollbarHoveredY)
+                        scrollerColor = gui.io.theme->fillColor1;
+                    else
+                        scrollerColor = gui.io.theme->fillColor2;
 
-        //    CLAY_AUTO_ID({
-        //        .layout = {
-        //            .sizing = {.width = CLAY_SIZING_FIXED(12), .height = CLAY_SIZING_GROW(0)},
-        //            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-        //            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        //        },
-        //        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor2)
-        //    }) {
-        //        SkColor4f scrollerColor;
-        //        if(sD.isMoving)
-        //            scrollerColor = io.theme->fillColor1;
-        //        else if(Clay_Hovered())
-        //            scrollerColor = io.theme->fillColor1;
-        //        else
-        //            scrollerColor = io.theme->fillColor2;
+                    CLAY_AUTO_ID({ 
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(areaAboveScrollerSize)}
+                        }
+                    }) {}
 
-        //        bool isHoveringOverScroller = false;
-        //        CLAY_AUTO_ID({ 
-        //            .layout = {
-        //                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(areaAboveScrollerSize)}
-        //            }
-        //        }) {}
-        //        CLAY_AUTO_ID({
-        //            .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(scrollerSize)}},
-        //            .backgroundColor = convert_vec4<Clay_Color>(scrollerColor),
-        //            .cornerRadius = CLAY_CORNER_RADIUS(3),
-        //        }) {
-        //            if(Clay_Hovered())
-        //                isHoveringOverScroller = true;
-        //        }
-        //        CLAY_AUTO_ID({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
-        //        if(Clay_Hovered() && io.mouse.leftClick) {
-        //            isMoving = true;
-        //            if(isHoveringOverScroller)
-        //                scrollerStartPos = scrollAreaBB.y + areaAboveScrollerSize + scrollerSize * 0.5f;
-        //            else
-        //                scrollerStartPos = std::clamp(io.mouse.pos.y(), scrollAreaBB.y + scrollerSize * 0.5f, scrollAreaBB.y + scrollAreaBB.height - scrollerSize * 0.5f);
-        //            mouseStartPos = io.mouse.pos.y();
-        //        }
-        //        if(!io.mouse.leftHeld)
-        //            isMoving = false;
-        //        if(isMoving) {
-        //            float newScrollPosFrac;
-        //            newScrollPosFrac = std::clamp((scrollerStartPos - (mouseStartPos - io.mouse.pos.y()) - scrollAreaBB.y - scrollerSize * 0.5f) / (scrollAreaBB.height - scrollerSize), 0.0f, 1.0f);
-        //            currentScrollPos = newScrollPosFrac * (-scrollPosMax);
-        //        }
-        //        currentScrollPos = std::clamp(currentScrollPos, -scrollPosMax, 0.0f);
-        //        scrollData.scrollPosition->y = currentScrollPos;
-        //    }
-        //}
-        //else
-        //    sD.currentScrollPos = 0.0f;
+                    gui.element<LayoutElement>("scroller", [&] (const Clay_ElementId& lId2) {
+                        CLAY(lId2, {
+                            .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(scrollerSize)}},
+                            .backgroundColor = convert_vec4<Clay_Color>(scrollerColor),
+                            .cornerRadius = CLAY_CORNER_RADIUS(3),
+                        }) {}
+                    }, LayoutElement::Callbacks{
+                        .mouseMotion = [&] (const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+                            if(isHoveringOverScrollerY != mouseHovering) {
+                                isHoveringOverScrollerY = mouseHovering;
+                                gui.set_to_layout();
+                            }
+                            return mouseHovering;
+                        }
+                    });
+
+                    CLAY_AUTO_ID({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                }
+            }, LayoutElement::Callbacks{
+                .mouseButton = [&, scrollPosMax, sAreaStart, sAreaDim, scrollerSize, areaAboveScrollerSize](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                    if(button.button == InputManager::MouseButton::LEFT) {
+                        if(button.down && mouseHovering) {
+                            isScrollbarHeldY = true;
+                            if(isHoveringOverScrollerY)
+                                scrollerStartPosY = sAreaStart + areaAboveScrollerSize + scrollerSize * 0.5f;
+                            else
+                                scrollerStartPosY = std::clamp(button.pos.y(), sAreaStart + scrollerSize * 0.5f, sAreaStart + sAreaDim - scrollerSize * 0.5f);
+                            mouseStartPosY = button.pos.y();
+
+                            float newScrollPosFrac;
+                            newScrollPosFrac = std::clamp((scrollerStartPosY - (mouseStartPosY - button.pos.y()) - sAreaStart - scrollerSize * 0.5f) / (sAreaDim - scrollerSize), 0.0f, 1.0f);
+                            scrollOffset.y() = newScrollPosFrac * (-scrollPosMax);
+
+                            clamp_scroll();
+                            gui.set_to_layout();
+                        }
+                        else if(isScrollbarHeldY) {
+                            isScrollbarHeldY = false;
+                            gui.set_to_layout();
+                        }
+                    }
+                    return mouseHovering;
+                },
+                .mouseMotion = [&, scrollPosMax, sAreaStart, sAreaDim, scrollerSize](const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+                    if(isScrollbarHoveredY != mouseHovering) {
+                        isScrollbarHoveredY = mouseHovering;
+                        gui.set_to_layout();
+                    }
+                    if(isScrollbarHeldY) {
+                        float newScrollPosFrac;
+                        newScrollPosFrac = std::clamp((scrollerStartPosY - (mouseStartPosY - motion.pos.y()) - sAreaStart - scrollerSize * 0.5f) / (sAreaDim - scrollerSize), 0.0f, 1.0f);
+                        scrollOffset.y() = newScrollPosFrac * (-scrollPosMax);
+
+                        clamp_scroll();
+                        gui.set_to_layout();
+                    }
+                    return mouseHovering;
+                }
+            });
+        }
     }
 }
 

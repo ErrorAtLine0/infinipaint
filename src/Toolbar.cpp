@@ -1679,223 +1679,228 @@ void Toolbar::general_settings_inner_gui() {
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             }
         }) {
-            gui.element<ScrollArea>("general settings scroll area", ScrollArea::Options{
-                .scrollVertical = true,
-                .clipHorizontal = false,
-                .clipVertical = true,
-                .showScrollbarY = true,
-                .innerContent = [&](const ScrollArea::InnerContentParameters&) {
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
-                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                            .childGap = io.theme->childGap1,
-                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        }
-                    }) {
-                        switch(generalSettingsOptions) {
-                            case GSETTINGS_GENERAL: {
-                                gui.new_id("general settings", [&] {
-                                    input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
-                                    main.update_display_names();
-                                    color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
-                                    #ifndef __EMSCRIPTEN__
-                                        checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);
-                                        checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
-                                    #endif
-                                    slider_scalar_field(gui, "drag zoom slider", "Drag zoom speed", &main.conf.dragZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
-                                    slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &main.conf.scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
-                                    checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &main.conf.flipZoomToolDirection);
-                                    checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
-                                    #ifndef __EMSCRIPTEN__
-                                        checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
-                                    #endif
-                                    input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
-                                    input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {.decimalPrecision = 1});
-                                    text_label(gui, "Anti-aliasing:");
-                                    radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
-                                        {"None", GlobalConfig::AntiAliasing::NONE},
-                                        {"Skia", GlobalConfig::AntiAliasing::SKIA},
-                                        {"Dynamic MSAA", GlobalConfig::AntiAliasing::DYNAMIC_MSAA}
-                                    }, [&] {
-                                        main.refresh_draw_surfaces();
-                                    });
-                                    text_label(gui, "VSync:");
-                                    radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
-                                        {"On", 1},
-                                        {"Off", 0},
-                                        {"Adaptive", -1}
-                                    }, [&] {
-                                        main.set_vsync_value(main.conf.vsyncValue);
-                                    });
-
-                                    #ifndef __EMSCRIPTEN__
-                                    checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
-                                    #endif
-                                });
-                                break;
+            auto general_scroll_area = [&](const char* id, const std::function<void()>& innerContent) {
+                gui.element<ScrollArea>("general settings scroll area", ScrollArea::Options{
+                    .scrollVertical = true,
+                    .clipHorizontal = false,
+                    .clipVertical = true,
+                    .showScrollbarY = true,
+                    .innerContent = [&, innerContent](const ScrollArea::InnerContentParameters&) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
+                                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                .childGap = io.theme->childGap1,
+                                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                                .layoutDirection = CLAY_TOP_TO_BOTTOM
                             }
-                            case GSETTINGS_TABLET: {
-                                gui.new_id("tablet settings", [&] {
-                                    checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
-                                    slider_scalar_field(gui, "smoothing time", "Smoothing sampling time", &main.conf.tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, {.decimalPrecision = 3});
-                                    input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &main.conf.tabletOptions.middleClickButton, 1, 255);
-                                    input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &main.conf.tabletOptions.rightClickButton, 1, 255);
-                                    slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
-                                    checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld);
-                                    #ifdef _WIN32
-                                        checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
-                                    #endif
-                                });
-                                break;
-                            }
-                            case GSETTINGS_THEME: {
-                                gui.new_id("theme", [&] {
-                                    if(!themeData.selectedThemeIndex)
-                                        reload_theme_list();
-
-                                    CLAY_AUTO_ID({.layout = { 
-                                          .childGap = io.theme->childGap1,
-                                          .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                                          .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                                    }
-                                    }) {
-                                        text_label(gui, "Theme: ");
-                                        gui.element<DropDown<size_t>>("dropdownSelectThemes", &themeData.selectedThemeIndex.value(), themeData.themeDirList, DropdownOptions{
-                                            .onClick = [&]() {
-                                                main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                                reload_theme_list();
-                                            }
-                                        });
-                                    }
-                                    left_to_right_line_layout(gui, [&]() {
-                                        if(themeData.selectedThemeIndex != 0) {
-                                            text_button_wide("savethemebutton", "Save", [&] {
-                                                main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                                main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
-                                                reload_theme_list();
-                                            });
-                                        }
-                                        text_button_wide("saveasthemebutton", "Save As", [&]() {
-                                            themeData.openedSaveAsMenu = !themeData.openedSaveAsMenu;
-                                        });
-                                        text_button_wide("reloadthemebutton", "Reload", [&] {
-                                            main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                            reload_theme_list();
-                                        });
-                                        if(themeData.selectedThemeIndex != 0) {
-                                            text_button_wide("deletethemebutton", "Delete", [&] {
-                                                try { std::filesystem::remove(main.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
-                                                main.conf.themeCurrentlyLoaded = "Default";
-                                                reload_theme_list();
-                                            });
-                                        }
-                                    });
-                                    if(themeData.openedSaveAsMenu) {
-                                        input_text_field(gui, "Theme name:", "Theme name: ", &main.conf.themeCurrentlyLoaded);
-                                        left_to_right_line_layout(gui, [&]() {
-                                            text_button_wide("saveasdone", "Done", [&] {
-                                                main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
-                                                reload_theme_list();
-                                            });
-                                            text_button_wide("saveascancel", "Cancel", [&] {
-                                                themeData.openedSaveAsMenu = false;
-                                            });
-                                        });
-                                    }
-                                    text_label(gui, "Edit theme:");
-                                    text_label_light(gui, "Note: Changes only remain if theme is saved");
-                                    color_picker_button_field<SkColor4f>(gui, "fillColor1", "Fill Color 1", &io.theme->fillColor1);
-                                    color_picker_button_field<SkColor4f>(gui, "fillColor2", "Fill Color 2", &io.theme->fillColor2);
-                                    color_picker_button_field<SkColor4f>(gui, "backColor1", "Back Color 1", &io.theme->backColor1);
-                                    color_picker_button_field<SkColor4f>(gui, "backColor2", "Back Color 2", &io.theme->backColor2);
-                                    color_picker_button_field<SkColor4f>(gui, "frontColor1", "Front Color 1", &io.theme->frontColor1);
-                                    color_picker_button_field<SkColor4f>(gui, "frontColor2", "Front Color 2", &io.theme->frontColor2);
-                                    color_picker_button_field<SkColor4f>(gui, "warningColor", "Warning Color", &io.theme->warningColor);
-                                    color_picker_button_field<SkColor4f>(gui, "errorColor", "Error Color", &io.theme->errorColor);
-                                    //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io.theme->hoverExpandTime, 0.001f, 1.0f);
-                                    input_scalar_field<uint16_t>(gui, "childGap1", "Gap between child elements", &io.theme->childGap1, 0, 30);
-                                    input_scalar_field<uint16_t>(gui, "padding1", "Window padding", &io.theme->padding1, 0, 30);
-                                    slider_scalar_field<float>(gui, "windowCorners1", "Window corner radius", &io.theme->windowCorners1, 0, 30);
-                                });
-                                break;
-                            }
-                            case GSETTINGS_KEYBINDS: {
-                                if(keybindWaiting.has_value()) {
-                                    main.input.stop_key_input();
-                                    if(main.input.lastPressedKeybind) {
-                                        unsigned v = keybindWaiting.value();
-
-                                        Vector2ui32 newKey = main.input.lastPressedKeybind.value();
-                                        main.input.keyAssignments.erase(newKey);
-                                        auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
-                                            return p.second == v;
-                                        });
-                                        if(f != main.input.keyAssignments.end())
-                                            main.input.keyAssignments.erase(f);
-                                        main.input.keyAssignments.emplace(newKey, v);
-                                        keybindWaiting = std::nullopt;
-                                    }
-                                }
-
-                                gui.new_id("keybind entries", [&] {
-                                    for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
-                                        gui.new_id(i, [&] {
-                                            CLAY_AUTO_ID({
-                                                .layout = {
-                                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                                    .padding = CLAY_PADDING_ALL(0),
-                                                    .childGap = io.theme->childGap1,
-                                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-                                                    .layoutDirection = CLAY_LEFT_TO_RIGHT 
-                                                }
-                                            }) {
-                                                text_label(gui, std::string(nlohmann::json(static_cast<InputManager::KeyCodeEnum>(i))));
-                                                auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
-                                                    return p.second == i;
-                                                });
-                                                std::string assignedKeystrokeStr = f != main.input.keyAssignments.end() ? main.input.key_assignment_to_str(f->first) : "";
-                                                text_button(gui, "keybind button", assignedKeystrokeStr, {
-                                                    .isSelected = keybindWaiting.has_value() && keybindWaiting.value() == i,
-                                                    .wide = true,
-                                                    .onClick = [&] {
-                                                        keybindWaiting = i;
-                                                    }
-                                                });
-                                            }
-                                        });
-                                    }
-                                });
-                                break;
-                            }
-                            case GSETTINGS_DEBUG: {
-                                gui.new_id("debug settings menu", [&] {
-                                    checkbox_boolean_field(gui, "show performance metrics", "Show metrics", &showPerformance);
-                                    input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
-                                    #ifndef __EMSCRIPTEN__
-                                        input_scalar_field(gui, "fps cap slider", "FPS cap", &main.conf.fpsLimit, 3.0f, 10000.0f);
-                                    #endif
-                                    input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
-                                    text_label_light(gui, "Cache related settings");
-                                    input_scalar_field<size_t>(gui, "cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
-                                    input_scalar_field<size_t>(gui, "max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
-                                    size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
-                                                                       * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
-                                                                       * 4) // 4 Channels per pixel (RGBA)
-                                                                       / (1024 * 1024); // Bytes -> Megabytes conversion
-                                    text_label_light(gui, "Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
-                                    input_scalar_field<size_t>(gui, "max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
-                                    input_scalar_field<size_t>(gui, "components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
-                                    input_scalar_field<size_t>(gui, "maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
-                                    input_scalar_field<size_t>(gui, "minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
-                                });
-                                break;
-                            }
+                        }) {
+                            innerContent();
                         }
                     }
+                });
+            };
+            switch(generalSettingsOptions) {
+                case GSETTINGS_GENERAL: {
+                    general_scroll_area("general settings", [&] {
+                        input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
+                        main.update_display_names();
+                        color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                        #ifndef __EMSCRIPTEN__
+                            checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);
+                            checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
+                        #endif
+                        slider_scalar_field(gui, "drag zoom slider", "Drag zoom speed", &main.conf.dragZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
+                        slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &main.conf.scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
+                        checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &main.conf.flipZoomToolDirection);
+                        checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                        #ifndef __EMSCRIPTEN__
+                            checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
+                        #endif
+                        input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+                        input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {.decimalPrecision = 1});
+                        text_label(gui, "Anti-aliasing:");
+                        radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
+                            {"None", GlobalConfig::AntiAliasing::NONE},
+                            {"Skia", GlobalConfig::AntiAliasing::SKIA},
+                            {"Dynamic MSAA", GlobalConfig::AntiAliasing::DYNAMIC_MSAA}
+                        }, [&] {
+                            main.refresh_draw_surfaces();
+                        });
+                        text_label(gui, "VSync:");
+                        radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
+                            {"On", 1},
+                            {"Off", 0},
+                            {"Adaptive", -1}
+                        }, [&] {
+                            main.set_vsync_value(main.conf.vsyncValue);
+                        });
+
+                        #ifndef __EMSCRIPTEN__
+                        checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
+                        #endif
+                    });
+                    break;
                 }
-            });
+                case GSETTINGS_TABLET: {
+                    general_scroll_area("tablet settings", [&] {
+                        checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
+                        slider_scalar_field(gui, "smoothing time", "Smoothing sampling time", &main.conf.tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, {.decimalPrecision = 3});
+                        input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &main.conf.tabletOptions.middleClickButton, 1, 255);
+                        input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &main.conf.tabletOptions.rightClickButton, 1, 255);
+                        slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
+                        checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld);
+                        #ifdef _WIN32
+                            checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
+                        #endif
+                    });
+                    break;
+                }
+                case GSETTINGS_THEME: {
+                    general_scroll_area("theme", [&] {
+                        if(!themeData.selectedThemeIndex)
+                            reload_theme_list();
+
+                        CLAY_AUTO_ID({.layout = { 
+                              .childGap = io.theme->childGap1,
+                              .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                              .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                        }
+                        }) {
+                            text_label(gui, "Theme: ");
+                            gui.element<DropDown<size_t>>("dropdownSelectThemes", &themeData.selectedThemeIndex.value(), themeData.themeDirList, DropdownOptions{
+                                .onClick = [&]() {
+                                    main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                    reload_theme_list();
+                                }
+                            });
+                        }
+                        left_to_right_line_layout(gui, [&]() {
+                            if(themeData.selectedThemeIndex != 0) {
+                                text_button_wide("savethemebutton", "Save", [&] {
+                                    main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                    main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
+                                    reload_theme_list();
+                                });
+                            }
+                            text_button_wide("saveasthemebutton", "Save As", [&]() {
+                                themeData.openedSaveAsMenu = !themeData.openedSaveAsMenu;
+                            });
+                            text_button_wide("reloadthemebutton", "Reload", [&] {
+                                main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
+                                reload_theme_list();
+                            });
+                            if(themeData.selectedThemeIndex != 0) {
+                                text_button_wide("deletethemebutton", "Delete", [&] {
+                                    try { std::filesystem::remove(main.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
+                                    main.conf.themeCurrentlyLoaded = "Default";
+                                    reload_theme_list();
+                                });
+                            }
+                        });
+                        if(themeData.openedSaveAsMenu) {
+                            input_text_field(gui, "Theme name:", "Theme name: ", &main.conf.themeCurrentlyLoaded);
+                            left_to_right_line_layout(gui, [&]() {
+                                text_button_wide("saveasdone", "Done", [&] {
+                                    main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
+                                    reload_theme_list();
+                                });
+                                text_button_wide("saveascancel", "Cancel", [&] {
+                                    themeData.openedSaveAsMenu = false;
+                                });
+                            });
+                        }
+                        text_label(gui, "Edit theme:");
+                        text_label_light(gui, "Note: Changes only remain if theme is saved");
+                        auto theme_color_field = [&](const char* id, const char* name, SkColor4f* c) {
+                            color_picker_button_field<SkColor4f>(gui, id, name, c, {});
+                        };
+                        theme_color_field("fillColor2", "Fill Color 2", &io.theme->fillColor2);
+                        theme_color_field("backColor1", "Back Color 1", &io.theme->backColor1);
+                        theme_color_field("backColor2", "Back Color 2", &io.theme->backColor2);
+                        theme_color_field("frontColor1", "Front Color 1", &io.theme->frontColor1);
+                        theme_color_field("frontColor2", "Front Color 2", &io.theme->frontColor2);
+                        theme_color_field("warningColor", "Warning Color", &io.theme->warningColor);
+                        theme_color_field("errorColor", "Error Color", &io.theme->errorColor);
+                        //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io.theme->hoverExpandTime, 0.001f, 1.0f);
+                        input_scalar_field<uint16_t>(gui, "childGap1", "Gap between child elements", &io.theme->childGap1, 0, 30);
+                        input_scalar_field<uint16_t>(gui, "padding1", "Window padding", &io.theme->padding1, 0, 30);
+                        slider_scalar_field<float>(gui, "windowCorners1", "Window corner radius", &io.theme->windowCorners1, 0, 30);
+                    });
+                    break;
+                }
+                case GSETTINGS_KEYBINDS: {
+                    if(keybindWaiting.has_value()) {
+                        main.input.stop_key_input();
+                        if(main.input.lastPressedKeybind) {
+                            unsigned v = keybindWaiting.value();
+
+                            Vector2ui32 newKey = main.input.lastPressedKeybind.value();
+                            main.input.keyAssignments.erase(newKey);
+                            auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
+                                return p.second == v;
+                            });
+                            if(f != main.input.keyAssignments.end())
+                                main.input.keyAssignments.erase(f);
+                            main.input.keyAssignments.emplace(newKey, v);
+                            keybindWaiting = std::nullopt;
+                        }
+                    }
+
+                    general_scroll_area("keybind entries", [&] {
+                        for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
+                            gui.new_id(i, [&] {
+                                CLAY_AUTO_ID({
+                                    .layout = {
+                                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                        .padding = CLAY_PADDING_ALL(0),
+                                        .childGap = io.theme->childGap1,
+                                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                        .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                                    }
+                                }) {
+                                    text_label(gui, std::string(nlohmann::json(static_cast<InputManager::KeyCodeEnum>(i))));
+                                    auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
+                                        return p.second == i;
+                                    });
+                                    std::string assignedKeystrokeStr = f != main.input.keyAssignments.end() ? main.input.key_assignment_to_str(f->first) : "";
+                                    text_button(gui, "keybind button", assignedKeystrokeStr, {
+                                        .isSelected = keybindWaiting.has_value() && keybindWaiting.value() == i,
+                                        .wide = true,
+                                        .onClick = [&] {
+                                            keybindWaiting = i;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    break;
+                }
+                case GSETTINGS_DEBUG: {
+                    general_scroll_area("debug settings menu", [&] {
+                        checkbox_boolean_field(gui, "show performance metrics", "Show metrics", &showPerformance);
+                        input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
+                        #ifndef __EMSCRIPTEN__
+                            input_scalar_field(gui, "fps cap slider", "FPS cap", &main.conf.fpsLimit, 3.0f, 10000.0f);
+                        #endif
+                        input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
+                        text_label_light(gui, "Cache related settings");
+                        input_scalar_field<size_t>(gui, "cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
+                        input_scalar_field<size_t>(gui, "max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
+                        size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
+                                                           * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
+                                                           * 4) // 4 Channels per pixel (RGBA)
+                                                           / (1024 * 1024); // Bytes -> Megabytes conversion
+                        text_label_light(gui, "Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
+                        input_scalar_field<size_t>(gui, "max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
+                        input_scalar_field<size_t>(gui, "components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
+                        input_scalar_field<size_t>(gui, "maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
+                        input_scalar_field<size_t>(gui, "minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
+                    });
+                    break;
+                }
+            }
             text_button_wide("done menu", "Done", [&] {
                 main.save_config();
                 main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);

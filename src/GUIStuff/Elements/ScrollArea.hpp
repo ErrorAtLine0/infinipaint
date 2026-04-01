@@ -32,8 +32,12 @@ class ScrollArea : public Element {
         virtual bool input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) override;
     private:
         Options opts;
-        bool isScrollbarXHeld = false;
-        bool isScrollbarYHeld = false;
+        bool isScrollbarHeldY = false;
+        bool isScrollbarHoveredY = false;
+        bool isHoveringOverScrollerY = false;
+        float scrollerStartPosY;
+        float mouseStartPosY;
+
         Vector2f contentDimensions = {0.0f, 0.0f};
         Vector2f containerDimensions = {0.0f, 0.0f};
         Vector2f scrollOffset = {0.0f, 0.0f};
