@@ -31,9 +31,10 @@ template <typename T> class TextBox : public Element {
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         ~TextBox();
     private:
-        void init_textbox(UpdateInputData& io);
+        void init_textbox(UpdateInputData& io, bool forceTextUpdate);
         bool update_data();
 
+        std::optional<T> oldData;
         bool isSelected = false;
         TextBoxData<T> userInfo;
         std::shared_ptr<RichText::TextBox> textbox;
