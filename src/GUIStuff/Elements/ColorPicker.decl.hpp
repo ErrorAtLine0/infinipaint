@@ -78,6 +78,7 @@ template <typename T> class ColorPicker : public Element {
         static constexpr float BAR_GAP = 5.0;
 
         T* data;
+        std::optional<T> oldData;
         Vector3f savedHsv; // We save the HSV so that conversion doesnt ruin the UI
         std::function<void()> onChange;
         bool selectAlpha = false;

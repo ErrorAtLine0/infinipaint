@@ -120,12 +120,16 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
                         gui.set_to_layout();
                     }
                     if(isScrollbarHeldY) {
+                        float oldScrollOffset = scrollOffset.y();
+
                         float newScrollPosFrac;
                         newScrollPosFrac = std::clamp((scrollerStartPosY - (mouseStartPosY - motion.pos.y()) - sAreaStart - scrollerSize * 0.5f) / (sAreaDim - scrollerSize), 0.0f, 1.0f);
                         scrollOffset.y() = newScrollPosFrac * (-scrollPosMax);
 
                         clamp_scroll();
-                        gui.set_to_layout();
+
+                        if(oldScrollOffset != scrollOffset.y())
+                            gui.set_to_layout();
                     }
                     return mouseHovering;
                 }
@@ -149,12 +153,16 @@ void ScrollArea::clamp_scroll() {
 
 bool ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) {
     if(mouseHovering) {
+        Vector2f oldScrollOffset = scrollOffset;
+
         if(opts.scrollVertical)
             scrollOffset.y() = scrollOffset.y() + wheel.amount.y() * 10.0f;
         if(opts.scrollHorizontal)
             scrollOffset.y() = scrollOffset.x() + wheel.amount.x() * 10.0f;
         clamp_scroll();
-        gui.set_to_layout();
+
+        if(oldScrollOffset != scrollOffset)
+            gui.set_to_layout();
     }
     return Element::input_mouse_wheel_callback(wheel, mouseHovering);
 }

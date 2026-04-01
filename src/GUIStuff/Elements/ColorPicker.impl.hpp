@@ -8,7 +8,10 @@ template <typename T> ColorPicker<T>::ColorPicker(GUIManager& gui): Element(gui)
 
 template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* data, bool selectAlpha, const std::function<void()>& onChange) {
     this->data = data;
-    savedHsv = rgb_to_hsv<Vector3f, T>(*data);
+    if(!oldData.has_value() || oldData.value() != *data) {
+        savedHsv = rgb_to_hsv<Vector3f, T>(*data);
+        oldData = *data;
+    }
     this->selectAlpha = selectAlpha;
     this->onChange = onChange;
 
@@ -121,7 +124,7 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                     savedHsv.y() = newSv.x();
                     savedHsv.z() = 1.0f - newSv.y();
                     set_hsv(savedHsv);
-                    gui.set_post_callback_func([&]{if(onChange) onChange();});
+                    if(onChange) onChange();
                     break;
                 }
                 case HeldBar::HUE_HELD: {
@@ -129,14 +132,15 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                     Vector2f hueDim = get_hue_bar_dim();
                     savedHsv.x() = (1.0f - std::clamp((p.y() - huePos.y()) / hueDim.y(), 0.0f, 1.0f)) * 360.0f;
                     set_hsv(savedHsv);
-                    gui.set_post_callback_func([&]{if(onChange) onChange();});
+                    if(onChange) onChange();
                     break;
                 }
                 case HeldBar::ALPHA_HELD: {
                     Vector2f alphaPos = get_alpha_bar_pos();
                     Vector2f alphaDim = get_alpha_bar_dim();
                     (*data)[3] = std::clamp((p.x() - alphaPos.x()) / alphaDim.x(), 0.0f, 1.0f);
-                    gui.set_post_callback_func([&]{if(onChange) onChange();});
+                    oldData = *data;
+                    if(onChange) onChange();
                     break;
                 }
             }
@@ -169,6 +173,7 @@ template <typename T> void ColorPicker<T>::set_hsv(const Vector3f& hsv) {
     (*data)[0] = a.x();
     (*data)[1] = a.y();
     (*data)[2] = a.z();
+    oldData = *data;
 }
 
 }
