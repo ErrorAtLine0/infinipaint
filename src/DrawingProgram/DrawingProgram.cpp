@@ -331,6 +331,7 @@ void DrawingProgram::toolbar_gui() {
 
     GUIManager& gui = world.main.g.gui;
     auto& io = gui.io;
+    auto& t = world.main.toolbar;
 
     gui.new_id("Drawing Program Toolbar GUI", [&] {
         gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] (const Clay_ElementId& lId) {
@@ -374,6 +375,9 @@ void DrawingProgram::toolbar_gui() {
                     world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), *newRotationAngle - world.drawData.cam.c.rotation);
                     *newRotationAngle = world.drawData.cam.c.rotation;
                 });
+
+                t.color_button_left("Foreground color", &world.main.toolConfig.globalConf.foregroundColor);
+                t.color_button_left("Background color", &world.main.toolConfig.globalConf.backgroundColor);
             }
         });
     });
@@ -444,6 +448,11 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
                 popup_menu_action_button("Send to back of layer", "Send to back of layer", [&] {
                     selection.push_selection_to_back();
                 });
+            }
+        }, LayoutElement::Callbacks{
+            .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                if(button.down && button.button != InputManager::MouseButton::RIGHT)
+                    clear_right_click_popup();
             }
         });
     });

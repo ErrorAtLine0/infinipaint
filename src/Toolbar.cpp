@@ -160,14 +160,44 @@ std::filesystem::path& Toolbar::file_selector_path() {
     return filePicker.currentSearchPath;
 }
 
-void Toolbar::color_selector_left(Vector4f* color) {
-    colorLeft = color;
-    justAssignedColorLeft = true;
+void Toolbar::color_button_left(const char* id, Vector4f* color, const std::function<void()>& onChange) {
+    auto& gui = main.g.gui;
+    color_button(gui, id, color, {
+        .isSelected = colorLeft == color,
+        .onClick = [&, onChange, color] {
+            color_selector_left(color, onChange);
+        }
+    });
 }
 
-void Toolbar::color_selector_right(Vector4f* color) {
-    colorRight = color;
-    justAssignedColorRight = true;
+void Toolbar::color_button_right(const char* id, Vector4f* color, const std::function<void()>& onChange) {
+    auto& gui = main.g.gui;
+    color_button(gui, id, color, {
+        .isSelected = colorRight == color,
+        .onClick = [&, onChange, color] {
+            color_selector_right(color, onChange);
+        }
+    });
+}
+
+void Toolbar::color_selector_left(Vector4f* color, const std::function<void()>& onChange) {
+    if(colorLeft != color) {
+        colorLeftJustEnabled = color;
+        onColorLeftChange = onChange;
+    }
+    else
+        colorLeftJustDisabled = true;
+    main.g.gui.set_to_layout();
+}
+
+void Toolbar::color_selector_right(Vector4f* color, const std::function<void()>& onChange) {
+    if(colorRight != color) {
+        colorRightJustEnabled = color;
+        onColorRightChange = onChange;
+    }
+    else
+        colorRightJustDisabled = true;
+    main.g.gui.set_to_layout();
 }
 
 void Toolbar::load_licenses() {
@@ -255,6 +285,12 @@ void Toolbar::layout_run() {
             close_popup_gui();
     }
 
+    // Make sure theyre set to null in case drawing_program_gui wasn't called
+    colorLeftJustEnabled = nullptr;
+    colorLeftJustDisabled = false;
+    colorRightJustEnabled = nullptr;
+    colorRightJustDisabled = false;
+
     if(!main.world->clientStillConnecting) {
         //if(io.hoverObstructed && (io.mouse.leftClick || io.mouse.rightClick))
         //    rightClickPopupLocation = std::nullopt;
@@ -267,9 +303,6 @@ void Toolbar::layout_run() {
         //if(io.hoverObstructed && io.mouse.rightClick) // This runs specifically if the paint popup has the cursor
         //    rightClickPopupLocation = std::nullopt;
     }
-
-    justAssignedColorLeft = false;
-    justAssignedColorRight = false;
 
     if(!optionsMenuOpen || generalSettingsOptions != GSETTINGS_KEYBINDS)
         keybindWaiting = std::nullopt;
@@ -544,108 +577,110 @@ void Toolbar::top_toolbar() {
                     layer_menu(layerMenuPopUpJustOpen);
             }
             if(menuPopUpOpen) {
-                gui.element<LayoutElement>("main menu popup", [&] (const Clay_ElementId& id) {
-                    CLAY(id, {
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
-                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                            .childGap = 1,
-                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                        },
-                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-                    }) {
-                        auto menu_popup_text_button = [&](const char* id, const char* str, const std::function<void()>& onClick) {
-                            text_button(gui, id, str, {
-                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                                .wide = true,
-                                .centered = false,
-                                .onClick = [&, onClick]{
-                                    onClick();
-                                    menuPopUpOpen = false;
-                                }
+                gui.set_z_index(5, [&] {
+                    gui.element<LayoutElement>("main menu popup", [&] (const Clay_ElementId& id) {
+                        CLAY(id, {
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
+                                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                .childGap = 1,
+                                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                                .layoutDirection = CLAY_TOP_TO_BOTTOM
+                            },
+                            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                            .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_TOP, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                        }) {
+                            auto menu_popup_text_button = [&](const char* id, const char* str, const std::function<void()>& onClick) {
+                                text_button(gui, id, str, {
+                                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                    .wide = true,
+                                    .centered = false,
+                                    .onClick = [&, onClick]{
+                                        onClick();
+                                        menuPopUpOpen = false;
+                                    }
+                                });
+                            };
+                            menu_popup_text_button("new file local", "New File", [&] {
+                                main.new_tab({
+                                    .isClient = false
+                                }, true);
                             });
-                        };
-                        menu_popup_text_button("new file local", "New File", [&] {
-                            main.new_tab({
-                                .isClient = false
-                            }, true);
-                        });
-                        menu_popup_text_button("open file", "Open", [&] { open_world_file(false, "", ""); });
-                        if(!main.world->clientStillConnecting) {
-                            menu_popup_text_button("save file", "Save", [&] { save_func(); });
-                            menu_popup_text_button("save as file", "Save As", [&] { save_as_func(); });
-                            menu_popup_text_button("screenshot", "Screenshot", [&] { main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT); });
-                            menu_popup_text_button("add image or file to canvas", "Add Image/File to Canvas", [&] {
-                                #ifdef __EMSCRIPTEN__
-                                    static std::weak_ptr<World> worldWeakPtr;
-                                    worldWeakPtr = make_weak_ptr(main.world);
-                                    emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
-                                        if(!buffer.empty()) {
-                                            auto world = ((std::weak_ptr<World>*)callbackData)->lock();
-                                            if(world)
-                                                world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                            menu_popup_text_button("open file", "Open", [&] { open_world_file(false, "", ""); });
+                            if(!main.world->clientStillConnecting) {
+                                menu_popup_text_button("save file", "Save", [&] { save_func(); });
+                                menu_popup_text_button("save as file", "Save As", [&] { save_as_func(); });
+                                menu_popup_text_button("screenshot", "Screenshot", [&] { main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT); });
+                                menu_popup_text_button("add image or file to canvas", "Add Image/File to Canvas", [&] {
+                                    #ifdef __EMSCRIPTEN__
+                                        static std::weak_ptr<World> worldWeakPtr;
+                                        worldWeakPtr = make_weak_ptr(main.world);
+                                        emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
+                                            if(!buffer.empty()) {
+                                                auto world = ((std::weak_ptr<World>*)callbackData)->lock();
+                                                if(world)
+                                                    world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
+                                                else
+                                                    Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                            }
+                                        }, &worldWeakPtr);
+                                    #else
+                                        open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
+                                            auto wLock = w.lock();
+                                            if(wLock)
+                                                wLock->drawProg.add_file_to_canvas_by_path(p, wLock->main.window.size.cast<float>() / 2.0f, false);
                                             else
                                                 Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
-                                        }
-                                    }, &worldWeakPtr);
-                                #else
-                                    open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
-                                        auto wLock = w.lock();
-                                        if(wLock)
-                                            wLock->drawProg.add_file_to_canvas_by_path(p, wLock->main.window.size.cast<float>() / 2.0f, false);
-                                        else
-                                            Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                        });
+                                    #endif
+                                });
+                                if(main.world->netObjMan.is_connected()) {
+                                    menu_popup_text_button("lobby info", "Lobby Info", [&] {
+                                        optionsMenuOpen = true;
+                                        optionsMenuType = LOBBY_INFO_MENU;
                                     });
-                                #endif
-                            });
-                            if(main.world->netObjMan.is_connected()) {
-                                menu_popup_text_button("lobby info", "Lobby Info", [&] {
+                                }
+                                menu_popup_text_button("start hosting", "Host", [&] {
+                                    serverLocalID = NetLibrary::get_random_server_local_id();
+                                    serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
                                     optionsMenuOpen = true;
-                                    optionsMenuType = LOBBY_INFO_MENU;
+                                    optionsMenuType = HOST_MENU;
+                                });
+                                menu_popup_text_button("canvas specific settings", "Canvas Settings", [&] {
+                                    optionsMenuOpen = true;
+                                    optionsMenuType = CANVAS_SETTINGS_MENU;
                                 });
                             }
-                            menu_popup_text_button("start hosting", "Host", [&] {
-                                serverLocalID = NetLibrary::get_random_server_local_id();
-                                serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+                            menu_popup_text_button("start connecting", "Connect", [&] {
+                                serverToConnectTo.clear();
                                 optionsMenuOpen = true;
-                                optionsMenuType = HOST_MENU;
+                                optionsMenuType = CONNECT_MENU;
                             });
-                            menu_popup_text_button("canvas specific settings", "Canvas Settings", [&] {
+                            menu_popup_text_button("open options", "Settings", [&] {
                                 optionsMenuOpen = true;
-                                optionsMenuType = CANVAS_SETTINGS_MENU;
+                                optionsMenuType = GENERAL_SETTINGS_MENU;
                             });
-                        }
-                        menu_popup_text_button("start connecting", "Connect", [&] {
-                            serverToConnectTo.clear();
-                            optionsMenuOpen = true;
-                            optionsMenuType = CONNECT_MENU;
-                        });
-                        menu_popup_text_button("open options", "Settings", [&] {
-                            optionsMenuOpen = true;
-                            optionsMenuType = GENERAL_SETTINGS_MENU;
-                        });
-                        menu_popup_text_button("about menu button", "About", [&] {
-                            optionsMenuOpen = true;
-                            optionsMenuType = ABOUT_MENU;
-                        });
-                        #ifndef __EMSCRIPTEN__
-                            menu_popup_text_button("quit button", "Quit", [&] {
-                                if(main.app_close_requested())
-                                    main.setToQuit = true;
+                            menu_popup_text_button("about menu button", "About", [&] {
+                                optionsMenuOpen = true;
+                                optionsMenuType = ABOUT_MENU;
                             });
-                        #endif
-                    }
-                }, LayoutElement::Callbacks {
-                    .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                        if(!mouseHovering && button.down && !menuPopupOpenFlipped) {
-                            menuPopUpOpen = false;
-                            menuPopupOpenFlipped = true;
-                            gui.set_to_layout();
+                            #ifndef __EMSCRIPTEN__
+                                menu_popup_text_button("quit button", "Quit", [&] {
+                                    if(main.app_close_requested())
+                                        main.setToQuit = true;
+                                });
+                            #endif
                         }
-                    }
+                    }, LayoutElement::Callbacks {
+                        .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                            if(!mouseHovering && button.down && !menuPopupOpenFlipped) {
+                                menuPopUpOpen = false;
+                                menuPopupOpenFlipped = true;
+                                gui.set_to_layout();
+                            }
+                        }
+                    });
                 });
             }
         }
@@ -1172,68 +1207,68 @@ void Toolbar::drawing_program_gui() {
         },
     }) {
         main.world->drawProg.toolbar_gui();
-        isUpdatingColorLeft = isUpdatingColorRight = false;
-        //if(colorLeft) {
-        //    CLAY_AUTO_ID({
-        //        .layout = {
-        //            .padding = {.top = 40, .bottom = 40}
-        //        }
-        //    }) {
-        //        auto localId = CLAY_ID_LOCAL("Drawing program gui color picker left");
-        //        CLAY(localId, {
-        //            .layout = {
-        //                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-        //                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-        //                .childGap = io.theme->childGap1,
-        //                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-        //                .layoutDirection = CLAY_TOP_TO_BOTTOM
-        //            },
-        //            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        //            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-        //        }) {
-        //            gui.obstructing_window(localId);
-        //            isUpdatingColorLeft |= gui.color_picker_items("colorpickerleft", colorLeft, true, 300.0f - io.theme->padding1 * 2.0f);
-        //            bool hoveringOnDropdown = false;
-        //            isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
-        //            if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io.mouse.leftClick)
-        //                colorLeft = nullptr;
-        //        }
-        //    }
-        //}
+
+        if(colorLeftJustEnabled)
+            colorLeft = colorLeftJustEnabled;
+        else if(colorLeftJustDisabled)
+            colorLeft = nullptr;
+
+        if(colorRightJustEnabled)
+            colorRight = colorRightJustEnabled;
+        else if(colorRightJustDisabled)
+            colorRight = nullptr;
+
+        if(colorLeft)
+            color_picker_window("Drawing program gui color picker left", &colorLeft, &colorLeftJustDisabled, onColorLeftChange);
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
             }
         }) {}
-        //if(colorRight) {
-        //    CLAY_AUTO_ID({
-        //        .layout = {
-        //            .padding = {.top = 40, .bottom = 40}
-        //        }
-        //    }) {
-        //        auto localID = CLAY_ID_LOCAL("Drawing program gui color picker right");
-        //        CLAY(localID, {
-        //            .layout = {
-        //                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
-        //                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-        //                .childGap = io.theme->childGap1,
-        //                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-        //                .layoutDirection = CLAY_TOP_TO_BOTTOM
-        //            },
-        //            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        //            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-        //        }) {
-        //            gui.obstructing_window(localID);
-        //            isUpdatingColorRight |= gui.color_picker_items("colorpickerright", colorRight, true, 300.0f - io.theme->padding1 * 2.0f);
-        //            bool hoveringOnDropdown = false;
-        //            isUpdatingColorRight |= color_palette("colorpickerrightpalette", colorRight, hoveringOnDropdown);
-        //            if(!Clay_Hovered() && !justAssignedColorRight && !hoveringOnDropdown && io.mouse.leftClick)
-        //                colorRight = nullptr;
-        //        }
-        //    }
-        //}
+        if(colorRight)
+            color_picker_window("Drawing program gui color picker right", &colorRight, &colorRightJustDisabled, onColorRightChange);
+
         main.world->drawProg.tool_options_gui();
         main.world->drawProg.right_click_popup_gui();
+    }
+}
+
+void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const std::function<void()>& onChange) {
+    auto& gui = main.g.gui;
+
+    CLAY_AUTO_ID({
+        .layout = {
+            .padding = {.top = 40, .bottom = 40}
+        }
+    }) {
+        main.g.gui.element<LayoutElement>(id, [&](const Clay_ElementId& lId) {
+            CLAY(lId, {
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
+                    .padding = CLAY_PADDING_ALL(gui.io.theme->padding1),
+                    .childGap = gui.io.theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(gui.io.theme->windowCorners1)
+            }) {
+                //template <typename T> void color_picker_items(GUIManager& gui, const char* id, T* val, const ColorPickerItemsOptions& options = {}) {
+                color_picker_items(gui, "colorpicker", *color, {
+                    .onEdit = onChange
+                });
+                //isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
+                //if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io.mouse.leftClick)
+                //    colorLeft = nullptr;
+            }
+        }, LayoutElement::Callbacks{
+            .mouseButton = [&, colorJustDisabled](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                if(!mouseHovering && button.down) {
+                    *colorJustDisabled = true;
+                    main.g.gui.set_to_layout();
+                }
+            }
+        });
     }
 }
 
@@ -1508,21 +1543,23 @@ void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, C
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    gui.element<LayoutElement>(id, [&] (const Clay_ElementId& id) {
-        CLAY(id, {
-            .layout = {
-                .sizing = {.width = x, .height = y },
-                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                .childGap = io.theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-            .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-        }) {
-            innerContent();
-        }
+    gui.set_z_index(100, [&] {
+        gui.element<LayoutElement>(id, [&] (const Clay_ElementId& id) {
+            CLAY(id, {
+                .layout = {
+                    .sizing = {.width = x, .height = y },
+                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                    .childGap = io.theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                .floating = {.zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
+            }) {
+                innerContent();
+            }
+        });
     });
 }
 

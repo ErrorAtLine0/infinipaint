@@ -52,9 +52,9 @@ template <typename T> void color_button(GUIManager& gui, const char* id, T* val,
         d.innerContent = [&] (const SelectableButton::InnerContentCallbackParameters&) {
             gui.element<ColorRectangleDisplay>("color display", [val, hasAlpha = options.hasAlpha] {
                 if(hasAlpha)
-                    return SkColor4f{(*val)[0], (*val)[1], (*val)[2], 1.0f};
-                else
                     return SkColor4f{(*val)[0], (*val)[1], (*val)[2], (*val)[3]};
+                else
+                    return SkColor4f{(*val)[0], (*val)[1], (*val)[2], 1.0f};
             });
         };
         CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(options.size), .height = CLAY_SIZING_FIXED(options.size) } } }) {

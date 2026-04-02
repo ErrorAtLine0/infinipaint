@@ -42,8 +42,11 @@ class Toolbar {
 
         Toolbar(MainProgram& initMain);
         void layout_run();
-        void color_selector_left(Vector4f* color);
-        void color_selector_right(Vector4f* color);
+        void color_selector_left(Vector4f* color, const std::function<void()>& onChange = nullptr);
+        void color_selector_right(Vector4f* color, const std::function<void()>& onChange = nullptr);
+        void color_button_left(const char* id, Vector4f* color, const std::function<void()>& onChange = nullptr);
+        void color_button_right(const char* id, Vector4f* color, const std::function<void()>& onChange = nullptr);
+
         void paint_popup(Vector2f popupPos);
 
         typedef std::function<void(const std::filesystem::path&, const ExtensionFilter& extensionSelected)> OpenFileSelectorCallback;
@@ -57,9 +60,13 @@ class Toolbar {
         void load_licenses();
 
         Vector4f* colorLeft = nullptr;
+        bool colorLeftJustDisabled = false;
+        Vector4f* colorLeftJustEnabled = nullptr;
+        std::function<void()> onColorLeftChange;
         Vector4f* colorRight = nullptr;
-        bool isUpdatingColorLeft = false;
-        bool isUpdatingColorRight = false;
+        bool colorRightJustDisabled = false;
+        Vector4f* colorRightJustEnabled = nullptr;
+        std::function<void()> onColorRightChange;
 
         bool app_close_requested();
     private:
@@ -81,6 +88,7 @@ class Toolbar {
         void file_picker_gui_done();
         void file_picker_gui();
         void performance_metrics();
+        void color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const std::function<void()>& onChange);
         bool color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
@@ -139,9 +147,6 @@ class Toolbar {
             std::optional<size_t> selectedThemeIndex;
             bool openedSaveAsMenu = false;
         } themeData;
-
-        bool justAssignedColorLeft = false;
-        bool justAssignedColorRight = false;
 
         bool showPerformance = false;
 

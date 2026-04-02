@@ -299,9 +299,15 @@ template <typename T> std::array<Vector<T, 2>, 4> triangle_from_rect_points(cons
     return {min, {min.x(), max.y()}, max, {max.x(), min.y()}};
 }
 
-template <typename T> std::string vec_pretty(const Vector<T, 2>& a) {
+template <typename T> std::string vec_pretty(const T& a) {
     std::stringstream ss;
-    ss << "[" << a.x() << ", " << a.y() << "]";
+    ss << "[";
+    for(size_t i = 0; i < a.size(); i++) {
+        if(i == a.size() - 1)
+            ss << a[i] << "]";
+        else
+            ss << a[i] << ", ";
+    }
     return ss.str();
 }
 
