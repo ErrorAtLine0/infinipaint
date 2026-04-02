@@ -70,7 +70,9 @@ class DrawingProgram {
         void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
         void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
-        bool rightClickPopupHoverOnClick = false;
+
+        void set_right_click_popup_location(const Vector2f& newLoc);
+        void clear_right_click_popup();
     private:
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
 
@@ -129,8 +131,6 @@ class DrawingProgram {
 
         std::optional<Vector2f> rightClickPopupLocation;
 
-        void set_right_click_popup_location(const Vector2f& newLoc);
-        void clear_right_click_popup();
 
         uint32_t nextID = 0;
 

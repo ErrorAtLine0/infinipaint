@@ -27,7 +27,7 @@ void PaintCircleMenu::layout(const Clay_ElementId& id, const Data& data) {
 }
 
 bool PaintCircleMenu::collides_with_point(const Vector2f& p) const {
-    return boundingBox.has_value() && SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), CIRCLE_END), p);
+    return boundingBox.has_value() && SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), CIRCLE_END), p) && !SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), PALETTE_START), p);
 }
 
 void PaintCircleMenu::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
@@ -100,10 +100,6 @@ void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_Rend
 
     draw_rotate_bar(canvas, io, skiaAA);
     draw_palette_bar(canvas, io, skiaAA);
-    SkPaint p;
-    p.setAntiAlias(skiaAA);
-    p.setColor4f(color_mul_alpha(io.theme->backColor1, 0.5f));
-    canvas->drawCircle(0.0f, 0.0f, PALETTE_START, p);
 
     canvas->restore();
 }

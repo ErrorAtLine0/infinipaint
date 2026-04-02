@@ -98,8 +98,6 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
             }
         }
         else {
-            if(!rightClickPopupHoverOnClick)
-                clear_right_click_popup();
             if(!world.main.g.gui.cursor_obstructed()) {
                 if(button.button == InputManager::MouseButton::LEFT && !controls.middleClickHeld) {
                     controls.leftClickHeld = true;
@@ -389,7 +387,6 @@ void DrawingProgram::right_click_popup_gui() {
 void DrawingProgram::set_right_click_popup_location(const Vector2f& newLoc) {
     if(!rightClickPopupLocation.has_value() || rightClickPopupLocation.value() != newLoc) {
         rightClickPopupLocation = newLoc;
-        rightClickPopupHoverOnClick = false;
         world.main.g.gui.set_to_layout();
     }
 }
@@ -398,7 +395,6 @@ void DrawingProgram::clear_right_click_popup() {
     if(rightClickPopupLocation.has_value()) {
         rightClickPopupLocation = std::nullopt;
         world.main.g.gui.set_to_layout();
-        rightClickPopupHoverOnClick = false;
     }
 }
 

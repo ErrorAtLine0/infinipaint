@@ -425,7 +425,8 @@ void Toolbar::paint_popup(Vector2f popupPos) {
                 gui.set_to_layout();
             },
             .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                main.world->drawProg.rightClickPopupHoverOnClick = mouseHovering;
+                if(!mouseHovering && button.down && button.button != InputManager::MouseButton::RIGHT)
+                    main.world->drawProg.clear_right_click_popup();
             }
         });
     });
