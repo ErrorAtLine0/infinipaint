@@ -21,9 +21,9 @@ namespace GUIStuff {
             virtual void tick_update();
 
             // Return true when mouse obstructs what's behind it
-            virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering);
-            virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering);
-            virtual bool input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering);
+            virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering);
+            virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering);
+            virtual void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering);
             virtual void input_key_callback(const InputManager::KeyCallbackArgs& key);
         protected:
             static SCollision::AABB<float> get_bb_from_command(Clay_RenderCommand* command);

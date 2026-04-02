@@ -63,7 +63,7 @@ void SelectableButton::layout(const Clay_ElementId& id, const Data& d) {
     }
 }
 
-bool SelectableButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+void SelectableButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
     bool oldIsHovering = isHovering;
     bool oldIsHeld = isHeld;
     isHovering = mouseHovering;
@@ -74,15 +74,15 @@ bool SelectableButton::input_mouse_button_callback(const InputManager::MouseButt
     }
     else if(isHovering != oldIsHovering || isHeld != oldIsHeld)
         gui.set_to_layout();
-    return Element::input_mouse_button_callback(button, mouseHovering);
+    Element::input_mouse_button_callback(button, mouseHovering);
 }
 
-bool SelectableButton::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+void SelectableButton::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
     bool oldIsHovering = isHovering;
     isHovering = mouseHovering;
     if(isHovering != oldIsHovering)
         gui.set_to_layout();
-    return Element::input_mouse_motion_callback(motion, mouseHovering);
+    Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 }

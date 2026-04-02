@@ -6,7 +6,7 @@ namespace GUIStuff {
 
 PositionAdjustingPopupMenu::PositionAdjustingPopupMenu(GUIManager& gui): Element(gui) {}
 
-void PositionAdjustingPopupMenu::layout(const Clay_ElementId& id, Vector2f popupPos, const std::function<void()>& innerContent) {
+void PositionAdjustingPopupMenu::layout(const Clay_ElementId& id, Vector2f popupPos, const std::function<void()>& innerContent, const LayoutElement::Callbacks& callbacks) {
     if(layoutElement && layoutElement->get_bb().has_value()) {
         auto& bb = layoutElement->get_bb().value();
         if((popupPos.y() + bb.height()) > gui.io.windowSize.y())
@@ -34,7 +34,7 @@ void PositionAdjustingPopupMenu::layout(const Clay_ElementId& id, Vector2f popup
         }) {
             innerContent();
         }
-    });
+    }, callbacks);
 }
 
 }

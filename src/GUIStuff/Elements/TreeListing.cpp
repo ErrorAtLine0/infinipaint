@@ -281,15 +281,4 @@ void TreeListing::select_and_unselect_parents(const std::vector<NetworkingObject
     //selectionData.objsSelected.emplace(newSelectedObj);
 }
 
-bool TreeListing::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-    return Element::input_mouse_button_callback(button, mouseHovering);
-}
-
-bool TreeListing::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-    return Element::input_mouse_motion_callback(motion, mouseHovering);
-}
-
-void TreeListing::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-}
-
 }

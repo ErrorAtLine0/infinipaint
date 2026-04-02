@@ -8,8 +8,8 @@ class CheckBox : public Element {
         CheckBox(GUIManager& gui);
 
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
-        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
 
         void layout(const Clay_ElementId& id, const std::function<bool()>& isTicked, const std::function<void()>& onClick);
     private:

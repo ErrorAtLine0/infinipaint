@@ -8,8 +8,8 @@ class RotateWheel : public Element {
         RotateWheel(GUIManager& gui);
         void layout(const Clay_ElementId& id, double* rotateAngle, const std::function<void()>& onChange);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
-        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
 
     private:
         float wheel_start();
@@ -23,7 +23,8 @@ class RotateWheel : public Element {
         bool isRotateBarHovered = false;
         std::function<void()> onChange;
 
-        void update_paint_circle_menu_mouse(const Vector2f& p);
+        void update_rotate_wheel_mouse_hover(const Vector2f& p);
+        void update_rotate_wheel_mouse(const Vector2f& p);
 };
 
 }

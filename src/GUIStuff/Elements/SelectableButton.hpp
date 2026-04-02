@@ -27,8 +27,8 @@ class SelectableButton : public Element {
 
         SelectableButton(GUIManager& gui);
         void layout(const Clay_ElementId& id, const Data& d);
-        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
-        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
 
     private:
         bool isHovering = false;

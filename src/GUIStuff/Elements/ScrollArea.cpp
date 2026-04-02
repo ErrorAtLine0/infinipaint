@@ -142,20 +142,12 @@ void ScrollArea::reset_scroll() {
     scrollOffset = {0.0f, 0.0f};
 }
 
-bool ScrollArea::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-    return Element::input_mouse_button_callback(button, mouseHovering);
-}
-
-bool ScrollArea::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-    return Element::input_mouse_motion_callback(motion, mouseHovering);
-}
-
 void ScrollArea::clamp_scroll() {
     scrollOffset.x() = std::clamp(scrollOffset.x(), -std::max(0.0f, contentDimensions.x() - containerDimensions.x()), 0.0f);
     scrollOffset.y() = std::clamp(scrollOffset.y(), -std::max(0.0f, contentDimensions.y() - containerDimensions.y()), 0.0f);
 }
 
-bool ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) {
+void ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) {
     if(mouseHovering) {
         Vector2f oldScrollOffset = scrollOffset;
 
@@ -168,7 +160,7 @@ bool ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallba
         if(oldScrollOffset != scrollOffset)
             gui.set_to_layout();
     }
-    return Element::input_mouse_wheel_callback(wheel, mouseHovering);
+    Element::input_mouse_wheel_callback(wheel, mouseHovering);
 }
 
 }

@@ -20,14 +20,14 @@ void CheckBox::layout(const Clay_ElementId& id, const std::function<bool()>& isT
     }) {}
 }
 
-bool CheckBox::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+void CheckBox::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
     isHovering = mouseHovering;
     if(isHovering && button.button == InputManager::MouseButton::LEFT && button.down)
         gui.set_post_callback_func([&](){if(onClick) onClick();});
     return Element::input_mouse_button_callback(button, mouseHovering);
 }
 
-bool CheckBox::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+void CheckBox::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
     isHovering = mouseHovering;
     return Element::input_mouse_motion_callback(motion, mouseHovering);
 }

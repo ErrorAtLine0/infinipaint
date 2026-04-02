@@ -406,20 +406,28 @@ void Toolbar::save_as_func() {
 }
 
 void Toolbar::paint_popup(Vector2f popupPos) {
+    using namespace GUIStuff;
     auto& gui = main.g.gui;
-    auto& io = main.g.gui.io;
 
-    double newRotationAngle = 0.0;
-    paint_circle_popup_menu(gui, "paint circle popup", popupPos, {
-        .rotationAngle = &main.world->drawData.cam.c.rotation,
-        .selectedColor = main.world->drawProg.get_foreground_color_ptr(),
-        .palette = paletteData.palettes[paletteData.selectedPalette].colors,
-        .onRotate = [&] {
-            main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), newRotationAngle - main.world->drawData.cam.c.rotation);
-        },
-        .onPaletteClick = [&] {
-            gui.set_to_layout();
-        }
+    std::shared_ptr<double> newRotationAngle = std::make_shared<double>(main.world->drawData.cam.c.rotation);
+
+    gui.set_z_index(-1, [&] {
+        paint_circle_popup_menu(gui, "paint circle popup", popupPos, {
+            .rotationAngle = newRotationAngle.get(),
+            .selectedColor = main.world->drawProg.get_foreground_color_ptr(),
+            .palette = paletteData.palettes[paletteData.selectedPalette].colors,
+            .onRotate = [&, newRotationAngle] {
+                main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), *newRotationAngle - main.world->drawData.cam.c.rotation);
+                *newRotationAngle = main.world->drawData.cam.c.rotation;
+                gui.set_to_layout();
+            },
+            .onPaletteClick = [&] {
+                gui.set_to_layout();
+            },
+            .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                main.world->drawProg.rightClickPopupHoverOnClick = mouseHovering;
+            }
+        });
     });
 }
 
@@ -636,7 +644,6 @@ void Toolbar::top_toolbar() {
                             menuPopupOpenFlipped = true;
                             gui.set_to_layout();
                         }
-                        return mouseHovering;
                     }
                 });
             }
@@ -1225,6 +1232,7 @@ void Toolbar::drawing_program_gui() {
         //    }
         //}
         main.world->drawProg.tool_options_gui();
+        main.world->drawProg.right_click_popup_gui();
     }
 }
 
@@ -2150,7 +2158,6 @@ void Toolbar::file_picker_gui() {
                                 });
                                 gui.set_to_layout();
                             }
-                            return mouseHovering;
                         }
                     });
                 }

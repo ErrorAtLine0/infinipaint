@@ -91,30 +91,33 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
     if(button.down) {
         if(button.button == InputManager::MouseButton::RIGHT) {
             if(!controls.middleClickHeld && !controls.leftClickHeld) {
-                if(world.main.toolbar.rightClickPopupLocation)
-                    world.main.toolbar.rightClickPopupLocation = std::nullopt;
+                if(rightClickPopupLocation.has_value())
+                    clear_right_click_popup();
                 else
-                    world.main.toolbar.rightClickPopupLocation = world.main.input.mouse.pos / world.main.g.final_gui_scale();
+                    set_right_click_popup_location(world.main.input.mouse.pos / world.main.g.final_gui_scale());
             }
         }
         else {
-            world.main.toolbar.rightClickPopupLocation = std::nullopt;
-            if(button.button == InputManager::MouseButton::LEFT && !controls.middleClickHeld) {
-                controls.leftClickHeld = true;
-                buttonCallbacks(button);
-            }
-            else if(button.button == InputManager::MouseButton::MIDDLE) {
-                if(controls.leftClickHeld) {
-                    controls.leftClickHeld = false;
-                    InputManager::MouseButtonCallbackArgs leftReleaseCallback;
-                    leftReleaseCallback.clicks = 0;
-                    leftReleaseCallback.down = false;
-                    leftReleaseCallback.pos = button.pos;
-                    leftReleaseCallback.button = InputManager::MouseButton::LEFT;
-                    buttonCallbacks(leftReleaseCallback);
+            if(!rightClickPopupHoverOnClick)
+                clear_right_click_popup();
+            if(!world.main.g.gui.cursor_obstructed()) {
+                if(button.button == InputManager::MouseButton::LEFT && !controls.middleClickHeld) {
+                    controls.leftClickHeld = true;
+                    buttonCallbacks(button);
                 }
-                controls.middleClickHeld = true;
-                buttonCallbacks(button);
+                else if(button.button == InputManager::MouseButton::MIDDLE) {
+                    if(controls.leftClickHeld) {
+                        controls.leftClickHeld = false;
+                        InputManager::MouseButtonCallbackArgs leftReleaseCallback;
+                        leftReleaseCallback.clicks = 0;
+                        leftReleaseCallback.down = false;
+                        leftReleaseCallback.pos = button.pos;
+                        leftReleaseCallback.button = InputManager::MouseButton::LEFT;
+                        buttonCallbacks(leftReleaseCallback);
+                    }
+                    controls.middleClickHeld = true;
+                    buttonCallbacks(button);
+                }
             }
         }
     }
@@ -378,12 +381,34 @@ void DrawingProgram::toolbar_gui() {
     });
 }
 
+void DrawingProgram::right_click_popup_gui() {
+    if(rightClickPopupLocation.has_value())
+        drawTool->right_click_popup_gui(rightClickPopupLocation.value());
+}
+
+void DrawingProgram::set_right_click_popup_location(const Vector2f& newLoc) {
+    if(!rightClickPopupLocation.has_value() || rightClickPopupLocation.value() != newLoc) {
+        rightClickPopupLocation = newLoc;
+        rightClickPopupHoverOnClick = false;
+        world.main.g.gui.set_to_layout();
+    }
+}
+
+void DrawingProgram::clear_right_click_popup() {
+    if(rightClickPopupLocation.has_value()) {
+        rightClickPopupLocation = std::nullopt;
+        world.main.g.gui.set_to_layout();
+        rightClickPopupHoverOnClick = false;
+    }
+}
+
 void DrawingProgram::popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick) {
     GUIStuff::GUIManager& gui = world.main.g.gui;
 
     GUIStuff::ElementHelpers::text_button(gui, id, text, {
         .drawType = GUIStuff::SelectableButton::DrawType::TRANSPARENT_ALL,
         .wide = true,
+        .centered = false,
         .onClick = onClick
     });
 }
@@ -393,45 +418,43 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = world.main.toolbar;
     GUIStuff::GUIManager& gui = world.main.g.gui;
-    auto& io = gui.io;
 
-    gui.element<PositionAdjustingPopupMenu>("Selection popup menu", popupPos, [&, popupPos] {
-        text_label_light(gui, "Selection menu");
-        popup_menu_action_button("Paste", "Paste", [&] {
-            selection.deselect_all();
-            selection.paste_clipboard(popupPos * world.main.g.final_gui_scale());
+    gui.set_z_index(-1, [&] {
+        gui.element<PositionAdjustingPopupMenu>("Selection popup menu", popupPos, [&] {
+            text_label_light(gui, "Selection menu");
+            popup_menu_action_button("Paste", "Paste", [&, popupPos] {
+                selection.deselect_all();
+                selection.paste_clipboard(popupPos * world.main.g.final_gui_scale());
+            });
+            popup_menu_action_button("Paste Image", "Paste Image", [&, popupPos] {
+                selection.deselect_all();
+                selection.paste_image(popupPos * world.main.g.final_gui_scale());
+            });
+            if(selection.is_something_selected()) {
+                popup_menu_action_button("Copy", "Copy", [&] {
+                    selection.selection_to_clipboard();
+                });
+                popup_menu_action_button("Cut", "Cut", [&] {
+                    selection.selection_to_clipboard();
+                    selection.delete_all();
+                });
+                popup_menu_action_button("Delete", "Delete", [&] {
+                    selection.delete_all();
+                });
+                popup_menu_action_button("Bring to front of layer", "Bring to front of layer", [&] {
+                    selection.push_selection_to_front();
+                });
+                popup_menu_action_button("Send to back of layer", "Send to back of layer", [&] {
+                    selection.push_selection_to_back();
+                });
+            }
         });
-        popup_menu_action_button("Paste Image", "Paste Image", [&] {
-            selection.deselect_all();
-            selection.paste_image(popupPos * world.main.g.final_gui_scale());
-        });
-        if(selection.is_something_selected()) {
-            popup_menu_action_button("Copy", "Copy", [&] {
-                selection.selection_to_clipboard();
-            });
-            popup_menu_action_button("Cut", "Cut", [&] {
-                selection.selection_to_clipboard();
-                selection.delete_all();
-            });
-            popup_menu_action_button("Delete", "Delete", [&] {
-                selection.delete_all();
-            });
-            popup_menu_action_button("Bring to front of layer", "Bring to front of layer", [&] {
-                selection.push_selection_to_front();
-            });
-            popup_menu_action_button("Send to back of layer", "Send to back of layer", [&] {
-                selection.push_selection_to_back();
-            });
-        }
     });
 }
 
 void DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = world.main.toolbar;
     GUIStuff::GUIManager& gui = world.main.g.gui;
-    auto& io = gui.io;
 
     gui.new_id("Drawing Program right click GUI", [&] {
         drawTool->right_click_popup_gui(popupPos);
@@ -441,7 +464,6 @@ void DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
 void DrawingProgram::tool_options_gui() {
     using namespace GUIStuff;
 
-    Toolbar& t = world.main.toolbar;
     GUIStuff::GUIManager& gui = world.main.g.gui;
     auto& io = gui.io;
 
@@ -524,7 +546,7 @@ bool DrawingProgram::is_selection_allowing_tool(DrawingProgramToolType typeToChe
 void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> newTool) {
     drawTool->switch_tool(newTool->get_type());
     drawTool = std::move(newTool);
-    world.main.toolbar.rightClickPopupLocation = std::nullopt;
+    clear_right_click_popup();
     world.main.g.gui.set_to_layout();
 }
 
@@ -532,7 +554,7 @@ void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool for
     if(newToolType != drawTool->get_type() || force) {
         drawTool->switch_tool(newToolType);
         drawTool = DrawingProgramToolBase::allocate_tool_type(*this, newToolType);
-        world.main.toolbar.rightClickPopupLocation = std::nullopt;
+        clear_right_click_popup();
         world.main.g.gui.set_to_layout();
     }
 }

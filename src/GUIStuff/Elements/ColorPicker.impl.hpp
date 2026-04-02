@@ -82,7 +82,7 @@ template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInp
     canvas->restore();
 }
 
-template <typename T> bool ColorPicker<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+template <typename T> void ColorPicker<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
     held = HeldBar::NONE;
     if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down && boundingBox.has_value()) {
         auto& bb = boundingBox.value();
@@ -103,12 +103,12 @@ template <typename T> bool ColorPicker<T>::input_mouse_button_callback(const Inp
         }
     }
     update_color_picker_pos(button.pos);
-    return Element::input_mouse_button_callback(button, mouseHovering);
+    Element::input_mouse_button_callback(button, mouseHovering);
 }
 
-template <typename T> bool ColorPicker<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+template <typename T> void ColorPicker<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
     update_color_picker_pos(motion.pos);
-    return Element::input_mouse_motion_callback(motion, mouseHovering);
+    Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2f& p) {

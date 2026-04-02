@@ -63,8 +63,8 @@ template <typename T> class ColorPicker : public Element {
         ColorPicker(GUIManager& gui);
         void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const std::function<void()>& onChange);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA);
-        bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
-        bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+        void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
+        void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
     private:
         void update_color_picker_pos(const Vector2f& p);
         float get_sv_selection_area_size();

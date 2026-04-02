@@ -73,19 +73,19 @@ template <typename T> class NumberSlider : public Element {
             
             canvas->restore();
         }
-        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override {
+        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override {
             isHovering = mouseHovering;
             isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
             if(isHeld && boundingBox.has_value())
                 update_slider_pos(button.pos);
-            return Element::input_mouse_button_callback(button, mouseHovering);
+            Element::input_mouse_button_callback(button, mouseHovering);
         }
 
-        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override {
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override {
             isHovering = mouseHovering;
             if(isHeld && boundingBox.has_value())
                 update_slider_pos(motion.pos);
-            return Element::input_mouse_motion_callback(motion, mouseHovering);
+            Element::input_mouse_motion_callback(motion, mouseHovering);
         }
 
     private:

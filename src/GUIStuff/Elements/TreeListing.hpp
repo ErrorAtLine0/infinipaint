@@ -42,9 +42,6 @@ class TreeListing : public Element {
 
         TreeListing(GUIManager& gui);
         void layout(const Clay_ElementId& id, NetworkingObjects::NetObjID rootObjID, const DisplayData& displayData, SelectionData& selectionData);
-        virtual bool input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
-        virtual bool input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
-        virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
     private:
         bool dragHoldSelected = false;
 

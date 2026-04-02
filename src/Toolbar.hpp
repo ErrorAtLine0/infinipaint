@@ -61,8 +61,6 @@ class Toolbar {
         bool isUpdatingColorLeft = false;
         bool isUpdatingColorRight = false;
 
-        std::optional<Vector2f> rightClickPopupLocation;
-
         bool app_close_requested();
     private:
         static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
