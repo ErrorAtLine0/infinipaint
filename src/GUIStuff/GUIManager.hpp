@@ -37,24 +37,31 @@ class GUIManager {
 
         template <typename ElementType, typename... Args> ElementType* element(const char* id, const Args&... a) {
             push_id(id);
+
             Element* oldParent = parentElement;
             ElementType* elem = insert_element<ElementType>();
             elem->parent = parentElement;
-            Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
+            parentElement = elem;
+
             elem->set_parent_clipping_region(clippingRegion);
+            Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
             elem->layout(clayId, a...);
             elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId)); // Setting bounding box after layout ensures that the element will have its bounding box set if it's set to be drawn.
+
             parentElement = oldParent;
+
             pop_id();
             return elem;
         }
 
         template <typename ElementType, typename... Args> ElementType* clipping_element(const char* id, const Args&... a) {
             push_id(id);
+
             Element* oldParent = parentElement;
             ElementType* elem = insert_element<ElementType>();
             elem->parent = parentElement;
-            Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
+            parentElement = elem;
+
             elem->set_parent_clipping_region(clippingRegion);
             auto oldClippingRegion = clippingRegion;
             if(elem->get_bb().has_value()) {
@@ -63,10 +70,15 @@ class GUIManager {
                 else
                     clippingRegion = elem->get_bb();
             }
+
+            Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
             elem->layout(clayId, a...);
             elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
+
             clippingRegion = oldClippingRegion;
+
             parentElement = oldParent;
+
             pop_id();
             return elem;
         }

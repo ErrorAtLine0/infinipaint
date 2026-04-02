@@ -379,8 +379,10 @@ void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<vo
             cursorObstructed = true;
             e->elem->mouseHovering = true;
             Element* nextParent = e->elem->parent;
-            while(nextParent)
+            while(nextParent) {
                 nextParent->childMouseHovering |= true;
+                nextParent = nextParent->parent;
+            }
         }
         else
             e->elem->mouseHovering = false;
