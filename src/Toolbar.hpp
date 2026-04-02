@@ -212,8 +212,6 @@ class Toolbar {
         };
         static NativeFilePicker nativeFilePicker;
 
-        std::optional<unsigned> keybindWaiting;
-
         std::unique_ptr<skia::textlayout::Paragraph> build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
 
         void load_icons_at(const std::filesystem::path& pathToLoad);

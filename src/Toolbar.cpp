@@ -290,22 +290,6 @@ void Toolbar::layout_run() {
     colorLeftJustDisabled = false;
     colorRightJustEnabled = nullptr;
     colorRightJustDisabled = false;
-
-    if(!main.world->clientStillConnecting) {
-        //if(io.hoverObstructed && (io.mouse.leftClick || io.mouse.rightClick))
-        //    rightClickPopupLocation = std::nullopt;
-
-        //if(rightClickPopupLocation.has_value()) {
-        //    if(!main.world->drawProg.right_click_popup_gui(rightClickPopupLocation.value()))
-        //        rightClickPopupLocation = std::nullopt;
-        //}
-
-        //if(io.hoverObstructed && io.mouse.rightClick) // This runs specifically if the paint popup has the cursor
-        //    rightClickPopupLocation = std::nullopt;
-    }
-
-    if(!optionsMenuOpen || generalSettingsOptions != GSETTINGS_KEYBINDS)
-        keybindWaiting = std::nullopt;
 }
 
 bool Toolbar::app_close_requested() {
@@ -1711,6 +1695,7 @@ void Toolbar::general_settings_inner_gui() {
                         main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                         themeData.selectedThemeIndex = std::nullopt;
                         generalSettingsOptions = opt;
+                        main.keybindWaiting = std::nullopt;
                     }
                 });
             };
@@ -1878,23 +1863,6 @@ void Toolbar::general_settings_inner_gui() {
                     break;
                 }
                 case GSETTINGS_KEYBINDS: {
-                    if(keybindWaiting.has_value()) {
-                        main.input.stop_key_input();
-                        if(main.input.lastPressedKeybind) {
-                            unsigned v = keybindWaiting.value();
-
-                            Vector2ui32 newKey = main.input.lastPressedKeybind.value();
-                            main.input.keyAssignments.erase(newKey);
-                            auto f = std::find_if(main.input.keyAssignments.begin(), main.input.keyAssignments.end(), [&](auto& p) {
-                                return p.second == v;
-                            });
-                            if(f != main.input.keyAssignments.end())
-                                main.input.keyAssignments.erase(f);
-                            main.input.keyAssignments.emplace(newKey, v);
-                            keybindWaiting = std::nullopt;
-                        }
-                    }
-
                     general_scroll_area("keybind entries", [&] {
                         for(unsigned i = 0; i < InputManager::KEY_ASSIGNABLE_COUNT; i++) {
                             gui.new_id(i, [&] {
@@ -1913,10 +1881,10 @@ void Toolbar::general_settings_inner_gui() {
                                     });
                                     std::string assignedKeystrokeStr = f != main.input.keyAssignments.end() ? main.input.key_assignment_to_str(f->first) : "";
                                     text_button(gui, "keybind button", assignedKeystrokeStr, {
-                                        .isSelected = keybindWaiting.has_value() && keybindWaiting.value() == i,
+                                        .isSelected = main.keybindWaiting.has_value() && main.keybindWaiting.value() == i,
                                         .wide = true,
-                                        .onClick = [&] {
-                                            keybindWaiting = i;
+                                        .onClick = [&, i] {
+                                            main.keybindWaiting = i;
                                         }
                                     });
                                 }
@@ -1953,6 +1921,7 @@ void Toolbar::general_settings_inner_gui() {
                 main.save_config();
                 main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
                 themeData.selectedThemeIndex = std::nullopt;
+                main.keybindWaiting = std::nullopt;
                 optionsMenuOpen = false;
             });
         }

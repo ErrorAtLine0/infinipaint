@@ -847,13 +847,11 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
     if(kPress != SDLK_LSHIFT && kPress != SDLK_RSHIFT && kPress != SDLK_LCTRL && kPress != SDLK_RCTRL &&
        kPress != SDLK_LGUI  && kPress != SDLK_RGUI &&
        kPress != SDLK_LALT   && kPress != SDLK_RALT) {
-        lastPressedKeybind = {make_generic_key_mod(kMod), kPress};
+        if(main.input_keybind_callback({make_generic_key_mod(kMod), kPress}))
+            return;
     }
 
     // e.key != SDLK_LMETA  && e.key != SDLK_RMETA  && 
-
-    if(stopKeyInput)
-        return;
 
     std::shared_ptr<RichText::TextBox> textBox = text.textBoxes.empty() ? nullptr : text.textBoxes.front().textBox;
     std::shared_ptr<RichText::TextBox::Cursor> cursor = text.textBoxes.empty() ? nullptr : text.textBoxes.front().cursor;
@@ -1168,10 +1166,6 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
     }
 }
 
-void InputManager::stop_key_input() {
-    stopKeyInput = 2;
-}
-
 void InputManager::Mouse::set_pos(const Vector2f& newPos) {
     pos = newPos;
 }
@@ -1194,10 +1188,6 @@ void InputManager::update() {
 
 void InputManager::frame_reset(const Vector2i& windowSize) {
     cursorIcon = SystemCursorType::DEFAULT;
-
-    lastPressedKeybind = std::nullopt;
-    if(stopKeyInput)
-        stopKeyInput--;
 
     toggleFullscreen = false;
     hideCursor = false;

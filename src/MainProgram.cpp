@@ -317,6 +317,24 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
     return nullptr;
 }
 
+bool MainProgram::input_keybind_callback(const Vector2ui32& newKey) {
+    if(keybindWaiting.has_value()) {
+        unsigned v = keybindWaiting.value();
+
+        input.keyAssignments.erase(newKey);
+        auto f = std::find_if(input.keyAssignments.begin(), input.keyAssignments.end(), [&](auto& p) {
+            return p.second == v;
+        });
+        if(f != input.keyAssignments.end())
+            input.keyAssignments.erase(f);
+        input.keyAssignments.emplace(newKey, v);
+        keybindWaiting = std::nullopt;
+        g.gui.set_to_layout();
+        return true;
+    }
+    return false;
+}
+
 void MainProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
     if(std::filesystem::is_regular_file(drop.data)) {
         std::filesystem::path droppedFilePath(drop.data);

@@ -187,9 +187,6 @@ struct InputManager {
     SDL_Keymod CTRL_MOD = SDL_KMOD_CTRL;
 #endif
 
-    int stopKeyInput = 0;
-    std::optional<Vector2ui32> lastPressedKeybind;
-
     enum KeyCodeEnum : unsigned {
         // Assignable
         KEY_CAMERA_ROTATE_CLOCKWISE = 0,
@@ -263,7 +260,6 @@ struct InputManager {
     typedef unsigned KeyCode;
 
     bool ctrl_or_meta_held();
-    void stop_key_input();
     uint32_t make_generic_key_mod(SDL_Keymod m);
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);

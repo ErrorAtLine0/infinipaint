@@ -3,6 +3,7 @@
 #include <SDL3/SDL_render.h>
 #include <chrono>
 #include <include/core/SkCanvas.h>
+#include "Helpers/Hashes.hpp"
 #include "InputManager.hpp"
 #include "FontData.hpp"
 #include "TimePoint.hpp"
@@ -118,6 +119,9 @@ class MainProgram {
         std::vector<std::shared_ptr<World>> worlds;
 
         GlobalConfig conf;
+
+        std::optional<unsigned> keybindWaiting;
+        bool input_keybind_callback(const Vector2ui32& newKey);
 
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
