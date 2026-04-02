@@ -61,7 +61,7 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
     canvas->restore();
 }
 
-template <typename T> void TextBox<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+template <typename T> void TextBox<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto& io = gui.io;
 
     if(button.button == InputManager::MouseButton::LEFT && boundingBox.has_value()) {
@@ -84,13 +84,11 @@ template <typename T> void TextBox<T>::input_mouse_button_callback(const InputMa
             textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
         }
     }
-    Element::input_mouse_button_callback(button, mouseHovering);
 }
 
-template <typename T> void TextBox<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
+template <typename T> void TextBox<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(boundingBox.has_value())
         textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, gui.io.input->mouse.leftDown, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
-    Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 template <typename T> void TextBox<T>::input_key_callback(const InputManager::KeyCallbackArgs& key) {

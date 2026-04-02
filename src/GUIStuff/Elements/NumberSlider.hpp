@@ -30,7 +30,7 @@ template <typename T> class NumberSlider : public Element {
             canvas->save();
             canvas->translate(bb.min.x(), bb.min.y());
 
-            float lerpTimeHover = smooth_two_way_time(hoverAnimation, io.deltaTime, isHovering, io.theme->hoverExpandTime);
+            float lerpTimeHover = smooth_two_way_time(hoverAnimation, io.deltaTime, mouseHovering, io.theme->hoverExpandTime);
 
             static BezierEasing easeHeight(0.68, -1.55, 0.265, 2.55);
 
@@ -73,19 +73,15 @@ template <typename T> class NumberSlider : public Element {
             
             canvas->restore();
         }
-        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override {
-            isHovering = mouseHovering;
-            isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override {
+            isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
             if(isHeld && boundingBox.has_value())
                 update_slider_pos(button.pos);
-            Element::input_mouse_button_callback(button, mouseHovering);
         }
 
-        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override {
-            isHovering = mouseHovering;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override {
             if(isHeld && boundingBox.has_value())
                 update_slider_pos(motion.pos);
-            Element::input_mouse_motion_callback(motion, mouseHovering);
         }
 
     private:
@@ -98,7 +94,6 @@ template <typename T> class NumberSlider : public Element {
         }
 
         bool isHeld = false;
-        bool isHovering = false;
         T* data = nullptr;
         T minData = 0.0;
         T maxData = 1.0;

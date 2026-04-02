@@ -30,27 +30,23 @@ bool PaintCircleMenu::collides_with_point(const Vector2f& p) const {
     return boundingBox.has_value() && SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), CIRCLE_END), p) && !SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), PALETTE_START), p);
 }
 
-void PaintCircleMenu::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+void PaintCircleMenu::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(d.mouseButton) d.mouseButton(button, mouseHovering);
-    isHovering = mouseHovering;
-    isHeld = isHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+    isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
     update_paint_circle_menu_mouse_hover(button.pos);
     isRotateBarHeld = isRotateBarHovered && isHeld;
     update_paint_circle_menu_mouse(button.pos, button.button == InputManager::MouseButton::LEFT && button.down);
-    Element::input_mouse_button_callback(button, mouseHovering);
 }
 
-void PaintCircleMenu::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-    isHovering = mouseHovering;
+void PaintCircleMenu::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     update_paint_circle_menu_mouse_hover(motion.pos);
     update_paint_circle_menu_mouse(motion.pos, false);
-    Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 void PaintCircleMenu::update_paint_circle_menu_mouse_hover(const Vector2f& p) {
     float distFromCenter = vec_distance(p, boundingBox.value().center());
-    isRotateBarHovered = isHovering && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END;
-    isColorBarHovered = isHovering && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START;
+    isRotateBarHovered = mouseHovering && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END;
+    isColorBarHovered = mouseHovering && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START;
 }
 
 void PaintCircleMenu::update_paint_circle_menu_mouse(const Vector2f& p, bool leftClicked) {

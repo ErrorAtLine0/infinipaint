@@ -353,31 +353,42 @@ void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 
 void GUIManager::input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button) {
     button.pos *= io.guiScaleMultiplier;
-    mouse_callback(button.pos, [&button] (ElementContainer* e, bool mouseHovering) { e->elem->input_mouse_button_callback(button, mouseHovering); });
+    mouse_callback(button.pos, [&button] (ElementContainer* e) { e->elem->input_mouse_button_callback(button); });
 }
 
 void GUIManager::input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion) {
     motion.pos *= io.guiScaleMultiplier;
-    mouse_callback(motion.pos, [&motion] (ElementContainer* e, bool mouseHovering) { e->elem->input_mouse_motion_callback(motion, mouseHovering); });
+    mouse_callback(motion.pos, [&motion] (ElementContainer* e) { e->elem->input_mouse_motion_callback(motion); });
 }
 
 void GUIManager::input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel) {
     wheel.mousePos *= io.guiScaleMultiplier;
-    mouse_callback(wheel.mousePos, [&wheel] (ElementContainer* e, bool mouseHovering) { e->elem->input_mouse_wheel_callback(wheel, mouseHovering); });
+    mouse_callback(wheel.mousePos, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
 }
 
-void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*, bool)>& f) {
+void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*)>& f) {
     cursorObstructed = false;
     int16_t zIndexObstructed = 0;
+
+    for(ElementContainer* e : orderedElements)
+        e->elem->childMouseHovering = false;
+
     for(ElementContainer* e : orderedElements) {
         if((!cursorObstructed || zIndexObstructed == e->elem->zIndex) && e->elem->collides_with_point(mousePos)) {
             zIndexObstructed = e->elem->zIndex;
             cursorObstructed = true;
-            f(e, true);
+            e->elem->mouseHovering = true;
+            Element* nextParent = e->elem->parent;
+            while(nextParent)
+                nextParent->childMouseHovering |= true;
         }
         else
-            f(e, false);
+            e->elem->mouseHovering = false;
     }
+
+    for(ElementContainer* e : orderedElements)
+        f(e);
+
     run_post_callback_func();
     layout_if_necessary();
 }

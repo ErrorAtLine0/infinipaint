@@ -19,18 +19,17 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
     });
     if(isOpen) {
         gui.set_z_index(gui.get_z_index() + 1, [&] {
-            ElementHelpers::top_to_bottom_window_popup_layout(gui, "Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data]() {
+            ElementHelpers::top_to_bottom_window_popup_layout(gui, "Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data](LayoutElement*) {
                 ElementHelpers::color_picker_items(gui, "c", val, {
                     .hasAlpha = data.hasAlpha,
                     .onEdit = data.onEdit
                 });
             }, {
-                .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                    if(!mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
+                .mouseButton = [&](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                    if(!l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
                         isOpen = false;
                         gui.set_to_layout();
                     }
-                    return mouseHovering;
                 }
             });
         });

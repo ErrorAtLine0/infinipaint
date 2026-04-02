@@ -17,14 +17,13 @@ class PaintCircleMenu : public Element {
         void layout(const Clay_ElementId& id, const Data& data);
         virtual bool collides_with_point(const Vector2f& p) const override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) override;
-        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) override;
+        virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
+        virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
         void draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA);
         void draw_palette_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA);
         Data d;
         unsigned colorSelectionIndex = 0;
-        bool isHovering = false;
         bool isRotateBarHeld = false;
         bool isRotateBarHovered = false;
         bool isColorBarHovered = false;

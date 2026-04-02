@@ -18,16 +18,9 @@ void RadioButton::layout(const Clay_ElementId& id, const std::function<bool()>& 
     }) {}
 }
 
-void RadioButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-    isHovering = mouseHovering;
-    if(isHovering && button.button == InputManager::MouseButton::LEFT && button.down)
+void RadioButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down)
         gui.set_post_callback_func([&] { if(onClick) onClick(); });
-    Element::input_mouse_button_callback(button, mouseHovering);
-}
-
-void RadioButton::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-    isHovering = mouseHovering;
-    Element::input_mouse_motion_callback(motion, mouseHovering);
 }
 
 void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {

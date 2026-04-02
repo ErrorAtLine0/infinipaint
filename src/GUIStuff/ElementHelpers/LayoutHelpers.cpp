@@ -3,8 +3,8 @@
 
 namespace GUIStuff { namespace ElementHelpers {
 
-void top_to_bottom_window_popup_layout(GUIManager& gui, const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent, const LayoutElement::Callbacks& callbacks) {
-    gui.element<LayoutElement>(id, [&] (const Clay_ElementId& lId) {
+void top_to_bottom_window_popup_layout(GUIManager& gui, const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void(LayoutElement*)>& innerContent, const LayoutElement::Callbacks& callbacks) {
+    gui.element<LayoutElement>(id, [&] (LayoutElement* l, const Clay_ElementId& lId) {
         CLAY(lId, {
             .layout = { 
                 .sizing = {.width = x, .height = y },
@@ -17,7 +17,7 @@ void top_to_bottom_window_popup_layout(GUIManager& gui, const char* id, Clay_Siz
             .floating = { .zIndex = gui.get_z_index(), .attachTo = CLAY_ATTACH_TO_PARENT },
             .border = {.color = convert_vec4<Clay_Color>(gui.io.theme->fillColor2), .width = CLAY_BORDER_OUTSIDE(1)}
         }) {
-            innerContent();
+            innerContent(l);
         }
     }, callbacks);
 }

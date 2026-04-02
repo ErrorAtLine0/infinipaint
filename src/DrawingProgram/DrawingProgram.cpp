@@ -334,7 +334,7 @@ void DrawingProgram::toolbar_gui() {
     auto& t = world.main.toolbar;
 
     gui.new_id("Drawing Program Toolbar GUI", [&] {
-        gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] (const Clay_ElementId& lId) {
+        gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] (LayoutElement*, const Clay_ElementId& lId) {
             CLAY(lId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
@@ -450,7 +450,7 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
                 });
             }
         }, LayoutElement::Callbacks{
-            .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+            .mouseButton = [&](LayoutElement*, const InputManager::MouseButtonCallbackArgs& button) {
                 if(button.down && button.button != InputManager::MouseButton::RIGHT)
                     clear_right_click_popup();
             }
@@ -473,7 +473,7 @@ void DrawingProgram::tool_options_gui() {
     auto& io = gui.io;
 
     float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    gui.element<LayoutElement>("Drawing program tool options gui", [&] (const Clay_ElementId& lId) {
+    gui.element<LayoutElement>("Drawing program tool options gui", [&] (LayoutElement*, const Clay_ElementId& lId) {
         CLAY(lId, {
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},

@@ -44,7 +44,7 @@ struct FixedSizeColorButtonOptions {
 
 void text_button(GUIManager& gui, const char* id, std::string_view text, const TextButtonOptions& options = {});
 void text_button_sized(GUIManager& gui, const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, const TextButtonOptions& options = {});
-void svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options = {});
+SelectableButton* svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options = {});
 
 template <typename T> void color_button(GUIManager& gui, const char* id, T* val, const FixedSizeColorButtonOptions& options = {}) {
     gui.new_id(id, [&] {

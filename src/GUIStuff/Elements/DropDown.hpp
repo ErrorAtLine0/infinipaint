@@ -53,7 +53,7 @@ template <typename T> class DropDown : public Element {
 
                 if(isOpen) {
                     gui.set_z_index(gui.get_z_index() + 1, [&] {
-                        gui.element<LayoutElement>("DROPDOWN", [&](const Clay_ElementId& lId) {
+                        gui.element<LayoutElement>("DROPDOWN", [&](LayoutElement*, const Clay_ElementId& lId) {
                             Clay_ElementData dropdownElemData = Clay_GetElementData(lId);
                             float calculatedDropdownMaxHeight = 0.0f;
                             if(dropdownElemData.found)
@@ -87,7 +87,7 @@ template <typename T> class DropDown : public Element {
                                     .clipHorizontal = true,
                                     .elementContent = [&](size_t i) {
                                         bool selectedEntry = static_cast<size_t>(*data) == i;
-                                        gui.element<LayoutElement>("elem", [&] (const Clay_ElementId& lId) {
+                                        gui.element<LayoutElement>("elem", [&] (LayoutElement*, const Clay_ElementId& lId) {
                                             CLAY(lId, {
                                                 .layout = {
                                                     .sizing = {.width = CLAY_SIZING_FIXED(250), .height = CLAY_SIZING_FIXED(18)},
@@ -117,9 +117,9 @@ template <typename T> class DropDown : public Element {
                                                 }
                                             }
                                         }, LayoutElement::Callbacks {
-                                            .mouseButton = [&, i](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                                                update_hovering_over(i, mouseHovering);
-                                                if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
+                                            .mouseButton = [&, i](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                                                update_hovering_over(i, l->mouseHovering);
+                                                if(l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
                                                     gui.set_post_callback_func([&, i] {
                                                         *d = i;
                                                         isOpen = false;
@@ -127,11 +127,9 @@ template <typename T> class DropDown : public Element {
                                                     });
                                                     gui.set_to_layout();
                                                 }
-                                                return mouseHovering;
                                             },
-                                            .mouseMotion = [&, i](const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-                                                update_hovering_over(i, mouseHovering);
-                                                return mouseHovering;
+                                            .mouseMotion = [&, i](LayoutElement* l, const InputManager::MouseMotionCallbackArgs& motion) {
+                                                update_hovering_over(i, l->mouseHovering);
                                             }
                                         });
                                     }

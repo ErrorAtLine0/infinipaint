@@ -63,6 +63,7 @@ class Toolbar {
         bool colorLeftJustDisabled = false;
         Vector4f* colorLeftJustEnabled = nullptr;
         std::function<void()> onColorLeftChange;
+
         Vector4f* colorRight = nullptr;
         bool colorRightJustDisabled = false;
         Vector4f* colorRightJustEnabled = nullptr;
@@ -89,7 +90,7 @@ class Toolbar {
         void file_picker_gui();
         void performance_metrics();
         void color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const std::function<void()>& onChange);
-        bool color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown);
+        bool color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
         void load_default_theme();
@@ -151,7 +152,6 @@ class Toolbar {
         bool showPerformance = false;
 
         bool menuPopUpOpen = false;
-        bool menuPopupOpenFlipped = false;
         bool optionsMenuOpen = false;
         bool playerMenuOpen = false;
 

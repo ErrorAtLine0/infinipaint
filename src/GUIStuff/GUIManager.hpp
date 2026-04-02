@@ -37,18 +37,23 @@ class GUIManager {
 
         template <typename ElementType, typename... Args> ElementType* element(const char* id, const Args&... a) {
             push_id(id);
+            Element* oldParent = parentElement;
             ElementType* elem = insert_element<ElementType>();
+            elem->parent = parentElement;
             Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
             elem->set_parent_clipping_region(clippingRegion);
             elem->layout(clayId, a...);
             elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId)); // Setting bounding box after layout ensures that the element will have its bounding box set if it's set to be drawn.
+            parentElement = oldParent;
             pop_id();
             return elem;
         }
 
         template <typename ElementType, typename... Args> ElementType* clipping_element(const char* id, const Args&... a) {
             push_id(id);
+            Element* oldParent = parentElement;
             ElementType* elem = insert_element<ElementType>();
+            elem->parent = parentElement;
             Clay_ElementId clayId = strArena.elem_id_from_id_stack(idStack);
             elem->set_parent_clipping_region(clippingRegion);
             auto oldClippingRegion = clippingRegion;
@@ -61,6 +66,7 @@ class GUIManager {
             elem->layout(clayId, a...);
             elem->set_bounding_box_from_elem_data(Clay_GetElementData(clayId));
             clippingRegion = oldClippingRegion;
+            parentElement = oldParent;
             pop_id();
             return elem;
         }
@@ -79,7 +85,7 @@ class GUIManager {
         void layout_end();
         void single_layout_run();
 
-        void mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*, bool)>& f);
+        void mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*)>& f);
 
         GUIManagerIDStack idStack;
         std::vector<ElementContainer*> orderedElements;
@@ -104,6 +110,7 @@ class GUIManager {
         void pop_id();
 
         int16_t zIndex = 0;
+        Element* parentElement = nullptr;
         std::optional<SCollision::AABB<float>> clippingRegion;
 
         std::function<void()> postCallbackFunc;

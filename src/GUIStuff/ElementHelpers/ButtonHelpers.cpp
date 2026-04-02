@@ -41,14 +41,16 @@ void text_button_sized(GUIManager& gui, const char* id, std::string_view text, C
     }
 }
 
-void svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options) {
+SelectableButton* svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options) {
     SelectableButton::Data d = selectable_button_options_to_data(options);
     d.innerContent = [&gui, &svgPath] (const SelectableButton::InnerContentCallbackParameters& p) {
         gui.element<SVGIcon>("icon", svgPath, p.isSelected || p.isHovering || p.isHeld);
     };
+    SelectableButton* toRet;
     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(options.size), .height = CLAY_SIZING_FIXED(options.size) } } }) {
-        gui.element<SelectableButton>(id, d);
+        toRet = gui.element<SelectableButton>(id, d);
     }
+    return toRet;
 }
 
 }}

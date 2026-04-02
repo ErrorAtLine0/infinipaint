@@ -453,7 +453,7 @@ void Toolbar::top_toolbar() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    gui.element<LayoutElement>("top menu bar", [&] (const Clay_ElementId& lId) {
+    gui.element<LayoutElement>("top menu bar", [&] (LayoutElement*, const Clay_ElementId& lId) {
         CLAY(lId, {
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -471,19 +471,15 @@ void Toolbar::top_toolbar() {
             bool layerMenuPopUpJustOpen = false;
 
             auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
-                svg_icon_button(gui, id, svgPath, {
+                return svg_icon_button(gui, id, svgPath, {
                     .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                     .isSelected = isSelected,
                     .onClick = onClick
                 });
             };
 
-            menuPopupOpenFlipped = false;
-            icon_button_top_toolbar("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen, [&] {
-                if(!menuPopupOpenFlipped) {
-                    menuPopUpOpen = !menuPopUpOpen;
-                    menuPopupOpenFlipped = false;
-                }
+            Element* mainMenuButton = icon_button_top_toolbar("Main Menu Button", "data/icons/menu.svg", menuPopUpOpen, [&] {
+                menuPopUpOpen = !menuPopUpOpen;
             });
 
 
@@ -562,7 +558,7 @@ void Toolbar::top_toolbar() {
             }
             if(menuPopUpOpen) {
                 gui.set_z_index(5, [&] {
-                    gui.element<LayoutElement>("main menu popup", [&] (const Clay_ElementId& id) {
+                    gui.element<LayoutElement>("main menu popup", [&] (LayoutElement*, const Clay_ElementId& id) {
                         CLAY(id, {
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0) },
@@ -657,10 +653,9 @@ void Toolbar::top_toolbar() {
                             #endif
                         }
                     }, LayoutElement::Callbacks {
-                        .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                            if(!mouseHovering && button.down && !menuPopupOpenFlipped) {
+                        .mouseButton = [&, mainMenuButton](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                            if(!l->mouseHovering && button.down && !mainMenuButton->mouseHovering) {
                                 menuPopUpOpen = false;
-                                menuPopupOpenFlipped = true;
                                 gui.set_to_layout();
                             }
                         }
@@ -1225,7 +1220,7 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
             .padding = {.top = 40, .bottom = 40}
         }
     }) {
-        main.g.gui.element<LayoutElement>(id, [&](const Clay_ElementId& lId) {
+        main.g.gui.element<LayoutElement>(id, [&](LayoutElement*, const Clay_ElementId& lId) {
             CLAY(lId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0)},
@@ -1237,17 +1232,14 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
                 .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
                 .cornerRadius = CLAY_CORNER_RADIUS(gui.io.theme->windowCorners1)
             }) {
-                //template <typename T> void color_picker_items(GUIManager& gui, const char* id, T* val, const ColorPickerItemsOptions& options = {}) {
                 color_picker_items(gui, "colorpicker", *color, {
                     .onEdit = onChange
                 });
-                //isUpdatingColorLeft |= color_palette("colorpickerleftpalette", colorLeft, hoveringOnDropdown);
-                //if(!Clay_Hovered() && !justAssignedColorLeft && !hoveringOnDropdown && io.mouse.leftClick)
-                //    colorLeft = nullptr;
+                color_palette("colorpickerleftpalette", colorLeft, onChange);
             }
         }, LayoutElement::Callbacks{
-            .mouseButton = [&, colorJustDisabled](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                if(!mouseHovering && button.down) {
+            .mouseButton = [&, colorJustDisabled](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                if(!l->mouseHovering && button.down) {
                     *colorJustDisabled = true;
                     main.g.gui.set_to_layout();
                 }
@@ -1256,7 +1248,7 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
     }
 }
 
-bool Toolbar::color_palette(const char* id, Vector4f* color, bool& hoveringOnDropdown) {
+bool Toolbar::color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
@@ -1528,7 +1520,7 @@ void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, C
     auto& io = gui.io;
 
     gui.set_z_index(100, [&] {
-        gui.element<LayoutElement>(id, [&] (const Clay_ElementId& id) {
+        gui.element<LayoutElement>(id, [&] (LayoutElement*, const Clay_ElementId& id) {
             CLAY(id, {
                 .layout = {
                     .sizing = {.width = x, .height = y },
@@ -2123,7 +2115,7 @@ void Toolbar::file_picker_gui() {
                 .elementContent = [&] (size_t i) {
                     const std::filesystem::path& entry = filePicker.entries[i];
                     bool selectedEntry = filePicker.currentSelectedPath == entry;
-                    gui.element<LayoutElement>("elem", [&] (const Clay_ElementId& lId) {
+                    gui.element<LayoutElement>("elem", [&] (LayoutElement*, const Clay_ElementId& lId) {
                         CLAY(lId, {
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
@@ -2146,8 +2138,8 @@ void Toolbar::file_picker_gui() {
                             text_label(gui, entry.filename().string());
                         }
                     }, LayoutElement::Callbacks {
-                        .mouseButton = [&, selectedEntry, entry](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
-                            if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
+                        .mouseButton = [&, selectedEntry, entry](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                            if(l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
                                 gui.set_post_callback_func([&, button, selectedEntry, entry] {
                                     if(selectedEntry && button.clicks >= 2) {
                                         if(std::filesystem::is_directory(entry)) {

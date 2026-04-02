@@ -15,7 +15,7 @@ void PositionAdjustingPopupMenu::layout(const Clay_ElementId& id, Vector2f popup
             popupPos.x() -= bb.width();
     }
 
-    layoutElement = gui.element<LayoutElement>("popup", [&] (const Clay_ElementId& lId) {
+    layoutElement = gui.element<LayoutElement>("popup", [&] (LayoutElement*, const Clay_ElementId& lId) {
         CLAY(lId, {
             .layout = { 
                 .sizing = {.width = CLAY_SIZING_FIT(100), .height = CLAY_SIZING_FIT(0)},

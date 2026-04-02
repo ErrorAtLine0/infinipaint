@@ -48,7 +48,7 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
             float scrollerPos = std::fabs(scrollOffset.y() / scrollPosMax);
             float areaAboveScrollerSize = scrollerPos * (sAreaDim - scrollerSize);
 
-            gui.element<LayoutElement>("scroll bar", [&] (const Clay_ElementId& lId) {
+            gui.element<LayoutElement>("scroll bar", [&] (LayoutElement*, const Clay_ElementId& lId) {
                 CLAY(lId, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIXED(12), .height = CLAY_SIZING_GROW(0)},
@@ -71,28 +71,27 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
                         }
                     }) {}
 
-                    gui.element<LayoutElement>("scroller", [&] (const Clay_ElementId& lId2) {
+                    gui.element<LayoutElement>("scroller", [&] (LayoutElement*, const Clay_ElementId& lId2) {
                         CLAY(lId2, {
                             .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(scrollerSize)}},
                             .backgroundColor = convert_vec4<Clay_Color>(scrollerColor),
                             .cornerRadius = CLAY_CORNER_RADIUS(3),
                         }) {}
                     }, LayoutElement::Callbacks{
-                        .mouseMotion = [&] (const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-                            if(isHoveringOverScrollerY != mouseHovering) {
-                                isHoveringOverScrollerY = mouseHovering;
+                        .mouseMotion = [&] (LayoutElement* t, const InputManager::MouseMotionCallbackArgs& motion) {
+                            if(isHoveringOverScrollerY != t->mouseHovering) {
+                                isHoveringOverScrollerY = t->mouseHovering;
                                 gui.set_to_layout();
                             }
-                            return mouseHovering;
                         }
                     });
 
                     CLAY_AUTO_ID({ .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
                 }
             }, LayoutElement::Callbacks{
-                .mouseButton = [&, scrollPosMax, sAreaStart, sAreaDim, scrollerSize, areaAboveScrollerSize](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                .mouseButton = [&, scrollPosMax, sAreaStart, sAreaDim, scrollerSize, areaAboveScrollerSize](LayoutElement* t, const InputManager::MouseButtonCallbackArgs& button) {
                     if(button.button == InputManager::MouseButton::LEFT) {
-                        if(button.down && mouseHovering) {
+                        if(button.down && t->mouseHovering) {
                             isScrollbarHeldY = true;
                             if(isHoveringOverScrollerY)
                                 scrollerStartPosY = sAreaStart + areaAboveScrollerSize + scrollerSize * 0.5f;
@@ -112,11 +111,10 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
                             gui.set_to_layout();
                         }
                     }
-                    return mouseHovering;
                 },
-                .mouseMotion = [&, scrollPosMax, sAreaStart, sAreaDim, scrollerSize](const InputManager::MouseMotionCallbackArgs& motion, bool mouseHovering) {
-                    if(isScrollbarHoveredY != mouseHovering) {
-                        isScrollbarHoveredY = mouseHovering;
+                .mouseMotion = [&, scrollPosMax, sAreaStart, sAreaDim, scrollerSize](LayoutElement* t, const InputManager::MouseMotionCallbackArgs& motion) {
+                    if(isScrollbarHoveredY != t->mouseHovering) {
+                        isScrollbarHoveredY = t->mouseHovering;
                         gui.set_to_layout();
                     }
                     if(isScrollbarHeldY) {
@@ -131,7 +129,6 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
                         if(oldScrollOffset != scrollOffset.y())
                             gui.set_to_layout();
                     }
-                    return mouseHovering;
                 }
             });
         }
@@ -147,7 +144,7 @@ void ScrollArea::clamp_scroll() {
     scrollOffset.y() = std::clamp(scrollOffset.y(), -std::max(0.0f, contentDimensions.y() - containerDimensions.y()), 0.0f);
 }
 
-void ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel, bool mouseHovering) {
+void ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
     if(mouseHovering) {
         Vector2f oldScrollOffset = scrollOffset;
 
@@ -160,7 +157,6 @@ void ScrollArea::input_mouse_wheel_callback(const InputManager::MouseWheelCallba
         if(oldScrollOffset != scrollOffset)
             gui.set_to_layout();
     }
-    Element::input_mouse_wheel_callback(wheel, mouseHovering);
 }
 
 }
