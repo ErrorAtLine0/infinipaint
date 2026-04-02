@@ -120,6 +120,7 @@ void DrawCamera::update_main(World& w) {
                 .move = {0, 0}
             };
             w.drawProg.drawTool->input_mouse_motion_callback(motion);
+            w.main.g.gui.set_to_layout();
         }
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
@@ -128,6 +129,7 @@ void DrawCamera::update_main(World& w) {
                 .move = {0, 0}
             };
             w.drawProg.drawTool->input_mouse_motion_callback(motion);
+            w.main.g.gui.set_to_layout();
         }
     }
 

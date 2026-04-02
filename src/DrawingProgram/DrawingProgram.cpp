@@ -533,6 +533,7 @@ void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool for
         drawTool->switch_tool(newToolType);
         drawTool = DrawingProgramToolBase::allocate_tool_type(*this, newToolType);
         world.main.toolbar.rightClickPopupLocation = std::nullopt;
+        world.main.g.gui.set_to_layout();
     }
 }
 

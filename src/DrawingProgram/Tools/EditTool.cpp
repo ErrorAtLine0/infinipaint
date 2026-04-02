@@ -209,6 +209,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
 
         oldData = nullptr;
         objInfoBeingEdited = nullptr;
+        drawP.world.main.g.gui.set_to_layout();
     }
     pointHandles.clear();
     pointDragging = nullptr;
@@ -250,6 +251,7 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
         oldData = comp->obj->get_comp().get_data_copy();
         undoAfterEditDone = initUndoAfterEditDone;
         compEditTool->edit_start(*this, objInfoBeingEdited, prevData);
+        drawP.world.main.g.gui.set_to_layout();
     }
 }
 

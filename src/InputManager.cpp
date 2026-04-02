@@ -126,12 +126,13 @@ void InputManager::remove_rich_text_box_input(const std::shared_ptr<RichText::Te
     text.update_accepting_input(main.window.sdlWindow);
 }
 
-void InputManager::Text::add_text_to_textbox(const std::string& inputText) {
-    if(!textBoxes.empty() && !inputText.empty()) {
-        auto& frontTextBox = textBoxes.front();
-        do_textbox_operation_with_undo([&]() {
+void InputManager::add_text_to_textbox(const std::string& inputText) {
+    if(!text.textBoxes.empty() && !inputText.empty()) {
+        auto& frontTextBox = text.textBoxes.front();
+        text.do_textbox_operation_with_undo([&]() {
             frontTextBox.textBox->process_text_input(*frontTextBox.cursor, inputText, shared_ptr_to_opt(frontTextBox.modMap));
         });
+        main.input_text_input_callback();
     }
 }
 
@@ -990,8 +991,10 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             break;
     }
 
-    if(text.is_accepting_input())
+    if(text.is_accepting_input()) {
+        main.input_text_key_callback();
         return;
+    }
 
     auto f = keyAssignments.find({make_generic_key_mod(kMod), kPress});
     if(f != keyAssignments.end()) {

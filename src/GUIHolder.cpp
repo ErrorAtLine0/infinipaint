@@ -123,6 +123,16 @@ void GUIHolder::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     gui.input_key_callback(key);
 }
 
+void GUIHolder::input_text_key_callback() {
+    gui.run_post_callback_func();
+    gui.layout_if_necessary();
+}
+
+void GUIHolder::input_text_input_callback() {
+    gui.run_post_callback_func();
+    gui.layout_if_necessary();
+}
+
 void GUIHolder::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     gui.input_mouse_button_callback(button);
 }

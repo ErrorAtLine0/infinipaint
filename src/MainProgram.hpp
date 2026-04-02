@@ -122,6 +122,8 @@ class MainProgram {
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_text_key_callback();
+        void input_text_input_callback();
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);

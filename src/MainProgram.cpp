@@ -354,6 +354,14 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
         world->input_key_callback(key);
 }
 
+void MainProgram::input_text_key_callback() {
+    g.input_text_key_callback();
+}
+
+void MainProgram::input_text_input_callback() {
+    g.input_text_input_callback();
+}
+
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     g.input_mouse_button_callback(button);
     if(world)

@@ -22,6 +22,11 @@ void EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
 
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
+    auto commit_update_func = [&, comp] { comp->obj->commit_update(drawP); };
+    auto commit_update_and_layout_func = [&, comp] {
+        comp->obj->commit_update(drawP);
+        drawP.world.main.g.gui.set_to_layout();
+    };
 
     Toolbar& t = drawP.world.main.toolbar;
     gui.new_id("edit tool ellipse", [&] {
@@ -30,7 +35,7 @@ void EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
             {"Fill only", 0},
             {"Outline only", 1},
             {"Fill and outline", 2}
-        });
+        }, commit_update_and_layout_func);
         if(a.d.fillStrokeMode == 0 || a.d.fillStrokeMode == 2) {
             left_to_right_line_layout(gui, [&] {
                 //if(gui.color_button_big("Fill Color", &a.d.fillColor, &a.d.fillColor == t.colorRight))
@@ -39,7 +44,7 @@ void EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
             });
         }
         if(a.d.fillStrokeMode == 1 || a.d.fillStrokeMode == 2) {
-            slider_scalar_field(gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f);
+            slider_scalar_field(gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f, {.onEdit = commit_update_func});
             left_to_right_line_layout(gui, [&] {
                 //if(gui.color_button_big("Outline Color", &a.d.strokeColor, &a.d.strokeColor == t.colorRight))
                 //    t.color_selector_right(&a.d.strokeColor == t.colorRight ? nullptr : &a.d.strokeColor);

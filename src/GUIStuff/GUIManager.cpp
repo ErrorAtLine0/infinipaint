@@ -348,6 +348,7 @@ void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     for(ElementContainer* e : orderedElements)
         e->elem->input_key_callback(key);
     run_post_callback_func();
+    layout_if_necessary();
 }
 
 void GUIManager::input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button) {
@@ -378,6 +379,7 @@ void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<vo
             f(e, false);
     }
     run_post_callback_func();
+    layout_if_necessary();
 }
 
 }

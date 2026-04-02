@@ -156,8 +156,6 @@ struct InputManager {
     struct Text {
         bool is_accepting_input();
 
-        void add_text_to_textbox(const std::string& inputText);
-
         void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
         void do_textbox_operation_with_undo(const std::function<void()>& func);
 
@@ -274,6 +272,8 @@ struct InputManager {
     void touch_finger_do_mouse_down();
     void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
     void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
+
+    void add_text_to_textbox(const std::string& inputText);
 
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
