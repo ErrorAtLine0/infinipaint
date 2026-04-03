@@ -639,11 +639,11 @@ void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
 
     // For now, only pass pressure axis
     if(e.axis == SDL_PEN_AXIS_PRESSURE) {
-        pen.pressure = e.value;
+        pen.pressure = std::clamp(e.value, 0.0f, 1.0f);
         main.input_pen_axis_callback({
             .pos = mouseNewPos,
             .axis = e.axis,
-            .value = e.value
+            .value = pen.pressure
         });
     }
 }
