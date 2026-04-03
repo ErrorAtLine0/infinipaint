@@ -61,7 +61,7 @@ void input_text_field(GUIManager& gui, const char* id, std::string_view name, st
     });
 }
 
-void input_scalar(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal, uint8_t maxVal, const TextBoxScalarOptions& options) {
+template <> void input_scalar<uint8_t>(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal, uint8_t maxVal, const TextBoxScalarOptions& options) {
     InputManager::TextInputProperties textInputProps {
         .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
         .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
@@ -76,13 +76,13 @@ void input_scalar(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal,
     d.fromStr = [minVal, maxVal](const std::string& a) {
         if(a.empty())
             return minVal;
-        uint8_t toRet;
+        uint32_t toRet;
         std::stringstream ss;
         ss << a;
         ss >> toRet;
         if(ss.fail())
             return minVal;
-        return std::clamp(toRet, minVal, maxVal);
+        return static_cast<uint8_t>(std::clamp(toRet, static_cast<uint32_t>(minVal), static_cast<uint32_t>(maxVal)));
     };
     d.toStr = [options](const uint8_t& a) {
         return std::to_string(static_cast<uint32_t>(a));

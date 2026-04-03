@@ -49,7 +49,6 @@ struct TextBoxHexColorOptions {
 void input_color_component_255(GUIManager& gui, const char* id, float* val, const TextBoxOptions& options = {});
 void input_text(GUIManager& gui, const char* id, std::string* val, const TextBoxOptions& options = {});
 void input_text_field(GUIManager& gui, const char* id, std::string_view name, std::string* val, const TextBoxOptions& options = {});
-void input_scalar(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal, uint8_t maxVal, const TextBoxScalarOptions& options = {});
 void input_path(GUIManager& gui, const char* id, std::filesystem::path* val, const TextBoxPathOptions& options = {});
 void input_path_field(GUIManager& gui, const char* id, std::string_view name, std::filesystem::path* val, const TextBoxPathOptions& options = {});
 
@@ -93,6 +92,8 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
 
     gui.element<TextBox<T>>(id, d);
 }
+
+template <> void input_scalar<uint8_t>(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal, uint8_t maxVal, const TextBoxScalarOptions& options);
 
 template <typename TContainer, typename T> void input_scalars_field(GUIManager& gui, const char* id, std::string_view name, TContainer* val, size_t elemCount, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
     gui.new_id(id, [&] {
