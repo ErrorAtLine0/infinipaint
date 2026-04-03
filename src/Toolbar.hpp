@@ -90,7 +90,7 @@ class Toolbar {
         void file_picker_gui();
         void performance_metrics();
         void color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const std::function<void()>& onChange);
-        bool color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
+        void color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
         void load_default_theme();
@@ -137,7 +137,6 @@ class Toolbar {
             };
 
             size_t selectedPalette = 0;
-            int selectedColor = -1;
             std::vector<Palette> palettes;
             bool addingPalette = false;
             std::string newPaletteStr;

@@ -15,13 +15,15 @@ void BrushEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
+    auto& a = static_cast<BrushStrokeCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
+    Toolbar& t = drawP.world.main.toolbar;
+    auto commit_update_func = [&, comp] { comp->obj->commit_update(drawP); };
+
     gui.new_id("edit tool brush", [&] {
         text_label_centered(gui, "Edit Brush Stroke");
         left_to_right_line_layout(gui, [&]() {
-            //if(gui.color_button_big("Outline Color", &a.d.color, &a.d.color == t.colorRight))
-            //    t.color_selector_right(&a.d.color == t.colorRight ? nullptr : &a.d.color);
+            t.color_button_right("Outline Color", &a.d.color, commit_update_func);
             text_label(gui, "Outline Color");
         });
     });

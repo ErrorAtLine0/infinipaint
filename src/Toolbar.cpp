@@ -1235,11 +1235,11 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
                 color_picker_items(gui, "colorpicker", *color, {
                     .onEdit = onChange
                 });
-                color_palette("colorpickerleftpalette", colorLeft, onChange);
+                color_palette("colorpickerpalette", *color, onChange);
             }
         }, LayoutElement::Callbacks{
             .mouseButton = [&, colorJustDisabled](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
-                if(!l->mouseHovering && button.down) {
+                if(!l->mouseHovering && !l->childMouseHovering && button.down) {
                     *colorJustDisabled = true;
                     main.g.gui.set_to_layout();
                 }
@@ -1248,121 +1248,132 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
     }
 }
 
-bool Toolbar::color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange) {
+void Toolbar::color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    bool isUpdating = false;
     gui.new_id(id, [&] {
-    //auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
-    //constexpr float COLOR_BUTTON_SIZE = GUIStuff::GUIManager::BIG_BUTTON_SIZE;
+        auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
 
-    //size_t nextID = 0;
+        gui.element<ScrollArea>("color palette scroll area", ScrollArea::Options{
+            .scrollVertical = true,
+            .clipVertical = true,
+            .showScrollbarY = true,
+            .innerContent = [&](const ScrollArea::InnerContentParameters&) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                        .childGap = io.theme->childGap1,
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    }
+                }) {
+                    size_t i = 0;
+                    size_t nextID = 0;
+                    while(i < palette.size()) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)},
+                                .childGap = io.theme->childGap1,
+                                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                                .layoutDirection = CLAY_LEFT_TO_RIGHT
+                            }
+                        }) {
+                            while(i < palette.size()) {
+                                CLAY_AUTO_ID({
+                                    .layout = {
+                                        .sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)}
+                                    }
+                                }) {
+                                    auto newC = std::make_shared<Vector3f>(palette[i].x(), palette[i].y(), palette[i].z());
+                                    gui.new_id(nextID++, [&] {
+                                        color_button(gui, "c", newC.get(), {
+                                            .isSelected = newC->x() == color->x() && newC->y() == color->y() && newC->z() == color->z(),
+                                            .hasAlpha = false,
+                                            .onClick = [newC, color, onChange] {
+                                                // We want to keep the old color's alpha
+                                                color->x() = newC->x();
+                                                color->y() = newC->y();
+                                                color->z() = newC->z();
+                                                if(onChange) onChange();
+                                            }
+                                        });
+                                    });
+                                }
+                                i++;
+                                if(i % 6 == 0)
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
-    //gui.scroll_bar_area("color palette scroll area", false, [&](float, float, float &) {
-    //    CLAY_AUTO_ID({
-    //        .layout = {
-    //            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-    //            .childGap = io.theme->childGap1,
-    //            .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //        }
-    //    }) {
-    //        size_t i = 0;
-    //        while(i < palette.size()) {
-    //            CLAY_AUTO_ID({
-    //                .layout = {
-    //                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)},
-    //                    .childGap = io.theme->childGap1,
-    //                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-    //                    .layoutDirection = CLAY_LEFT_TO_RIGHT
-    //                }
-    //            }) {
-    //                while(i < palette.size()) {
-    //                    CLAY_AUTO_ID({
-    //                        .layout = {
-    //                            .sizing = {.width = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(COLOR_BUTTON_SIZE)}
-    //                        }
-    //                    }) {
-    //                        Vector4f newC = {palette[i].x(), palette[i].y(), palette[i].z(), 1.0f};
-    //                        gui.push_id(nextID++);
-    //                        if(gui.color_button("c", &newC, (paletteData.selectedColor == (int)i))) {
-    //                            paletteData.selectedColor = (int)i;
-    //                            // We want to keep the old color's alpha
-    //                            color->x() = newC.x();
-    //                            color->y() = newC.y();
-    //                            color->z() = newC.z();
-    //                            isUpdating = true;
-    //                        }
-    //                        gui.pop_id();
-    //                        if(paletteData.selectedColor == (int)i && (newC.x() != color->x() || newC.y() != color->y() || newC.z() != color->z()))
-    //                            paletteData.selectedColor = -1;
-    //                    }
-    //                    i++;
-    //                    if(i % 6 == 0)
-    //                        break;
-    //                }
-    //            }
-    //        }
-    //    }
-    //});
+        if(paletteData.selectedPalette != 0) {
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                    .padding = {.top = 3, .bottom = 3},
+                    .childGap = io.theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                }
+            }) {
+                svg_icon_button(gui, "addcolor", "data/icons/plus.svg", {
+                    .onClick = [&, color] {
+                        std::erase(palette, Vector3f{color->x(), color->y(), color->z()});
+                        palette.emplace_back(color->x(), color->y(), color->z());
+                    }
+                });
+                svg_icon_button(gui, "deletecolor", "data/icons/close.svg", {
+                    .onClick = [&, color] {
+                        std::erase(palette, Vector3f{color->x(), color->y(), color->z()});
+                    }
+                });
+            }
+        }
 
-    //if(paletteData.selectedPalette != 0) {
-    //    CLAY_AUTO_ID({
-    //        .layout = {
-    //            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-    //            .padding = {.top = 3, .bottom = 3},
-    //            .childGap = io.theme->childGap1,
-    //            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-    //            .layoutDirection = CLAY_LEFT_TO_RIGHT
-    //        }
-    //    }) {
-    //        if(gui.svg_icon_button("addcolor", "data/icons/plus.svg", false, COLOR_BUTTON_SIZE)) {
-    //            palette.emplace_back(color->x(), color->y(), color->z());
-    //            paletteData.selectedColor = palette.size() - 1;
-    //        }
-    //        if(gui.svg_icon_button("deletecolor", "data/icons/close.svg", false, COLOR_BUTTON_SIZE)) {
-    //            if(paletteData.selectedColor >= 0 && paletteData.selectedColor < (int)palette.size()) {
-    //                palette.erase(palette.begin() + paletteData.selectedColor);
-    //                paletteData.selectedColor = -1;
-    //            }
-    //        }
-    //    }
-    //}
-    //CLAY_AUTO_ID({
-    //    .layout = {
-    //        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
-    //        .padding = {.top = 3, .bottom = 3},
-    //        .childGap = io.theme->childGap1,
-    //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-    //        .layoutDirection = CLAY_LEFT_TO_RIGHT
-    //    }
-    //}) {
-    //    std::vector<std::string> paletteNames;
-    //    for(auto& p : paletteData.palettes)
-    //        paletteNames.emplace_back(p.name);
-    //    gui.dropdown_select("paletteselector", &paletteData.selectedPalette, paletteNames, 200.0f, [&]() {
-    //        hoveringOnDropdown = Clay_Hovered();
-    //    });
-    //    if(gui.svg_icon_button("paletteadd", "data/icons/plus.svg", paletteData.addingPalette, 25.0f)) paletteData.addingPalette = !paletteData.addingPalette;
-    //    if(paletteData.selectedPalette != 0) {
-    //        if(gui.svg_icon_button("paletteremove", "data/icons/close.svg", false, 25.0f)) {
-    //            paletteData.palettes.erase(paletteData.palettes.begin() + paletteData.selectedPalette);
-    //            paletteData.selectedPalette = 0;
-    //        }
-    //    }
-    //}
-    //if(paletteData.addingPalette) {
-    //    gui.input_text_field("paletteinputname", "Name", &paletteData.newPaletteStr);
-    //    if(gui.text_button_wide("addpalettebutton", "Create") && !paletteData.newPaletteStr.empty()) {
-    //        paletteData.palettes.emplace_back();
-    //        paletteData.palettes.back().name = paletteData.newPaletteStr;
-    //        paletteData.selectedPalette = paletteData.palettes.size() - 1;
-    //        paletteData.addingPalette = false;
-    //    }
-    //}
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                .padding = {.top = 3, .bottom = 3},
+                .childGap = io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            }
+        }) {
+            std::vector<std::string> paletteNames;
+            for(auto& p : paletteData.palettes)
+                paletteNames.emplace_back(p.name);
+            gui.element<DropDown<size_t>>("paletteselector", &paletteData.selectedPalette, paletteNames, DropdownOptions{
+                .onClick = [&] { gui.set_to_layout(); }
+            });
+            svg_icon_button(gui, "paletteadd", "data/icons/plus.svg", {
+                .size = 25.0f,
+                .onClick = [&] {
+                    paletteData.addingPalette = !paletteData.addingPalette;
+                }
+            });
+            svg_icon_button(gui, "paletteremove", "data/icons/close.svg", {
+                .size = 25.0f,
+                .onClick = [&] {
+                    paletteData.palettes.erase(paletteData.palettes.begin() + paletteData.selectedPalette);
+                    paletteData.selectedPalette = 0;
+                }
+            });
+        }
+        if(paletteData.addingPalette) {
+            input_text_field(gui, "paletteinputname", "Name", &paletteData.newPaletteStr);
+            text_button_wide("addpalettebutton", "Create", [&] {
+                if(!paletteData.newPaletteStr.empty()) {
+                    paletteData.palettes.emplace_back();
+                    paletteData.palettes.back().name = paletteData.newPaletteStr;
+                    paletteData.selectedPalette = paletteData.palettes.size() - 1;
+                    paletteData.addingPalette = false;
+                }
+            });
+        }
     });
-
-    return isUpdating;
 }
 
 void Toolbar::performance_metrics() {
@@ -1707,7 +1718,6 @@ void Toolbar::general_settings_inner_gui() {
             auto general_scroll_area = [&](const char* id, const std::function<void()>& innerContent) {
                 gui.clipping_element<ScrollArea>("general settings scroll area", ScrollArea::Options{
                     .scrollVertical = true,
-                    .clipHorizontal = false,
                     .clipVertical = true,
                     .showScrollbarY = true,
                     .innerContent = [&, innerContent](const ScrollArea::InnerContentParameters&) {
@@ -1936,7 +1946,6 @@ void Toolbar::about_menu_inner_gui() {
             }) {
                 gui.clipping_element<ScrollArea>("About Menu Selector Scroll Area", ScrollArea::Options{
                     .scrollVertical = true,
-                    .clipHorizontal = false,
                     .clipVertical = true,
                     .showScrollbarY = true,
                     .innerContent = [&](const ScrollArea::InnerContentParameters&) {
@@ -1979,7 +1988,6 @@ void Toolbar::about_menu_inner_gui() {
 
         gui.clipping_element<ScrollArea>("About Menu Text Scroll Area", ScrollArea::Options{
             .scrollVertical = true,
-            .clipHorizontal = false,
             .clipVertical = true,
             .showScrollbarY = true,
             .innerContent = [&](const ScrollArea::InnerContentParameters&) {
