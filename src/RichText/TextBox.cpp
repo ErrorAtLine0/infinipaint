@@ -500,6 +500,11 @@ void TextBox::set_rich_text_data(const TextData& richText) {
     needsRebuild = true;
 }
 
+void TextBox::set_rich_text_data_for_undo_redo(const TextData& richText) {
+    set_rich_text_data(richText);
+    if(onUserTextEdit) onUserTextEdit();
+}
+
 std::string TextBox::get_string() {
     return get_text_between({0, 0}, move(TextBox::Movement::END, {0, 0}));
 }

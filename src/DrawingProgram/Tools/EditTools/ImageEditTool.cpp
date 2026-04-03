@@ -29,8 +29,9 @@ void ImageEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::Obj
     Affine2f transformMat = Translation2f(a.d.p1) * AlignedScaling2f(a.d.p2 - a.d.p1) * Affine2f::Identity();
 
     prevData = a.d;
-    editTool.add_point_handle({&a.d.cropP1, &staticZero, &a.d.cropP2, 0.0f, transformMat});
-    editTool.add_point_handle({&a.d.cropP2, &a.d.cropP1, &staticOne, 0.0f, transformMat});
+    constexpr float MINIMUM_DISTANCE_BETWEEN_IMAGE_CROP_POINTS = 0.02f;
+    editTool.add_point_handle({&a.d.cropP1, &staticZero, &a.d.cropP2, 0.0f, MINIMUM_DISTANCE_BETWEEN_IMAGE_CROP_POINTS, transformMat});
+    editTool.add_point_handle({&a.d.cropP2, &a.d.cropP1, &staticOne, MINIMUM_DISTANCE_BETWEEN_IMAGE_CROP_POINTS, 0.0f, transformMat});
     a.d.editing = true;
     comp->obj->commit_update(drawP);
 }

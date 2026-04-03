@@ -138,6 +138,7 @@ class TextBox {
 
         TextData get_rich_text_data();
         void set_rich_text_data(const TextData& richText);
+        void set_rich_text_data_for_undo_redo(const TextData& richText);
 
         TextData get_rich_text_data_between(TextPosition p1, TextPosition p2);
         TextPosition insert_rich_text(TextPosition p, const TextData& richText);

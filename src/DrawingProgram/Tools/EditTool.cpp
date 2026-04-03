@@ -102,7 +102,6 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
                         if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
                             pointDragging = &h;
                             isMovingPoint = true;
-                            break;
                         }
                     }
                     if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
@@ -141,9 +140,9 @@ void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallba
             Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
             if(newPos != *pointDragging->p) {
                 if(pointDragging->min)
-                    newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
+                    newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenMinAndPoint, pointDragging->minimumDistanceBetweenMinAndPoint}).eval(), newPos);
                 if(pointDragging->max)
-                    newPos = cwise_vec_min((*pointDragging->max - Vector2f{pointDragging->minimumDistanceBetweenBoundsAndPoint, pointDragging->minimumDistanceBetweenBoundsAndPoint}).eval(), newPos);
+                    newPos = cwise_vec_min((*pointDragging->max - Vector2f{pointDragging->minimumDistanceBetweenMaxAndPoint, pointDragging->minimumDistanceBetweenMaxAndPoint}).eval(), newPos);
                 *pointDragging->p = newPos;
                 objInfoBeingEdited->obj->commit_update(drawP);
             }

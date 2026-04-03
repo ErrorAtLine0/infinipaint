@@ -12,7 +12,8 @@ class EditTool : public DrawingProgramToolBase {
             Vector2f* p;
             Vector2f* min;
             Vector2f* max;
-            float minimumDistanceBetweenBoundsAndPoint = MINIMUM_DISTANCE_BETWEEN_BOUNDS;
+            float minimumDistanceBetweenMinAndPoint = MINIMUM_DISTANCE_BETWEEN_BOUNDS;
+            float minimumDistanceBetweenMaxAndPoint = MINIMUM_DISTANCE_BETWEEN_BOUNDS;
             Affine2f coordMatrix = Affine2f::Identity();
         };
 

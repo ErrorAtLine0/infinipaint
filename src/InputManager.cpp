@@ -140,13 +140,13 @@ void InputManager::Text::add_textbox_undo(const RichText::TextBox::Cursor& prevC
     if(!textBoxes.empty()) {
         auto& frontTextBox = textBoxes.front();
         frontTextBox.textboxUndo.push({[textBox = frontTextBox.textBox, cursor = frontTextBox.cursor, prevCursor = prevCursor, prevRichText = prevRichText]() {
-            textBox->set_rich_text_data(prevRichText);
+            textBox->set_rich_text_data_for_undo_redo(prevRichText);
             cursor->selectionBeginPos = cursor->selectionEndPos = cursor->pos = std::max(prevCursor.selectionEndPos, prevCursor.selectionBeginPos);
             cursor->previousX = std::nullopt;
             return true;
         },
         [textBox = frontTextBox.textBox, cursor = frontTextBox.cursor, currentCursor = *frontTextBox.cursor, currentRichText = frontTextBox.textBox->get_rich_text_data()]() {
-            textBox->set_rich_text_data(currentRichText);
+            textBox->set_rich_text_data_for_undo_redo(currentRichText);
             cursor->selectionBeginPos = cursor->selectionEndPos = cursor->pos = std::max(currentCursor.selectionEndPos, currentCursor.selectionBeginPos);
             cursor->previousX = std::nullopt;
             return true;
