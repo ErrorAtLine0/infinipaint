@@ -75,6 +75,11 @@ void DrawingProgramLayerFolder::save_file(cereal::PortableBinaryOutputArchive& a
         listItem.obj->save_file(a);
 }
 
+void DrawingProgramLayerFolder::erase_invalid_components() {
+    for(auto& listItem : *folderList)
+        listItem.obj->erase_invalid_components();
+}
+
 void DrawingProgramLayerFolder::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const {
     for(auto& listItem : *folderList)
         listItem.obj->get_used_resources(resourceSet);

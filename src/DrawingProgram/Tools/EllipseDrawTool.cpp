@@ -115,7 +115,12 @@ void EllipseDrawTool::commit() {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
-        drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
+        if(containerPtr->get_world_bounds().has_value())
+            drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
+        else {
+            auto& components = containerPtr->parentLayer->get_layer().components;
+            components->erase(components, containerPtr->objInfo);
+        }
         objInfoBeingEdited = nullptr;
     }
 }

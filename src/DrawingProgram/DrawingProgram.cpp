@@ -527,7 +527,7 @@ void DrawingProgram::pen_tool_switch_check() {
 
 void DrawingProgram::invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck) {
     if(!selection.is_selected(objToCheck))
-        drawCache.invalidate_cache_at_aabb(objToCheck->obj->get_world_bounds());
+        drawCache.invalidate_cache_at_optional_aabb(objToCheck->obj->get_world_bounds());
 }
 
 void DrawingProgram::preupdate_component(CanvasComponentContainer::ObjInfo* objToCheck) {

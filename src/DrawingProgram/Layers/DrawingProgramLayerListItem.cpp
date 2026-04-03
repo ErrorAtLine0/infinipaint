@@ -271,6 +271,13 @@ DrawingProgramLayerListItemMetaInfo DrawingProgramLayerListItem::get_metainfo() 
     };
 }
 
+void DrawingProgramLayerListItem::erase_invalid_components() {
+    if(folderData)
+        folderData->erase_invalid_components();
+    else
+        layerData->erase_invalid_components();
+}
+
 void DrawingProgramLayerListItem::register_class(World& w) {
     w.netObjMan.register_class<DrawingProgramLayerListItem, DrawingProgramLayerListItem, DrawingProgramLayerListItem, DrawingProgramLayerListItem>({
         .writeConstructorFuncClient = write_constructor_func,

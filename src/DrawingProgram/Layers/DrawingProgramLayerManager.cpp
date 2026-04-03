@@ -284,6 +284,7 @@ void DrawingProgramLayerManager::load_file(cereal::PortableBinaryInputArchive& a
     parallel_loop_container(flattenedCompList, [&drawP = drawP](CanvasComponentContainer::ObjInfo* comp) {
         comp->obj->commit_update_dont_invalidate_cache(drawP);
     });
+    layerTreeRoot->erase_invalid_components();
     drawP.rebuild_cache();
     editingLayer = layerTreeRoot->get_folder().get_initial_editing_layer();
 }

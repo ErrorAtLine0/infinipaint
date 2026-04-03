@@ -55,7 +55,7 @@ class CanvasComponentContainer {
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, NetworkingObjects::NetObjManager& objMan);
         CanvasComponent& get_comp() const;
-        SCollision::AABB<WorldScalar> get_world_bounds() const;
+        const std::optional<SCollision::AABB<WorldScalar>>& get_world_bounds() const;
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void draw_with_predraw_data(SkCanvas* canvas, const DrawData& drawData, const PreDrawData& preDrawData) const;
         PreDrawData calculate_predraw_data(const DrawData& drawData) const;

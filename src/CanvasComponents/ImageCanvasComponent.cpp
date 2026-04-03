@@ -130,7 +130,8 @@ void ImageCanvasComponent::update(DrawingProgram& drawP) {
     if(display) {
         if(display->update_draw())
             drawP.invalidate_cache_at_component(&(*compContainer->objInfo));
-        display->camera_view_update(compContainer->coords, compContainer->get_world_bounds(), drawP.world.drawData, rect_from_points(d.p1, d.p2));
+        if(compContainer->get_world_bounds().has_value())
+            display->camera_view_update(compContainer->coords, compContainer->get_world_bounds().value(), drawP.world.drawData, rect_from_points(d.p1, d.p2));
     }
 }
 

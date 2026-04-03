@@ -2,7 +2,9 @@
 #include "DrawingProgramLayerManager.hpp"
 #include "../DrawingProgram.hpp"
 #include "../../World.hpp"
+#include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/Parallel.hpp>
+#include <Helpers/Logger.hpp>
 
 void DrawingProgramLayer::draw(SkCanvas* canvas, const DrawData& drawData) const {
     for(auto& p : *components)
@@ -32,7 +34,7 @@ void DrawingProgramLayer::set_component_list_callbacks(DrawingProgramLayerListIt
     components->set_insert_callback(insertCallback);
     components->set_erase_callback(eraseCallback);
     components->set_move_callback([&](const CanvasComponentContainer::ObjInfoIterator& c, uint32_t oldPos) {
-        layerMan.drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
+        layerMan.drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
         if(layerMan.drawP.selection.is_selected(&(*c)))
             layerMan.drawP.selection.sort_selection(); // If item is selected, selected items will be unordered, so sort everything again
     });
@@ -64,6 +66,18 @@ void DrawingProgramLayer::load_file(cereal::PortableBinaryInputArchive& a, Versi
         CanvasComponentContainer* item = new CanvasComponentContainer();
         item->load_file(a, version, layerMan.drawP.world.netObjMan);
         components->push_back_and_send_create(components, item);
+    }
+}
+
+void DrawingProgramLayer::erase_invalid_components() {
+    std::vector<NetworkingObjects::NetObjOrderedListIterator<CanvasComponentContainer>> compsToErase;
+    for(auto it = components->begin(); it != components->end(); ++it) {
+        if(!it->obj->get_world_bounds().has_value())
+            compsToErase.emplace_back(it);
+    }
+    if(!compsToErase.empty()) {
+        Logger::get().log("INFO", "[DrawingProgramLayer::erase_invalid_components] Erased " + std::to_string(compsToErase.size()) + " invalid component(s) from layer");
+        components->erase_list(components, compsToErase);
     }
 }
 

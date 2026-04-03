@@ -197,7 +197,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
         drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
             if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
                 selectedComponents.emplace_back(c);
-                drawP.drawCache.invalidate_cache_at_aabb(c->obj->get_world_bounds());
+                drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                 return true;
             }
             return false;
@@ -232,9 +232,9 @@ void DrawingProgramSelection::sort_selection() {
 
 void DrawingProgramSelection::calculate_aabb() {
     if(is_something_selected()) {
-        initialSelectionAABB = (*selectedSet.begin())->obj->get_world_bounds();
+        initialSelectionAABB = (*selectedSet.begin())->obj->get_world_bounds().value();
         for(auto& c : selectedSet)
-            initialSelectionAABB.include_aabb_in_bounds(c->obj->get_world_bounds());
+            initialSelectionAABB.include_aabb_in_bounds(c->obj->get_world_bounds().value());
         rotateData.centerPos = initialSelectionAABB.center();
     }
 }
