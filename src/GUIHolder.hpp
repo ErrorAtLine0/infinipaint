@@ -17,6 +17,9 @@ class GUIHolder {
 
         void update();
         void draw(SkCanvas* canvas, bool skiaAA);
+
+        void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_text_callback(const std::string& str);
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_text_key_callback();
         void input_text_input_callback();

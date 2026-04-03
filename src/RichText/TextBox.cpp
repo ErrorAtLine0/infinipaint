@@ -145,14 +145,12 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
             else
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::LEFT_WORD : Movement::LEFT, cur.pos));
-            if(onUserTextEdit) onUserTextEdit();
             break;
         case InputKey::DEL:
             if(cur.selectionBeginPos != cur.selectionEndPos)
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
             else
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::RIGHT_WORD : Movement::RIGHT, cur.pos));
-            if(onUserTextEdit) onUserTextEdit();
             break;
         case InputKey::ENTER:
             process_text_input(cur, "\n", inputModMap);
@@ -244,7 +242,6 @@ std::pair<std::string, TextData> TextBox::process_cut(Cursor& cur) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.previousX = std::nullopt;
         if(onChange) onChange();
-        if(onUserTextEdit) onUserTextEdit();
         inputChangedTextBox = true;
     }
     return toRet;
@@ -257,7 +254,6 @@ void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert(cur.pos, in, inputModMap);
         cur.previousX = std::nullopt;
         if(onChange) onChange();
-        if(onUserTextEdit) onUserTextEdit();
         inputChangedTextBox = true;
     }
 }
@@ -269,7 +265,6 @@ void TextBox::process_rich_text_input(Cursor& cur, const TextData& richText) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert_rich_text(cur.pos, richText);
         cur.previousX = std::nullopt;
         if(onChange) onChange();
-        if(onUserTextEdit) onUserTextEdit();
         inputChangedTextBox = true;
     }
 }
@@ -502,7 +497,6 @@ void TextBox::set_rich_text_data(const TextData& richText) {
 
 void TextBox::set_rich_text_data_for_undo_redo(const TextData& richText) {
     set_rich_text_data(richText);
-    if(onUserTextEdit) onUserTextEdit();
 }
 
 std::string TextBox::get_string() {

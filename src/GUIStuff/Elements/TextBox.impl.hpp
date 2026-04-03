@@ -28,7 +28,7 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
     SkRect r = SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height());
 
     canvas->drawRect(r, SkPaint(io.theme->backColor2));
-    SkPaint outline(isSelected ? io.theme->fillColor1 : io.theme->backColor2);
+    SkPaint outline(is_selected() ? io.theme->fillColor1 : io.theme->backColor2);
     outline.setStroke(true);
     outline.setStrokeWidth(2.0f);
     outline.setAntiAlias(skiaAA);
@@ -40,7 +40,7 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
     yOffset -= textbox->get_height() * 0.5f;
 
     RichText::TextBox::PaintOpts paintOpts;
-    if(isSelected) {
+    if(is_selected()) {
         paintOpts.cursor = *cur;
         SkRect cursorRect = textbox->get_cursor_rect(cur->pos);
         canvas->translate(bb.min.x() - std::max(cursorRect.fRight - bb.width(), -2.0f), bb.min.y() + yOffset);
@@ -61,45 +61,65 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
     canvas->restore();
 }
 
+template <typename T> bool TextBox<T>::is_selected() const {
+    return edit.has_value();
+}
+
+template <typename T> void TextBox<T>::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+    if(is_selected()) {
+        if(key.key == InputManager::KEY_GENERIC_ENTER && key.down) {
+            bool success = update_data();
+            gui.set_post_callback_func_high_priority([&, success] {
+                if(success && userInfo.onEdit) userInfo.onEdit();
+                if(userInfo.onEnter) userInfo.onEnter();
+                reset_textbox_text();
+            });
+        }
+        else
+            edit.value().userInput.input_key_callback(*gui.io.input, key);
+    }
+}
+
+template <typename T> void TextBox<T>::input_text_callback(const std::string& str) {
+    if(is_selected())
+        edit.value().userInput.add_text_to_textbox(str);
+}
+
 template <typename T> void TextBox<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto& io = gui.io;
 
     if(button.button == InputManager::MouseButton::LEFT && boundingBox.has_value()) {
         if(button.down) {
             if(mouseHovering) {
-                *rect = {(boundingBox.value().min + io.windowPos) * io.guiScaleMultiplier, (boundingBox.value().max + io.windowPos) * io.guiScaleMultiplier};
-                gui.io.input->set_rich_text_box_input_front(textbox, cur, false, rect, userInfo.textInputProps, nullptr);
-                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
-                isSelected = true;
+                SCollision::AABB<float> rect = {(boundingBox.value().min + io.windowPos) * io.guiScaleMultiplier, (boundingBox.value().max + io.windowPos) * io.guiScaleMultiplier};
+                unsigned id = gui.io.input->set_text_box_front(rect, userInfo.textInputProps);
+                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+                edit = TextEditData(id, textbox, cur, [&] {
+                    if(userInfo.immutable)
+                        cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
+                    else {
+                        if(update_data() && userInfo.onEdit)
+                            gui.set_post_callback_func_high_priority(userInfo.onEdit);
+                    }
+                });
             }
-            else if(isSelected) {
-                gui.io.input->remove_rich_text_box_input(textbox);
+            else if(is_selected()) {
+                gui.io.input->remove_text_box(edit.value().textboxInputID);
                 if(update_data())
                     gui.set_post_callback_func_high_priority(userInfo.onEdit);
                 reset_textbox_text();
-                isSelected = false;
+                edit = std::nullopt;
             }
         }
         else {
-            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
+            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
         }
     }
 }
 
 template <typename T> void TextBox<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(boundingBox.has_value())
-        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, gui.io.input->mouse.leftDown, gui.io.input->key(InputManager::KEY_TEXT_SHIFT).held);
-}
-
-template <typename T> void TextBox<T>::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-    if(key.key == InputManager::KEY_TEXT_ENTER && key.down && isSelected) {
-        bool success = update_data();
-        gui.set_post_callback_func_high_priority([&, success] {
-            if(success && userInfo.onEdit) userInfo.onEdit();
-            if(userInfo.onEnter) userInfo.onEnter();
-            reset_textbox_text();
-        });
-    }
+        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, gui.io.input->mouse.leftDown, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
 }
 
 template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
@@ -109,17 +129,7 @@ template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
         textbox->set_font_data(io.fonts);
         textbox->set_allow_newlines(false);
         cur = std::make_shared<RichText::TextBox::Cursor>();
-        rect = std::make_shared<SCollision::AABB<float>>();
     }
-
-    textbox->onUserTextEdit = [&] {
-        if(userInfo.immutable)
-            cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
-        else {
-            if(update_data() && userInfo.onEdit)
-                gui.set_post_callback_func_high_priority(userInfo.onEdit);
-        }
-    };
 }
 
 template <typename T> void TextBox<T>::reset_textbox_text() {
@@ -138,7 +148,8 @@ template <typename T> bool TextBox<T>::update_data() {
 }
 
 template <typename T> TextBox<T>::~TextBox() {
-    gui.io.input->remove_rich_text_box_input(textbox);
+    if(is_selected())
+        gui.io.input->remove_text_box(edit.value().textboxInputID);
 }
 
 }

@@ -5,6 +5,7 @@
 #include <modules/skparagraph/include/TextStyle.h>
 #include "../../FontData.hpp"
 #include "../../InputManager.hpp"
+#include "../../RichTextUserInput.hpp"
 
 namespace GUIStuff {
 
@@ -20,27 +21,39 @@ template <typename T> struct TextBoxData {
     std::function<void()> onEnter;
 };
 
+
+struct TextEditData {
+    TextEditData(unsigned initTextboxInputID, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, const std::function<void()>& onTextEdit):
+        textboxInputID(initTextboxInputID),
+        userInput(initTextBox, initCursor, nullptr, onTextEdit)
+    {}
+    unsigned textboxInputID;
+    RichTextUserInput userInput;
+};
+
 template <typename T> class TextBox : public Element {
     public:
         TextBox(GUIManager& gui);
 
         void layout(const Clay_ElementId& id, const TextBoxData<T>& userInfo);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
+        virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;
+        virtual void input_text_callback(const std::string& str) override;
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
-        virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         ~TextBox();
     private:
         void init_textbox(UpdateInputData& io);
         void reset_textbox_text();
         bool update_data();
+        bool is_selected() const;
+
+        std::optional<TextEditData> edit;
 
         std::optional<T> oldData;
-        bool isSelected = false;
         TextBoxData<T> userInfo;
         std::shared_ptr<RichText::TextBox> textbox;
         std::shared_ptr<RichText::TextBox::Cursor> cur;
-        std::shared_ptr<SCollision::AABB<float>> rect;
 };
 
 }

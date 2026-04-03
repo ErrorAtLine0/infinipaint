@@ -344,6 +344,20 @@ bool GUIManager::cursor_obstructed() const {
     return cursorObstructed;
 }
 
+void GUIManager::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+    for(ElementContainer* e : orderedElements)
+        e->elem->input_text_key_callback(key);
+    run_post_callback_func();
+    layout_if_necessary();
+}
+
+void GUIManager::input_text_callback(const std::string& str) {
+    for(ElementContainer* e : orderedElements)
+        e->elem->input_text_callback(str);
+    run_post_callback_func();
+    layout_if_necessary();
+}
+
 void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     for(ElementContainer* e : orderedElements)
         e->elem->input_key_callback(key);

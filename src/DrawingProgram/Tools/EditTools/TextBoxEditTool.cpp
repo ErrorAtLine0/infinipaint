@@ -207,22 +207,22 @@ void TextBoxEditTool::right_click_popup_gui(CanvasComponentContainer::ObjInfo* c
     gui.element<PositionAdjustingPopupMenu>("Text popup menu", popupPos, [&, popupPos] {
         text_label_light(gui, "Text menu");
         InputManager& input = drawP.world.main.input;
-        drawP.popup_menu_action_button("Paste", "Paste", [&] {
-            input.call_text_paste(true);
-        });
-        drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
-            input.call_text_paste(false);
-        });
-        if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
-            drawP.popup_menu_action_button("Copy", "Copy", [&] {
-                input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor));
-            });
-            drawP.popup_menu_action_button("Cut", "Cut", [&] {
-                input.text.do_textbox_operation_with_undo([&]() {
-                    input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor));
-                });
-            });
-        }
+        //drawP.popup_menu_action_button("Paste", "Paste", [&] {
+        //    input.call_text_paste(true);
+        //});
+        //drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
+        //    input.call_text_paste(false);
+        //});
+        //if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
+        //    drawP.popup_menu_action_button("Copy", "Copy", [&] {
+        //        input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor));
+        //    });
+        //    drawP.popup_menu_action_button("Cut", "Cut", [&] {
+        //        input.text.do_textbox_operation_with_undo([&]() {
+        //            input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor));
+        //        });
+        //    });
+        //}
     });
 }
 
@@ -242,7 +242,7 @@ void TextBoxEditTool::release_undo_data(const std::string& undoName) {
     if(it != undoHeldData.end()) {
         std::pair<RichText::TextBox::Cursor, RichText::TextData>& undoData = it->second;
         InputManager& input = drawP.world.main.input;
-        input.text.add_textbox_undo(undoData.first, undoData.second);
+        //input.text.add_textbox_undo(undoData.first, undoData.second);
         undoHeldData.erase(it);
     }
 }
@@ -252,13 +252,13 @@ void TextBoxEditTool::add_undo_if_selecting_area(TextBoxCanvasComponent& a, cons
         func();
     else {
         InputManager& input = drawP.world.main.input;
-        input.text.do_textbox_operation_with_undo(func);
+        //input.text.do_textbox_operation_with_undo(func);
     }
 }
 
 void TextBoxEditTool::add_undo(const std::function<void()>& func) {
     InputManager& input = drawP.world.main.input;
-    input.text.do_textbox_operation_with_undo(func);
+    //input.text.do_textbox_operation_with_undo(func);
 }
 
 uint8_t TextBoxEditTool::get_new_decoration_value() {
@@ -299,7 +299,7 @@ void TextBoxEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* com
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     a.d.editing = false;
     comp->obj->commit_update(drawP);
-    drawP.world.main.input.remove_rich_text_box_input(a.textBox);
+    //drawP.world.main.input.remove_rich_text_box_input(a.textBox);
 }
 
 TextBoxEditTool::TextBoxEditToolAllData TextBoxEditTool::get_all_data(const TextBoxCanvasComponent& a) {
@@ -330,13 +330,13 @@ void TextBoxEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::O
 
     comp->obj->commit_update(drawP);
 
-    drawP.world.main.input.set_rich_text_box_input_back(a.textBox, a.cursor, true, nullptr, {
-        .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
-        .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
-        .autocorrect = true,
-        .multiline = true,
-        .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
-    }, currentModsPtr);
+    //drawP.world.main.input.set_rich_text_box_input_back(a.textBox, a.cursor, true, nullptr, {
+    //    .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
+    //    .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
+    //    .autocorrect = true,
+    //    .multiline = true,
+    //    .androidInputType = InputManager::AndroidInputType::ANDROIDTEXT_TYPE_CLASS_TEXT
+    //}, currentModsPtr);
 }
 
 bool TextBoxEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {

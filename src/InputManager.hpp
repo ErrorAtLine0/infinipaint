@@ -149,34 +149,26 @@ struct InputManager {
         int androidInputType;
     };
 
-    void set_rich_text_box_input_front(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& nModMap = nullptr);
-    void set_rich_text_box_input_back(const std::shared_ptr<RichText::TextBox>& nTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& nCursor, bool isRichTextBox, const std::shared_ptr<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& nModMap = nullptr);
-    void remove_rich_text_box_input(const std::shared_ptr<RichText::TextBox>& nTextBox);
+    unsigned set_text_box_front(const std::optional<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps);
+    unsigned set_text_box_back(const std::optional<SCollision::AABB<float>>& textboxRect, const TextInputProperties& inputProps);
+    void remove_text_box(unsigned textboxID);
     
     struct Text {
         bool is_accepting_input();
 
-        void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
-        void do_textbox_operation_with_undo(const std::function<void()>& func);
-
         private:
             struct TextBoxInfo {
-                bool isRichTextBox;
-                std::shared_ptr<RichText::TextBox> textBox;
-                std::shared_ptr<RichText::TextBox::Cursor> cursor;
-                std::shared_ptr<SCollision::AABB<float>> rect;
-                std::shared_ptr<RichText::TextStyleModifier::ModifierMap> modMap;
+                std::optional<SCollision::AABB<float>> rect;
                 TextInputProperties textInputProperties;
-                UndoManager textboxUndo;
+                unsigned id;
             };
 
             void update_accepting_input(SDL_Window* window);
 
-            bool isNextPasteRich = false;
-
             std::optional<SDL_PropertiesID> propID;
 
             std::deque<TextBoxInfo> textBoxes;
+            unsigned get_id();
 
             friend struct InputManager;
     } text;
@@ -224,26 +216,17 @@ struct InputManager {
         KEY_ASSIGNABLE_COUNT, // Not a real key
 
         // Unassignable
-        KEY_TEXT_DOWN,
-        KEY_TEXT_UP,
-        KEY_TEXT_LEFT,
-        KEY_TEXT_RIGHT,
         KEY_TEXT_BACKSPACE,
         KEY_TEXT_DELETE,
         KEY_TEXT_HOME,
         KEY_TEXT_END,
-        KEY_TEXT_SHIFT,
         KEY_TEXT_COPY,
         KEY_TEXT_CUT,
         KEY_TEXT_PASTE,
-        KEY_TEXT_ENTER,
         KEY_TEXT_TAB,
-        KEY_TEXT_CTRL,
-        KEY_TEXT_META,
         KEY_TEXT_SELECTALL,
         KEY_TEXT_UNDO,
         KEY_TEXT_REDO,
-        KEY_TEXT_ESCAPE,
         KEY_GENERIC_UP,
         KEY_GENERIC_DOWN,
         KEY_GENERIC_LEFT,
@@ -254,6 +237,7 @@ struct InputManager {
         KEY_GENERIC_LALT,
         KEY_GENERIC_LCTRL,
         KEY_GENERIC_LMETA,
+
         KEY_COUNT
     };
 
@@ -269,8 +253,7 @@ struct InputManager {
     void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
     void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
 
-    void add_text_to_textbox(const std::string& inputText);
-
+    void backend_input_text_event(const std::string& str);
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
     void backend_mouse_button_up_update(const SDL_MouseButtonEvent& e);
@@ -293,9 +276,14 @@ struct InputManager {
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
     std::string get_clipboard_str_SDL();
     void get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback);
-    void call_text_paste(bool isRichTextPaste);
-    void process_text_paste(const std::string& plainClipboardStr);
 
+    struct TextPasteCallbackArgs {
+        std::string text;
+        std::optional<RichText::TextData> richText;
+    };
+    void call_text_paste(const std::function<void(const TextPasteCallbackArgs&)>& pasteCallbackFunc);
+    void process_text_paste(const std::string& pasteStr);
+    std::function<void(const TextPasteCallbackArgs&)> pasteCallback;
     std::optional<RichText::TextData> lastCopiedRichText;
 
     std::string key_assignment_to_str(const Vector2ui32& k) const;

@@ -6,6 +6,8 @@ namespace GUIStuff {
 
     void Element::tick_update() {}
 
+    void Element::input_text_key_callback(const InputManager::KeyCallbackArgs& key) { }
+    void Element::input_text_callback(const std::string& str) { }
     void Element::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) { }
     void Element::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) { }
     void Element::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) { }
