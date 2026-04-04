@@ -33,7 +33,7 @@ void EditTool::gui_toolbox() {
     auto& gui = drawP.world.main.g.gui;
 
     if(objInfoBeingEdited)
-        compEditTool->edit_gui(objInfoBeingEdited);
+        compEditTool->edit_gui();
     else {
         gui.new_id("edit tool", [&] {
             text_label_centered(gui, "Edit");
@@ -44,6 +44,21 @@ void EditTool::gui_toolbox() {
 void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     if(erasedComp == objInfoBeingEdited)
         switch_tool(get_type());
+}
+
+void EditTool::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    if(objInfoBeingEdited)
+        compEditTool->input_paste_callback(paste);
+}
+
+void EditTool::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+    if(objInfoBeingEdited)
+        compEditTool->input_text_key_callback(key);
+}
+
+void EditTool::input_text_callback(const InputManager::TextCallbackArgs& text) {
+    if(objInfoBeingEdited)
+        compEditTool->input_text_callback(text);
 }
 
 void EditTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
@@ -122,12 +137,12 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
                     switch_tool(get_type());
 
                 if(objInfoBeingEdited)
-                    compEditTool->input_mouse_button_on_canvas_callback(objInfoBeingEdited, button, pointDragging);
+                    compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
             }
         }
         else {
             if(objInfoBeingEdited)
-                compEditTool->input_mouse_button_on_canvas_callback(objInfoBeingEdited, button, pointDragging);
+                compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
             if(pointDragging)
                 pointDragging = nullptr;
         }
@@ -147,14 +162,14 @@ void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallba
                 objInfoBeingEdited->obj->commit_update(drawP);
             }
         }
-        compEditTool->input_mouse_motion_callback(objInfoBeingEdited, motion, pointDragging);
+        compEditTool->input_mouse_motion_callback(motion, pointDragging);
     }
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
 }
 
 void EditTool::right_click_popup_gui(Vector2f popupPos) {
     if(objInfoBeingEdited)
-        return compEditTool->right_click_popup_gui(objInfoBeingEdited, popupPos);
+        return compEditTool->right_click_popup_gui(popupPos);
     else
         return drawP.selection_action_menu(popupPos);
 }
@@ -165,7 +180,7 @@ void EditTool::add_point_handle(const HandleData& handle) {
 
 void EditTool::switch_tool(DrawingProgramToolType newTool) {
     if(objInfoBeingEdited) {
-        compEditTool->commit_edit_updates(objInfoBeingEdited, prevData);
+        compEditTool->commit_edit_updates(prevData);
         objInfoBeingEdited->obj->commit_update(drawP);
         objInfoBeingEdited->obj->send_comp_update(drawP, true);
 
@@ -221,23 +236,23 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
     bool isEditing = true;
     switch(comp->obj->get_comp().get_type()) {
         case CanvasComponentType::TEXTBOX: {
-            compEditTool = std::make_unique<TextBoxEditTool>(drawP);
+            compEditTool = std::make_unique<TextBoxEditTool>(drawP, comp);
             break;
         }
         case CanvasComponentType::ELLIPSE: {
-            compEditTool = std::make_unique<EllipseDrawEditTool>(drawP);
+            compEditTool = std::make_unique<EllipseDrawEditTool>(drawP, comp);
             break;
         }
         case CanvasComponentType::RECTANGLE: {
-            compEditTool = std::make_unique<RectDrawEditTool>(drawP);
+            compEditTool = std::make_unique<RectDrawEditTool>(drawP, comp);
             break;
         }
         case CanvasComponentType::IMAGE: {
-            compEditTool = std::make_unique<ImageEditTool>(drawP);
+            compEditTool = std::make_unique<ImageEditTool>(drawP, comp);
             break;
         }
         case CanvasComponentType::BRUSHSTROKE: {
-            compEditTool = std::make_unique<BrushEditTool>(drawP);
+            compEditTool = std::make_unique<BrushEditTool>(drawP, comp);
             break;
         }
         default: {
@@ -249,7 +264,7 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
         objInfoBeingEdited = comp;
         oldData = comp->obj->get_comp().get_data_copy();
         undoAfterEditDone = initUndoAfterEditDone;
-        compEditTool->edit_start(*this, objInfoBeingEdited, prevData);
+        compEditTool->edit_start(*this, prevData);
         drawP.world.main.g.gui.set_to_layout();
     }
 }
@@ -261,7 +276,7 @@ bool EditTool::is_editable(CanvasComponentContainer::ObjInfo* comp) {
 void EditTool::tool_update() {
     if(objInfoBeingEdited) {
         objInfoBeingEdited->obj->send_comp_update(drawP, false);
-        bool shouldNotReset = compEditTool->edit_update(objInfoBeingEdited);
+        bool shouldNotReset = compEditTool->edit_update();
         if(!shouldNotReset)
             switch_tool(get_type());
     }

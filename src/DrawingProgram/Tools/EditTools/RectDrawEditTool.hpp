@@ -8,11 +8,11 @@ class DrawingProgram;
 
 class RectDrawEditTool : public DrawingProgramEditToolBase {
     public:
-        RectDrawEditTool(DrawingProgram& initDrawP);
-        virtual void edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) override;
-        virtual void commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) override;
-        virtual bool edit_update(CanvasComponentContainer::ObjInfo* comp) override;
-        virtual void edit_gui(CanvasComponentContainer::ObjInfo* comp) override;
+        RectDrawEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
+        virtual void edit_start(EditTool& editTool, std::any& prevData) override;
+        virtual void commit_edit_updates(std::any& prevData) override;
+        virtual bool edit_update() override;
+        virtual void edit_gui() override;
     private:
         std::optional<RectangleCanvasComponent::Data> oldData;
 };

@@ -20,6 +20,8 @@
 
 #include <Helpers/SCollision.hpp>
 
+#include "CustomEvents.hpp"
+
 using namespace Eigen;
 class MainProgram;
 
@@ -155,6 +157,7 @@ struct InputManager {
     
     struct Text {
         bool is_accepting_input();
+        std::optional<unsigned> current_textbox_editing_id();
 
         private:
             struct TextBoxInfo {
@@ -253,6 +256,7 @@ struct InputManager {
     void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
     void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
 
+    void backend_paste_event();
     void backend_input_text_event(const std::string& str);
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
@@ -277,19 +281,19 @@ struct InputManager {
     std::string get_clipboard_str_SDL();
     void get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback);
 
-    struct TextPasteCallbackArgs {
-        std::string text;
-        std::optional<RichText::TextData> richText;
-    };
-    void call_text_paste(const std::function<void(const TextPasteCallbackArgs&)>& pasteCallbackFunc);
+    void call_paste(CustomEvents::PasteEventDataType type, const std::optional<Vector2f>& pastePosition = std::nullopt);
     void process_text_paste(const std::string& pasteStr);
-    std::function<void(const TextPasteCallbackArgs&)> pasteCallback;
+
     std::optional<RichText::TextData> lastCopiedRichText;
 
     std::string key_assignment_to_str(const Vector2ui32& k) const;
     Vector2ui32 key_assignment_from_str(const std::string& s) const;
 
     const KeyData& key(KeyCode kCode);
+
+    struct TextCallbackArgs {
+        std::string str;
+    };
 
     struct KeyCallbackArgs {
         KeyCode key;

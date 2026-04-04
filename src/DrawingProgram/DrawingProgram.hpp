@@ -59,8 +59,11 @@ class DrawingProgram {
         void send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor);
 
         void on_tab_out();
+        void input_paste_callback(const CustomEvents::PasteEventData& paste);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
+        void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
+        void input_text_callback(const InputManager::TextCallbackArgs& text);
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
@@ -130,7 +133,6 @@ class DrawingProgram {
         std::unique_ptr<DrawingProgramToolBase> drawTool;
 
         std::optional<Vector2f> rightClickPopupLocation;
-
 
         uint32_t nextID = 0;
 

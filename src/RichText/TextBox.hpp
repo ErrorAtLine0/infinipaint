@@ -66,9 +66,6 @@ class TextBox {
     public:
         TextBox();
 
-        bool inputChangedTextBox = false;
-        std::function<void()> onChange;
-
         enum class Movement {
             NOWHERE,
             LEFT,

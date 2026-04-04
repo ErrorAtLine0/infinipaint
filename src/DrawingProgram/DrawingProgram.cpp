@@ -58,6 +58,10 @@ void DrawingProgram::on_tab_out() {
     controls.middleClickHeld = false;
 }
 
+void DrawingProgram::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    drawTool->input_paste_callback(paste);
+}
+
 void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
     if(std::filesystem::is_regular_file(drop.data)) {
         #ifdef __EMSCRIPTEN_
@@ -81,6 +85,14 @@ void DrawingProgram::input_drop_text_callback(const InputManager::DropCallbackAr
         layerMan.add_undo_place_component(newObjInfo);
         droppedDownloadingFiles.emplace_back(newObjInfo, world.main.window.size.cast<float>(), FileDownloader::download_data_from_url(drop.data));
     }
+}
+
+void DrawingProgram::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+    drawTool->input_text_key_callback(key);
+}
+
+void DrawingProgram::input_text_callback(const InputManager::TextCallbackArgs& text) {
+    drawTool->input_text_callback(text);
 }
 
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {

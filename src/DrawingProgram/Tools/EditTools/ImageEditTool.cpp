@@ -17,11 +17,11 @@
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
-ImageEditTool::ImageEditTool(DrawingProgram& initDrawP):
-    DrawingProgramEditToolBase(initDrawP)
+ImageEditTool::ImageEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp):
+    DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void ImageEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
+void ImageEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     auto& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     static Vector2f staticZero = {0.0f, 0.0f};
     static Vector2f staticOne = {1.0f, 1.0f};
@@ -36,17 +36,17 @@ void ImageEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::Obj
     comp->obj->commit_update(drawP);
 }
 
-void ImageEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
+void ImageEditTool::commit_edit_updates(std::any& prevData) {
     auto& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     a.d.editing = false;
     comp->obj->commit_update(drawP);
 }
 
-bool ImageEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
+bool ImageEditTool::edit_update() {
     return true;
 }
 
-void ImageEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+void ImageEditTool::edit_gui() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 

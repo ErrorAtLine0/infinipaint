@@ -4,16 +4,23 @@
 
 namespace GUIStuff {
 
+struct NumberSliderData {
+    std::function<void()> onChange;
+    std::function<void()> onHold;
+    std::function<void()> onRelease;
+};
+
 template <typename T> class NumberSlider : public Element {
     public:
         NumberSlider(GUIManager& gui):
             Element(gui) {}
 
-        void layout(const Clay_ElementId& id, T* data, T minData, T maxData, const std::function<void()>& onChange) {
+
+        void layout(const Clay_ElementId& id, T* data, T minData, T maxData, const NumberSliderData& config) {
             this->data = data;
             this->minData = minData;
             this->maxData = maxData;
-            this->onChange = onChange;
+            this->config = config;
 
             CLAY(id, {
                 .layout = {
@@ -74,22 +81,29 @@ template <typename T> class NumberSlider : public Element {
             canvas->restore();
         }
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override {
+            bool oldIsHeld = isHeld;
             isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
-            if(isHeld && boundingBox.has_value())
-                update_slider_pos(button.pos);
+            if(oldIsHeld && !isHeld) {
+                gui.set_post_callback_func([&] {
+                    if(config.onRelease) config.onRelease();
+                });
+            }
+            else if(isHeld && boundingBox.has_value())
+                update_slider_pos(button.pos, true);
         }
 
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override {
             if(isHeld && boundingBox.has_value())
-                update_slider_pos(motion.pos);
+                update_slider_pos(motion.pos, false);
         }
 
     private:
-        void update_slider_pos(const Vector2f& p) {
-            gui.set_post_callback_func([&, p] {
+        void update_slider_pos(const Vector2f& p, bool justHeld) {
+            gui.set_post_callback_func([&, p, justHeld] {
                 float fracPosOnSlider = (p.x() - boundingBox.value().min.x()) / boundingBox.value().width();
                 *data = static_cast<T>(std::clamp<double>(std::lerp<double>(minData, maxData, fracPosOnSlider), minData, maxData)); // Clamp as double then cast so that unsigned types dont wrap on clamp
-                if(onChange) onChange();
+                if(justHeld && config.onHold) config.onHold();
+                if(config.onChange) config.onChange();
             });
         }
 
@@ -97,7 +111,7 @@ template <typename T> class NumberSlider : public Element {
         T* data = nullptr;
         T minData = 0.0;
         T maxData = 1.0;
-        std::function<void()> onChange;
+        NumberSliderData config;
 
         float hoverAnimation = 0.0;
         float holdAnimation = 0.0;

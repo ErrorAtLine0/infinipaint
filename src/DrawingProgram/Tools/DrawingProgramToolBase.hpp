@@ -36,6 +36,9 @@ class DrawingProgramToolBase {
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         virtual void switch_tool(DrawingProgramToolType newTool) = 0;
         virtual bool prevent_undo_or_redo() = 0;
+        virtual void input_paste_callback(const CustomEvents::PasteEventData& paste);
+        virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
+        virtual void input_text_callback(const InputManager::TextCallbackArgs& text);
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key);
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button);
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);

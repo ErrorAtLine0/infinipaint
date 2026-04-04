@@ -55,6 +55,9 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
     return nullptr;
 }
 
+void DrawingProgramToolBase::input_paste_callback(const CustomEvents::PasteEventData& paste) {}
+void DrawingProgramToolBase::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {}
+void DrawingProgramToolBase::input_text_callback(const InputManager::TextCallbackArgs& text) {}
 void DrawingProgramToolBase::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
 void DrawingProgramToolBase::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {}
 void DrawingProgramToolBase::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {}

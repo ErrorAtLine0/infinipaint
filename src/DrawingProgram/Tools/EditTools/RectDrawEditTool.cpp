@@ -9,20 +9,20 @@
 #include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 
-RectDrawEditTool::RectDrawEditTool(DrawingProgram& initDrawP):
-    DrawingProgramEditToolBase(initDrawP)
+RectDrawEditTool::RectDrawEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp):
+    DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void RectDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+void RectDrawEditTool::edit_gui() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
-    auto commit_update_and_layout_func = [&, comp] {
+    auto commit_update_and_layout_func = [&] {
         comp->obj->commit_update(drawP);
         drawP.world.main.g.gui.set_to_layout();
     };
-    auto commit_update_func = [&, comp] { comp->obj->commit_update(drawP); };
+    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
 
     Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
@@ -50,16 +50,16 @@ void RectDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     });
 }
 
-void RectDrawEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
+void RectDrawEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     prevData = a.d;
     editTool.add_point_handle({&a.d.p1, nullptr, &a.d.p2});
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 }
 
-void RectDrawEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
+void RectDrawEditTool::commit_edit_updates(std::any& prevData) {
 }
 
-bool RectDrawEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
+bool RectDrawEditTool::edit_update() {
     return true;
 }

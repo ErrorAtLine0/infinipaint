@@ -9,11 +9,11 @@ class DrawingProgram;
 
 class EllipseDrawEditTool : public DrawingProgramEditToolBase {
     public:
-        EllipseDrawEditTool(DrawingProgram& initDrawP);
-        virtual void edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) override;
-        virtual void commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) override;
-        virtual bool edit_update(CanvasComponentContainer::ObjInfo* comp) override;
-        virtual void edit_gui(CanvasComponentContainer::ObjInfo* comp) override;
+        EllipseDrawEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
+        virtual void edit_start(EditTool& editTool, std::any& prevData) override;
+        virtual void commit_edit_updates(std::any& prevData) override;
+        virtual bool edit_update() override;
+        virtual void edit_gui() override;
     private:
         void commit();
 

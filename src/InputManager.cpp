@@ -1,4 +1,5 @@
 #include "InputManager.hpp"
+#include "CustomEvents.hpp"
 
 #include <SDL3/SDL_clipboard.h>
 #include <SDL3/SDL_keyboard.h>
@@ -10,6 +11,7 @@
 #include <optional>
 
 #include <Helpers/Logger.hpp>
+
 
 #ifdef _WIN32
     #include <include/core/SkStream.h>
@@ -124,6 +126,12 @@ void InputManager::remove_text_box(unsigned id) {
 
 bool InputManager::Text::is_accepting_input() {
     return !textBoxes.empty();
+}
+
+std::optional<unsigned> InputManager::Text::current_textbox_editing_id() {
+    if(textBoxes.empty())
+        return std::nullopt;
+    return textBoxes.front().id;
 }
 
 void InputManager::Text::update_accepting_input(SDL_Window* window) {
@@ -354,8 +362,13 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     return toRet;
 }
 
+void InputManager::backend_paste_event() {
+    main.input_paste_callback(CustomEvents::get_paste_event_data());
+    CustomEvents::pop_paste_event_data();
+}
+
 void InputManager::backend_input_text_event(const std::string& str) {
-    main.input_text_callback(str);
+    main.input_text_callback(TextCallbackArgs{ .str = str });
 }
 
 void InputManager::backend_drop_file_event(const SDL_DropEvent& e) {
@@ -901,27 +914,35 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         set_key_down(e, f->second);
 }
 
-void InputManager::call_text_paste(const std::function<void(const TextPasteCallbackArgs&)>& pasteCallbackFunc) {
+void InputManager::call_paste(CustomEvents::PasteEventDataType type, const std::optional<Vector2f>& pastePosition) {
     // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
-    pasteCallback = pasteCallbackFunc;
 #ifdef __EMSCRIPTEN__
-    emscripten_browser_clipboard::paste_async([](std::string&& pasteData, void* callbackData){
-        InputManager* inMan = (InputManager*)callbackData;
-        std::string pData = pasteData;
-        inMan->process_text_paste(pData);
-    }, this);
+    if(type == PasteDataType::TEXT) {
+        emscripten_browser_clipboard::paste_async([](std::string&& pasteData, void* callbackData){
+            InputManager* inMan = (InputManager*)callbackData;
+            std::string pData = pasteData;
+            inMan->process_text_paste(pData);
+        }, this);
+    }
+    else {
+    }
 #else
-    process_text_paste(get_clipboard_str_SDL());
+    switch(type) {
+        case CustomEvents::PasteEventDataType::TEXT:
+            process_text_paste(get_clipboard_str_SDL());
+            break;
+        case CustomEvents::PasteEventDataType::IMAGE:
+            break;
+    }
 #endif
 }
 
 void InputManager::process_text_paste(const std::string& pasteStr) {
-    if(lastCopiedRichText.has_value() && lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(pasteStr)) {
-        pasteCallback({
-            .text = pasteStr,
-            .richText = lastCopiedRichText
-        });
-    }
+    CustomEvents::emit_paste_event({
+        .type = CustomEvents::PasteEventDataType::TEXT,
+        .data = pasteStr,
+        .richText = lastCopiedRichText.has_value() && lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(pasteStr) ? lastCopiedRichText : std::nullopt
+    });
 }
 
 bool InputManager::ctrl_or_meta_held() {

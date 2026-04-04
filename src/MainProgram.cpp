@@ -317,6 +317,12 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
     return nullptr;
 }
 
+void MainProgram::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    g.input_paste_callback(paste);
+    if(world)
+        world->input_paste_callback(paste);
+}
+
 bool MainProgram::input_keybind_callback(const Vector2ui32& newKey) {
     if(keybindWaiting.has_value()) {
         unsigned v = keybindWaiting.value();
@@ -374,10 +380,14 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 
 void MainProgram::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     g.input_text_key_callback(key);
+    if(world)
+        world->input_text_key_callback(key);
 }
 
-void MainProgram::input_text_callback(const std::string& str) {
-    g.input_text_callback(str);
+void MainProgram::input_text_callback(const InputManager::TextCallbackArgs& text) {
+    g.input_text_callback(text);
+    if(world)
+        world->input_text_callback(text);
 }
 
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {

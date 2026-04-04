@@ -169,9 +169,6 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
 
     if(in != InputKey::UP && in != InputKey::DOWN)
         cur.previousX = std::nullopt;
-
-    if(onChange) onChange();
-    inputChangedTextBox = true;
 }
 
 void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift) {
@@ -224,9 +221,6 @@ void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int cl
         }
 
         cur.previousX = std::nullopt;
-
-        if((oldCursor != cur) && onChange) onChange();
-        inputChangedTextBox |= (oldCursor != cur);
     }
     else
         cur.selectionEndPosBeforeHeld = std::nullopt;
@@ -241,8 +235,6 @@ std::pair<std::string, TextData> TextBox::process_cut(Cursor& cur) {
     if(cur.selectionBeginPos != cur.selectionEndPos) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.previousX = std::nullopt;
-        if(onChange) onChange();
-        inputChangedTextBox = true;
     }
     return toRet;
 }
@@ -253,8 +245,6 @@ void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert(cur.pos, in, inputModMap);
         cur.previousX = std::nullopt;
-        if(onChange) onChange();
-        inputChangedTextBox = true;
     }
 }
 
@@ -264,8 +254,6 @@ void TextBox::process_rich_text_input(Cursor& cur, const TextData& richText) {
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = insert_rich_text(cur.pos, richText);
         cur.previousX = std::nullopt;
-        if(onChange) onChange();
-        inputChangedTextBox = true;
     }
 }
 
@@ -461,8 +449,6 @@ TextPosition TextBox::insert_rich_text(TextPosition p, const TextData& richText)
             paragraphs[pIndex].pStyleData = richText.paragraphs[pIndex - p.fParagraphIndex].pStyleData;
     }
 
-    if(onChange) onChange();
-    inputChangedTextBox = true;
     needsRebuild = true;
 
     return toRet;
@@ -490,8 +476,6 @@ void TextBox::set_rich_text_data(const TextData& richText) {
     if(richText.paragraphs.empty())
         paragraphs.emplace_back();
     tStyleMods = richText.tStyleMods;
-    if(onChange) onChange();
-    inputChangedTextBox = true;
     needsRebuild = true;
 }
 
@@ -526,8 +510,6 @@ std::string TextBox::get_text_between(TextPosition p1, TextPosition p2) {
 void TextBox::set_initial_text_style(const skia::textlayout::TextStyle& tStyle) {
     if(!tStyle.equals(initialTStyle)) {
         initialTStyle = tStyle;
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -598,8 +580,6 @@ void TextBox::set_text_style_modifier_between(TextPosition p1, TextPosition p2, 
         insert_style_at_pos(start, modifier);
         insert_style_at_pos(end, lastModOfThisTypeBeforeEnd); // Even if the end is the literal end of the text (which wont be seen), the end style must still be placed at the end so that it can merge with and delete the start style when the styled text is erased
         remove_duplicate_text_style_mods();
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -614,8 +594,6 @@ void TextBox::set_text_alignment_between(size_t paragraphIndex1, size_t paragrap
         }
     }
     if(anythingChanged) {
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -630,8 +608,6 @@ void TextBox::set_text_direction_between(size_t paragraphIndex1, size_t paragrap
         }
     }
     if(anythingChanged) {
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -867,8 +843,6 @@ int TextBox::get_line_number_at_from_byte_text_pos(TextPosition pos) {
 void TextBox::set_width(float newWidth) {
     if(width != newWidth) {
         width = std::max(newWidth, 4.0f);
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -885,8 +859,6 @@ void TextBox::set_allow_newlines(bool allow) {
 void TextBox::set_font_data(const std::shared_ptr<FontData>& fD) {
     if(fontData != fD) {
         fontData = fD;
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 }
@@ -1055,8 +1027,6 @@ TextPosition TextBox::insert(TextPosition pos, std::string_view textToInsert, co
             for(const auto& [modType, modifier] : inputModMap.value())
                 set_text_style_modifier_between(oldPos, pos, modifier);
         }
-        if(onChange) onChange();
-        inputChangedTextBox = true;
         needsRebuild = true;
     }
 
@@ -1105,8 +1075,6 @@ TextPosition TextBox::remove(TextPosition p1, TextPosition p2) {
     }
 
     remove_duplicate_text_style_mods();
-    if(onChange) onChange();
-    inputChangedTextBox = true;
     needsRebuild = true;
 
     return start;

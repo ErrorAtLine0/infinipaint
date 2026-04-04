@@ -1,3 +1,4 @@
+#include "CustomEvents.hpp"
 #include "Helpers/SCollision.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "Helpers/FileDownloader.hpp"
@@ -94,6 +95,7 @@
 
 #include <Helpers/Logger.hpp>
 #include "SwitchCWD.hpp"
+#include "CustomEvents.hpp"
 
 // Use dedicated graphics card on Windows
 #ifdef _WIN32
@@ -832,8 +834,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN:
                 break;
-            default:
+            default: {
+                if(event->type == CustomEvents::PASTE_EVENT)
+                    mS.m->input.backend_paste_event();
                 break;
+            }
         }
 #ifdef NDEBUG
     }

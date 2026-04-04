@@ -244,6 +244,21 @@ void World::on_tab_out() {
     rMan.clear_display_cache();
 }
 
+void World::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    if(!clientStillConnecting)
+        drawProg.input_paste_callback(paste);
+}
+
+void World::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+    if(!clientStillConnecting)
+        drawProg.input_text_key_callback(key);
+}
+
+void World::input_text_callback(const InputManager::TextCallbackArgs& text) {
+    if(!clientStillConnecting)
+        drawProg.input_text_callback(text);
+}
+
 void World::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
     if(!clientStillConnecting)
         drawProg.input_drop_file_callback(drop);

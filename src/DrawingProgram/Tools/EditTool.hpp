@@ -26,6 +26,9 @@ class EditTool : public DrawingProgramToolBase {
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual bool prevent_undo_or_redo() override;
+        virtual void input_paste_callback(const CustomEvents::PasteEventData& paste) override;
+        virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;
+        virtual void input_text_callback(const InputManager::TextCallbackArgs& text) override;
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;

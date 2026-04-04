@@ -12,6 +12,8 @@ template <typename T, typename OptT> TextBoxData<T> textbox_options_to_data(cons
     toRet.onEnter = options.onEnter;
     toRet.onEdit = options.onEdit;
     toRet.immutable = options.immutable;
+    toRet.onSelect = options.onSelect;
+    toRet.onDeselect = options.onDeselect;
     return toRet;
 }
 
@@ -20,6 +22,8 @@ struct TextBoxOptions {
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
+    std::function<void()> onSelect;
+    std::function<void()> onDeselect;
 };
 
 struct TextBoxScalarOptions {
@@ -28,6 +32,8 @@ struct TextBoxScalarOptions {
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
+    std::function<void()> onSelect;
+    std::function<void()> onDeselect;
 };
 
 struct TextBoxPathOptions {
@@ -36,6 +42,8 @@ struct TextBoxPathOptions {
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
+    std::function<void()> onSelect;
+    std::function<void()> onDeselect;
 };
 
 struct TextBoxHexColorOptions {
@@ -44,6 +52,8 @@ struct TextBoxHexColorOptions {
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
+    std::function<void()> onSelect;
+    std::function<void()> onDeselect;
 };
 
 void input_color_component_255(GUIManager& gui, const char* id, float* val, const TextBoxOptions& options = {});

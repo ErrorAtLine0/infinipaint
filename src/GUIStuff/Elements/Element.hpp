@@ -24,9 +24,9 @@ namespace GUIStuff {
 
             virtual void tick_update();
 
-            // Return true when mouse obstructs what's behind it
+            virtual void input_paste_callback(const CustomEvents::PasteEventData& paste);
             virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
-            virtual void input_text_callback(const std::string& str);
+            virtual void input_text_callback(const InputManager::TextCallbackArgs& text);
             virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
             virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
             virtual void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);

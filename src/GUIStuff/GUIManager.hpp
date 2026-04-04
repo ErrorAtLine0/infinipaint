@@ -85,8 +85,9 @@ class GUIManager {
 
         DefaultStringArena strArena;
 
+        void input_paste_callback(const CustomEvents::PasteEventData& paste);
         void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
-        void input_text_callback(const std::string& str);
+        void input_text_callback(const InputManager::TextCallbackArgs& text);
         void input_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button);
         void input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion);

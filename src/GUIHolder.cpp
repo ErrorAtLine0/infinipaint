@@ -119,12 +119,16 @@ void GUIHolder::draw(SkCanvas* canvas, bool skiaAA) {
     canvas->restore();
 }
 
+void GUIHolder::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    gui.input_paste_callback(paste);
+}
+
 void GUIHolder::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     gui.input_text_key_callback(key);
 }
 
-void GUIHolder::input_text_callback(const std::string& str) {
-    gui.input_text_callback(str);
+void GUIHolder::input_text_callback(const InputManager::TextCallbackArgs& text) {
+    gui.input_text_callback(text);
 }
 
 void GUIHolder::input_key_callback(const InputManager::KeyCallbackArgs& key) {

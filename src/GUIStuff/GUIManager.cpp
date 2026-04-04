@@ -344,6 +344,13 @@ bool GUIManager::cursor_obstructed() const {
     return cursorObstructed;
 }
 
+void GUIManager::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    for(ElementContainer* e : orderedElements)
+        e->elem->input_paste_callback(paste);
+    run_post_callback_func();
+    layout_if_necessary();
+}
+
 void GUIManager::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     for(ElementContainer* e : orderedElements)
         e->elem->input_text_key_callback(key);
@@ -351,9 +358,9 @@ void GUIManager::input_text_key_callback(const InputManager::KeyCallbackArgs& ke
     layout_if_necessary();
 }
 
-void GUIManager::input_text_callback(const std::string& str) {
+void GUIManager::input_text_callback(const InputManager::TextCallbackArgs& text) {
     for(ElementContainer* e : orderedElements)
-        e->elem->input_text_callback(str);
+        e->elem->input_text_callback(text);
     run_post_callback_func();
     layout_if_necessary();
 }

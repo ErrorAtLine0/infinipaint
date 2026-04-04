@@ -65,6 +65,11 @@ template <typename T> bool TextBox<T>::is_selected() const {
     return edit.has_value();
 }
 
+template <typename T> void TextBox<T>::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+    if(is_selected() && edit.value().userInput.input_paste_callback(paste))
+        after_text_input_callback();
+}
+
 template <typename T> void TextBox<T>::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     if(is_selected()) {
         if(key.key == InputManager::KEY_GENERIC_ENTER && key.down) {
@@ -75,14 +80,27 @@ template <typename T> void TextBox<T>::input_text_key_callback(const InputManage
                 reset_textbox_text();
             });
         }
-        else
-            edit.value().userInput.input_key_callback(*gui.io.input, key);
+        else {
+            if(edit.value().userInput.input_key_callback(*gui.io.input, key).textEdited)
+                after_text_input_callback();
+        }
     }
 }
 
-template <typename T> void TextBox<T>::input_text_callback(const std::string& str) {
-    if(is_selected())
-        edit.value().userInput.add_text_to_textbox(str);
+template <typename T> void TextBox<T>::after_text_input_callback() {
+    if(userInfo.immutable)
+        cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
+    else {
+        if(update_data() && userInfo.onEdit)
+            gui.set_post_callback_func_high_priority(userInfo.onEdit);
+    }
+}
+
+template <typename T> void TextBox<T>::input_text_callback(const InputManager::TextCallbackArgs& text) {
+    if(is_selected()) {
+        edit.value().userInput.add_text_to_textbox(text.str);
+        after_text_input_callback();
+    }
 }
 
 template <typename T> void TextBox<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
@@ -91,22 +109,23 @@ template <typename T> void TextBox<T>::input_mouse_button_callback(const InputMa
     if(button.button == InputManager::MouseButton::LEFT && boundingBox.has_value()) {
         if(button.down) {
             if(mouseHovering) {
-                SCollision::AABB<float> rect = {(boundingBox.value().min + io.windowPos) * io.guiScaleMultiplier, (boundingBox.value().max + io.windowPos) * io.guiScaleMultiplier};
-                unsigned id = gui.io.input->set_text_box_front(rect, userInfo.textInputProps);
+                if(!is_selected()) {
+                    SCollision::AABB<float> rect = {(boundingBox.value().min + io.windowPos) * io.guiScaleMultiplier, (boundingBox.value().max + io.windowPos) * io.guiScaleMultiplier};
+                    unsigned id = gui.io.input->set_text_box_front(rect, userInfo.textInputProps);
+                    edit = TextEditData(id, textbox, cur);
+                    gui.set_post_callback_func_high_priority([&] {
+                        if(userInfo.onSelect) userInfo.onSelect();
+                    });
+                }
                 textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
-                edit = TextEditData(id, textbox, cur, [&] {
-                    if(userInfo.immutable)
-                        cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
-                    else {
-                        if(update_data() && userInfo.onEdit)
-                            gui.set_post_callback_func_high_priority(userInfo.onEdit);
-                    }
-                });
             }
             else if(is_selected()) {
                 gui.io.input->remove_text_box(edit.value().textboxInputID);
-                if(update_data())
-                    gui.set_post_callback_func_high_priority(userInfo.onEdit);
+                gui.set_post_callback_func_high_priority([&] {
+                    if(update_data())
+                        if(userInfo.onEdit) userInfo.onEdit();
+                    if(userInfo.onDeselect) userInfo.onDeselect();
+                });
                 reset_textbox_text();
                 edit = std::nullopt;
             }

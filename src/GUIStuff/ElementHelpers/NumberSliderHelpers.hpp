@@ -14,7 +14,11 @@ namespace GUIStuff { namespace ElementHelpers {
                 text_label(gui, name);
                 input_scalar(gui, "textbox", val, min, max, options);
             });
-            gui.element<NumberSlider<T>>("slider", val, min, max, options.onEdit);
+            gui.element<NumberSlider<T>>("slider", val, min, max, NumberSliderData{
+                .onChange = options.onEdit,
+                .onHold = options.onSelect,
+                .onRelease = options.onDeselect
+            });
         });
     }
 }}

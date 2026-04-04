@@ -12,19 +12,19 @@
 #include "../../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../../../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
 
-EllipseDrawEditTool::EllipseDrawEditTool(DrawingProgram& initDrawP):
-    DrawingProgramEditToolBase(initDrawP)
+EllipseDrawEditTool::EllipseDrawEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp):
+    DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
+void EllipseDrawEditTool::edit_gui() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
     Toolbar& t = drawP.world.main.toolbar;
-    auto commit_update_func = [&, comp] { comp->obj->commit_update(drawP); };
-    auto commit_update_and_layout_func = [&, comp] {
+    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
+    auto commit_update_and_layout_func = [&] {
         comp->obj->commit_update(drawP);
         drawP.world.main.g.gui.set_to_layout();
     };
@@ -52,7 +52,7 @@ void EllipseDrawEditTool::edit_gui(CanvasComponentContainer::ObjInfo* comp) {
     });
 }
 
-void EllipseDrawEditTool::edit_start(EditTool& editTool, CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
+void EllipseDrawEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
 
     prevData = a.d;
@@ -60,9 +60,9 @@ void EllipseDrawEditTool::edit_start(EditTool& editTool, CanvasComponentContaine
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 }
 
-void EllipseDrawEditTool::commit_edit_updates(CanvasComponentContainer::ObjInfo* comp, std::any& prevData) {
+void EllipseDrawEditTool::commit_edit_updates(std::any& prevData) {
 }
 
-bool EllipseDrawEditTool::edit_update(CanvasComponentContainer::ObjInfo* comp) {
+bool EllipseDrawEditTool::edit_update() {
     return true;
 }
