@@ -106,6 +106,8 @@ template <typename T> void TextBox<T>::input_text_callback(const InputManager::T
 template <typename T> void TextBox<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto& io = gui.io;
 
+    isHeld = false;
+
     if(button.button == InputManager::MouseButton::LEFT && boundingBox.has_value()) {
         if(button.down) {
             if(mouseHovering) {
@@ -117,7 +119,8 @@ template <typename T> void TextBox<T>::input_mouse_button_callback(const InputMa
                         if(userInfo.onSelect) userInfo.onSelect();
                     });
                 }
-                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+                isHeld = true;
+                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
             }
             else if(is_selected()) {
                 gui.io.input->remove_text_box(edit.value().textboxInputID);
@@ -131,14 +134,14 @@ template <typename T> void TextBox<T>::input_mouse_button_callback(const InputMa
             }
         }
         else {
-            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
         }
     }
 }
 
 template <typename T> void TextBox<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(boundingBox.has_value())
-        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, gui.io.input->mouse.leftDown, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
 }
 
 template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
@@ -153,7 +156,9 @@ template <typename T> void TextBox<T>::init_textbox(UpdateInputData& io) {
 
 template <typename T> void TextBox<T>::reset_textbox_text() {
     textbox->set_string(userInfo.toStr(*userInfo.data));
-    cur->pos = cur->selectionBeginPos = cur->selectionEndPos = {0, 0};
+    cur->pos = textbox->move(RichText::TextBox::Movement::NOWHERE, cur->pos);
+    cur->selectionBeginPos = textbox->move(RichText::TextBox::Movement::NOWHERE, cur->selectionBeginPos);
+    cur->selectionEndPos = textbox->move(RichText::TextBox::Movement::NOWHERE, cur->selectionEndPos);
 }
 
 template <typename T> bool TextBox<T>::update_data() {

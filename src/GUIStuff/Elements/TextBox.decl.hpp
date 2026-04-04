@@ -52,6 +52,7 @@ template <typename T> class TextBox : public Element {
         bool update_data();
         bool is_selected() const;
 
+        bool isHeld = false;
         std::optional<TextEditData> edit;
 
         std::optional<T> oldData;

@@ -43,7 +43,7 @@ class GlobalConfig {
             NONE,
             SKIA,
             DYNAMIC_MSAA
-        } antialiasing = AntiAliasing::DYNAMIC_MSAA;
+        } antialiasing = AntiAliasing::SKIA;
 
         std::string displayName;
         bool flipZoomToolDirection = false;

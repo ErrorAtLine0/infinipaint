@@ -303,8 +303,6 @@ void TextBoxEditTool::right_click_popup_gui(Vector2f popupPos) {
             }
         });
     });
-
-    
 }
 
 void TextBoxEditTool::hold_undo_data(const std::string& undoName, TextBoxCanvasComponent& a) {
