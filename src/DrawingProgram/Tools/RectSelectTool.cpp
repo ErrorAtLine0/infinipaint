@@ -61,6 +61,7 @@ void RectSelectTool::input_mouse_button_on_canvas_callback(const InputManager::M
         }
 
         controls.isSelecting = false;
+        drawP.world.main.g.gui.set_to_layout();
     }
 }
 

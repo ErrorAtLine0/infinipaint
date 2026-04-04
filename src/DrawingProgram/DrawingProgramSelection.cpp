@@ -36,6 +36,7 @@ void DrawingProgramSelection::selection_gui() {
     using namespace ElementHelpers;
 
     auto& gui = drawP.world.main.g.gui;
+    auto& t = drawP.world.main.toolbar;
 
     gui.new_id("general selection gui", [&] {
         text_label(gui, "Select from:");
@@ -45,14 +46,18 @@ void DrawingProgramSelection::selection_gui() {
         });
         if(is_something_selected()) {
             left_to_right_line_layout(gui, [&]() {
-                //if(gui.color_button_big("Stroke Color Button", &strokeColorChangeData.newColor, &strokeColorChangeData.newColor == t.colorRight)) {
-                //    if(strokeColorChangeData.newColor.w() == 0.0f)
-                //        strokeColorChangeData.newColor.w() = 1.0f;
-                //    t.color_selector_right(&strokeColorChangeData.newColor == t.colorRight ? nullptr : &strokeColorChangeData.newColor);
-                //}
+                t.color_button_right("Stroke Color Button", &strokeColorChangeData.newColor, {
+                    .onSelectorButtonClick = [&] {
+                        if(strokeColorChangeData.newColor.w() == 0.0f)
+                            strokeColorChangeData.newColor.w() = 1.0f;
+                        update_selection_stroke_color();
+                    },
+                    .onChange = [&] {
+                        update_selection_stroke_color();
+                    }
+                });
                 text_label(gui, "Stroke Color");
             });
-            update_selection_stroke_color();
         }
     });
 }
@@ -386,19 +391,24 @@ void DrawingProgramSelection::input_key_callback_modify_selection(const InputMan
 void DrawingProgramSelection::input_key_callback_display_selection(const InputManager::KeyCallbackArgs& key) {
     switch(key.key) {
         case InputManager::KEY_DRAW_DELETE: {
-            if(key.down && !key.repeat)
+            if(key.down && !key.repeat) {
                 delete_all();
+                drawP.world.main.g.gui.set_to_layout();
+            }
             break;
         }
         case InputManager::KEY_COPY: {
-            if(key.down && !key.repeat)
+            if(key.down && !key.repeat) {
                 selection_to_clipboard();
+                drawP.world.main.g.gui.set_to_layout();
+            }
             break;
         }
         case InputManager::KEY_CUT: {
             if(key.down && !key.repeat) {
                 selection_to_clipboard();
                 delete_all();
+                drawP.world.main.g.gui.set_to_layout();
             }
             break;
         }
@@ -406,6 +416,7 @@ void DrawingProgramSelection::input_key_callback_display_selection(const InputMa
             if(key.down && !key.repeat) {
                 deselect_all();
                 paste_clipboard(drawP.world.main.input.mouse.pos);
+                drawP.world.main.g.gui.set_to_layout();
             }
             break;
         }
@@ -413,6 +424,7 @@ void DrawingProgramSelection::input_key_callback_display_selection(const InputMa
             if(key.down && !key.repeat) {
                 deselect_all();
                 paste_image(drawP.world.main.input.mouse.pos);
+                drawP.world.main.g.gui.set_to_layout();
             }
             break;
         }
@@ -422,6 +434,7 @@ void DrawingProgramSelection::input_key_callback_display_selection(const InputMa
                     deselect_all();
                 else
                     drawP.switch_to_tool(DrawingProgramToolType::EDIT, true);
+                drawP.world.main.g.gui.set_to_layout();
             }
             break;
         }
