@@ -25,6 +25,12 @@
 using namespace Eigen;
 class MainProgram;
 
+
+struct InputManagerCallPasteInfo {
+    std::optional<Vector2f> pastePosition;
+    bool allowRichText = true;
+};
+
 struct InputManager {
     InputManager(MainProgram& initMain);
 
@@ -281,8 +287,8 @@ struct InputManager {
     std::string get_clipboard_str_SDL();
     void get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback);
 
-    void call_paste(CustomEvents::PasteEventDataType type, const std::optional<Vector2f>& pastePosition = std::nullopt);
-    void process_text_paste(const std::string& pasteStr);
+    void call_paste(CustomEvents::PasteEventDataType type, const InputManagerCallPasteInfo& info = {});
+    void process_text_paste(const std::string& pasteStr, bool allowRichText);
 
     std::optional<RichText::TextData> lastCopiedRichText;
 

@@ -271,30 +271,40 @@ void TextBoxEditTool::right_click_popup_gui(Vector2f popupPos) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
 
-    gui.element<PositionAdjustingPopupMenu>("Text popup menu", popupPos, [&, popupPos] {
-        text_label_light(gui, "Text menu");
-        InputManager& input = drawP.world.main.input;
-        //drawP.popup_menu_action_button("Paste", "Paste", [&] {
-        //    input.call_text_paste(true);
-        //});
-        //drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
-        //    input.call_text_paste(false);
-        //});
-        //if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
-        //    drawP.popup_menu_action_button("Copy", "Copy", [&] {
-        //        input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor));
-        //    });
-        //    drawP.popup_menu_action_button("Cut", "Cut", [&] {
-        //        input.text.do_textbox_operation_with_undo([&]() {
-        //            input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor));
-        //        });
-        //    });
-        //}
+    gui.set_z_index(-1, [&] {
+        gui.element<PositionAdjustingPopupMenu>("Text popup menu", popupPos, [&] {
+            text_label_light(gui, "Text menu");
+            InputManager& input = drawP.world.main.input;
+            drawP.popup_menu_action_button("Paste", "Paste", [&] {
+                drawP.world.main.input.call_paste(CustomEvents::PasteEventDataType::TEXT, { .allowRichText = true });
+            });
+            drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
+                drawP.world.main.input.call_paste(CustomEvents::PasteEventDataType::TEXT, { .allowRichText = false });
+            });
+            if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
+                drawP.popup_menu_action_button("Copy", "Copy", [&] {
+                    input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor));
+                });
+                drawP.popup_menu_action_button("Cut", "Cut", [&] {
+                    userInput->do_textbox_operation_with_undo([&]() {
+                        input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor));
+                    });
+                    commit_update_and_layout_func();
+                    set_styles_at_selection(a);
+                });
+            }
+        }, LayoutElement::Callbacks{
+            .mouseButton = [&](LayoutElement*, const InputManager::MouseButtonCallbackArgs& button) {
+                if(button.down && button.button != InputManager::MouseButton::RIGHT)
+                    drawP.clear_right_click_popup();
+            }
+        });
     });
+
+    
 }
 
 void TextBoxEditTool::hold_undo_data(const std::string& undoName, TextBoxCanvasComponent& a) {

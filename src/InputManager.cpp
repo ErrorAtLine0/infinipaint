@@ -914,7 +914,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         set_key_down(e, f->second);
 }
 
-void InputManager::call_paste(CustomEvents::PasteEventDataType type, const std::optional<Vector2f>& pastePosition) {
+void InputManager::call_paste(CustomEvents::PasteEventDataType type, const InputManagerCallPasteInfo& info) {
     // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
 #ifdef __EMSCRIPTEN__
     if(type == PasteDataType::TEXT) {
@@ -924,12 +924,10 @@ void InputManager::call_paste(CustomEvents::PasteEventDataType type, const std::
             inMan->process_text_paste(pData);
         }, this);
     }
-    else {
-    }
 #else
     switch(type) {
         case CustomEvents::PasteEventDataType::TEXT:
-            process_text_paste(get_clipboard_str_SDL());
+            process_text_paste(get_clipboard_str_SDL(), info.allowRichText);
             break;
         case CustomEvents::PasteEventDataType::IMAGE:
             break;
@@ -937,11 +935,11 @@ void InputManager::call_paste(CustomEvents::PasteEventDataType type, const std::
 #endif
 }
 
-void InputManager::process_text_paste(const std::string& pasteStr) {
+void InputManager::process_text_paste(const std::string& pasteStr, bool allowRichText) {
     CustomEvents::emit_paste_event({
         .type = CustomEvents::PasteEventDataType::TEXT,
         .data = pasteStr,
-        .richText = lastCopiedRichText.has_value() && lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(pasteStr) ? lastCopiedRichText : std::nullopt
+        .richText = allowRichText && lastCopiedRichText.has_value() && lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(pasteStr) ? lastCopiedRichText : std::nullopt
     });
 }
 
