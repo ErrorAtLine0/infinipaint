@@ -36,14 +36,14 @@ void RectDrawEditTool::edit_gui() {
         }, commit_update_and_layout_func);
         if(a.d.fillStrokeMode == 0 || a.d.fillStrokeMode == 2) {
             left_to_right_line_layout(gui, [&] {
-                t.color_button_right("Fill color button", &a.d.fillColor, commit_update_func);
+                t.color_button_right("Fill color button", &a.d.fillColor, { .onChange = commit_update_func });
                 text_label(gui, "Fill Color");
             });
         }
         if(a.d.fillStrokeMode == 1 || a.d.fillStrokeMode == 2) {
             slider_scalar_field(gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f, { .onEdit = commit_update_func });
             left_to_right_line_layout(gui, [&] {
-                t.color_button_right("Outline color button", &a.d.strokeColor, commit_update_func);
+                t.color_button_right("Outline color button", &a.d.strokeColor, { .onChange = commit_update_func });
                 text_label(gui, "Outline Color");
             });
         }

@@ -6,14 +6,14 @@ namespace GUIStuff {
 
 template <typename T> ColorPicker<T>::ColorPicker(GUIManager& gui): Element(gui) {}
 
-template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* data, bool selectAlpha, const std::function<void()>& onChange) {
+template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* data, bool selectAlpha, const ColorPickerData& config) {
     this->data = data;
     if(!oldData.has_value() || oldData.value() != *data) {
         savedHsv = rgb_to_hsv<Vector3f, T>(*data);
         oldData = *data;
     }
     this->selectAlpha = selectAlpha;
-    this->onChange = onChange;
+    this->config = config;
 
     CLAY(id, {
         .layout = {
@@ -83,6 +83,7 @@ template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInp
 }
 
 template <typename T> void ColorPicker<T>::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    HeldBar oldHeld = held;
     held = HeldBar::NONE;
     if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down && boundingBox.has_value()) {
         auto& bb = boundingBox.value();
@@ -102,16 +103,21 @@ template <typename T> void ColorPicker<T>::input_mouse_button_callback(const Inp
             }
         }
     }
-    update_color_picker_pos(button.pos);
+    if(oldHeld != HeldBar::NONE && held == HeldBar::NONE) {
+        gui.set_post_callback_func([&] {
+            if(config.onRelease) config.onRelease();
+        });
+    }
+    update_color_picker_pos(button.pos, true);
 }
 
 template <typename T> void ColorPicker<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    update_color_picker_pos(motion.pos);
+    update_color_picker_pos(motion.pos, false);
 }
 
-template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2f& p) {
+template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2f& p, bool justHeld) {
     if(held != HeldBar::NONE && boundingBox.has_value()) {
-        gui.set_post_callback_func([&, p]() {
+        gui.set_post_callback_func([&, p, justHeld]() {
             auto& bb = boundingBox.value();
             switch(held) {
                 case HeldBar::NONE:
@@ -122,7 +128,8 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                     savedHsv.y() = newSv.x();
                     savedHsv.z() = 1.0f - newSv.y();
                     set_hsv(savedHsv);
-                    if(onChange) onChange();
+                    if(justHeld && config.onHold) config.onHold();
+                    if(config.onChange) config.onChange();
                     break;
                 }
                 case HeldBar::HUE_HELD: {
@@ -130,7 +137,8 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                     Vector2f hueDim = get_hue_bar_dim();
                     savedHsv.x() = (1.0f - std::clamp((p.y() - huePos.y()) / hueDim.y(), 0.0f, 1.0f)) * 360.0f;
                     set_hsv(savedHsv);
-                    if(onChange) onChange();
+                    if(justHeld && config.onHold) config.onHold();
+                    if(config.onChange) config.onChange();
                     break;
                 }
                 case HeldBar::ALPHA_HELD: {
@@ -138,7 +146,8 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                     Vector2f alphaDim = get_alpha_bar_dim();
                     (*data)[3] = std::clamp((p.x() - alphaPos.x()) / alphaDim.x(), 0.0f, 1.0f);
                     oldData = *data;
-                    if(onChange) onChange();
+                    if(justHeld && config.onHold) config.onHold();
+                    if(config.onChange) config.onChange();
                     break;
                 }
             }

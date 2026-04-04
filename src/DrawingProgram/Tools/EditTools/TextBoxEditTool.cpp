@@ -148,62 +148,50 @@ void TextBoxEditTool::edit_gui() {
             .onDeselect = [&] { release_undo_data("Font Size"); }
         });
 
-        //// Text color
-        //gui.left_to_right_line_layout([&]() {
-        //    if(gui.color_button_big("Text Color", &newTextColor, &newTextColor == t.colorRight)) 
-        //        t.color_selector_right(&newTextColor == t.colorRight ? nullptr : &newTextColor);
-        //    gui.text_label("Text Color");
-        //});
+        left_to_right_line_layout(gui, [&]() {
+            t.color_button_right("Text Color", &newTextColor, {
+                .onChange = [&] {
+                    currentMods[TextStyleModifier::ModifierType::COLOR] = std::make_shared<ColorTextStyleModifier>(newTextColor);
+                    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
+                    commit_update_func();
+                },
+                .onSelect = [&] { hold_undo_data("Text Color", a); },
+                .onDeselect = [&] { release_undo_data("Text Color"); }
+            });
+            text_label(gui, "Text Color");
+        });
 
-        //if(&newTextColor == t.colorRight)
-        //    hold_undo_data("Text Color", a);
-        //else
-        //    release_undo_data("Text Color");
-
-        //if((&newTextColor == t.colorRight) && t.isUpdatingColorRight) {
-        //    currentMods[TextStyleModifier::ModifierType::COLOR] = std::make_shared<ColorTextStyleModifier>(newTextColor);
-        //    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
-        //}
-
-        //// Highlight color
-        //gui.left_to_right_line_layout([&]() {
-        //    if(gui.color_button_big("Highlight Color", &newHighlightColor, &newHighlightColor == t.colorRight)) {
-        //        if(newHighlightColor.w() == 0.0f) { // Make highlight appear when the button is pressed
-        //            newHighlightColor.w() = 1.0f;
-        //            currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
-        //            add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
-        //        }
-        //        t.color_selector_right(&newHighlightColor == t.colorRight ? nullptr : &newHighlightColor);
-        //    }
-        //    if(newHighlightColor.w() != 0.0f) {
-        //        if(gui.svg_icon_button("Remove Highlight Color", "data/icons/close.svg")) {
-        //            newHighlightColor = {0.0f, 0.0f, 0.0f, 0.0f};
-        //            currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
-        //            add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
-        //        }
-        //    }
-        //    gui.text_label("Highlight Color");
-        //});
-
-        //if(&newHighlightColor == t.colorRight)
-        //    hold_undo_data("Highlight Color", a);
-        //else
-        //    release_undo_data("Highlight Color");
-
-        //if((&newHighlightColor == t.colorRight) && t.isUpdatingColorRight) {
-        //    currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
-        //    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
-        //}
-
+        left_to_right_line_layout(gui, [&]() {
+            t.color_button_right("Highlight Color", &newHighlightColor, {
+                .onSelectorButtonClick = [&] {
+                    if(newHighlightColor.w() == 0.0f) {
+                        newHighlightColor.w() = 1.0f;
+                        currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
+                        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
+                        commit_update_and_layout_func();
+                    }
+                },
+                .onChange = [&] {
+                    currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
+                    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
+                    commit_update_and_layout_func();
+                },
+                .onSelect = [&] { hold_undo_data("Highlight Color", a); },
+                .onDeselect = [&] { release_undo_data("Highlight Color"); }
+            });
+            if(newHighlightColor.w() != 0.0f) {
+                svg_icon_button(gui, "Remove Highlight Color", "data/icons/close.svg", {
+                    .onClick = [&] {
+                        newHighlightColor = {0.0f, 0.0f, 0.0f, 0.0f};
+                        currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
+                        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
+                        commit_update_and_layout_func();
+                    }
+                });
+            }
+            text_label(gui, "Highlight Color");
+        });
     });
-
-    //if(a.textBox->inputChangedTextBox)
-    //    set_styles_at_selection(a);
-
-    //// NOTE: There should be a system that periodically sends updates even if no changes are made, since unreliable channels can drop update data
-    //bool oldInputChangedTextBox = a.textBox->inputChangedTextBox;
-    //a.textBox->inputChangedTextBox = false;
-    //return oldInputChangedTextBox;
 }
 
 void TextBoxEditTool::input_paste_callback(const CustomEvents::PasteEventData& paste) {

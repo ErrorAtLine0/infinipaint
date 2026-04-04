@@ -6,6 +6,8 @@ namespace GUIStuff {
 struct ColorPickerButtonData {
     bool hasAlpha = true;
     std::function<void()> onEdit;
+    std::function<void()> onSelect;
+    std::function<void()> onDeselect;
 };
 
 template <typename T> class ColorPickerButton : public Element {

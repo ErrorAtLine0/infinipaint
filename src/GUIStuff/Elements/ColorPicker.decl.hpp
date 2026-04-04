@@ -58,15 +58,21 @@ namespace ColorPickerShaders {
     sk_sp<SkShader> get_alpha_bar_shader(const Vector3f& mainColor, float horizontalResolution);
 }
 
+struct ColorPickerData {
+    std::function<void()> onChange;
+    std::function<void()> onHold;
+    std::function<void()> onRelease;
+};
+
 template <typename T> class ColorPicker : public Element {
     public:
         ColorPicker(GUIManager& gui);
-        void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const std::function<void()>& onChange);
+        void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const ColorPickerData& config);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
-        void update_color_picker_pos(const Vector2f& p);
+        void update_color_picker_pos(const Vector2f& p, bool justHeld);
         float get_sv_selection_area_size();
         Vector2f get_hue_bar_pos();
         Vector2f get_hue_bar_dim();
@@ -80,7 +86,7 @@ template <typename T> class ColorPicker : public Element {
         T* data;
         std::optional<T> oldData;
         Vector3f savedHsv; // We save the HSV so that conversion doesnt ruin the UI
-        std::function<void()> onChange;
+        ColorPickerData config;
         bool selectAlpha = false;
         enum class HeldBar {
             NONE,

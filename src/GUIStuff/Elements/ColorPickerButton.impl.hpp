@@ -22,7 +22,9 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
             ElementHelpers::top_to_bottom_window_popup_layout(gui, "Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data](LayoutElement*) {
                 ElementHelpers::color_picker_items(gui, "c", val, {
                     .hasAlpha = data.hasAlpha,
-                    .onEdit = data.onEdit
+                    .onEdit = data.onEdit,
+                    .onSelect = data.onSelect,
+                    .onDeselect = data.onDeselect
                 });
             }, {
                 .mouseButton = [&](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {

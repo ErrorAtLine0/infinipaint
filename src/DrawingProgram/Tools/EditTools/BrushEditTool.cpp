@@ -23,7 +23,7 @@ void BrushEditTool::edit_gui() {
     gui.new_id("edit tool brush", [&] {
         text_label_centered(gui, "Edit Brush Stroke");
         left_to_right_line_layout(gui, [&]() {
-            t.color_button_right("Outline Color", &a.d.color, commit_update_func);
+            t.color_button_right("Outline Color", &a.d.color, { .onChange = commit_update_func });
             text_label(gui, "Outline Color");
         });
     });

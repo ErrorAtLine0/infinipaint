@@ -160,40 +160,50 @@ std::filesystem::path& Toolbar::file_selector_path() {
     return filePicker.currentSearchPath;
 }
 
-void Toolbar::color_button_left(const char* id, Vector4f* color, const std::function<void()>& onChange) {
+void Toolbar::color_button_left(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData) {
     auto& gui = main.g.gui;
     color_button(gui, id, color, {
         .isSelected = colorLeft == color,
-        .onClick = [&, onChange, color] {
-            color_selector_left(color, onChange);
+        .onClick = [&, colorSelectorData, color] {
+            if(colorSelectorData.onSelectorButtonClick) colorSelectorData.onSelectorButtonClick();
+            color_selector_left(color, {
+                .onChange = colorSelectorData.onChange,
+                .onSelect = colorSelectorData.onSelect,
+                .onDeselect = colorSelectorData.onDeselect,
+            });
         }
     });
 }
 
-void Toolbar::color_button_right(const char* id, Vector4f* color, const std::function<void()>& onChange) {
+void Toolbar::color_button_right(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData) {
     auto& gui = main.g.gui;
     color_button(gui, id, color, {
         .isSelected = colorRight == color,
-        .onClick = [&, onChange, color] {
-            color_selector_right(color, onChange);
+        .onClick = [&, colorSelectorData, color] {
+            if(colorSelectorData.onSelectorButtonClick) colorSelectorData.onSelectorButtonClick();
+            color_selector_right(color, {
+                .onChange = colorSelectorData.onChange,
+                .onSelect = colorSelectorData.onSelect,
+                .onDeselect = colorSelectorData.onDeselect,
+            });
         }
     });
 }
 
-void Toolbar::color_selector_left(Vector4f* color, const std::function<void()>& onChange) {
+void Toolbar::color_selector_left(Vector4f* color, const ColorSelectorData& colorSelectorData) {
     if(colorLeft != color) {
         colorLeftJustEnabled = color;
-        onColorLeftChange = onChange;
+        colorLeftData = colorSelectorData;
     }
     else
         colorLeftJustDisabled = true;
     main.g.gui.set_to_layout();
 }
 
-void Toolbar::color_selector_right(Vector4f* color, const std::function<void()>& onChange) {
+void Toolbar::color_selector_right(Vector4f* color, const ColorSelectorData& colorSelectorData) {
     if(colorRight != color) {
         colorRightJustEnabled = color;
-        onColorRightChange = onChange;
+        colorRightData = colorSelectorData;
     }
     else
         colorRightJustDisabled = true;
@@ -1198,21 +1208,21 @@ void Toolbar::drawing_program_gui() {
             colorRight = nullptr;
 
         if(colorLeft)
-            color_picker_window("Drawing program gui color picker left", &colorLeft, &colorLeftJustDisabled, onColorLeftChange);
+            color_picker_window("Drawing program gui color picker left", &colorLeft, &colorLeftJustDisabled, colorLeftData);
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
             }
         }) {}
         if(colorRight)
-            color_picker_window("Drawing program gui color picker right", &colorRight, &colorRightJustDisabled, onColorRightChange);
+            color_picker_window("Drawing program gui color picker right", &colorRight, &colorRightJustDisabled, colorRightData);
 
         main.world->drawProg.tool_options_gui();
         main.world->drawProg.right_click_popup_gui();
     }
 }
 
-void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const std::function<void()>& onChange) {
+void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const ColorSelectorData& colorSelectorData) {
     auto& gui = main.g.gui;
 
     CLAY_AUTO_ID({
@@ -1233,9 +1243,15 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
                 .cornerRadius = CLAY_CORNER_RADIUS(gui.io.theme->windowCorners1)
             }) {
                 color_picker_items(gui, "colorpicker", *color, {
-                    .onEdit = onChange
+                    .onEdit = colorSelectorData.onChange,
+                    .onSelect = colorSelectorData.onSelect,
+                    .onDeselect = colorSelectorData.onDeselect,
                 });
-                color_palette("colorpickerpalette", *color, onChange);
+                color_palette("colorpickerpalette", *color, [colorSelectorData] {
+                    if(colorSelectorData.onSelect) colorSelectorData.onSelect();
+                    if(colorSelectorData.onChange) colorSelectorData.onChange();
+                    if(colorSelectorData.onDeselect) colorSelectorData.onDeselect();
+                });
             }
         }, LayoutElement::Callbacks{
             .mouseButton = [&, colorJustDisabled](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {

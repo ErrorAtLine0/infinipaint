@@ -42,10 +42,21 @@ class Toolbar {
 
         Toolbar(MainProgram& initMain);
         void layout_run();
-        void color_selector_left(Vector4f* color, const std::function<void()>& onChange = nullptr);
-        void color_selector_right(Vector4f* color, const std::function<void()>& onChange = nullptr);
-        void color_button_left(const char* id, Vector4f* color, const std::function<void()>& onChange = nullptr);
-        void color_button_right(const char* id, Vector4f* color, const std::function<void()>& onChange = nullptr);
+        struct ColorSelectorData {
+            std::function<void()> onChange;
+            std::function<void()> onSelect;
+            std::function<void()> onDeselect;
+        };
+        struct ColorSelectorButtonData {
+            std::function<void()> onSelectorButtonClick;
+            std::function<void()> onChange;
+            std::function<void()> onSelect;
+            std::function<void()> onDeselect;
+        };
+        void color_selector_left(Vector4f* color, const ColorSelectorData& colorSelectorData = {});
+        void color_selector_right(Vector4f* color, const ColorSelectorData& colorSelectorData = {});
+        void color_button_left(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData = {});
+        void color_button_right(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData = {});
 
         void paint_popup(Vector2f popupPos);
 
@@ -62,12 +73,12 @@ class Toolbar {
         Vector4f* colorLeft = nullptr;
         bool colorLeftJustDisabled = false;
         Vector4f* colorLeftJustEnabled = nullptr;
-        std::function<void()> onColorLeftChange;
+        ColorSelectorData colorLeftData;
 
         Vector4f* colorRight = nullptr;
         bool colorRightJustDisabled = false;
         Vector4f* colorRightJustEnabled = nullptr;
-        std::function<void()> onColorRightChange;
+        ColorSelectorData colorRightData;
 
         bool app_close_requested();
     private:
@@ -89,7 +100,7 @@ class Toolbar {
         void file_picker_gui_done();
         void file_picker_gui();
         void performance_metrics();
-        void color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const std::function<void()>& onChange);
+        void color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const ColorSelectorData& colorSelectorData);
         void color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();
