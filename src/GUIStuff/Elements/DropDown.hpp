@@ -123,7 +123,7 @@ template <typename T> class DropDown : public Element {
                                                     gui.set_post_callback_func([&, i] {
                                                         *d = i;
                                                         isOpen = false;
-                                                        opts.onClick();
+                                                        if(opts.onClick) opts.onClick();
                                                     });
                                                     gui.set_to_layout();
                                                 }

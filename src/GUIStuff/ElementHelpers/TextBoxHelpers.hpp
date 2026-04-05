@@ -36,6 +36,16 @@ struct TextBoxScalarOptions {
     std::function<void()> onDeselect;
 };
 
+struct TextBoxScalarsOptions {
+    int decimalPrecision = 0;
+    bool updateEveryEdit = false;
+    bool immutable = false;
+    std::function<void(size_t)> onEnter;
+    std::function<void(size_t)> onEdit;
+    std::function<void(size_t)> onSelect;
+    std::function<void(size_t)> onDeselect;
+};
+
 struct TextBoxPathOptions {
     std::filesystem::file_type fileTypeRestriction;
     bool updateEveryEdit = false;
@@ -105,12 +115,21 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
 
 template <> void input_scalar<uint8_t>(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal, uint8_t maxVal, const TextBoxScalarOptions& options);
 
-template <typename TContainer, typename T> void input_scalars_field(GUIManager& gui, const char* id, std::string_view name, TContainer* val, size_t elemCount, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
+template <typename TContainer, typename T> void input_scalars_field(GUIManager& gui, const char* id, std::string_view name, TContainer* val, size_t elemCount, T minVal, T maxVal, const TextBoxScalarsOptions& options = {}) {
     gui.new_id(id, [&] {
         left_to_right_line_layout(gui, [&]() {
             text_label(gui, name);
-            for(size_t i = 0; i < elemCount; i++)
-                gui.new_id(i, [&] { input_scalar<T>(gui, "field", &(*val)[i], minVal, maxVal, options); });
+            for(size_t i = 0; i < elemCount; i++) {
+                gui.new_id(i, [&] { input_scalar<T>(gui, "field", &(*val)[i], minVal, maxVal, TextBoxScalarOptions {
+                    .decimalPrecision = options.decimalPrecision,
+                    .updateEveryEdit = options.updateEveryEdit,
+                    .immutable = options.immutable,
+                    .onEnter = [f = options.onEnter, i] { if(f) f(i); },
+                    .onEdit = [f = options.onEdit, i] { if(f) f(i); },
+                    .onSelect = [f = options.onSelect, i] { if(f) f(i); },
+                    .onDeselect = [f = options.onDeselect, i] { if(f) f(i); },
+                }); });
+            }
         });
     });
 }

@@ -61,11 +61,25 @@ void ScreenshotTool::gui_toolbox() {
     auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
     gui.new_id("screenshot tool", [&] {
         text_label_centered(gui, "Screenshot");
-        auto oldImgSize = controls.imageSize;
         if(controls.selectionMode == ScreenshotControls::SelectionMode::NO_SELECTION)
             text_label(gui, "Select an area on the canvas...");
-        if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != SCREENSHOT_SVG)
-            input_scalars_field(gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999);
+        if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != SCREENSHOT_SVG) {
+            input_scalars_field(gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999, {
+                .onEdit = [&] (size_t i) {
+                    if(i == 0) {
+                        screenshotConfig.setDimensionSize = controls.imageSize.x();
+                        screenshotConfig.setDimensionIsX = true;
+                        controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
+                    }
+                    else {
+                        screenshotConfig.setDimensionSize = controls.imageSize.y();
+                        screenshotConfig.setDimensionIsX = false;
+                        controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
+                    }
+                    gui.set_to_layout();
+                }
+            });
+        }
         if(controls.selectionMode == ScreenshotControls::SelectionMode::SELECTION_EXISTS) {
             left_to_right_line_layout(gui, [&]() {
                 text_label(gui, "Image Type");
@@ -77,16 +91,6 @@ void ScreenshotTool::gui_toolbox() {
                 text_label(gui, "Note: Screenshot will ignore blend\nmodes and layer alpha");
             if(screenshotConfig.selectedType != 0)
                 checkbox_boolean_field(gui, "Transparent Background", "Transparent Background", &controls.transparentBackground);
-            if(controls.imageSize.x() != oldImgSize.x()) {
-                screenshotConfig.setDimensionSize = controls.imageSize.x();
-                screenshotConfig.setDimensionIsX = true;
-                controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
-            }
-            else if(controls.imageSize.y() != oldImgSize.y()) {
-                screenshotConfig.setDimensionSize = controls.imageSize.y();
-                screenshotConfig.setDimensionIsX = false;
-                controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
-            }
             text_button(gui, "Take Screenshot", "Take Screenshot", {
                 .wide = true,
                 .onClick = [&] {
@@ -141,6 +145,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
                     controls.coords = drawP.world.drawData.cam.c;
                     controls.dragType = 0;
                     controls.selectionMode = ScreenshotControls::SelectionMode::DRAGGING_BORDER;
+                    drawP.world.main.g.gui.set_to_layout();
                 }
                 break;
             }
@@ -148,6 +153,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
                 if(!button.down && dragging_border_update(button.pos)) {
                     controls.selectionMode = ScreenshotControls::SelectionMode::SELECTION_EXISTS;
                     commit_rect();
+                    drawP.world.main.g.gui.set_to_layout();
                 }
                 break;
             }
@@ -172,6 +178,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
                     }
                     else
                         controls.selectionMode = ScreenshotControls::SelectionMode::DRAGGING_BORDER;
+                    drawP.world.main.g.gui.set_to_layout();
                 }
                 break;
             }
@@ -179,6 +186,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
                 if(!button.down && dragging_border_update(button.pos)) {
                     controls.selectionMode = ScreenshotControls::SelectionMode::SELECTION_EXISTS;
                     commit_rect();
+                    drawP.world.main.g.gui.set_to_layout();
                 }
                 break;
             }
@@ -193,6 +201,7 @@ void ScreenshotTool::input_mouse_motion_callback(const InputManager::MouseMotion
         }
         case ScreenshotControls::SelectionMode::DRAGGING_BORDER: {
             dragging_border_update(motion.pos);
+            drawP.world.main.g.gui.set_to_layout();
             break;
         }
         case ScreenshotControls::SelectionMode::SELECTION_EXISTS: {

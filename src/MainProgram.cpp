@@ -291,7 +291,7 @@ void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, con
     DrawData drawDataCopy = drawData;
     drawDataCopy.skiaAA = conf.antialiasing == GlobalConfig::AntiAliasing::SKIA;
     worldToDraw->draw(canvas, drawDataCopy);
-    if(drawGui)
+    if(!drawData.takingScreenshot)
         g.draw(canvas, drawDataCopy.skiaAA);
 }
 
@@ -364,8 +364,10 @@ void MainProgram::input_drop_text_callback(const InputManager::DropCallbackArgs&
 void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     switch(key.key) {
         case InputManager::KEY_NOGUI: {
-            if(key.down && !key.repeat)
+            if(key.down && !key.repeat) {
                 drawGui = !drawGui;
+                g.gui.set_to_layout();
+            }
             break;
         }
         case InputManager::KEY_FULLSCREEN: {

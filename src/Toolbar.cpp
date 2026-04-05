@@ -295,6 +295,9 @@ void Toolbar::layout_run() {
             close_popup_gui();
     }
 
+    if(!main.world->clientStillConnecting)
+        main.world->drawProg.right_click_popup_gui();
+
     // Make sure theyre set to null in case drawing_program_gui wasn't called
     colorLeftJustEnabled = nullptr;
     colorLeftJustDisabled = false;
@@ -1218,7 +1221,6 @@ void Toolbar::drawing_program_gui() {
             color_picker_window("Drawing program gui color picker right", &colorRight, &colorRightJustDisabled, colorRightData);
 
         main.world->drawProg.tool_options_gui();
-        main.world->drawProg.right_click_popup_gui();
     }
 }
 
