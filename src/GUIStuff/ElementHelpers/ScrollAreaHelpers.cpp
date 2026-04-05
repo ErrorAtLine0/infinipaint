@@ -12,7 +12,7 @@ ScrollArea* scroll_area_many_entries(GUIManager& gui, const char* id, const Scro
         .innerContent = [&](const ScrollArea::InnerContentParameters& params) {
             if(options.innerContentExtraCallback) options.innerContentExtraCallback(params);
 
-            float absScrollAmount = std::fabs(params.scrollOffset.y());
+            float absScrollAmount = std::fabs(params.scrollOffset->y());
             size_t startPoint = absScrollAmount / options.entryHeight;
             size_t elementsContainable = (params.containerDimensions.y() / options.entryHeight) + 2; // Displaying 2 more elements ensures that there isn't any empty space in the container
             size_t endPoint = std::min(options.entryCount, startPoint + elementsContainable);

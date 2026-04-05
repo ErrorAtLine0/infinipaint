@@ -56,11 +56,11 @@ struct TextBoxHexColorOptions {
     std::function<void()> onDeselect;
 };
 
-void input_color_component_255(GUIManager& gui, const char* id, float* val, const TextBoxOptions& options = {});
-void input_text(GUIManager& gui, const char* id, std::string* val, const TextBoxOptions& options = {});
-void input_text_field(GUIManager& gui, const char* id, std::string_view name, std::string* val, const TextBoxOptions& options = {});
-void input_path(GUIManager& gui, const char* id, std::filesystem::path* val, const TextBoxPathOptions& options = {});
-void input_path_field(GUIManager& gui, const char* id, std::string_view name, std::filesystem::path* val, const TextBoxPathOptions& options = {});
+TextBox<float>* input_color_component_255(GUIManager& gui, const char* id, float* val, const TextBoxOptions& options = {});
+TextBox<std::string>* input_text(GUIManager& gui, const char* id, std::string* val, const TextBoxOptions& options = {});
+TextBox<std::string>* input_text_field(GUIManager& gui, const char* id, std::string_view name, std::string* val, const TextBoxOptions& options = {});
+TextBox<std::filesystem::path>* input_path(GUIManager& gui, const char* id, std::filesystem::path* val, const TextBoxPathOptions& options = {});
+TextBox<std::filesystem::path>* input_path_field(GUIManager& gui, const char* id, std::string_view name, std::filesystem::path* val, const TextBoxPathOptions& options = {});
 
 template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val, T minVal, T maxVal, const TextBoxScalarOptions& options = {}) {
     InputManager::TextInputProperties textInputProps {

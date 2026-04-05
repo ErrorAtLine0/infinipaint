@@ -7,8 +7,8 @@ namespace GUIStuff {
 TextParagraph::TextParagraph(GUIManager& gui):
     Element(gui) {}
 
-void TextParagraph::layout(const Clay_ElementId& id, std::unique_ptr<skia::textlayout::Paragraph> paragraph, float width) {
-    data = std::move(paragraph);
+void TextParagraph::layout(const Clay_ElementId& id, const std::shared_ptr<skia::textlayout::Paragraph>& paragraph, float width) {
+    data = paragraph;
     data->layout(width);
     CLAY(id, {
         .layout = {

@@ -11,7 +11,7 @@ class ScrollArea : public Element {
         struct InnerContentParameters {
             Vector2f contentDimensions;
             Vector2f containerDimensions;
-            Vector2f scrollOffset;
+            Vector2f* scrollOffset;
         };
 
         struct Options {

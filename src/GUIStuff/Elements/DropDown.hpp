@@ -100,7 +100,7 @@ template <typename T> class DropDown : public Element {
                                                 SkColor4f entryColor;
                                                 if(selectedEntry)
                                                     entryColor = gui.io.theme->backColor2;
-                                                else if(hoveringOver.has_value() && hoveringOver.value() == i)
+                                                else if(hoveringOver == i)
                                                     entryColor = gui.io.theme->backColor2;
                                                 else
                                                     entryColor = gui.io.theme->backColor1;
@@ -145,15 +145,15 @@ template <typename T> class DropDown : public Element {
             auto oldHoveringOver = hoveringOver;
             if(mouseHovering)
                 hoveringOver = i;
-            else if(hoveringOver.has_value() && hoveringOver.value() == i)
-                hoveringOver = std::nullopt;
+            else if(hoveringOver == i)
+                hoveringOver = std::numeric_limits<size_t>::max();
             if(oldHoveringOver != hoveringOver)
                 gui.set_to_layout();
         }
         T* d;
         DropdownOptions opts;
         bool isOpen = false;
-        std::optional<size_t> hoveringOver;
+        size_t hoveringOver = std::numeric_limits<size_t>::max();
 };
 
 }

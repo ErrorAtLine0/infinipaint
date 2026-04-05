@@ -19,6 +19,7 @@
 #include "../../../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
 #include "../../../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
 #include "../../../GUIStuff/Elements/PositionAdjustingPopupMenu.hpp"
+#include "../../../GUIStuff/Elements/FontPicker.hpp"
 
 using namespace RichText;
 
@@ -47,13 +48,16 @@ void TextBoxEditTool::edit_gui() {
     gui.new_id("edit tool text", [&] {
         text_label_centered(gui, "Edit Text");
 
-        //left_to_right_line_layout(gui, [&] {
-        //    text_label(gui, "Font");
-        //    if(gui.font_picker("font picker", &newFontName)) {
-        //        currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES] = std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{newFontName.c_str(), newFontName.size()}});
-        //        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES]);});
-        //    }
-        //});
+        left_to_right_line_layout(gui, [&] {
+            text_label(gui, "Font");
+            gui.element<FontPicker>("Font picker", &newFontName, FontPickerData{
+                .onFontChange = [&] {
+                    currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES] = std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{newFontName.c_str(), newFontName.size()}});
+                    add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES]);});
+                    commit_update_func();
+                }
+            });
+        });
         
         left_to_right_line_centered_layout(gui, [&] {
             svg_icon_button(gui, "Bold button", "data/icons/RemixIcon/bold.svg", {
@@ -119,21 +123,27 @@ void TextBoxEditTool::edit_gui() {
             };
 
             paragraph_operation_button("Align left button", "data/icons/RemixIcon/align-left.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kLeft, [&] {
+                currentPStyle.textAlignment = skia::textlayout::TextAlign::kLeft;
                 a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kLeft);
             });
             paragraph_operation_button("Align center button", "data/icons/RemixIcon/align-center.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kCenter, [&] {
+                currentPStyle.textAlignment = skia::textlayout::TextAlign::kCenter;
                 a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kCenter);
             });
             paragraph_operation_button("Align right button", "data/icons/RemixIcon/align-right.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kRight, [&] {
+                currentPStyle.textAlignment = skia::textlayout::TextAlign::kRight;
                 a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kRight);
             });
             paragraph_operation_button("Align justify button", "data/icons/RemixIcon/align-justify.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kJustify, [&] {
+                currentPStyle.textAlignment = skia::textlayout::TextAlign::kJustify;
                 a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kJustify);
             });
             paragraph_operation_button("Text direction left button", "data/icons/RemixIcon/text-direction-l.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kLtr, [&] {
+                currentPStyle.textDirection = skia::textlayout::TextDirection::kLtr;
                 a.textBox->set_text_direction_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kLtr);
             });
             paragraph_operation_button("Text direction right button", "data/icons/RemixIcon/text-direction-r.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kRtl, [&] {
+                currentPStyle.textDirection = skia::textlayout::TextDirection::kRtl;
                 a.textBox->set_text_direction_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kRtl);
             });
         });

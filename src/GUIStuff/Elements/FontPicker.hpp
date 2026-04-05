@@ -1,21 +1,27 @@
 #pragma once
 #include "Element.hpp"
+#include <limits>
 
 namespace GUIStuff {
 
+struct FontPickerData {
+    std::function<void()> onFontChange;
+};
+
 class FontPicker : public Element {
     public:
-        struct Data {
-            std::string* fontName = nullptr;
-            std::function<void()> onFontChange;
-        };
         FontPicker(GUIManager& gui);
-        void layout(const Clay_ElementId& id, const Data& data);
+        void layout(const Clay_ElementId& id, std::string* newFontName, const FontPickerData& newData = {});
     private:
-        Data d;
+        std::string* fontName;
+        FontPickerData data;
 
-        std::vector<std::string> sortedFontList;
-        std::vector<std::string> sortedFontListLowercase;
+        size_t hoveringOver = std::numeric_limits<size_t>::max();
+
+        bool jumpToFontName = false;
+
+        std::optional<std::string> get_valid_font_name();
+
         bool dropdownOpen = false;
 };
 

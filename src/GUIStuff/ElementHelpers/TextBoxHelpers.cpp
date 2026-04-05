@@ -3,7 +3,7 @@
 
 namespace GUIStuff { namespace ElementHelpers {
 
-void input_color_component_255(GUIManager& gui, const char* id, float* val, const TextBoxOptions& options) {
+TextBox<float>* input_color_component_255(GUIManager& gui, const char* id, float* val, const TextBoxOptions& options) {
     InputManager::TextInputProperties textInputProps {
         .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_NUMBER,
         .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
@@ -29,10 +29,10 @@ void input_color_component_255(GUIManager& gui, const char* id, float* val, cons
         return ss.str();
     };
 
-    gui.element<TextBox<float>>(id, d);
+    return gui.element<TextBox<float>>(id, d);
 }
 
-void input_text(GUIManager& gui, const char* id, std::string* val, const TextBoxOptions& options) {
+TextBox<std::string>* input_text(GUIManager& gui, const char* id, std::string* val, const TextBoxOptions& options) {
     InputManager::TextInputProperties textInputProps {
         .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
         .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
@@ -51,14 +51,16 @@ void input_text(GUIManager& gui, const char* id, std::string* val, const TextBox
         return a;
     };
 
-    gui.element<TextBox<std::string>>(id, d);
+    return gui.element<TextBox<std::string>>(id, d);
 }
 
-void input_text_field(GUIManager& gui, const char* id, std::string_view name, std::string* val, const TextBoxOptions& options) {
+TextBox<std::string>* input_text_field(GUIManager& gui, const char* id, std::string_view name, std::string* val, const TextBoxOptions& options) {
+    TextBox<std::string>* toRet;
     left_to_right_line_layout(gui, [&]() {
         text_label(gui, name);
-        input_text(gui, id, val, options);
+        toRet = input_text(gui, id, val, options);
     });
+    return toRet;
 }
 
 template <> void input_scalar<uint8_t>(GUIManager& gui, const char* id, uint8_t* val, uint8_t minVal, uint8_t maxVal, const TextBoxScalarOptions& options) {
@@ -91,7 +93,7 @@ template <> void input_scalar<uint8_t>(GUIManager& gui, const char* id, uint8_t*
     gui.element<TextBox<uint8_t>>(id, d);
 }
 
-void input_path(GUIManager& gui, const char* id, std::filesystem::path* val, const TextBoxPathOptions& options) {
+TextBox<std::filesystem::path>* input_path(GUIManager& gui, const char* id, std::filesystem::path* val, const TextBoxPathOptions& options) {
     InputManager::TextInputProperties textInputProps {
         .inputType = SDL_TextInputType::SDL_TEXTINPUT_TYPE_TEXT,
         .capitalization = SDL_Capitalization::SDL_CAPITALIZE_NONE,
@@ -113,14 +115,16 @@ void input_path(GUIManager& gui, const char* id, std::filesystem::path* val, con
         return a.string();
     };
 
-    gui.element<TextBox<std::filesystem::path>>(id, d);
+    return gui.element<TextBox<std::filesystem::path>>(id, d);
 }
 
-void input_path_field(GUIManager& gui, const char* id, std::string_view name, std::filesystem::path* val, const TextBoxPathOptions& options) {
+TextBox<std::filesystem::path>* input_path_field(GUIManager& gui, const char* id, std::string_view name, std::filesystem::path* val, const TextBoxPathOptions& options) {
+    TextBox<std::filesystem::path>* toRet;
     left_to_right_line_layout(gui, [&]() {
         text_label(gui, name);
-        input_path(gui, id, val, options);
+        toRet = input_path(gui, id, val, options);
     });
+    return toRet;
 }
 
 } }
