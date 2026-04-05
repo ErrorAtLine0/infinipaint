@@ -48,6 +48,7 @@ MainProgram::MainProgram():
         logMessages.emplace_front(Toolbar::LogMessage{text, Toolbar::LogMessage::COLOR_ERROR});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
+        g.gui.set_to_layout();
     });
 
     Logger::get().add_log("USERINFO", [&](const std::string& text) {
@@ -56,11 +57,13 @@ MainProgram::MainProgram():
         logMessages.emplace_front(Toolbar::LogMessage{text, Toolbar::LogMessage::COLOR_NORMAL});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
+        g.gui.set_to_layout();
     });
 
     Logger::get().add_log("CHAT", [&](const std::string& text) {
         *logFile << "[CHAT] " << text << std::endl;
         std::cout << "[CHAT] " << text << std::endl;
+        g.gui.set_to_layout();
     });
 }
 
@@ -81,8 +84,11 @@ void MainProgram::update() {
     }
 
     g.update();
+    toolbar.update();
 
     NetLibrary::update();
+
+    post_callback();
 }
 
 bool MainProgram::app_close_requested() {
@@ -318,6 +324,7 @@ bool MainProgram::input_keybind_callback(const Vector2ui32& newKey) {
         input.keyAssignments.emplace(newKey, v);
         keybindWaiting = std::nullopt;
         g.gui.set_to_layout();
+        post_callback();
         return true;
     }
     return false;

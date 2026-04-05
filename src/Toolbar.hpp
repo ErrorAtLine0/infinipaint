@@ -15,6 +15,8 @@ class MainProgram;
 class Toolbar {
     public:
         struct LogMessage {
+            static constexpr float DISPLAY_TIME = 8.0f;
+            static constexpr float FADE_START_TIME = 7.0f;
             std::string text;
             enum {
                 COLOR_NORMAL = 0,
@@ -41,6 +43,7 @@ class Toolbar {
         std::string chatMessageInput;
 
         Toolbar(MainProgram& initMain);
+        void update();
         void layout_run();
         struct ColorSelectorData {
             std::function<void()> onChange;

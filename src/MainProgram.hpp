@@ -81,8 +81,6 @@ class MainProgram {
         std::ofstream* logFile;
         std::deque<Toolbar::LogMessage> logMessages;
 
-        std::string newAddr;
-        
         MainProgram();
         void update();
         void draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData);

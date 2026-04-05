@@ -246,6 +246,17 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 )";
 }
 
+void Toolbar::update() {
+    std::erase_if(main.logMessages, [&](auto& logM) {
+        logM.time.update_time_since();
+        if(logM.time > LogMessage::FADE_START_TIME) {
+            main.g.gui.set_to_layout();
+            return logM.time >= LogMessage::DISPLAY_TIME;
+        }
+        return false;
+    });
+}
+
 void Toolbar::layout_run() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
@@ -1149,41 +1160,41 @@ void Toolbar::global_log() {
         },
         .floating = {.offset = {0, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
     }) {
-    //    constexpr float DISPLAY_TIME = 8.0f;
-    //    constexpr float FADE_START_TIME = 7.0f;
-    //    int i = 0;
-    //    for(auto& logM : main.logMessages) {
-    //        logM.time.update_time_since();
-    //        if(logM.time < DISPLAY_TIME) {
-    //            float a = 1.0f - lerp_time<float>(logM.time, DISPLAY_TIME, FADE_START_TIME);
-    //            Clay_ElementId elemId = CLAY_IDI_LOCAL("GLOBAL LOG", i++);
-    //            CLAY(elemId, {
-    //                .layout = {
-    //                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
-    //                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
-    //                    .childGap = 0,
-    //                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-    //                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //                },
-    //                .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
-    //                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-    //            }) {
-    //                gui.obstructing_window(elemId);
-    //                SkColor4f c{0, 0, 0, 0};
-    //                switch(logM.color) {
-    //                    case LogMessage::COLOR_NORMAL:
-    //                        c = io.theme->frontColor1;
-    //                        break;
-    //                    case LogMessage::COLOR_ERROR:
-    //                        c = io.theme->errorColor;
-    //                        break;
-    //                }
-    //                gui.text_label_color(logM.text, color_mul_alpha(c, a));
-    //            }
-    //        }
-    //        else
-    //            break;
-    //    }
+        int i = 0;
+        for(auto& logM : main.logMessages) {
+            logM.time.update_time_since();
+            if(logM.time < LogMessage::DISPLAY_TIME) {
+                float a = 1.0f - lerp_time<float>(logM.time, LogMessage::DISPLAY_TIME, LogMessage::FADE_START_TIME);
+                gui.new_id(i, [&] {
+                    gui.element<LayoutElement>("GLOBAL LOG", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                        CLAY(lId, {
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
+                                .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                .childGap = 0,
+                                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                                .layoutDirection = CLAY_TOP_TO_BOTTOM
+                            },
+                            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
+                            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+                        }) {
+                            SkColor4f c{0, 0, 0, 0};
+                            switch(logM.color) {
+                                case LogMessage::COLOR_NORMAL:
+                                    c = io.theme->frontColor1;
+                                    break;
+                                case LogMessage::COLOR_ERROR:
+                                    c = io.theme->errorColor;
+                                    break;
+                            }
+                            text_label_color(gui, logM.text, color_mul_alpha(c, a));
+                        }
+                    });
+                });
+            }
+            else
+                break;
+        }
     }
 }
 
