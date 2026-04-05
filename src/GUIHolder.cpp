@@ -162,3 +162,8 @@ void GUIHolder::input_finger_touch_callback(const InputManager::FingerTouchCallb
 
 void GUIHolder::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
 }
+
+void GUIHolder::post_callback() {
+    gui.run_post_callback_func();
+    gui.layout_if_necessary();
+}

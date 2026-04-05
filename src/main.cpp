@@ -436,6 +436,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
         initialize_sdl(mS, initWidth, initHeight);
 
+        CustomEvents::init();
+
         int32_t cursorData[2] = {0, 0};
         mS.hiddenCursor = SDL_CreateCursor((Uint8 *)cursorData, (Uint8 *)cursorData, 8, 8, 4, 4);
 
@@ -548,16 +550,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         resize_window(mS);
 
         if(listOfFilesToOpenFromCommand.empty()) {
-            mS.m->new_tab({
+            mS.m->create_new_tab({
                 .isClient = false
-            }, true);
+            });
         }
         else {
             for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
-                mS.m->new_tab({
+                mS.m->create_new_tab({
                     .isClient = false,
                     .filePathSource = f
-                }, true);
+                });
             }
         }
 
@@ -837,6 +839,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             default: {
                 if(event->type == CustomEvents::PASTE_EVENT)
                     mS.m->input.backend_paste_event();
+                else if(event->type == CustomEvents::OPEN_INFINIPAINT_FILE_EVENT)
+                    mS.m->input.backend_open_infinipaint_file_event();
                 break;
             }
         }

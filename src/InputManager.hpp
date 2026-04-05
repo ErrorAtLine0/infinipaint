@@ -262,6 +262,7 @@ struct InputManager {
     void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
     void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
 
+    void backend_open_infinipaint_file_event();
     void backend_paste_event();
     void backend_input_text_event(const std::string& str);
     void backend_drop_file_event(const SDL_DropEvent& e);

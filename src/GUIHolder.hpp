@@ -30,6 +30,7 @@ class GUIHolder {
         void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
         void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
+        void post_callback();
 
         float final_gui_scale();
     private:

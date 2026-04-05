@@ -1,4 +1,5 @@
 #include "MainProgram.hpp"
+#include "CustomEvents.hpp"
 #include "VersionConstants.hpp"
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
@@ -69,27 +70,6 @@ void MainProgram::update() {
 
     input.update();
 
-    for(auto& s : setTabsToClose)
-        std::erase(worlds, s.lock());
-
-    std::erase_if(worlds, [&](const std::shared_ptr<World>& w) {
-        return w->setToDestroy;
-    });
-
-    if(worldIndex >= worlds.size())
-        worldIndex = worlds.size() - 1;
-    if(worlds.size() == 0)
-        new_tab({
-            .isClient = false
-        }, true);
-
-    std::shared_ptr<World> oldWorld = world;
-    world = worlds[worldIndex];
-    if(oldWorld != world) {
-        if(oldWorld)
-            oldWorld->on_tab_out();
-    }
-
     deltaTime.update_time_since();
     deltaTime.update_time_point();
 
@@ -103,13 +83,6 @@ void MainProgram::update() {
     g.update();
 
     NetLibrary::update();
-
-    if(tabSetToOpen) {
-        tabSetToOpen = false;
-        new_tab_open();
-    }
-
-    return;
 }
 
 bool MainProgram::app_close_requested() {
@@ -121,31 +94,6 @@ void MainProgram::update_display_names() {
         if(!w->netObjMan.is_connected())
             w->ownClientData->set_display_name(conf.displayName);
     }
-}
-
-void MainProgram::new_tab(const World::OpenWorldInfo& tabInfo, bool createSameThread) {
-    newTabToOpenInfo = tabInfo;
-    if(createSameThread)
-        new_tab_open();
-    else
-        tabSetToOpen = true;
-}
-
-void MainProgram::new_tab_open() {
-    std::unique_ptr<World> newWorld;
-    try {
-        newWorld = std::make_unique<World>(*this, newTabToOpenInfo);
-    }
-    catch(const std::runtime_error& e) {
-        Logger::get().log("WORLDFATAL", "Failed to open canvas: " + (newTabToOpenInfo.filePathSource.has_value() ? newTabToOpenInfo.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
-        return;
-    }
-    worlds.emplace_back(std::move(newWorld));
-    worldIndex = worlds.size() - 1;
-}
-
-void MainProgram::set_tab_to_close(const std::weak_ptr<World>& tabToClose) {
-    setTabsToClose.emplace_back(tabToClose);
 }
 
 void MainProgram::init_net_library() {
@@ -317,10 +265,44 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
     return nullptr;
 }
 
+void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEventData& openFile) {
+    std::shared_ptr<World> newWorld;
+    try {
+        newWorld = std::make_shared<World>(*this, openFile);
+    }
+    catch(const std::runtime_error& e) {
+        Logger::get().log("WORLDFATAL", "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
+        return;
+    }
+    worlds.emplace_back(newWorld);
+    switch_to_tab(worlds.size() - 1);
+    g.gui.set_to_layout();
+}
+
+void MainProgram::set_tab_to_close(World* world) {
+    tabsToClose.emplace(world);
+}
+
+void MainProgram::switch_to_tab(size_t wIndex) {
+    world = worlds[wIndex];
+    worldIndex = wIndex;
+}
+
+void MainProgram::post_callback() {
+    close_set_to_close_tabs();
+    g.post_callback();
+}
+
+void MainProgram::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEventData& openFile) {
+    create_new_tab(openFile);
+    post_callback();
+}
+
 void MainProgram::input_paste_callback(const CustomEvents::PasteEventData& paste) {
     g.input_paste_callback(paste);
     if(world)
         world->input_paste_callback(paste);
+    post_callback();
 }
 
 bool MainProgram::input_keybind_callback(const Vector2ui32& newKey) {
@@ -345,10 +327,10 @@ void MainProgram::input_drop_file_callback(const InputManager::DropCallbackArgs&
     if(std::filesystem::is_regular_file(drop.data)) {
         std::filesystem::path droppedFilePath(drop.data);
         if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
-            new_tab({
+            CustomEvents::emit_open_infinipaint_file_event({
                 .isClient = false,
                 .filePathSource = droppedFilePath
-            }, true);
+            });
             return;
         }
     }
@@ -378,36 +360,42 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     g.input_key_callback(key);
     if(world)
         world->input_key_callback(key);
+    post_callback();
 }
 
 void MainProgram::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     g.input_text_key_callback(key);
     if(world)
         world->input_text_key_callback(key);
+    post_callback();
 }
 
 void MainProgram::input_text_callback(const InputManager::TextCallbackArgs& text) {
     g.input_text_callback(text);
     if(world)
         world->input_text_callback(text);
+    post_callback();
 }
 
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     g.input_mouse_button_callback(button);
     if(world)
         world->input_mouse_button_callback(button);
+    post_callback();
 }
 
 void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     g.input_mouse_motion_callback(motion);
     if(world)
         world->input_mouse_motion_callback(motion);
+    post_callback();
 }
 
 void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
     g.input_mouse_wheel_callback(wheel);
     if(world)
         world->input_mouse_wheel_callback(wheel);
+    post_callback();
 }
 
 void MainProgram::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
@@ -444,6 +432,29 @@ void MainProgram::input_finger_touch_callback(const InputManager::FingerTouchCal
 }
 
 void MainProgram::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
+}
+
+void MainProgram::close_set_to_close_tabs() {
+    if(!tabsToClose.empty()) {
+        std::erase_if(worlds, [&](auto& w) {
+            if(tabsToClose.contains(w.get())) {
+                if(w == world)
+                    world = nullptr;
+                return true;
+            }
+            return false;
+        });
+        if(worlds.empty())
+            create_new_tab({
+                .isClient = false
+            });
+        else if(world)
+            worldIndex = std::find(worlds.begin(), worlds.end(), world) - worlds.begin();
+        else
+            switch_to_tab(0);
+        tabsToClose.clear();
+        g.gui.set_to_layout();
+    }
 }
 
 bool MainProgram::network_being_used() {

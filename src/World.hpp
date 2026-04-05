@@ -1,6 +1,7 @@
 #pragma once
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
+#include "CustomEvents.hpp"
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
 #include "WorldUndoManager.hpp"
 #include "Bookmarks/BookmarkManager.hpp"
@@ -24,15 +25,7 @@ class World {
         static constexpr std::string FILE_EXTENSION = "infpnt";
         static constexpr size_t CHAT_SIZE = 10;
 
-        struct OpenWorldInfo {
-            bool isClient;
-            std::optional<std::filesystem::path> filePathSource;
-            std::string netSource;
-            std::string serverLocalID;
-            std::string_view fileDataBuffer;
-        };
-
-        World(MainProgram& initMain, OpenWorldInfo& worldInfo);
+        World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEventData& worldInfo);
 
         // NOTE: Keep at the very beginning so that it's destroyed last
         NetworkingObjects::NetObjManager netObjMan;
@@ -87,10 +80,9 @@ class World {
         void scale_up_step();
 
         bool should_ask_before_closing();
+        void set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal);
         bool is_focus();
 
-        bool hasUnsavedLocalChanges = false;
-        bool setToDestroy = false;
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
 
         std::shared_ptr<NetServer> netServer;
@@ -112,6 +104,9 @@ class World {
         void input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch);
         void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion);
     private:
+
+        bool hasUnsavedLocalChanges = false;
+
         void load_empty_canvas();
 
         Vector3f get_random_cursor_color();
@@ -125,7 +120,7 @@ class World {
         void draw_other_player_cursors(SkCanvas* canvas, const DrawData& drawData);
         void ensure_display_name_unique(std::string& displayName);
 
-        void connection_update();
+        bool connection_update();
 
         TimePoint timeToSendCameraData;
 

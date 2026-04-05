@@ -1,4 +1,5 @@
 #include "Toolbar.hpp"
+#include "CustomEvents.hpp"
 #include "DrawingProgram/Tools/DrawingProgramToolBase.hpp"
 #include "DrawingProgram/Tools/ScreenshotTool.hpp"
 #include "FileHelpers.hpp"
@@ -50,6 +51,7 @@
 #include "GUIStuff/Elements/LayoutElement.hpp"
 #include "GUIStuff/Elements/DropDown.hpp"
 #include "GUIStuff/Elements/SVGIcon.hpp"
+#include "GUIStuff/Elements/MovableTabList.hpp"
 
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
 #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
@@ -320,6 +322,7 @@ void Toolbar::add_world_to_close_popup_data(const std::shared_ptr<World>& w) {
     });
     if(it == closePopupData.worldsToClose.end())
         closePopupData.worldsToClose.emplace_back(w, true);
+    main.g.gui.set_to_layout();
 }
 
 void Toolbar::close_popup_gui() {
@@ -388,7 +391,7 @@ void Toolbar::close_popup_gui() {
                         else
                             wLock->save_to_file(wLock->filePath);
                     }
-                    main.set_tab_to_close(w);
+                    main.set_tab_to_close(wLock.get());
                 }
                 closePopupData.worldsToClose.clear();
                 if(closePopupData.closeAppWhenDone)
@@ -398,8 +401,11 @@ void Toolbar::close_popup_gui() {
         text_button(gui, "Discard All", "Discard All", {
             .wide = true,
             .onClick = [&] {
-                for(auto& [w, setToSave] : closePopupData.worldsToClose)
-                    main.set_tab_to_close(w);
+                for(auto& [w, setToSave] : closePopupData.worldsToClose) {
+                    auto wLock = w.lock();
+                    if(wLock)
+                        main.set_tab_to_close(wLock.get());
+                }
                 closePopupData.worldsToClose.clear();
                 if(closePopupData.closeAppWhenDone)
                     main.setToQuit = true;
@@ -495,31 +501,26 @@ void Toolbar::top_toolbar() {
                 menuPopUpOpen = !menuPopUpOpen;
             });
 
+            std::vector<MovableTabListData::IconNamePair> tabNames;
+            for(size_t i = 0; i < main.worlds.size(); i++) {
+                auto& w = main.worlds[i];
+                bool shouldAddStarNextToName = w->should_ask_before_closing() && !w->netServer && !w->netClient;
+                tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
+            }
 
-            // Temporary gap between buttons while tab list is being fixed
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+            gui.element<MovableTabList>("file tab list", MovableTabListData{
+                .tabNames = tabNames,
+                .selectedTab = main.worldIndex,
+                .changeSelectedTab = [&] (size_t i) {
+                    main.switch_to_tab(i);
+                },
+                .closeTab = [&] (size_t i) {
+                    if(main.worlds[i]->should_ask_before_closing())
+                        add_world_to_close_popup_data(main.worlds[i]);
+                    else
+                        main.set_tab_to_close(main.worlds[i].get());
                 }
-            }) { }
-
-
-            //std::vector<std::pair<std::string, std::string>> tabNames;
-            //for(size_t i = 0; i < main.worlds.size(); i++) {
-            //    auto& w = main.worlds[i];
-            //    bool shouldAddStarNextToName = w->should_ask_before_closing() && !w->netServer && !w->netClient;
-            //    tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
-            //}
-
-            //std::optional<size_t> closedTab;
-            //gui.tab_list("file tab list", tabNames, main.worldIndex, closedTab);
-            //if(closedTab) {
-            //    auto& closedWorldPtr = main.worlds[closedTab.value()];
-            //    if(closedWorldPtr->should_ask_before_closing())
-            //        add_world_to_close_popup_data(closedWorldPtr);
-            //    else
-            //        main.set_tab_to_close(closedWorldPtr);
-            //}
+            });
 
             if(!main.world->clientStillConnecting) {
                 if(main.world->netObjMan.is_connected()) {
@@ -596,9 +597,9 @@ void Toolbar::top_toolbar() {
                                 });
                             };
                             menu_popup_text_button("new file local", "New File", [&] {
-                                main.new_tab({
+                                CustomEvents::emit_open_infinipaint_file_event({
                                     .isClient = false
-                                }, true);
+                                });
                             });
                             menu_popup_text_button("open file", "Open", [&] { open_world_file(false, "", ""); });
                             if(!main.world->clientStillConnecting) {
@@ -1454,18 +1455,8 @@ void Toolbar::player_list() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(500), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-            .childGap = io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
+
+    center_obstructing_window_gui("player client list", CLAY_SIZING_FIT(500), CLAY_SIZING_FIT(0), [&] {
         gui.new_id("client list", [&] {
             text_label_centered(gui, "Player List");
             if(!main.world->clientStillConnecting) {
@@ -1505,7 +1496,7 @@ void Toolbar::player_list() {
                 playerMenuOpen = false;
             }});
         });
-    }
+    });
 }
 
 void Toolbar::open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID2) {
@@ -1534,7 +1525,7 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
     }, &uploadData);
 #else
     open_file_selector("Open", {{"InfiniPaint Canvas", World::FILE_EXTENSION}, {"Any File", "*"}}, [&, isClient = isClient, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
-        main.new_tab({
+        CustomEvents::emit_open_infinipaint_file_event({
             .isClient = isClient,
             .filePathSource = p,
             .netSource = netSource,
@@ -1611,10 +1602,10 @@ void Toolbar::options_menu() {
                         else if(serverToConnectTo.substr(0, NetLibrary::GLOBALID_LEN) == NetLibrary::get_global_id())
                             Logger::get().log("USERINFO", "Connect issue: Can't connect to your own address");
                         else {
-                            main.new_tab({
+                            CustomEvents::emit_open_infinipaint_file_event({
                                 .isClient = true,
                                 .netSource = serverToConnectTo
-                            }, true);
+                            });
                             optionsMenuOpen = false;
                         }
                     });

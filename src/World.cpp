@@ -38,7 +38,7 @@
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
-World::World(MainProgram& initMain, OpenWorldInfo& worldInfo):
+World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEventData& worldInfo):
     netObjMan(!worldInfo.isClient),
     main(initMain),
     undo(*this),
@@ -151,12 +151,15 @@ void World::init_client(const std::string& serverFullID) {
         #endif
 
         clientStillConnecting = false;
+        drawProg.world.main.g.gui.set_to_layout();
     });
     netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
+        drawProg.world.main.g.gui.set_to_layout();
     });
     netClient->add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_many_update_message(message, nullptr);
+        drawProg.world.main.g.gui.set_to_layout();
     });
     netClient->add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
@@ -165,8 +168,7 @@ void World::init_client(const std::string& serverFullID) {
 }
 
 void World::focus_update() {
-    connection_update();
-    if(setToDestroy)
+    if(!connection_update())
         return;
 
     if(!clientStillConnecting) {
@@ -190,7 +192,7 @@ void World::focus_update() {
     rMan.update();
 }
 
-void World::connection_update() {
+bool World::connection_update() {
     if(netServer) {
         if(netServer->is_disconnected()) {
             Logger::get().log("USERINFO", "Host connection failed");
@@ -209,8 +211,9 @@ void World::connection_update() {
     else if(netClient) {
         if(netClient->is_disconnected()) {
             Logger::get().log("USERINFO", "Client connection failed");
-            setToDestroy = true;
             netObjMan.disconnect();
+            main.set_tab_to_close(this);
+            return false;
         }
         netClient->update();
         if(std::chrono::steady_clock::now() - lastKeepAliveSent > std::chrono::seconds(2)) {
@@ -218,6 +221,7 @@ void World::connection_update() {
             lastKeepAliveSent = std::chrono::steady_clock::now();
         }
     }
+    return true;
 }
 
 bool World::is_focus() {
@@ -236,8 +240,6 @@ void World::redo_with_checks() {
 
 void World::unfocus_update() {
     connection_update();
-    if(setToDestroy)
-        return;
 }
 
 void World::on_tab_out() {
@@ -580,6 +582,13 @@ bool World::should_ask_before_closing() {
         return !(netClient && filePath.empty());
     return hasUnsavedLocalChanges;
 #endif
+}
+
+void World::set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal) {
+    bool oldHasUnsavedLocalChanges = hasUnsavedLocalChanges;
+    hasUnsavedLocalChanges = newHasUnsavedLocalChangesVal;
+    if(oldHasUnsavedLocalChanges != hasUnsavedLocalChanges)
+        main.g.gui.set_to_layout();
 }
 
 #ifdef ENABLE_ORDERED_LIST_TEST

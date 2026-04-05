@@ -76,7 +76,6 @@ class MainProgram {
         TimePoint deltaTime;
         Toolbar toolbar;
         GUIHolder g;
-        std::shared_ptr<World> world;
         ToolConfiguration toolConfig;
 
         std::ofstream* logFile;
@@ -93,8 +92,6 @@ class MainProgram {
         
         void early_destroy();
 
-        void new_tab(const World::OpenWorldInfo& tabInfo, bool createSameThread = false);
-        void set_tab_to_close(const std::weak_ptr<World>& tabToClose);
         bool network_being_used();
         bool net_server_hosted();
         void update_display_names();
@@ -117,11 +114,13 @@ class MainProgram {
         bool drawGui = true;
 
         size_t worldIndex = 0;
+        std::shared_ptr<World> world;
         std::vector<std::shared_ptr<World>> worlds;
 
         GlobalConfig conf;
 
         std::optional<unsigned> keybindWaiting;
+        void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEventData& openFile);
         void input_paste_callback(const CustomEvents::PasteEventData& paste);
         bool input_keybind_callback(const Vector2ui32& newKey);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
@@ -141,13 +140,15 @@ class MainProgram {
         void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
 
+        void create_new_tab(const CustomEvents::OpenInfiniPaintFileEventData& openFile);
+        void set_tab_to_close(World* world);
+        void switch_to_tab(size_t wIndex);
+
         ~MainProgram();
     private:
-        void new_tab_open();
-        std::atomic<bool> tabSetToOpen = false;
-        World::OpenWorldInfo newTabToOpenInfo;
-
-        std::vector<std::weak_ptr<World>> setTabsToClose;
+        std::unordered_set<World*> tabsToClose;
+        void close_set_to_close_tabs();
+        void post_callback();
 
         std::string gen_random_display_name();
 

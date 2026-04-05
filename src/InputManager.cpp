@@ -362,6 +362,11 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     return toRet;
 }
 
+void InputManager::backend_open_infinipaint_file_event() {
+    main.input_open_infinipaint_file_callback(CustomEvents::get_open_infinipaint_file_event_data());
+    CustomEvents::pop_open_infinipaint_file_event_data();
+}
+
 void InputManager::backend_paste_event() {
     main.input_paste_callback(CustomEvents::get_paste_event_data());
     CustomEvents::pop_paste_event_data();

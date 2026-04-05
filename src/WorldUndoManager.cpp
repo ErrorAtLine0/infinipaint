@@ -19,7 +19,7 @@ bool WorldUndoManager::can_redo() {
 void WorldUndoManager::push(std::unique_ptr<WorldUndoAction> undoAction) {
     push_undo(std::move(undoAction));
     redoQueue.clear();
-    world.hasUnsavedLocalChanges = true;
+    world.set_has_unsaved_local_changes(true);
 }
 
 void WorldUndoManager::push_undo(std::unique_ptr<WorldUndoAction> undoAction) {
@@ -160,7 +160,7 @@ void WorldUndoManager::set_save_action() {
         undoActionSavedAt = nullptr;
     else
         undoActionSavedAt = undoQueue.back().get();
-    world.hasUnsavedLocalChanges = false;
+    world.set_has_unsaved_local_changes(false);
 }
 
 void WorldUndoManager::set_world_has_unsaved_local_changes() {
@@ -169,11 +169,11 @@ void WorldUndoManager::set_world_has_unsaved_local_changes() {
     // - nullptr: The file was saved when undoQueue was empty
     // - nullopt: The undo action the file was saved at was lost
     if(!undoActionSavedAt.has_value())
-        world.hasUnsavedLocalChanges = true;
+        world.set_has_unsaved_local_changes(true);
     else {
         if(undoQueue.empty())
-            world.hasUnsavedLocalChanges = undoActionSavedAt.value() != nullptr;
+            world.set_has_unsaved_local_changes(undoActionSavedAt.value() != nullptr);
         else
-            world.hasUnsavedLocalChanges = undoActionSavedAt.value() != undoQueue.back().get();
+            world.set_has_unsaved_local_changes(undoActionSavedAt.value() != undoQueue.back().get());
     }
 }
