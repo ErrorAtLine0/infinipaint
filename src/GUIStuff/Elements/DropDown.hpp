@@ -38,7 +38,7 @@ template <typename T> class DropDown : public Element {
                                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                             }
                         }) {
-                            ElementHelpers::text_label(gui, selections[*data]);
+                            ElementHelpers::text_label(gui, selections[static_cast<size_t>(*data)]);
                             CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
                             CLAY_AUTO_ID({
                                 .layout = {
@@ -121,7 +121,7 @@ template <typename T> class DropDown : public Element {
                                                 update_hovering_over(i, l->mouseHovering);
                                                 if(l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
                                                     gui.set_post_callback_func([&, i] {
-                                                        *d = i;
+                                                        *d = static_cast<T>(i);
                                                         isOpen = false;
                                                         if(opts.onClick) opts.onClick();
                                                     });

@@ -32,7 +32,7 @@ void ColorRectangleDisplay::clay_draw(SkCanvas* canvas, UpdateInputData& io, Cla
         SkPaint alphaPaint;
         alphaPaint.setShader(get_alpha_background_shader());
         canvas->drawPaint(alphaPaint);
-        canvas->drawPaint(SkPaint{color});
+        canvas->drawPaint(SkPaint{SkColor4f(color.fR, color.fG, color.fB, std::sqrt(color.fA))}); // Square root for alpha to keep color visible
         canvas->restore();
     }
 }

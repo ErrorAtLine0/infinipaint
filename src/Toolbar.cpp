@@ -166,9 +166,9 @@ void Toolbar::color_button_left(const char* id, Vector4f* color, const ColorSele
     auto& gui = main.g.gui;
     color_button(gui, id, color, {
         .isSelected = colorLeft == color,
-        .onClick = [&, colorSelectorData, color] {
+        .onClickButton = [&, colorSelectorData, color] (SelectableButton* b) {
             if(colorSelectorData.onSelectorButtonClick) colorSelectorData.onSelectorButtonClick();
-            color_selector_left(color, {
+            color_selector_left(b, color, {
                 .onChange = colorSelectorData.onChange,
                 .onSelect = colorSelectorData.onSelect,
                 .onDeselect = colorSelectorData.onDeselect,
@@ -181,9 +181,9 @@ void Toolbar::color_button_right(const char* id, Vector4f* color, const ColorSel
     auto& gui = main.g.gui;
     color_button(gui, id, color, {
         .isSelected = colorRight == color,
-        .onClick = [&, colorSelectorData, color] {
+        .onClickButton = [&, colorSelectorData, color] (SelectableButton* b) {
             if(colorSelectorData.onSelectorButtonClick) colorSelectorData.onSelectorButtonClick();
-            color_selector_right(color, {
+            color_selector_right(b, color, {
                 .onChange = colorSelectorData.onChange,
                 .onSelect = colorSelectorData.onSelect,
                 .onDeselect = colorSelectorData.onDeselect,
@@ -192,23 +192,25 @@ void Toolbar::color_button_right(const char* id, Vector4f* color, const ColorSel
     });
 }
 
-void Toolbar::color_selector_left(Vector4f* color, const ColorSelectorData& colorSelectorData) {
+void Toolbar::color_selector_left(Element* button, Vector4f* color, const ColorSelectorData& colorSelectorData) {
     if(colorLeft != color) {
-        colorLeftJustEnabled = color;
+        colorLeft = color;
         colorLeftData = colorSelectorData;
+        colorLeftButton = button;
     }
     else
-        colorLeftJustDisabled = true;
+        colorLeft = nullptr;
     main.g.gui.set_to_layout();
 }
 
-void Toolbar::color_selector_right(Vector4f* color, const ColorSelectorData& colorSelectorData) {
+void Toolbar::color_selector_right(Element* button, Vector4f* color, const ColorSelectorData& colorSelectorData) {
     if(colorRight != color) {
-        colorRightJustEnabled = color;
+        colorRight = color;
         colorRightData = colorSelectorData;
+        colorRightButton = button;
     }
     else
-        colorRightJustDisabled = true;
+        colorRight = nullptr;
     main.g.gui.set_to_layout();
 }
 
@@ -310,12 +312,6 @@ void Toolbar::layout_run() {
 
     if(!main.world->clientStillConnecting)
         main.world->drawProg.right_click_popup_gui();
-
-    // Make sure theyre set to null in case drawing_program_gui wasn't called
-    colorLeftJustEnabled = nullptr;
-    colorLeftJustDisabled = false;
-    colorRightJustEnabled = nullptr;
-    colorRightJustDisabled = false;
 }
 
 bool Toolbar::app_close_requested() {
@@ -497,7 +493,6 @@ void Toolbar::top_toolbar() {
         }) {
             global_log();
             bool bookmarkMenuPopUpJustOpen = false;
-            bool gridMenuPopUpJustOpen = false;
             bool layerMenuPopUpJustOpen = false;
 
             auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
@@ -545,13 +540,11 @@ void Toolbar::top_toolbar() {
                 icon_button_top_toolbar("Menu Redo Button", "data/icons/redo.svg", false, [&] {
                     main.world->redo_with_checks();
                 });
-                icon_button_top_toolbar("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen, [&] {
+                Element* gridMenuButton = icon_button_top_toolbar("Grids Button", "data/icons/grid.svg", gridMenu.popupOpen, [&] {
                     if(gridMenu.popupOpen)
                         stop_displaying_grid_menu();
-                    else {
+                    else
                         gridMenu.popupOpen = true;
-                        gridMenuPopUpJustOpen = true;
-                    }
                 });
                 icon_button_top_toolbar("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen, [&] {
                     if(layerMenuPopupOpen) {
@@ -575,7 +568,7 @@ void Toolbar::top_toolbar() {
                 });
 
                 if(gridMenu.popupOpen)
-                    grid_menu(gridMenuPopUpJustOpen);
+                    grid_menu(gridMenuButton);
                 if(bookmarkMenuPopupOpen)
                     bookmark_menu(bookmarkMenuPopUpJustOpen);
                 if(layerMenuPopupOpen)
@@ -845,95 +838,116 @@ void Toolbar::update_notification_gui() {
 }
 #endif
 
-void Toolbar::grid_menu(bool justOpened) {
+void Toolbar::grid_menu(Element* gridMenuButton) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
     if(main.world->gridMan.grids) {
-        gui.new_id("grid menu", [&] {
-        //CLAY(localId, {
-        //    .layout = {
-        //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-        //        .padding = CLAY_PADDING_ALL(io.theme->padding1),
-        //        .childGap = io.theme->childGap1,
-        //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-        //        .layoutDirection = CLAY_TOP_TO_BOTTOM
-        //    },
-        //    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        //    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-        //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-        //}) {
-        //    gui.obstructing_window(localId);
-        //    text_label_centered(gui, "Grids");
-        //    float entryHeight = 25.0f;
-        //    if(main.world->gridMan.grids->empty())
-        //        text_label_centered(gui, "No grids yet...");
-        //    uint32_t toDelete = std::numeric_limits<uint32_t>::max();
-        //    gui.scroll_bar_many_entries_area("grid menu entries", entryHeight, main.world->gridMan.grids->size(), true, [&](size_t i, bool isListHovered) {
-        //        auto& grid = main.world->gridMan.grids->at(i)->obj;
-        //        bool selectedEntry = gridMenu.selectedGrid == i;
-        //        CLAY_AUTO_ID({
-        //            .layout = {
-        //                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(entryHeight)},
-        //                .childGap = 2,
-        //                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
-        //                .layoutDirection = CLAY_LEFT_TO_RIGHT 
-        //            },
-        //            .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io.theme->backColor1) : convert_vec4<Clay_Color>(io.theme->backColor2)
-        //        }) {
-        //            text_label(gui, grid->get_display_name());
-        //            bool miniButtonClicked = false;
-        //            CLAY_AUTO_ID({
-        //                .layout = {
-        //                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-        //                    .childGap = 1,
-        //                    .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
-        //                    .layoutDirection = CLAY_LEFT_TO_RIGHT
-        //                }
-        //            }) {
-        //                if(gui.svg_icon_button_transparent("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", false, entryHeight, false)) {
-        //                    miniButtonClicked = true;
-        //                    grid->visible = !grid->visible;
-        //                    NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
-        //                }
-        //                if(gui.svg_icon_button_transparent("edit pencil", "data/icons/pencil.svg", false, entryHeight, false)) {
-        //                    miniButtonClicked = true;
-        //                    main.world->drawProg.modify_grid(grid);
-        //                    stop_displaying_grid_menu();
-        //                }
-        //                if(gui.svg_icon_button_transparent("delete trash", "data/icons/trash.svg", false, entryHeight, false)) {
-        //                    miniButtonClicked = true;
-        //                    toDelete = i;
-        //                }
-        //            }
-        //            if(Clay_Hovered() && io.mouse.leftClick && isListHovered && !miniButtonClicked) {
-        //                gridMenu.selectedGrid = i;
-        //                if(io.mouse.leftClick >= 2) {
-        //                    main.world->drawProg.modify_grid(grid);
-        //                    stop_displaying_grid_menu();
-        //                }
-        //            }
-        //        }
-        //    });
-        //    if(toDelete != std::numeric_limits<uint32_t>::max())
-        //        main.world->gridMan.remove_grid(toDelete);
-        //    gui.left_to_right_line_layout([&]() {
-        //        bool addByEnter = false;
-        //        gui.input_text("grid text input", &gridMenu.newName, true, [&](GUIStuff::SelectionHelper& s) {
-        //            addByEnter = s.selected && io.key.enter;
-        //        });
-        //        if(gui.svg_icon_button("grid add button", "data/icons/plusbold.svg", false, GUIStuff::GUIManager::SMALL_BUTTON_SIZE) || (addByEnter && !gridMenu.newName.empty())) {
-        //            main.world->gridMan.add_default_grid(gridMenu.newName);
-        //            main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
-        //            stop_displaying_grid_menu();
-        //        }
-        //    });
-
-        //    bool dropdownHover = false;
-        //    if(io.mouse.leftClick && !Clay_Hovered() && !justOpened && !dropdownHover)
-        //        stop_displaying_grid_menu();
-        //}
+        gui.set_z_index(gui.get_z_index() + 1, [&] {
+            gui.element<LayoutElement>("grid menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                CLAY(lId, {
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+                        .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                        .childGap = io.theme->childGap1,
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                }) {
+                    text_label_centered(gui, "Grids");
+                    float ENTRY_HEIGHT = 25.0f;
+                    if(main.world->gridMan.grids->empty())
+                        text_label_centered(gui, "No grids yet...");
+                    scroll_area_many_entries(gui, "grid menu entries", {
+                        .entryHeight = ENTRY_HEIGHT,
+                        .entryCount = main.world->gridMan.grids->size(),
+                        .clipHorizontal = true,
+                        .elementContent = [&](size_t i) {
+                            auto& grid = main.world->gridMan.grids->at(i)->obj;
+                            bool selectedEntry = gridMenu.selectedGrid == i;
+                            gui.element<LayoutElement>("elem", [&] (LayoutElement*, const Clay_ElementId& lId2) {
+                                CLAY(lId2, {
+                                    .layout = {
+                                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ENTRY_HEIGHT)},
+                                        .childGap = 2,
+                                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                                        .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                                    },
+                                    .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(io.theme->backColor1) : convert_vec4<Clay_Color>(io.theme->backColor2)
+                                }) {
+                                    text_label(gui, grid->get_display_name());
+                                    CLAY_AUTO_ID({
+                                        .layout = {
+                                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                                            .childGap = 1,
+                                            .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
+                                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                                        }
+                                    }) {
+                                        auto list_button = [&](const char* id, const char* svgPath, const std::function<void()>& onClick) {
+                                            gui.set_z_index_keep_clipping_region(gui.get_z_index() + 1, [&] {
+                                                svg_icon_button(gui, id, svgPath, {
+                                                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                                    .size = ENTRY_HEIGHT,
+                                                    .onClick = onClick
+                                                });
+                                            });
+                                        };
+                                        list_button("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", [&] {
+                                            grid->visible = !grid->visible;
+                                            NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
+                                        });
+                                        list_button("edit pencil", "data/icons/pencil.svg", [&] {
+                                            main.world->drawProg.modify_grid(grid);
+                                            stop_displaying_grid_menu();
+                                        });
+                                        list_button("delete trash", "data/icons/trash.svg", [&, i] {
+                                            main.world->gridMan.remove_grid(i);
+                                        });
+                                    }
+                                }
+                            }, LayoutElement::Callbacks {
+                                .mouseButton = [&, i] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                                    if(l->mouseHovering && button.down && button.button == InputManager::MouseButton::LEFT) {
+                                        gridMenu.selectedGrid = i;
+                                        if(button.clicks == 2) {
+                                            main.world->drawProg.modify_grid(grid);
+                                            stop_displaying_grid_menu();
+                                        }
+                                        gui.set_to_layout();
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    left_to_right_line_layout(gui, [&]() {
+                        input_text(gui, "grid text input", &gridMenu.newName, {
+                            .onEnter = [&]() { add_grid(); }
+                        });
+                        svg_icon_button(gui, "grid add button", "data/icons/plusbold.svg", {
+                            .size = SMALL_BUTTON_SIZE,
+                            .onClick = [&] { add_grid(); }
+                        });
+                    });
+                }
+            }, LayoutElement::Callbacks {
+                .mouseButton = [&, gridMenuButton] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                    if(!l->mouseHovering && !l->childMouseHovering && !gridMenuButton->mouseHovering && button.down)
+                        stop_displaying_grid_menu();
+                }
+            });
         });
+    }
+}
+
+void Toolbar::add_grid() {
+    if(!gridMenu.newName.empty()) {
+        main.world->gridMan.add_default_grid(gridMenu.newName);
+        main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
+        stop_displaying_grid_menu();
     }
 }
 
@@ -941,6 +955,7 @@ void Toolbar::stop_displaying_grid_menu() {
     gridMenu.newName.clear();
     gridMenu.popupOpen = false;
     gridMenu.selectedGrid = std::numeric_limits<uint32_t>::max();
+    main.g.gui.set_to_layout();
 }
 
 void Toolbar::bookmark_menu(bool justOpened) {
@@ -1212,31 +1227,21 @@ void Toolbar::drawing_program_gui() {
     }) {
         main.world->drawProg.toolbar_gui();
 
-        if(colorLeftJustEnabled)
-            colorLeft = colorLeftJustEnabled;
-        else if(colorLeftJustDisabled)
-            colorLeft = nullptr;
-
-        if(colorRightJustEnabled)
-            colorRight = colorRightJustEnabled;
-        else if(colorRightJustDisabled)
-            colorRight = nullptr;
-
         if(colorLeft)
-            color_picker_window("Drawing program gui color picker left", &colorLeft, &colorLeftJustDisabled, colorLeftData);
+            color_picker_window("Drawing program gui color picker left", &colorLeft, colorLeftButton, colorLeftData);
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
             }
         }) {}
         if(colorRight)
-            color_picker_window("Drawing program gui color picker right", &colorRight, &colorRightJustDisabled, colorRightData);
+            color_picker_window("Drawing program gui color picker right", &colorRight, colorRightButton, colorRightData);
 
         main.world->drawProg.tool_options_gui();
     }
 }
 
-void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const ColorSelectorData& colorSelectorData) {
+void Toolbar::color_picker_window(const char* id, Vector4f** color, GUIStuff::Element* b, const ColorSelectorData& colorSelectorData) {
     auto& gui = main.g.gui;
 
     CLAY_AUTO_ID({
@@ -1268,9 +1273,9 @@ void Toolbar::color_picker_window(const char* id, Vector4f** color, bool* colorJ
                 });
             }
         }, LayoutElement::Callbacks{
-            .mouseButton = [&, colorJustDisabled](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
-                if(!l->mouseHovering && !l->childMouseHovering && button.down) {
-                    *colorJustDisabled = true;
+            .mouseButton = [&, b, color](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                if(!l->mouseHovering && !l->childMouseHovering && !b->mouseHovering && button.down) {
+                    *color = nullptr;
                     main.g.gui.set_to_layout();
                 }
             }

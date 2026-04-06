@@ -14,7 +14,11 @@ void SelectableButton::layout(const Clay_ElementId& id, const Data& d) {
     SkColor4f backgroundColorHighlight;
     SkColor4f backgroundColor;
 
-    onClick = d.onClick;
+    onClick = [&, this, d] {
+        if(d.onClickButton)
+            d.onClickButton(this);
+        else if(d.onClick) d.onClick();
+    };
 
     if(isHeld || ((d.isSelected || mouseHovering) && d.drawType == DrawType::TRANSPARENT_BORDER))
         borderColor = io.theme->fillColor1;
@@ -66,8 +70,10 @@ void SelectableButton::layout(const Clay_ElementId& id, const Data& d) {
 void SelectableButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     bool oldIsHeld = isHeld;
     isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
-    if(isHeld) {
-        gui.set_post_callback_func([&]{ if(onClick) onClick(); });
+    if(isHeld)
+        gui.set_to_layout();
+    else if(mouseHovering && oldIsHeld && button.button == InputManager::MouseButton::LEFT && !button.down) {
+        gui.set_post_callback_func(onClick);
         gui.set_to_layout();
     }
     else if(mouseHovering != oldIsHovering || isHeld != oldIsHeld)

@@ -29,6 +29,7 @@ class GUIManager {
         void new_id(int64_t id, const std::function<void()>& f);
 
         void set_z_index(int16_t z, const std::function<void()>& f);
+        void set_z_index_keep_clipping_region(int16_t z, const std::function<void()>& f);
         int16_t get_z_index();
 
         void set_post_callback_func(const std::function<void()>& f);

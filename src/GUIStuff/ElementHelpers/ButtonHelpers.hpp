@@ -13,6 +13,7 @@ template <typename OptT> SelectableButton::Data selectable_button_options_to_dat
     toRet.onClick = options.onClick;
     toRet.isSelected = options.isSelected;
     toRet.drawType = options.drawType;
+    toRet.onClickButton = options.onClickButton;
     return toRet;
 }
 
@@ -23,6 +24,7 @@ struct TextButtonOptions {
     bool centered = true;
 
     std::function<void()> onClick;
+    std::function<void(SelectableButton*)> onClickButton;
 };
 
 struct SVGButtonOptions {
@@ -31,6 +33,7 @@ struct SVGButtonOptions {
     float size = BIG_BUTTON_SIZE;
 
     std::function<void()> onClick;
+    std::function<void(SelectableButton*)> onClickButton;
 };
 
 struct FixedSizeColorButtonOptions {
@@ -40,13 +43,15 @@ struct FixedSizeColorButtonOptions {
     float size = BIG_BUTTON_SIZE;
 
     std::function<void()> onClick;
+    std::function<void(SelectableButton*)> onClickButton;
 };
 
 void text_button(GUIManager& gui, const char* id, std::string_view text, const TextButtonOptions& options = {});
 void text_button_sized(GUIManager& gui, const char* id, std::string_view text, Clay_SizingAxis x, Clay_SizingAxis y, const TextButtonOptions& options = {});
 SelectableButton* svg_icon_button(GUIManager& gui, const char* id, const std::string& svgPath, const SVGButtonOptions& options = {});
 
-template <typename T> void color_button(GUIManager& gui, const char* id, T* val, const FixedSizeColorButtonOptions& options = {}) {
+template <typename T> SelectableButton* color_button(GUIManager& gui, const char* id, T* val, const FixedSizeColorButtonOptions& options = {}) {
+    SelectableButton* toRet;
     gui.new_id(id, [&] {
         SelectableButton::Data d = selectable_button_options_to_data(options);
         d.innerContent = [&] (const SelectableButton::InnerContentCallbackParameters&) {
@@ -58,9 +63,10 @@ template <typename T> void color_button(GUIManager& gui, const char* id, T* val,
             });
         };
         CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_FIXED(options.size), .height = CLAY_SIZING_FIXED(options.size) } } }) {
-            gui.element<SelectableButton>("button", d);
+            toRet = gui.element<SelectableButton>("button", d);
         }
     });
+    return toRet;
 }
 
 }}

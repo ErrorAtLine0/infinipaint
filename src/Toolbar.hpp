@@ -56,8 +56,8 @@ class Toolbar {
             std::function<void()> onSelect;
             std::function<void()> onDeselect;
         };
-        void color_selector_left(Vector4f* color, const ColorSelectorData& colorSelectorData = {});
-        void color_selector_right(Vector4f* color, const ColorSelectorData& colorSelectorData = {});
+        void color_selector_left(GUIStuff::Element* button, Vector4f* color, const ColorSelectorData& colorSelectorData = {});
+        void color_selector_right(GUIStuff::Element* button, Vector4f* color, const ColorSelectorData& colorSelectorData = {});
         void color_button_left(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData = {});
         void color_button_right(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData = {});
 
@@ -73,14 +73,12 @@ class Toolbar {
         void load_palettes();
         void load_licenses();
 
+        GUIStuff::Element* colorLeftButton; 
         Vector4f* colorLeft = nullptr;
-        bool colorLeftJustDisabled = false;
-        Vector4f* colorLeftJustEnabled = nullptr;
         ColorSelectorData colorLeftData;
 
+        GUIStuff::Element* colorRightButton; 
         Vector4f* colorRight = nullptr;
-        bool colorRightJustDisabled = false;
-        Vector4f* colorRightJustEnabled = nullptr;
         ColorSelectorData colorRightData;
 
         bool app_close_requested();
@@ -93,7 +91,8 @@ class Toolbar {
         void chat_box();
         void global_log();
         void top_toolbar();
-        void grid_menu(bool justOpened);
+        void grid_menu(GUIStuff::Element* gridMenuButton);
+        void add_grid();
         void stop_displaying_grid_menu();
         void bookmark_menu(bool justOpened);
         void layer_menu(bool justOpened);
@@ -103,7 +102,7 @@ class Toolbar {
         void file_picker_gui_done();
         void file_picker_gui();
         void performance_metrics();
-        void color_picker_window(const char* id, Vector4f** color, bool* colorJustDisabled, const ColorSelectorData& colorSelectorData);
+        void color_picker_window(const char* id, Vector4f** color, GUIStuff::Element* b, const ColorSelectorData& colorSelectorData);
         void color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
         void load_default_palette();

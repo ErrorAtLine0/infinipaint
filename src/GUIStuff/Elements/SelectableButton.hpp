@@ -22,6 +22,7 @@ class SelectableButton : public Element {
             DrawType drawType = DrawType::TRANSPARENT_ALL;
             bool isSelected = false;
             std::function<void()> onClick;
+            std::function<void(SelectableButton*)> onClickButton;
             std::function<void(const InnerContentCallbackParameters&)> innerContent;
         };
 

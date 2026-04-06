@@ -299,11 +299,15 @@ void GUIManager::new_id(int64_t id, const std::function<void()>& f) {
 void GUIManager::set_z_index(int16_t z, const std::function<void()>& f) {
     auto oldClippingRegion = clippingRegion;
     clippingRegion = std::nullopt;
+    set_z_index_keep_clipping_region(z, f);
+    clippingRegion = oldClippingRegion;
+}
+
+void GUIManager::set_z_index_keep_clipping_region(int16_t z, const std::function<void()>& f) {
     int16_t oldZIndex = zIndex;
     zIndex = z;
     f();
     zIndex = oldZIndex;
-    clippingRegion = oldClippingRegion;
 }
 
 int16_t GUIManager::get_z_index() {
