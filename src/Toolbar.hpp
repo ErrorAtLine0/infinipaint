@@ -94,7 +94,8 @@ class Toolbar {
         void grid_menu(GUIStuff::Element* gridMenuButton);
         void add_grid();
         void stop_displaying_grid_menu();
-        void bookmark_menu(bool justOpened);
+        void stop_displaying_bookmark_menu();
+        void bookmark_menu(GUIStuff::Element* bookmarkMenuButton);
         void layer_menu(bool justOpened);
         void drawing_program_gui();
         void options_menu();

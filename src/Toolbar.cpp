@@ -492,7 +492,6 @@ void Toolbar::top_toolbar() {
             .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
         }) {
             global_log();
-            bool bookmarkMenuPopUpJustOpen = false;
             bool layerMenuPopUpJustOpen = false;
 
             auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
@@ -556,21 +555,17 @@ void Toolbar::top_toolbar() {
                         layerMenuPopUpJustOpen = true;
                     }
                 });
-                icon_button_top_toolbar("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen, [&] {
-                    if(bookmarkMenuPopupOpen) {
-                        main.world->bMan.refresh_gui_data();
-                        bookmarkMenuPopupOpen = false;
-                    }
-                    else {
+                Element* bookmarkMenuButton = icon_button_top_toolbar("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen, [&] {
+                    if(bookmarkMenuPopupOpen)
+                        stop_displaying_bookmark_menu();
+                    else
                         bookmarkMenuPopupOpen = true;
-                        bookmarkMenuPopUpJustOpen = true;
-                    }
                 });
 
                 if(gridMenu.popupOpen)
                     grid_menu(gridMenuButton);
                 if(bookmarkMenuPopupOpen)
-                    bookmark_menu(bookmarkMenuPopUpJustOpen);
+                    bookmark_menu(bookmarkMenuButton);
                 if(layerMenuPopupOpen)
                     layer_menu(layerMenuPopUpJustOpen);
             }
@@ -855,7 +850,7 @@ void Toolbar::grid_menu(Element* gridMenuButton) {
                     },
                     .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
                     .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-                    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
                 }) {
                     text_label_centered(gui, "Grids");
                     float ENTRY_HEIGHT = 25.0f;
@@ -958,32 +953,39 @@ void Toolbar::stop_displaying_grid_menu() {
     main.g.gui.set_to_layout();
 }
 
-void Toolbar::bookmark_menu(bool justOpened) {
+void Toolbar::stop_displaying_bookmark_menu() {
+    main.world->bMan.refresh_gui_data();
+    bookmarkMenuPopupOpen = false;
+    main.g.gui.set_to_layout();
+}
+
+void Toolbar::bookmark_menu(Element* bookmarkMenuButton) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    gui.new_id("bookmark menu", [&] {
-    //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT BOOKMARK MENU");
-    //CLAY(localId, {
-    //    .layout = {
-    //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-    //        .padding = CLAY_PADDING_ALL(io.theme->padding1),
-    //        .childGap = io.theme->childGap1,
-    //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-    //        .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //    },
-    //    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-    //    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    //}) {
-    //    gui.obstructing_window(localId);
-    //    text_label_centered(gui, "Bookmarks");
-    //    main.world->bMan.setup_list_gui("bookmark menu list");
-    //    if(io.mouse.leftClick && !Clay_Hovered() && !justOpened) {
-    //        bookmarkMenuPopupOpen = false;
-    //        main.world->bMan.refresh_gui_data();
-    //    }
-    //}
+    gui.set_z_index(gui.get_z_index() + 1, [&] {
+        gui.element<LayoutElement>("grid menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+            CLAY(lId, {
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                    .childGap = io.theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+            }) {
+                text_label_centered(gui, "Bookmarks");
+                main.world->bMan.setup_list_gui("bookmark menu list");
+            }
+        }, LayoutElement::Callbacks {
+            .mouseButton = [&, bookmarkMenuButton] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                if(!l->mouseHovering && !l->childMouseHovering && !bookmarkMenuButton->mouseHovering && button.down)
+                    stop_displaying_bookmark_menu();
+            }
+        });
     });
 }
 

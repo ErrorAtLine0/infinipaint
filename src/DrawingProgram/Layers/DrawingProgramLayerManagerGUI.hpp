@@ -20,7 +20,6 @@ class DrawingProgramLayerManagerGUI {
         void remove_layer(const NetworkingObjects::NetObjID& parentID, const NetworkingObjects::NetObjID& objectID);
         void editing_layer_check();
 
-        GUIStuff::TreeListing::SelectionData selectionData;
         std::unordered_set<NetworkingObjects::NetObjID> oldSelection;
         std::string nameToEdit;
         std::string nameForNew;

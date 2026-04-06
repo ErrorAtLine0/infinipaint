@@ -20,17 +20,20 @@ class BookmarkManager {
 
         NetworkingObjects::NetObjOwnerPtr<BookmarkListItem> bookmarkListRoot;
     private:
+        NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem> get_bookmark_parent_from_obj_index(const GUIStuff::TreeListingObjIndexList& objIndex);
+        NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem> get_bookmark_from_obj_index(const GUIStuff::TreeListingObjIndexList& objIndex);
         std::pair<NetworkingObjects::NetObjID, NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem>> create_in_proper_position(BookmarkListItem* newItem);
         std::optional<std::pair<NetworkingObjects::NetObjID, NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem>>> try_to_create_in_proper_position(BookmarkListItem* newItem);
         NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> create_bookmark(BookmarkListItem* newItem);
-        void remove_bookmark(const NetworkingObjects::NetObjID& parentID, const NetworkingObjects::NetObjID& objectID);
+        void remove_bookmark(const GUIStuff::TreeListingObjIndexList& objIndex);
 
-        GUIStuff::TreeListing::SelectionData selectionData;
-        std::unordered_set<NetworkingObjects::NetObjID> oldSelection;
         std::string nameToEdit;
         std::string nameForNew;
 
-        std::optional<std::string> editingBookmarkName;
+        std::set<GUIStuff::TreeListingObjIndexList> selectedBookmarkIndices;
+
+        NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem> editingBookmark;
+        std::optional<std::string> editingBookmarkOldName;
 
         void editing_bookmark_check();
 

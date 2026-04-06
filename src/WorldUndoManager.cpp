@@ -1,5 +1,6 @@
 #include "WorldUndoManager.hpp"
 #include "World.hpp"
+#include "MainProgram.hpp"
 
 void WorldUndoAction::scale_up(const WorldScalar& scaleAmount) {}
 WorldUndoAction::~WorldUndoAction() {}
@@ -42,6 +43,9 @@ void WorldUndoManager::push_redo(std::unique_ptr<WorldUndoAction> undoAction) {
 void WorldUndoManager::undo() {
     if(undoQueue.empty())
         return;
+
+    world.bMan.refresh_gui_data();
+    
     if(!undoQueue.back()->undo(*this))
         clear();
     else {
@@ -50,11 +54,16 @@ void WorldUndoManager::undo() {
     }
 
     set_world_has_unsaved_local_changes();
+
+    world.main.g.gui.set_to_layout();
 }
 
 void WorldUndoManager::redo() {
     if(redoQueue.empty())
         return;
+
+    world.bMan.refresh_gui_data();
+
     if(!redoQueue.back()->redo(*this))
         clear();
     else {
@@ -63,6 +72,8 @@ void WorldUndoManager::redo() {
     }
 
     set_world_has_unsaved_local_changes();
+
+    world.main.g.gui.set_to_layout();
 }
 
 void WorldUndoManager::clear() {

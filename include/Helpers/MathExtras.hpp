@@ -300,6 +300,8 @@ template <typename T> std::array<Vector<T, 2>, 4> triangle_from_rect_points(cons
 }
 
 template <typename T> std::string vec_pretty(const T& a) {
+    if(a.size() == 0)
+        return "[]";
     std::stringstream ss;
     ss << "[";
     for(size_t i = 0; i < a.size(); i++) {
