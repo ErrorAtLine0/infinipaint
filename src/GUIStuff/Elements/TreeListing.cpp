@@ -26,6 +26,16 @@ bool operator<(const GUIStuff::TreeListingObjIndexList& a, const GUIStuff::TreeL
 
 namespace GUIStuff {
 
+bool is_tree_listing_obj_index_parent(const TreeListingObjIndexList& parentToCheck, const TreeListingObjIndexList& obj) {
+    if(parentToCheck.size() >= obj.size())
+        return false;
+    for(size_t i = 0; i < parentToCheck.size(); i++) {
+        if(parentToCheck[i] != obj[i])
+            return false;
+    }
+    return true;
+}
+
 using namespace ElementHelpers;
 
 TreeListing::TreeListing(GUIManager& gui):
@@ -40,92 +50,164 @@ void TreeListing::layout(const Clay_ElementId& id, const Data& newDisplayData) {
     CLAY(id, {
         .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
     }) {
-        scroll_area_many_entries(gui, "scroll", {
-            .entryHeight = ENTRY_HEIGHT,
-            .entryCount = flattenedIndexList.size(),
-            .elementContent = [&](size_t i) {
-                const ObjInfo& objInfo = flattenedIndexList[i];
-                gui.element<LayoutElement>("elem", [&](LayoutElement*, const Clay_ElementId& lId) {
-                    SkColor4f backgroundColor;
-                    if(d.selectedIndices && d.selectedIndices->contains(flattenedIndexList[i].objIndex))
-                        backgroundColor = gui.io.theme->backColor1;
-                    else
-                        backgroundColor = gui.io.theme->backColor2;
+        gui.element<LayoutElement>("scroll parent", [&] (LayoutElement*, const Clay_ElementId& lIdParent) {
+            CLAY(lIdParent, {
+                .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
+            }) {
+                scroll_area_many_entries(gui, "scroll", {
+                    .entryHeight = ENTRY_HEIGHT,
+                    .entryCount = flattenedIndexList.size(),
+                    .elementContent = [&](size_t i) {
+                        const ObjInfo& objInfo = flattenedIndexList[i];
+                        gui.element<LayoutElement>("elem", [&](LayoutElement*, const Clay_ElementId& lId) {
+                            SkColor4f backgroundColor;
+                            if(d.selectedIndices && d.selectedIndices->contains(flattenedIndexList[i].objIndex))
+                                backgroundColor = gui.io.theme->backColor1;
+                            else
+                                backgroundColor = gui.io.theme->backColor2;
 
-                    CLAY(lId, {
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                            .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
-                        },
-                        .backgroundColor = convert_vec4<Clay_Color>(backgroundColor)
-                    }) {
-                        if(objInfo.objIndex.size() > 1) {
-                            CLAY_AUTO_ID({
-                                .layout = {.sizing = {.width = CLAY_SIZING_FIXED((objInfo.objIndex.size() - 1) * ICON_SIZE), .height = CLAY_SIZING_GROW(0)}}
-                            }) {}
-                        }
-                        CLAY_AUTO_ID({
-                            .layout = {.sizing = {.width = CLAY_SIZING_FIXED(ICON_SIZE), .height = CLAY_SIZING_FIXED(ICON_SIZE)}}
-                        }) {
-                            if(!objInfo.isDirectory)
-                                d.drawNonDirectoryObjIconGUI(objInfo.objIndex);
-                            else {
-                                gui.set_z_index_keep_clipping_region(gui.get_z_index() + 1, [&] {
-                                    svg_icon_button(gui, "open dir button", objInfo.isOpen ? "data/icons/droparrow.svg" : "data/icons/droparrowclose.svg", {
-                                        .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                                        .size = ICON_SIZE,
-                                        .onClick = [&] {
-                                            d.setDirectoryOpen(objInfo.objIndex, !objInfo.isOpen);
-                                            if(d.selectedIndices) {
-                                                d.selectedIndices->clear();
+                            uint16_t borderWidth = (isDragging && i == dragIndexEnd && dragIndexStart != dragIndexEnd) ? 1 : 0;
+
+                            CLAY(lId, {
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                                    .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
+                                },
+                                .backgroundColor = convert_vec4<Clay_Color>(backgroundColor),
+                                .border = {
+                                    .color = convert_vec4<Clay_Color>(gui.io.theme->frontColor1),
+                                    .width = {
+                                        .left = 0,
+                                        .right = 0,
+                                        .top = borderWidth,
+                                        .bottom = 0,
+                                        .betweenChildren = 0
+                                    }
+                                }
+                            }) {
+                                if(objInfo.objIndex.size() > 1) {
+                                    CLAY_AUTO_ID({
+                                        .layout = {.sizing = {.width = CLAY_SIZING_FIXED((objInfo.objIndex.size() - 1) * ICON_SIZE), .height = CLAY_SIZING_GROW(0)}}
+                                    }) {}
+                                }
+                                CLAY_AUTO_ID({
+                                    .layout = {.sizing = {.width = CLAY_SIZING_FIXED(ICON_SIZE), .height = CLAY_SIZING_FIXED(ICON_SIZE)}}
+                                }) {
+                                    if(!objInfo.isDirectory)
+                                        d.drawNonDirectoryObjIconGUI(objInfo.objIndex);
+                                    else {
+                                        gui.set_z_index_keep_clipping_region(gui.get_z_index() + 1, [&] {
+                                            svg_icon_button(gui, "open dir button", objInfo.isOpen ? "data/icons/droparrow.svg" : "data/icons/droparrowclose.svg", {
+                                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                                .size = ICON_SIZE,
+                                                .onClick = [&] {
+                                                    d.setDirectoryOpen(objInfo.objIndex, !objInfo.isOpen);
+                                                    if(d.selectedIndices) {
+                                                        d.selectedIndices->clear();
+                                                        if(d.onSelectChange) d.onSelectChange();
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    }
+                                }
+                                d.drawObjGUI(objInfo.objIndex);
+                            }
+                        }, LayoutElement::Callbacks {
+                            .mouseButton = [&, i] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                                if(l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
+                                    gui.set_post_callback_func([&, i, buttonClicks = button.clicks]{
+                                        auto& objIndex = flattenedIndexList[i].objIndex;
+                                        if(d.selectedIndices) {
+                                            auto it = d.selectedIndices->find(objIndex);
+                                            bool wasSelected = it != d.selectedIndices->end();
+
+                                            if(gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held) {
+                                                if(!wasSelected) {
+                                                    d.selectedIndices->emplace(objIndex);
+                                                    if(d.onSelectChange) d.onSelectChange();
+                                                }
+                                            }
+                                            else if(gui.io.input->key(InputManager::KEY_GENERIC_LCTRL).held) {
+                                                if(!wasSelected)
+                                                    d.selectedIndices->emplace(objIndex);
+                                                else
+                                                    d.selectedIndices->erase(it);
                                                 if(d.onSelectChange) d.onSelectChange();
                                             }
+                                            else if(buttonClicks == 2) {
+                                                if(d.onDoubleClick) d.onDoubleClick(objIndex);
+                                            }
+                                            else {
+                                                if(buttonClicks == 2 && d.onDoubleClick) d.onDoubleClick(objIndex);
+                                                if(!wasSelected) {
+                                                    d.selectedIndices->clear();
+                                                    d.selectedIndices->emplace(objIndex);
+                                                    if(d.onSelectChange) d.onSelectChange();
+                                                }
+                                                isDragging = true;
+                                                dragIndexStart = dragIndexEnd = i;
+                                            }
                                         }
+                                        else if(buttonClicks == 2)
+                                            if(d.onDoubleClick) d.onDoubleClick(objIndex);
                                     });
-                                });
-                            }
-                        }
-                        d.drawObjGUI(objInfo.objIndex);
-                    }
-                }, LayoutElement::Callbacks {
-                    .mouseButton = [&, i] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
-                        if(l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
-                            gui.set_post_callback_func([&]{
-                                auto& objIndex = flattenedIndexList[i].objIndex;
-                                if(d.selectedIndices) {
-                                    auto it = d.selectedIndices->find(objIndex);
-                                    bool wasSelected = it != d.selectedIndices->end();
-
-                                    if(gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held) {
-                                        if(!wasSelected) {
-                                            d.selectedIndices->emplace(objIndex);
-                                            if(d.onSelectChange) d.onSelectChange();
-                                        }
-                                    }
-                                    else if(gui.io.input->key(InputManager::KEY_GENERIC_LCTRL).held) {
-                                        if(!wasSelected)
-                                            d.selectedIndices->emplace(objIndex);
-                                        else
-                                            d.selectedIndices->erase(it);
-                                        if(d.onSelectChange) d.onSelectChange();
-                                    }
-                                    else if(!wasSelected || d.selectedIndices->size() != 1) {
-                                        d.selectedIndices->clear();
-                                        d.selectedIndices->emplace(objIndex);
-                                        if(d.onSelectChange) d.onSelectChange();
-                                    }
-                                    else if(button.clicks == 2)
-                                        if(d.onDoubleClick) d.onDoubleClick(objIndex);
+                                    gui.set_to_layout();
                                 }
-                                else if(button.clicks == 2)
-                                    if(d.onDoubleClick) d.onDoubleClick(objIndex);
-                            });
-                            gui.set_to_layout();
-                        }
+                            },
+                            .mouseMotion = [&, i] (LayoutElement* l, const InputManager::MouseMotionCallbackArgs& motion) {
+                                if(isDragging && l->mouseHovering && dragIndexEnd != i) {
+                                    dragIndexEnd = i;
+                                    gui.set_to_layout();
+                                }
+                            }
+                        });
                     }
                 });
             }
+        }, LayoutElement::Callbacks {
+            .mouseButton = [&] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                if(button.button == InputManager::MouseButton::LEFT && !button.down) {
+                    if(isDragging) {
+                        gui.set_to_layout();
+                        isDragging = false;
+                        if(l->mouseHovering || l->childMouseHovering) {
+                            if(dragIndexStart != dragIndexEnd)
+                                gui.set_post_callback_func([&] {move_selected_objects();});
+                            else if(!gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held && !gui.io.input->key(InputManager::KEY_GENERIC_LCTRL).held) {
+                                gui.set_post_callback_func([&, i = dragIndexEnd] {
+                                    if(d.selectedIndices->size() != 1 || !d.selectedIndices->contains(flattenedIndexList[i].objIndex)) {
+                                        d.selectedIndices->clear();
+                                        d.selectedIndices->emplace(flattenedIndexList[i].objIndex);
+                                        if(d.onSelectChange) d.onSelectChange();
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
         });
+    }
+}
+
+void TreeListing::move_selected_objects() {
+    if(d.selectedIndices && dragIndexEnd < flattenedIndexList.size()) {
+        TreeListingObjIndexList objIndexToMoveTo = flattenedIndexList[dragIndexEnd].objIndex;
+        // Check if object is about to move into itself (wrong movement)
+        bool wrongMovement = false;
+        for(const TreeListingObjIndexList& o : *d.selectedIndices) {
+            if(is_tree_listing_obj_index_parent(o, objIndexToMoveTo)) {
+                wrongMovement = true;
+                break;
+            }
+        }
+        if(!wrongMovement) {
+            std::vector<TreeListingObjIndexList> toMove(d.selectedIndices->begin(), d.selectedIndices->end());
+            d.selectedIndices->clear();
+            if(d.onSelectChange) d.onSelectChange();
+            if(d.moveObj) d.moveObj(toMove, objIndexToMoveTo);
+        }
     }
 }
 

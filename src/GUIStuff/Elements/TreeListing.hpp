@@ -5,6 +5,7 @@
 
 namespace GUIStuff {
 typedef std::vector<size_t> TreeListingObjIndexList;
+bool is_tree_listing_obj_index_parent(const TreeListingObjIndexList& parentToCheck, const TreeListingObjIndexList& obj);
 }
 
 bool operator<(const GUIStuff::TreeListingObjIndexList& a, const GUIStuff::TreeListingObjIndexList& b);
@@ -44,6 +45,12 @@ class TreeListing : public Element {
         void layout(const Clay_ElementId& id, const Data& newDisplayData);
     private:
         void recursive_visible_flattened_obj_list(std::vector<ObjInfo>& objs, const TreeListingObjIndexList& objIndex);
+
+        void move_selected_objects();
+
+        bool isDragging = false;
+        size_t dragIndexStart;
+        size_t dragIndexEnd;
 
         std::vector<ObjInfo> flattenedIndexList;
         Data d;
