@@ -95,8 +95,9 @@ class Toolbar {
         void add_grid();
         void stop_displaying_grid_menu();
         void stop_displaying_bookmark_menu();
+        void stop_displaying_layer_menu();
         void bookmark_menu(GUIStuff::Element* bookmarkMenuButton);
-        void layer_menu(bool justOpened);
+        void layer_menu(GUIStuff::Element* layerMenuButton);
         void drawing_program_gui();
         void options_menu();
         void file_picker_gui_refresh_entries();

@@ -545,15 +545,11 @@ void Toolbar::top_toolbar() {
                     else
                         gridMenu.popupOpen = true;
                 });
-                icon_button_top_toolbar("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen, [&] {
-                    if(layerMenuPopupOpen) {
-                        main.world->drawProg.layerMan.listGUI.refresh_gui_data();
-                        layerMenuPopupOpen = false;
-                    }
-                    else {
+                Element* layerMenuButton = icon_button_top_toolbar("Layer Menu Button", "data/icons/layer.svg", layerMenuPopupOpen, [&] {
+                    if(layerMenuPopupOpen)
+                        stop_displaying_layer_menu();
+                    else
                         layerMenuPopupOpen = true;
-                        layerMenuPopUpJustOpen = true;
-                    }
                 });
                 Element* bookmarkMenuButton = icon_button_top_toolbar("Bookmark Menu Button", "data/icons/bookmark.svg", bookmarkMenuPopupOpen, [&] {
                     if(bookmarkMenuPopupOpen)
@@ -567,7 +563,7 @@ void Toolbar::top_toolbar() {
                 if(bookmarkMenuPopupOpen)
                     bookmark_menu(bookmarkMenuButton);
                 if(layerMenuPopupOpen)
-                    layer_menu(layerMenuPopUpJustOpen);
+                    layer_menu(layerMenuButton);
             }
             if(menuPopUpOpen) {
                 gui.set_z_index(5, [&] {
@@ -959,12 +955,18 @@ void Toolbar::stop_displaying_bookmark_menu() {
     main.g.gui.set_to_layout();
 }
 
+void Toolbar::stop_displaying_layer_menu() {
+    main.world->drawProg.layerMan.listGUI.refresh_gui_data();
+    layerMenuPopupOpen = false;
+    main.g.gui.set_to_layout();
+}
+
 void Toolbar::bookmark_menu(Element* bookmarkMenuButton) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
     gui.set_z_index(gui.get_z_index() + 1, [&] {
-        gui.element<LayoutElement>("grid menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+        gui.element<LayoutElement>("bookmark menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
             CLAY(lId, {
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
@@ -978,7 +980,7 @@ void Toolbar::bookmark_menu(Element* bookmarkMenuButton) {
                 .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
             }) {
                 text_label_centered(gui, "Bookmarks");
-                main.world->bMan.setup_list_gui("bookmark menu list");
+                main.world->bMan.setup_list_gui();
             }
         }, LayoutElement::Callbacks {
             .mouseButton = [&, bookmarkMenuButton] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
@@ -989,33 +991,33 @@ void Toolbar::bookmark_menu(Element* bookmarkMenuButton) {
     });
 }
 
-void Toolbar::layer_menu(bool justOpened) {
+void Toolbar::layer_menu(Element* layerMenuButton) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    gui.new_id("layer menu", [&] {
-    //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT LAYER MENU");
-    //CLAY(localId, {
-    //    .layout = {
-    //        .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
-    //        .padding = CLAY_PADDING_ALL(io.theme->padding1),
-    //        .childGap = io.theme->childGap1,
-    //        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-    //        .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //    },
-    //    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-    //    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-    //    .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    //}) {
-    //    gui.obstructing_window(localId);
-    //    text_label_centered(gui, "Layers");
-    //    bool hoveringOverDropdown = false;
-    //    main.world->drawProg.layerMan.listGUI.setup_list_gui("layer menu list", hoveringOverDropdown);
-    //    if(io.mouse.leftClick && !Clay_Hovered() && !justOpened && !hoveringOverDropdown) {
-    //        layerMenuPopupOpen = false;
-    //        main.world->drawProg.layerMan.listGUI.refresh_gui_data();
-    //    }
-    //}
+    gui.set_z_index(gui.get_z_index() + 1, [&] {
+        gui.element<LayoutElement>("layer menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+            CLAY(lId, {
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0, 600) },
+                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                    .childGap = io.theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+            }) {
+                text_label_centered(gui, "Layers");
+                main.world->drawProg.layerMan.listGUI.setup_list_gui();
+            }
+        }, LayoutElement::Callbacks {
+            .mouseButton = [&, layerMenuButton] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                if(!l->mouseHovering && !l->childMouseHovering && !layerMenuButton->mouseHovering && button.down)
+                    stop_displaying_layer_menu();
+            }
+        });
     });
 }
 

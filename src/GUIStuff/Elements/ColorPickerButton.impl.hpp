@@ -12,6 +12,7 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
 
     GUIStuff::ElementHelpers::color_button(gui, "Color Picker Button", val, {
         .isSelected = isOpen,
+        .hasAlpha = data.hasAlpha,
         .onClick = [&]{
             isOpen = !isOpen;
             gui.set_to_layout();

@@ -44,7 +44,7 @@ NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem> BookmarkManager::get_boo
     return toRet;
 }
 
-void BookmarkManager::setup_list_gui(const char* id) {
+void BookmarkManager::setup_list_gui() {
     using namespace NetworkingObjects;
     using namespace GUIStuff;
     using namespace ElementHelpers;
@@ -439,6 +439,7 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
     auto& it = insertedBookmarkPair.second;
     world.undo.push(std::make_unique<AddBookmarkWorldUndoAction>(it->pos, world.undo.get_undoid_from_netid(insertedBookmarkPair.first), world.undo.get_undoid_from_netid(it->obj.get_net_id())));
     world.main.g.gui.set_to_layout();
+    refresh_gui_data();
     return it;
 }
 
