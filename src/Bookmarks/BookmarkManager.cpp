@@ -443,7 +443,7 @@ NetworkingObjects::NetObjOrderedListIterator<BookmarkListItem> BookmarkManager::
 }
 
 void BookmarkManager::remove_bookmark(const GUIStuff::TreeListingObjIndexList& objIndex) {
-    editing_bookmark_check();
+    refresh_gui_data();
 
     class DeleteBookmarkWorldUndoAction : public WorldUndoAction {
         public:

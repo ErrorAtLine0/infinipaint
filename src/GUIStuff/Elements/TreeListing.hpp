@@ -51,6 +51,7 @@ class TreeListing : public Element {
         bool isDragging = false;
         size_t dragIndexStart;
         size_t dragIndexEnd;
+        bool dragFromTop;
 
         std::vector<ObjInfo> flattenedIndexList;
         Data d;
