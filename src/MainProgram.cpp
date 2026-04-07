@@ -76,15 +76,15 @@ void MainProgram::update() {
     deltaTime.update_time_since();
     deltaTime.update_time_point();
 
+    g.update();
+    toolbar.update();
+
     for(auto& w : worlds) {
         if(w == world)
             w->focus_update();
         else
             w->unfocus_update();
     }
-
-    g.update();
-    toolbar.update();
 
     NetLibrary::update();
 

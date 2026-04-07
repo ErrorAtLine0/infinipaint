@@ -144,30 +144,16 @@ void FontPicker::layout(const Clay_ElementId& id, std::string* newFontName, cons
                                             },
                                             .backgroundColor = convert_vec4<Clay_Color>(entryColor)
                                         }) {
-                                            skia::textlayout::ParagraphStyle pStyle;
-                                            pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
-                                            pStyle.setTextHeightBehavior(skia::textlayout::kDisableAll);
-        
-                                            skia::textlayout::StrutStyle strutStyle;
-                                            strutStyle.setStrutEnabled(true);
-                                            strutStyle.setForceStrutHeight(true);
-                                            pStyle.setStrutStyle(strutStyle);
-        
-                                            skia::textlayout::TextStyle tStyle;
-                                            tStyle.setFontSize(gui.io.fontSize);
-                                            tStyle.setFontFamilies({SkString{sortedFontList[i].c_str()}, SkString{"Roboto"}});
-                                            tStyle.setForegroundColor(SkPaint{gui.io.theme->frontColor1});
-                                            pStyle.setTextStyle(tStyle);
-        
-                                            skia::textlayout::ParagraphBuilderImpl pBuilder(pStyle, gui.io.fonts->collection, SkUnicodes::ICU::Make());
-                                            tStyle.setFontStyle(SkFontStyle::Normal());
-        
-                                            pBuilder.pushStyle(tStyle);
-                                            pBuilder.addText(sortedFontList[i].c_str(), sortedFontList[i].size());
-        
-                                            std::shared_ptr<skia::textlayout::Paragraph> p = pBuilder.Build();
+                                            TextParagraph::Data d;
+                                            RichText::TextData::Paragraph& par = d.text.paragraphs.emplace_back();
+                                            par.text = sortedFontList[i];
+                                            d.width = 10000.0f; // Setting width to numeric_limits::max will lead to multiplying it by any number greater than 1 to = infinity, which will cause issues
 
-                                            gui.element<TextParagraph>("font name", p, 10000.0f); // Setting width to numeric_limits::max will lead to multiplying it by any number greater than 1 to = infinity, which will cause issues
+                                            RichText::PositionedTextStyleMod& positionedMod = d.text.tStyleMods.emplace_back();
+                                            positionedMod.pos = {0, 0};
+                                            positionedMod.mods[RichText::TextStyleModifier::ModifierType::FONT_FAMILIES] = std::make_shared<RichText::FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{sortedFontList[i].c_str(), sortedFontList[i].size()}});
+
+                                            gui.element<TextParagraph>("font name", d);
                                         }
                                     }
                                 }, LayoutElement::Callbacks{

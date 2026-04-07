@@ -15,6 +15,8 @@ struct ParagraphStyleData {
         textAlignment = static_cast<skia::textlayout::TextAlign>(alignRead);
         textDirection = static_cast<skia::textlayout::TextDirection>(directionRead);
     }
+    bool operator==(const ParagraphStyleData& o) const = default;
+    bool operator!=(const ParagraphStyleData& o) const = default;
     skia::textlayout::ParagraphStyle get_paragraph_style() const;
 };
 

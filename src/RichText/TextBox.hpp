@@ -27,6 +27,7 @@ struct TextPosition {
         fTextByteIndex = t;
     }
     bool operator==(const TextPosition& o) const = default;
+    bool operator!=(const TextPosition& o) const = default;
     bool operator<(const TextPosition& o) const;
     bool operator>(const TextPosition& o) const;
     bool operator>=(const TextPosition& o) const;
@@ -36,6 +37,8 @@ struct TextPosition {
 struct PositionedTextStyleMod {
     TextPosition pos;
     TextStyleModifier::ModifierMap mods;
+    bool operator==(const PositionedTextStyleMod& o) const = default;
+    bool operator!=(const PositionedTextStyleMod& o) const = default;
 };
 
 typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;
@@ -45,6 +48,8 @@ class TextData {
         struct Paragraph {
             std::string text;
             ParagraphStyleData pStyleData;
+            bool operator==(const Paragraph& o) const = default;
+            bool operator!=(const Paragraph& o) const = default;
             template<typename Archive> void save(Archive& a) const {
                 a(text, pStyleData);
             }
@@ -58,6 +63,8 @@ class TextData {
         std::string get_plain_text() const;
         void save(cereal::PortableBinaryOutputArchive& a) const;
         void load(cereal::PortableBinaryInputArchive& a);
+        bool operator==(const TextData& o) const = default;
+        bool operator!=(const TextData& o) const = default;
         TextStyleModContainer tStyleMods;
         std::vector<Paragraph> paragraphs;
 };
