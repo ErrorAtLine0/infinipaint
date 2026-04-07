@@ -282,6 +282,8 @@ struct InputManager {
     void backend_touch_finger_down_update(const SDL_TouchFingerEvent& e);
     void backend_touch_finger_up_update(const SDL_TouchFingerEvent& e);
     void backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e);
+    void backend_window_resize_update(const SDL_WindowEvent& e);
+    void backend_window_scale_update(const SDL_WindowEvent& e);
 
     void set_clipboard_str(std::string_view s);
     void set_clipboard_plain_and_richtext_pair(const std::pair<std::string, RichText::TextData>& plainAndRichtextPair);
@@ -396,6 +398,15 @@ struct InputManager {
         Vector2f pos;
         Vector2f move;
         size_t fingerDownCount;
+    };
+
+    struct WindowResizeCallbackArgs {
+        Vector2i size;
+        float density;
+    };
+
+    struct WindowScaleCallbackArgs {
+        float scale;
     };
 
     MainProgram& main;

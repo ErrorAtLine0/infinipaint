@@ -828,6 +828,19 @@ void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent
     isTouchDevice = true;
 }
 
+void InputManager::backend_window_resize_update(const SDL_WindowEvent& e) {
+    WindowResizeCallbackArgs w;
+    w.size = {e.data1, e.data2};
+    w.density = main.window.density;
+    main.input_window_resize_callback(w);
+}
+
+void InputManager::backend_window_scale_update(const SDL_WindowEvent& e) {
+    WindowScaleCallbackArgs w;
+    w.scale = main.window.scale;
+    main.input_window_scale_callback(w);
+}
+
 void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
     auto kPress = e.key;
     auto kMod = e.mod;

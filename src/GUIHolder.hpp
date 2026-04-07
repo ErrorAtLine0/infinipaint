@@ -17,6 +17,7 @@ class GUIHolder {
         bool load_theme(const std::filesystem::path& configPath, const std::string& themeName);
 
         void update();
+        void window_update();
         void draw(SkCanvas* canvas, bool skiaAA);
 
         void input_paste_callback(const CustomEvents::PasteEventData& paste);
@@ -30,6 +31,7 @@ class GUIHolder {
         void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
         void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
+
         void post_callback();
 
         float final_gui_scale();

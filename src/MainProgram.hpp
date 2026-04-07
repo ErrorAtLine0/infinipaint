@@ -137,6 +137,8 @@ class MainProgram {
         void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion);
         void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
+        void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w);
+        void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w);
 
         void create_new_tab(const CustomEvents::OpenInfiniPaintFileEventData& openFile);
         void set_tab_to_close(World* world);

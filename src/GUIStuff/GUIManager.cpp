@@ -227,7 +227,7 @@ void GUIManager::update_window(const Vector2f& windowPos, const Vector2f& window
     if(io.windowPos != windowPos || io.windowSize != windowSize || io.guiScaleMultiplier != guiScaleMultiplier)
         set_to_layout();
     io.windowPos = windowPos;
-    io.windowSize = windowSize;
+    io.windowSize = windowSize / guiScaleMultiplier;
     io.guiScaleMultiplier = guiScaleMultiplier;
 }
 
@@ -369,17 +369,17 @@ void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void GUIManager::input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button) {
-    button.pos *= io.guiScaleMultiplier;
+    button.pos /= io.guiScaleMultiplier;
     mouse_callback(button.pos, [&button] (ElementContainer* e) { e->elem->input_mouse_button_callback(button); });
 }
 
 void GUIManager::input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion) {
-    motion.pos *= io.guiScaleMultiplier;
+    motion.pos /= io.guiScaleMultiplier;
     mouse_callback(motion.pos, [&motion] (ElementContainer* e) { e->elem->input_mouse_motion_callback(motion); });
 }
 
 void GUIManager::input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel) {
-    wheel.mousePos *= io.guiScaleMultiplier;
+    wheel.mousePos /= io.guiScaleMultiplier;
     mouse_callback(wheel.mousePos, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
 }
 

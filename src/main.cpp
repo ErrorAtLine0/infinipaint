@@ -638,8 +638,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 #ifdef NDEBUG
     try {
 #endif
-        mS.m->update_scale_and_density();
-
 #ifdef __EMSCRIPTEN__
         if(emscriptenFilesystemReadReady && !emscriptenFilesystemLoadConfigDone) {
             mS.m->load_config();
@@ -718,6 +716,13 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     mS.m->window.writtenSize.y() = event->window.data2;
                 }
                 resize_window(mS);
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_window_resize_update(event->window);
+                get_refresh_rate(mS);
+                break;
+            case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+                mS.m->update_scale_and_density();
+                mS.m->input.backend_window_scale_update(event->window);
                 get_refresh_rate(mS);
                 break;
             case SDL_EVENT_WINDOW_MAXIMIZED:
@@ -729,7 +734,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 get_refresh_rate(mS);
                 break;
             case SDL_EVENT_MOUSE_MOTION:
-                mS.m->update_scale_and_density();
                 #ifdef _WIN32
                     if(!mS.m->toolbar.tabletOptions.ignoreMouseMovementWhenPenInProximity || !mS.m->input.pen.inProximity)
                 #endif
@@ -738,15 +742,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     }
                 break;
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_mouse_button_up_update(event->button);
                 break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_mouse_button_down_update(event->button);
                 break;
             case SDL_EVENT_MOUSE_WHEEL:
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_mouse_wheel_update(event->wheel);
                 break;
             case SDL_EVENT_KEY_DOWN:
@@ -759,11 +760,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.backend_input_text_event(event->text.text);
                 break;
             case SDL_EVENT_DROP_FILE:
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_drop_file_event(event->drop);
                 break;
             case SDL_EVENT_DROP_TEXT:
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_drop_text_event(event->drop);
                 break;
             case SDL_EVENT_PEN_PROXIMITY_IN: {
@@ -775,49 +774,38 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_PEN_MOTION: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_pen_motion_update(event->pmotion);
-                //mS.m->input.pen.isEraser = event->pmotion.pen_state & SDL_PEN_INPUT_ERASER_TIP;
-				//mS.m->input.mouse.set_pos({event->pmotion.x * mS.m->window.density, event->pmotion.y * mS.m->window.density});
                 break;
             }
             case SDL_EVENT_PEN_AXIS: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_pen_axis_update(event->paxis);
                 break;
             }
             case SDL_EVENT_PEN_DOWN: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_pen_touch_down_update(event->ptouch);
                 break;
             }
             case SDL_EVENT_PEN_UP: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_pen_touch_up_update(event->ptouch);
                 break;
             }
             case SDL_EVENT_PEN_BUTTON_UP: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_pen_button_up_update(event->pbutton);
                 break;
             }
             case SDL_EVENT_PEN_BUTTON_DOWN: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_pen_button_down_update(event->pbutton);
                 break;
             }
             case SDL_EVENT_FINGER_DOWN: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_touch_finger_down_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_FINGER_UP: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_touch_finger_up_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_FINGER_MOTION: {
-                mS.m->update_scale_and_density();
                 mS.m->input.backend_touch_finger_motion_update(event->tfinger);
                 break;
             }

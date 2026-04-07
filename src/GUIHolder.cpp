@@ -92,10 +92,12 @@ bool GUIHolder::load_theme(const std::filesystem::path& configPath, const std::s
 }
 
 void GUIHolder::update() {
+    gui.io.deltaTime = main.deltaTime;
+}
+
+void GUIHolder::window_update() {
     calculate_final_gui_scale();
     gui.update_window({0, 0}, main.window.size.cast<float>(), final_gui_scale());
-    gui.io.deltaTime = main.deltaTime;
-    gui.layout_if_necessary();
 }
 
 float GUIHolder::final_gui_scale() {
@@ -136,13 +138,9 @@ void GUIHolder::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void GUIHolder::input_text_key_callback() {
-    gui.run_post_callback_func();
-    gui.layout_if_necessary();
 }
 
 void GUIHolder::input_text_input_callback() {
-    gui.run_post_callback_func();
-    gui.layout_if_necessary();
 }
 
 void GUIHolder::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {

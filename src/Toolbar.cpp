@@ -1784,7 +1784,10 @@ void Toolbar::general_settings_inner_gui() {
                             checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
                         #endif
                         input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
-                        input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {.decimalPrecision = 1});
+                        input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {
+                            .decimalPrecision = 1,
+                            .onEdit = [&] { main.g.window_update(); }
+                        });
                         text_label(gui, "Anti-aliasing:");
                         radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
                             {"None", GlobalConfig::AntiAliasing::NONE},

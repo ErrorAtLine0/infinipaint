@@ -441,6 +441,16 @@ void MainProgram::input_finger_touch_callback(const InputManager::FingerTouchCal
 void MainProgram::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
 }
 
+void MainProgram::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
+    g.window_update();
+    post_callback();
+}
+
+void MainProgram::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {
+    g.window_update();
+    post_callback();
+}
+
 void MainProgram::close_set_to_close_tabs() {
     if(!tabsToClose.empty()) {
         std::erase_if(worlds, [&](auto& w) {
