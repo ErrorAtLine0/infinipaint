@@ -87,6 +87,17 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
                 },
                 .drawObjGUI = [&](const TreeListingObjIndexList& objIndex) {
                     auto layer = get_layer_from_obj_index(objIndex);
+                    if(!layer->is_folder()) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT), .height = CLAY_SIZING_FIXED(GUIStuff::TreeListing::ENTRY_HEIGHT)},
+                                .padding = CLAY_PADDING_ALL(2),
+                            },
+                        }) {
+                            if(layer.get_net_id() == layerMan.editingLayer.get_net_id())
+                                gui.element<SVGIcon>("edit ico", "data/icons/pencil.svg");
+                        }
+                    }
                     CLAY_AUTO_ID({
                         .layout = {
                             .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -127,6 +138,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
                 },
                 .onDoubleClick = [&](const TreeListingObjIndexList& objIndex) {
                     layerMan.editingLayer = get_layer_from_obj_index(objIndex);
+                    layerMan.drawP.world.main.g.gui.set_to_layout();
                 },
                 .onSelectChange = [&] {
                     editing_layer_check();
@@ -357,6 +369,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
                 .onEnter = [&] {
                     auto newLayerObjInfo = create_layer(new DrawingProgramLayerListItem(world.netObjMan, nameForNew, false));
                     layerMan.editingLayer = newLayerObjInfo->obj;
+                    layerMan.drawP.world.main.g.gui.set_to_layout();
                 }
             });
 
@@ -365,6 +378,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
                 .onClick = [&] {
                     auto newLayerObjInfo = create_layer(new DrawingProgramLayerListItem(world.netObjMan, nameForNew, false));
                     layerMan.editingLayer = newLayerObjInfo->obj;
+                    layerMan.drawP.world.main.g.gui.set_to_layout();
                 }
             });
 
