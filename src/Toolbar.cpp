@@ -320,6 +320,7 @@ bool Toolbar::app_close_requested() {
             add_world_to_close_popup_data(w);
     }
     closePopupData.closeAppWhenDone = true;
+    main.g.gui.set_to_layout();
     return closePopupData.worldsToClose.empty();
 }
 

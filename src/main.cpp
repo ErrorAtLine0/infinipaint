@@ -650,11 +650,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         if(mS.m->setToQuit)
             return SDL_APP_SUCCESS;
 
-        if(mS.m->input.toggleFullscreen) {
-            SDL_SetWindowFullscreen(mS.window, !mS.m->window.fullscreen);
-            mS.m->window.fullscreen = !mS.m->window.fullscreen;
-        }
-
         if(mS.m->input.hideCursor) {
             SDL_HideCursor();
             SDL_SetCursor(mS.hiddenCursor); // Using this because SDL hidden cursor sometimes doesnt work
@@ -840,7 +835,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
 #endif
 
-    return SDL_APP_CONTINUE;
+    return mS.m->setToQuit ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {

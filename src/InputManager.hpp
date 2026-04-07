@@ -63,8 +63,6 @@ struct InputManager {
     } cursorIcon;
     bool hideCursor = false;
 
-    bool toggleFullscreen = false;
-
     struct KeyData {
         bool held = false;
         std::chrono::steady_clock::time_point lastPressTime;

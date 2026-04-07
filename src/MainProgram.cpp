@@ -361,7 +361,18 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
         }
         case InputManager::KEY_FULLSCREEN: {
             if(key.down && !key.repeat)
-                input.toggleFullscreen = true;
+                toggle_full_screen();
+            break;
+        }
+        case InputManager::KEY_SAVE: {
+            if(key.down && !key.repeat)
+                toolbar.save_func();
+            break;
+        }
+        case InputManager::KEY_SAVE_AS: {
+            if(key.down && !key.repeat)
+                toolbar.save_as_func();
+            break;
         }
     }
     g.input_key_callback(key);
@@ -449,6 +460,11 @@ void MainProgram::input_window_resize_callback(const InputManager::WindowResizeC
 void MainProgram::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {
     g.window_update();
     post_callback();
+}
+
+void MainProgram::toggle_full_screen() {
+    window.fullscreen = !window.fullscreen;
+    SDL_SetWindowFullscreen(window.sdlWindow, window.fullscreen);
 }
 
 void MainProgram::close_set_to_close_tabs() {

@@ -1060,7 +1060,5 @@ void InputManager::update() {
 
 void InputManager::frame_reset(const Vector2i& windowSize) {
     cursorIcon = SystemCursorType::DEFAULT;
-
-    toggleFullscreen = false;
     hideCursor = false;
 }

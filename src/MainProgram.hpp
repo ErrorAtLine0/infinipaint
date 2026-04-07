@@ -102,6 +102,7 @@ class MainProgram {
         void update_scale_and_density();
         float get_scale_and_density_factor_gui();
         bool app_close_requested();
+        void toggle_full_screen();
 
         void refresh_draw_surfaces();
 
