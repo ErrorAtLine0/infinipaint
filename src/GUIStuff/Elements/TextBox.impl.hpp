@@ -91,7 +91,7 @@ template <typename T> void TextBox<T>::after_text_input_callback() {
     if(userInfo.immutable)
         cur->pos = cur->selectionBeginPos = cur->selectionEndPos = textbox->insert({0, 0}, userInfo.toStr(*userInfo.data));
     else {
-        if(update_data() && userInfo.onEdit)
+        if(userInfo.updateEveryEdit && update_data() && userInfo.onEdit)
             gui.set_post_callback_func_high_priority(userInfo.onEdit);
     }
 }

@@ -1170,51 +1170,53 @@ void Toolbar::global_log() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(300), .height = CLAY_SIZING_FIT(0) },
-            .childGap = io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .floating = {.offset = {0, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        int i = 0;
-        for(auto& logM : main.logMessages) {
-            logM.time.update_time_since();
-            if(logM.time < LogMessage::DISPLAY_TIME) {
-                float a = 1.0f - lerp_time<float>(logM.time, LogMessage::DISPLAY_TIME, LogMessage::FADE_START_TIME);
-                gui.new_id(i, [&] {
-                    gui.element<LayoutElement>("GLOBAL LOG", [&] (LayoutElement*, const Clay_ElementId& lId) {
-                        CLAY(lId, {
-                            .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
-                                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                                .childGap = 0,
-                                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                                .layoutDirection = CLAY_TOP_TO_BOTTOM
-                            },
-                            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
-                            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-                        }) {
-                            SkColor4f c{0, 0, 0, 0};
-                            switch(logM.color) {
-                                case LogMessage::COLOR_NORMAL:
-                                    c = io.theme->frontColor1;
-                                    break;
-                                case LogMessage::COLOR_ERROR:
-                                    c = io.theme->errorColor;
-                                    break;
+    gui.new_id("Global log popup list", [&] {
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIXED(300), .height = CLAY_SIZING_FIT(0) },
+                .childGap = io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .floating = {.offset = {0, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        }) {
+            for(size_t i = 0; i < main.logMessages.size(); i++) {
+                auto& logM = main.logMessages[i];
+                logM.time.update_time_since();
+                if(logM.time < LogMessage::DISPLAY_TIME) {
+                    float a = 1.0f - lerp_time<float>(logM.time, LogMessage::DISPLAY_TIME, LogMessage::FADE_START_TIME);
+                    gui.new_id(i, [&] {
+                        gui.element<LayoutElement>("Global log message", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                            CLAY(lId, {
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_FIT(300), .height = CLAY_SIZING_FIT(0) },
+                                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                    .childGap = 0,
+                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                                },
+                                .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
+                                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+                            }) {
+                                SkColor4f c{0, 0, 0, 0};
+                                switch(logM.color) {
+                                    case LogMessage::COLOR_NORMAL:
+                                        c = io.theme->frontColor1;
+                                        break;
+                                    case LogMessage::COLOR_ERROR:
+                                        c = io.theme->errorColor;
+                                        break;
+                                }
+                                text_label_color(gui, logM.text, color_mul_alpha(c, a));
                             }
-                            text_label_color(gui, logM.text, color_mul_alpha(c, a));
-                        }
+                        });
                     });
-                });
+                }
+                else
+                    break;
             }
-            else
-                break;
         }
-    }
+    });
 }
 
 void Toolbar::drawing_program_gui() {
@@ -2131,6 +2133,7 @@ void Toolbar::file_picker_gui() {
                 }
             });
             input_path_field(gui, "file picker path", "Path", &filePicker.currentSearchPath, {
+                .updateEveryEdit = false,
                 .onEdit = [&] {
                     file_picker_gui_refresh_entries();
                 }

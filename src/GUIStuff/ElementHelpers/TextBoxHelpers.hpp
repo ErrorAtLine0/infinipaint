@@ -18,7 +18,7 @@ template <typename T, typename OptT> TextBoxData<T> textbox_options_to_data(cons
 }
 
 struct TextBoxOptions {
-    bool updateEveryEdit = false;
+    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -28,7 +28,7 @@ struct TextBoxOptions {
 
 struct TextBoxScalarOptions {
     int decimalPrecision = 0;
-    bool updateEveryEdit = false;
+    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -38,7 +38,7 @@ struct TextBoxScalarOptions {
 
 struct TextBoxScalarsOptions {
     int decimalPrecision = 0;
-    bool updateEveryEdit = false;
+    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void(size_t)> onEnter;
     std::function<void(size_t)> onEdit;
@@ -48,7 +48,7 @@ struct TextBoxScalarsOptions {
 
 struct TextBoxPathOptions {
     std::filesystem::file_type fileTypeRestriction;
-    bool updateEveryEdit = false;
+    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -58,7 +58,7 @@ struct TextBoxPathOptions {
 
 struct TextBoxHexColorOptions {
     bool hasAlpha = true;
-    bool updateEveryEdit = false;
+    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;

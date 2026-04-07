@@ -14,7 +14,7 @@ template <typename T> struct TextBoxData {
     std::function<std::optional<T>(const std::string&)> fromStr;
     std::function<std::string(const T&)> toStr;
     bool singleLine = true;
-    bool updateEveryEdit = false;
+    bool updateEveryEdit = true;
     bool immutable = false;
     InputManager::TextInputProperties textInputProps;
     std::function<void()> onEdit;
