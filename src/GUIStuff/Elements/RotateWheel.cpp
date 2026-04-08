@@ -26,6 +26,14 @@ void RotateWheel::layout(const Clay_ElementId& id, double* rotateAngle, const st
     }
 }
 
+void RotateWheel::update() {
+    dd.rotateAngleDisplayed = *rotateAngle;
+    if(oldDD != dd) {
+        oldDD = dd;
+        gui.invalidate_draw_element(this);
+    }
+}
+
 float RotateWheel::wheel_start() {
     return wheel_end() - WHEEL_WIDTH;
 }
@@ -35,9 +43,9 @@ float RotateWheel::wheel_end() {
 }
 
 void RotateWheel::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+    dd.isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
     update_rotate_wheel_mouse_hover(button.pos);
-    isRotateBarHeld = isRotateBarHovered && isHeld;
+    dd.isRotateBarHeld = dd.isRotateBarHovered && dd.isHeld;
     update_rotate_wheel_mouse(button.pos);
     Element::input_mouse_button_callback(button);
 }
@@ -50,17 +58,17 @@ void RotateWheel::input_mouse_motion_callback(const InputManager::MouseMotionCal
 
 void RotateWheel::update_rotate_wheel_mouse_hover(const Vector2f& p) {
     float distFromCenter = vec_distance(p, boundingBox.value().center());
-    isRotateBarHovered = mouseHovering && distFromCenter > wheel_start() && distFromCenter < wheel_end();
+    dd.isRotateBarHovered = mouseHovering && distFromCenter > wheel_start() && distFromCenter < wheel_end();
 }
 
 void RotateWheel::update_rotate_wheel_mouse(const Vector2f& p) {
     if(boundingBox.has_value()) {
         Vector2f vecFromCenter = (p - boundingBox.value().center()).normalized();
-        if(isRotateBarHeld) {
+        if(dd.isRotateBarHeld) {
             gui.set_post_callback_func([&, vecFromCenter] {
                 auto& rotationAngle = *rotateAngle;
                 rotationAngle = std::atan2(vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
-                if(isRotateBarHovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
+                if(dd.isRotateBarHovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
                     for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0 + 0.001; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
                         if(std::fabs(rotationAngle - snapPos) < ROTATE_BAR_SNAP_DISTANCE) {
                             rotationAngle = snapPos;
@@ -97,7 +105,7 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io, bool 
     rotateBarFill.setStrokeWidth(wheelEnd - wheelStart);
     canvas->drawCircle(0.0f, 0.0f, rotateBarMiddleRadius, rotateBarFill);
 
-    if(isRotateBarHovered) {
+    if(dd.isRotateBarHovered) {
         for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
             Vector2f lineDir{std::cos(snapPos), -std::sin(snapPos)};
             SkPaint p(snapPos == 0.0 ? io.theme->fillColor1 : io.theme->frontColor2);
@@ -109,14 +117,14 @@ void RotateWheel::draw_rotate_wheel(SkCanvas* canvas, UpdateInputData& io, bool 
 
     SkPaint rotateBarHolderFill;
     rotateBarHolderFill.setAntiAlias(skiaAA);
-    if(isRotateBarHeld)
+    if(dd.isRotateBarHeld)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
-    else if(isRotateBarHovered)
+    else if(dd.isRotateBarHovered)
         rotateBarHolderFill.setColor4f(io.theme->fillColor2);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor2);
     float rotateBarHolderRadius = (wheelEnd - wheelStart) / 2.0f;
-    Vector2f rotateBarHolderPos{std::cos(*rotateAngle) * rotateBarMiddleRadius, -std::sin(*rotateAngle) * rotateBarMiddleRadius};
+    Vector2f rotateBarHolderPos{std::cos(dd.rotateAngleDisplayed) * rotateBarMiddleRadius, -std::sin(dd.rotateAngleDisplayed) * rotateBarMiddleRadius};
     canvas->drawCircle(rotateBarHolderPos.x(), rotateBarHolderPos.y(), rotateBarHolderRadius, rotateBarHolderFill);
     SkPaint rotateBarHolderOutline(io.theme->frontColor1);
     rotateBarHolderOutline.setAntiAlias(skiaAA);

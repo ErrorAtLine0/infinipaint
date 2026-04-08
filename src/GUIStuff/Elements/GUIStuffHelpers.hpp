@@ -16,9 +16,25 @@
 #include "../../InputManager.hpp"
 #include "../GUIManagerID.hpp"
 
+#ifdef USE_SKIA_BACKEND_GRAPHITE
+    #include <include/gpu/graphite/Surface.h>
+#elif USE_SKIA_BACKEND_GANESH
+    #include <include/gpu/ganesh/GrDirectContext.h>
+    #include <include/gpu/ganesh/SkSurfaceGanesh.h>
+#endif
+
 using namespace Eigen;
 
 namespace GUIStuff {
+
+struct BorderData {
+    float top = 0.0f;
+    float bottom = 0.0f;
+    float left = 0.0f;
+    float right = 0.0f;
+};
+
+SCollision::AABB<float> clay_bounding_box_to_aabb(const Clay_BoundingBox& bb);
 
 // Taken from https://github.com/TimothyHoytBSME/ClayMan (rewritten to be a separate struct, and use templates to change size)
 template <size_t S> class StringArena {
@@ -99,6 +115,9 @@ struct UpdateInputData {
 
     std::shared_ptr<Theme> theme;
     std::unordered_map<std::string, sk_sp<SkSVGDOM>> svgData;
+
+    sk_sp<SkSurface> surface;
+    bool redrawSurface = true;
 };
 
 class SelectionHelper {

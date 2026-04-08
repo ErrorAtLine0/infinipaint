@@ -38,6 +38,7 @@ template <typename T> class TextBox : public Element {
         TextBox(GUIManager& gui);
 
         void layout(const Clay_ElementId& id, const TextBoxData<T>& userInfo);
+        virtual void update();
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         virtual void input_paste_callback(const CustomEvents::PasteEventData& paste) override;
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;
@@ -51,6 +52,12 @@ template <typename T> class TextBox : public Element {
         void reset_textbox_text();
         bool update_data();
         bool is_selected() const;
+
+        struct OldDisplayData {
+            bool isSelected = false;
+            std::string textboxStr;
+            RichText::TextBox::Cursor cur;
+        } oldDD;
 
         bool isHeld = false;
         std::optional<TextEditData> edit;

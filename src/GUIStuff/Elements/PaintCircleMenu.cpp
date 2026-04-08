@@ -26,15 +26,24 @@ void PaintCircleMenu::layout(const Clay_ElementId& id, const Data& data) {
     }
 }
 
+void PaintCircleMenu::update() {
+    dd.selectedColorDisplayed = *d.selectedColor;
+    dd.rotationAngleDisplayed = *d.rotationAngle;
+    if(dd != oldDD) {
+        oldDD = dd;
+        gui.invalidate_draw_element(this);
+    }
+}
+
 bool PaintCircleMenu::collides_with_point(const Vector2f& p) const {
     return boundingBox.has_value() && SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), CIRCLE_END), p) && !SCollision::collide(SCollision::Circle<float>(boundingBox.value().center(), PALETTE_START), p);
 }
 
 void PaintCircleMenu::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(d.mouseButton) d.mouseButton(button, mouseHovering);
-    isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+    dd.isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
     update_paint_circle_menu_mouse_hover(button.pos);
-    isRotateBarHeld = isRotateBarHovered && isHeld;
+    dd.isRotateBarHeld = dd.isRotateBarHovered && dd.isHeld;
     update_paint_circle_menu_mouse(button.pos, button.button == InputManager::MouseButton::LEFT && button.down);
 }
 
@@ -45,25 +54,25 @@ void PaintCircleMenu::input_mouse_motion_callback(const InputManager::MouseMotio
 
 void PaintCircleMenu::update_paint_circle_menu_mouse_hover(const Vector2f& p) {
     float distFromCenter = vec_distance(p, boundingBox.value().center());
-    isRotateBarHovered = mouseHovering && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END;
-    isColorBarHovered = mouseHovering && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START;
+    dd.isRotateBarHovered = mouseHovering && distFromCenter > ROTATE_START && distFromCenter < CIRCLE_END;
+    dd.isColorBarHovered = mouseHovering && distFromCenter > PALETTE_START && distFromCenter < ROTATE_START;
 }
 
 void PaintCircleMenu::update_paint_circle_menu_mouse(const Vector2f& p, bool leftClicked) {
     if(boundingBox.has_value()) {
 
         Vector2f vecFromCenter = (p - boundingBox.value().center()).normalized();
-        if(isColorBarHovered) {
+        if(dd.isColorBarHovered) {
             double selectionAngle = std::atan2(-vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
-            colorSelectionIndex = (selectionAngle / (std::numbers::pi * 2.0)) * d.palette.size();
-            colorSelectionIndex = std::clamp<unsigned>(colorSelectionIndex, 0, d.palette.size() - 1);
+            dd.colorSelectionIndex = (selectionAngle / (std::numbers::pi * 2.0)) * d.palette.size();
+            dd.colorSelectionIndex = std::clamp<unsigned>(dd.colorSelectionIndex, 0, d.palette.size() - 1);
         }
 
-        if(isRotateBarHeld) {
+        if(dd.isRotateBarHeld) {
             gui.set_post_callback_func([&, vecFromCenter] {
                 auto& rotationAngle = *d.rotationAngle;
                 rotationAngle = std::atan2(vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
-                if(isRotateBarHovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
+                if(dd.isRotateBarHovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
                     for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0 + 0.001; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
                         if(std::fabs(rotationAngle - snapPos) < ROTATE_BAR_SNAP_DISTANCE) {
                             rotationAngle = snapPos;
@@ -76,12 +85,12 @@ void PaintCircleMenu::update_paint_circle_menu_mouse(const Vector2f& p, bool lef
                 d.onRotate();
             });
         }
-        else if(isColorBarHovered && leftClicked) {
+        else if(dd.isColorBarHovered && leftClicked) {
             gui.set_post_callback_func([&] {
                 Vector4f& selectedColor = *d.selectedColor;
-                selectedColor.x() = d.palette[colorSelectionIndex].x();
-                selectedColor.y() = d.palette[colorSelectionIndex].y();
-                selectedColor.z() = d.palette[colorSelectionIndex].z();
+                selectedColor.x() = d.palette[dd.colorSelectionIndex].x();
+                selectedColor.y() = d.palette[dd.colorSelectionIndex].y();
+                selectedColor.z() = d.palette[dd.colorSelectionIndex].z();
                 d.onPaletteClick();
             });
         }
@@ -101,7 +110,7 @@ void PaintCircleMenu::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_Rend
 }
 
 void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, bool skiaAA) {
-    double rotationAngle = *d.rotationAngle;
+    double rotationAngle = dd.rotationAngleDisplayed;
     float rotateBarMiddleRadius = (CIRCLE_END + ROTATE_START) / 2.0f;
     SkPaint rotateBarFill(io.theme->backColor2);
     rotateBarFill.setAntiAlias(skiaAA);
@@ -109,7 +118,7 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, boo
     rotateBarFill.setStrokeWidth(CIRCLE_END - ROTATE_START);
     canvas->drawCircle(0.0f, 0.0f, rotateBarMiddleRadius, rotateBarFill);
 
-    if(isRotateBarHovered) {
+    if(dd.isRotateBarHovered) {
         for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
             Vector2f lineDir{std::cos(snapPos), -std::sin(snapPos)};
             SkPaint p(snapPos == 0.0 ? io.theme->fillColor1 : io.theme->frontColor2);
@@ -121,9 +130,9 @@ void PaintCircleMenu::draw_rotate_bar(SkCanvas* canvas, UpdateInputData& io, boo
 
     SkPaint rotateBarHolderFill;
     rotateBarHolderFill.setAntiAlias(skiaAA);
-    if(isRotateBarHeld)
+    if(dd.isRotateBarHeld)
         rotateBarHolderFill.setColor4f(io.theme->fillColor1);
-    else if(isRotateBarHovered)
+    else if(dd.isRotateBarHovered)
         rotateBarHolderFill.setColor4f(io.theme->fillColor2);
     else
         rotateBarHolderFill.setColor4f(io.theme->frontColor1);
@@ -179,10 +188,10 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io, bo
 
     SkRect startOval = SkRect::MakeLTRB(-PALETTE_START, -PALETTE_START, PALETTE_START, PALETTE_START);
     SkRect endOval = SkRect::MakeLTRB(-ROTATE_START, -ROTATE_START, ROTATE_START, ROTATE_START);
-    if(isColorBarHovered) {
+    if(dd.isColorBarHovered) {
         SkPathBuilder selectionPathBuilder;
-        double angleStart = colorSelectionIndex * colorDistribution;
-        double angleEnd = (colorSelectionIndex + 1) * colorDistribution;
+        double angleStart = dd.colorSelectionIndex * colorDistribution;
+        double angleEnd = (dd.colorSelectionIndex + 1) * colorDistribution;
         Vector2f lineDir1{std::cos(angleStart), std::sin(angleStart)};
         Vector2f lineDir2{std::cos(angleEnd), std::sin(angleEnd)};
         SkPaint lineP(io.theme->fillColor1);
@@ -199,7 +208,7 @@ void PaintCircleMenu::draw_palette_bar(SkCanvas* canvas, UpdateInputData& io, bo
         canvas->drawPath(selectionPathBuilder.detach(), lineP);
     }
     for(unsigned i = 0; i < d.palette.size(); i++) {
-        if(d.palette[i].x() == d.selectedColor->x() && d.palette[i].y() == d.selectedColor->y() && d.palette[i].z() == d.selectedColor->z()) {
+        if(d.palette[i].x() == dd.selectedColorDisplayed.x() && d.palette[i].y() == dd.selectedColorDisplayed.y() && d.palette[i].z() == dd.selectedColorDisplayed.z()) {
             SkPathBuilder selectionPathBuilder;
             double angleStart = i * colorDistribution;
             double angleEnd = (i + 1) * colorDistribution;

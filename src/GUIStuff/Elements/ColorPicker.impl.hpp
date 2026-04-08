@@ -9,9 +9,12 @@ template <typename T> ColorPicker<T>::ColorPicker(GUIManager& gui): Element(gui)
 template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* data, bool selectAlpha, const ColorPickerData& config) {
     this->data = data;
     if(!oldData.has_value() || oldData.value() != *data) {
-        savedHsv = rgb_to_hsv<Vector3f, T>(*data);
+        dd.savedHsv = rgb_to_hsv<Vector3f, T>(*data);
         oldData = *data;
     }
+    if(selectAlpha)
+        dd.savedAlpha = (*data)[3];
+
     this->selectAlpha = selectAlpha;
     this->config = config;
 
@@ -24,6 +27,13 @@ template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* d
     }) {}
 }
 
+template <typename T> void ColorPicker<T>::update() {
+    if(dd != oldDD) {
+        gui.invalidate_draw_element(this);
+        oldDD = dd;
+    }
+}
+
 template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     auto& bb = boundingBox.value();
 
@@ -34,18 +44,18 @@ template <typename T> void ColorPicker<T>::clay_draw(SkCanvas* canvas, UpdateInp
     canvas->clipRect(SkRect::MakeXYWH(0.0f, 0.0f, 1.0f, 1.0f), skiaAA);
 
     SkPaint svSelectionAreaPaint;
-    svSelectionAreaPaint.setShader(ColorPickerShaders::get_sv_selection_shader(savedHsv.x() / 360.0f));
+    svSelectionAreaPaint.setShader(ColorPickerShaders::get_sv_selection_shader(dd.savedHsv.x() / 360.0f));
     canvas->drawPaint(svSelectionAreaPaint);
 
     SkPaint selectionLinePaint({1.0f, 1.0f, 1.0f, 1.0f});
     selectionLinePaint.setAntiAlias(skiaAA);
     selectionLinePaint.setStrokeWidth(2.0f / svSelectionAreaSize);
-    canvas->drawLine(0.0f, 1.0f - savedHsv.z(), 1.0f, 1.0f - savedHsv.z(), selectionLinePaint);
-    canvas->drawLine(savedHsv.y(), 0.0f, savedHsv.y(), 1.0f, selectionLinePaint);
+    canvas->drawLine(0.0f, 1.0f - dd.savedHsv.z(), 1.0f, 1.0f - dd.savedHsv.z(), selectionLinePaint);
+    canvas->drawLine(dd.savedHsv.y(), 0.0f, dd.savedHsv.y(), 1.0f, selectionLinePaint);
 
     canvas->restore();
 
-    float normalizedHue = savedHsv.x() / 360.0f;
+    float normalizedHue = dd.savedHsv.x() / 360.0f;
 
     Vector2f hueBarPos = get_hue_bar_pos();
     Vector2f hueBarDim = get_hue_bar_dim();
@@ -125,9 +135,9 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                 case HeldBar::SV_HELD: {
                     float svSelectionAreaSize = bb.width() - (BAR_GAP + BAR_WIDTH);
                     Vector2f newSv = cwise_vec_clamp<Vector2f>((p - bb.min) / svSelectionAreaSize, Vector2f{0.0f, 0.0f}, Vector2f{1.0f, 1.0f});
-                    savedHsv.y() = newSv.x();
-                    savedHsv.z() = 1.0f - newSv.y();
-                    set_hsv(savedHsv);
+                    dd.savedHsv.y() = newSv.x();
+                    dd.savedHsv.z() = 1.0f - newSv.y();
+                    set_hsv(dd.savedHsv);
                     if(justHeld && config.onHold) config.onHold();
                     if(config.onChange) config.onChange();
                     break;
@@ -135,8 +145,8 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                 case HeldBar::HUE_HELD: {
                     Vector2f huePos = get_hue_bar_pos();
                     Vector2f hueDim = get_hue_bar_dim();
-                    savedHsv.x() = (1.0f - std::clamp((p.y() - huePos.y()) / hueDim.y(), 0.0f, 1.0f)) * 360.0f;
-                    set_hsv(savedHsv);
+                    dd.savedHsv.x() = (1.0f - std::clamp((p.y() - huePos.y()) / hueDim.y(), 0.0f, 1.0f)) * 360.0f;
+                    set_hsv(dd.savedHsv);
                     if(justHeld && config.onHold) config.onHold();
                     if(config.onChange) config.onChange();
                     break;
@@ -145,6 +155,7 @@ template <typename T> void ColorPicker<T>::update_color_picker_pos(const Vector2
                     Vector2f alphaPos = get_alpha_bar_pos();
                     Vector2f alphaDim = get_alpha_bar_dim();
                     (*data)[3] = std::clamp((p.x() - alphaPos.x()) / alphaDim.x(), 0.0f, 1.0f);
+                    dd.savedAlpha = (*data)[3];
                     oldData = *data;
                     if(justHeld && config.onHold) config.onHold();
                     if(config.onChange) config.onChange();

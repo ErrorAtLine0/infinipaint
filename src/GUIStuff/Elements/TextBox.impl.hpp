@@ -21,6 +21,16 @@ template <typename T> void TextBox<T>::layout(const Clay_ElementId& id, const Te
     }
 }
 
+template <typename T> void TextBox<T>::update() {
+    std::string newTextboxStr = textbox->get_string();
+    if(oldDD.isSelected != is_selected() || oldDD.textboxStr != newTextboxStr || oldDD.cur != *cur) {
+        oldDD.isSelected = is_selected();
+        oldDD.textboxStr = newTextboxStr;
+        oldDD.cur = *cur;
+        gui.invalidate_draw_element(this);
+    }
+}
+
 template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     auto& bb = boundingBox.value();
 

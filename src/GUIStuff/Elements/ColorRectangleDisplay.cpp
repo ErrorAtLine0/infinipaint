@@ -1,4 +1,5 @@
 #include "ColorRectangleDisplay.hpp"
+#include "../GUIManager.hpp"
 
 namespace GUIStuff {
 
@@ -14,15 +15,22 @@ void ColorRectangleDisplay::layout(const Clay_ElementId& id, const std::function
     }) {}
 }
 
+void ColorRectangleDisplay::update() {
+    SkColor4f newDrawVal = colorFunc();
+    if(newDrawVal != drawVal) {
+        drawVal = newDrawVal;
+        gui.invalidate_draw_element(this);
+    }
+}
+
 void ColorRectangleDisplay::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {
     auto& bb = boundingBox.value();
 
-    SkColor4f color = colorFunc();
     SkRect r = SkRect::MakeLTRB(bb.min.x(), bb.min.y(), bb.max.x(), bb.max.y());
 
-    if(color.fA == 1.0f) {
+    if(drawVal.fA == 1.0f) {
         SkPaint p;
-        p.setColor4f(color);
+        p.setColor4f(drawVal);
         p.setAntiAlias(skiaAA);
         canvas->drawRect(r, p);
     }
@@ -32,7 +40,7 @@ void ColorRectangleDisplay::clay_draw(SkCanvas* canvas, UpdateInputData& io, Cla
         SkPaint alphaPaint;
         alphaPaint.setShader(get_alpha_background_shader());
         canvas->drawPaint(alphaPaint);
-        canvas->drawPaint(SkPaint{SkColor4f(color.fR, color.fG, color.fB, std::sqrt(color.fA))}); // Square root for alpha to keep color visible
+        canvas->drawPaint(SkPaint{SkColor4f(drawVal.fR, drawVal.fG, drawVal.fB, std::sqrt(drawVal.fA))}); // Square root for alpha to keep color visible
         canvas->restore();
     }
 }

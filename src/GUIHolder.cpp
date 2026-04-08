@@ -93,6 +93,7 @@ bool GUIHolder::load_theme(const std::filesystem::path& configPath, const std::s
 
 void GUIHolder::update() {
     gui.io.deltaTime = main.deltaTime;
+    gui.update();
 }
 
 void GUIHolder::window_update() {
@@ -114,11 +115,17 @@ float GUIHolder::final_gui_scale_not_fit() {
     return main.conf.guiScale * main.get_scale_and_density_factor_gui();
 }
 
+void GUIHolder::delete_cache_surface() {
+    gui.io.surface = nullptr;
+}
+
 void GUIHolder::draw(SkCanvas* canvas, bool skiaAA) {
-    canvas->save();
-    canvas->scale(final_gui_scale(), final_gui_scale());
+    if(!gui.io.surface) {
+        gui.io.surface = main.create_native_surface(main.window.size, true);
+        gui.io.redrawSurface = true;
+    }
+
     gui.draw(canvas, skiaAA);
-    canvas->restore();
 }
 
 void GUIHolder::input_paste_callback(const CustomEvents::PasteEventData& paste) {

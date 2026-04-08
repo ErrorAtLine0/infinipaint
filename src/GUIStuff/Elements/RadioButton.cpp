@@ -18,6 +18,15 @@ void RadioButton::layout(const Clay_ElementId& id, const std::function<bool()>& 
     }) {}
 }
 
+void RadioButton::update() {
+    if(smooth_two_way_time(hoverAnimation, gui.io.deltaTime, mouseHovering, RADIOBUTTON_ANIMATION_TIME))
+        gui.invalidate_draw_element(this);
+    if(oldIsTicked != isTicked()) {
+        gui.invalidate_draw_element(this);
+        oldIsTicked = isTicked();
+    }
+}
+
 void RadioButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down)
         gui.set_post_callback_func([&] { if(onClick) onClick(); });
@@ -44,7 +53,7 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
         innerCircleP.setStyle(SkPaint::kFill_Style);
 
         static BezierEasing easeRadius(0.68, -2.55, 0.265, 3.55);
-        float lerpTime2 = easeRadius(smooth_two_way_time(hoverAnimation2, io.deltaTime, isHovering, RADIOBUTTON_ANIMATION_TIME));
+        float lerpTime2 = easeRadius(hoverAnimation / RADIOBUTTON_ANIMATION_TIME);
         float innerCircleRadius = lerp_vec(0.3f, 0.2f, lerpTime2);
 
         canvas->drawCircle(0.0f, 0.0f, innerCircleRadius, innerCircleP);
@@ -52,7 +61,7 @@ void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCo
     else {
         SkPaint p;
         p.setAntiAlias(skiaAA);
-        p.setColor4f(convert_vec4<SkColor4f>(isHovering ? io.theme->fillColor1 : io.theme->backColor2));
+        p.setColor4f(convert_vec4<SkColor4f>(mouseHovering ? io.theme->fillColor1 : io.theme->backColor2));
         p.setStyle(SkPaint::kStroke_Style);
         p.setStrokeWidth(0.15f);
         canvas->drawCircle(0.0f, 0.0f, 0.5f, p);

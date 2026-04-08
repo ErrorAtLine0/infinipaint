@@ -18,6 +18,7 @@ class GUIHolder {
 
         void update();
         void window_update();
+        void delete_cache_surface();
         void draw(SkCanvas* canvas, bool skiaAA);
 
         void input_paste_callback(const CustomEvents::PasteEventData& paste);

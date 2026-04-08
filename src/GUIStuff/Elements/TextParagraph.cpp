@@ -9,6 +9,8 @@ TextParagraph::TextParagraph(GUIManager& gui):
     Element(gui) {}
 
 void TextParagraph::layout(const Clay_ElementId& id, const Data& newData) {
+    bool redraw = false;
+
     if(!textbox) {
         d = newData;
         textbox = std::make_unique<RichText::TextBox>();
@@ -16,17 +18,23 @@ void TextParagraph::layout(const Clay_ElementId& id, const Data& newData) {
         textbox->set_rich_text_data(d.text);
         textbox->set_font_data(gui.io.fonts);
         textbox->set_allow_newlines(true);
+        redraw = true;
     }
 
     if(d.width != newData.width) {
         d.width = newData.width;
         textbox->set_width(d.width);
+        redraw = true;
     }
 
     if(d.text != newData.text) {
         d.text = newData.text;
         textbox->set_rich_text_data(d.text);
+        redraw = true;
     }
+
+    if(redraw)
+        gui.invalidate_draw_element(this);
 
     CLAY(id, {
         .layout = {

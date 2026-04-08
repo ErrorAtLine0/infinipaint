@@ -12,14 +12,22 @@ SVGIcon::SVGIcon(GUIManager& gui):
     Element(gui) {}
 
 void SVGIcon::layout(const Clay_ElementId& id, const std::string& newSvgPath, bool newIsHighlighted) {
+    bool redraw = false;
+
     auto& io = gui.io;
     auto findSVGData = io.svgData.find(newSvgPath);
     if(findSVGData == io.svgData.end())
         throw std::runtime_error("[SVGIcon::update] Could not load icon " + newSvgPath);
-    else
+    else {
+        redraw |= svgDom != findSVGData->second;
         svgDom = findSVGData->second;
+    }
 
+    redraw |= highlighted != newIsHighlighted;
     highlighted = newIsHighlighted;
+
+    if(redraw)
+        gui.invalidate_draw_element(this);
 
     CLAY(id, {
         .layout = {

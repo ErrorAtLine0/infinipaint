@@ -7,6 +7,7 @@
 #include <ostream>
 #include <Eigen/Geometry>
 #include <SDL3/SDL_rect.h>
+#include <include/core/SkRect.h>
 
 using namespace Eigen;
 
@@ -79,6 +80,9 @@ namespace SCollision {
             }
             SDL_Rect get_sdl_rect() const {
                 return SDL_Rect{static_cast<int>(min.x()), static_cast<int>(min.y()), static_cast<int>(width()), static_cast<int>(height())};
+            }
+            SkRect get_sk_rect() const {
+                return SkRect::MakeLTRB(static_cast<float>(min.x()), static_cast<float>(min.y()), static_cast<float>(max.x()), static_cast<float>(max.y()));
             }
     };
     template <typename T> class Circle {

@@ -493,7 +493,6 @@ void Toolbar::top_toolbar() {
             .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
         }) {
             global_log();
-            bool layerMenuPopUpJustOpen = false;
 
             auto icon_button_top_toolbar = [&](const char* id, const std::string& svgPath, bool isSelected, const std::function<void()>& onClick) {
                 return svg_icon_button(gui, id, svgPath, {

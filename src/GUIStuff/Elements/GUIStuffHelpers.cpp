@@ -3,6 +3,10 @@
 #include <chrono>
 
 namespace GUIStuff {
+    SCollision::AABB<float> clay_bounding_box_to_aabb(const Clay_BoundingBox& bb) {
+        return {{bb.x, bb.y}, {bb.x + bb.width, bb.y + bb.height}};
+    }
+
     SkFont get_setup_skfont() {
         SkFont font;
         font.setLinearMetrics(true);

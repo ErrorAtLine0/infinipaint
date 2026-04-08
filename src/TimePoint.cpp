@@ -21,9 +21,13 @@ TimePoint::operator float() const {
     return get_time_since(); 
 }
 
-float smooth_two_way_time(float& timeToUpdate, float deltaTime, bool isWay1, float animDuration) {
-    timeToUpdate = std::clamp(isWay1 ? (timeToUpdate + deltaTime) : (timeToUpdate - deltaTime), 0.0f, animDuration);
-    return timeToUpdate / animDuration;
+bool smooth_two_way_time(float& timeToUpdate, float deltaTime, bool isWay1, float animDuration) {
+    float newTimeToUpdate = std::clamp(isWay1 ? (timeToUpdate + deltaTime) : (timeToUpdate - deltaTime), 0.0f, animDuration);
+    if(newTimeToUpdate != timeToUpdate) {
+        timeToUpdate = newTimeToUpdate;
+        return true;
+    }
+    return false;
 }
 
 WorldVec lerp_world_vec_double(const WorldVec& v1, const WorldVec& v2, double t) {

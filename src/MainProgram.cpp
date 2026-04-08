@@ -236,6 +236,8 @@ void MainProgram::refresh_draw_surfaces() {
         if(!window.intermediateCanvas)
             throw std::runtime_error("[refresh_draw_surfaces] Could not create intermediate canvas");
 
+        g.delete_cache_surface();
+
         DrawingProgramCache::delete_all_draw_cache();
     }
 }

@@ -68,6 +68,7 @@ template <typename T> class ColorPicker : public Element {
     public:
         ColorPicker(GUIManager& gui);
         void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const ColorPickerData& config);
+        virtual void update() override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA);
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
@@ -83,9 +84,18 @@ template <typename T> class ColorPicker : public Element {
         static constexpr float BAR_WIDTH = 30.0;
         static constexpr float BAR_GAP = 5.0;
 
+        struct DisplayData {
+            Vector3f savedHsv = {0.0f, 0.0f, 0.0f};
+            float savedAlpha = 0.0f;
+            bool operator!=(const DisplayData&) const = default;
+            bool operator==(const DisplayData&) const = default;
+        };
+
+        DisplayData dd;
+        DisplayData oldDD;
+
         T* data;
         std::optional<T> oldData;
-        Vector3f savedHsv; // We save the HSV so that conversion doesnt ruin the UI
         ColorPickerData config;
         bool selectAlpha = false;
         enum class HeldBar {

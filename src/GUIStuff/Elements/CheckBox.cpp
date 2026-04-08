@@ -20,6 +20,15 @@ void CheckBox::layout(const Clay_ElementId& id, const std::function<bool()>& isT
     }) {}
 }
 
+void CheckBox::update() {
+    if(smooth_two_way_time(hoverAnimation, gui.io.deltaTime, mouseHovering, CHECKBOX_ANIMATION_TIME))
+        gui.invalidate_draw_element(this);
+    if(oldIsTicked != isTicked()) {
+        gui.invalidate_draw_element(this);
+        oldIsTicked = isTicked();
+    }
+}
+
 void CheckBox::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down)
         gui.set_post_callback_func([&](){if(onClick) onClick();});
@@ -70,7 +79,7 @@ void CheckBox::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComma
 
         static BezierEasing anim{0.445, -0.733, 0.575, 1.627};
 
-        float lerpTime2 = anim(smooth_two_way_time(hoverAnimation2, io.deltaTime, mouseHovering, CHECKBOX_ANIMATION_TIME));
+        float lerpTime2 = anim(hoverAnimation / CHECKBOX_ANIMATION_TIME);
 
         std::array<Vector2f, 5> points;
 

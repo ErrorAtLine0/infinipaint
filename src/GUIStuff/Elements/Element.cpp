@@ -1,10 +1,11 @@
 #include "Element.hpp"
+#include "GUIStuffHelpers.hpp"
 
 namespace GUIStuff {
     Element::Element(GUIManager& initGUI):
         gui(initGUI) {}
 
-    void Element::tick_update() {}
+    void Element::update() {}
 
     void Element::input_paste_callback(const CustomEvents::PasteEventData& paste) { }
     void Element::input_text_key_callback(const InputManager::KeyCallbackArgs& key) { }
@@ -39,6 +40,6 @@ namespace GUIStuff {
     }
 
     SCollision::AABB<float> Element::get_bb_from_command(Clay_RenderCommand* command) {
-        return {{command->boundingBox.x, command->boundingBox.y}, {command->boundingBox.x + command->boundingBox.width, command->boundingBox.y + command->boundingBox.height}};
+        return clay_bounding_box_to_aabb(command->boundingBox);
     }
 }

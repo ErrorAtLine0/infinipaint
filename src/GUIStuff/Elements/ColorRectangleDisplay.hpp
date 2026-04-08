@@ -8,6 +8,7 @@ class ColorRectangleDisplay : public Element {
     public:
         ColorRectangleDisplay(GUIManager& gui);
         void layout(const Clay_ElementId& id, const std::function<SkColor4f()>& colorFunc);
+        virtual void update() override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
     private:
         static constexpr const char* alphaBackgroundSksl = 
@@ -23,6 +24,7 @@ vec4 main(vec2 fragcoord) {
 }
         )V";
         std::function<SkColor4f()> colorFunc;
+        SkColor4f drawVal;
 
         static sk_sp<SkRuntimeEffect> alphaBackgroundEffect;
         static sk_sp<SkShader> get_alpha_background_shader();

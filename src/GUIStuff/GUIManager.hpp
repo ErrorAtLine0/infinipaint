@@ -17,10 +17,11 @@ class GUIManager {
         };
 
         GUIManager();
-        void draw(SkCanvas* canvas, bool skiaAA);
+        void draw(SkCanvas* c, bool skiaAA);
         void set_to_layout();
         void layout_if_necessary();
 
+        void update();
         void update_window(const Vector2f& windowPos, const Vector2f& windowSize, float guiScaleMultiplier);
 
         UpdateInputData io;
@@ -35,6 +36,9 @@ class GUIManager {
         void set_post_callback_func(const std::function<void()>& f);
         void set_post_callback_func_high_priority(const std::function<void()>& f);
         void run_post_callback_func();
+
+        void invalidate_draw_element(Element* element, const BorderData& extraPadding = {});
+        void invalidate_draw_in_area(const SCollision::AABB<float>& bb);
 
         template <typename ElementType, typename... Args> ElementType* element(const char* id, const Args&... a) {
             push_id(id);
@@ -133,8 +137,17 @@ class GUIManager {
         bool postCallbackFuncIsHighPriority;
         Clay_Context* clayInstance;
         Clay_Arena clayArena;
+
         Clay_RenderCommandArray renderCommands;
+        std::unordered_map<uint32_t, Clay_RenderCommand> oldRenderCommandMap;
+        std::optional<SCollision::AABB<float>> invalidDrawBB;
+
+        SCollision::AABB<float> get_invalid_draw_bb(SCollision::AABB<float> bb, const BorderData& extraPadding = {});
+        SCollision::AABB<float> get_invalid_draw_bb_from_command(const Clay_RenderCommand* command);
+        void update_invalidated_draw_area_from_layout();
+
         bool setToLayout;
+        bool setToUpdateInvalidateDrawAreaFromLayout;
         bool cursorObstructed;
 };
 
