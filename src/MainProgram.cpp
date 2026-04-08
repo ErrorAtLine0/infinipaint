@@ -252,11 +252,7 @@ void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, con
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {
     if(window.canCreateSurfaces) {
-        #ifdef USE_BACKEND_OPENGLES_3_0
-            SkImageInfo imgInfo = SkImageInfo::Make(resolution.x(), resolution.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
-        #else
-            SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(resolution.x(), resolution.y());
-        #endif
+        SkImageInfo imgInfo = SkImageInfo::MakeN32Premul(resolution.x(), resolution.y());
         SkSurfaceProps defaultProps;
         #ifdef USE_SKIA_BACKEND_GRAPHITE
             auto surfaceToRet = SkSurfaces::RenderTarget(window.recorder(), imgInfo, skgpu::Mipmapped::kNo, isMSAA ? &window.defaultMSAASurfaceProps : &defaultProps);
