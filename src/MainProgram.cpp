@@ -230,11 +230,10 @@ void MainProgram::refresh_draw_surfaces() {
     if(window.canCreateSurfaces) {
         window.defaultMSAASampleCount = 0;
         window.defaultMSAASurfaceProps = SkSurfaceProps(conf.antialiasing == GlobalConfig::AntiAliasing::DYNAMIC_MSAA ? SkSurfaceProps::kDynamicMSAA_Flag : SkSurfaceProps::kDefault_Flag, kUnknown_SkPixelGeometry);
-        window.intermediateSurface = create_native_surface(window.size, true);
-        window.intermediateCanvas = window.intermediateSurface->getCanvas();
-
-        if(!window.intermediateCanvas)
-            throw std::runtime_error("[refresh_draw_surfaces] Could not create intermediate canvas");
+        if(conf.antialiasing == GlobalConfig::AntiAliasing::DYNAMIC_MSAA)
+            window.intermediateSurfaceMSAA = create_native_surface(window.size, true);
+        else
+            window.intermediateSurfaceMSAA = nullptr;
 
         g.delete_cache_surface();
 

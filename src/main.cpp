@@ -136,8 +136,6 @@ struct MainStruct {
     unsigned currentCursor = 0;
     
     SkCanvas* canvas;
-    sk_sp<SkSurface> surface;
-
 
     SDL_Surface* iconSurface = nullptr;
     std::string iconData;
@@ -324,11 +322,11 @@ void resize_window(MainStruct& mS) {
 
     SkSurfaceProps props2;
     mS.target = GrBackendRenderTargets::MakeGL(mS.m->window.size.x(), mS.m->window.size.y(), 0, mS.kStencilBits, info);
-    mS.surface = SkSurfaces::WrapBackendRenderTarget(mS.ctx.get(), mS.target, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, SkColorSpace::MakeSRGB(), &props2);
+    mS.m->window.nativeSurface = SkSurfaces::WrapBackendRenderTarget(mS.ctx.get(), mS.target, kBottomLeft_GrSurfaceOrigin, kRGBA_8888_SkColorType, SkColorSpace::MakeSRGB(), &props2);
 
-    if(!mS.surface)
+    if(!mS.m->window.nativeSurface)
         throw std::runtime_error("[resize_window] Could not make surface");
-    mS.canvas = mS.surface->getCanvas();
+    mS.canvas = mS.m->window.nativeSurface->getCanvas();
     if(!mS.canvas)
         throw std::runtime_error("[resize_window] No canvas made");
 
@@ -479,7 +477,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
                                                                 },
                                                                 SDL_Vulkan_GetPresentationSupport,
                                                                 (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr());
-                mS.surface = mS.vulkanWindowContext->getBackbufferSurface();
+                mS.m->window.nativeSurface = mS.vulkanWindowContext->getBackbufferSurface();
             #elif USE_SKIA_BACKEND_GANESH
                 std::unique_ptr<const skwindow::DisplayParams> displayParams = skwindow::DisplayParamsBuilder().detach();
 
@@ -496,7 +494,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
                                             (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr());
 
                 mS.ctx = mS.vulkanWindowContext->fContext; // fContext is supposed to be private, but put it in public for convenience for this app
-                mS.surface = mS.vulkanWindowContext->getBackbufferSurface();
+                mS.m->window.nativeSurface = mS.vulkanWindowContext->getBackbufferSurface();
             #endif
         #elif USE_BACKEND_OPENGL
             sk_sp<const GrGLInterface> iface = GrGLMakeNativeInterface();
@@ -575,58 +573,36 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     return SDL_APP_CONTINUE;
 }
 
-void cpu_save_sleep(MainStruct& mS) {
-    int swapInterval = 0;
-    constexpr std::chrono::duration MINIMUM_UPDATE_FRAMETIME = std::chrono::milliseconds(3);
-    SDL_GL_GetSwapInterval(&swapInterval);
-    if(swapInterval != 0) {
-        std::chrono::time_point point1 = mS.lastRenderTimePoint + mS.frameRefreshDuration;
-        std::chrono::time_point point2 = mS.lastUpdateTimePoint + MINIMUM_UPDATE_FRAMETIME;
-        std::this_thread::sleep_until(std::min(point1, point2));
-    }
-}
-
-void attempt_redraw_and_swap_buffers(MainStruct& mS) {
-    int swapInterval = 0;
-    SDL_GL_GetSwapInterval(&swapInterval);
-    if(std::chrono::steady_clock::now() - mS.lastRenderTimePoint > mS.frameRefreshDuration || swapInterval == 0) {
-        #ifdef USE_BACKEND_VULKAN
-            mS.vulkanWindowContext->swapBuffers();
-        #elif USE_BACKEND_OPENGL
-            SDL_GL_SwapWindow(mS.window);
-        #endif
-        mS.lastRenderTimePoint = std::chrono::steady_clock::now();
-
-        mS.m->window.intermediateCanvas->save();
-        mS.m->draw(mS.m->window.intermediateCanvas, mS.m->world, mS.m->world->drawData);
-        mS.m->window.intermediateCanvas->restore();
-
-        #ifdef USE_BACKEND_VULKAN
-            mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
-            mS.ctx->flushAndSubmit();
-        #elif USE_BACKEND_OPENGL
-            mS.canvas->drawImage(mS.m->window.intermediateSurface->makeTemporaryImage(), 0, 0);
-            mS.ctx->flushAndSubmit();
-        #endif
-    }
-}
-
 void regular_draw(MainStruct& mS) {
     mS.lastRenderTimePoint = std::chrono::steady_clock::now();
 
-    mS.m->window.intermediateCanvas->save();
-    mS.m->draw(mS.m->window.intermediateCanvas, mS.m->world, mS.m->world->drawData);
-    mS.m->window.intermediateCanvas->restore();
+    if(mS.m->window.intermediateSurfaceMSAA) {
+        SkCanvas* intermediateCanvas = mS.m->window.intermediateSurfaceMSAA->getCanvas();
+        intermediateCanvas->save();
+        mS.m->draw(intermediateCanvas, mS.m->world, mS.m->world->drawData);
+        intermediateCanvas->restore();
 
-    #ifdef USE_BACKEND_VULKAN
-        mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.intermediateSurface->makeTemporaryImage(), 0, 0);
-        mS.ctx->flushAndSubmit();
-        mS.vulkanWindowContext->swapBuffers();
-    #elif USE_BACKEND_OPENGL
-        mS.canvas->drawImage(mS.m->window.intermediateSurface->makeTemporaryImage(), 0, 0);
-        mS.ctx->flushAndSubmit();
-        SDL_GL_SwapWindow(mS.window);
-    #endif
+        #ifdef USE_BACKEND_VULKAN
+            mS.vulkanWindowContext->getBackbufferSurface()->getCanvas()->drawImage(mS.m->window.intermediateSurfaceMSAA->makeTemporaryImage(), 0, 0);
+            mS.ctx->flushAndSubmit();
+            mS.vulkanWindowContext->swapBuffers();
+        #elif USE_BACKEND_OPENGL
+            mS.canvas->drawImage(mS.m->window.intermediateSurfaceMSAA->makeTemporaryImage(), 0, 0);
+            mS.ctx->flushAndSubmit();
+            SDL_GL_SwapWindow(mS.window);
+        #endif
+    }
+    else {
+        #ifdef USE_BACKEND_VULKAN
+            mS.m->draw(mS.vulkanWindowContext->getBackbufferSurface()->getCanvas(), mS.m->world, mS.m->world->drawData);
+            mS.ctx->flushAndSubmit();
+            mS.vulkanWindowContext->swapBuffers();
+        #elif USE_BACKEND_OPENGL
+            mS.m->draw(mS.canvas, mS.m->world, mS.m->world->drawData);
+            mS.ctx->flushAndSubmit();
+            SDL_GL_SwapWindow(mS.window);
+        #endif
+    }
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
@@ -659,8 +635,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_SetCursor(mS.systemCursors[static_cast<unsigned>(mS.m->input.cursorIcon)]);
         }
 
-        //cpu_save_sleep(mS);
-        //attempt_redraw_and_swap_buffers(mS);
         regular_draw(mS);
 
         mS.m->input.frame_reset(mS.m->window.size);

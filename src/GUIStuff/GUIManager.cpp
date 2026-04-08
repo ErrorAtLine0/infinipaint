@@ -310,8 +310,8 @@ SCollision::AABB<float> GUIManager::get_invalid_draw_bb(SCollision::AABB<float> 
 }
 
 void GUIManager::update_invalidated_draw_area_from_layout() {
-    auto renderCommandMapCopy = oldRenderCommandMap;
     if(setToUpdateInvalidateDrawAreaFromLayout) {
+        auto renderCommandMapCopy = oldRenderCommandMap;
         for(int32_t i = 0; i < renderCommands.length; i++) {
             const Clay_RenderCommand& renderCommand = renderCommands.internalArray[i];
             auto oldCommandIt = oldRenderCommandMap.find(renderCommand.id);

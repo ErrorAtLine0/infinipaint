@@ -58,8 +58,8 @@ class MainProgram {
                 sk_sp<GrDirectContext> ctx;
             #endif
 
-            sk_sp<SkSurface> intermediateSurface;
-            SkCanvas* intermediateCanvas;
+            sk_sp<SkSurface> nativeSurface;
+            sk_sp<SkSurface> intermediateSurfaceMSAA;
 
             SDL_Window* sdlWindow;
             bool canCreateSurfaces = false;
