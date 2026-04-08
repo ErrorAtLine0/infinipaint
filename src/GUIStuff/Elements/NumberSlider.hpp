@@ -53,7 +53,7 @@ template <typename T> class NumberSlider : public Element {
             canvas->save();
             canvas->translate(bb.min.x(), bb.min.y());
 
-            float lerpTimeHover = smooth_two_way_time(dd.hoverAnimation, io.deltaTime, mouseHovering, io.theme->hoverExpandTime);
+            float lerpTimeHover = dd.hoverAnimation / io.theme->hoverExpandTime;
 
             static BezierEasing easeHeight(0.68, -1.55, 0.265, 2.55);
 

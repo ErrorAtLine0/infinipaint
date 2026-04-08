@@ -146,6 +146,9 @@ class GUIManager {
         SCollision::AABB<float> get_invalid_draw_bb_from_command(const Clay_RenderCommand* command);
         void update_invalidated_draw_area_from_layout();
 
+        void calculate_new_clip_rect(std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw);
+        void clip_rect_transform(SkCanvas* canvas, std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw);
+
         bool setToLayout;
         bool setToUpdateInvalidateDrawAreaFromLayout;
         bool cursorObstructed;

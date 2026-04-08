@@ -84,6 +84,9 @@ namespace SCollision {
             SkRect get_sk_rect() const {
                 return SkRect::MakeLTRB(static_cast<float>(min.x()), static_cast<float>(min.y()), static_cast<float>(max.x()), static_cast<float>(max.y()));
             }
+            SkIRect get_sk_irect() const {
+                return SkIRect::MakeLTRB(static_cast<int>(min.x()), static_cast<int>(min.y()), static_cast<int>(max.x()), static_cast<int>(max.y()));
+            }
     };
     template <typename T> class Circle {
         public:

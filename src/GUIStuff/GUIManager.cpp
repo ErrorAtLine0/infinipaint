@@ -58,6 +58,34 @@ Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_Te
     return Clay_Dimensions(p->getMaxIntrinsicWidth(), p->getHeight());
 }
 
+void GUIManager::calculate_new_clip_rect(std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw) {
+    if(clipRectStack.empty()) {
+        clipNoDraw = false;
+        clipRect = std::nullopt;
+        return;
+    }
+    SCollision::AABB<float> toRet = clipRectStack.front();
+    for(size_t i = 1; i < clipRectStack.size(); i++) {
+        if(!SCollision::collide(toRet, clipRectStack[i])) {
+            clipNoDraw = true;
+            clipRect = std::nullopt;
+            return;
+        }
+        toRet = toRet.get_intersection_between_aabbs(clipRectStack[i]);
+    }
+    clipNoDraw = false;
+    clipRect = toRet;
+}
+
+void GUIManager::clip_rect_transform(SkCanvas* canvas, std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw) {
+    canvas->save();
+    canvas->scale(io.guiScaleMultiplier, io.guiScaleMultiplier);
+    canvas->translate(io.windowPos.x(), io.windowPos.y());
+    calculate_new_clip_rect(clipRectStack, clipRect, clipNoDraw);
+    if(clipRect.has_value())
+        canvas->clipIRect(clipRect.value().get_sk_irect());
+}
+
 void GUIManager::draw(SkCanvas* c, bool skiaAA) {
     if(io.redrawSurface) {
         oldRenderCommandMap.clear();
@@ -66,19 +94,26 @@ void GUIManager::draw(SkCanvas* c, bool skiaAA) {
     update_invalidated_draw_area_from_layout();
     if(io.redrawSurface || invalidDrawBB.has_value()) {
         SkCanvas* canvas = io.surface->getCanvas();
-        canvas->save();
+
+        std::optional<SCollision::AABB<float>> clipRect;
+        std::vector<SCollision::AABB<float>> clipRectStack;
+        bool clipNoDraw = false;
+
         if(!io.redrawSurface)
-            canvas->clipRect(invalidDrawBB.value().get_sk_rect());
+            clipRectStack.emplace_back(invalidDrawBB.value());
+
+        clip_rect_transform(canvas, clipRectStack, clipRect, clipNoDraw);
+
         canvas->clear({0.0f, 0.0f, 0.0f, 0.0f});
-        canvas->scale(io.guiScaleMultiplier, io.guiScaleMultiplier);
-        canvas->translate(io.windowPos.x(), io.windowPos.y());
 
         for(size_t i = 0; i < static_cast<size_t>(renderCommands.length); i++) {
             Clay_RenderCommand* command = Clay_RenderCommandArray_Get(&renderCommands, i);
             Clay_BoundingBox bb = command->boundingBox;
 
-            if(!io.redrawSurface && command->commandType != CLAY_RENDER_COMMAND_TYPE_SCISSOR_START && command->commandType != CLAY_RENDER_COMMAND_TYPE_SCISSOR_END && !SCollision::collide(get_invalid_draw_bb_from_command(command), invalidDrawBB.value()))
-                continue;
+            if(command->commandType != CLAY_RENDER_COMMAND_TYPE_SCISSOR_START && command->commandType != CLAY_RENDER_COMMAND_TYPE_SCISSOR_END) {
+                if(clipNoDraw || (clipRect.has_value() && !SCollision::collide(get_invalid_draw_bb_from_command(command), clipRect.value())))
+                    continue;
+            }
 
             switch(command->commandType) {
                 case CLAY_RENDER_COMMAND_TYPE_RECTANGLE: {
@@ -210,20 +245,26 @@ void GUIManager::draw(SkCanvas* c, bool skiaAA) {
                     Clay_ClipRenderData* clip = &command->renderData.clip;
                     if(!clip->horizontal) {
                         bb.x = 0.0f;
-                        bb.width = std::numeric_limits<float>::max();
+                        bb.width = 30000.0f;
                     }
                     if(!clip->vertical) {
                         bb.y = 0.0f;
-                        bb.height = std::numeric_limits<float>::max();
+                        bb.height = 30000.0f;
                     }
 
-                    canvas->save();
-                    SkRect clipRect = SkRect::MakeXYWH(bb.x - 1.0f, bb.y - 1.0f, bb.width + 1.0f, bb.height + 1.0f);
-                    canvas->clipRect(clipRect);
+                    bb.x -= 1;
+                    bb.y -= 1;
+                    bb.width += 1;
+                    bb.height += 1;
+                    canvas->restore();
+                    clipRectStack.emplace_back(clay_bounding_box_to_aabb(bb));
+                    clip_rect_transform(canvas, clipRectStack, clipRect, clipNoDraw);
                     break;
                 }
                 case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
                     canvas->restore();
+                    clipRectStack.pop_back();
+                    clip_rect_transform(canvas, clipRectStack, clipRect, clipNoDraw);
                     break;
                 }
                 case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
@@ -264,9 +305,6 @@ SCollision::AABB<float> GUIManager::get_invalid_draw_bb(SCollision::AABB<float> 
     bb.max.y() += EXTRA_AREA + extraPadding.bottom;
     bb.min.x() -= EXTRA_AREA + extraPadding.left;
     bb.max.x() += EXTRA_AREA + extraPadding.right;
-
-    bb.min *= io.guiScaleMultiplier;
-    bb.max *= io.guiScaleMultiplier;
 
     return bb;
 }
