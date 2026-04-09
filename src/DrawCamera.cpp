@@ -29,12 +29,10 @@ void DrawCamera::set_based_on_center(World& w, const WorldVec& newPos, const Wor
 }
 
 void DrawCamera::set_viewing_area(Vector2f viewingAreaNew) {
-    if(viewingArea != viewingAreaNew) {
-        viewingArea = viewingAreaNew;
-    }
-    float maxDim = std::max(viewingAreaNew.x(), viewingAreaNew.y());
+    viewingArea = viewingAreaNew;
+    float maxDim = std::max(viewingArea.x(), viewingArea.y());
     WorldScalar a = WorldScalar(maxDim * 0.708f) * c.inverseScale;
-    WorldVec center = c.from_space(viewingAreaNew * 0.5f);
+    WorldVec center = c.from_space(viewingArea * 0.5f);
     viewingAreaGenerousCollider = SCollision::AABB<WorldScalar>(center - WorldVec{a, a}, center + WorldVec{a, a});
 }
 
@@ -112,6 +110,8 @@ void DrawCamera::update_main(World& w) {
             c.rotate_about(smoothMove.endCenter, smoothMove.end.rotation);
             smoothMove.occurring = false;
         }
+
+        checks_after_input(w);
     }
     else {
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
@@ -122,6 +122,7 @@ void DrawCamera::update_main(World& w) {
             };
             w.drawProg.drawTool->input_mouse_motion_callback(motion);
             w.main.g.gui.set_to_layout();
+            checks_after_input(w);
         }
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_CLOCKWISE).held && !w.main.input.text.is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), w.main.deltaTime);
@@ -131,11 +132,17 @@ void DrawCamera::update_main(World& w) {
             };
             w.drawProg.drawTool->input_mouse_motion_callback(motion);
             w.main.g.gui.set_to_layout();
+            checks_after_input(w);
         }
     }
+}
 
+void DrawCamera::checks_after_input(World& w) {
+    check_if_scale_up_required(w);
     set_viewing_area(w.main.window.size.cast<float>());
+}
 
+void DrawCamera::check_if_scale_up_required(World& w) {
     if(c.inverseScale < WorldScalar(1))
         w.scale_up_step();
 }
@@ -154,6 +161,8 @@ void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputMana
             startZoomCameraPos = c.pos;
         }
         isAccurateZooming = newIsAccurateZooming;
+
+        checks_after_input(w);
     }
     else
         isAccurateZooming = false;
@@ -174,9 +183,13 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
                 WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
                 c.pos = startZoomMousePos + mVec * mX;
             }
+
+            checks_after_input(w);
         }
-        else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN))
+        else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN)) {
             c.pos -= c.dir_from_space(motion.move);
+            checks_after_input(w);
+        }
     }
 }
 
@@ -202,6 +215,8 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
                 }
             }
         }
+
+        checks_after_input(w);
     }
 }
 
@@ -236,6 +251,8 @@ void DrawCamera::input_multi_finger_motion_callback(World& w, const InputManager
         float rotateAngle = initialAngle - newAngle;
         rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
         c.rotate_about(newCenterWorld, rotateAngle);
+
+        checks_after_input(w);
     }
 }
 

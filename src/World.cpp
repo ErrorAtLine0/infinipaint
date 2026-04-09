@@ -60,6 +60,7 @@ World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent
 
     drawData.rMan = &rMan;
     drawData.main = &main;
+    drawData.cam.set_viewing_area(main.window.size.cast<float>());
 
     if(worldInfo.isClient)
         init_client(worldInfo.netSource);

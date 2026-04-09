@@ -56,4 +56,7 @@ class DrawCamera {
         CoordSpaceHelper touchInitialC;
         std::vector<Vector2f> touchInitialPositions;
         bool isTouchTransforming = false;
+
+        void check_if_scale_up_required(World& w);
+        void checks_after_input(World& w);
 };

@@ -461,6 +461,8 @@ void MainProgram::input_finger_motion_callback(const InputManager::FingerMotionC
 }
 
 void MainProgram::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
+    for(auto& wor : worlds)
+        wor->drawData.cam.set_viewing_area(window.size.cast<float>());
     g.window_update();
     post_callback();
 }
