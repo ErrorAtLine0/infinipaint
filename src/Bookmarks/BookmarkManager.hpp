@@ -33,7 +33,7 @@ class BookmarkManager {
 
         std::set<GUIStuff::TreeListingObjIndexList> selectedBookmarkIndices;
 
-        NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem> editingBookmark;
+        NetworkingObjects::NetObjWeakPtr<BookmarkListItem> editingBookmark;
         std::optional<std::string> editingBookmarkOldName;
 
         void editing_bookmark_check();

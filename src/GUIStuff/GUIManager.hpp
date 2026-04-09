@@ -43,8 +43,8 @@ class GUIManager {
         template <typename ElementType, typename... Args> ElementType* element(const char* id, const Args&... a) {
             push_id(id);
 
-            Element* oldParent = parentElement;
             ElementType* elem = insert_element<ElementType>();
+            Element* oldParent = parentElement;
             elem->parent = parentElement;
             parentElement = elem;
 
@@ -61,9 +61,8 @@ class GUIManager {
 
         template <typename ElementType, typename... Args> ElementType* clipping_element(const char* id, const Args&... a) {
             push_id(id);
-
-            Element* oldParent = parentElement;
             ElementType* elem = insert_element<ElementType>();
+            Element* oldParent = parentElement;
             elem->parent = parentElement;
             parentElement = elem;
 
@@ -83,10 +82,11 @@ class GUIManager {
             clippingRegion = oldClippingRegion;
 
             parentElement = oldParent;
-
             pop_id();
             return elem;
         }
+
+        void deselect_all();
 
         DefaultStringArena strArena;
 

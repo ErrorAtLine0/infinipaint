@@ -14,7 +14,6 @@ template <typename T> struct TextBoxData {
     std::function<std::optional<T>(const std::string&)> fromStr;
     std::function<std::string(const T&)> toStr;
     bool singleLine = true;
-    bool updateEveryEdit = true;
     bool immutable = false;
     InputManager::TextInputProperties textInputProps;
     std::function<void()> onEdit;
@@ -38,7 +37,9 @@ template <typename T> class TextBox : public Element {
         TextBox(GUIManager& gui);
 
         void layout(const Clay_ElementId& id, const TextBoxData<T>& userInfo);
-        virtual void update();
+        void select();
+        virtual void update() override;
+        virtual void deselect() override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         virtual void input_paste_callback(const CustomEvents::PasteEventData& paste) override;
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;

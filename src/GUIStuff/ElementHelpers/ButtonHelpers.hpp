@@ -12,6 +12,7 @@ template <typename OptT> SelectableButton::Data selectable_button_options_to_dat
     SelectableButton::Data toRet;
     toRet.onClick = options.onClick;
     toRet.isSelected = options.isSelected;
+    toRet.instantResponse = options.instantResponse;
     toRet.drawType = options.drawType;
     toRet.onClickButton = options.onClickButton;
     return toRet;
@@ -20,6 +21,7 @@ template <typename OptT> SelectableButton::Data selectable_button_options_to_dat
 struct TextButtonOptions {
     SelectableButton::DrawType drawType = SelectableButton::DrawType::FILLED;
     bool isSelected = false;
+    bool instantResponse = false;
     bool wide = false;
     bool centered = true;
 
@@ -30,6 +32,7 @@ struct TextButtonOptions {
 struct SVGButtonOptions {
     SelectableButton::DrawType drawType = SelectableButton::DrawType::FILLED;
     bool isSelected = false;
+    bool instantResponse = false;
     float size = BIG_BUTTON_SIZE;
 
     std::function<void()> onClick;
@@ -39,6 +42,7 @@ struct SVGButtonOptions {
 struct FixedSizeColorButtonOptions {
     SelectableButton::DrawType drawType = SelectableButton::DrawType::FILLED;
     bool isSelected = false;
+    bool instantResponse = false;
     bool hasAlpha = true;
     float size = BIG_BUTTON_SIZE;
 

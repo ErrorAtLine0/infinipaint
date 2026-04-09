@@ -21,6 +21,7 @@ class SelectableButton : public Element {
         struct Data {
             DrawType drawType = DrawType::TRANSPARENT_ALL;
             bool isSelected = false;
+            bool instantResponse = false;
             std::function<void()> onClick;
             std::function<void(SelectableButton*)> onClickButton;
             std::function<void(const InnerContentCallbackParameters&)> innerContent;
@@ -32,6 +33,7 @@ class SelectableButton : public Element {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
 
     private:
+        bool instantResponse = false;
         bool isHeld = false;
         bool oldIsHovering = false;
         std::function<void()> onClick;

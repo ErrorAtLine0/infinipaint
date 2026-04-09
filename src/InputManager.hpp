@@ -252,8 +252,8 @@ struct InputManager {
 
     bool ctrl_or_meta_held();
     uint32_t make_generic_key_mod(SDL_Keymod m);
-    void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode);
-    void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode);
+    void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput);
+    void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput);
     std::vector<Vector2f> get_multiple_finger_positions();
     std::vector<Vector2f> get_multiple_finger_motions();
     void touch_finger_do_mouse_down();

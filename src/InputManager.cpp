@@ -332,18 +332,18 @@ const InputManager::KeyData& InputManager::key(KeyCode kCode) {
     return keys[kCode];
 }
 
-void InputManager::set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode) {
+void InputManager::set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput) {
     auto& k = keys[kCode];
     k.held = true;
-    if(text.is_accepting_input())
+    if(acceptingTextInput)
         main.input_text_key_callback(KeyCallbackArgs{.key = kCode, .down = e.down, .repeat = e.repeat});
     else
         main.input_key_callback(KeyCallbackArgs{.key = kCode, .down = e.down, .repeat = e.repeat});
 }
 
-void InputManager::set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode) {
+void InputManager::set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput) {
     keys[kCode].held = false;
-    if(text.is_accepting_input())
+    if(acceptingTextInput)
         main.input_text_key_callback(KeyCallbackArgs{.key = kCode, .down = e.down, .repeat = e.repeat});
     // Send key up even if text input is happening
     main.input_key_callback(KeyCallbackArgs{.key = kCode, .down = e.down, .repeat = e.repeat});
@@ -852,76 +852,78 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
             return;
     }
 
+    bool acceptingTextInput = text.is_accepting_input();
+
     switch(kPress) {
         case SDLK_UP:
-            set_key_down(e, KEY_GENERIC_UP);
+            set_key_down(e, KEY_GENERIC_UP, acceptingTextInput);
             break;
         case SDLK_DOWN:
-            set_key_down(e, KEY_GENERIC_DOWN);
+            set_key_down(e, KEY_GENERIC_DOWN, acceptingTextInput);
             break;
         case SDLK_LEFT:
-            set_key_down(e, KEY_GENERIC_LEFT);
+            set_key_down(e, KEY_GENERIC_LEFT, acceptingTextInput);
             break;
         case SDLK_RIGHT:
-            set_key_down(e, KEY_GENERIC_RIGHT);
+            set_key_down(e, KEY_GENERIC_RIGHT, acceptingTextInput);
             break;
         case SDLK_BACKSPACE:
-            set_key_down(e, KEY_TEXT_BACKSPACE);
+            set_key_down(e, KEY_TEXT_BACKSPACE, acceptingTextInput);
             break;
         case SDLK_DELETE:
-            set_key_down(e, KEY_TEXT_DELETE);
+            set_key_down(e, KEY_TEXT_DELETE, acceptingTextInput);
             break;
         case SDLK_HOME:
-            set_key_down(e, KEY_TEXT_HOME);
+            set_key_down(e, KEY_TEXT_HOME, acceptingTextInput);
             break;
         case SDLK_END:
-            set_key_down(e, KEY_TEXT_END);
+            set_key_down(e, KEY_TEXT_END, acceptingTextInput);
             break;
         case SDLK_LSHIFT:
-            set_key_down(e, KEY_GENERIC_LSHIFT);
+            set_key_down(e, KEY_GENERIC_LSHIFT, acceptingTextInput);
             break;
         case SDLK_LALT:
-            set_key_down(e, KEY_GENERIC_LALT);
+            set_key_down(e, KEY_GENERIC_LALT, acceptingTextInput);
             break;
         case SDLK_LCTRL:
-            set_key_down(e, KEY_GENERIC_LCTRL);
+            set_key_down(e, KEY_GENERIC_LCTRL, acceptingTextInput);
             break;
         case SDLK_LMETA:
-            set_key_down(e, KEY_GENERIC_LMETA);
+            set_key_down(e, KEY_GENERIC_LMETA, acceptingTextInput);
             break;
         case SDLK_C:
             // Use either Ctrl or Meta (command for Mac) keys. We do either instead of checking, since checking can get complicated on Emscripten
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
-                set_key_down(e, KEY_TEXT_COPY);
+                set_key_down(e, KEY_TEXT_COPY, acceptingTextInput);
             break;
         case SDLK_X:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
-                set_key_down(e, KEY_TEXT_CUT);
+                set_key_down(e, KEY_TEXT_CUT, acceptingTextInput);
             break;
         case SDLK_V:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
-                set_key_down(e, KEY_TEXT_PASTE);
+                set_key_down(e, KEY_TEXT_PASTE, acceptingTextInput);
             break;
         case SDLK_A:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
-                set_key_down(e, KEY_TEXT_SELECTALL);
+                set_key_down(e, KEY_TEXT_SELECTALL, acceptingTextInput);
             break;
         case SDLK_Z:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
-                set_key_down(e, KEY_TEXT_UNDO);
+                set_key_down(e, KEY_TEXT_UNDO, acceptingTextInput);
             break;
         case SDLK_R:
             if((kMod & SDL_KMOD_GUI) || (kMod & SDL_KMOD_CTRL))
-                set_key_down(e, KEY_TEXT_REDO);
+                set_key_down(e, KEY_TEXT_REDO, acceptingTextInput);
             break;
         case SDLK_RETURN:
-            set_key_down(e, KEY_GENERIC_ENTER);
+            set_key_down(e, KEY_GENERIC_ENTER, acceptingTextInput);
             break;
         case SDLK_TAB:
-            set_key_down(e, KEY_TEXT_TAB);
+            set_key_down(e, KEY_TEXT_TAB, acceptingTextInput);
             break;
         case SDLK_ESCAPE:
-            set_key_down(e, KEY_GENERIC_ESCAPE);
+            set_key_down(e, KEY_GENERIC_ESCAPE, acceptingTextInput);
             break;
         default:
             break;
@@ -929,7 +931,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 
     auto f = keyAssignments.find({make_generic_key_mod(kMod), kPress});
     if(f != keyAssignments.end())
-        set_key_down(e, f->second);
+        set_key_down(e, f->second, acceptingTextInput);
 }
 
 void InputManager::call_paste(CustomEvents::PasteEventDataType type, const InputManagerCallPasteInfo& info) {
@@ -968,66 +970,68 @@ bool InputManager::ctrl_or_meta_held() {
 void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
     auto kPress = e.key;
 
+    bool acceptingTextInput = text.is_accepting_input();
+
     switch(kPress) {
         case SDLK_UP:
-            set_key_up(e, KEY_GENERIC_UP);
+            set_key_up(e, KEY_GENERIC_UP, acceptingTextInput);
             break;
         case SDLK_DOWN:
-            set_key_up(e, KEY_GENERIC_DOWN);
+            set_key_up(e, KEY_GENERIC_DOWN, acceptingTextInput);
             break;
         case SDLK_LEFT:
-            set_key_up(e, KEY_GENERIC_LEFT);
+            set_key_up(e, KEY_GENERIC_LEFT, acceptingTextInput);
             break;
         case SDLK_RIGHT:
-            set_key_up(e, KEY_GENERIC_RIGHT);
+            set_key_up(e, KEY_GENERIC_RIGHT, acceptingTextInput);
             break;
         case SDLK_BACKSPACE:
-            set_key_up(e, KEY_TEXT_BACKSPACE);
+            set_key_up(e, KEY_TEXT_BACKSPACE, acceptingTextInput);
             break;
         case SDLK_DELETE:
-            set_key_up(e, KEY_TEXT_DELETE);
+            set_key_up(e, KEY_TEXT_DELETE, acceptingTextInput);
             break;
         case SDLK_HOME:
-            set_key_up(e, KEY_TEXT_HOME);
+            set_key_up(e, KEY_TEXT_HOME, acceptingTextInput);
             break;
         case SDLK_END:
-            set_key_up(e, KEY_TEXT_END);
+            set_key_up(e, KEY_TEXT_END, acceptingTextInput);
             break;
         case SDLK_LSHIFT:
-            set_key_up(e, KEY_GENERIC_LSHIFT);
+            set_key_up(e, KEY_GENERIC_LSHIFT, acceptingTextInput);
             break;
         case SDLK_LALT:
-            set_key_up(e, KEY_GENERIC_LALT);
+            set_key_up(e, KEY_GENERIC_LALT, acceptingTextInput);
             break;
         case SDLK_LCTRL:
-            set_key_up(e, KEY_GENERIC_LCTRL);
+            set_key_up(e, KEY_GENERIC_LCTRL, acceptingTextInput);
             break;
         case SDLK_C:
-            set_key_up(e, KEY_TEXT_COPY);
+            set_key_up(e, KEY_TEXT_COPY, acceptingTextInput);
             break;
         case SDLK_X:
-            set_key_up(e, KEY_TEXT_CUT);
+            set_key_up(e, KEY_TEXT_CUT, acceptingTextInput);
             break;
         case SDLK_V:
-            set_key_up(e, KEY_TEXT_PASTE);
+            set_key_up(e, KEY_TEXT_PASTE, acceptingTextInput);
             break;
         case SDLK_A:
-            set_key_up(e, KEY_TEXT_SELECTALL);
+            set_key_up(e, KEY_TEXT_SELECTALL, acceptingTextInput);
             break;
         case SDLK_Z:
-            set_key_up(e, KEY_TEXT_UNDO);
+            set_key_up(e, KEY_TEXT_UNDO, acceptingTextInput);
             break;
         case SDLK_R:
-            set_key_up(e, KEY_TEXT_REDO);
+            set_key_up(e, KEY_TEXT_REDO, acceptingTextInput);
             break;
         case SDLK_RETURN:
-            set_key_up(e, KEY_GENERIC_ENTER);
+            set_key_up(e, KEY_GENERIC_ENTER, acceptingTextInput);
             break;
         case SDLK_TAB:
-            set_key_up(e, KEY_TEXT_TAB);
+            set_key_up(e, KEY_TEXT_TAB, acceptingTextInput);
             break;
         case SDLK_ESCAPE:
-            set_key_up(e, KEY_GENERIC_ESCAPE);
+            set_key_up(e, KEY_GENERIC_ESCAPE, acceptingTextInput);
             break;
         default:
             break;
@@ -1035,7 +1039,7 @@ void InputManager::backend_key_up_update(const SDL_KeyboardEvent& e) {
 
     for(auto& p : keyAssignments)
         if(p.first.y() == kPress) // Dont try matching modifiers when setting key to go up
-            set_key_up(e, p.second);
+            set_key_up(e, p.second, acceptingTextInput);
 }
 
 void InputManager::Mouse::set_pos(const Vector2f& newPos) {

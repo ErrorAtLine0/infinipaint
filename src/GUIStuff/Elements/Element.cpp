@@ -6,6 +6,7 @@ namespace GUIStuff {
         gui(initGUI) {}
 
     void Element::update() {}
+    void Element::deselect() {}
 
     void Element::input_paste_callback(const CustomEvents::PasteEventData& paste) { }
     void Element::input_text_key_callback(const InputManager::KeyCallbackArgs& key) { }

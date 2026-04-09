@@ -16,6 +16,7 @@
 #include "MainProgram.hpp"
 #include "InputManager.hpp"
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
+#include "RichText/TextStyleModifier.hpp"
 #include "VersionConstants.hpp"
 #include "World.hpp"
 #include <SDL3/SDL_dialog.h>
@@ -52,6 +53,7 @@
 #include "GUIStuff/Elements/DropDown.hpp"
 #include "GUIStuff/Elements/SVGIcon.hpp"
 #include "GUIStuff/Elements/MovableTabList.hpp"
+#include "GUIStuff/Elements/TextParagraph.hpp"
 
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
 #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
@@ -257,6 +259,31 @@ void Toolbar::update() {
         }
         return false;
     });
+    if(!chatboxOpen) {
+        for(auto& chatMessage : main.world->chatMessages) {
+            bool wasShown = chatMessage.time < ChatMessage::DISPLAY_TIME;
+            chatMessage.time.update_time_since();
+            bool isShown = chatMessage.time < ChatMessage::DISPLAY_TIME;
+            bool isFading = chatMessage.time >= ChatMessage::FADE_START_TIME;
+            if((isFading && isShown) || (wasShown && !isShown))
+                main.g.gui.set_to_layout();
+        }
+    }
+}
+
+void Toolbar::open_chatbox() {
+    if(!chatboxOpen) {
+        chatMessageInput.clear();
+        chatboxOpen = true;
+        main.g.gui.set_to_layout();
+    }
+}
+
+void Toolbar::close_chatbox() {
+    if(chatboxOpen) {
+        chatboxOpen = false;
+        main.g.gui.set_to_layout();
+    }
 }
 
 void Toolbar::layout_run() {
@@ -1021,149 +1048,139 @@ void Toolbar::layer_menu(Element* layerMenuButton) {
     });
 }
 
-std::unique_ptr<skia::textlayout::Paragraph> Toolbar::build_paragraph_from_chat_message(const ChatMessage& message, float alpha) {
+RichText::TextData Toolbar::build_paragraph_from_chat_message(const ChatMessage& message, float alpha) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    skia::textlayout::ParagraphStyle pStyle;
-    pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
-    skia::textlayout::TextStyle tStyle;
-    tStyle.setFontSize(io.fontSize);
-    tStyle.setFontFamilies(main.fonts->get_default_font_families());
-    tStyle.setFontStyle(SkFontStyle::Bold());
-    tStyle.setForegroundColor(SkPaint{color_mul_alpha(message.type == ChatMessage::JOIN ? io.theme->warningColor : io.theme->frontColor1, alpha)});
-    pStyle.setTextStyle(tStyle);
+    RichText::TextData toRet;
 
-    skia::textlayout::ParagraphBuilderImpl a(pStyle, io.fonts->collection, SkUnicodes::ICU::Make());
-    if(message.type == ChatMessage::JOIN) {
-        std::string messageName = message.name + " ";
-        a.addText(messageName.c_str(), messageName.length());
-    }
-    else {
-        std::string messageName = "[" + message.name + "] ";
-        a.addText(messageName.c_str(), messageName.length());
-    }
+    auto& par = toRet.paragraphs.emplace_back();
 
-    tStyle.setFontStyle(SkFontStyle::Normal());
-    a.pushStyle(tStyle);
-    a.addText(message.message.c_str(), message.message.length());
+    RichText::PositionedTextStyleMod& positionedModInit = toRet.tStyleMods.emplace_back();
+    positionedModInit.pos = {0, 0};
+    positionedModInit.mods[RichText::TextStyleModifier::ModifierType::WEIGHT] = std::make_shared<RichText::WeightTextStyleModifier>(SkFontStyle::Weight::kBold_Weight);
+    positionedModInit.mods[RichText::TextStyleModifier::ModifierType::COLOR] = std::make_shared<RichText::ColorTextStyleModifier>(convert_vec4<Vector4f>(color_mul_alpha(message.type == ChatMessage::JOIN ? io.theme->warningColor : io.theme->frontColor1, alpha)));
+    if(message.type == ChatMessage::JOIN)
+        par.text += message.name + " ";
+    else
+        par.text += "[" + message.name + "] ";
 
-    return a.Build();
+    RichText::PositionedTextStyleMod& positionedModMessage = toRet.tStyleMods.emplace_back();
+    positionedModMessage.pos = {0, par.text.size()};
+    positionedModMessage.mods[RichText::TextStyleModifier::ModifierType::WEIGHT] = std::make_shared<RichText::WeightTextStyleModifier>(SkFontStyle::Weight::kNormal_Weight);
+    par.text += message.message;
+
+    return toRet;
 }
 
 void Toolbar::chat_box() {
-    //constexpr float CHATBOX_WIDTH = 700;
-    //if(main.world->netObjMan.is_connected()) {
-    //    Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN BUTTON");
-    //    CLAY(localId, {
-    //        .layout = {
-    //            .layoutDirection = CLAY_LEFT_TO_RIGHT
-    //        },
-    //        .floating = {.offset = {static_cast<float>(io.theme->padding1), -static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    //    }) {
-    //        gui.obstructing_window(localId);
-    //        gui.push_id("chat box open button");
-    //        if(gui.svg_icon_button("Chat Open Button", "data/icons/chat.svg", chatBoxState != CHATBOXSTATE_CLOSE)) {
-    //            if(chatBoxState == CHATBOXSTATE_CLOSE)
-    //                chatBoxState = CHATBOXSTATE_JUSTOPEN;
-    //            else
-    //                chatBoxState = CHATBOXSTATE_CLOSE;
-    //        }
-    //        gui.pop_id();
-    //    }
-    //}
-    //Clay_ElementId localId = CLAY_ID_LOCAL("INFINIPAINT CHAT BOX OPEN");
-    //CLAY(localId, {
-    //    .layout = {
-    //        .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
-    //        .childGap = 0,
-    //        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-    //        .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //    },
-    //    .floating = {.offset = {60 + static_cast<float>(io.theme->padding1), -static_cast<float>(io.theme->padding1)}, .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    //}) {
-    //    gui.obstructing_window(localId);
-    //    gui.push_id("chat box");
-    //    if(chatBoxState == CHATBOXSTATE_JUSTOPEN || chatBoxState == CHATBOXSTATE_OPEN) {
-    //        gui.push_id("messages");
-    //        CLAY_AUTO_ID({
-    //            .layout = {
-    //                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-    //                .padding = CLAY_PADDING_ALL(0),
-    //                .childGap = 0,
-    //                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-    //                .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //            },
-    //            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1)
-    //        }) {
-    //            int id = 0;
-    //            for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
-    //                gui.push_id(id);
-    //                gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, 1.0f), CHATBOX_WIDTH);
-    //                gui.pop_id();
-    //                id++;
-    //            }
-    //        }
-    //        gui.pop_id();
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
 
-    //        gui.left_to_right_line_layout([&]() {
-    //            gui.input_text("message input", &chatMessageInput);
-    //            if(gui.text_button("send button", "Send", false, true)) {
-    //                if(!chatMessageInput.empty())
-    //                    main.world->send_chat_message(chatMessageInput);
-    //            }
-    //        });
-    //        gui.push_id("message input");
-    //        GUIStuff::GUIManager::ElementContainer& a = gui.elements[gui.idStack];
-    //        GUIStuff::TextBox<std::string>& t = *(GUIStuff::TextBox<std::string>*)a.elem.get();
-    //        gui.pop_id();
-    //        if(chatBoxState == CHATBOXSTATE_JUSTOPEN) {
-    //            t.selection.selected = true;
-    //            chatBoxState = CHATBOXSTATE_OPEN;
-    //        }
-    //        if(io.key.escape)
-    //            t.selection.selected = false;
-    //        if(io.key.enter) {
-    //            main.world->send_chat_message(chatMessageInput);
-    //            t.selection.selected = false;
-    //        }
-    //        if(!t.selection.selected) {
-    //            chatMessageInput.clear();
-    //            chatBoxState = CHATBOXSTATE_CLOSE;
-    //        }
-    //    }
-    //    else {
-    //        constexpr float DISPLAY_TIME = 8.0f;
-    //        constexpr float FADE_START_TIME = 7.0f;
-    //        gui.push_id("messages popup");
-    //        int id = 0;
-    //        for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
-    //            chatMessage.time.update_time_since();
-    //            if(chatMessage.time < DISPLAY_TIME) {
-    //                float a = 1.0f - lerp_time<float>(chatMessage.time, DISPLAY_TIME, FADE_START_TIME);
-    //                Clay_ElementId elemId = CLAY_IDI_LOCAL("CHAT MESSAGE ID", id);
-    //                CLAY(elemId, {
-    //                    .layout = {
-    //                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-    //                        .padding = CLAY_PADDING_ALL(0),
-    //                        .childGap = 0,
-    //                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-    //                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-    //                    },
-    //                    .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
-    //                }) {
-    //                    gui.push_id(id);
-    //                    gui.obstructing_window(elemId);
-    //                    gui.text_paragraph("text", build_paragraph_from_chat_message(chatMessage, a), CHATBOX_WIDTH);
-    //                    gui.pop_id();
-    //                }
-    //            }
-    //            id++;
-    //        }
-    //        gui.pop_id();
-    //    }
-    //    gui.pop_id();
-    //}
+    constexpr float CHATBOX_WIDTH = 700;
+    if(main.world->netObjMan.is_connected()) {
+        gui.element<LayoutElement>("Infinipaint chat box open button", [&](LayoutElement*, const Clay_ElementId& lId) {
+            CLAY(lId, {
+                .layout = {
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                },
+                .floating = {.offset = {static_cast<float>(io.theme->padding1), -static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+            }) {
+                svg_icon_button(gui, "Chat open button", "data/icons/chat.svg", {
+                    .onClick = [&] {
+                        chatboxOpen = !chatboxOpen;
+                        chatMessageInput.clear();
+                    }
+                });
+            }
+        });
+    }
+    gui.element<LayoutElement>("Infinipaint chat box", [&](LayoutElement*, const Clay_ElementId& lId) {
+        CLAY(lId, {
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIXED(CHATBOX_WIDTH), .height = CLAY_SIZING_FIT(0) },
+                .childGap = 0,
+                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .floating = {.offset = {60 + static_cast<float>(io.theme->padding1), -static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        }) {
+            if(chatboxOpen) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                        .padding = CLAY_PADDING_ALL(0),
+                        .childGap = 0,
+                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1)
+                }) {
+                    int id = 0;
+                    for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
+                        gui.new_id(id++, [&] {
+                            gui.element<TextParagraph>("text", TextParagraph::Data{
+                                .text = build_paragraph_from_chat_message(chatMessage, 1.0f),
+                                .width = CHATBOX_WIDTH
+                            });
+                        });
+                    }
+                }
+
+                left_to_right_line_layout(gui, [&] {
+                    input_text(gui, "message input", &chatMessageInput, {
+                        .onEnter = [&] {
+                            if(!chatMessageInput.empty())
+                                main.world->send_chat_message(chatMessageInput);
+                            chatboxOpen = false;
+                        },
+                        .onDeselect = [&] {
+                            chatboxOpen = false;
+                            gui.set_to_layout();
+                        }
+                    })->select();
+                    text_button(gui, "send button", "Send", {
+                        .instantResponse = true,
+                        .onClick = [&] {
+                            if(!chatMessageInput.empty())
+                                main.world->send_chat_message(chatMessageInput);
+                            chatboxOpen = false;
+                        }
+                    });
+                });
+            }
+            else {
+                gui.new_id("Message popups", [&] {
+                    int id = 0;
+                    for(auto& chatMessage : main.world->chatMessages | std::views::reverse) {
+                        chatMessage.time.update_time_since();
+                        if(chatMessage.time < ChatMessage::DISPLAY_TIME) {
+                            gui.new_id(id++, [&] {
+                                float a = 1.0f - lerp_time<float>(chatMessage.time, ChatMessage::DISPLAY_TIME, ChatMessage::FADE_START_TIME);
+                                gui.element<LayoutElement>("Chat message", [&](LayoutElement*, const Clay_ElementId& lId) {
+                                    CLAY(lId, {
+                                        .layout = {
+                                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                            .padding = CLAY_PADDING_ALL(0),
+                                            .childGap = 0,
+                                            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                                        },
+                                        .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
+                                    }) {
+                                        gui.element<TextParagraph>("message", TextParagraph::Data{
+                                            .text = build_paragraph_from_chat_message(chatMessage, a),
+                                            .width = CHATBOX_WIDTH
+                                        });
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+            }
+        }
+    });
 }
 
 void Toolbar::global_log() {
@@ -2136,7 +2153,7 @@ void Toolbar::file_picker_gui() {
                 }
             });
             input_path_field(gui, "file picker path", "Path", &filePicker.currentSearchPath, {
-                .updateEveryEdit = false,
+                .fileTypeRestriction = std::filesystem::file_type::directory,
                 .onEdit = [&] {
                     file_picker_gui_refresh_entries();
                 }

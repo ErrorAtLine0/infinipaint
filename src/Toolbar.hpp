@@ -1,5 +1,6 @@
 #pragma once
 #include "GUIStuff/Elements/ScrollArea.hpp"
+#include "GUIStuff/Elements/TextParagraph.hpp"
 #include "GUIStuff/GUIManager.hpp"
 #include "DrawData.hpp"
 #include "Helpers/FileDownloader.hpp"
@@ -26,6 +27,8 @@ class Toolbar {
         };
 
         struct ChatMessage {
+            static constexpr float DISPLAY_TIME = 8.0f;
+            static constexpr float FADE_START_TIME = 7.0f;
             std::string name;
             std::string message;
             enum Type {
@@ -72,6 +75,9 @@ class Toolbar {
         void save_palettes();
         void load_palettes();
         void load_licenses();
+
+        void open_chatbox();
+        void close_chatbox();
 
         GUIStuff::Element* colorLeftButton; 
         Vector4f* colorLeft = nullptr;
@@ -171,11 +177,7 @@ class Toolbar {
 
         float finalCalculatedGuiScale = 1.0f;
 
-        enum {
-            CHATBOXSTATE_OPEN,
-            CHATBOXSTATE_JUSTOPEN,
-            CHATBOXSTATE_CLOSE
-        } chatBoxState = CHATBOXSTATE_CLOSE;
+        bool chatboxOpen = false;
 
         enum OptionsMenuType {
             HOST_MENU,
@@ -226,7 +228,7 @@ class Toolbar {
         };
         static NativeFilePicker nativeFilePicker;
 
-        std::unique_ptr<skia::textlayout::Paragraph> build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
+        RichText::TextData build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
 
         void load_icons_at(const std::filesystem::path& pathToLoad);
 

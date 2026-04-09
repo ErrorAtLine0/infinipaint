@@ -391,12 +391,14 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
             });
         });
 
-        if(editingLayer) {
-            text_label_centered(gui, editingLayer->is_folder() ? "Edit Layer Folder" : "Edit Layer");
+        auto editingLayerLock = editingLayer.lock();
+        if(editingLayerLock) {
+            text_label_centered(gui, editingLayerLock->is_folder() ? "Edit Layer Folder" : "Edit Layer");
             input_text_field(gui, "input edit name", "Name", &nameToEdit, {
                 .onEdit = [&] {
-                    if(editingLayer) { // This can be set to null on the way here (close layer popup when textbox is selected)
-                        editingLayer->set_name(world.delayedUpdateObjectManager, nameToEdit);
+                    auto editingLayerLock = editingLayer.lock();
+                    if(editingLayerLock) { // This can be set to null on the way here (close layer popup when textbox is selected)
+                        editingLayerLock->set_name(world.delayedUpdateObjectManager, nameToEdit);
                         world.main.g.gui.set_to_layout();
                     }
                 }
@@ -404,9 +406,10 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
             slider_scalar_field(gui, "input alpha slider", "Alpha", &alphaValToEdit, 0.0f, 1.0f, {
                 .decimalPrecision = 2,
                 .onEdit = [&] {
-                    if(editingLayer) {
-                        editingLayer->set_name(world.delayedUpdateObjectManager, nameToEdit);
-                        editingLayer->set_alpha(layerMan, alphaValToEdit);
+                    auto editingLayerLock = editingLayer.lock();
+                    if(editingLayerLock) {
+                        editingLayerLock->set_name(world.delayedUpdateObjectManager, nameToEdit);
+                        editingLayerLock->set_alpha(layerMan, alphaValToEdit);
                     }
                 }
             });
@@ -415,8 +418,9 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
                 gui.element<DropDown<size_t>>("input blend mode", &blendModeValToEdit, get_blend_mode_useful_name_list(), DropdownOptions{
                     .width = 190.0f,
                     .onClick = [&] {
-                        if(editingLayer)
-                            editingLayer->set_blend_mode(layerMan, get_blend_mode_useful_list()[blendModeValToEdit]);
+                        auto editingLayerLock = editingLayer.lock();
+                        if(editingLayerLock)
+                            editingLayerLock->set_blend_mode(layerMan, get_blend_mode_useful_list()[blendModeValToEdit]);
                     }
                 });
             });
@@ -603,19 +607,19 @@ void DrawingProgramLayerManagerGUI::editing_layer_check() {
             WorldUndoManager::UndoObjectID undoID;
     };
 
-
-    if(editingLayer) {
-        const DrawingProgramLayerListItemMetaInfo& currentMetaData = editingLayer->get_metainfo();
+    auto editingLayerLock = editingLayer.lock();
+    if(editingLayerLock) {
+        const DrawingProgramLayerListItemMetaInfo& currentMetaData = editingLayerLock->get_metainfo();
         if(currentMetaData != editingLayerOldMetainfo.value())
             world.undo.push(std::make_unique<EditLayerWorldUndoAction>(std::make_unique<DrawingProgramLayerListItemMetaInfo>(editingLayerOldMetainfo.value()), world.undo.get_undoid_from_netid(editingLayer.get_net_id())));
     }
 
     if(selectedLayerIndices.size() == 1) {
         editingLayer = get_layer_from_obj_index(*selectedLayerIndices.begin());
-        editingLayerOldMetainfo = editingLayer->get_metainfo();
+        editingLayerOldMetainfo = editingLayer.lock()->get_metainfo();
     }
     else {
-        editingLayer = NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem>();
+        editingLayer.reset();
         editingLayerOldMetainfo = std::nullopt;
     }
 }

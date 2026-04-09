@@ -370,6 +370,11 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
                 toolbar.save_as_func();
             break;
         }
+        case InputManager::KEY_OPEN_CHAT: {
+            if(key.down && !key.repeat)
+                toolbar.open_chatbox();
+            break;
+        }
     }
     g.input_key_callback(key);
     if(world)
@@ -378,6 +383,13 @@ void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void MainProgram::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+    switch(key.key) {
+        case InputManager::KEY_GENERIC_ESCAPE: {
+            if(key.down && !key.repeat)
+                toolbar.close_chatbox();
+            break;
+        }
+    }
     g.input_text_key_callback(key);
     if(world)
         world->input_text_key_callback(key);

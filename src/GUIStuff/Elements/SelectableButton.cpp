@@ -14,6 +14,7 @@ void SelectableButton::layout(const Clay_ElementId& id, const Data& d) {
     SkColor4f backgroundColorHighlight;
     SkColor4f backgroundColor;
 
+    instantResponse = d.instantResponse;
     onClick = [&, this, d] {
         if(d.onClickButton)
             d.onClickButton(this);
@@ -70,10 +71,16 @@ void SelectableButton::layout(const Clay_ElementId& id, const Data& d) {
 void SelectableButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     bool oldIsHeld = isHeld;
     isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
-    if(isHeld)
+    if(isHeld) {
+        if(instantResponse) {
+            std::cout << "INSTANT" << std::endl;
+            gui.set_post_callback_func(onClick);
+        }
         gui.set_to_layout();
+    }
     else if(mouseHovering && oldIsHeld && button.button == InputManager::MouseButton::LEFT && !button.down) {
-        gui.set_post_callback_func(onClick);
+        if(!instantResponse)
+            gui.set_post_callback_func(onClick);
         gui.set_to_layout();
     }
     else if(mouseHovering != oldIsHovering || isHeld != oldIsHeld)

@@ -8,7 +8,6 @@ namespace GUIStuff { namespace ElementHelpers {
 
 template <typename T, typename OptT> TextBoxData<T> textbox_options_to_data(const OptT& options) {
     TextBoxData<T> toRet;
-    toRet.updateEveryEdit = options.updateEveryEdit;
     toRet.onEnter = options.onEnter;
     toRet.onEdit = options.onEdit;
     toRet.immutable = options.immutable;
@@ -18,7 +17,6 @@ template <typename T, typename OptT> TextBoxData<T> textbox_options_to_data(cons
 }
 
 struct TextBoxOptions {
-    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -28,7 +26,6 @@ struct TextBoxOptions {
 
 struct TextBoxScalarOptions {
     int decimalPrecision = 0;
-    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -38,7 +35,6 @@ struct TextBoxScalarOptions {
 
 struct TextBoxScalarsOptions {
     int decimalPrecision = 0;
-    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void(size_t)> onEnter;
     std::function<void(size_t)> onEdit;
@@ -48,7 +44,6 @@ struct TextBoxScalarsOptions {
 
 struct TextBoxPathOptions {
     std::filesystem::file_type fileTypeRestriction;
-    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -58,7 +53,6 @@ struct TextBoxPathOptions {
 
 struct TextBoxHexColorOptions {
     bool hasAlpha = true;
-    bool updateEveryEdit = true;
     bool immutable = false;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -122,7 +116,6 @@ template <typename TContainer, typename T> void input_scalars_field(GUIManager& 
             for(size_t i = 0; i < elemCount; i++) {
                 gui.new_id(i, [&] { input_scalar<T>(gui, "field", &(*val)[i], minVal, maxVal, TextBoxScalarOptions {
                     .decimalPrecision = options.decimalPrecision,
-                    .updateEveryEdit = options.updateEveryEdit,
                     .immutable = options.immutable,
                     .onEnter = [f = options.onEnter, i] { if(f) f(i); },
                     .onEdit = [f = options.onEdit, i] { if(f) f(i); },

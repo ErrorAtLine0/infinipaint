@@ -355,12 +355,14 @@ void BookmarkManager::setup_list_gui() {
             });
         });
 
-        if(editingBookmark) {
-            text_label_centered(gui, editingBookmark->is_folder() ? "Edit Bookmark Folder" : "Edit Bookmark");
+        auto editingBookmarkLock = editingBookmark.lock();
+        if(editingBookmarkLock) {
+            text_label_centered(gui, editingBookmarkLock->is_folder() ? "Edit Bookmark Folder" : "Edit Bookmark");
             input_text_field(gui, "input edit name", "Name", &nameToEdit, {
                 .onEdit = [&] {
-                    if(editingBookmark) { // This can be set to null on the way here (close bookmark popup when textbox is selected)
-                        editingBookmark->set_name(world.delayedUpdateObjectManager, nameToEdit);
+                    auto editingBookmarkLock = editingBookmark.lock();
+                    if(editingBookmarkLock) { // This can be set to null on the way here (close bookmark popup when textbox is selected)
+                        editingBookmarkLock->set_name(world.delayedUpdateObjectManager, nameToEdit);
                         world.main.g.gui.set_to_layout();
                     }
                 }
@@ -572,18 +574,19 @@ void BookmarkManager::editing_bookmark_check() {
             WorldUndoManager::UndoObjectID undoID;
     };
 
-    if(editingBookmark) {
-        const std::string& currentNameData = editingBookmark->get_name();
+    auto editingBookmarkLock = editingBookmark.lock();
+    if(editingBookmarkLock) {
+        const std::string& currentNameData = editingBookmarkLock->get_name();
         if(currentNameData != editingBookmarkOldName.value())
             world.undo.push(std::make_unique<EditBookmarkWorldUndoAction>(editingBookmarkOldName.value(), world.undo.get_undoid_from_netid(editingBookmark.get_net_id())));
     }
 
     if(selectedBookmarkIndices.size() == 1) {
         editingBookmark = get_bookmark_from_obj_index(*selectedBookmarkIndices.begin());
-        editingBookmarkOldName = editingBookmark->get_name();
+        editingBookmarkOldName = editingBookmark.lock()->get_name();
     }
     else {
-        editingBookmark = NetworkingObjects::NetObjTemporaryPtr<BookmarkListItem>();
+        editingBookmark.reset();
         editingBookmarkOldName = std::nullopt;
     }
 }

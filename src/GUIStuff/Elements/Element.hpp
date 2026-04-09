@@ -23,6 +23,7 @@ namespace GUIStuff {
             Element* parent = nullptr;
 
             virtual void update();
+            virtual void deselect();
 
             virtual void input_paste_callback(const CustomEvents::PasteEventData& paste);
             virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key);

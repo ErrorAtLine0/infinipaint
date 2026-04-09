@@ -29,7 +29,7 @@ class DrawingProgramLayerManagerGUI {
         size_t blendModeValToEdit = 0;
 
         std::set<GUIStuff::TreeListingObjIndexList> selectedLayerIndices;
-        NetworkingObjects::NetObjTemporaryPtr<DrawingProgramLayerListItem> editingLayer;
+        NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> editingLayer;
 
         std::optional<DrawingProgramLayerListItemMetaInfo> editingLayerOldMetainfo;
 
