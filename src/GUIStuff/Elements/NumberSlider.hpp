@@ -34,8 +34,8 @@ template <typename T> class NumberSlider : public Element {
         }
 
         virtual void update() {
-            smooth_two_way_time(dd.holdAnimation, gui.io.deltaTime, dd.isHeld, HOLD_ANIMATION_TIME);
-            smooth_two_way_time(dd.hoverAnimation, gui.io.deltaTime, mouseHovering, gui.io.theme->hoverExpandTime);
+            smooth_two_way_animation_time(dd.holdAnimation, gui.io.deltaTime, dd.isHeld, HOLD_ANIMATION_TIME);
+            smooth_two_way_animation_time(dd.hoverAnimation, gui.io.deltaTime, mouseHovering, gui.io.theme->hoverExpandTime);
             if(oldDD != dd) {
                 gui.invalidate_draw_element(this, {
                     .top = 10.0f,

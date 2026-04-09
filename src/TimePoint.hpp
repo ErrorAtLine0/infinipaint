@@ -30,7 +30,9 @@ template<typename TimeType> SkColor4f lerp_vec(const SkColor4f& t1, const SkColo
             std::lerp(t1[3], t2[3], t)};
 }
 
-bool smooth_two_way_time(float& timeToUpdate, float deltaTime, bool isWay1, float animDuration);
+bool smooth_two_way_animation_time_check_for_change(float& timeToUpdate, float deltaTime, bool isWay1, float animDuration);
+float smooth_two_way_animation_time_get_lerp(float& timeToUpdate, float deltaTime, bool isWay1, float animDuration);
+void smooth_two_way_animation_time(float& timeToUpdate, float deltaTime, bool isWay1, float animDuration);
 
 class TimePoint {
     public:

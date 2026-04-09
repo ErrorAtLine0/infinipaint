@@ -19,7 +19,7 @@ void RadioButton::layout(const Clay_ElementId& id, const std::function<bool()>& 
 }
 
 void RadioButton::update() {
-    if(smooth_two_way_time(hoverAnimation, gui.io.deltaTime, mouseHovering, RADIOBUTTON_ANIMATION_TIME))
+    if(smooth_two_way_animation_time_check_for_change(hoverAnimation, gui.io.deltaTime, mouseHovering, RADIOBUTTON_ANIMATION_TIME))
         gui.invalidate_draw_element(this);
     if(oldIsTicked != isTicked()) {
         gui.invalidate_draw_element(this);

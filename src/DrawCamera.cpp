@@ -3,6 +3,7 @@
 #include "Helpers/FixedPoint.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
+#include "TimePoint.hpp"
 #include "World.hpp"
 #include "InputManager.hpp"
 #include <Helpers/Logger.hpp>
@@ -65,7 +66,7 @@ void DrawCamera::scale_up(World& w, const WorldScalar& scaleUpAmount) {
 void DrawCamera::update_main(World& w) {
     if(smoothMove.occurring) {
         BezierEasing zoomAnim{w.main.conf.jumpTransitionEasing};
-        float smoothTime = smooth_two_way_time(smoothMove.moveTime, w.main.deltaTime, true, w.main.conf.jumpTransitionTime);
+        float smoothTime = smooth_two_way_animation_time_get_lerp(smoothMove.moveTime, w.main.deltaTime, true, w.main.conf.jumpTransitionTime);
         float lerpTime;
         float rotationLerpTime = zoomAnim(smoothTime);
         lerpTime = zoomAnim(smoothTime);
