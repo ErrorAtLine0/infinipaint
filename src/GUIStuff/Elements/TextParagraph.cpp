@@ -18,6 +18,10 @@ void TextParagraph::layout(const Clay_ElementId& id, const Data& newData) {
         textbox->set_rich_text_data(d.text);
         textbox->set_font_data(gui.io.fonts);
         textbox->set_allow_newlines(true);
+        skia::textlayout::TextStyle tStyle;
+        tStyle.setFontFamilies(gui.io.fonts->get_default_font_families());
+        tStyle.setFontSize(gui.io.fontSize);
+        textbox->set_initial_text_style(tStyle);
         redraw = true;
     }
 
@@ -49,8 +53,8 @@ void TextParagraph::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_Render
     canvas->save();
     canvas->translate(bb.min.x(), bb.min.y());
     skia::textlayout::TextStyle tStyle;
-    tStyle.setFontFamilies(io.fonts->get_default_font_families());
-    tStyle.setFontSize(io.fontSize);
+    tStyle.setFontFamilies(gui.io.fonts->get_default_font_families());
+    tStyle.setFontSize(gui.io.fontSize);
     tStyle.setForegroundPaint(SkPaint{io.theme->frontColor1});
     textbox->set_initial_text_style(tStyle);
     textbox->paint(canvas, { .skiaAA = skiaAA });
