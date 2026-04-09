@@ -15,13 +15,16 @@ void DrawingProgramLayerFolder::set_component_list_callbacks(DrawingProgramLayer
     folderList->set_insert_callback([&](auto& c) {
         layerMan.drawP.drawCache.clear_own_cached_surfaces();
         c->obj->set_component_list_callbacks(layerMan);
+        layerMan.drawP.world.set_to_layout_gui_if_focus();
     });
     folderList->set_erase_callback([&](auto& c) {
         layerMan.drawP.drawCache.clear_own_cached_surfaces();
         c->obj->set_to_erase();
+        layerMan.drawP.world.set_to_layout_gui_if_focus();
     });
     folderList->set_move_callback([&](auto& c, uint32_t oldPos) {
         layerMan.drawP.drawCache.clear_own_cached_surfaces();
+        layerMan.drawP.world.set_to_layout_gui_if_focus();
     });
     for(auto& listItem : *folderList)
         listItem.obj->set_component_list_callbacks(layerMan);

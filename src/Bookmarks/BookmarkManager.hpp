@@ -12,6 +12,7 @@ class BookmarkManager {
     public:
         BookmarkManager(World& w);
         void server_init_no_file();
+        void read_create_message(cereal::PortableBinaryInputArchive& a);
         void scale_up(const WorldScalar& scaleUpAmount);
         void setup_list_gui();
         void refresh_gui_data();

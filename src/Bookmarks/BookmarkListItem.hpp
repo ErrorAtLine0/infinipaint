@@ -32,6 +32,7 @@ class BookmarkListItem {
         BookmarkListItem();
         BookmarkListItem(World& w, const BookmarkCompleteUndoData& undoData);
         BookmarkListItem(NetworkingObjects::NetObjManager& netObjMan, const std::string& initName, bool isFolder, const BookmarkData& initBookmarkData);
+        void set_list_callbacks(World& w);
         bool is_folder() const;
         const BookmarkData& get_bookmark_data() const;
         const NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<BookmarkListItem>>& get_folder_list() const;

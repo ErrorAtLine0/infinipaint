@@ -82,6 +82,7 @@ class World {
         bool should_ask_before_closing();
         void set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal);
         bool is_focus();
+        void set_to_layout_gui_if_focus();
 
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
 

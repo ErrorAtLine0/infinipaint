@@ -179,6 +179,7 @@ void WorldGrid::register_class(World& w) {
     auto readWorldGrid = [&](WorldGrid& o, cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& c) {
         a(o);
         canvas_scale_up_check(o, w, c);
+        w.set_to_layout_gui_if_focus();
     };
     w.delayedUpdateObjectManager.register_class<WorldGrid>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<WorldGrid>{
         .readConstructor = readWorldGrid,

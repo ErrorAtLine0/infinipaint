@@ -323,6 +323,7 @@ void DrawingProgram::process_transform_message(const std::vector<std::pair<Netwo
         objPtr->coords = coords;
         objPtr->commit_transform(*this);
     }
+    world.set_to_layout_gui_if_focus();
 }
 
 void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor) {

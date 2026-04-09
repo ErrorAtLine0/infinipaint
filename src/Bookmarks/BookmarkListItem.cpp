@@ -65,6 +65,22 @@ BookmarkCompleteUndoData BookmarkListItem::get_complete_undo_data(WorldUndoManag
     return toRet;
 }
 
+void BookmarkListItem::set_list_callbacks(World& w) {
+    if(folderData) {
+        folderData->folderList->set_insert_callback([&](auto&) {
+            w.set_to_layout_gui_if_focus();
+        });
+        folderData->folderList->set_erase_callback([&](auto&) {
+            w.set_to_layout_gui_if_focus();
+        });
+        folderData->folderList->set_move_callback([&](auto&, uint32_t) {
+            w.set_to_layout_gui_if_focus();
+        });
+        for(auto& listItem : *folderData->folderList)
+            listItem.obj->set_list_callbacks(w);
+    }
+}
+
 void BookmarkListItem::reassign_netobj_ids_call() {
     if(folderData)
         folderData->folderList.reassign_ids();
@@ -136,7 +152,11 @@ void BookmarkListItem::register_class(World& w) {
         .readUpdateFuncServer = nullptr
     });
     NetworkingObjects::register_ordered_list_class<BookmarkListItem>(w.netObjMan);
-    w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan);
+    w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<NameData>{
+        .postUpdateFunc = [&](NameData& o) {
+            w.set_to_layout_gui_if_focus();
+        }
+    });
 }
 
 void BookmarkListItem::write_constructor_data(const NetObjTemporaryPtr<BookmarkListItem>& o, cereal::PortableBinaryOutputArchive& a) {

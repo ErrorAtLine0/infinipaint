@@ -137,8 +137,8 @@ void World::init_client(const std::string& serverFullID) {
         NetworkingObjects::NetObjID clientDataObjID;
         message(fileDisplayName, clientDataObjID);
         set_name(fileDisplayName);
-        bMan.bookmarkListRoot = netObjMan.read_create_message<BookmarkListItem>(message, nullptr);
-        gridMan.grids = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(message, nullptr);
+        bMan.read_create_message(message);
+        gridMan.read_create_message(message);
         drawProg.read_components_client(message);
         canvasTheme.read_create_message(message);
         clients = netObjMan.read_create_message<NetworkingObjects::NetObjUnorderedSet<ClientData>>(message, nullptr);
@@ -151,15 +151,13 @@ void World::init_client(const std::string& serverFullID) {
         #endif
 
         clientStillConnecting = false;
-        drawProg.world.main.g.gui.set_to_layout();
+        set_to_layout_gui_if_focus();
     });
     netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
-        drawProg.world.main.g.gui.set_to_layout();
     });
     netClient->add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_many_update_message(message, nullptr);
-        drawProg.world.main.g.gui.set_to_layout();
     });
     netClient->add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
@@ -226,6 +224,11 @@ bool World::connection_update() {
 
 bool World::is_focus() {
     return main.world.get() == this;
+}
+
+void World::set_to_layout_gui_if_focus() {
+    if(is_focus())
+        main.g.gui.set_to_layout();
 }
 
 void World::undo_with_checks() {
@@ -349,6 +352,7 @@ void World::add_chat_message(const std::string& name, const std::string& message
     chatMessages.emplace_front(Toolbar::ChatMessage{name, message, type});
     if(chatMessages.size() == CHAT_SIZE)
         chatMessages.pop_back();
+    set_to_layout_gui_if_focus();
 }
 
 void World::early_destroy() {

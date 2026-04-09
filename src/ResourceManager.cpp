@@ -13,6 +13,7 @@
 #include "ResourceDisplay/FileResourceDisplay.hpp"
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include "MainProgram.hpp"
 
 ResourceManager::ResourceManager(World& initWorld):
     world(initWorld) 
@@ -25,6 +26,7 @@ void ResourceManager::init_client_callbacks() {
         // There is a scenario where the resource id and data messages can be sent twice for the same resource (a resource can be sent early before CLIENT_INITIAL_DATA is sent, and then resent with CLIENT_INITIAL_DATA), so check if resource already exists, and only keep track of the ID if the resource doesn't exist yet
         if(!world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(idBeingRetrieved))
             resourcesBeingRetrieved.emplace(idBeingRetrieved, std::weak_ptr<NetServer::ClientData>());
+        world.main.g.gui.set_to_layout();
     });
     world.netClient->add_recv_callback(SERVER_NEW_RESOURCE_DATA, [&](cereal::PortableBinaryInputArchive& message) {
         if(!resourcesBeingRetrieved.empty()) { // If the resource was sent for the second time, this will be empty, so we can ignore the message
@@ -33,6 +35,7 @@ void ResourceManager::init_client_callbacks() {
             resourceList.emplace_back(world.netObjMan.make_obj_direct_with_specific_id<ResourceData>(resourcesBeingRetrieved.begin()->first, newResource));
             resourcesBeingRetrieved.clear();
         }
+        world.main.g.gui.set_to_layout();
     });
 }
 

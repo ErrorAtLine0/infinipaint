@@ -1,5 +1,6 @@
 #pragma once
 #include "WorldGrid.hpp"
+#include "cereal/archives/portable_binary.hpp"
 #include <Helpers/NetworkingObjects/NetObjOrderedList.hpp>
 #include <Helpers/NetworkingObjects/NetObjOwnerPtr.hpp>
 
@@ -9,6 +10,8 @@ class GridManager {
     public:
         GridManager(World& w);
         void server_init_no_file();
+        void read_create_message(cereal::PortableBinaryInputArchive& a);
+        void set_grid_list_callbacks();
 
         void add_default_grid(const std::string& newName);
 

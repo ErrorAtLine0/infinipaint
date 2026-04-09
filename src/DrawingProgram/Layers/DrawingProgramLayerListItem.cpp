@@ -287,10 +287,15 @@ void DrawingProgramLayerListItem::register_class(World& w) {
         .readConstructorFuncServer = read_constructor_func,
         .readUpdateFuncServer = nullptr,
     });
-    w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan);
+    w.delayedUpdateObjectManager.register_class<NameData>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<NameData>{
+        .postUpdateFunc = [&](NameData& o) {
+            w.set_to_layout_gui_if_focus();
+        }
+    });
     w.delayedUpdateObjectManager.register_class<DisplayData>(w.netObjMan, NetworkingObjects::DelayUpdateSerializedClassManager::CustomConstructors<DisplayData>{
         .postUpdateFunc = [&](DisplayData& o) {
             w.drawProg.drawCache.clear_own_cached_surfaces();
+            w.set_to_layout_gui_if_focus();
         }
     });
 }

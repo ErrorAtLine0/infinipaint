@@ -18,6 +18,12 @@ BookmarkManager::BookmarkManager(World& w):
 
 void BookmarkManager::server_init_no_file() {
     bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem(world.netObjMan, "ROOT", true, {}));
+    bookmarkListRoot->set_list_callbacks(world); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
+}
+
+void BookmarkManager::read_create_message(cereal::PortableBinaryInputArchive& a) {
+    bookmarkListRoot = world.netObjMan.read_create_message<BookmarkListItem>(a, nullptr);
+    bookmarkListRoot->set_list_callbacks(world);
 }
 
 void BookmarkManager::refresh_gui_data() {
@@ -517,6 +523,7 @@ void BookmarkManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNu
     if(version >= VersionNumber(0, 4, 0)) {
         bookmarkListRoot = world.netObjMan.make_obj_from_ptr<BookmarkListItem>(new BookmarkListItem());
         bookmarkListRoot->load_file(a, version, *this);
+        bookmarkListRoot->set_list_callbacks(world); // Only need to call set_component_list_callbacks on root, and the rest will get the callbacks set as well
     }
     else {
         server_init_no_file();

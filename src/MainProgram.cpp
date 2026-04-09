@@ -63,7 +63,6 @@ MainProgram::MainProgram():
     Logger::get().add_log("CHAT", [&](const std::string& text) {
         *logFile << "[CHAT] " << text << std::endl;
         std::cout << "[CHAT] " << text << std::endl;
-        g.gui.set_to_layout();
     });
 }
 

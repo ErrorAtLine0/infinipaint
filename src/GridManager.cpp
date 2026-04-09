@@ -9,6 +9,18 @@ GridManager::GridManager(World& w):
 
 void GridManager::server_init_no_file() {
     grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
+    set_grid_list_callbacks();
+}
+
+void GridManager::read_create_message(cereal::PortableBinaryInputArchive& a) {
+    grids = world.netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<WorldGrid>>(a, nullptr);
+    set_grid_list_callbacks();
+}
+
+void GridManager::set_grid_list_callbacks() {
+    grids->set_insert_callback([&](auto&) { world.set_to_layout_gui_if_focus(); });
+    grids->set_erase_callback([&](auto&) { world.set_to_layout_gui_if_focus(); });
+    grids->set_move_callback([&](auto&, uint32_t) { world.set_to_layout_gui_if_focus(); });
 }
 
 void GridManager::add_default_grid(const std::string& newName) {
@@ -207,7 +219,7 @@ void GridManager::save_file(cereal::PortableBinaryOutputArchive& a) const {
 }
 
 void GridManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    grids = world.netObjMan.make_obj<NetworkingObjects::NetObjOrderedList<WorldGrid>>();
+    server_init_no_file();
     if(version >= VersionNumber(0, 4, 0)) {
         uint32_t gridSize;
         a(gridSize);

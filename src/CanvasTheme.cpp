@@ -68,6 +68,7 @@ void CanvasTheme::set_tool_front_color(DrawingProgram& drawP) {
     else
         toolFrontColor = SkColor4f{1.0f, 1.0f, 1.0f, 1.0f};
     drawP.drawCache.clear_own_cached_surfaces();
+    world.set_to_layout_gui_if_focus();
 }
 
 void CanvasTheme::register_class() {
