@@ -1,4 +1,5 @@
 #include "GUIManager.hpp"
+#include <include/core/SkBlendMode.h>
 #include <include/core/SkPaint.h>
 #include <include/core/SkRRect.h>
 #include <include/core/SkFont.h>
@@ -79,11 +80,18 @@ void GUIManager::calculate_new_clip_rect(std::vector<SCollision::AABB<float>>& c
 
 void GUIManager::clip_rect_transform(SkCanvas* canvas, std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw) {
     canvas->save();
+    // Calculating clip rect before transform should resolve the 1 pixel edge bug
+    calculate_new_clip_rect(clipRectStack, clipRect, clipNoDraw);
+    if(clipRect.has_value()) {
+        SCollision::AABB<float> c = clipRect.value();
+        c.min += io.windowPos * io.guiScaleMultiplier;
+        c.max += io.windowPos * io.guiScaleMultiplier;
+        c.min *= io.guiScaleMultiplier;
+        c.max *= io.guiScaleMultiplier;
+        canvas->clipIRect(c.get_sk_irect());
+    }
     canvas->scale(io.guiScaleMultiplier, io.guiScaleMultiplier);
     canvas->translate(io.windowPos.x(), io.windowPos.y());
-    calculate_new_clip_rect(clipRectStack, clipRect, clipNoDraw);
-    if(clipRect.has_value())
-        canvas->clipIRect(clipRect.value().get_sk_irect());
 }
 
 void GUIManager::draw(SkCanvas* c, bool skiaAA) {
