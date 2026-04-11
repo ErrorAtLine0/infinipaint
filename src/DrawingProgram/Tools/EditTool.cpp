@@ -1,5 +1,4 @@
 #include "EditTool.hpp"
-#include <chrono>
 #include "../DrawingProgram.hpp"
 #include "../../MainProgram.hpp"
 #include "../../DrawData.hpp"
@@ -29,7 +28,6 @@ void EditTool::gui_toolbox() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
 
     if(objInfoBeingEdited)
@@ -46,7 +44,7 @@ void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
         switch_tool(get_type());
 }
 
-void EditTool::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+void EditTool::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(objInfoBeingEdited)
         compEditTool->input_paste_callback(paste);
 }

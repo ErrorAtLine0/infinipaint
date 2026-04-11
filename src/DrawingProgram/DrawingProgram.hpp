@@ -36,7 +36,7 @@ class DrawingProgram {
         void read_components_client(cereal::PortableBinaryInputArchive& a);
         void init_server_callbacks();
         void init_client_callbacks();
-        void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread);
+        void add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos);
         CanvasComponentContainer::ObjInfo* add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
         void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet);
 
@@ -59,7 +59,8 @@ class DrawingProgram {
         void send_transforms_for(const std::vector<CanvasComponentContainer::ObjInfo*>& objsToSendTransformsFor);
 
         void on_tab_out();
-        void input_paste_callback(const CustomEvents::PasteEventData& paste);
+        void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
+        void input_paste_callback(const CustomEvents::PasteEvent& paste);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
@@ -80,16 +81,12 @@ class DrawingProgram {
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
 
         void drag_drop_update();
-        void add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos);
         void check_updateable_components();
         void update_downloading_dropped_files();
 
         void selection_action_menu(Vector2f popupPos);
         void popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick);
         void rebuild_cache();
-
-        std::atomic<bool> addFileInNextFrame = false;
-        std::pair<std::filesystem::path, Vector2f> addFileInfo;
 
         float drag_point_radius();
         void draw_drag_circle(SkCanvas* canvas, const Vector2f& pos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier = 1.0f);

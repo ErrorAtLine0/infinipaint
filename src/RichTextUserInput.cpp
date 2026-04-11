@@ -14,8 +14,8 @@ RichTextUserInput::RichTextUserInput(const std::shared_ptr<RichText::TextBox>& i
     modMap(initModMap)
 {}
 
-bool RichTextUserInput::input_paste_callback(const CustomEvents::PasteEventData& paste) {
-    if(paste.type == CustomEvents::PasteEventDataType::TEXT) {
+bool RichTextUserInput::input_paste_callback(const CustomEvents::PasteEvent& paste) {
+    if(paste.type == CustomEvents::PasteEvent::DataType::TEXT) {
         do_textbox_operation_with_undo([&]() {
             if(paste.richText.has_value())
                 textBox->process_rich_text_input(*cursor, paste.richText.value());
@@ -104,7 +104,7 @@ RichTextUserInput::Changes RichTextUserInput::input_key_callback(InputManager& i
                 toRet.textEdited = true;
                 break;
             case InputManager::KEY_TEXT_PASTE:
-                input.call_paste(CustomEvents::PasteEventDataType::TEXT);
+                input.call_paste(CustomEvents::PasteEvent::DataType::TEXT);
                 break;
             case InputManager::KEY_TEXT_SELECTALL:
                 textBox->process_key_input(*cursor, RichText::TextBox::InputKey::SELECT_ALL, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);

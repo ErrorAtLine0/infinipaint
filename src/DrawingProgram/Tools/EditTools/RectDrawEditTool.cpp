@@ -2,7 +2,6 @@
 #include "../../DrawingProgram.hpp"
 #include "../../../World.hpp"
 #include "../../../MainProgram.hpp"
-#include <memory>
 #include "../EditTool.hpp"
 
 #include "../../../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"

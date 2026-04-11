@@ -7,7 +7,6 @@
 #include "Helpers/SCollision.hpp"
 #include "../../CoordSpaceHelper.hpp"
 #include <ranges>
-#include "../../DrawCollision.hpp"
 #include <earcut.hpp>
 #include <include/core/SkPathBuilder.h>
 
@@ -41,7 +40,6 @@ DrawingProgramToolType LassoSelectTool::get_type() {
 }
 
 void LassoSelectTool::gui_toolbox() {
-    auto& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("lasso select tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Lasso Select");

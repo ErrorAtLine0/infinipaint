@@ -58,16 +58,19 @@ void DrawingProgram::on_tab_out() {
     controls.middleClickHeld = false;
 }
 
-void DrawingProgram::input_paste_callback(const CustomEvents::PasteEventData& paste) {
-    drawTool->input_paste_callback(paste);
+void DrawingProgram::input_paste_callback(const CustomEvents::PasteEvent& paste) {
+    if(paste.type == CustomEvents::PasteEvent::DataType::IMAGE)
+        selection.paste_image_process_event(paste);
+    else
+        drawTool->input_paste_callback(paste);
 }
 
 void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
     if(std::filesystem::is_regular_file(drop.data)) {
         #ifdef __EMSCRIPTEN_
-            add_file_to_canvas_by_path(drop.data, world.main.input.mouse.pos, true);
+            add_file_to_canvas_by_path(drop.data, world.main.input.mouse.pos);
         #else
-            add_file_to_canvas_by_path(drop.data, drop.pos, true);
+            add_file_to_canvas_by_path(drop.data, drop.pos);
         #endif
     }
 }
@@ -422,7 +425,10 @@ void DrawingProgram::popup_menu_action_button(const char* id, const char* text, 
         .drawType = GUIStuff::SelectableButton::DrawType::TRANSPARENT_ALL,
         .wide = true,
         .centered = false,
-        .onClick = onClick
+        .onClick = [&, onClick] {
+            onClick();
+            clear_right_click_popup();
+        }
     });
 }
 
@@ -442,7 +448,9 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
             });
             popup_menu_action_button("Paste Image", "Paste Image", [&, popupPos] {
                 selection.deselect_all();
-                selection.paste_image(popupPos * world.main.g.final_gui_scale());
+                world.main.input.call_paste(CustomEvents::PasteEvent::DataType::IMAGE, {
+                    .pastePosition = popupPos * world.main.g.final_gui_scale()
+                });
             });
             if(selection.is_something_selected()) {
                 popup_menu_action_button("Copy", "Copy", [&] {
@@ -463,8 +471,8 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
                 });
             }
         }, LayoutElement::Callbacks{
-            .mouseButton = [&](LayoutElement*, const InputManager::MouseButtonCallbackArgs& button) {
-                if(button.down && button.button != InputManager::MouseButton::RIGHT)
+            .mouseButton = [&](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                if(button.down && button.button != InputManager::MouseButton::RIGHT && !l->mouseHovering)
                     clear_right_click_popup();
             }
         });
@@ -510,11 +518,6 @@ void DrawingProgram::modify_grid(const NetworkingObjects::NetObjWeakPtr<WorldGri
 }
 
 void DrawingProgram::update() {
-    if(addFileInNextFrame) {
-        add_file_to_canvas_by_path_execute(addFileInfo.first, addFileInfo.second);
-        addFileInNextFrame = false;
-    }
-
     selection.update();
     drawTool->tool_update();
 
@@ -652,16 +655,11 @@ void DrawingProgram::update_downloading_dropped_files() {
     });
 }
 
-void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos, bool addInSameThread) {
-    if(addInSameThread)
-        add_file_to_canvas_by_path_execute(filePath, dropPos);
-    else if(!addFileInNextFrame) {
-        addFileInfo = {filePath, dropPos};
-        addFileInNextFrame = true;
-    }
+void DrawingProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
+    add_file_to_canvas_by_path(addFile.filePath, addFile.pos);
 }
 
-void DrawingProgram::add_file_to_canvas_by_path_execute(const std::filesystem::path& filePath, Vector2f dropPos) {
+void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos) {
     if(layerMan.is_a_layer_being_edited()) {
         NetworkingObjects::NetObjTemporaryPtr<ResourceData> imageTempPtr = world.rMan.add_resource_file(filePath);
         if(imageTempPtr) {

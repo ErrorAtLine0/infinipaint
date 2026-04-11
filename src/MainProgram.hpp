@@ -119,8 +119,10 @@ class MainProgram {
         GlobalConfig conf;
 
         std::optional<unsigned> keybindWaiting;
-        void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEventData& openFile);
-        void input_paste_callback(const CustomEvents::PasteEventData& paste);
+        void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
+        void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
+        void input_paste_callback(const CustomEvents::PasteEvent& paste);
+
         bool input_keybind_callback(const Vector2ui32& newKey);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
@@ -141,7 +143,7 @@ class MainProgram {
         void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w);
         void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w);
 
-        void create_new_tab(const CustomEvents::OpenInfiniPaintFileEventData& openFile);
+        void create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
         void set_tab_to_close(World* world);
         void switch_to_tab(size_t wIndex);
 

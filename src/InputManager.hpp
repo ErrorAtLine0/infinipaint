@@ -4,15 +4,11 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_touch.h>
 #include <array>
-#include "RichText/TextStyleModifier.hpp"
 #include "RichText/TextBox.hpp"
-#include "TimePoint.hpp"
 #include <Helpers/Hashes.hpp>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
-#include <queue>
 #include <Helpers/CallbackManager.hpp>
-#include "UndoManager.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
@@ -260,8 +256,6 @@ struct InputManager {
     void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
     void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
 
-    void backend_open_infinipaint_file_event();
-    void backend_paste_event();
     void backend_input_text_event(const std::string& str);
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
@@ -288,8 +282,9 @@ struct InputManager {
     std::string get_clipboard_str_SDL();
     void get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback);
 
-    void call_paste(CustomEvents::PasteEventDataType type, const InputManagerCallPasteInfo& info = {});
+    void call_paste(CustomEvents::PasteEvent::DataType type, const InputManagerCallPasteInfo& info = {});
     void process_text_paste(const std::string& pasteStr, bool allowRichText);
+    void process_image_paste(std::string_view pasteData, const std::optional<Vector2f>& pastePos);
 
     std::optional<RichText::TextData> lastCopiedRichText;
 

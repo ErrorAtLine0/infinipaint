@@ -2,33 +2,46 @@
 #include <cstdint>
 #include <string>
 #include <optional>
+#include <queue>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_events.h>
 #include "RichText/TextBox.hpp"
 
 namespace CustomEvents {
     void init();
 
-    // Paste event
-    enum class PasteEventDataType {
-        TEXT,
-        IMAGE
-    };
-    struct PasteEventData {
-        PasteEventDataType type;
+    extern std::queue<std::any> eventDataQueue;
+
+    template <typename T> bool emit_event(const T& data) {
+        SDL_Event event;
+        SDL_zero(event);
+        event.type = T::EVENT_NUM;
+        if(SDL_PushEvent(&event)) {
+            eventDataQueue.push(data);
+            return true;
+        }
+        return false;
+    }
+
+    template <typename T> const T& get_event() {
+        return std::any_cast<const T&>(eventDataQueue.front());
+    }
+
+    void pop_event();
+
+    struct PasteEvent {
+        static uint32_t EVENT_NUM;
+        enum class DataType {
+            TEXT,
+            IMAGE
+        } type;
         std::string data;
         std::optional<RichText::TextData> richText;
         std::optional<Vector2f> mousePos;
     };
 
-    bool emit_paste_event(const PasteEventData& pasteData);
-    const PasteEventData& get_paste_event_data();
-    void pop_paste_event_data();
-
-    extern uint32_t PASTE_EVENT;
-
-
-    // Open InfiniPaint file event
-
-    struct OpenInfiniPaintFileEventData {
+    struct OpenInfiniPaintFileEvent {
+        static uint32_t EVENT_NUM;
         bool isClient;
         std::optional<std::filesystem::path> filePathSource;
         std::string netSource;
@@ -36,9 +49,15 @@ namespace CustomEvents {
         std::string_view fileDataBuffer;
     };
 
-    bool emit_open_infinipaint_file_event(const OpenInfiniPaintFileEventData& openData);
-    const OpenInfiniPaintFileEventData& get_open_infinipaint_file_event_data();
-    void pop_open_infinipaint_file_event_data();
-
-    extern uint32_t OPEN_INFINIPAINT_FILE_EVENT;
+    struct AddFileToCanvasEvent {
+        static uint32_t EVENT_NUM;
+        enum class Type {
+            BUFFER,
+            PATH
+        } type;
+        std::string name;
+        std::string buffer;
+        std::filesystem::path filePath;
+        Vector2f pos;
+    };
 }

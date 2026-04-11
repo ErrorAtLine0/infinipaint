@@ -5,7 +5,6 @@
 #include "../InputManager.hpp"
 #include <Helpers/Parallel.hpp>
 #include <Helpers/Logger.hpp>
-#include <chrono>
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include <include/gpu/graphite/Surface.h>
@@ -423,7 +422,9 @@ void DrawingProgramSelection::input_key_callback_display_selection(const InputMa
         case InputManager::KEY_PASTE_IMAGE: {
             if(key.down && !key.repeat) {
                 deselect_all();
-                paste_image(drawP.world.main.input.mouse.pos);
+                drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::IMAGE, {
+                    .pastePosition = drawP.world.main.input.mouse.pos
+                });
                 drawP.world.main.g.gui.set_to_layout();
             }
             break;
@@ -689,39 +690,19 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
     }
 }
 
-void DrawingProgramSelection::paste_image(Vector2f pasteScreenPos) {
+void DrawingProgramSelection::paste_image_process_event(const CustomEvents::PasteEvent& paste) {
     check_add_stroke_color_change_undo();
 
     if(drawP.layerMan.is_a_layer_being_edited()) {
-        #ifdef __EMSCRIPTEN__
-            struct PasteData {
-                std::weak_ptr<World> w;
-                Vector2f screenPos;
-            };
-            static PasteData pasteData;
-            pasteData.screenPos = pasteScreenPos;
-            pasteData.w = make_weak_ptr(drawP.world.main.world);
-            emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
-                PasteData* p = (PasteData*)callbackData;
-                std::shared_ptr<World> wLock = p->w.lock();
-                if(wLock)
-                    wLock->drawProg.add_file_to_canvas_by_data("Image from clipboard", pasteData, p->screenPos);
-                else
-                    Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
-            }, &pasteData);
-        #else
-            if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
-                drawP.switch_to_tool(DrawingProgramToolType::EDIT);
+        if(!drawP.is_selection_allowing_tool(drawP.drawTool->get_type()))
+            drawP.switch_to_tool(DrawingProgramToolType::EDIT);
 
-            std::vector<CanvasComponentContainer::ObjInfo*> compSetInserted;
-            drawP.world.main.input.get_clipboard_image_data_SDL([&](std::string_view pasteData) {
-                compSetInserted.emplace_back(drawP.add_file_to_canvas_by_data("Image from clipboard", pasteData, pasteScreenPos));
-            });
-            if(!compSetInserted.empty() && compSetInserted.back() != nullptr) {
-                drawP.drawCache.erase_component(compSetInserted.back());
-                set_to_selection(compSetInserted);
-            }
-        #endif
+        std::vector<CanvasComponentContainer::ObjInfo*> compSetInserted;
+        compSetInserted.emplace_back(drawP.add_file_to_canvas_by_data("Image from clipboard", paste.data, paste.mousePos.value()));
+        if(compSetInserted.back() != nullptr) {
+            drawP.drawCache.erase_component(compSetInserted.back());
+            set_to_selection(compSetInserted);
+        }
     }
 }
 

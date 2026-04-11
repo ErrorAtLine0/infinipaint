@@ -4,7 +4,6 @@
 #include "../../../MainProgram.hpp"
 #include "../../../DrawData.hpp"
 #include <cereal/types/vector.hpp>
-#include <memory>
 #include "../EditTool.hpp"
 
 #include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"

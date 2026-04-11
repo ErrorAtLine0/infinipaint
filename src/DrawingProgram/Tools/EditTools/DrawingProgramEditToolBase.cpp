@@ -11,7 +11,7 @@ void DrawingProgramEditToolBase::right_click_popup_gui(Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 
-void DrawingProgramEditToolBase::input_paste_callback(const CustomEvents::PasteEventData& paste) {}
+void DrawingProgramEditToolBase::input_paste_callback(const CustomEvents::PasteEvent& paste) {}
 void DrawingProgramEditToolBase::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {}
 void DrawingProgramEditToolBase::input_text_callback(const InputManager::TextCallbackArgs& text) {}
 void DrawingProgramEditToolBase::input_key_callback(const InputManager::KeyCallbackArgs& key) {}

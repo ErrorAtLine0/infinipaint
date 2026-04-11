@@ -92,7 +92,7 @@ template <typename T> bool TextBox<T>::is_selected() const {
     return edit.has_value();
 }
 
-template <typename T> void TextBox<T>::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+template <typename T> void TextBox<T>::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(is_selected() && edit.value().userInput.input_paste_callback(paste))
         after_text_input_callback();
 }

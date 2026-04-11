@@ -1,6 +1,5 @@
 #pragma once
 #include "DrawingProgramEditToolBase.hpp"
-#include "../../../CanvasComponents/BrushStrokeCanvasComponent.hpp"
 #include <Helpers/SCollision.hpp>
 #include <any>
 

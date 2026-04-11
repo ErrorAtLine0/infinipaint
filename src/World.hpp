@@ -25,7 +25,7 @@ class World {
         static constexpr std::string FILE_EXTENSION = "infpnt";
         static constexpr size_t CHAT_SIZE = 10;
 
-        World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEventData& worldInfo);
+        World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo);
 
         // NOTE: Keep at the very beginning so that it's destroyed last
         NetworkingObjects::NetObjManager netObjMan;
@@ -89,7 +89,8 @@ class World {
         std::shared_ptr<NetServer> netServer;
         std::shared_ptr<NetClient> netClient;
 
-        void input_paste_callback(const CustomEvents::PasteEventData& paste);
+        void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
+        void input_paste_callback(const CustomEvents::PasteEvent& paste);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
         void input_text_key_callback(const InputManager::KeyCallbackArgs& key);

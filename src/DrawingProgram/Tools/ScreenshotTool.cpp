@@ -17,9 +17,7 @@
 #include <include/encode/SkPngEncoder.h>
 #include <include/encode/SkWebpEncoder.h>
 #include <include/encode/SkJpegEncoder.h>
-#include <fstream>
 #include <include/gpu/GpuTypes.h>
-#include "../../FileHelpers.hpp"
 #include <filesystem>
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include <include/gpu/graphite/Surface.h>

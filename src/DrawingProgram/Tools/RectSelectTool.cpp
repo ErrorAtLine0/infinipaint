@@ -19,7 +19,6 @@ DrawingProgramToolType RectSelectTool::get_type() {
 }
 
 void RectSelectTool::gui_toolbox() {
-    auto& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("rectangle select tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Rectangle Select");

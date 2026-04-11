@@ -41,7 +41,7 @@ template <typename T> class TextBox : public Element {
         virtual void update() override;
         virtual void deselect() override;
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
-        virtual void input_paste_callback(const CustomEvents::PasteEventData& paste) override;
+        virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual void input_text_callback(const InputManager::TextCallbackArgs& text) override;
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;

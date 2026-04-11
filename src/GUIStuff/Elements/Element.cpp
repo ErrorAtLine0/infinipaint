@@ -8,7 +8,7 @@ namespace GUIStuff {
     void Element::update() {}
     void Element::deselect() {}
 
-    void Element::input_paste_callback(const CustomEvents::PasteEventData& paste) { }
+    void Element::input_paste_callback(const CustomEvents::PasteEvent& paste) { }
     void Element::input_text_key_callback(const InputManager::KeyCallbackArgs& key) { }
     void Element::input_text_callback(const InputManager::TextCallbackArgs& text) { }
     void Element::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) { }

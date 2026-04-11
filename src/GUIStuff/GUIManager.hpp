@@ -90,7 +90,7 @@ class GUIManager {
 
         DefaultStringArena strArena;
 
-        void input_paste_callback(const CustomEvents::PasteEventData& paste);
+        void input_paste_callback(const CustomEvents::PasteEvent& paste);
         void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
         void input_text_callback(const InputManager::TextCallbackArgs& text);
         void input_key_callback(const InputManager::KeyCallbackArgs& key);

@@ -619,7 +619,7 @@ void Toolbar::top_toolbar() {
                                 });
                             };
                             menu_popup_text_button("new file local", "New File", [&] {
-                                CustomEvents::emit_open_infinipaint_file_event({
+                                CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
                                     .isClient = false
                                 });
                             });
@@ -630,24 +630,23 @@ void Toolbar::top_toolbar() {
                                 menu_popup_text_button("screenshot", "Screenshot", [&] { main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT); });
                                 menu_popup_text_button("add image or file to canvas", "Add Image/File to Canvas", [&] {
                                     #ifdef __EMSCRIPTEN__
-                                        static std::weak_ptr<World> worldWeakPtr;
-                                        worldWeakPtr = make_weak_ptr(main.world);
                                         emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
                                             if(!buffer.empty()) {
-                                                auto world = ((std::weak_ptr<World>*)callbackData)->lock();
-                                                if(world)
-                                                    world->drawProg.add_file_to_canvas_by_data(fileName, buffer, world->main.window.size.cast<float>() / 2.0f);
-                                                else
-                                                    Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                                auto& main = *static_cast<MainProgram*>(callbackData);
+                                                CustomEvents::emit_event<CustomEvents::AddFileToCanvasEvent>({
+                                                    .type = CustomEvents::AddFileToCanvasEvent::Type::BUFFER,
+                                                    .name = fileName,
+                                                    .buffer = std::string(buffer)
+                                                });
                                             }
-                                        }, &worldWeakPtr);
+                                        }, &main);
                                     #else
-                                        open_file_selector("Open File", {{"Any File", "*"}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
-                                            auto wLock = w.lock();
-                                            if(wLock)
-                                                wLock->drawProg.add_file_to_canvas_by_path(p, wLock->main.window.size.cast<float>() / 2.0f, false);
-                                            else
-                                                Logger::get().log("INFO", "Loading image to canvas that has been destroyed");
+                                        open_file_selector("Open File", {{"Any File", "*"}}, [&](const std::filesystem::path& p, const auto& e) {
+                                            CustomEvents::emit_event<CustomEvents::AddFileToCanvasEvent>({
+                                                .type = CustomEvents::AddFileToCanvasEvent::Type::PATH,
+                                                .filePath = p,
+                                                .pos = main.window.size.cast<float>() / 2.0f
+                                            });
                                         });
                                     #endif
                                 });
@@ -1492,8 +1491,6 @@ void Toolbar::performance_metrics() {
 
 void Toolbar::player_list() {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
-
 
     center_obstructing_window_gui("player client list", CLAY_SIZING_FIT(500), CLAY_SIZING_FIT(0), [&] {
         gui.new_id("client list", [&] {
@@ -1564,7 +1561,7 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
     }, &uploadData);
 #else
     open_file_selector("Open", {{"InfiniPaint Canvas", World::FILE_EXTENSION}, {"Any File", "*"}}, [&, isClient = isClient, netSource = netSource, serverLocalID2 = serverLocalID2](const std::filesystem::path& p, const auto& e) {
-        CustomEvents::emit_open_infinipaint_file_event({
+        CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
             .isClient = isClient,
             .filePathSource = p,
             .netSource = netSource,
@@ -1600,7 +1597,6 @@ void Toolbar::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, C
 
 void Toolbar::text_button_wide(const char* id, const char* str, const std::function<void()>& onClick) {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
 
     text_button(gui, id, str, {
         .wide = true,
@@ -1610,7 +1606,6 @@ void Toolbar::text_button_wide(const char* id, const char* str, const std::funct
 
 void Toolbar::options_menu() {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
 
     switch(optionsMenuType) {
         case HOST_MENU: {
@@ -1641,7 +1636,7 @@ void Toolbar::options_menu() {
                         else if(serverToConnectTo.substr(0, NetLibrary::GLOBALID_LEN) == NetLibrary::get_global_id())
                             Logger::get().log("USERINFO", "Connect issue: Can't connect to your own address");
                         else {
-                            CustomEvents::emit_open_infinipaint_file_event({
+                            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
                                 .isClient = true,
                                 .netSource = serverToConnectTo
                             });

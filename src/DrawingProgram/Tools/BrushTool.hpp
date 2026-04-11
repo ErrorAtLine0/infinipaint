@@ -4,7 +4,6 @@
 #include <include/core/SkPath.h>
 #include <include/core/SkVertices.h>
 #include <Helpers/SCollision.hpp>
-#include <deque>
 #include <include/core/SkCanvas.h>
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>

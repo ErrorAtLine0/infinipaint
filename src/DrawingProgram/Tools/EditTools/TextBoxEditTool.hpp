@@ -17,7 +17,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         virtual void edit_gui() override;
         virtual void right_click_popup_gui(Vector2f popupPos) override;
 
-        virtual void input_paste_callback(const CustomEvents::PasteEventData& paste) override;
+        virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual void input_text_callback(const InputManager::TextCallbackArgs& text) override;
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button, bool isDraggingPoint) override;

@@ -8,7 +8,6 @@
 #include "../EditTool.hpp"
 #include "DrawingProgramEditToolBase.hpp"
 #include "Eigen/Geometry"
-#include <fstream>
 
 #include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../../GUIStuff/ElementHelpers/ButtonHelpers.hpp"

@@ -38,7 +38,7 @@
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
-World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEventData& worldInfo):
+World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo):
     netObjMan(!worldInfo.isClient),
     main(initMain),
     undo(*this),
@@ -250,7 +250,12 @@ void World::on_tab_out() {
     rMan.clear_display_cache();
 }
 
-void World::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+void World::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
+    if(!clientStillConnecting)
+        drawProg.input_add_file_to_canvas_callback(addFile);
+}
+
+void World::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(!clientStillConnecting)
         drawProg.input_paste_callback(paste);
 }

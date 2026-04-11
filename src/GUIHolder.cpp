@@ -128,7 +128,7 @@ void GUIHolder::draw(SkCanvas* canvas, bool skiaAA) {
     gui.draw(canvas, skiaAA);
 }
 
-void GUIHolder::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+void GUIHolder::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     gui.input_paste_callback(paste);
 }
 

@@ -2,7 +2,6 @@
 #include <include/core/SkCanvas.h>
 #include "../../DrawData.hpp"
 #include "DrawingProgramToolBase.hpp"
-#include "../DrawingProgramCache.hpp"
 
 class DrawingProgram;
 

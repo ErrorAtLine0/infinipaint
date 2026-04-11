@@ -12,7 +12,7 @@ class RichTextUserInput {
             bool cursorChanged = false;
         };
         Changes input_key_callback(InputManager& input, const InputManager::KeyCallbackArgs& key);
-        bool input_paste_callback(const CustomEvents::PasteEventData& paste);
+        bool input_paste_callback(const CustomEvents::PasteEvent& paste);
         void add_text_to_textbox(const std::string& inputText);
         void do_textbox_operation_with_undo(const std::function<void()>& func);
         void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);

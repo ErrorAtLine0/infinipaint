@@ -495,7 +495,7 @@ void GUIManager::deselect_all() {
         e->elem->deselect();
 }
 
-void GUIManager::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+void GUIManager::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     for(ElementContainer* e : orderedElements)
         e->elem->input_paste_callback(paste);
 }

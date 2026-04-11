@@ -362,16 +362,6 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     return toRet;
 }
 
-void InputManager::backend_open_infinipaint_file_event() {
-    main.input_open_infinipaint_file_callback(CustomEvents::get_open_infinipaint_file_event_data());
-    CustomEvents::pop_open_infinipaint_file_event_data();
-}
-
-void InputManager::backend_paste_event() {
-    main.input_paste_callback(CustomEvents::get_paste_event_data());
-    CustomEvents::pop_paste_event_data();
-}
-
 void InputManager::backend_input_text_event(const std::string& str) {
     main.input_text_callback(TextCallbackArgs{ .str = str });
 }
@@ -934,7 +924,7 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
         set_key_down(e, f->second, acceptingTextInput);
 }
 
-void InputManager::call_paste(CustomEvents::PasteEventDataType type, const InputManagerCallPasteInfo& info) {
+void InputManager::call_paste(CustomEvents::PasteEvent::DataType type, const InputManagerCallPasteInfo& info) {
     // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
 #ifdef __EMSCRIPTEN__
     if(type == PasteDataType::TEXT) {
@@ -944,22 +934,46 @@ void InputManager::call_paste(CustomEvents::PasteEventDataType type, const Input
             inMan->process_text_paste(pData);
         }, this);
     }
+    else {
+        struct PasteData {
+            std::optional<Vector2f> pos;
+            InputManager* t;
+        };
+        static PasteData pasteData;
+        pasteData.pos = info.pastePosition;
+        pasteData.t = this;
+        emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
+            PasteData* p = (PasteData*)callbackData;
+            p->t->process_image_paste(pasteData, p->pos);
+        }, &pasteData);
+    }
 #else
     switch(type) {
-        case CustomEvents::PasteEventDataType::TEXT:
+        case CustomEvents::PasteEvent::DataType::TEXT:
             process_text_paste(get_clipboard_str_SDL(), info.allowRichText);
             break;
-        case CustomEvents::PasteEventDataType::IMAGE:
+        case CustomEvents::PasteEvent::DataType::IMAGE:
+            get_clipboard_image_data_SDL([&](std::string_view pasteData) {
+                process_image_paste(pasteData, info.pastePosition);
+            });
             break;
     }
 #endif
 }
 
 void InputManager::process_text_paste(const std::string& pasteStr, bool allowRichText) {
-    CustomEvents::emit_paste_event({
-        .type = CustomEvents::PasteEventDataType::TEXT,
+    CustomEvents::emit_event<CustomEvents::PasteEvent>({
+        .type = CustomEvents::PasteEvent::DataType::TEXT,
         .data = pasteStr,
         .richText = allowRichText && lastCopiedRichText.has_value() && lastCopiedRichText.value().get_plain_text() == remove_carriage_returns_from_str(pasteStr) ? lastCopiedRichText : std::nullopt
+    });
+}
+
+void InputManager::process_image_paste(std::string_view pasteData, const std::optional<Vector2f>& pastePos) {
+    CustomEvents::emit_event<CustomEvents::PasteEvent>({
+        .type = CustomEvents::PasteEvent::DataType::IMAGE,
+        .data = std::string(pasteData),
+        .mousePos = pastePos
     });
 }
 

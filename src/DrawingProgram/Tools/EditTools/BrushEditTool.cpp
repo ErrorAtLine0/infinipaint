@@ -3,6 +3,7 @@
 #include "../../../World.hpp"
 #include "../../../MainProgram.hpp"
 #include "../EditTool.hpp"
+#include "../../../CanvasComponents/BrushStrokeCanvasComponent.hpp"
 
 #include "../../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"

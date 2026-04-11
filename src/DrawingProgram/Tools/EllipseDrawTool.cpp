@@ -24,7 +24,6 @@ void EllipseDrawTool::gui_toolbox() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& fillStrokeMode = toolConfig.ellipseDraw.fillStrokeMode;

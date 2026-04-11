@@ -30,7 +30,6 @@ void EyeDropperTool::gui_toolbox() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;
     gui.new_id("Color select tool", [&] {

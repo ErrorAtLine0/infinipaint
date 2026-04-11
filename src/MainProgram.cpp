@@ -267,7 +267,7 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
     return nullptr;
 }
 
-void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEventData& openFile) {
+void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     std::shared_ptr<World> newWorld;
     try {
         newWorld = std::make_shared<World>(*this, openFile);
@@ -295,12 +295,18 @@ void MainProgram::post_callback() {
     g.post_callback();
 }
 
-void MainProgram::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEventData& openFile) {
+void MainProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
+    if(world)
+        world->input_add_file_to_canvas_callback(addFile);
+    post_callback();
+}
+
+void MainProgram::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     create_new_tab(openFile);
     post_callback();
 }
 
-void MainProgram::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+void MainProgram::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     g.input_paste_callback(paste);
     if(world)
         world->input_paste_callback(paste);
@@ -330,7 +336,7 @@ void MainProgram::input_drop_file_callback(const InputManager::DropCallbackArgs&
     if(std::filesystem::is_regular_file(drop.data)) {
         std::filesystem::path droppedFilePath(drop.data);
         if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
-            CustomEvents::emit_open_infinipaint_file_event({
+            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
                 .isClient = false,
                 .filePathSource = droppedFilePath
             });

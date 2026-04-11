@@ -2,7 +2,6 @@
 #include "../../DrawingProgram.hpp"
 #include "../../../MainProgram.hpp"
 #include "../../../DrawData.hpp"
-#include "Helpers/ConvertVec.hpp"
 #include "Helpers/SCollision.hpp"
 #include <cereal/types/vector.hpp>
 #include <include/core/SkFontStyle.h>
@@ -204,7 +203,7 @@ void TextBoxEditTool::edit_gui() {
     });
 }
 
-void TextBoxEditTool::input_paste_callback(const CustomEvents::PasteEventData& paste) {
+void TextBoxEditTool::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(textboxID.has_value() && textboxID.value() == drawP.world.main.input.text.current_textbox_editing_id()) {
         auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
         if(userInput->input_paste_callback(paste)) {
@@ -289,10 +288,10 @@ void TextBoxEditTool::right_click_popup_gui(Vector2f popupPos) {
             text_label_light(gui, "Text menu");
             InputManager& input = drawP.world.main.input;
             drawP.popup_menu_action_button("Paste", "Paste", [&] {
-                drawP.world.main.input.call_paste(CustomEvents::PasteEventDataType::TEXT, { .allowRichText = true });
+                drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = true });
             });
             drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
-                drawP.world.main.input.call_paste(CustomEvents::PasteEventDataType::TEXT, { .allowRichText = false });
+                drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = false });
             });
             if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
                 drawP.popup_menu_action_button("Copy", "Copy", [&] {

@@ -6,7 +6,6 @@
 #include "../../CanvasComponents/BrushStrokeCanvasComponent.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include "Helpers/MathExtras.hpp"
-#include <limits>
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
@@ -22,7 +21,6 @@ DrawingProgramToolType LineDrawTool::get_type() {
 void LineDrawTool::gui_toolbox() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     auto& toolConfig = drawP.world.main.toolConfig;
     gui.new_id("rect draw tool", [&] {

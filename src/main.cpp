@@ -794,10 +794,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN:
                 break;
             default: {
-                if(event->type == CustomEvents::PASTE_EVENT)
-                    mS.m->input.backend_paste_event();
-                else if(event->type == CustomEvents::OPEN_INFINIPAINT_FILE_EVENT)
-                    mS.m->input.backend_open_infinipaint_file_event();
+                if(event->type == CustomEvents::PasteEvent::EVENT_NUM) {
+                    mS.m->input_paste_callback(CustomEvents::get_event<CustomEvents::PasteEvent>());
+                    CustomEvents::pop_event();
+                }
+                else if(event->type == CustomEvents::OpenInfiniPaintFileEvent::EVENT_NUM) {
+                    mS.m->input_open_infinipaint_file_callback(CustomEvents::get_event<CustomEvents::OpenInfiniPaintFileEvent>());
+                    CustomEvents::pop_event();
+                }
+                else if(event->type == CustomEvents::AddFileToCanvasEvent::EVENT_NUM) {
+                    mS.m->input_add_file_to_canvas_callback(CustomEvents::get_event<CustomEvents::AddFileToCanvasEvent>());
+                    CustomEvents::pop_event();
+                }
                 break;
             }
         }

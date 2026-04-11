@@ -6,9 +6,7 @@
 #include "DrawingProgramToolBase.hpp"
 #include "../../CanvasComponents/BrushStrokeCanvasComponent.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
-#include "Helpers/NetworkingObjects/NetObjWeakPtr.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
-#include <chrono>
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
@@ -176,7 +174,6 @@ void BrushTool::gui_toolbox() {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
 
     gui.new_id("brush tool", [&] {
