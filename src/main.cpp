@@ -704,7 +704,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             case SDL_EVENT_MOUSE_MOTION:
                 #ifdef _WIN32
-                    if(!mS.m->toolbar.tabletOptions.ignoreMouseMovementWhenPenInProximity || !mS.m->input.pen.inProximity)
+                    if(!mS.m->conf.tabletOptions.ignoreMouseMovementWhenPenInProximity || !mS.m->input.pen.inProximity)
                 #endif
                     {
                         mS.m->input.backend_mouse_motion_update(event->motion);

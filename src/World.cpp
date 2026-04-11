@@ -469,7 +469,7 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
                 f.view()
             );
         #else
-            if(!SDL_SaveFile(filePath.c_str(), f.view().data(), f.view().size()))
+            if(!SDL_SaveFile(filePath.string().c_str(), f.view().data(), f.view().size()))
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         #endif
 

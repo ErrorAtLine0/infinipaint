@@ -28,12 +28,12 @@ GUIHolder::GUIHolder(MainProgram& m):
 
 void GUIHolder::load_icons_at(const std::filesystem::path& pathToLoad) {
     int globCount;
-    char** filesInPath = SDL_GlobDirectory(pathToLoad.c_str(), nullptr, 0, &globCount);
+    char** filesInPath = SDL_GlobDirectory(pathToLoad.string().c_str(), nullptr, 0, &globCount);
     if(filesInPath) {
         for(int i = 0; i < globCount; i++) {
             std::filesystem::path filePath = pathToLoad / std::filesystem::path(filesInPath[i]);
             SDL_PathInfo fileInfo;
-            if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
+            if(SDL_GetPathInfo(filePath.string().c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
                 std::string iconRelativePath = filePath.relative_path().string();
                 std::replace(iconRelativePath.begin(), iconRelativePath.end(), '\\', '/');
                 std::string iconData = read_file_to_string(iconRelativePath);

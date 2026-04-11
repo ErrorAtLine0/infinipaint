@@ -48,7 +48,7 @@ std::string read_file_to_string(const std::filesystem::path& filePath) {
     // Could also use SDL_LoadFile, but that allocates into a void* and involves a copy into std::string
 
     std::string toRet;
-    SDL_IOStream* file = SDL_IOFromFile(filePath.c_str(), "rb");
+    SDL_IOStream* file = SDL_IOFromFile(filePath.string().c_str(), "rb");
     if(!file)
         throw std::runtime_error("[read_file_to_string] Could not open file " + filePath.string());
     Sint64 fileSize = SDL_GetIOSize(file);

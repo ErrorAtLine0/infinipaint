@@ -220,12 +220,12 @@ void Toolbar::load_licenses() {
     {
         int globCount;
         std::filesystem::path third_party_license_path("data/third_party_licenses");
-        char** filesInPath = SDL_GlobDirectory(third_party_license_path.c_str(), nullptr, 0, &globCount);
+        char** filesInPath = SDL_GlobDirectory(third_party_license_path.string().c_str(), nullptr, 0, &globCount);
         if(filesInPath) {
             for(int i = 0; i < globCount; i++) {
                 std::filesystem::path filePath = third_party_license_path / std::filesystem::path(filesInPath[i]);
                 SDL_PathInfo fileInfo;
-                if(SDL_GetPathInfo(filePath.c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
+                if(SDL_GetPathInfo(filePath.string().c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
                     thirdPartyLicenses.emplace_back(filePath.filename().string(), read_file_to_string(filePath));
                 }
             }
@@ -1837,7 +1837,7 @@ void Toolbar::general_settings_inner_gui() {
                         slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
                         checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld);
                         #ifdef _WIN32
-                            checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &tabletOptions.ignoreMouseMovementWhenPenInProximity);
+                            checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &main.conf.tabletOptions.ignoreMouseMovementWhenPenInProximity);
                         #endif
                     });
                     break;

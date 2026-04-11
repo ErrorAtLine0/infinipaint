@@ -70,7 +70,7 @@ void ImageEditTool::edit_gui() {
                         );
                     #endif
                     t.open_file_selector("Download File", {{"Any File", "*"}}, [resourceData](const std::filesystem::path& p, const auto& e) {
-                        SDL_SaveFile(p.c_str(), resourceData->data->c_str(), resourceData->data->size());
+                        SDL_SaveFile(p.string().c_str(), resourceData->data->c_str(), resourceData->data->size());
                     }, resourceData->name, true);
                 }
             });

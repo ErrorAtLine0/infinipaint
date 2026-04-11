@@ -352,7 +352,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, Scre
     #ifndef __EMSCRIPTEN__
         try {
             auto skData = out.detachAsData();
-            if(!SDL_SaveFile(filePath.c_str(), skData->bytes(), skData->size()))
+            if(!SDL_SaveFile(filePath.string().c_str(), skData->bytes(), skData->size()))
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
@@ -382,7 +382,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, Scre
     #ifndef __EMSCRIPTEN__
         try {
             auto skData = out.detachAsData();
-            if(!SDL_SaveFile(filePath.c_str(), skData->bytes(), skData->size()))
+            if(!SDL_SaveFile(filePath.string().c_str(), skData->bytes(), skData->size()))
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
