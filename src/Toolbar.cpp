@@ -1945,9 +1945,6 @@ void Toolbar::general_settings_inner_gui() {
                     general_scroll_area("debug settings menu", [&] {
                         checkbox_boolean_field(gui, "show performance metrics", "Show metrics", &showPerformance);
                         input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
-                        #ifndef __EMSCRIPTEN__
-                            input_scalar_field(gui, "fps cap slider", "FPS cap", &main.conf.fpsLimit, 3.0f, 10000.0f);
-                        #endif
                         input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
                         text_label_light(gui, "Cache related settings");
                         input_scalar_field<size_t>(gui, "cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);

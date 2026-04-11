@@ -67,9 +67,6 @@ MainProgram::MainProgram():
 }
 
 void MainProgram::update() {
-    while(std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - lastFrameTime).count() < 1.0 / conf.fpsLimit);
-    lastFrameTime = std::chrono::steady_clock::now();
-
     deltaTime.update_time_since();
     deltaTime.update_time_point();
 

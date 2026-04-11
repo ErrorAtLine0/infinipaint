@@ -51,7 +51,6 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
 
     json debugJson;
     debugJson["showPerformance"] = showPerformance;
-    debugJson["fpsLimit"] = fpsLimit;
     debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
     debugJson["imageLoadMaxThreads"] = ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX;
     debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
@@ -118,7 +117,6 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
 
     try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
-    try{j.at("debug").at("fpsLimit").get_to(fpsLimit);} catch(...) {}
     try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
     try{j.at("debug").at("imageLoadMaxThreads").get_to(ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX);} catch(...) {}
     try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}

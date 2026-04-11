@@ -28,7 +28,6 @@ class GlobalConfig {
         } tabletOptions;
 
         Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;
-        float fpsLimit = 10000.0f;
 
         nlohmann::json get_config_json(const InputManager& input) const;
         void set_config_json(InputManager& input, const nlohmann::json& j, VersionNumber version);

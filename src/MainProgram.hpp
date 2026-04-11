@@ -31,8 +31,6 @@ class MainProgram {
 
         InputManager input;
 
-        std::chrono::steady_clock::time_point lastFrameTime = std::chrono::steady_clock::now();
-
         Vector3f userColor;
 
         struct Window {
