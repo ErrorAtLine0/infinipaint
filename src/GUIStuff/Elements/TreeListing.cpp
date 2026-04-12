@@ -143,9 +143,6 @@ void TreeListing::layout(const Clay_ElementId& id, const Data& newDisplayData) {
                                                     d.selectedIndices->erase(it);
                                                 if(d.onSelectChange) d.onSelectChange();
                                             }
-                                            else if(button.clicks == 2) {
-                                                if(d.onDoubleClick) d.onDoubleClick(objIndex);
-                                            }
                                             else {
                                                 if(button.clicks == 2 && d.onDoubleClick) d.onDoubleClick(objIndex);
                                                 if(!wasSelected) {
