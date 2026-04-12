@@ -193,6 +193,7 @@ void ClientData::draw_cursor(SkCanvas* canvas, const DrawData& drawData) const {
         canvas->translate(cursorPos.x(), cursorPos.y());
 
         SkPaint p(SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.2f});
+        p.setAntiAlias(drawData.skiaAA);
         canvas->drawCircle(0.0f, 0.0f, 4.5f, p);
         p.setStroke(true);
         p.setStrokeWidth(1.0f);
@@ -207,9 +208,11 @@ void ClientData::draw_cursor(SkCanvas* canvas, const DrawData& drawData) const {
         Vector2f bounds{nextText, - metrics.fAscent + metrics.fDescent};
 
         SkPaint p2(SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.5f});
+        p2.setAntiAlias(drawData.skiaAA);
         canvas->drawSimpleText(displayName.c_str(), displayName.length(), SkTextEncoding::kUTF8, 6.0f, -metrics.fDescent, f, p2);
 
         SkPaint p3(color_mul_alpha(drawData.main->g.gui.io.theme->backColor1, 0.5f));
+        p3.setAntiAlias(drawData.skiaAA);
         canvas->drawRoundRect(SkRect::MakeXYWH(6.0f, -bounds.y(), bounds.x(), bounds.y()), 3.0f, 3.0f, p3);
 
         canvas->restore();

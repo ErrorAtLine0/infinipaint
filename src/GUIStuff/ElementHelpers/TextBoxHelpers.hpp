@@ -93,7 +93,7 @@ template <typename T> void input_scalar(GUIManager& gui, const char* id, T* val,
             return minVal;
         return std::clamp(toRet, minVal, maxVal);
     };
-    d.toStr = [decimalPrecision = options.decimalPrecision, minVal, maxVal](const T& a) {
+    d.toStr = [decimalPrecision = options.decimalPrecision](const T& a) {
         std::stringstream ss;
         if(std::is_floating_point<T>()) {
             ss.precision(decimalPrecision);

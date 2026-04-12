@@ -21,9 +21,6 @@
 #include "WorldGrid.hpp"
 #include <cereal/archives/portable_binary.hpp>
 #include <chrono>
-#include <fstream>
-#include "FileHelpers.hpp"
-#include "FontData.hpp"
 #include <include/core/SkFontMetrics.h>
 #include <Helpers/Networking/NetLibrary.hpp>
 #include <Helpers/Logger.hpp>
@@ -245,6 +242,8 @@ void World::update() {
 
 void World::on_tab_out() {
     rMan.clear_display_cache();
+    if(!clientStillConnecting)
+        drawProg.on_tab_out();
 }
 
 void World::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {

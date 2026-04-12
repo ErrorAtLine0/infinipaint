@@ -205,8 +205,7 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
                                                WindowInsets.Type.systemGestures() |
                                                WindowInsets.Type.mandatorySystemGestures() |
                                                WindowInsets.Type.tappableElement() |
-                                               WindowInsets.Type.displayCutout() |
-                                               WindowInsets.Type.ime());
+                                               WindowInsets.Type.displayCutout());
 
             SDLActivity.onNativeInsetsChanged(combined.left, combined.right, combined.top, combined.bottom);
         }

@@ -56,6 +56,7 @@ set(sources "src/main.cpp"
             "src/CustomEvents.cpp"
             "src/Screens/Screen.cpp"
             "src/Screens/DrawingProgramScreen.cpp"
+            "src/Screens/FileSelectScreen.cpp"
             "src/Bookmarks/BookmarkListItem.cpp"
             "src/Bookmarks/BookmarkManager.cpp"
             "src/ResourceDisplay/ResourceDisplay.cpp"
@@ -259,6 +260,8 @@ elseif(APPLE)
 endif()
 
 if(EMSCRIPTEN)
+    set(SDL_EMSCRIPTEN_PERSISTENT_PATH "/infinipaint" CACHE STRING "SDL emscripten persistent path")
+
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
         target_compile_options(main PRIVATE -g3)
         target_link_options(main PRIVATE -g3)
@@ -377,7 +380,7 @@ else()
     if(ANDROID)
         target_link_libraries(main SDL3::SDL3 game-text-input::game-text-input)
     else()
-        target_link_libraries(main sdl::sdl)
+        target_link_libraries(main sdl-infinipaint::sdl-infinipaint)
     endif()
     target_link_libraries(main icu-infinipaint::icu-infinipaint)
 endif()

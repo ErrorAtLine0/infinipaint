@@ -92,7 +92,7 @@ class CompressorRecipe(ConanFile):
         if self.settings.os == "Linux":
             self.requires("fontconfig/2.17.1")
             self.requires("egl/system")
-            self.requires("sdl/3.4.0", options = {
+            self.requires("sdl-infinipaint/3.4.4", options = {
                 "wayland": False,
                 "x11": True,
                 "pulseaudio": False,
@@ -101,8 +101,12 @@ class CompressorRecipe(ConanFile):
                 "vulkan": False,
                 "opengles": False
             })
+        elif self.settings.os == "Emscripten":
+            self.requires("sdl-infinipaint/3.4.4", options = {
+                "emscriptenPersistentPath": "/infinipaint"
+            })
         elif self.settings.os != "Android":
-            self.requires("sdl/3.4.0")
+            self.requires("sdl-infinipaint/3.4.4")
 
         if self.settings.os != "Emscripten" and self.settings.os != "Macos" and self.settings.os != "Android":
             self.requires("hwloc/2.12.2", options = {

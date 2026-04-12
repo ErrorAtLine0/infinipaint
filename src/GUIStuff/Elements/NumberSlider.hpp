@@ -33,7 +33,7 @@ template <typename T> class NumberSlider : public Element {
             }
         }
 
-        virtual void update() {
+        virtual void update() override {
             smooth_two_way_animation_time(dd.holdAnimation, gui.io.deltaTime, dd.isHeld, HOLD_ANIMATION_TIME);
             smooth_two_way_animation_time(dd.hoverAnimation, gui.io.deltaTime, mouseHovering, gui.io.theme->hoverExpandTime);
             if(oldDD != dd) {

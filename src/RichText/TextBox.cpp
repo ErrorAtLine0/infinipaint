@@ -183,8 +183,6 @@ void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int cl
     if(clickCount || held) {
         rebuild();
 
-        Cursor oldCursor = cur;
-
         cur.pos = get_text_pos_closest_to_point(pos);
         if(lastClicksCursorPos != cur.pos && clickCount) {
             lastClicksAtCursorPos = 1;

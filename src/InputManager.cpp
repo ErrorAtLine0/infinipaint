@@ -81,9 +81,7 @@ InputManager::InputManager(MainProgram& initMain):
 	});
     emscripten_browser_clipboard::paste_event([](std::string&& pasteData, void* callbackData){
         InputManager* inMan = (InputManager*)callbackData;
-        inMan->text.isNextPasteRich = true;
-        std::string pData = pasteData;
-        inMan->process_text_paste(pData);
+        inMan->process_text_paste(pasteData, true);
     }, this);
 #endif
 
@@ -927,25 +925,35 @@ void InputManager::backend_key_down_update(const SDL_KeyboardEvent& e) {
 void InputManager::call_paste(CustomEvents::PasteEvent::DataType type, const InputManagerCallPasteInfo& info) {
     // Workaround for not being able to copy richtext to system clipboard, this should at least work within the application itself
 #ifdef __EMSCRIPTEN__
-    if(type == PasteDataType::TEXT) {
-        emscripten_browser_clipboard::paste_async([](std::string&& pasteData, void* callbackData){
-            InputManager* inMan = (InputManager*)callbackData;
-            std::string pData = pasteData;
-            inMan->process_text_paste(pData);
-        }, this);
-    }
-    else {
-        struct PasteData {
-            std::optional<Vector2f> pos;
-            InputManager* t;
-        };
-        static PasteData pasteData;
-        pasteData.pos = info.pastePosition;
-        pasteData.t = this;
-        emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
-            PasteData* p = (PasteData*)callbackData;
-            p->t->process_image_paste(pasteData, p->pos);
-        }, &pasteData);
+    switch(type) {
+        case CustomEvents::PasteEvent::DataType::TEXT: {
+            struct PasteData {
+                bool allowRichText;
+                InputManager* t;
+            };
+            static PasteData pasteData;
+            pasteData.allowRichText = info.allowRichText;
+            pasteData.t = this;
+            emscripten_browser_clipboard::paste_async([](std::string&& pasteData, void* callbackData){
+                PasteData* p = (PasteData*)callbackData;
+                p->t->process_text_paste(pasteData, p->allowRichText);
+            }, &pasteData);
+            break;
+        }
+        case CustomEvents::PasteEvent::DataType::IMAGE: {
+            struct PasteData {
+                std::optional<Vector2f> pos;
+                InputManager* t;
+            };
+            static PasteData pasteData;
+            pasteData.pos = info.pastePosition;
+            pasteData.t = this;
+            emscripten_browser_clipboard::paste_async_image([](std::string_view pasteData, void* callbackData){
+                PasteData* p = (PasteData*)callbackData;
+                p->t->process_image_paste(pasteData, p->pos);
+            }, &pasteData);
+            break;
+        }
     }
 #else
     switch(type) {

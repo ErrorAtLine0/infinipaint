@@ -151,11 +151,6 @@ struct MainStruct {
     std::chrono::steady_clock::duration frameRefreshDuration = std::chrono::steady_clock::duration::zero();
 } MainData;
 
-#ifdef __EMSCRIPTEN__
-    bool emscriptenFilesystemReadReady = false;
-    bool emscriptenFilesystemLoadConfigDone = false;
-#endif
-
 bool load_file_to_string(std::string& toRet, std::string_view fileName) {
     // https://nullptr.org/cpp-read-file-into-string/
     std::ifstream file(fileName.data(), std::ios::in | std::ios::binary | std::ios::ate);
@@ -334,12 +329,6 @@ void resize_window(MainStruct& mS) {
 }
 
 #ifdef __EMSCRIPTEN__
-extern "C" {
-    EMSCRIPTEN_KEEPALIVE inline void emscripten_filesystem_loaded() {
-        emscriptenFilesystemReadReady = true;
-    }
-}
-
 const char* emscripten_before_unload(int eventType, const void *reserved, void *userData) {
     MainStruct& mS = *((MainStruct*)userData);
     mS.m->save_config();
@@ -351,23 +340,7 @@ void init_logs(MainStruct& mS) {
     char* homePathSDL = SDL_GetCurrentDirectory();
     mS.homePath = std::filesystem::path(homePathSDL);
     SDL_free(homePathSDL);
-#ifdef __EMSCRIPTEN__
-    EM_ASM(
-        FS.mkdir('/infinipaint');
-        FS.mount(FS.filesystems.IDBFS, {}, '/infinipaint');
-        
-        FS.syncfs(true, (err) => {
-            if(err)
-                console.log("Error syncing IDBFS: ", err);
-            else {
-                console.log("Synced to IDBFS. Read Ready");
-                Module["ccall"]('emscripten_filesystem_loaded', null, [], []);
-            }
-        });
-    );
-    mS.homePath = std::filesystem::path("/");
-    mS.configPath = std::filesystem::path("/infinipaint");
-#elif CONFIG_NEXT_TO_EXECUTABLE
+#ifdef CONFIG_NEXT_TO_EXECUTABLE
     std::string CONFIG_FOLDER_NAME = "config";
     std::filesystem::create_directory(CONFIG_FOLDER_NAME);
     mS.configPath = mS.homePath / CONFIG_FOLDER_NAME;
@@ -420,17 +393,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         int initWidth = 1000;
         int initHeight = 900;
 
-#ifdef __EMSCRIPTEN__
-        Vector2d sizeD;
-        EMSCRIPTEN_RESULT result = emscripten_get_element_css_size("#canvas", &sizeD.x(), &sizeD.y());
-        if(result != EMSCRIPTEN_RESULT_SUCCESS)
-            std::cout << "Failed to get canvas size" << std::endl;
-        else {
-            initWidth = sizeD.x();
-            initHeight = sizeD.y();
-            std::cout << "Initial window size: " << initWidth << " " << initHeight << std::endl;
+        #ifdef __EMSCRIPTEN__
+        {
+            Vector2d sizeD;
+            EMSCRIPTEN_RESULT result = emscripten_get_element_css_size("#canvas", &sizeD.x(), &sizeD.y());
+            if(result != EMSCRIPTEN_RESULT_SUCCESS)
+                std::cout << "Failed to get canvas size" << std::endl;
+            else {
+                initWidth = sizeD.x();
+                initHeight = sizeD.y();
+                std::cout << "Initial window size: " << initWidth << " " << initHeight << std::endl;
+            }
         }
-#endif
+        #endif
 
         initialize_sdl(mS, initWidth, initHeight);
 
@@ -443,25 +418,24 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.m->logFile = &mS.logFile;
         mS.m->conf.configPath = mS.configPath;
         mS.m->homePath = mS.homePath;
-#ifndef __EMSCRIPTEN__
-        const char* documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS);
-        if(!documentsPathSDL) {
-            documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DESKTOP);
-            if(!documentsPathSDL)
-                mS.m->documentsPath = mS.m->conf.configPath;
+        #ifndef __EMSCRIPTEN__
+            const char* documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS);
+            if(!documentsPathSDL) {
+                documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DESKTOP);
+                if(!documentsPathSDL)
+                    mS.m->documentsPath = mS.m->conf.configPath;
+                else
+                    mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
+            }
             else
                 mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
-        }
-        else
-            mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
-#endif
+        #endif
         mS.m->window.sdlWindow = mS.window;
         mS.m->update_scale_and_density();
-#ifdef __EMSCRIPTEN__
-        emscripten_set_beforeunload_callback((void*)mSPtr, emscripten_before_unload);
-#else
         mS.m->load_config();
-#endif
+        #ifdef __EMSCRIPTEN__
+            emscripten_set_beforeunload_callback((void*)mSPtr, emscripten_before_unload);
+        #endif
         #ifdef USE_BACKEND_VULKAN
             #ifdef USE_SKIA_BACKEND_GRAPHITE
                 std::unique_ptr<const skwindow::DisplayParams> displayParams = skwindow::DisplayParamsBuilder().build();
@@ -614,13 +588,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 #ifdef NDEBUG
     try {
 #endif
-#ifdef __EMSCRIPTEN__
-        if(emscriptenFilesystemReadReady && !emscriptenFilesystemLoadConfigDone) {
-            mS.m->load_config();
-            emscriptenFilesystemLoadConfigDone = true;
-        }
-#endif
-
         mS.m->update();
 
         if(mS.m->setToQuit)

@@ -111,17 +111,6 @@ void MainProgram::save_config() {
         f.close();
     }
     conf.save_palettes();
-
-#ifdef __EMSCRIPTEN__
-    EM_ASM(
-        FS.syncfs(false, (err) => {
-            if(err)
-                console.log("Error syncing IDBFS: ", err);
-            else
-                console.log("Synced to IDBFS");
-        });
-    );
-#endif
 }
 
 void MainProgram::load_config() {
@@ -174,7 +163,7 @@ void MainProgram::load_config() {
     }
 #ifdef __EMSCRIPTEN__
     else
-        toolbar.viewWebVersionWelcome = true;
+        conf.viewWebVersionWelcome = true;
 #endif
     conf.load_palettes();
     g.load_theme(conf.configPath, conf.themeCurrentlyLoaded);

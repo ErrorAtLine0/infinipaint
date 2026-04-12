@@ -551,7 +551,6 @@ void Toolbar::top_toolbar() {
                                     #ifdef __EMSCRIPTEN__
                                         emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
                                             if(!buffer.empty()) {
-                                                auto& main = *static_cast<MainProgram*>(callbackData);
                                                 CustomEvents::emit_event<CustomEvents::AddFileToCanvasEvent>({
                                                     .type = CustomEvents::AddFileToCanvasEvent::Type::BUFFER,
                                                     .name = fileName,
@@ -1469,13 +1468,13 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
     emscripten_browser_file::upload("." + World::FILE_EXTENSION, [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
         if(!buffer.empty()) {
             UploadData* uD = (UploadData*)callbackData;
-            uD->main->new_tab({
+            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
                 .isClient = uD->iC,
                 .filePathSource = std::filesystem::path(fileName),
                 .netSource = uD->nS,
                 .serverLocalID = uD->sLID,
                 .fileDataBuffer = buffer
-            }, true);
+            });
         }
     }, &uploadData);
 #else

@@ -69,7 +69,7 @@ template <typename T> class ColorPicker : public Element {
         ColorPicker(GUIManager& gui);
         void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const ColorPickerData& config);
         virtual void update() override;
-        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA);
+        virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
