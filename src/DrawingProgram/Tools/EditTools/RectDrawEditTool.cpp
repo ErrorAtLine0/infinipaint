@@ -12,7 +12,7 @@ RectDrawEditTool::RectDrawEditTool(DrawingProgram& initDrawP, CanvasComponentCon
     DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void RectDrawEditTool::edit_gui() {
+void RectDrawEditTool::edit_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -23,7 +23,6 @@ void RectDrawEditTool::edit_gui() {
     };
     auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("edit tool rectangle", [&] {
         text_label_centered(gui, "Edit Rectangle");

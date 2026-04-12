@@ -53,7 +53,7 @@ class World {
         WorldScalar calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize);
 
         void focus_update();
-        void unfocus_update();
+        void update();
         void on_tab_out();
 
         void draw(SkCanvas* canvas, const DrawData& calledDrawData);

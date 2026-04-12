@@ -111,11 +111,10 @@ void GridModifyTool::input_mouse_motion_callback(const InputManager::MouseMotion
     }
 }
 
-void GridModifyTool::gui_toolbox() {
+void GridModifyTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
 
     gui.new_id("Grid modify tool", [&] {
@@ -162,8 +161,7 @@ void GridModifyTool::gui_toolbox() {
     });
 }
 
-void GridModifyTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void GridModifyTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

@@ -18,7 +18,7 @@ DrawingProgramToolType RectDrawTool::get_type() {
     return DrawingProgramToolType::RECTANGLE;
 }
 
-void RectDrawTool::gui_toolbox() {
+void RectDrawTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -97,8 +97,7 @@ void RectDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp
         objInfoBeingEdited = nullptr;
 }
 
-void RectDrawTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void RectDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

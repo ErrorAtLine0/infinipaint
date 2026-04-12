@@ -6,8 +6,7 @@ DrawingProgramEditToolBase::DrawingProgramEditToolBase(DrawingProgram& initDrawP
     comp(initComp)
 {}
 
-void DrawingProgramEditToolBase::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void DrawingProgramEditToolBase::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

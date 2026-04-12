@@ -16,14 +16,14 @@ DrawingProgramToolType ZoomCanvasTool::get_type() {
     return DrawingProgramToolType::ZOOM;
 }
 
-void ZoomCanvasTool::gui_toolbox() {
+void ZoomCanvasTool::gui_toolbox(Toolbar& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("Zoom canvas tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Zoom tool");
     });
 }
 
-void ZoomCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+void ZoomCanvasTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     drawP.selection_action_menu(popupPos);
 }
 

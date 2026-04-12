@@ -26,7 +26,7 @@ DrawingProgramToolType EyeDropperTool::get_type() {
     return DrawingProgramToolType::EYEDROPPER;
 }
 
-void EyeDropperTool::gui_toolbox() {
+void EyeDropperTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -42,8 +42,7 @@ void EyeDropperTool::gui_toolbox() {
     });
 }
 
-void EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void EyeDropperTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

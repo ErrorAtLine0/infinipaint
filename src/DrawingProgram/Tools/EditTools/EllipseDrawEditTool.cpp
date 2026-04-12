@@ -15,13 +15,12 @@ EllipseDrawEditTool::EllipseDrawEditTool(DrawingProgram& initDrawP, CanvasCompon
     DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void EllipseDrawEditTool::edit_gui() {
+void EllipseDrawEditTool::edit_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
-    Toolbar& t = drawP.world.main.toolbar;
     auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
     auto commit_update_and_layout_func = [&] {
         comp->obj->commit_update(drawP);

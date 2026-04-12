@@ -26,7 +26,6 @@
 #include <filesystem>
 #include <optional>
 #include <Helpers/Logger.hpp>
-#include <fstream>
 #include <Helpers/StringHelpers.hpp>
 #include <Helpers/VersionNumber.hpp>
 
@@ -69,49 +68,7 @@ using namespace ElementHelpers;
 
 Toolbar::Toolbar(MainProgram& initMain):
     main(initMain)
-{
-    load_default_palette();
-}
-
-
-void Toolbar::load_default_palette() {
-    paletteData.palettes.clear();
-    paletteData.palettes.emplace_back();
-    auto& palette = paletteData.palettes.back().colors;
-    paletteData.palettes.back().name = "Default";
-    palette = {{1.0,1.0,1.0},{0.0,0.0,0.0},{1.0,0.0,0.0},{1.0,0.529411792755127,0.0},{1.0,0.8274509906768799,0.0},{0.8705882430076599,1.0,0.03921568766236305},{0.6313725709915161,1.0,0.03921568766236305},{0.03921568766236305,1.0,0.6000000238418579},{0.03921568766236305,0.9372549057006836,1.0},{0.0784313753247261,0.4901960790157318,0.9607843160629272},{0.3450980484485626,0.03921568766236305,1.0},{0.7450980544090271,0.03921568766236305,1.0}};
-
-    paletteData.selectedPalette = 0;
-}
-
-void Toolbar::save_palettes() {
-    std::ofstream f(main.configPath / "palettes.json");
-    if(f.is_open()) {
-        using json = nlohmann::json;
-        json j;
-        auto palettesToSave = paletteData.palettes;
-        palettesToSave.erase(palettesToSave.begin());
-        j = palettesToSave;
-        f << j;
-        f.close();
-    }
-}
-
-void Toolbar::load_palettes() {
-    std::ifstream f(main.configPath / "palettes.json");
-    load_default_palette();
-    if(f.is_open()) {
-        using json = nlohmann::json;
-        try {
-            json j;
-            f >> j;
-            std::vector<PaletteData::Palette> palettes;
-            j.get_to(palettes);
-            paletteData.palettes.insert(paletteData.palettes.end(), palettes.begin(), palettes.end());
-        } catch(...) {}
-        f.close();
-    }
-}
+{}
 
 // You can't trust that filter wont be -1 on the platform youre on, so dont use the extension from the callback
 void Toolbar::sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter) {
@@ -158,10 +115,6 @@ void Toolbar::open_file_selector(const std::string& filePickerName, const std::v
         filePicker.entriesScrollArea = nullptr;
         file_picker_gui_refresh_entries();
     }
-}
-
-std::filesystem::path& Toolbar::file_selector_path() {
-    return filePicker.currentSearchPath;
 }
 
 void Toolbar::color_button_left(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData) {
@@ -216,46 +169,12 @@ void Toolbar::color_selector_right(Element* button, Vector4f* color, const Color
     main.g.gui.set_to_layout();
 }
 
-void Toolbar::load_licenses() {
-    {
-        int globCount;
-        std::filesystem::path third_party_license_path("data/third_party_licenses");
-        char** filesInPath = SDL_GlobDirectory(third_party_license_path.string().c_str(), nullptr, 0, &globCount);
-        if(filesInPath) {
-            for(int i = 0; i < globCount; i++) {
-                std::filesystem::path filePath = third_party_license_path / std::filesystem::path(filesInPath[i]);
-                SDL_PathInfo fileInfo;
-                if(SDL_GetPathInfo(filePath.string().c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
-                    thirdPartyLicenses.emplace_back(filePath.filename().string(), read_file_to_string(filePath));
-                }
-            }
-            SDL_free(filesInPath);
-        }
-    }
-
-    std::sort(thirdPartyLicenses.begin(), thirdPartyLicenses.end(), [](const auto& a1, const auto& a2) {
-        return std::lexicographical_compare(a1.first.begin(), a1.first.end(), a2.first.begin(), a2.first.end());
-    });
-    ownLicenseText = "InfiniPaint v" + VersionConstants::CURRENT_VERSION_STRING;
-    ownLicenseText +=
-R"(
-
-Copyright © 2026 Yousef Khadadeh
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-)";
-}
-
 void Toolbar::update() {
     std::erase_if(main.logMessages, [&](auto& logM) {
         logM.time.update_time_since();
-        if(logM.time > LogMessage::FADE_START_TIME) {
+        if(logM.time > UserLogMessage::FADE_START_TIME) {
             main.g.gui.set_to_layout();
-            return logM.time >= LogMessage::DISPLAY_TIME;
+            return logM.time >= UserLogMessage::DISPLAY_TIME;
         }
         return false;
     });
@@ -294,7 +213,7 @@ void Toolbar::layout_run() {
     update_notification_check();
 #endif
 
-    if(main.drawGui) {
+    if(drawGui) {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(gui.io.windowSize.x()), .height = CLAY_SIZING_FIT(gui.io.windowSize.y())},
@@ -338,7 +257,7 @@ void Toolbar::layout_run() {
     }
 
     if(!main.world->clientStillConnecting)
-        main.world->drawProg.right_click_popup_gui();
+        main.world->drawProg.right_click_popup_gui(*this);
 }
 
 bool Toolbar::app_close_requested() {
@@ -486,7 +405,7 @@ void Toolbar::paint_popup(Vector2f popupPos) {
         paint_circle_popup_menu(gui, "paint circle popup", popupPos, {
             .rotationAngle = newRotationAngle.get(),
             .selectedColor = main.world->drawProg.get_foreground_color_ptr(),
-            .palette = paletteData.palettes[paletteData.selectedPalette].colors,
+            .palette = main.conf.palettes[paletteData.selectedPalette].colors,
             .onRotate = [&, newRotationAngle] {
                 main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), *newRotationAngle - main.world->drawData.cam.c.rotation);
                 *newRotationAngle = main.world->drawData.cam.c.rotation;
@@ -1199,8 +1118,8 @@ void Toolbar::global_log() {
             for(size_t i = 0; i < main.logMessages.size(); i++) {
                 auto& logM = main.logMessages[i];
                 logM.time.update_time_since();
-                if(logM.time < LogMessage::DISPLAY_TIME) {
-                    float a = 1.0f - lerp_time<float>(logM.time, LogMessage::DISPLAY_TIME, LogMessage::FADE_START_TIME);
+                if(logM.time < UserLogMessage::DISPLAY_TIME) {
+                    float a = 1.0f - lerp_time<float>(logM.time, UserLogMessage::DISPLAY_TIME, UserLogMessage::FADE_START_TIME);
                     gui.new_id(i, [&] {
                         gui.element<LayoutElement>("Global log message", [&] (LayoutElement*, const Clay_ElementId& lId) {
                             CLAY(lId, {
@@ -1216,10 +1135,10 @@ void Toolbar::global_log() {
                             }) {
                                 SkColor4f c{0, 0, 0, 0};
                                 switch(logM.color) {
-                                    case LogMessage::COLOR_NORMAL:
+                                    case UserLogMessage::COLOR_NORMAL:
                                         c = io.theme->frontColor1;
                                         break;
-                                    case LogMessage::COLOR_ERROR:
+                                    case UserLogMessage::COLOR_ERROR:
                                         c = io.theme->errorColor;
                                         break;
                                 }
@@ -1247,7 +1166,7 @@ void Toolbar::drawing_program_gui() {
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         },
     }) {
-        main.world->drawProg.toolbar_gui();
+        main.world->drawProg.toolbar_gui(*this);
 
         if(colorLeft)
             color_picker_window("Drawing program gui color picker left", &colorLeft, colorLeftButton, colorLeftData);
@@ -1259,7 +1178,7 @@ void Toolbar::drawing_program_gui() {
         if(colorRight)
             color_picker_window("Drawing program gui color picker right", &colorRight, colorRightButton, colorRightData);
 
-        main.world->drawProg.tool_options_gui();
+        main.world->drawProg.tool_options_gui(*this);
     }
 }
 
@@ -1310,7 +1229,7 @@ void Toolbar::color_palette(const char* id, Vector4f* color, const std::function
     auto& io = gui.io;
 
     gui.new_id(id, [&] {
-        auto& palette = paletteData.palettes[paletteData.selectedPalette].colors;
+        auto& palette = main.conf.palettes[paletteData.selectedPalette].colors;
 
         gui.element<ScrollArea>("color palette scroll area", ScrollArea::Options{
             .scrollVertical = true,
@@ -1400,7 +1319,7 @@ void Toolbar::color_palette(const char* id, Vector4f* color, const std::function
             }
         }) {
             std::vector<std::string> paletteNames;
-            for(auto& p : paletteData.palettes)
+            for(auto& p : main.conf.palettes)
                 paletteNames.emplace_back(p.name);
             gui.element<DropDown<size_t>>("paletteselector", &paletteData.selectedPalette, paletteNames, DropdownOptions{
                 .onClick = [&] { gui.set_to_layout(); }
@@ -1414,7 +1333,7 @@ void Toolbar::color_palette(const char* id, Vector4f* color, const std::function
             svg_icon_button(gui, "paletteremove", "data/icons/close.svg", {
                 .size = 25.0f,
                 .onClick = [&] {
-                    paletteData.palettes.erase(paletteData.palettes.begin() + paletteData.selectedPalette);
+                    main.conf.palettes.erase(main.conf.palettes.begin() + paletteData.selectedPalette);
                     paletteData.selectedPalette = 0;
                 }
             });
@@ -1423,9 +1342,9 @@ void Toolbar::color_palette(const char* id, Vector4f* color, const std::function
             input_text_field(gui, "paletteinputname", "Name", &paletteData.newPaletteStr);
             text_button_wide("addpalettebutton", "Create", [&] {
                 if(!paletteData.newPaletteStr.empty()) {
-                    paletteData.palettes.emplace_back();
-                    paletteData.palettes.back().name = paletteData.newPaletteStr;
-                    paletteData.selectedPalette = paletteData.palettes.size() - 1;
+                    main.conf.palettes.emplace_back();
+                    main.conf.palettes.back().name = paletteData.newPaletteStr;
+                    paletteData.selectedPalette = main.conf.palettes.size() - 1;
                     paletteData.addingPalette = false;
                 }
             });
@@ -1738,7 +1657,7 @@ void Toolbar::general_settings_inner_gui() {
                     .wide = true,
                     .centered = false,
                     .onClick = [&, opt] {
-                        main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
+                        main.g.load_theme(main.conf.configPath, main.conf.themeCurrentlyLoaded);
                         themeData.selectedThemeIndex = std::nullopt;
                         generalSettingsOptions = opt;
                         main.keybindWaiting = std::nullopt;
@@ -1860,7 +1779,7 @@ void Toolbar::general_settings_inner_gui() {
                             if(themeData.selectedThemeIndex != 0) {
                                 text_button_wide("savethemebutton", "Save", [&] {
                                     main.conf.themeCurrentlyLoaded = themeData.themeDirList[themeData.selectedThemeIndex.value()];
-                                    main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
+                                    main.g.save_theme(main.conf.configPath, main.conf.themeCurrentlyLoaded);
                                     reload_theme_list();
                                 });
                             }
@@ -1873,7 +1792,7 @@ void Toolbar::general_settings_inner_gui() {
                             });
                             if(themeData.selectedThemeIndex != 0) {
                                 text_button_wide("deletethemebutton", "Delete", [&] {
-                                    try { std::filesystem::remove(main.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
+                                    try { std::filesystem::remove(main.conf.configPath / "themes" / (themeData.themeDirList[themeData.selectedThemeIndex.value()] + ".json")); } catch(...) { }
                                     main.conf.themeCurrentlyLoaded = "Default";
                                     reload_theme_list();
                                 });
@@ -1883,7 +1802,7 @@ void Toolbar::general_settings_inner_gui() {
                             input_text_field(gui, "Theme name:", "Theme name: ", &main.conf.themeCurrentlyLoaded);
                             left_to_right_line_layout(gui, [&]() {
                                 text_button_wide("saveasdone", "Done", [&] {
-                                    main.g.save_theme(main.configPath, main.conf.themeCurrentlyLoaded);
+                                    main.g.save_theme(main.conf.configPath, main.conf.themeCurrentlyLoaded);
                                     reload_theme_list();
                                 });
                                 text_button_wide("saveascancel", "Cancel", [&] {
@@ -1964,7 +1883,7 @@ void Toolbar::general_settings_inner_gui() {
             }
             text_button_wide("done menu", "Done", [&] {
                 main.save_config();
-                main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded);
+                main.g.load_theme(main.conf.configPath, main.conf.themeCurrentlyLoaded);
                 themeData.selectedThemeIndex = std::nullopt;
                 main.keybindWaiting = std::nullopt;
                 optionsMenuOpen = false;
@@ -2006,7 +1925,7 @@ void Toolbar::about_menu_inner_gui() {
                             });
                         }
                         text_label_light_centered(gui, "Third Party Components");
-                        for(int i = 0; i < static_cast<int>(thirdPartyLicenses.size()); i++) {
+                        for(int i = 0; i < static_cast<int>(main.conf.thirdPartyLicenses.size()); i++) {
                             CLAY_AUTO_ID({
                                 .layout = {
                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -2014,7 +1933,7 @@ void Toolbar::about_menu_inner_gui() {
                                 }
                             }) {
                                 gui.new_id(i, [&] {
-                                    text_button(gui, "noticebutton", thirdPartyLicenses[i].first, {
+                                    text_button(gui, "noticebutton", main.conf.thirdPartyLicenses[i].first, {
                                         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                                         .isSelected = selectedLicense == i,
                                         .wide = true,
@@ -2034,7 +1953,7 @@ void Toolbar::about_menu_inner_gui() {
             .clipVertical = true,
             .showScrollbarY = true,
             .innerContent = [&](const ScrollArea::InnerContentParameters&) {
-                text_label_size(gui, (selectedLicense == -1) ? ownLicenseText : thirdPartyLicenses[selectedLicense].second, 0.8f);
+                text_label_size(gui, (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second, 0.8f);
             }
         });
     });
@@ -2048,7 +1967,7 @@ void Toolbar::reload_theme_list() {
 
     themeData.themeDirList.clear();
     themeData.themeDirList.emplace_back("Default");
-    std::filesystem::path themeDir = main.configPath / "themes";
+    std::filesystem::path themeDir = main.conf.configPath / "themes";
     if(std::filesystem::exists(themeDir) && std::filesystem::is_directory(themeDir)) {
         for(auto& theme : std::filesystem::recursive_directory_iterator(themeDir)) {
             std::string name = theme.path().stem().string();
@@ -2059,7 +1978,7 @@ void Toolbar::reload_theme_list() {
             }
         }
     }
-    if(!main.g.load_theme(main.configPath, main.conf.themeCurrentlyLoaded))
+    if(!main.g.load_theme(main.conf.configPath, main.conf.themeCurrentlyLoaded))
         themeData.selectedThemeIndex = 0;
 
     themeData.openedSaveAsMenu = false;
@@ -2071,15 +1990,15 @@ void Toolbar::file_picker_gui_refresh_entries() {
     filePicker.entries.clear();
     for(;;) {
         try {
-            for(const std::filesystem::path& entry : std::filesystem::directory_iterator(filePicker.currentSearchPath))
+            for(const std::filesystem::path& entry : std::filesystem::directory_iterator(main.conf.currentSearchPath))
                 filePicker.entries.emplace_back(entry);
             break;
         }
         catch(const std::exception& e) {
             Logger::get().log("INFO", e.what());
-            if(filePicker.currentSearchPath == main.homePath) // The home path must exist. If we get errors on the home path, we have a real problem
+            if(main.conf.currentSearchPath == main.homePath) // The home path must exist. If we get errors on the home path, we have a real problem
                 throw e;
-            filePicker.currentSearchPath = main.homePath;
+            main.conf.currentSearchPath = main.homePath;
         }
     }
 
@@ -2122,7 +2041,7 @@ void Toolbar::file_picker_gui_refresh_entries() {
 
 void Toolbar::file_picker_gui_done() {
     if(!filePicker.fileName.empty()) {
-        std::filesystem::path pathToRet = filePicker.currentSearchPath / filePicker.fileName;
+        std::filesystem::path pathToRet = main.conf.currentSearchPath / filePicker.fileName;
         if(filePicker.isSaving)
             pathToRet = force_extension_on_path(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected].extensions);
         filePicker.postSelectionFunc(pathToRet, filePicker.extensionFiltersComplete[filePicker.extensionSelected]);
@@ -2140,11 +2059,11 @@ void Toolbar::file_picker_gui() {
         left_to_right_line_layout(gui, [&]() {
             svg_icon_button(gui, "file picker back button", "data/icons/backarrow.svg", {
                 .onClick = [&] {
-                    filePicker.currentSearchPath = filePicker.currentSearchPath.parent_path();
+                    main.conf.currentSearchPath = main.conf.currentSearchPath.parent_path();
                     file_picker_gui_refresh_entries();
                 }
             });
-            input_path_field(gui, "file picker path", "Path", &filePicker.currentSearchPath, {
+            input_path_field(gui, "file picker path", "Path", &main.conf.currentSearchPath, {
                 .fileTypeRestriction = std::filesystem::file_type::directory,
                 .onEdit = [&] {
                     file_picker_gui_refresh_entries();
@@ -2195,7 +2114,7 @@ void Toolbar::file_picker_gui() {
                                 gui.set_post_callback_func([&, button, selectedEntry, entry] {
                                     if(selectedEntry && button.clicks >= 2) {
                                         if(std::filesystem::is_directory(entry)) {
-                                            filePicker.currentSearchPath = entry;
+                                            main.conf.currentSearchPath = entry;
                                             file_picker_gui_refresh_entries();
                                         }
                                         else if(std::filesystem::is_regular_file(entry))

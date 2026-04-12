@@ -19,7 +19,7 @@ DrawingProgramToolType TextBoxTool::get_type() {
     return DrawingProgramToolType::TEXTBOX;
 }
 
-void TextBoxTool::gui_toolbox() {
+void TextBoxTool::gui_toolbox(Toolbar& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("textbox tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Place textbox");
@@ -74,8 +74,7 @@ void TextBoxTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp)
         objInfoBeingEdited = nullptr;
 }
 
-void TextBoxTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void TextBoxTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

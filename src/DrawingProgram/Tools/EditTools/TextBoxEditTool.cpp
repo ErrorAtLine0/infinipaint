@@ -35,12 +35,11 @@ void TextBoxEditTool::commit_update_and_layout_func() {
     drawP.world.main.g.gui.set_to_layout();
 }
 
-void TextBoxEditTool::edit_gui() {
+void TextBoxEditTool::edit_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     auto& currentMods = *currentModsPtr;
 
@@ -276,7 +275,7 @@ void TextBoxEditTool::input_mouse_motion_callback(const InputManager::MouseMotio
     }
 }
 
-void TextBoxEditTool::right_click_popup_gui(Vector2f popupPos) {
+void TextBoxEditTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 

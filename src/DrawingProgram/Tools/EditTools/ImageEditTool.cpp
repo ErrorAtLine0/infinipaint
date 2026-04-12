@@ -45,12 +45,11 @@ bool ImageEditTool::edit_update() {
     return true;
 }
 
-void ImageEditTool::edit_gui() {
+void ImageEditTool::edit_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     ImageCanvasComponent& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("edit tool image", [&] {
         text_label_centered(gui, "File Properties");

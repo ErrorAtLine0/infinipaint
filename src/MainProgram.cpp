@@ -3,7 +3,6 @@
 #include "VersionConstants.hpp"
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
-#include <chrono>
 #include <include/core/SkAlphaType.h>
 #include <include/core/SkColor.h>
 #include <include/core/SkPaint.h>
@@ -20,6 +19,7 @@
 #include <cereal/archives/json.hpp>
 #include <Helpers/Serializers.hpp>
 #include <nlohmann/json.hpp>
+#include "Screens/DrawingProgramScreen.hpp"
 
 #include <include/core/SkSurface.h>
 #ifdef USE_SKIA_BACKEND_GRAPHITE
@@ -34,18 +34,17 @@
 #endif
 
 #include <Helpers/Logger.hpp>
-#include "DrawCollision.hpp"
 
 MainProgram::MainProgram():
     input(*this),
     fonts(std::make_shared<FontData>()),
-    toolbar(*this),
     g(*this)
 {
+    screen = std::make_unique<DrawingProgramScreen>(*this);
     Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
         std::cout << "[WORLDFATAL] " << text << std::endl;
-        logMessages.emplace_front(Toolbar::LogMessage{text, Toolbar::LogMessage::COLOR_ERROR});
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
         g.gui.set_to_layout();
@@ -54,7 +53,7 @@ MainProgram::MainProgram():
     Logger::get().add_log("USERINFO", [&](const std::string& text) {
         *logFile << "[USERINFO] " << text << std::endl;
         std::cout << "[USERINFO] " << text << std::endl;
-        logMessages.emplace_front(Toolbar::LogMessage{text, Toolbar::LogMessage::COLOR_NORMAL});
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_NORMAL});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
         g.gui.set_to_layout();
@@ -69,26 +68,17 @@ MainProgram::MainProgram():
 void MainProgram::update() {
     deltaTime.update_time_since();
     deltaTime.update_time_point();
-
     input.update();
-
     g.update();
-    toolbar.update();
-
-    for(auto& w : worlds) {
-        if(w == world)
-            w->focus_update();
-        else
-            w->unfocus_update();
-    }
-
+    screen->update();
+    for(auto& w : worlds)
+        w->update();
     NetLibrary::update();
-
     post_callback();
 }
 
 bool MainProgram::app_close_requested() {
-    return toolbar.app_close_requested();
+    return screen->app_close_requested();
 }
 
 void MainProgram::update_display_names() {
@@ -99,11 +89,11 @@ void MainProgram::update_display_names() {
 }
 
 void MainProgram::init_net_library() {
-    NetLibrary::init(configPath / "p2p.json");
+    NetLibrary::init(conf.configPath / "p2p.json");
 }
 
 void MainProgram::save_config() {
-    std::ofstream f(configPath / "config.json");
+    std::ofstream f(conf.configPath / "config.json");
     if(f.is_open()) {
         using json = nlohmann::json;
         json j;
@@ -114,13 +104,13 @@ void MainProgram::save_config() {
         j["window"]["size"] = window.writtenSize;
         j["window"]["maximized"] = window.maximized;
         j["window"]["fullscreen"] = window.fullscreen;
-        j["fileselectorpath"] = toolbar.file_selector_path();
+        j["fileselectorpath"] = conf.currentSearchPath;
         j["toolConfig"] = toolConfig;
 
         f << std::setw(4) << j;
         f.close();
     }
-    toolbar.save_palettes();
+    conf.save_palettes();
 
 #ifdef __EMSCRIPTEN__
     EM_ASM(
@@ -135,8 +125,8 @@ void MainProgram::save_config() {
 }
 
 void MainProgram::load_config() {
-    std::ifstream f(configPath / "config.json");
-    toolbar.file_selector_path() = homePath;
+    std::ifstream f(conf.configPath / "config.json");
+    conf.currentSearchPath = homePath;
     if(f.is_open()) {
         using json = nlohmann::json;
 
@@ -169,10 +159,10 @@ void MainProgram::load_config() {
             }
             catch(...) {}
             try {
-                j.at("fileselectorpath").get_to(toolbar.file_selector_path());
+                j.at("fileselectorpath").get_to(conf.currentSearchPath);
             }
             catch(...) {
-                toolbar.file_selector_path() = homePath;
+                conf.currentSearchPath = homePath;
             }
 #endif
             try {
@@ -186,11 +176,11 @@ void MainProgram::load_config() {
     else
         toolbar.viewWebVersionWelcome = true;
 #endif
-    toolbar.load_palettes();
-    g.load_theme(configPath, conf.themeCurrentlyLoaded);
-    toolbar.load_licenses();
+    conf.load_palettes();
+    g.load_theme(conf.configPath, conf.themeCurrentlyLoaded);
+    conf.load_licenses();
 
-    NetLibrary::copy_default_p2p_config_to_path(configPath / "p2p.json");
+    NetLibrary::copy_default_p2p_config_to_path(conf.configPath / "p2p.json");
 
     update_display_names();
     set_vsync_value(conf.vsyncValue);
@@ -293,20 +283,18 @@ void MainProgram::post_callback() {
 }
 
 void MainProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
-    if(world)
-        world->input_add_file_to_canvas_callback(addFile);
+    screen->input_add_file_to_canvas_callback(addFile);
     post_callback();
 }
 
 void MainProgram::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
-    create_new_tab(openFile);
+    screen->input_open_infinipaint_file_callback(openFile);
     post_callback();
 }
 
 void MainProgram::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     g.input_paste_callback(paste);
-    if(world)
-        world->input_paste_callback(paste);
+    screen->input_paste_callback(paste);
     post_callback();
 }
 
@@ -330,148 +318,106 @@ bool MainProgram::input_keybind_callback(const Vector2ui32& newKey) {
 }
 
 void MainProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
-    if(std::filesystem::is_regular_file(drop.data)) {
-        std::filesystem::path droppedFilePath(drop.data);
-        if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
-            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
-                .isClient = false,
-                .filePathSource = droppedFilePath
-            });
-            return;
-        }
-    }
-    if(world)
-        world->input_drop_file_callback(drop);
+    screen->input_drop_file_callback(drop);
+    post_callback();
 }
 
 void MainProgram::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
-    if(world)
-        world->input_drop_text_callback(drop);
+    screen->input_drop_text_callback(drop);
+    post_callback();
 }
 
 void MainProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-    switch(key.key) {
-        case InputManager::KEY_NOGUI: {
-            if(key.down && !key.repeat) {
-                drawGui = !drawGui;
-                g.gui.set_to_layout();
-            }
-            break;
-        }
-        case InputManager::KEY_FULLSCREEN: {
-            if(key.down && !key.repeat)
-                toggle_full_screen();
-            break;
-        }
-        case InputManager::KEY_SAVE: {
-            if(key.down && !key.repeat)
-                toolbar.save_func();
-            break;
-        }
-        case InputManager::KEY_SAVE_AS: {
-            if(key.down && !key.repeat)
-                toolbar.save_as_func();
-            break;
-        }
-        case InputManager::KEY_OPEN_CHAT: {
-            if(key.down && !key.repeat)
-                toolbar.open_chatbox();
-            break;
-        }
+    if(key.key == InputManager::KEY_FULLSCREEN) {
+        if(key.down && !key.repeat)
+            toggle_full_screen();
     }
     g.input_key_callback(key);
-    if(world)
-        world->input_key_callback(key);
+    screen->input_key_callback(key);
     post_callback();
 }
 
 void MainProgram::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
-    switch(key.key) {
-        case InputManager::KEY_GENERIC_ESCAPE: {
-            if(key.down && !key.repeat)
-                toolbar.close_chatbox();
-            break;
-        }
-    }
     g.input_text_key_callback(key);
-    if(world)
-        world->input_text_key_callback(key);
+    screen->input_text_key_callback(key);
     post_callback();
 }
 
 void MainProgram::input_text_callback(const InputManager::TextCallbackArgs& text) {
     g.input_text_callback(text);
-    if(world)
-        world->input_text_callback(text);
+    screen->input_text_callback(text);
     post_callback();
 }
 
 void MainProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     g.input_mouse_button_callback(button);
-    if(world)
-        world->input_mouse_button_callback(button);
+    screen->input_mouse_button_callback(button);
     post_callback();
 }
 
 void MainProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     g.input_mouse_motion_callback(motion);
-    if(world)
-        world->input_mouse_motion_callback(motion);
+    screen->input_mouse_motion_callback(motion);
     post_callback();
 }
 
 void MainProgram::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
     g.input_mouse_wheel_callback(wheel);
-    if(world)
-        world->input_mouse_wheel_callback(wheel);
+    screen->input_mouse_wheel_callback(wheel);
     post_callback();
 }
 
 void MainProgram::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
-    if(world)
-        world->input_pen_button_callback(button);
+    screen->input_pen_button_callback(button);
+    post_callback();
 }
 
 void MainProgram::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
-    if(world)
-        world->input_pen_touch_callback(touch);
+    screen->input_pen_touch_callback(touch);
+    post_callback();
 }
 
 void MainProgram::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
-    if(world)
-        world->input_pen_motion_callback(motion);
+    screen->input_pen_motion_callback(motion);
+    post_callback();
 }
 
 void MainProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
-    if(world)
-        world->input_pen_axis_callback(axis);
+    screen->input_pen_axis_callback(axis);
+    post_callback();
 }
 
 void MainProgram::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch) {
-    if(world)
-        world->input_multi_finger_touch_callback(touch);
+    screen->input_multi_finger_touch_callback(touch);
+    post_callback();
 }
 
 void MainProgram::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion) {
-    if(world)
-        world->input_multi_finger_motion_callback(motion);
+    screen->input_multi_finger_motion_callback(motion);
+    post_callback();
 }
 
 void MainProgram::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+    screen->input_finger_touch_callback(touch);
+    post_callback();
 }
 
 void MainProgram::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
+    screen->input_finger_motion_callback(motion);
+    post_callback();
 }
 
 void MainProgram::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
     for(auto& wor : worlds)
         wor->drawData.cam.set_viewing_area(window.size.cast<float>());
     g.window_update();
+    screen->input_window_resize_callback(w);
     post_callback();
 }
 
 void MainProgram::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {
     g.window_update();
+    screen->input_window_scale_callback(w);
     post_callback();
 }
 

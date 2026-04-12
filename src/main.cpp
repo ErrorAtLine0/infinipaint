@@ -441,14 +441,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
         mS.m = std::make_unique<MainProgram>();
         mS.m->logFile = &mS.logFile;
-        mS.m->configPath = mS.configPath;
+        mS.m->conf.configPath = mS.configPath;
         mS.m->homePath = mS.homePath;
 #ifndef __EMSCRIPTEN__
         const char* documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS);
         if(!documentsPathSDL) {
             documentsPathSDL = SDL_GetUserFolder(SDL_FOLDER_DESKTOP);
             if(!documentsPathSDL)
-                mS.m->documentsPath = mS.m->configPath;
+                mS.m->documentsPath = mS.m->conf.configPath;
             else
                 mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
         }

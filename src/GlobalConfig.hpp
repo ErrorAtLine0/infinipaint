@@ -9,6 +9,21 @@ class GlobalConfig {
     public:
         GlobalConfig();
 
+        std::filesystem::path currentSearchPath;
+
+        std::string ownLicenseText;
+        std::vector<std::pair<std::string, std::string>> thirdPartyLicenses;
+
+        struct Palette {
+            std::string name;
+            std::vector<Vector3f> colors;
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Palette, name, colors)
+        };
+
+        std::vector<Palette> palettes;
+
+        std::filesystem::path configPath;
+
         float guiScale = 1.0f;
 
         double dragZoomSpeed = 0.02;
@@ -32,6 +47,10 @@ class GlobalConfig {
         nlohmann::json get_config_json(const InputManager& input) const;
         void set_config_json(InputManager& input, const nlohmann::json& j, VersionNumber version);
 
+        void save_palettes();
+        void load_palettes();
+        void load_licenses();
+
         bool showPerformance = false;
         bool checkForUpdates = false;
         bool useNativeFilePicker = true;
@@ -53,6 +72,8 @@ class GlobalConfig {
         #ifndef __EMSCRIPTEN__
             bool applyDisplayScale = true;
         #endif
+    private:
+        void load_default_palette();
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(GlobalConfig::AntiAliasing, {

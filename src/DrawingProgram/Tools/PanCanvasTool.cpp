@@ -16,14 +16,14 @@ DrawingProgramToolType PanCanvasTool::get_type() {
     return DrawingProgramToolType::PAN;
 }
 
-void PanCanvasTool::gui_toolbox() {
+void PanCanvasTool::gui_toolbox(Toolbar& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("Pan canvas tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Pan tool");
     });
 }
 
-void PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+void PanCanvasTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     drawP.selection_action_menu(popupPos);
 }
 

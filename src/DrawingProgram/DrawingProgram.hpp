@@ -25,10 +25,9 @@ class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
         void server_init_no_file();
-        void toolbar_gui();
-        void right_click_popup_gui();
-        void tool_options_gui();
-        void right_click_popup_gui(Vector2f popupPos);
+        void toolbar_gui(Toolbar& t);
+        void tool_options_gui(Toolbar& t);
+        void right_click_popup_gui(Toolbar& t);
         void update();
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);

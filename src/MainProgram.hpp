@@ -16,6 +16,7 @@
 #include "DrawingProgram/ToolConfiguration.hpp"
 #include "GUIHolder.hpp"
 #include "GlobalConfig.hpp"
+#include "Screens/Screen.hpp"
 
 #ifdef USE_SKIA_BACKEND_GRAPHITE
     #include "include/gpu/graphite/Recorder.h"
@@ -25,13 +26,22 @@
 
 using namespace Eigen;
 
+struct UserLogMessage {
+    static constexpr float DISPLAY_TIME = 8.0f;
+    static constexpr float FADE_START_TIME = 7.0f;
+    std::string text;
+    enum {
+        COLOR_NORMAL = 0,
+        COLOR_ERROR
+    } color;
+    TimePoint time;
+};
+
 class MainProgram {
     public:
         static constexpr size_t LOG_SIZE = 30;
 
         InputManager input;
-
-        Vector3f userColor;
 
         struct Window {
             std::chrono::steady_clock::duration lastFrameTime = std::chrono::milliseconds(16);
@@ -72,12 +82,13 @@ class MainProgram {
 
         std::shared_ptr<FontData> fonts;
         TimePoint deltaTime;
-        Toolbar toolbar;
         GUIHolder g;
         ToolConfiguration toolConfig;
 
         std::ofstream* logFile;
-        std::deque<Toolbar::LogMessage> logMessages;
+        std::deque<UserLogMessage> logMessages;
+
+        std::unique_ptr<Screen> screen;
 
         MainProgram();
         void update();
@@ -105,7 +116,6 @@ class MainProgram {
         void refresh_draw_surfaces();
 
         std::filesystem::path homePath;
-        std::filesystem::path configPath;
         std::filesystem::path documentsPath;
 
         bool drawGui = true;

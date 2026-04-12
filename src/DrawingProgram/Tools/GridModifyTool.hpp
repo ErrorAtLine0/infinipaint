@@ -10,8 +10,8 @@ class GridModifyTool : public DrawingProgramToolBase {
         GridModifyTool(DrawingProgram& initDrawP);
         void set_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& newGrid);
         virtual DrawingProgramToolType get_type() override;
-        virtual void gui_toolbox() override;
-        virtual void right_click_popup_gui(Vector2f popupPos) override;
+        virtual void gui_toolbox(Toolbar& t) override;
+        virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos) override;
         virtual void tool_update() override;
         virtual void erase_component(CanvasComponentContainer::ObjInfo* erasedComp) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;

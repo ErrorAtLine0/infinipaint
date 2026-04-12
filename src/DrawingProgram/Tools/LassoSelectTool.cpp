@@ -39,15 +39,15 @@ DrawingProgramToolType LassoSelectTool::get_type() {
     return DrawingProgramToolType::LASSOSELECT;
 }
 
-void LassoSelectTool::gui_toolbox() {
+void LassoSelectTool::gui_toolbox(Toolbar& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("lasso select tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Lasso Select");
-        drawP.selection.selection_gui();
+        drawP.selection.selection_gui(t);
     });
 }
 
-void LassoSelectTool::right_click_popup_gui(Vector2f popupPos) {
+void LassoSelectTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     drawP.selection_action_menu(popupPos);
 }
 

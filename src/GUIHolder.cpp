@@ -11,7 +11,7 @@ GUIHolder::GUIHolder(MainProgram& m):
     gui.io.textTypeface = main.fonts->map["Roboto"];
     gui.io.fonts = main.fonts;
     gui.io.layoutRun = [&] {
-        main.toolbar.layout_run();
+        main.screen->gui_layout_run();
     };
     gui.io.input = &main.input;
 

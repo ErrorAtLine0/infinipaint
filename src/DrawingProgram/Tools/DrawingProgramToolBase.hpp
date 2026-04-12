@@ -29,9 +29,9 @@ class DrawingProgramToolBase {
     public:
         DrawingProgramToolBase(DrawingProgram& initDrawP);
         virtual DrawingProgramToolType get_type() = 0;
-        virtual void gui_toolbox() = 0;
+        virtual void gui_toolbox(Toolbar& t) = 0;
         virtual void erase_component(CanvasComponentContainer::ObjInfo* erasedComp) = 0;
-        virtual void right_click_popup_gui(Vector2f popupPos) = 0;
+        virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos) = 0;
         virtual void tool_update() = 0;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         virtual void switch_tool(DrawingProgramToolType newTool) = 0;

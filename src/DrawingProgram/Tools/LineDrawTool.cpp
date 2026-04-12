@@ -18,7 +18,7 @@ DrawingProgramToolType LineDrawTool::get_type() {
     return DrawingProgramToolType::LINE;
 }
 
-void LineDrawTool::gui_toolbox() {
+void LineDrawTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
     auto& gui = drawP.world.main.g.gui;
@@ -87,8 +87,7 @@ void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp
         objInfoBeingEdited = nullptr;
 }
 
-void LineDrawTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void LineDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

@@ -50,11 +50,10 @@ DrawingProgramToolType ScreenshotTool::get_type() {
     return DrawingProgramToolType::SCREENSHOT;
 }
 
-void ScreenshotTool::gui_toolbox() {
+void ScreenshotTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
-    Toolbar& t = drawP.world.main.toolbar;
     auto& gui = drawP.world.main.g.gui;
     auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
     gui.new_id("screenshot tool", [&] {
@@ -128,8 +127,7 @@ void ScreenshotTool::gui_toolbox() {
     });
 }
 
-void ScreenshotTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void ScreenshotTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

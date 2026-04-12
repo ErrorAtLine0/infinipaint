@@ -12,13 +12,12 @@ BrushEditTool::BrushEditTool(DrawingProgram& initDrawP, CanvasComponentContainer
     DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void BrushEditTool::edit_gui() {
+void BrushEditTool::edit_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto& a = static_cast<BrushStrokeCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
-    Toolbar& t = drawP.world.main.toolbar;
     auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
 
     gui.new_id("edit tool brush", [&] {

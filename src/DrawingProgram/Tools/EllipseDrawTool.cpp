@@ -20,7 +20,7 @@ DrawingProgramToolType EllipseDrawTool::get_type() {
     return DrawingProgramToolType::ELLIPSE;
 }
 
-void EllipseDrawTool::gui_toolbox() {
+void EllipseDrawTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -93,8 +93,7 @@ void EllipseDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedC
         objInfoBeingEdited = nullptr;
 }
 
-void EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void EllipseDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

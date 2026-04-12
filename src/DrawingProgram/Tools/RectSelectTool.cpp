@@ -18,11 +18,11 @@ DrawingProgramToolType RectSelectTool::get_type() {
     return DrawingProgramToolType::RECTSELECT;
 }
 
-void RectSelectTool::gui_toolbox() {
+void RectSelectTool::gui_toolbox(Toolbar& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("rectangle select tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Rectangle Select");
-        drawP.selection.selection_gui();
+        drawP.selection.selection_gui(t);
     });
 }
 
@@ -73,7 +73,7 @@ void RectSelectTool::input_mouse_motion_callback(const InputManager::MouseMotion
 void RectSelectTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
-void RectSelectTool::right_click_popup_gui(Vector2f popupPos) {
+void RectSelectTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     drawP.selection_action_menu(popupPos);
 }
 

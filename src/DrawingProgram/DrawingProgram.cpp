@@ -341,13 +341,12 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
     }
 }
 
-void DrawingProgram::toolbar_gui() {
+void DrawingProgram::toolbar_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     GUIManager& gui = world.main.g.gui;
     auto& io = gui.io;
-    auto& t = world.main.toolbar;
 
     gui.new_id("Drawing Program Toolbar GUI", [&] {
         gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] (LayoutElement*, const Clay_ElementId& lId) {
@@ -399,9 +398,9 @@ void DrawingProgram::toolbar_gui() {
     });
 }
 
-void DrawingProgram::right_click_popup_gui() {
+void DrawingProgram::right_click_popup_gui(Toolbar& t) {
     if(rightClickPopupLocation.has_value())
-        drawTool->right_click_popup_gui(rightClickPopupLocation.value());
+        drawTool->right_click_popup_gui(t, rightClickPopupLocation.value());
 }
 
 void DrawingProgram::set_right_click_popup_location(const Vector2f& newLoc) {
@@ -479,15 +478,7 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
     });
 }
 
-void DrawingProgram::right_click_popup_gui(Vector2f popupPos) {
-    GUIStuff::GUIManager& gui = world.main.g.gui;
-
-    gui.new_id("Drawing Program right click GUI", [&] {
-        drawTool->right_click_popup_gui(popupPos);
-    });
-}
-
-void DrawingProgram::tool_options_gui() {
+void DrawingProgram::tool_options_gui(Toolbar& t) {
     using namespace GUIStuff;
 
     GUIStuff::GUIManager& gui = world.main.g.gui;
@@ -506,7 +497,7 @@ void DrawingProgram::tool_options_gui() {
             .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
             .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
         }) {
-            drawTool->gui_toolbox();
+            drawTool->gui_toolbox(t);
         }
     });
 }

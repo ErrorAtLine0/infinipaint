@@ -16,7 +16,7 @@ DrawingProgramToolType EraserTool::get_type() {
     return DrawingProgramToolType::ERASER;
 }
 
-void EraserTool::gui_toolbox() {
+void EraserTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -32,8 +32,7 @@ void EraserTool::gui_toolbox() {
     });
 }
 
-void EraserTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void EraserTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 

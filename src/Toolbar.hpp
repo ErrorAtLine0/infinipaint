@@ -1,7 +1,5 @@
 #pragma once
 #include "GUIStuff/Elements/ScrollArea.hpp"
-#include "GUIStuff/Elements/TextParagraph.hpp"
-#include "GUIStuff/GUIManager.hpp"
 #include "DrawData.hpp"
 #include "Helpers/FileDownloader.hpp"
 #include <filesystem>
@@ -15,17 +13,6 @@ class MainProgram;
 
 class Toolbar {
     public:
-        struct LogMessage {
-            static constexpr float DISPLAY_TIME = 8.0f;
-            static constexpr float FADE_START_TIME = 7.0f;
-            std::string text;
-            enum {
-                COLOR_NORMAL = 0,
-                COLOR_ERROR
-            } color;
-            TimePoint time;
-        };
-
         struct ChatMessage {
             static constexpr float DISPLAY_TIME = 8.0f;
             static constexpr float FADE_START_TIME = 7.0f;
@@ -70,11 +57,6 @@ class Toolbar {
         void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);
         void save_func();
         void save_as_func();
-        std::filesystem::path& file_selector_path();
-
-        void save_palettes();
-        void load_palettes();
-        void load_licenses();
 
         void open_chatbox();
         void close_chatbox();
@@ -86,6 +68,8 @@ class Toolbar {
         GUIStuff::Element* colorRightButton; 
         Vector4f* colorRight = nullptr;
         ColorSelectorData colorRightData;
+
+        bool drawGui = true;
 
         bool app_close_requested();
     private:
@@ -113,7 +97,6 @@ class Toolbar {
         void color_picker_window(const char* id, Vector4f** color, GUIStuff::Element* b, const ColorSelectorData& colorSelectorData);
         void color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
-        void load_default_palette();
         void load_default_theme();
         void about_menu_inner_gui();
         void web_version_welcome();
@@ -144,21 +127,12 @@ class Toolbar {
         } updateCheckerData;
         #endif
 
-        std::string ownLicenseText;
-        std::vector<std::pair<std::string, std::string>> thirdPartyLicenses;
         int selectedLicense = -1;
 
         std::string downloadNameSet;
 
         struct PaletteData {
-            struct Palette {
-                std::string name;
-                std::vector<Vector3f> colors;
-                NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Palette, name, colors)
-            };
-
             size_t selectedPalette = 0;
-            std::vector<Palette> palettes;
             bool addingPalette = false;
             std::string newPaletteStr;
         } paletteData;
@@ -211,7 +185,6 @@ class Toolbar {
             std::vector<ExtensionFilter> extensionFiltersComplete;
             std::vector<std::string> extensionFilters;
             std::vector<std::filesystem::path> entries;
-            std::filesystem::path currentSearchPath;
             std::filesystem::path currentSelectedPath;
             std::string fileName = "";
             bool isSaving = false;

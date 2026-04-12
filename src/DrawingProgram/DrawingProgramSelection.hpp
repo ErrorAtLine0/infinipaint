@@ -9,7 +9,7 @@ class DrawingProgram;
 class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
-        void selection_gui();
+        void selection_gui(Toolbar& t);
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void erase_component(CanvasComponentContainer::ObjInfo* objToCheck);

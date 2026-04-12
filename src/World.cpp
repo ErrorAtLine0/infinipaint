@@ -167,9 +167,6 @@ void World::init_client(const std::string& serverFullID) {
 }
 
 void World::focus_update() {
-    if(!connection_update())
-        return;
-
     if(!clientStillConnecting) {
         delayedUpdateObjectManager.update(netObjMan);
         constexpr float SECONDS_TO_SEND_CAMERA_DATA = 0.5f;
@@ -242,7 +239,7 @@ void World::redo_with_checks() {
         undo.redo();
 }
 
-void World::unfocus_update() {
+void World::update() {
     connection_update();
 }
 

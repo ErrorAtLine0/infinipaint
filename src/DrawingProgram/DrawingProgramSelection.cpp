@@ -30,12 +30,11 @@ DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
-void DrawingProgramSelection::selection_gui() {
+void DrawingProgramSelection::selection_gui(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto& gui = drawP.world.main.g.gui;
-    auto& t = drawP.world.main.toolbar;
 
     gui.new_id("general selection gui", [&] {
         text_label(gui, "Select from:");
@@ -129,10 +128,6 @@ void DrawingProgramSelection::check_add_stroke_color_change_undo() {
 
         drawP.world.undo.push(std::make_unique<EditCanvasComponentsStrokeColorWorldUndoAction>(std::move(undoIDs), std::move(oldColors)));
         strokeColorChangeData.oldColorData.clear();
-
-        auto& t = drawP.world.main.toolbar;
-        if(&strokeColorChangeData.newColor == t.colorRight)
-            t.colorRight = nullptr; // Just making sure that the color selector doesn't leak
     }
 }
 

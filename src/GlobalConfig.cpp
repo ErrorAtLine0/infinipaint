@@ -2,8 +2,10 @@
 #include <Helpers/Random.hpp>
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "DrawingProgram/DrawingProgramCache.hpp"
+#include <fstream>
 
 GlobalConfig::GlobalConfig() {
+    load_default_palette();
     displayName = Random::get().alphanumeric_str(10);
 }
 
@@ -126,3 +128,75 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("debug").at("maximumFrameTimeToForceCacheRebuild").get_to(DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH);} catch(...) {}
     try{j.at("debug").at("millisecondMinimumTimeToCheckForCacheRebuild").get_to(DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH);} catch(...) {}
 }
+
+void GlobalConfig::save_palettes() {
+    std::ofstream f(configPath / "palettes.json");
+    if(f.is_open()) {
+        using json = nlohmann::json;
+        json j;
+        auto palettesToSave = palettes;
+        palettesToSave.erase(palettesToSave.begin());
+        j = palettesToSave;
+        f << j;
+        f.close();
+    }
+}
+
+void GlobalConfig::load_palettes() {
+    std::ifstream f(configPath / "palettes.json");
+    load_default_palette();
+    if(f.is_open()) {
+        using json = nlohmann::json;
+        try {
+            json j;
+            f >> j;
+            std::vector<Palette> palettes;
+            j.get_to(palettes);
+            palettes.insert(palettes.end(), palettes.begin(), palettes.end());
+        } catch(...) {}
+        f.close();
+    }
+}
+
+void GlobalConfig::load_default_palette() {
+    palettes.clear();
+    palettes.emplace_back();
+    auto& palette = palettes.back().colors;
+    palettes.back().name = "Default";
+    palette = {{1.0,1.0,1.0},{0.0,0.0,0.0},{1.0,0.0,0.0},{1.0,0.529411792755127,0.0},{1.0,0.8274509906768799,0.0},{0.8705882430076599,1.0,0.03921568766236305},{0.6313725709915161,1.0,0.03921568766236305},{0.03921568766236305,1.0,0.6000000238418579},{0.03921568766236305,0.9372549057006836,1.0},{0.0784313753247261,0.4901960790157318,0.9607843160629272},{0.3450980484485626,0.03921568766236305,1.0},{0.7450980544090271,0.03921568766236305,1.0}};
+}
+
+void GlobalConfig::load_licenses() {
+    {
+        int globCount;
+        std::filesystem::path third_party_license_path("data/third_party_licenses");
+        char** filesInPath = SDL_GlobDirectory(third_party_license_path.string().c_str(), nullptr, 0, &globCount);
+        if(filesInPath) {
+            for(int i = 0; i < globCount; i++) {
+                std::filesystem::path filePath = third_party_license_path / std::filesystem::path(filesInPath[i]);
+                SDL_PathInfo fileInfo;
+                if(SDL_GetPathInfo(filePath.string().c_str(), &fileInfo) && fileInfo.type == SDL_PATHTYPE_FILE) {
+                    thirdPartyLicenses.emplace_back(filePath.filename().string(), read_file_to_string(filePath));
+                }
+            }
+            SDL_free(filesInPath);
+        }
+    }
+
+    std::sort(thirdPartyLicenses.begin(), thirdPartyLicenses.end(), [](const auto& a1, const auto& a2) {
+        return std::lexicographical_compare(a1.first.begin(), a1.first.end(), a2.first.begin(), a2.first.end());
+    });
+    ownLicenseText = "InfiniPaint v" + VersionConstants::CURRENT_VERSION_STRING;
+    ownLicenseText +=
+R"(
+
+Copyright © 2026 Yousef Khadadeh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+)";
+}
+

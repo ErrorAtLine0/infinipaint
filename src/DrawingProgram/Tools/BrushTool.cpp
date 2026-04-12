@@ -170,7 +170,7 @@ void BrushTool::commit_stroke() {
     }
 }
 
-void BrushTool::gui_toolbox() {
+void BrushTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -183,8 +183,7 @@ void BrushTool::gui_toolbox() {
     });
 }
 
-void BrushTool::right_click_popup_gui(Vector2f popupPos) {
-    Toolbar& t = drawP.world.main.toolbar;
+void BrushTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }
 
