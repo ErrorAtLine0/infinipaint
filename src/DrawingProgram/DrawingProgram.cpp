@@ -575,20 +575,27 @@ bool DrawingProgram::prevent_undo_or_redo() {
     return drawTool->prevent_undo_or_redo();
 }
 
-SkPaint DrawingProgram::select_tool_line_paint(const DrawData& drawData) {
-    SkScalar intervals[] = {10, 5};
+std::pair<SkPaint, SkPaint> DrawingProgram::select_tool_line_paint(const DrawData& drawData) {
+    SkScalar intervals[] = {10, 10};
+    SkScalar intervalSum = intervals[0] + intervals[1];
     float timeSinceEpoch = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    sk_sp<SkPathEffect> lassoLineDashEffect = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 50, 15));
+    sk_sp<SkPathEffect> lassoLineDashEffect1 = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 10, intervalSum));
+    sk_sp<SkPathEffect> lassoLineDashEffect2 = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 10, intervalSum) + 10);
 
-    SkPaint selectLinePaint;
-    selectLinePaint.setStyle(SkPaint::kStroke_Style);
-    selectLinePaint.setStrokeWidth(3);
-    selectLinePaint.setColor4f(world.canvasTheme.get_tool_front_color());
-    selectLinePaint.setPathEffect(lassoLineDashEffect);
-    selectLinePaint.setBlender(CanvasTheme::get_visible_blend_mode());
-    selectLinePaint.setAntiAlias(drawData.skiaAA);
+    std::pair<SkPaint, SkPaint> selectLinePaintPair;
+    selectLinePaintPair.first.setStyle(SkPaint::kStroke_Style);
+    selectLinePaintPair.first.setStrokeWidth(3);
+    selectLinePaintPair.first.setColor4f(SkColor4f{1.0f, 1.0f, 1.0f, 1.0f});
+    selectLinePaintPair.first.setPathEffect(lassoLineDashEffect1);
+    selectLinePaintPair.first.setAntiAlias(drawData.skiaAA);
 
-    return selectLinePaint;
+    selectLinePaintPair.second.setStyle(SkPaint::kStroke_Style);
+    selectLinePaintPair.second.setStrokeWidth(3);
+    selectLinePaintPair.second.setColor4f(SkColor4f{0.0f, 0.0f, 0.0f, 1.0f});
+    selectLinePaintPair.second.setPathEffect(lassoLineDashEffect2);
+    selectLinePaintPair.second.setAntiAlias(drawData.skiaAA);
+
+    return selectLinePaintPair;
 }
 
 void DrawingProgram::rebuild_cache() {

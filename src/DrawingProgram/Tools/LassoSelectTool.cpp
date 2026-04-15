@@ -138,7 +138,10 @@ void LassoSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         for(Vector2f& p : controls.lassoPoints | std::views::drop(1))
             lassoPath.lineTo(convert_vec2<SkPoint>(p));
 
-        canvas->drawPath(lassoPath.detach(), drawP.select_tool_line_paint(drawData));
+        auto paintPair = drawP.select_tool_line_paint(drawData);
+        SkPath lassoPathDetach = lassoPath.detach();
+        canvas->drawPath(lassoPathDetach, paintPair.first);
+        canvas->drawPath(lassoPathDetach, paintPair.second);
 
         canvas->restore();
     }

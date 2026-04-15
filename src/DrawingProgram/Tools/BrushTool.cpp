@@ -208,8 +208,10 @@ void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             linePaint.setStyle(SkPaint::kStroke_Style);
             linePaint.setStrokeCap(SkPaint::kRound_Cap);
             linePaint.setStrokeWidth(0.0f);
-            linePaint.setBlender(CanvasTheme::get_visible_blend_mode());
             SkPath circ = SkPath::Circle(pos.x(), pos.y(), width);
+            canvas->drawPath(circ, linePaint);
+            linePaint.setColor4f({0.0f, 0.0f, 0.0f, 1.0f});
+            circ = SkPath::Circle(pos.x(), pos.y(), width - 1.0f);
             canvas->drawPath(circ, linePaint);
         }
     }

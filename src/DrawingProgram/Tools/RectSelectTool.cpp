@@ -100,7 +100,10 @@ void RectSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         controls.coords.transform_sk_canvas(canvas, drawData);
 
         SkRect r = SkRect::MakeLTRB(newT[0].x(), newT[0].y(), newT[2].x(), newT[2].y());
-        canvas->drawRect(r, drawP.select_tool_line_paint(drawData));
+
+        auto paintPair = drawP.select_tool_line_paint(drawData);
+        canvas->drawRect(r, paintPair.first);
+        canvas->drawRect(r, paintPair.second);
 
         canvas->restore();
     }

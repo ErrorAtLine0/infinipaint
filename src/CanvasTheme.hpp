@@ -24,8 +24,6 @@ class CanvasTheme {
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
 
-        static sk_sp<SkBlender> get_visible_blend_mode();
-
     private:
         void set_tool_front_color(DrawingProgram& drawP);
         struct BackColor {
