@@ -103,15 +103,20 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
             float width = relativeWidthResult.first.value() * 0.5f;
 
             SkPaint linePaint;
-            linePaint.setColor4f({1.0f, 1.0f, 1.0f, 0.5f});
+            linePaint.setColor4f({0.0f, 0.0f, 0.0f, 0.4f});
             linePaint.setStyle(SkPaint::kStroke_Style);
             linePaint.setStrokeCap(SkPaint::kRound_Cap);
-            linePaint.setStrokeWidth(width * 2.0f);
-            linePaint.setBlender(CanvasTheme::get_visible_blend_mode());
+            linePaint.setStrokeWidth(width * 2.0f + 1.0f);
             SkPathBuilder erasePath;
             erasePath.moveTo(convert_vec2<SkPoint>(drawData.main->input.mouse.lastPos));
             erasePath.lineTo(convert_vec2<SkPoint>(drawData.main->input.mouse.pos));
-            canvas->drawPath(erasePath.detach(), linePaint);
+
+            SkPath erasePathDetach = erasePath.detach();
+            canvas->drawPath(erasePathDetach, linePaint);
+
+            linePaint.setStrokeWidth(width * 2.0f);
+            linePaint.setColor4f({1.0f, 1.0f, 1.0f, 0.4f});
+            canvas->drawPath(erasePathDetach, linePaint);
         }
     }
 }
