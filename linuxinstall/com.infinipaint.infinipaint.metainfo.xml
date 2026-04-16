@@ -60,6 +60,14 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.4.3" date="2026-04-16">
+            <description>
+                <p>Patch update:</p>
+                <ul>
+                    <li>Fixed black screen bug on some Intel integrated GPUs</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.4.2" date="2026-03-28">
             <description>
                 <p>Patch update:</p>

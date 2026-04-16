@@ -1,6 +1,5 @@
 #pragma once
 #include <Helpers/VersionNumber.hpp>
-#include <unordered_map>
 
 namespace VersionConstants {
     // Map OLDEST version that is compatible with the filetype with a specific header
@@ -11,6 +10,6 @@ namespace VersionConstants {
 
     constexpr int SAVEFILE_HEADER_LEN = 12; // DO NOT CHANGE THIS HEADER LENGTH
     const std::string CURRENT_SAVEFILE_HEADER = "INFPNT000005"; // Change whenever the save file is incompatible with the previous version
-    const std::string CURRENT_VERSION_STRING = "0.4.2";
-    constexpr VersionNumber CURRENT_VERSION_NUMBER(0, 4, 2);
+    const std::string CURRENT_VERSION_STRING = "0.4.3";
+    constexpr VersionNumber CURRENT_VERSION_NUMBER(0, 4, 3);
 }

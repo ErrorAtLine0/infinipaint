@@ -1,5 +1,6 @@
 #include "VersionConstants.hpp"
 #include <stdexcept>
+#include <unordered_map>
 
 namespace VersionConstants {
 
