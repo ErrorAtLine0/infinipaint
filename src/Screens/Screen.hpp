@@ -5,6 +5,7 @@ class Screen {
     public:
         Screen(MainProgram& m);
         virtual void update();
+        virtual void draw(SkCanvas* canvas) = 0;
 
         virtual void gui_layout_run();
         virtual bool app_close_requested();

@@ -424,7 +424,7 @@ void ScreenshotTool::take_screenshot_svg(SkCanvas* canvas, bool transparentBackg
     screenshotDrawData.drawGrids = false;
     screenshotDrawData.isSVGRender = true;
     screenshotDrawData.refresh_draw_optimizing_values();
-    drawP.world.main.draw(canvas, drawP.world.main.world, screenshotDrawData);
+    drawP.world.main.draw_world(canvas, drawP.world.main.world, screenshotDrawData);
 }
 
 void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground) {
@@ -455,7 +455,7 @@ void ScreenshotTool::take_screenshot_area_hw(const sk_sp<SkSurface>& surface, Sk
     screenshotDrawData.transparentBackground = transparentBackground;
     screenshotDrawData.drawGrids = controls.displayGrid;
     screenshotDrawData.refresh_draw_optimizing_values();
-    drawP.world.main.draw(canvas, drawP.world.main.world, screenshotDrawData);
+    drawP.world.main.draw_world(canvas, drawP.world.main.world, screenshotDrawData);
 
     SkImageInfo aaImgInfo = SkImageInfo::Make(sectionImageSize.x(), sectionImageSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     void* fullImgRawDataStartPt = (uint8_t*)fullImgRawData + 4 * (size_t)sectionImagePos.x() + 4 * (size_t)fullImageSize.x() * (size_t)sectionImagePos.y();

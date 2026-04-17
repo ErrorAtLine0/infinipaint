@@ -6,6 +6,7 @@ class DrawingProgramScreen : public Screen {
     public:
         DrawingProgramScreen(MainProgram& m);
         virtual void update() override;
+        virtual void draw(SkCanvas* canvas) override;
         virtual void gui_layout_run() override;
         virtual bool app_close_requested() override;
         virtual void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) override;

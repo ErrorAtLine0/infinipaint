@@ -92,7 +92,8 @@ class MainProgram {
 
         MainProgram();
         void update();
-        void draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData);
+        void draw_world(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData);
+        void draw(SkCanvas* canvas);
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
         bool setToQuit = false;

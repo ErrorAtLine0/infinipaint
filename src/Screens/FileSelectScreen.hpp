@@ -1,7 +1,9 @@
 #pragma once
+#include "Screen.hpp"
 
-class FileSelectScreen {
+class FileSelectScreen : public Screen {
     public:
-        FileSelectScreen();
-    private:
+        FileSelectScreen(MainProgram& m);
+        virtual void gui_layout_run() override;
+        virtual void draw(SkCanvas* canvas) override;
 };

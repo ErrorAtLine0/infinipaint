@@ -553,7 +553,7 @@ void regular_draw(MainStruct& mS) {
     if(mS.m->window.intermediateSurfaceMSAA) {
         SkCanvas* intermediateCanvas = mS.m->window.intermediateSurfaceMSAA->getCanvas();
         intermediateCanvas->save();
-        mS.m->draw(intermediateCanvas, mS.m->world, mS.m->world->drawData);
+        mS.m->draw(intermediateCanvas);
         intermediateCanvas->restore();
 
         #ifdef USE_BACKEND_VULKAN
@@ -568,11 +568,11 @@ void regular_draw(MainStruct& mS) {
     }
     else {
         #ifdef USE_BACKEND_VULKAN
-            mS.m->draw(mS.vulkanWindowContext->getBackbufferSurface()->getCanvas(), mS.m->world, mS.m->world->drawData);
+            mS.m->draw(mS.vulkanWindowContext->getBackbufferSurface()->getCanvas());
             mS.ctx->flushAndSubmit();
             mS.vulkanWindowContext->swapBuffers();
         #elif USE_BACKEND_OPENGL
-            mS.m->draw(mS.canvas, mS.m->world, mS.m->world->drawData);
+            mS.m->draw(mS.canvas);
             mS.ctx->flushAndSubmit();
             SDL_GL_SwapWindow(mS.window);
         #endif

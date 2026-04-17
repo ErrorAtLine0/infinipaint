@@ -11,6 +11,10 @@ void DrawingProgramScreen::update() {
     main.world->focus_update();
 }
 
+void DrawingProgramScreen::draw(SkCanvas* canvas) {
+    main.draw_world(canvas, main.world, main.world->drawData);
+}
+
 void DrawingProgramScreen::gui_layout_run() {
     toolbar.layout_run();
 }

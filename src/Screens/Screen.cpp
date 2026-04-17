@@ -6,7 +6,7 @@ Screen::Screen(MainProgram& m):
 
 void Screen::update() {}
 void Screen::gui_layout_run() {}
-bool Screen::app_close_requested() { return false; }
+bool Screen::app_close_requested() { return true; }
 void Screen::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {}
 void Screen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {}
 void Screen::input_paste_callback(const CustomEvents::PasteEvent& paste) {}

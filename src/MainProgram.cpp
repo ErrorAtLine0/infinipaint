@@ -1,5 +1,6 @@
 #include "MainProgram.hpp"
 #include "CustomEvents.hpp"
+#include "Screens/FileSelectScreen.hpp"
 #include "VersionConstants.hpp"
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
@@ -20,6 +21,7 @@
 #include <Helpers/Serializers.hpp>
 #include <nlohmann/json.hpp>
 #include "Screens/DrawingProgramScreen.hpp"
+#include "Screens/FileSelectScreen.hpp"
 
 #include <include/core/SkSurface.h>
 #ifdef USE_SKIA_BACKEND_GRAPHITE
@@ -216,13 +218,16 @@ void MainProgram::refresh_draw_surfaces() {
     }
 }
 
-void MainProgram::draw(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData) {
+void MainProgram::draw_world(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData) {
     canvas->clear(drawData.transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : worldToDraw->canvasTheme.get_back_color());
     DrawData drawDataCopy = drawData;
     drawDataCopy.skiaAA = conf.antialiasing == GlobalConfig::AntiAliasing::SKIA;
     worldToDraw->draw(canvas, drawDataCopy);
-    if(!drawData.takingScreenshot)
-        g.draw(canvas, drawDataCopy.skiaAA);
+}
+
+void MainProgram::draw(SkCanvas* canvas) {
+    screen->draw(canvas);
+    g.draw(canvas, conf.antialiasing == GlobalConfig::AntiAliasing::SKIA);
 }
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {
