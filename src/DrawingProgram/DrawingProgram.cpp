@@ -576,11 +576,14 @@ bool DrawingProgram::prevent_undo_or_redo() {
 }
 
 std::pair<SkPaint, SkPaint> DrawingProgram::select_tool_line_paint(const DrawData& drawData) {
-    SkScalar intervals[] = {10, 10};
-    SkScalar intervalSum = intervals[0] + intervals[1];
-    float timeSinceEpoch = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    sk_sp<SkPathEffect> lassoLineDashEffect1 = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 10, intervalSum));
-    sk_sp<SkPathEffect> lassoLineDashEffect2 = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch * 10, intervalSum) + 10);
+    constexpr uint64_t INTERVAL_LENGTH = 10;
+    constexpr uint64_t INTERVAL_SUM = INTERVAL_LENGTH * 2;
+    constexpr uint64_t DURATION_FACTOR = 10;
+
+    SkScalar intervals[] = {INTERVAL_LENGTH, INTERVAL_LENGTH};
+    uint64_t timeSinceEpoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() % (INTERVAL_SUM * DURATION_FACTOR);
+    sk_sp<SkPathEffect> lassoLineDashEffect1 = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch / DURATION_FACTOR, INTERVAL_SUM));
+    sk_sp<SkPathEffect> lassoLineDashEffect2 = SkDashPathEffect::Make({intervals, 2}, -std::fmod(timeSinceEpoch / DURATION_FACTOR, INTERVAL_SUM) + INTERVAL_LENGTH);
 
     std::pair<SkPaint, SkPaint> selectLinePaintPair;
     selectLinePaintPair.first.setStyle(SkPaint::kStroke_Style);
