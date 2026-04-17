@@ -5,7 +5,8 @@
 
 namespace CustomEvents {
 
-std::queue<std::any> eventDataQueue;
+std::queue<std::shared_ptr<void>> eventDataQueue;
+std::mutex eventDataQueueMutex;
 
 bool alreadyInitialized = false;
 
@@ -16,10 +17,6 @@ void init() {
         AddFileToCanvasEvent::EVENT_NUM = SDL_RegisterEvents(1);
         alreadyInitialized = true;
     }
-}
-
-void pop_event() {
-    eventDataQueue.pop();
 }
 
 uint32_t PasteEvent::EVENT_NUM;
