@@ -42,7 +42,7 @@ MainProgram::MainProgram():
     fonts(std::make_shared<FontData>()),
     g(*this)
 {
-    screen = std::make_unique<DrawingProgramScreen>(*this);
+    screen = std::make_unique<FileSelectScreen>(*this);
     Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
         std::cout << "[WORLDFATAL] " << text << std::endl;
