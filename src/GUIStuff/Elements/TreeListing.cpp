@@ -57,6 +57,7 @@ void TreeListing::layout(const Clay_ElementId& id, const Data& newDisplayData) {
                 scroll_area_many_entries(gui, "scroll", {
                     .entryHeight = ENTRY_HEIGHT,
                     .entryCount = flattenedIndexList.size(),
+                    .growing = d.scrollAreaGrowing,
                     .elementContent = [&](size_t i) {
                         const ObjInfo& objInfo = flattenedIndexList[i];
                         gui.element<LayoutElement>("elem", [&](LayoutElement*, const Clay_ElementId& lId) {

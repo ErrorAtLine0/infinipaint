@@ -6,4 +6,7 @@ class FileSelectScreen : public Screen {
         FileSelectScreen(MainProgram& m);
         virtual void gui_layout_run() override;
         virtual void draw(SkCanvas* canvas) override;
+    private:
+        const std::vector<std::string>& get_file_list();
+        std::optional<std::vector<std::string>> fileListOptional;
 };

@@ -85,6 +85,7 @@ template <typename T> class DropDown : public Element {
                                     .entryHeight = 18.0f,
                                     .entryCount = selections.size(),
                                     .clipHorizontal = true,
+                                    .growing = true,
                                     .elementContent = [&](size_t i) {
                                         bool selectedEntry = static_cast<size_t>(*data) == i;
                                         gui.element<LayoutElement>("elem", [&] (LayoutElement*, const Clay_ElementId& lId) {

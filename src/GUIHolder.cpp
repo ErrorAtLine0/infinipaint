@@ -19,10 +19,6 @@ GUIHolder::GUIHolder(MainProgram& m):
     // So, it's better to load the icons at the beginning of the program so that the icon loading doesn't fail later
     load_icons_at("data/icons");
 
-#ifdef __ANDROID__
-    load_icons_at("data/icons/RemixIcon"); // SDL_GlobDirectory doesn't work recursively on Android
-#endif
-    
     load_default_theme();
 }
 

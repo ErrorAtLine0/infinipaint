@@ -800,6 +800,7 @@ void Toolbar::grid_menu(Element* gridMenuButton) {
                         .entryHeight = ENTRY_HEIGHT,
                         .entryCount = main.world->gridMan.grids->size(),
                         .clipHorizontal = true,
+                        .growing = true,
                         .elementContent = [&](size_t i) {
                             auto& grid = main.world->gridMan.grids->at(i)->obj;
                             bool selectedEntry = gridMenu.selectedGrid == i;

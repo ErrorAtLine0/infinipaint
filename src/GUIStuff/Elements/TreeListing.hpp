@@ -31,6 +31,7 @@ class TreeListing : public Element {
         };
 
         struct Data {
+            bool scrollAreaGrowing = true;
             std::set<TreeListingObjIndexList>* selectedIndices = nullptr;
             std::function<std::optional<DirectoryInfo>(const TreeListingObjIndexList& objIndex)> dirInfo;
             std::function<void(const TreeListingObjIndexList& objIndex, bool isOpen)> setDirectoryOpen;

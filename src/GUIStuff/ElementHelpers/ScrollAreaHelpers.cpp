@@ -1,6 +1,5 @@
 #include "ScrollAreaHelpers.hpp"
 #include "../GUIManager.hpp"
-#include "../Elements/LayoutElement.hpp"
 
 namespace GUIStuff { namespace ElementHelpers {
 
@@ -13,8 +12,23 @@ ScrollArea* scroll_area_many_entries(GUIManager& gui, const char* id, const Scro
         .innerContent = [&](const ScrollArea::InnerContentParameters& params) {
             if(options.innerContentExtraCallback) options.innerContentExtraCallback(params);
 
-            if(params.containerDimensions.y() == 0.0f)
+            if(params.containerDimensions.y() == 0.0f) {
+                if(options.growing) {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(1)},
+                        }
+                    }) { }
+                }
+                else {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                        }
+                    }) { }
+                }
                 return;
+            }
 
             float absScrollAmount = std::fabs(params.scrollOffset->y());
             size_t startPoint = absScrollAmount / options.entryHeight;
@@ -32,13 +46,11 @@ ScrollArea* scroll_area_many_entries(GUIManager& gui, const char* id, const Scro
             gui.new_id("many element list", [&] {
                 for(size_t i = startPoint; i < endPoint; i++) {
                     gui.new_id(i - startPoint, [&] {
-                        gui.element<LayoutElement>("elem", [&] (LayoutElement*, const Clay_ElementId& lId) {
-                            CLAY(lId, {
-                                .layout = { .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(options.entryHeight)}}
-                            }) {
-                                options.elementContent(i);
-                            }
-                        });
+                        CLAY_AUTO_ID({
+                            .layout = { .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(options.entryHeight)}}
+                        }) {
+                            options.elementContent(i);
+                        }
                     });
                 }
             });
