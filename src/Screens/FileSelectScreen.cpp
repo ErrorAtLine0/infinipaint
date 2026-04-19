@@ -5,6 +5,7 @@
 #include "Helpers/ConvertVec.hpp"
 #include "../GUIStuff/Elements/GridScrollArea.hpp"
 #include "../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/ScrollAreaHelpers.hpp"
 
 FileSelectScreen::FileSelectScreen(MainProgram& m): Screen(m) {}
 
@@ -22,11 +23,19 @@ void FileSelectScreen::gui_layout_run() {
         },
     }) {
         text_label(gui, "Test grid");
+        //scroll_area_many_entries(gui, "Test scroll", ScrollBarManyEntriesOptions{
+        //    .entryHeight = 100.0f,
+        //    .entryCount = 2000,
+        //    .clipHorizontal = true,
+        //    .elementContent = [&] (size_t i) {
+        //        text_button_sized(gui, "button", "Square " + std::to_string(i), CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0));
+        //    }
+        //});
         gui.element<GridScrollArea>("Test grid", GridScrollArea::Options{
             .entryMaximumWidth = 100.0f,
             .childAlignmentX = CLAY_ALIGN_X_LEFT,
             .entryHeight = 100.0f,
-            .entryCount = 700,
+            .entryCount = 200,
             .elementContent = [&](size_t i) {
                 CLAY_AUTO_ID({
                     .layout = {

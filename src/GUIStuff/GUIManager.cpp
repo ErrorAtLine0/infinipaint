@@ -294,6 +294,174 @@ void GUIManager::draw(SkCanvas* c, bool skiaAA) {
     c->drawImage(io.surface->makeTemporaryImage(), 0, 0, {SkFilterMode::kNearest, SkMipmapMode::kNone}, nullptr);
 }
 
+void GUIManager::draw_force(SkCanvas* canvas, bool skiaAA) {
+    canvas->save();
+    canvas->scale(io.guiScaleMultiplier, io.guiScaleMultiplier);
+    canvas->translate(io.windowPos.x(), io.windowPos.y());
+
+    for(size_t i = 0; i < static_cast<size_t>(renderCommands.length); i++) {
+        Clay_RenderCommand* command = Clay_RenderCommandArray_Get(&renderCommands, i);
+        Clay_BoundingBox bb = command->boundingBox;
+
+        switch(command->commandType) {
+            case CLAY_RENDER_COMMAND_TYPE_RECTANGLE: {
+                Clay_RectangleRenderData* config = &command->renderData.rectangle;
+                SkVector radii[4] = {
+                    {config->cornerRadius.topLeft, config->cornerRadius.topLeft},
+                    {config->cornerRadius.topRight, config->cornerRadius.topRight},
+                    {config->cornerRadius.bottomRight, config->cornerRadius.bottomRight},
+                    {config->cornerRadius.bottomLeft, config->cornerRadius.bottomLeft}
+                };
+
+                SkRRect rrect;
+                rrect.setRectRadii(
+                    SkRect::MakeXYWH(bb.x, bb.y, bb.width, bb.height),
+                    radii
+                );
+
+                SkPaint paint;
+                paint.setAntiAlias(skiaAA);
+                paint.setStyle(SkPaint::kFill_Style);
+                paint.setColor4f(convert_vec4<SkColor4f>(config->backgroundColor));
+                canvas->drawRRect(rrect, paint);
+
+                break;
+            }
+            case CLAY_RENDER_COMMAND_TYPE_TEXT: {
+                Clay_TextRenderData* config = &command->renderData.text;
+
+                skia::textlayout::ParagraphStyle pStyle;
+                pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+                skia::textlayout::TextStyle tStyle;
+                tStyle.setFontSize(config->fontSize);
+                tStyle.setFontFamilies(io.fonts->get_default_font_families());
+                tStyle.setColor(convert_vec4<SkColor4f>(config->textColor).toSkColor());
+                pStyle.setTextStyle(tStyle);
+
+                skia::textlayout::ParagraphBuilderImpl a(pStyle, io.fonts->collection, SkUnicodes::ICU::Make());
+                a.addText(config->stringContents.chars, config->stringContents.length);
+                std::unique_ptr<skia::textlayout::Paragraph> p = a.Build();
+                p->layout(std::numeric_limits<float>::max());
+                p->paint(canvas, bb.x, bb.y);
+
+                break;
+            }
+            case CLAY_RENDER_COMMAND_TYPE_BORDER: {
+                Clay_BorderRenderData* config = &command->renderData.border;
+
+                SkPaint p;
+                p.setColor4f(convert_vec4<SkColor4f>(config->color));
+                p.setStyle(SkPaint::kStroke_Style);
+                p.setAntiAlias(skiaAA);
+
+                float halfLineWidth = 0.0f;
+                // Top Left corner
+                if (config->cornerRadius.topLeft > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.top;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo(bb.x + halfLineWidth, bb.y + config->cornerRadius.topLeft + halfLineWidth);
+                    path.arcTo(SkPoint{(bb.x + halfLineWidth), (bb.y + halfLineWidth)}, SkPoint{(bb.x + config->cornerRadius.topLeft + halfLineWidth), (bb.y + halfLineWidth)}, config->cornerRadius.topLeft);
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Top border
+                if (config->width.top > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.top;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + config->cornerRadius.topLeft + halfLineWidth), (bb.y + halfLineWidth));
+                    path.lineTo((bb.x + bb.width - config->cornerRadius.topRight - halfLineWidth), (bb.y + halfLineWidth));
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Top Right Corner
+                if (config->cornerRadius.topRight > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.top;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + bb.width - config->cornerRadius.topRight - halfLineWidth), (bb.y + halfLineWidth));
+                    path.arcTo(SkPoint{(bb.x + bb.width - halfLineWidth), (bb.y + halfLineWidth)}, SkPoint{(bb.x + bb.width - halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth)}, config->cornerRadius.topRight);
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Right border
+                if (config->width.right > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.right;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + bb.width - halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth));
+                    path.lineTo((bb.x + bb.width - halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomRight - halfLineWidth));
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Bottom Right Corner
+                if (config->cornerRadius.bottomRight > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.bottom;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + bb.width - halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomRight - halfLineWidth));
+                    path.arcTo(SkPoint{(bb.x + bb.width - halfLineWidth), (bb.y + bb.height - halfLineWidth)}, SkPoint{(bb.x + bb.width - config->cornerRadius.bottomRight - halfLineWidth), (bb.y + bb.height - halfLineWidth)}, config->cornerRadius.bottomRight);
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Bottom Border
+                if (config->width.bottom > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.bottom;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + config->cornerRadius.bottomLeft + halfLineWidth), (bb.y + bb.height - halfLineWidth));
+                    path.lineTo((bb.x + bb.width - config->cornerRadius.bottomRight - halfLineWidth), (bb.y + bb.height - halfLineWidth));
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Bottom Left Corner
+                if (config->cornerRadius.bottomLeft > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.bottom;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + config->cornerRadius.bottomLeft + halfLineWidth), (bb.y + bb.height - halfLineWidth));
+                    path.arcTo(SkPoint{(bb.x + halfLineWidth), (bb.y + bb.height - halfLineWidth)}, SkPoint{(bb.x + halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomLeft - halfLineWidth)}, config->cornerRadius.bottomLeft);
+                    canvas->drawPath(path.detach(), p);
+                }
+                // Left Border
+                if (config->width.left > 0.0f) {
+                    SkPathBuilder path;
+                    float lineWidth = config->width.left;
+                    p.setStrokeWidth(lineWidth);
+                    path.moveTo((bb.x + halfLineWidth), (bb.y + bb.height - config->cornerRadius.bottomLeft - halfLineWidth));
+                    path.lineTo((bb.x + halfLineWidth), (bb.y + config->cornerRadius.topRight + halfLineWidth));
+                    canvas->drawPath(path.detach(), p);
+                }
+                break;
+            }
+            case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
+                Clay_ClipRenderData* clip = &command->renderData.clip;
+                if(!clip->horizontal) {
+                    bb.x = 0.0f;
+                    bb.width = std::numeric_limits<float>::max();
+                }
+                if(!clip->vertical) {
+                    bb.y = 0.0f;
+                    bb.height = std::numeric_limits<float>::max();
+                }
+
+                canvas->save();
+                SkRect clipRect = SkRect::MakeXYWH(bb.x - 1.0f, bb.y - 1.0f, bb.width + 1.0f, bb.height + 1.0f);
+                canvas->clipRect(clipRect);
+                break;
+            }
+            case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
+                canvas->restore();
+                break;
+            }
+            case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
+                Element* customElement = static_cast<Element*>(command->renderData.custom.customData);
+                customElement->clay_draw(canvas, io, command, skiaAA);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    canvas->restore();
+}
+
 SCollision::AABB<float> GUIManager::get_invalid_draw_bb_from_command(const Clay_RenderCommand* command) {
     BorderData extraPadding;
     if(command->commandType == CLAY_RENDER_COMMAND_TYPE_BORDER) {

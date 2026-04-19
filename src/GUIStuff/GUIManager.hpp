@@ -18,6 +18,7 @@ class GUIManager {
 
         GUIManager();
         void draw(SkCanvas* c, bool skiaAA);
+        void draw_force(SkCanvas* canvas, bool skiaAA);
         void set_to_layout();
         void layout_if_necessary();
 
