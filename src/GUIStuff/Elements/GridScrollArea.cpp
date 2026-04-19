@@ -34,7 +34,7 @@ void GridScrollArea::layout(const Clay_ElementId& id, const Options& o) {
                 size_t startIndex = rowIndex * entriesPerRow;
                 size_t endIndex = std::min(rowIndex * entriesPerRow + entriesPerRow, o.entryCount);
                 for(size_t i = startIndex; i < endIndex; i++) {
-                    gui.new_id(static_cast<int64_t>(i), [&] {
+                    gui.new_id(static_cast<int64_t>(i - startIndex), [&] {
                         CLAY_AUTO_ID({
                             .layout = {.sizing = {.width = CLAY_SIZING_FIXED(entryWidth), .height = CLAY_SIZING_FIXED(options.entryHeight)}}
                         }) {

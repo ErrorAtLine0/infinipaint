@@ -7,33 +7,21 @@
 #include <include/core/SkPath.h>
 #include <include/core/SkPathBuilder.h>
 #include "Elements/GUIStuffHelpers.hpp"
-#include "Elements/SVGIcon.hpp"
-#include "Elements/FontPicker.hpp"
-#include "Elements/SelectableButton.hpp"
-#include "Elements/RotateWheel.hpp"
-#include "Elements/TextParagraph.hpp"
-#include "Elements/MovableTabList.hpp"
-#include "Elements/Element.hpp"
-#include "Elements/TextParagraph.hpp"
 #include <Helpers/ConvertVec.hpp>
-#include <filesystem>
-#include <fstream>
 #include <Helpers/Logger.hpp>
-#include <iostream>
-#include <cmath>
 #include <limits>
 #include <modules/skparagraph/src/ParagraphBuilderImpl.h>
 #include <modules/skparagraph/include/ParagraphStyle.h>
 #include <modules/skparagraph/include/FontCollection.h>
 #include <modules/skparagraph/include/TextStyle.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
-#include "../FontData.hpp"
 
 namespace GUIStuff {
 
 GUIManager::GUIManager()
 {
     Clay_SetMaxMeasureTextCacheWordCount(100000);
+    Clay_SetMaxElementCount(32768);
     clayArena = Clay_CreateArenaWithCapacityAndMemory(Clay_MinMemorySize(), malloc(Clay_MinMemorySize()));
     clayInstance = Clay_Initialize(clayArena, Clay_Dimensions(1.0f, 1.0f), (Clay_ErrorHandler)clay_error_handler);
     Clay_SetMeasureTextFunction(clay_skia_measure_text, this);

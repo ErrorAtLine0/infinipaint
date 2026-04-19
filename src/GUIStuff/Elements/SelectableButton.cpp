@@ -72,10 +72,8 @@ void SelectableButton::input_mouse_button_callback(const InputManager::MouseButt
     bool oldIsHeld = isHeld;
     isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
     if(isHeld) {
-        if(instantResponse) {
-            std::cout << "INSTANT" << std::endl;
+        if(instantResponse)
             gui.set_post_callback_func(onClick);
-        }
         gui.set_to_layout();
     }
     else if(mouseHovering && oldIsHeld && button.button == InputManager::MouseButton::LEFT && !button.down) {
