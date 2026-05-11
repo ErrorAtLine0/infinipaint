@@ -1,5 +1,25 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "RichTextUserInput.hpp"
 #include "CustomEvents.hpp"
+#include "AndroidJNICalls.hpp"
+#include "RichText/TextBox.hpp"
 
 template <typename T> std::optional<T> shared_ptr_to_opt(const std::shared_ptr<T> o) {
     if(o)
@@ -8,12 +28,32 @@ template <typename T> std::optional<T> shared_ptr_to_opt(const std::shared_ptr<T
         return std::nullopt;
 }
 
-RichTextUserInput::RichTextUserInput(InputManager::TextBoxID initId, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& initModMap):
+RichTextUserInput::RichTextUserInput(CustomEvents::InputTextBoxID initId, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& initModMap):
     id(initId),
     textBox(initTextBox),
     cursor(initCursor),
     modMap(initModMap)
 {}
+
+void RichTextUserInput::android_force_update_modmap() {
+#ifdef __ANDROID__
+    AndroidJNICalls::updateModMap(id, modMap);
+#endif
+}
+
+void RichTextUserInput::android_force_update_textbox_and_cursor() {
+#ifdef __ANDROID__
+    AndroidJNICalls::updateTextboxAndCursorPos(id, textBox, cursor);
+#endif
+    android_force_update_modmap();
+}
+
+void RichTextUserInput::android_force_update_cursor() {
+#ifdef __ANDROID__
+    AndroidJNICalls::updateCursorPos(id, cursor);
+#endif
+    android_force_update_modmap();
+}
 
 bool RichTextUserInput::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(paste.type == CustomEvents::PasteEvent::DataType::TEXT) {
@@ -23,9 +63,33 @@ bool RichTextUserInput::input_paste_callback(const CustomEvents::PasteEvent& pas
             else
                 textBox->process_text_input(*cursor, paste.data, shared_ptr_to_opt(modMap));
         });
+        android_force_update_textbox_and_cursor();
         return true;
     }
     return false;
+}
+
+RichTextUserInput::Changes RichTextUserInput::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
+    RichTextUserInput::Changes toRet{false, false};
+    switch(textboxInput.command) {
+        case CustomEvents::AndroidTextBoxInputEvent::CommandType::COMMIT_ALL: {
+            #ifdef __ANDROID__
+                std::pair<bool, bool> c = AndroidJNICalls::getChangesToCommit(id);
+                toRet.textEdited = c.first;
+                toRet.cursorChanged = c.second;
+                if(toRet.textEdited)
+                    do_textbox_operation_with_undo([&]() {
+                        AndroidJNICalls::commitAll(id, textBox, cursor);
+                    });
+                else 
+                    AndroidJNICalls::commitAll(id, textBox, cursor);
+            #else
+                toRet.textEdited = toRet.cursorChanged = false;
+            #endif
+            break;
+        }
+    }
+    return toRet;
 }
 
 void RichTextUserInput::add_text_to_textbox(const std::string& inputText) {
@@ -54,6 +118,27 @@ void RichTextUserInput::do_textbox_operation_with_undo(const std::function<void(
     auto prevCursor = *cursor;
     func();
     add_textbox_undo(prevCursor, prevRichText);
+}
+
+void RichTextUserInput::process_mouse_left_button(const Vector2f& pos, int clickCount, bool held, bool shift) {
+    RichText::TextBox::Cursor oldCursor = *cursor;
+    textBox->process_mouse_left_button(*cursor, pos, clickCount, held, shift);
+    if(oldCursor != *cursor)
+        android_force_update_cursor();
+}
+
+void RichTextUserInput::input_finger_touch_down(const Vector2f& pos) {
+    RichText::TextBox::Cursor oldCursor = *cursor;
+    cursor->pos = cursor->selectionBeginPos = cursor->selectionEndPos = textBox->get_text_pos_closest_to_point(pos);
+    if(oldCursor != *cursor)
+        android_force_update_cursor();
+}
+
+void RichTextUserInput::input_finger_held_motion(const Vector2f& pos) {
+    RichText::TextBox::Cursor oldCursor = *cursor;
+    cursor->pos = cursor->selectionEndPos = textBox->get_text_pos_closest_to_point(pos);
+    if(oldCursor != *cursor)
+        android_force_update_cursor();
 }
 
 RichTextUserInput::Changes RichTextUserInput::input_key_callback(InputManager& input, const InputManager::KeyCallbackArgs& key) {
@@ -134,6 +219,10 @@ RichTextUserInput::Changes RichTextUserInput::input_key_callback(InputManager& i
                 return toRet;
         }
         toRet.cursorChanged = oldCursor != *cursor;
+        if(toRet.textEdited)
+            android_force_update_textbox_and_cursor();
+        else if(toRet.cursorChanged)
+            android_force_update_cursor();
     }
     return toRet;
 }

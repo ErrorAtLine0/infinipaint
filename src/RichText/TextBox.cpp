@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "TextBox.hpp"
 #include "Helpers/Networking/ByteStream.hpp"
 #include "TextStyleModifier.hpp"
@@ -360,6 +378,68 @@ TextPosition TextBox::get_text_pos_closest_to_point(Vector2f point) {
         return TextPosition{pIndex, 0};
 }
 
+int TextBox::get_codepoint_location_from_text_position(TextPosition pos) {
+    pos = move(Movement::NOWHERE, pos);
+    std::string str = get_string();
+    size_t bytePos = get_byte_pos_from_text_pos(pos);
+    const char* utf8StartPtr = str.c_str();
+    const char* utf8EndPtr = str.c_str() + bytePos;
+    const char* utf8StringEndPtr = str.c_str() + str.size();
+    int i = 0;
+    for(; utf8StartPtr < utf8EndPtr; i++) {
+        SkUnichar u = SkUTF::NextUTF8(&utf8StartPtr, utf8StringEndPtr);
+        if(u == -1)
+            return 0;
+    }
+    return i;
+}
+
+TextPosition TextBox::get_text_position_from_codepoint_location(int p) {
+    std::string str = get_string();
+    const char* utf8StartPtr = str.c_str();
+    const char* utf8StringEndPtr = str.c_str() + str.size();
+    for(int i = 0; i < p; i++) {
+        SkUnichar u = SkUTF::NextUTF8(&utf8StartPtr, utf8StringEndPtr);
+        if(u == -1)
+            return move(Movement::HOME, {0, 0});
+        else if(utf8StartPtr == utf8StringEndPtr)
+            return move(Movement::END, {0, 0});
+    }
+    size_t bytePos = utf8StartPtr - str.c_str();
+    return get_text_pos_from_byte_pos(str, bytePos);
+}
+
+int TextBox::get_utf16_location_from_codepoint_location(int p) {
+    std::string u8s = get_string();
+    std::u16string str = SkUnicodes::ICU::Make()->convertUtf8ToUtf16(u8s.c_str(), u8s.length());
+    const uint16_t* utf16StartPtr = reinterpret_cast<const uint16_t*>(str.data());
+    const uint16_t* utf16StringEndPtr = reinterpret_cast<const uint16_t*>(str.data()) + str.size();
+    for(int i = 0; i < p; i++) {
+        SkUnichar u = SkUTF::NextUTF16(&utf16StartPtr, utf16StringEndPtr);
+        if(u == -1)
+            return 0;
+        else if(utf16StartPtr == utf16StringEndPtr)
+            return str.length();
+    }
+    size_t u16Pos = utf16StartPtr - (const uint16_t*)str.c_str();
+    return u16Pos;
+}
+
+int TextBox::get_codepoint_location_from_utf16_location(int p) {
+    std::string u8s = get_string();
+    std::u16string str = SkUnicodes::ICU::Make()->convertUtf8ToUtf16(u8s.c_str(), u8s.length());
+    const uint16_t* utf16StartPtr = reinterpret_cast<const uint16_t*>(str.data());
+    const uint16_t* utf16EndPtr = reinterpret_cast<const uint16_t*>(str.data()) + p;
+    const uint16_t* utf16StringEndPtr = reinterpret_cast<const uint16_t*>(str.data()) + str.size();
+    int i = 0;
+    for(; utf16StartPtr < utf16EndPtr; i++) {
+        SkUnichar u = SkUTF::NextUTF16(&utf16StartPtr, utf16StringEndPtr);
+        if(u == -1)
+            return 0;
+    }
+    return i;
+}
+
 TextData TextBox::get_rich_text_data() {
     TextData toRet;
     for(auto& p : paragraphs) {
@@ -643,8 +723,7 @@ TextPosition TextBox::move(Movement movement, TextPosition pos, std::optional<fl
     if(pos.fTextByteIndex >= paragraphs[pos.fParagraphIndex].text.size())
         pos.fTextByteIndex = paragraphs[pos.fParagraphIndex].text.size();
 
-    if(movement != Movement::NOWHERE && movement != Movement::HOME && movement != Movement::END) {
-        rebuild();
+    if(movement != Movement::NOWHERE && movement != Movement::HOME && movement != Movement::END) { 
         if(flipDependingOnTextDirection && paragraphs[pos.fParagraphIndex].pStyleData.textDirection == skia::textlayout::TextDirection::kRtl) {
             if(movement == Movement::LEFT)
                 movement = Movement::RIGHT;

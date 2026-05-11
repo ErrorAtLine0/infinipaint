@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "DrawingProgram.hpp"
 #include "Helpers/Networking/NetLibrary.hpp"
 #include "Tools/DrawingProgramToolBase.hpp"
@@ -63,6 +81,10 @@ void DrawingProgram::input_paste_callback(const CustomEvents::PasteEvent& paste)
         selection.paste_image_process_event(paste);
     else
         drawTool->input_paste_callback(paste);
+}
+
+void DrawingProgram::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
+    drawTool->input_android_text_box_input_callback(textboxInput);
 }
 
 void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
@@ -758,6 +780,26 @@ void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
 
 void DrawingProgram::get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) {
     layerMan.get_used_resources(resourceSet);
+}
+
+Vector4f* DrawingProgram::color_picker_left(Vector4f* oldColor) {
+    if(oldColor == &world.main.toolConfig.globalConf.foregroundColor)
+        return oldColor;
+    else if(oldColor == &world.main.toolConfig.globalConf.backgroundColor)
+        return oldColor;
+    return nullptr;
+}
+
+Vector4f* DrawingProgram::color_picker_right(Vector4f* oldColor) {
+    return drawTool->color_picker_color(oldColor);
+}
+
+bool DrawingProgram::phone_gui_tool_specific_bottom_toolbar_exists() {
+    return drawTool->phone_gui_tool_specific_bottom_toolbar_exists();
+}
+
+void DrawingProgram::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+    drawTool->phone_gui_tool_specific_bottom_toolbar(t);
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {

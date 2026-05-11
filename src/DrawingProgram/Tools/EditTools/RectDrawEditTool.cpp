@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "RectDrawEditTool.hpp"
 #include "../../DrawingProgram.hpp"
 #include "../../../World.hpp"
@@ -42,6 +60,50 @@ void RectDrawEditTool::edit_gui(Toolbar& t) {
             slider_scalar_field(gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f, { .onEdit = commit_update_func });
             left_to_right_line_layout(gui, [&] {
                 t.color_button_right("Outline color button", &a.d.strokeColor, { .onChange = commit_update_func });
+                text_label(gui, "Outline Color");
+            });
+        }
+    });
+}
+
+Vector4f* RectDrawEditTool::color_picker_color(Vector4f* oldColor) {
+    auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
+    if(oldColor == &a.d.fillColor)
+        return oldColor;
+    if(oldColor == &a.d.strokeColor)
+        return oldColor;
+    return nullptr;
+}
+
+void RectDrawEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
+    auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
+    auto commit_update_and_layout_func = [&] {
+        comp->obj->commit_update(drawP);
+        drawP.world.main.g.gui.set_to_layout();
+    };
+    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
+
+    auto& gui = drawP.world.main.g.gui;
+    gui.new_id("edit tool rectangle", [&] {
+        slider_scalar_field(gui, "relradiuswidth", "Corner Radius", &a.d.cornerRadius, 0.0f, 40.0f, { .onEdit = commit_update_func });
+        radio_button_selector(gui, "Fill selector", &a.d.fillStrokeMode, {
+            {"Fill only", 0},
+            {"Outline only", 1},
+            {"Fill and outline", 2}
+        }, commit_update_and_layout_func);
+        if(a.d.fillStrokeMode == 0 || a.d.fillStrokeMode == 2) {
+            left_to_right_line_layout(gui, [&] {
+                t.color_selector_button("Fill color button", &a.d.fillColor, { .onChange = commit_update_func });
+                text_label(gui, "Fill Color");
+            });
+        }
+        if(a.d.fillStrokeMode == 1 || a.d.fillStrokeMode == 2) {
+            slider_scalar_field(gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f, { .onEdit = commit_update_func });
+            left_to_right_line_layout(gui, [&] {
+                t.color_selector_button("Outline color button", &a.d.strokeColor, { .onChange = commit_update_func });
                 text_label(gui, "Outline Color");
             });
         }

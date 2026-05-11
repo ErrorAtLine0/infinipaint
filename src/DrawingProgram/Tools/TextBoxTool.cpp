@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "TextBoxTool.hpp"
 #include "../DrawingProgram.hpp"
 #include "../../MainProgram.hpp"
@@ -46,6 +64,8 @@ void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::Mous
             newTextBox.d.p2 = ensure_points_have_distance(newTextBox.d.p1, newTextBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
             newTextBox.d.editing = true;
             newContainer->coords = drawP.world.drawData.cam.c;
+            if(drawP.world.main.g.gui.io.isTouchDevice)
+                newContainer->coords.scale_about_double(drawP.world.drawData.cam.c.from_space(startAt), 1.0 / drawP.world.main.g.final_gui_scale());
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
         }
         else if(!button.down && objInfoBeingEdited) {

@@ -1,11 +1,28 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include "Element.hpp"
 #include "Helpers/ConvertVec.hpp"
-#include "ManyElementScrollArea.hpp"
 #include "SelectableButton.hpp"
 #include "../ElementHelpers/LayoutHelpers.hpp"
-#include "../ElementHelpers/TextLabelHelpers.hpp"
 #include "../ElementHelpers/ButtonHelpers.hpp"
+#include "TextParagraph.hpp"
 #include "SVGIcon.hpp"
 
 namespace GUIStuff {
@@ -38,15 +55,30 @@ template <typename T> class DropDown : public Element {
                     .innerContent = [&](const SelectableButton::InnerContentCallbackParameters&) {
                         CLAY_AUTO_ID({
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
+                                .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
                                 .padding = {.left = 4, .right = 4},
                                 .childGap = gui.io.theme->childGap1,
                                 .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
                                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                             }
                         }) {
-                            text_label(gui, selections[static_cast<size_t>(*data)]);
-                            CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}}) {}
+                            RichText::TextData t;
+                            t.paragraphs.emplace_back();
+                            t.paragraphs.back().text = selections[static_cast<size_t>(*data)];
+                            gui.element<LayoutElement>("dropdown inner text area", [&](LayoutElement* l, const Clay_ElementId& lId) {
+                                CLAY(lId, {
+                                    .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
+                                }) {
+                                    if(l->get_bb().has_value()) {
+                                        gui.element<TextParagraph>("dropdown inner text", TextParagraph::Data{
+                                            .text = t,
+                                            .maxGrowX = l->get_bb().value().width(),
+                                            .maxGrowY = 0.0f,
+                                            .ellipsis = true
+                                        });
+                                    }
+                                }
+                            });
                             CLAY_AUTO_ID({
                                 .layout = {
                                     .sizing = {.width = CLAY_SIZING_FIT(ElementHelpers::SMALL_BUTTON_SIZE), .height = CLAY_SIZING_FIT(ElementHelpers::SMALL_BUTTON_SIZE)}
@@ -59,59 +91,18 @@ template <typename T> class DropDown : public Element {
                 });
 
                 if(isOpen && boundingBox.has_value()) {
-                    auto& buttonBB = boundingBox.value();
-                    float ENTRY_HEIGHT = buttonBB.height();
                     gui.set_z_index(gui.get_z_index() + 1, [&] {
-                        gui.element<LayoutElement>("DROPDOWN", [&](LayoutElement* l, const Clay_ElementId& lId) {
-                            float dropdownHeight = ENTRY_HEIGHT * selections.size() + DROPDOWN_OFFSET;
-                            Clay_FloatingElementConfig floatConfig;
-                            float maxHeight = gui.io.safeWindowRect.height();
-                            if(buttonBB.max.y() + dropdownHeight > gui.io.safeWindowRect.max.y()) {
-                                float rightSideWidth = gui.io.safeWindowRect.max.x() - buttonBB.max.x();
-                                float leftSideWidth = buttonBB.min.x() - gui.io.safeWindowRect.min.x();
-                                if(rightSideWidth > buttonBB.width() || leftSideWidth > buttonBB.width())
-                                    vertical_offset_setup(dropdownHeight, floatConfig, maxHeight, rightSideWidth >= leftSideWidth);
-                                else {
-                                    if(gui.io.safeWindowRect.max.y() - buttonBB.max.y() >= buttonBB.min.y() - gui.io.safeWindowRect.min.y())
-                                        bottom_offset_setup(dropdownHeight, floatConfig, maxHeight);
-                                    else
-                                        top_offset_setup(dropdownHeight, floatConfig, maxHeight);
-                                }
-                            }
-                            else
-                                bottom_offset_setup(dropdownHeight, floatConfig, maxHeight);
-                            CLAY(lId, {
-                                .layout = {
-                                    .sizing = {.width = CLAY_SIZING_FIXED(buttonBB.width()), .height = CLAY_SIZING_FIT(0, maxHeight)},
-                                    .childGap = 0
-                                },
-                                .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
-                                .cornerRadius = CLAY_CORNER_RADIUS(4),
-                                .floating = floatConfig,
-                                .border = {
-                                    .color = convert_vec4<Clay_Color>(gui.io.theme->fillColor2),
-                                    .width = CLAY_BORDER_OUTSIDE(1)
-                                }
-                            }) {
-                                gui.element<ManyElementScrollArea>("dropdown scroll area", ManyElementScrollArea::Options{
-                                    .entryHeight = ENTRY_HEIGHT,
-                                    .entryCount = selections.size(),
-                                    .clipHorizontal = true,
-                                    .elementContent = [&](size_t i) {
-                                        text_transparent_option_button("option", selections[i].c_str(), [&, i] {
-                                            *d = static_cast<T>(i);
-                                            if(opts.onClick) opts.onClick();
-                                            isOpen = false;
-                                        });
-                                    }
-                                });
-                            }
-                        }, LayoutElement::Callbacks {
-                            .onClick = [&](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& m) {
-                                if(!l->mouseHovering && !l->childMouseHovering && m.down && !dropdownButton->mouseHovering) {
+                        dropdown_many_element_popup_layout(gui, "DROPDOWN", {
+                            .button = this,
+                            .isOpen = &isOpen,
+                            .entrySize = boundingBox.value().dim(),
+                            .entryCount = selections.size(),
+                            .entryLayout = [&](size_t i) {
+                                text_transparent_option_button("option", selections[i].c_str(), [&, i] {
+                                    *d = static_cast<T>(i);
+                                    if(opts.onClick) opts.onClick();
                                     isOpen = false;
-                                    gui.set_to_layout();
-                                }
+                                });
                             }
                         });
                     });
@@ -119,59 +110,6 @@ template <typename T> class DropDown : public Element {
             }
         }
     private:
-        void bottom_offset_setup(float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight) {
-            floatConfig = {
-                .offset = {
-                    .y = DROPDOWN_OFFSET
-                },
-                .zIndex = gui.get_z_index(),
-                .attachPoints = {
-                    .element = CLAY_ATTACH_POINT_LEFT_TOP,
-                    .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM
-                },
-                .attachTo = CLAY_ATTACH_TO_PARENT
-            };
-            // This function might be used even when boundingBox isnt determined yet
-            maxHeight = boundingBox.has_value() ? std::max(gui.io.safeWindowRect.max.y() - boundingBox.value().max.y() - DROPDOWN_OFFSET, 0.0f) : 0.0f;
-        }
-
-        void top_offset_setup(float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight) {
-            floatConfig = {
-                .offset = {
-                    .y = -DROPDOWN_OFFSET
-                },
-                .zIndex = gui.get_z_index(),
-                .attachPoints = {
-                    .element = CLAY_ATTACH_POINT_LEFT_BOTTOM,
-                    .parent = CLAY_ATTACH_POINT_LEFT_TOP
-                },
-                .attachTo = CLAY_ATTACH_TO_PARENT
-            };
-            maxHeight = std::max(boundingBox.value().min.y() - gui.io.safeWindowRect.min.y() - DROPDOWN_OFFSET, 0.0f);
-        }
-
-        void vertical_offset_setup(float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight, bool isRightSide) {
-            auto& bb = boundingBox.value();
-            float offsetY = bb.center().y() - dropdownHeight * 0.5f;
-            if(dropdownHeight >= gui.io.safeWindowRect.height() || offsetY < gui.io.safeWindowRect.min.y())
-                offsetY = gui.io.safeWindowRect.min.y();
-            else if(offsetY + dropdownHeight > gui.io.safeWindowRect.max.y())
-                offsetY -= (offsetY + dropdownHeight) - gui.io.safeWindowRect.max.y();
-            floatConfig = {
-                .offset = {
-                    .x = isRightSide ? bb.max.x() + DROPDOWN_OFFSET : bb.min.x() - bb.width() - DROPDOWN_OFFSET,
-                    .y = offsetY
-                },
-                .zIndex = gui.get_z_index(),
-                .attachPoints = {
-                    .element = CLAY_ATTACH_POINT_LEFT_TOP,
-                    .parent = CLAY_ATTACH_POINT_LEFT_TOP
-                },
-                .attachTo = CLAY_ATTACH_TO_ROOT
-            };
-            maxHeight = gui.io.safeWindowRect.height();
-        }
-
         void text_transparent_option_button(const char* id, const char* text, const std::function<void()>& onClick) {
             using namespace ElementHelpers;
             text_button(gui, id, text, {

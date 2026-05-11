@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include <Eigen/Dense>
 #include <SDL3/SDL_keyboard.h>
@@ -143,7 +161,6 @@ struct InputManager {
         ANDROIDTEXT_TYPE_TEXT_VARIATION_WEB_PASSWORD = 0x000000e0
     };
 
-    typedef int64_t TextBoxID;
     struct TextInputProperties {
         SDL_TextInputType inputType;
         SDL_Capitalization capitalization;
@@ -153,25 +170,24 @@ struct InputManager {
     };
 
     struct TextBoxStartInfo {
-        TextBoxID id;
+        CustomEvents::InputTextBoxID id;
         std::optional<SCollision::AABB<float>> rect;
         TextInputProperties inputProperties;
 
         // Android textbox info
-        std::string str;
-        int startCursorPos;
-        int endCursorPos;
+        std::shared_ptr<RichText::TextBox> textBox;
+        std::shared_ptr<RichText::TextBox::Cursor> cursor;
+        std::shared_ptr<RichText::TextStyleModifier::ModifierMap> modMap;
     };
 
     void refresh_receiving_text_box_input();
-    void update_textbox_rectangle(TextBoxID textboxID, std::optional<SCollision::AABB<float>> textboxRect);
+    void update_textbox_rectangle(CustomEvents::InputTextBoxID textboxID, std::optional<SCollision::AABB<float>> textboxRect);
     bool text_is_accepting_input();
 
     void text_update_textbox_rectangle();
-    TextBoxID text_box_get_new_id();
     void update_text_box_area_offset();
 
-    std::optional<TextBoxID> currentTextboxID;
+    std::optional<CustomEvents::InputTextBoxID> currentTextboxID;
     std::optional<SDL_PropertiesID> textPropID;
 
 #ifdef __APPLE__
@@ -413,7 +429,7 @@ struct InputManager {
 
     std::mutex safeAreaWithoutIMEMutex;
     std::optional<SCollision::AABB<float>> safeAreaWithoutIME;
-    bool excludeIMEFromSafeArea = false;
+    std::atomic<bool> excludeIMEFromSafeArea = false;
     Vector2f screenOffset = {0.0f, 0.0f};
 
     MainProgram& main;

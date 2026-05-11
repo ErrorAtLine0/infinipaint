@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "PhoneDrawingProgramScreen.hpp"
 #include "../MainProgram.hpp"
 #include "DrawingProgramScreen.hpp"
@@ -94,93 +112,120 @@ void PhoneDrawingProgramScreen::bottom_toolbar() {
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER}
             }
         }) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                    .childGap = io.theme->childGap1,
-                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                }
-            }) {
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT
-                    }
-                }) {
-                    switch(settingsMenuPopup) {
-                        case SettingsMenuPopup::NONE:
-                            reset_color_picker_popup_data();
-                            break;
-                        case SettingsMenuPopup::SETTINGS:
+            if(main.world->drawProg.phone_gui_tool_specific_bottom_toolbar_exists())
+                main.world->drawProg.phone_gui_tool_specific_bottom_toolbar(*this);
+            else
+                default_bottom_toolbar();
+        }
+    });
+}
+
+void PhoneDrawingProgramScreen::default_bottom_toolbar() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .childGap = io.theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        }
+    }) {
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            }
+        }) {
+            switch(settingsMenuPopup) {
+                case SettingsMenuPopup::NONE:
+                    reset_color_picker_popup_data();
+                    colorPickerPtr = nullptr;
+                    break;
+                case SettingsMenuPopup::SETTINGS:
+                    colorPickerPtr = main.world->drawProg.color_picker_right(colorPickerPtr);
+                    if(colorPickerPtr) {
+                        if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
                             CLAY_AUTO_ID({
                                 .layout = {
                                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                                 }
                             }) {}
-                            reset_color_picker_popup_data();
-                            tool_settings_popup();
-                            break;
-                        case SettingsMenuPopup::FG_COLOR:
-                        case SettingsMenuPopup::BG_COLOR:
-                            if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
-                                CLAY_AUTO_ID({
-                                    .layout = {
-                                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                    }
-                                }) {}
+                        }
+                        color_settings_popup(colorPickerPtr, colorPickerData, [&] {
+                            colorPickerPtr = nullptr;
+                        });
+                    }
+                    else {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
                             }
-                            color_settings_popup(settingsMenuPopup == SettingsMenuPopup::FG_COLOR ? &main.toolConfig.globalConf.foregroundColor : &main.toolConfig.globalConf.backgroundColor);
-                            break;
+                        }) {}
+                        reset_color_picker_popup_data();
+                        tool_settings_popup();
                     }
-                }
-
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                        .childGap = io.theme->childGap1,
-                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT
+                    break;
+                case SettingsMenuPopup::FG_COLOR:
+                case SettingsMenuPopup::BG_COLOR:
+                    if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                            }
+                        }) {}
                     }
-                }) {
-                    gui.element<LayoutElement>("bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
-                        CLAY(lId, {
-                            .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}
-                            },
-                            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-                            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-                        }) {
-                            gui.clipping_element<ScrollArea>("tools scroll", ScrollArea::Options{
-                                .scrollHorizontal = true,
-                                .clipHorizontal = true,
-                                .scrollbarX = ScrollArea::ScrollbarType::NONE,
-                                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                                .xAlign = CLAY_ALIGN_X_LEFT,
-                                .yAlign = CLAY_ALIGN_Y_CENTER,
-                                .innerContent = [&](auto&) {
-                                    bottom_toolbar_gui();
-                                }
-                            });
-                        }
-                    });
-                    gui.element<LayoutElement>("bottom extra toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
-                        CLAY(lId, {
-                            .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
-                                .layoutDirection = CLAY_LEFT_TO_RIGHT
-                            },
-                            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-                            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-                        }) {
-                            bottom_extra_toolbar_gui();
-                        }
-                    });
-                }
+                    colorPickerData = ColorSelectorData();
+                    colorPickerPtr = nullptr;
+                    color_settings_popup(settingsMenuPopup == SettingsMenuPopup::FG_COLOR ? &main.toolConfig.globalConf.foregroundColor : &main.toolConfig.globalConf.backgroundColor, {}, nullptr);
+                    break;
             }
         }
-    });
+
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                .childGap = io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            }
+        }) {
+            gui.element<LayoutElement>("bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
+                CLAY(lId, {
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+                }) {
+                    gui.clipping_element<ScrollArea>("tools scroll", ScrollArea::Options{
+                        .scrollHorizontal = true,
+                        .clipHorizontal = true,
+                        .scrollbarX = ScrollArea::ScrollbarType::NONE,
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                        .xAlign = CLAY_ALIGN_X_LEFT,
+                        .yAlign = CLAY_ALIGN_Y_CENTER,
+                        .innerContent = [&](auto&) {
+                            bottom_toolbar_gui();
+                        }
+                    });
+                }
+            });
+            gui.element<LayoutElement>("bottom extra toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
+                CLAY(lId, {
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+                }) {
+                    bottom_extra_toolbar_gui();
+                }
+            });
+        }
+    }
 }
 
 void PhoneDrawingProgramScreen::bottom_toolbar_gui() {
@@ -192,6 +237,8 @@ void PhoneDrawingProgramScreen::bottom_toolbar_gui() {
             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
             .isSelected = drawP.drawTool->get_type() == toolType,
             .onClick = [&, toolType] {
+                if(toolType == DrawingProgramToolType::EDIT)
+                    settingsMenuPopup = SettingsMenuPopup::SETTINGS;
                 drawP.switch_to_tool(toolType);
             }
         });
@@ -251,23 +298,39 @@ void PhoneDrawingProgramScreen::reset_color_picker_popup_data() {
     colorPickerPopupData.paletteListSelection.clear();
 }
 
-void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color) {
+void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color, const ColorSelectorData& d, std::function<void()> backOnPaletteButton, bool setAlphaToOne, bool setToTransparentCancelButton) {
     auto& gui = main.g.gui;
     auto& palette = main.conf.palettes[colorPickerPopupData.selectedPalette];
 
-    bool extraSettingsOpen = colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::EXTRA;
-    bool extraColorButtons = extraSettingsOpen && colorPickerPopupData.selectedPalette != 0;
+    int extraColorButtonCount = 1;
+    if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
+        if(backOnPaletteButton)
+            extraColorButtonCount++;
+        if(setToTransparentCancelButton)
+            extraColorButtonCount++;
+    }
+    else if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::EXTRA && colorPickerPopupData.selectedPalette != 0)
+        extraColorButtonCount = 3;
+
+    auto paletteButtonChange = [d] () {
+        if(d.onSelect) d.onSelect();
+        if(d.onChange) d.onChange();
+        if(d.onDeselect) d.onDeselect();
+    };
 
     auto paletteColorPickerGridColorButton = [&](size_t i){
         auto newC = std::make_shared<Vector3f>(palette.colors[i].x(), palette.colors[i].y(), palette.colors[i].z());
         color_button(gui, "c", newC.get(), {
             .isSelected = newC->x() == color->x() && newC->y() == color->y() && newC->z() == color->z(),
             .hasAlpha = false,
-            .onClick = [newC, color] {
+            .onClick = [setAlphaToOne, newC, color, paletteButtonChange] {
                 // We want to keep the old color's alpha
                 color->x() = newC->x();
                 color->y() = newC->y();
                 color->z() = newC->z();
+                if(setAlphaToOne)
+                    color->w() = 1.0f;
+                paletteButtonChange();
             }
         });
     };
@@ -277,24 +340,44 @@ void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color) {
             .entryWidth = BIG_BUTTON_SIZE,
             .childAlignmentX = CLAY_ALIGN_X_CENTER,
             .entryHeight = BIG_BUTTON_SIZE,
-            .entryCount = palette.colors.size() + (extraColorButtons ? 3 : 1),
+            .entryCount = palette.colors.size() + extraColorButtonCount,
             .scrollbar = ScrollArea::ScrollbarType::NORMAL,
             .elementContent = [&](size_t i) {
                 if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
-                    if(i < palette.colors.size())
-                        paletteColorPickerGridColorButton(i);
-                    else {
-                        svg_icon_button(gui, "extra color settings", "data/icons/RemixIcon/more-fill.svg", {
+                    int32_t newI = static_cast<int32_t>(i);
+                    if(backOnPaletteButton)
+                        newI--;
+                    if(newI == -1)
+                        svg_icon_button(gui, "back on palette button", "data/icons/RemixIcon/arrow-left-s-line.svg", {
                             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                            .onClick = [&] {
-                                colorPickerPopupData.screenType = ColorPickerPopupData::ScreenType::EXTRA;
-                            }
+                            .onClick = backOnPaletteButton
                         });
+                    else if(newI < static_cast<int32_t>(palette.colors.size()))
+                        paletteColorPickerGridColorButton(newI);
+                    else {
+                        if(newI == static_cast<int32_t>(palette.colors.size()) && setToTransparentCancelButton)
+                            svg_icon_button(gui, "set to transparent button", "data/icons/close.svg", {
+                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .onClick = [&, color, paletteButtonChange] {
+                                    color->x() = 0.0f;
+                                    color->y() = 0.0f;
+                                    color->z() = 0.0f;
+                                    color->w() = 0.0f;
+                                    paletteButtonChange();
+                                }
+                            });
+                        else
+                            svg_icon_button(gui, "extra color settings", "data/icons/RemixIcon/more-fill.svg", {
+                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .onClick = [&] {
+                                    colorPickerPopupData.screenType = ColorPickerPopupData::ScreenType::EXTRA;
+                                }
+                            });
                     }
                 }
                 else {
                     if(i == 0) {
-                        svg_icon_button(gui, "extra color settings", "data/icons/RemixIcon/arrow-left-s-line.svg", {
+                        svg_icon_button(gui, "extra color settings back button", "data/icons/RemixIcon/arrow-left-s-line.svg", {
                             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                             .onClick = [&] {
                                 colorPickerPopupData.screenType = ColorPickerPopupData::ScreenType::NORMAL;
@@ -303,7 +386,7 @@ void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color) {
                     }
                     else if((i - 1) < palette.colors.size())
                         paletteColorPickerGridColorButton(i - 1);
-                    else if(extraColorButtons) {
+                    else if(colorPickerPopupData.selectedPalette != 0) {
                         switch(i - palette.colors.size() - 1) {
                             case 0:
                                 svg_icon_button(gui, "addcolor", "data/icons/plus.svg", {
@@ -329,7 +412,7 @@ void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color) {
         });
     };
 
-    auto paletteColorPickerExtras = [&] {
+    auto paletteColorPickerExtras = [&, d] {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_GROW(0)},
@@ -339,9 +422,12 @@ void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color) {
             .aspectRatio = {1.0f}
         }) {
             gui.element<ColorPicker<Vector4f>>("color picker element", color, true, ColorPickerData{
-                .onChange = [&] {
+                .onChange = [&, d] {
+                    if(d.onChange) d.onChange();
                     gui.set_to_layout();
-                }
+                },
+                .onHold = d.onSelect,
+                .onRelease = d.onDeselect
             });
         }
         CLAY_AUTO_ID({
@@ -552,4 +638,29 @@ void PhoneDrawingProgramScreen::input_global_back_button_callback() {
 
 void PhoneDrawingProgramScreen::input_app_about_to_go_to_background_callback() {
     main.world->save_to_file(main.world->filePath);
+}
+
+void PhoneDrawingProgramScreen::color_selector(Vector4f* color, const ColorSelectorData& colorSelectorData) {
+    if(colorPickerPtr != color) {
+        colorPickerPtr = color;
+        colorPickerData = colorSelectorData;
+    }
+    else
+        colorPickerPtr = nullptr;
+    main.g.gui.set_to_layout();
+}
+
+void PhoneDrawingProgramScreen::color_selector_button(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData) {
+    auto& gui = main.g.gui;
+    color_button(gui, id, color, {
+        .isSelected = colorPickerPtr == color,
+        .onClick = [&, colorSelectorData, color] {
+            if(colorSelectorData.onSelectorButtonClick) colorSelectorData.onSelectorButtonClick();
+            color_selector(color, {
+                .onChange = colorSelectorData.onChange,
+                .onSelect = colorSelectorData.onSelect,
+                .onDeselect = colorSelectorData.onDeselect,
+            });
+        }
+    });
 }

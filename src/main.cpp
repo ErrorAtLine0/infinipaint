@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "CustomEvents.hpp"
 #include "Helpers/SCollision.hpp"
 #include "Helpers/StringHelpers.hpp"
@@ -371,10 +389,6 @@ void init_logs(MainStruct& mS) {
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
-#ifdef __ANDROID__
-    std::scoped_lock a{AndroidJNICalls::globalCallMutex};
-#endif
-
     std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
     for(int i = 1; i < argc; i++)
         listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(std::u8string_view(reinterpret_cast<char8_t*>(argv[i])))));
@@ -598,10 +612,6 @@ void regular_draw(MainStruct& mS) {
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
-#ifdef __ANDROID__
-    std::scoped_lock a{AndroidJNICalls::globalCallMutex};
-#endif
-
     std::chrono::steady_clock::time_point frameTimeStart = std::chrono::steady_clock::now();
 
     MainStruct& mS = *((MainStruct*)appstate);
@@ -641,10 +651,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
-#ifdef __ANDROID__
-    std::scoped_lock a{AndroidJNICalls::globalCallMutex};
-#endif
-
     MainStruct& mS = *((MainStruct*)appstate);
 
 #ifdef NDEBUG
@@ -802,8 +808,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     mS.m->input_open_infinipaint_file_callback(*CustomEvents::get_event<CustomEvents::OpenInfiniPaintFileEvent>());
                 else if(event->type == CustomEvents::AddFileToCanvasEvent::EVENT_NUM)
                     mS.m->input_add_file_to_canvas_callback(*CustomEvents::get_event<CustomEvents::AddFileToCanvasEvent>());
-                else if(event->type == CustomEvents::RefreshTextBoxInputEvent::EVENT_NUM)
+                else if(event->type == CustomEvents::RefreshTextBoxInputEvent::EVENT_NUM) {
+                    CustomEvents::get_event<CustomEvents::RefreshTextBoxInputEvent>();
                     mS.m->input.refresh_receiving_text_box_input();
+                }
+                else if(event->type == CustomEvents::AndroidTextBoxInputEvent::EVENT_NUM)
+                    mS.m->input_android_text_box_input_callback(*CustomEvents::get_event<CustomEvents::AndroidTextBoxInputEvent>());
                 break;
             }
         }

@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "EditTool.hpp"
 #include "../DrawingProgram.hpp"
 #include "../../MainProgram.hpp"
@@ -45,9 +63,13 @@ void EditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
     auto& gui = drawP.world.main.g.gui;
 
-    gui.new_id("edit tool", [&] {
-        text_label_centered(gui, "Edit");
-    });
+    if(objInfoBeingEdited)
+        compEditTool->gui_phone_toolbox(t);
+    else {
+        gui.new_id("edit tool", [&] {
+            text_label_centered(gui, "Double tap object to edit");
+        });
+    }
 }
 
 void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
@@ -58,6 +80,11 @@ void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 void EditTool::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(objInfoBeingEdited)
         compEditTool->input_paste_callback(paste);
+}
+
+void EditTool::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
+    if(objInfoBeingEdited)
+        compEditTool->input_android_text_box_input_callback(textboxInput);
 }
 
 void EditTool::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
@@ -295,6 +322,23 @@ void EditTool::tool_update() {
         if(!shouldNotReset)
             switch_tool(get_type());
     }
+}
+
+Vector4f* EditTool::color_picker_color(Vector4f* oldColor) {
+    if(objInfoBeingEdited)
+        return compEditTool->color_picker_color(oldColor);
+    return nullptr;
+}
+
+bool EditTool::phone_gui_tool_specific_bottom_toolbar_exists() {
+    if(objInfoBeingEdited)
+        return compEditTool->phone_gui_tool_specific_bottom_toolbar_exists();
+    return false;
+}
+
+void EditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+    if(objInfoBeingEdited)
+        return compEditTool->phone_gui_tool_specific_bottom_toolbar(t);
 }
 
 bool EditTool::prevent_undo_or_redo() {

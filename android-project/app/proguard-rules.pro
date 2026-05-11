@@ -17,7 +17,9 @@
 #}
 
 -keep,includedescriptorclasses,allowoptimization class com.erroratline0.infinipaint.InfiniPaint {
-    void startTextInput(int);
+    void startTextInput(long, java.lang.String, int, int, int);
+    void updateCursorPos(int, int);
+    void updateTextboxAndCursorPos(java.lang.String, int, int);
 }
 
 -keep,includedescriptorclasses,allowoptimization class org.libsdl.app.SDLActivity {

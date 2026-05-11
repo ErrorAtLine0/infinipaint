@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include "GUIStuff/Elements/ScrollArea.hpp"
 #include "DrawData.hpp"
@@ -36,6 +54,7 @@ class Toolbar {
         Toolbar(MainProgram& initMain);
         void update();
         void layout_run();
+
         struct ColorSelectorData {
             std::function<void()> onChange;
             std::function<void()> onSelect;
@@ -47,6 +66,7 @@ class Toolbar {
             std::function<void()> onSelect;
             std::function<void()> onDeselect;
         };
+
         void color_selector_left(GUIStuff::Element* button, Vector4f* color, const ColorSelectorData& colorSelectorData = {});
         void color_selector_right(GUIStuff::Element* button, Vector4f* color, const ColorSelectorData& colorSelectorData = {});
         void color_button_left(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData = {});
@@ -61,14 +81,6 @@ class Toolbar {
 
         void open_chatbox();
         void close_chatbox();
-
-        GUIStuff::Element* colorLeftButton; 
-        Vector4f* colorLeft = nullptr;
-        ColorSelectorData colorLeftData;
-
-        GUIStuff::Element* colorRightButton; 
-        Vector4f* colorRight = nullptr;
-        ColorSelectorData colorRightData;
 
         bool drawGui = true;
 
@@ -107,6 +119,14 @@ class Toolbar {
         void add_world_to_close_popup_data(const std::shared_ptr<World>& w);
         void general_settings_inner_gui();
         void center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent);
+
+        GUIStuff::Element* colorLeftButton; 
+        Vector4f* colorLeft = nullptr;
+        ColorSelectorData colorLeftData;
+
+        GUIStuff::Element* colorRightButton; 
+        Vector4f* colorRight = nullptr;
+        ColorSelectorData colorRightData;
 
         struct ClosePopupData {
             struct CloseWorldData {

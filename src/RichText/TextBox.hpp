@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include <cstdint>
 #include <cwchar>
@@ -106,6 +124,11 @@ class TextBox {
             bool skiaAA = false;
         };
 
+        int get_codepoint_location_from_text_position(TextPosition pos);
+        TextPosition get_text_position_from_codepoint_location(int p);
+        int get_utf16_location_from_codepoint_location(int p);
+        int get_codepoint_location_from_utf16_location(int p);
+
         TextPosition move(Movement movement, TextPosition pos, std::optional<float>* previousX = nullptr, bool flipDependingOnTextDirection = false);
         void set_max_width(float newWidth);
         void set_max_height(float newMaxHeight);
@@ -166,6 +189,8 @@ class TextBox {
         SkRect get_cursor_rect(TextPosition pos);
 
         skia::textlayout::TextDirection get_suggested_direction(size_t pIndex);
+
+        TextPosition get_text_pos_closest_to_point(Vector2f point);
     private:
         std::pair<TextPosition, TextPosition> get_start_end_text_pos(TextPosition p1, TextPosition p2);
         std::pair<size_t, size_t> get_start_end_paragraph_pos(size_t p1, size_t p2);
@@ -180,7 +205,6 @@ class TextBox {
         void rects_between_text_positions_func(TextPosition p1, TextPosition p2, std::function<void(const SkRect& r)> f);
 
 
-        TextPosition get_text_pos_closest_to_point(Vector2f point);
         std::shared_ptr<TextStyleModifier> get_last_text_style_mod_before_pos(TextPosition pos, TextStyleModifier::ModifierType modType);
         void erase_if_over_all_styles_until_pos(TextPosition pos, const std::function<bool(TextPosition, const std::shared_ptr<TextStyleModifier>&)>& func);
         void insert_style_at_pos(TextPosition pos, const std::shared_ptr<TextStyleModifier>& modifier);

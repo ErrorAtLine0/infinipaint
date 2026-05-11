@@ -8,7 +8,7 @@
 		<a href="https://github.com/ErrorAtLine0/infinipaint/blob/main/docs/BUILDING.md">⚒️ Build Manual</a>
 	</p>
 	<p>
-		<a href="https://opensource.org/license/mit"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"/></a>
+		<a href="https://www.gnu.org/licenses/gpl-3.0"><img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg"/></a>
 		<a href="https://github.com/ErrorAtLine0/infinipaint/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/erroratline0/infinipaint.svg"/></a>
 		<a href="https://x.com/ErrorAtLine0"><img alt="X (Twitter) follow" src="https://img.shields.io/twitter/follow/ErrorAtLine0"/></a>
 		<a href="https://github.com/ErrorAtLine0/infinipaint"><img alt="Github Stars" src="https://img.shields.io/github/stars/erroratline0/infinipaint"/></a>
@@ -75,4 +75,4 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
 
 ## Contribution
 
-Currently, I won't be accepting most pull requests. The program is at a stage where large parts of the code are constantly being rewritten, so unless it's something small and doesn't interfere with code I'm currently working on, I probably won't be merging it. Any issue reports (bug reports, feature requests, etc.) are welcome though!
+Currently, I won't be accepting pull requests. The program is at a stage where large parts of the code are constantly being rewritten. Any issue reports (bug reports, feature requests, etc.) are welcome though!

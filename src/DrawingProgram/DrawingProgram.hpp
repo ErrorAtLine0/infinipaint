@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include "../DrawData.hpp"
 #include "DrawingProgramCache.hpp"
@@ -40,6 +58,11 @@ class DrawingProgram {
         CanvasComponentContainer::ObjInfo* add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
         void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet);
 
+        Vector4f* color_picker_left(Vector4f* oldColor);
+        Vector4f* color_picker_right(Vector4f* oldColor);
+        bool phone_gui_tool_specific_bottom_toolbar_exists();
+        void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t);
+
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         World& world;
@@ -61,6 +84,7 @@ class DrawingProgram {
         void on_tab_out();
         void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
         void input_paste_callback(const CustomEvents::PasteEvent& paste);
+        void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
         void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         void input_text_key_callback(const InputManager::KeyCallbackArgs& key);

@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include "../GUIManager.hpp"
 #include "../Elements/LayoutElement.hpp"
@@ -22,5 +40,16 @@ struct WindowFillSideBarConfig {
 
 void window_fill_side_bar(GUIManager& gui, const WindowFillSideBarConfig& config, const std::function<void()>& innerContent);
 void window_gap_side_bar(GUIManager& gui, const WindowFillSideBarConfig::Direction& dir);
+
+struct DropDownPopupLayout {
+    float dropdownOffset = 4.0f;
+    Element* button = nullptr;
+    bool* isOpen;
+    Vector2f entrySize;
+    size_t entryCount;
+    std::function<void(size_t i)> entryLayout;
+};
+
+void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, const DropDownPopupLayout& d);
 
 }}

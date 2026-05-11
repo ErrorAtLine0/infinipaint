@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "DrawingProgramToolBase.hpp"
 
 #include "BrushTool.hpp"
@@ -55,7 +73,9 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
     return nullptr;
 }
 
+Vector4f* DrawingProgramToolBase::color_picker_color(Vector4f* oldColor) { return nullptr; }
 void DrawingProgramToolBase::input_paste_callback(const CustomEvents::PasteEvent& paste) {}
+void DrawingProgramToolBase::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {}
 void DrawingProgramToolBase::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {}
 void DrawingProgramToolBase::input_text_callback(const InputManager::TextCallbackArgs& text) {}
 void DrawingProgramToolBase::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
@@ -65,4 +85,6 @@ void DrawingProgramToolBase::input_pen_button_callback(const InputManager::PenBu
 void DrawingProgramToolBase::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {}
 void DrawingProgramToolBase::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {}
 void DrawingProgramToolBase::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {}
+bool DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar_exists() { return false; }
+void DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {}
 std::optional<InputManager::TextBoxStartInfo> DrawingProgramToolBase::get_text_box_start_info() { return std::nullopt; }

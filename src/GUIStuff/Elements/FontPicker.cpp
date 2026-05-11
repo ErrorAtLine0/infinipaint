@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "FontPicker.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include <algorithm>
@@ -14,18 +32,12 @@
 #include "TextParagraph.hpp"
 #include "ManyElementScrollArea.hpp"
 
-std::vector<std::string> sortedFontList;
-std::vector<std::string> sortedFontListLowercase;
-
 namespace GUIStuff {
 
-FontPicker::FontPicker(GUIManager& gui): Element(gui) {}
+std::vector<std::string> sortedFontListLowercase;
+std::vector<std::string> sortedFontList;
 
-void FontPicker::layout(const Clay_ElementId& id, std::string* newFontName, const FontPickerData& newData) {
-    using namespace ElementHelpers;
-    fontName = newFontName;
-    data = newData;
-
+const std::vector<std::string>& FontPicker::sorted_font_list(GUIManager& gui) {
     if(sortedFontList.empty()) {
         auto icu = SkUnicodes::ICU::Make();
         std::set<std::string> sortedFontSet;
@@ -53,6 +65,17 @@ void FontPicker::layout(const Clay_ElementId& id, std::string* newFontName, cons
         for(std::string& s : sortedFontListLowercase)
             std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     }
+    return sortedFontList;
+}
+
+FontPicker::FontPicker(GUIManager& gui): Element(gui) {}
+
+void FontPicker::layout(const Clay_ElementId& id, std::string* newFontName, const FontPickerData& newData) {
+    using namespace ElementHelpers;
+    fontName = newFontName;
+    data = newData;
+
+    sorted_font_list(gui);
 
     auto sortedFontListValIt = std::find(sortedFontList.begin(), sortedFontList.end(), *fontName);
     size_t val = sortedFontListValIt != sortedFontList.end() ? sortedFontListValIt - sortedFontList.begin() : std::numeric_limits<size_t>::max();

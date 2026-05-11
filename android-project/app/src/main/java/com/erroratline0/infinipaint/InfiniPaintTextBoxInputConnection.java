@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.erroratline0.infinipaint;
 
 import static android.text.TextUtils.CAP_MODE_SENTENCES;
@@ -9,7 +27,9 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.Handler;
 import android.text.Editable;
+import android.text.Selection;
 import android.text.SpannableStringBuilder;
+import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.CompletionInfo;
@@ -40,27 +60,38 @@ import org.libsdl.app.SDL;
 import org.libsdl.app.SDLActivity;
 
 public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
-    public static native void nativeCommitText(int textboxID, String text, int newCursorPosition);
-    public static native void nativeDeleteSurroundingText(int textboxID, int beforeLength, int afterLength);
-    public static native void nativeSetSelection(int textboxID, int start, int end);
+    protected InfiniPaintTextBoxEditable mEditText;
+    protected long mTextBoxID;
 
-    protected EditText mEditText;
-    protected int mTextBoxID;
+    public static native int[] nativeGetSelection(long mTextBoxID);
+    public static native void nativeShiftSelection(long mTextBoxID, int amount);
+    public static native void nativeSetSelection(long mTextBoxID, int start, int end);
 
     InfiniPaintTextBoxInputConnection(View targetView, boolean fullEditor) {
         super(targetView, fullEditor);
-        mEditText = new EditText(SDL.getContext());
+        mEditText = new InfiniPaintTextBoxEditable();
     }
 
-    public void setInitialData(int textboxID, String initialText, int begin, int end) {
+    public void setInitialData(long textboxID, String initialText, int begin, int end) {
         mTextBoxID = textboxID;
-        mEditText.setText(initialText);
-        mEditText.setSelection(begin, end);
+        mEditText.mTextBoxID = textboxID;
+        Selection.setSelection(mEditText, begin, end);
+    }
+
+    public void updateSelection(int start, int end) {
+        Selection.setSelection(mEditText, start, end);
+    }
+
+    public void clearAndSetNewTextAndSelection(String str, int start, int end) {
+        finishComposingText();
+        mEditText.clear();
+        mEditText.replace(0, 0, str);
+        Selection.setSelection(mEditText, start, end);
     }
 
     @Override
     public Editable getEditable() {
-        return mEditText.getEditableText();
+        return mEditText;
     }
 
     @Override
@@ -82,31 +113,147 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
                 return true;
             }
         }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_DOWN) {
+            int start = Selection.getSelectionStart(mEditText);
+            int end = Selection.getSelectionEnd(mEditText);
+            if(start != end)
+                commitText("", 0);
+            else {
+                nativeShiftSelection(mTextBoxID, -1);
+                int[] p = nativeGetSelection(mTextBoxID);
+                if(p[0] != start)
+                    deleteSurroundingText(start - p[0], 0);
+            }
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT && event.getAction() == KeyEvent.ACTION_DOWN) {
+            leftKey();
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT && event.getAction() == KeyEvent.ACTION_DOWN) {
+            rightKey();
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_0 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("0", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_1 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("1", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_2 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("2", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_3 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("3", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_4 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("4", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_5 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("5", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_6 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("6", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_7 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("7", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_8 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("8", 1);
+            return true;
+        }
+        else if(event.getKeyCode() == KeyEvent.KEYCODE_9 && event.getAction() == KeyEvent.ACTION_DOWN) {
+            finishComposingText();
+            commitText("9", 1);
+            return true;
+        }
 
         return super.sendKeyEvent(event);
     }
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
-        if (!super.commitText(text, newCursorPosition))
-            return false;
-        nativeCommitText(mTextBoxID, text.toString(), newCursorPosition);
+        // Manually do commitText
+        int composingTextBegin = getComposingSpanStart(mEditText);
+        int composingTextEnd = getComposingSpanEnd(mEditText);
+        int start, end;
+
+        if(composingTextBegin != -1 && composingTextEnd != -1) {
+            start = Math.min(composingTextBegin, composingTextEnd);
+            end = Math.max(composingTextBegin, composingTextEnd);
+        }
+        else {
+            start = Math.min(Selection.getSelectionStart(mEditText), Selection.getSelectionEnd(mEditText));
+            end = Math.max(Selection.getSelectionStart(mEditText), Selection.getSelectionEnd(mEditText));
+        }
+
+        mEditText.replace(start, end, text);
+        if(newCursorPosition <= 0)
+            setSelection(start + newCursorPosition, start + newCursorPosition);
+        else
+            setSelection(start + text.length() + newCursorPosition - 1, start + text.length() + newCursorPosition - 1);
         return true;
     }
 
     @Override
     public boolean setComposingText(CharSequence text, int newCursorPosition) {
-        if (!super.setComposingText(text, newCursorPosition))
-            return false;
-        nativeCommitText(mTextBoxID, text.toString(), newCursorPosition);
+        // Manually do setComposingText
+        int composingTextBegin = getComposingSpanStart(mEditText);
+        int composingTextEnd = getComposingSpanEnd(mEditText);
+        int start, end;
+
+        if(composingTextBegin != -1 && composingTextEnd != -1) {
+            start = Math.min(composingTextBegin, composingTextEnd);
+            end = Math.max(composingTextBegin, composingTextEnd);
+        }
+        else {
+            start = Math.min(Selection.getSelectionStart(mEditText), Selection.getSelectionEnd(mEditText));
+            end = Math.max(Selection.getSelectionStart(mEditText), Selection.getSelectionEnd(mEditText));
+        }
+        mEditText.replace(start, end, text);
+        if(newCursorPosition <= 0)
+            setSelection(start + newCursorPosition, start + newCursorPosition);
+        else
+            setSelection(start + text.length() + newCursorPosition - 1, start + text.length() + newCursorPosition - 1);
+
+        setComposingRegion(start, start + text.length());
+
         return true;
     }
 
     @Override
     public boolean deleteSurroundingText(int beforeLength, int afterLength) {
+        int start = Math.min(Selection.getSelectionStart(mEditText), Selection.getSelectionEnd(mEditText));
         if (!super.deleteSurroundingText(beforeLength, afterLength))
             return false;
-        nativeDeleteSurroundingText(mTextBoxID, beforeLength, afterLength);
+        int newCursorPos = Math.max(start - beforeLength, 0);
+        setSelection(newCursorPos, newCursorPos);
+        return true;
+    }
+
+    @Override
+    public boolean deleteSurroundingTextInCodePoints(int beforeLength, int afterLength) {
+        if (!super.deleteSurroundingTextInCodePoints(beforeLength, afterLength))
+            return false;
+        int[] p = nativeGetSelection(mTextBoxID);
+        Selection.setSelection(mEditText, p[0], p[1]);
         return true;
     }
 
@@ -115,7 +262,29 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
         if(!super.setSelection(start, end))
             return false;
         nativeSetSelection(mTextBoxID, start, end);
+        int[] p = nativeGetSelection(mTextBoxID);
+        Selection.setSelection(mEditText, p[0], p[1]);
         return true;
+    }
+
+    @Override
+    public boolean replaceText(int start, int end, CharSequence text, int newCursorPosition, TextAttribute textAttribute) {
+        finishComposingText();
+        setSelection(start, end);
+        commitText(text, newCursorPosition);
+        return true;
+    }
+
+    public void leftKey() {
+        nativeShiftSelection(mTextBoxID, -1);
+        int[] p = nativeGetSelection(mTextBoxID);
+        Selection.setSelection(mEditText, p[0], p[1]);
+    }
+
+    public void rightKey() {
+        nativeShiftSelection(mTextBoxID, 1);
+        int[] p = nativeGetSelection(mTextBoxID);
+        Selection.setSelection(mEditText, p[0], p[1]);
     }
 }
 

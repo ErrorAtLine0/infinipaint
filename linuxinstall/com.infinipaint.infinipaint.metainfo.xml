@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2025 Yousef Khadadeh -->
+<!-- Copyright (C) 2025-2026 Yousef Khadadeh -->
 <component type="desktop-application">
     <id>com.infinipaint.infinipaint</id>
     <name>Infinipaint</name>
     <summary>Draw on a big canvas</summary>
     <metadata_license>CC0-1.0</metadata_license>
-    <project_license>MIT</project_license>
+    <project_license>GPL-3.0-or-later</project_license>
 
     <branding>
         <color type="primary" scheme_preference="light">#83b9b2</color>

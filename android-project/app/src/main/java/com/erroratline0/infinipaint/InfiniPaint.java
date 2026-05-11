@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.erroratline0.infinipaint;
 
 import android.content.Context;
@@ -15,10 +33,6 @@ import android.widget.RelativeLayout;
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLDummyEdit;
 import org.libsdl.app.SDLSurface;
-
-/**
- * A sample wrapper class that just calls SDLActivity
- */
 
 public class InfiniPaint extends SDLActivity {
 
@@ -40,7 +54,7 @@ public class InfiniPaint extends SDLActivity {
     }
 
     static class StartInfiniPaintTextInputTask implements Runnable {
-        public StartInfiniPaintTextInputTask(int textboxID, String str, int selectionBegin, int selectionEnd, int inputType) {
+        public StartInfiniPaintTextInputTask(long textboxID, String str, int selectionBegin, int selectionEnd, int inputType) {
             mTextBoxID = textboxID;
             mStr = str;
             mSelectionBegin = selectionBegin;
@@ -48,7 +62,7 @@ public class InfiniPaint extends SDLActivity {
             mInputType = inputType;
         }
 
-        int mTextBoxID;
+        long mTextBoxID;
         String mStr;
         int mSelectionBegin;
         int mSelectionEnd;
@@ -57,29 +71,75 @@ public class InfiniPaint extends SDLActivity {
         @Override
         public void run() {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(1, 1);
+            //params.leftMargin = 1;
+            //params.topMargin = 1;
 
-            if (mTextEdit == null) {
-                mTextEdit = new InfiniPaintTextBoxView(getContext());
-                mLayout.addView(mTextEdit, params);
+            if (mTextEdit2 == null) {
+                mTextEdit2 = new InfiniPaintTextBoxView(getContext());
+                mLayout.addView(mTextEdit2, params);
             }
             else {
-                mTextEdit.setLayoutParams(params);
+                mTextEdit2.setLayoutParams(params);
             }
 
-            mTextEdit.setInitialData(mTextBoxID, mStr, mSelectionBegin, mSelectionEnd, mInputType);
-            mTextEdit.setVisibility(View.VISIBLE);
-            mTextEdit.requestFocus();
+            mTextEdit2.setInitialData(mTextBoxID, mStr, mSelectionBegin, mSelectionEnd, mInputType);
+            mTextEdit2.setVisibility(View.VISIBLE);
+            mTextEdit2.requestFocus();
             InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(mTextEdit, 0);
+            imm.showSoftInput(mTextEdit2, 0);
 
             if (imm.isAcceptingText())
                 onNativeScreenKeyboardShown();
         }
     }
 
-    static public void startTextInput(int textboxID, String str, int selectionBegin, int selectionEnd, int inputType) {
-        mSingleton.commandHandler.post(new StartInfiniPaintTextInputTask(textboxID, str, selectionBegin, selectionEnd, inputType));
+    static class InfiniPaintUpdateCursorPosTask implements Runnable {
+        public InfiniPaintUpdateCursorPosTask(int selectionBegin, int selectionEnd) {
+            mSelectionBegin = selectionBegin;
+            mSelectionEnd = selectionEnd;
+        }
+
+        int mSelectionBegin;
+        int mSelectionEnd;
+
+        @Override
+        public void run() {
+            if (mTextEdit2 != null) {
+                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                mTextEdit2.ic.updateSelection(mSelectionBegin, mSelectionEnd);
+                imm.updateSelection(mTextEdit2, mSelectionBegin, mSelectionEnd, -1, -1);
+            }
+        }
     }
 
-    static InfiniPaintTextBoxView mTextEdit;
+    static class InfiniPaintUpdateTextboxAndCursorPosTask implements Runnable {
+        public InfiniPaintUpdateTextboxAndCursorPosTask(String str, int selectionBegin, int selectionEnd) {
+            mStr = str;
+            mSelectionBegin = selectionBegin;
+            mSelectionEnd = selectionEnd;
+        }
+
+        String mStr;
+        int mSelectionBegin;
+        int mSelectionEnd;
+
+        @Override
+        public void run() {
+            if (mTextEdit2 != null) {
+                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                mTextEdit2.ic.clearAndSetNewTextAndSelection(mStr, mSelectionBegin, mSelectionEnd);
+                imm.updateSelection(mTextEdit2, mSelectionBegin, mSelectionEnd, -1, -1);
+            }
+        }
+    }
+
+    static public void startTextInput(long textboxID, String str, int selectionBegin, int selectionEnd, int inputType) {
+        mSingleton.commandHandler.post(new StartInfiniPaintTextInputTask(textboxID, str, selectionBegin, selectionEnd, inputType));
+    }
+    static public void updateCursorPos(int selectionBegin, int selectionEnd) {
+        mSingleton.commandHandler.post(new InfiniPaintUpdateCursorPosTask(selectionBegin, selectionEnd));
+    }
+    static public void updateTextboxAndCursorPos(String str, int selectionBegin, int selectionEnd) {
+        mSingleton.commandHandler.post(new InfiniPaintUpdateTextboxAndCursorPosTask(str, selectionBegin, selectionEnd));
+    }
 }

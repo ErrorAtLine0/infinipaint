@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "GUIManager.hpp"
 #include <include/core/SkBlendMode.h>
 #include <include/core/SkPaint.h>
@@ -705,6 +723,11 @@ void GUIManager::deselect_all() {
 void GUIManager::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     for(ElementContainer* e : orderedElements)
         e->elem->input_paste_callback(paste);
+}
+
+void GUIManager::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
+    for(ElementContainer* e : orderedElements)
+        e->elem->input_android_text_box_input_callback(textboxInput);
 }
 
 void GUIManager::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {

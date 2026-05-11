@@ -1,3 +1,21 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "InputManager.hpp"
 #include "CustomEvents.hpp"
 
@@ -91,12 +109,6 @@ InputManager::InputManager(MainProgram& initMain):
     keyAssignments = defaultKeyAssignments;
 }
 
-InputManager::TextBoxID InputManager::text_box_get_new_id() {
-    static TextBoxID nextID = 0;
-    ++nextID;
-    return nextID;
-}
-
 void InputManager::refresh_receiving_text_box_input() {
     std::optional<TextBoxStartInfo> startInfo = main.get_text_box_start_info();
     if(startInfo.has_value()) {
@@ -115,7 +127,7 @@ void InputManager::refresh_receiving_text_box_input() {
         update_textbox_rectangle(currentTextboxID.value(), startInfo->rect);
 
         #ifdef __ANDROID__
-            AndroidJNICalls::startTextInput(startInfo->inputProperties.androidInputType);
+            AndroidJNICalls::startTextInput(startInfo->id, startInfo->textBox, startInfo->cursor, startInfo->modMap, startInfo->inputProperties.androidInputType);
         #else
             SDL_StartTextInputWithProperties(main.window.sdlWindow, propIDVal);
         #endif
@@ -125,9 +137,9 @@ void InputManager::refresh_receiving_text_box_input() {
         #endif
     }
     else {
-        SDL_StopTextInput(main.window.sdlWindow);
-        currentTextboxID = std::nullopt;
         excludeIMEFromSafeArea = false;
+        currentTextboxID = std::nullopt;
+        SDL_StopTextInput(main.window.sdlWindow);
         screenOffset = {0.0f, 0.0f};
         #ifdef __EMSCRIPTEN__
             isAcceptingInputEmscripten = 0;
@@ -139,7 +151,7 @@ bool InputManager::text_is_accepting_input() {
     return currentTextboxID.has_value();
 }
 
-void InputManager::update_textbox_rectangle(TextBoxID textboxID, std::optional<SCollision::AABB<float>> textboxRect) {
+void InputManager::update_textbox_rectangle(CustomEvents::InputTextBoxID textboxID, std::optional<SCollision::AABB<float>> textboxRect) {
     if(currentTextboxID.has_value() && textboxID == currentTextboxID.value()) {
         excludeIMEFromSafeArea = !textboxRect.has_value();
         if(excludeIMEFromSafeArea)
@@ -855,7 +867,7 @@ void InputManager::update_safe_area() {
         main.window.safeArea = SCollision::AABB<float>({0, 0}, {main.window.size.x(), main.window.size.y()});
 
     std::scoped_lock a{safeAreaWithoutIMEMutex};
-    if(excludeIMEFromSafeArea && safeAreaWithoutIME.has_value())
+    if(safeAreaWithoutIME.has_value() && excludeIMEFromSafeArea)
         main.window.safeArea = safeAreaWithoutIME.value();
 }
 

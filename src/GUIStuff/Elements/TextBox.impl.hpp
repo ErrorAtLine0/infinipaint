@@ -1,6 +1,26 @@
+/*  
+ * InfiniPaint
+ * Copyright (C) 2025-2026 Yousef Khadadeh
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "TextBox.decl.hpp"
 #include "../GUIManager.hpp"
 #include <SDL3/SDL_keyboard.h>
+#include <Helpers/Logger.hpp>
+#include "../../AndroidJNICalls.hpp"
 
 namespace GUIStuff {
 
@@ -84,7 +104,8 @@ template <typename T> void TextBox<T>::select() {
     if(!is_selected()) {
         if(isEmptyText)
             textbox->clear_text();
-        edit = std::make_unique<RichTextUserInput>(gui.io.input->text_box_get_new_id(), textbox, cur, nullptr);
+        edit = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, nullptr);
+        Logger::get().log("INFO", "Select");
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
     }
 }
@@ -93,6 +114,7 @@ template <typename T> void TextBox<T>::deselect() {
     if(is_selected()) {
         edit = nullptr;
         if(userInfo.onDeselect) userInfo.onDeselect();
+        Logger::get().log("INFO", "Deselect");
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
         reset_textbox_text();
         populate_empty_textbox();
@@ -108,6 +130,11 @@ template <typename T> void TextBox<T>::input_paste_callback(const CustomEvents::
         after_text_input_callback();
 }
 
+template <typename T> void TextBox<T>::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
+    if(is_selected() && edit->input_android_text_box_input_callback(textboxInput).textEdited)
+        after_text_input_callback();
+}
+
 template <typename T> void TextBox<T>::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     if(is_selected()) {
         if(key.key == InputManager::KEY_GENERIC_ENTER && key.down) {
@@ -116,6 +143,7 @@ template <typename T> void TextBox<T>::input_text_key_callback(const InputManage
                 if(success && userInfo.onEdit) userInfo.onEdit();
                 if(userInfo.onEnter) userInfo.onEnter();
                 reset_textbox_text();
+                if(is_selected()) edit->android_force_update_textbox_and_cursor();
             });
         }
         else {
@@ -166,20 +194,53 @@ template <typename T> void TextBox<T>::input_mouse_button_callback(const InputMa
                         if(userInfo.onSelect) userInfo.onSelect();
                     });
                 }
-                textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, button.clicks, true, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+                isHeld = true;
+                edit->process_mouse_left_button(button.pos - boundingBox.value().min, button.clicks, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
             }
-            else if(is_selected())
+            else if(is_selected()) {
+                isHeld = false;
                 deselect();
+            }
         }
         else {
-            textbox->process_mouse_left_button(*cur, button.pos - boundingBox.value().min, 0, false, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+            isHeld = false;
+            if(is_selected())
+                edit->process_mouse_left_button(button.pos - boundingBox.value().min, 0, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
         }
     }
 }
 
 template <typename T> void TextBox<T>::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(boundingBox.has_value())
-        textbox->process_mouse_left_button(*cur, motion.pos - boundingBox.value().min, 0, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+    if(boundingBox.has_value() && is_selected())
+        edit->process_mouse_left_button(motion.pos - boundingBox.value().min, 0, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
+}
+
+template <typename T> void TextBox<T>::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+    if(boundingBox.has_value()) {
+        if(touch.down) {
+            if(mouseHovering) {
+                if(!is_selected()) {
+                    select();
+                    gui.set_post_callback_func_high_priority([&] {
+                        if(userInfo.onSelect) userInfo.onSelect();
+                    });
+                }
+                isHeld = true;
+                edit->input_finger_touch_down(touch.pos - boundingBox.value().min);
+            }
+            else if(is_selected()) {
+                isHeld = false;
+                deselect();
+            }
+        }
+        else
+            isHeld = false;
+    }
+}
+
+template <typename T> void TextBox<T>::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
+    if(boundingBox.has_value() && is_selected() && isHeld)
+        edit->input_finger_held_motion(motion.pos - boundingBox.value().min);
 }
 
 template <typename T> std::optional<InputManager::TextBoxStartInfo> TextBox<T>::get_text_box_start_info() {
@@ -188,7 +249,9 @@ template <typename T> std::optional<InputManager::TextBoxStartInfo> TextBox<T>::
         return InputManager::TextBoxStartInfo{
             .id = edit->id,
             .rect = rect,
-            .inputProperties = userInfo.textInputProps
+            .inputProperties = userInfo.textInputProps,
+            .textBox = textbox,
+            .cursor = cur
         };
     }
     return std::nullopt;
@@ -224,8 +287,10 @@ template <typename T> bool TextBox<T>::update_data() {
 }
 
 template <typename T> TextBox<T>::~TextBox() {
-    if(is_selected())
+    if(is_selected()) {
+        Logger::get().log("INFO", "Destroy");
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
+    }
 }
 
 }
