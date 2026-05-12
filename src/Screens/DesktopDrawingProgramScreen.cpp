@@ -22,7 +22,7 @@
 
 DesktopDrawingProgramScreen::DesktopDrawingProgramScreen(MainProgram& m):
     DrawingProgramScreen(m),
-    toolbar(m)
+    toolbar(m, *this)
 {}
 
 void DesktopDrawingProgramScreen::update() {
@@ -75,4 +75,11 @@ void DesktopDrawingProgramScreen::input_text_key_callback(const InputManager::Ke
         }
     }
     DrawingProgramScreen::input_text_key_callback(key);
+}
+
+void DesktopDrawingProgramScreen::open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
+    if(main.conf.useNativeFilePicker)
+        Screen::open_file_selector(filePickerName, extensionFilters, postSelectionFunc, fileName, isSaving);
+    else
+        toolbar.open_file_selector_non_native(filePickerName, extensionFilters, postSelectionFunc, fileName, isSaving);
 }

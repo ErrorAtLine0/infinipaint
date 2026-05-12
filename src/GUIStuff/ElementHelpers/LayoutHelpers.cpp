@@ -245,7 +245,7 @@ void bottom_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingEle
     floatConfig = {
         .offset = {
             .x = xOffset,
-            .y = bb.max.y() + d.dropdownOffset
+            .y = bb.max.y() + d.popupOffset
         },
         .zIndex = gui.get_z_index(),
         .attachPoints = {
@@ -255,7 +255,7 @@ void bottom_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingEle
         .attachTo = CLAY_ATTACH_TO_ROOT
     };
 
-    maxHeight = std::max(gui.io.safeWindowRect.max.y() - bb.max.y() - d.dropdownOffset, 0.0f);
+    maxHeight = std::max(gui.io.safeWindowRect.max.y() - bb.max.y() - d.popupOffset, 0.0f);
 }
 
 void top_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight, const DropDownPopupLayout& d) {
@@ -271,7 +271,7 @@ void top_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElemen
     floatConfig = {
         .offset = {
             .x = xOffset,
-            .y = bb.min.y() - d.dropdownOffset
+            .y = bb.min.y() - d.popupOffset
         },
         .zIndex = gui.get_z_index(),
         .attachPoints = {
@@ -281,7 +281,7 @@ void top_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElemen
         .attachTo = CLAY_ATTACH_TO_ROOT
     };
 
-    maxHeight = std::max(bb.min.y() - gui.io.safeWindowRect.min.y() - d.dropdownOffset, 0.0f);
+    maxHeight = std::max(bb.min.y() - gui.io.safeWindowRect.min.y() - d.popupOffset, 0.0f);
 }
 
 void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight, bool isRightSide, const DropDownPopupLayout& d) {
@@ -293,9 +293,9 @@ void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_Floatin
         offsetY -= (offsetY + dropdownHeight) - gui.io.safeWindowRect.max.y();
     float offsetX = 0.0f;
     if(isRightSide)
-        offsetX = bb.max.x() + d.dropdownOffset;
+        offsetX = bb.max.x() + d.popupOffset;
     else
-        offsetX = bb.min.x() - d.entrySize.x() - d.dropdownOffset;
+        offsetX = bb.min.x() - d.entrySize.x() - d.popupOffset;
     floatConfig = {
         .offset = {
             .x = offsetX,
@@ -314,9 +314,9 @@ void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_Floatin
 void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, DropDownPopupLayout d) {
     if(!d.button->get_bb().has_value())
         return;
-    d.entrySize.x() = std::min(d.entrySize.x(), gui.io.windowSize.x());
+    d.entrySize.x() = std::min(d.entrySize.x(), gui.io.safeWindowRect.width());
     gui.element<LayoutElement>(id, [&](LayoutElement* l, const Clay_ElementId& lId) {
-        float dropdownHeight = d.entrySize.y() * d.entryCount + d.dropdownOffset;
+        float dropdownHeight = d.entrySize.y() * d.entryCount + d.popupOffset;
         Clay_FloatingElementConfig floatConfig;
         float maxHeight = gui.io.safeWindowRect.height();
         auto& buttonBB = d.button->get_bb().value();
@@ -356,9 +356,88 @@ void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, DropDow
         }
     }, LayoutElement::Callbacks {
         .onClick = [&, d](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& m) {
-            if(!l->mouseHovering && !l->childMouseHovering && m.down && !d.button->mouseHovering && d.isOpen) {
-                *d.isOpen = false;
-                gui.set_to_layout();
+            if(!l->mouseHovering && !l->childMouseHovering && !d.button->mouseHovering) {
+                if(m.down && d.clickAwayCallback) {
+                    d.clickAwayCallback();
+                    gui.set_to_layout();
+                }
+                if(!m.down && d.clickUpAwayCallback) {
+                    d.clickUpAwayCallback();
+                    gui.set_to_layout();
+                }
+            }
+        }
+    });
+}
+
+void attach_to_button_popup_layout(GUIManager& gui, const char* id, AttachToButtonPopupLayout d) {
+    if(!d.button->get_bb().has_value())
+        return;
+    d.popupSize.x() = std::min(d.popupSize.x(), std::abs(gui.io.safeWindowRect.width() - 10.0f));
+    d.popupSize.y() = std::min(d.popupSize.y(), std::abs(gui.io.safeWindowRect.height() - 10.0f));
+    float maxHeight = d.popupSize.y();
+    gui.element<LayoutElement>(id, [&](LayoutElement* l, const Clay_ElementId& lId) {
+        Clay_FloatingElementConfig floatConfig;
+        auto& buttonBB = d.button->get_bb().value();
+        if(buttonBB.max.y() + d.popupSize.y() > gui.io.safeWindowRect.max.y()) {
+            float rightSideWidth = gui.io.safeWindowRect.max.x() - buttonBB.max.x();
+            float leftSideWidth = buttonBB.min.x() - gui.io.safeWindowRect.min.x();
+            if(rightSideWidth > d.popupSize.x() || leftSideWidth > d.popupSize.x())
+                left_right_offset_setup(gui, d.popupSize.y(), floatConfig, maxHeight, rightSideWidth >= leftSideWidth, {
+                    .popupOffset = d.popupOffset,
+                    .button = d.button,
+                    .entrySize = d.popupSize
+                });
+            else {
+                if(gui.io.safeWindowRect.max.y() - buttonBB.max.y() >= buttonBB.min.y() - gui.io.safeWindowRect.min.y())
+                    bottom_offset_setup(gui, d.popupSize.y(), floatConfig, maxHeight, {
+                        .popupOffset = d.popupOffset,
+                        .button = d.button,
+                        .entrySize = d.popupSize
+                    });
+                else
+                    top_offset_setup(gui, d.popupSize.y(), floatConfig, maxHeight, {
+                        .popupOffset = d.popupOffset,
+                        .button = d.button,
+                        .entrySize = d.popupSize
+                    });
+            }
+        }
+        else
+            bottom_offset_setup(gui, d.popupSize.y(), floatConfig, maxHeight, {
+                .popupOffset = d.popupOffset,
+                .button = d.button,
+                .entrySize = d.popupSize
+            });
+
+        if(maxHeight < d.popupSize.y())
+            d.popupSize.y() = maxHeight;
+        CLAY(lId, {
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIXED(d.popupSize.x()), .height = CLAY_SIZING_FIXED(d.popupSize.y())},
+                .childGap = 0
+            },
+            .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
+            .cornerRadius = CLAY_CORNER_RADIUS(4),
+            .floating = floatConfig,
+            .border = {
+                .color = convert_vec4<Clay_Color>(gui.io.theme->fillColor2),
+                .width = CLAY_BORDER_OUTSIDE(1)
+            }
+        }) {
+            d.innerLayout();
+        }
+    }, LayoutElement::Callbacks {
+        .onClick = [&, d](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& m) {
+            if(!l->mouseHovering && !l->childMouseHovering && !d.button->mouseHovering) {
+                if(m.down && d.clickAwayCallback) {
+                    d.clickAwayCallback();
+                    gui.set_to_layout();
+                }
+                if(!m.down && d.clickUpAwayCallback) {
+                    d.clickUpAwayCallback();
+                    gui.set_to_layout();
+                }
             }
         }
     });

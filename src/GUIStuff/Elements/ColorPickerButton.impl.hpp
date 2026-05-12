@@ -20,6 +20,7 @@
 #include "../ElementHelpers/ColorPickerItemsHelpers.hpp"
 #include "../ElementHelpers/ButtonHelpers.hpp"
 #include "../ElementHelpers/LayoutHelpers.hpp"
+#include "Helpers/ConvertVec.hpp"
 
 namespace GUIStuff {
 
@@ -28,7 +29,7 @@ template <typename T> ColorPickerButton<T>::ColorPickerButton(GUIManager& gui): 
 template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id, T* val, const ColorPickerButtonData& d) {
     this->data = d;
 
-    GUIStuff::ElementHelpers::color_button(gui, "Color Picker Button", val, {
+    Element* button = GUIStuff::ElementHelpers::color_button(gui, "Color Picker Button", val, {
         .isSelected = isOpen,
         .hasAlpha = data.hasAlpha,
         .onClick = [&]{
@@ -38,18 +39,26 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
     });
     if(isOpen) {
         gui.set_z_index(gui.get_z_index() + 1, [&] {
-            ElementHelpers::top_to_bottom_window_popup_layout(gui, "Color Picker", CLAY_SIZING_FIT(300), CLAY_SIZING_FIT(0), [&, val, data = data](LayoutElement*) {
-                ElementHelpers::color_picker_items(gui, "c", val, {
-                    .hasAlpha = data.hasAlpha,
-                    .onEdit = data.onEdit,
-                    .onSelect = data.onSelect,
-                    .onDeselect = data.onDeselect
-                });
-            }, {
-                .mouseButton = [&](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
-                    if(!l->mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
-                        isOpen = false;
-                        gui.set_to_layout();
+            ElementHelpers::attach_to_button_popup_layout(gui, "Color Picker", {
+                .button = button,
+                .clickAwayCallback = [&] { isOpen = false; },
+                .popupSize = {300.0f, 300.0f},
+                .innerLayout = [&] {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                            .padding = CLAY_PADDING_ALL(gui.io.theme->padding1),
+                            .childGap = gui.io.theme->childGap1,
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                    }) {
+                        ElementHelpers::color_picker_items(gui, "c", val, {
+                            .forceAspectRatioOnColorPicker = false,
+                            .hasAlpha = data.hasAlpha,
+                            .onEdit = data.onEdit,
+                            .onSelect = data.onSelect,
+                            .onDeselect = data.onDeselect
+                        });
                     }
                 }
             });

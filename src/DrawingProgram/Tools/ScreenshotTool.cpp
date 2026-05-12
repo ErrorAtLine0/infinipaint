@@ -93,7 +93,7 @@ void ScreenshotTool::gui_toolbox(Toolbar& t) {
                         take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType], screenshotConfig.selectedType);
                     #else
                         // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
-                        Toolbar::ExtensionFilter setExtensionFilter;
+                        Screen::ExtensionFilter setExtensionFilter;
                         switch(screenshotConfig.selectedType) {
                             case WorldScreenshotInfo::ScreenshotType::JPG:
                                 setExtensionFilter = {"JPEG", "jpg;jpeg"};

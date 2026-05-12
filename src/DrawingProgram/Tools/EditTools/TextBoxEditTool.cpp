@@ -404,7 +404,7 @@ void TextBoxEditTool::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t) {
         gui.set_z_index(gui.get_z_index() + 1, [&] {
             dropdown_many_element_popup_layout(gui, "Font Picker Popup", DropDownPopupLayout{
                 .button = fontPickerButton,
-                .isOpen = &fontPickerIsOpen,
+                .clickAwayCallback = [&] { fontPickerIsOpen = false; },
                 .entrySize = {200.0f, BIG_BUTTON_SIZE},
                 .entryCount = FontPicker::sorted_font_list(gui).size(),
                 .entryLayout = [&](size_t i) {

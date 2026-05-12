@@ -719,6 +719,8 @@ void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& fil
             CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);
             ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(newContainer->get_comp());
             newContainer->coords = world.drawData.cam.c;
+            if(world.main.g.gui.io.isTouchDevice)
+                newContainer->coords.scale_about_double(world.drawData.cam.c.from_space(dropPos), 1.0 / world.main.get_scale_and_density_factor_gui());
             float imWidth = imTrueDim.x() / (imTrueDim.x() + imTrueDim.y());
             float imHeight = imTrueDim.y() / (imTrueDim.x() + imTrueDim.y());
             Vector2f imDim = Vector2f{world.main.window.size.x() * imWidth, world.main.window.size.x() * imHeight} * display->get_dimension_scale();

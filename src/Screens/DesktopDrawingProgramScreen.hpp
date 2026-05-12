@@ -28,6 +28,8 @@ class DesktopDrawingProgramScreen : public DrawingProgramScreen {
         virtual bool app_close_requested() override;
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;
+        virtual void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false) override;
+
     private:
         Toolbar toolbar;
 };

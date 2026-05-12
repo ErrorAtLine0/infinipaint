@@ -42,14 +42,25 @@ void window_fill_side_bar(GUIManager& gui, const WindowFillSideBarConfig& config
 void window_gap_side_bar(GUIManager& gui, const WindowFillSideBarConfig::Direction& dir);
 
 struct DropDownPopupLayout {
-    float dropdownOffset = 4.0f;
+    float popupOffset = 4.0f;
     Element* button = nullptr;
-    bool* isOpen;
+    std::function<void()> clickAwayCallback;
+    std::function<void()> clickUpAwayCallback;
     Vector2f entrySize;
     size_t entryCount;
     std::function<void(size_t i)> entryLayout;
 };
 
+struct AttachToButtonPopupLayout {
+    float popupOffset = 4.0f;
+    Element* button = nullptr;
+    std::function<void()> clickAwayCallback;
+    std::function<void()> clickUpAwayCallback;
+    Vector2f popupSize;
+    std::function<void()> innerLayout;
+};
+
+void attach_to_button_popup_layout(GUIManager& gui, const char* id, AttachToButtonPopupLayout d);
 void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, DropDownPopupLayout d);
 
 }}

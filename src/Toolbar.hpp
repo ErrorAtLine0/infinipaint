@@ -27,8 +27,10 @@
 #include <Helpers/Serializers.hpp>
 #include <SDL3/SDL_dialog.h>
 #include <Helpers/VersionNumber.hpp>
+#include "Screens/Screen.hpp"
 
 class MainProgram;
+class DesktopDrawingProgramScreen;
 
 class Toolbar {
     public:
@@ -44,14 +46,9 @@ class Toolbar {
             TimePoint time;
         };
 
-        struct ExtensionFilter {
-            std::string name;
-            std::string extensions;
-        };
-
         std::string chatMessageInput;
 
-        Toolbar(MainProgram& initMain);
+        Toolbar(MainProgram& initMain, DesktopDrawingProgramScreen& initDrawScreen);
         void update();
         void layout_run();
 
@@ -74,8 +71,8 @@ class Toolbar {
 
         void paint_popup(Vector2f popupPos);
 
-        typedef std::function<void(const std::filesystem::path&, const ExtensionFilter& extensionSelected)> OpenFileSelectorCallback;
-        void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);
+        void open_file_selector(const std::string& filePickerName, const std::vector<Screen::ExtensionFilter>& extensionFilters, Screen::OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);
+        void open_file_selector_non_native(const std::string& filePickerName, const std::vector<Screen::ExtensionFilter>& extensionFilters, Screen::OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);
         void save_func();
         void save_as_func();
 
@@ -203,7 +200,7 @@ class Toolbar {
         struct FilePicker {
             bool isOpen = false;
             std::string filePickerWindowName;
-            std::vector<ExtensionFilter> extensionFiltersComplete;
+            std::vector<Screen::ExtensionFilter> extensionFiltersComplete;
             std::vector<std::string> extensionFilters;
             std::vector<std::filesystem::path> entries;
             std::filesystem::path currentSelectedPath;
@@ -211,16 +208,8 @@ class Toolbar {
             bool isSaving = false;
             size_t extensionSelected;
             GUIStuff::ScrollArea* entriesScrollArea = nullptr;
-            OpenFileSelectorCallback postSelectionFunc;
+            Screen::OpenFileSelectorCallback postSelectionFunc;
         } filePicker;
-
-        struct NativeFilePicker {
-            std::atomic<bool> isOpen = false;
-            std::vector<ExtensionFilter> extensionFiltersComplete;
-            std::vector<SDL_DialogFileFilter> sdlFileFilters;
-            OpenFileSelectorCallback postSelectionFunc;
-        };
-        static NativeFilePicker nativeFilePicker;
 
         RichText::TextData build_paragraph_from_chat_message(const ChatMessage& message, float alpha);
 
@@ -230,4 +219,5 @@ class Toolbar {
         std::string serverLocalID;
 
         MainProgram& main;
+        DesktopDrawingProgramScreen& drawScreen;
 };

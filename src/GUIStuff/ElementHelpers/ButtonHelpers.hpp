@@ -41,6 +41,7 @@ struct TextButtonOptions {
     bool isSelected = false;
     bool instantResponse = false;
     bool wide = false;
+    bool growHeight = false;
     bool centered = true;
 
     std::function<void()> onClick;

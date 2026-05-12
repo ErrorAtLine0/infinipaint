@@ -25,6 +25,20 @@ class Screen {
         virtual void update();
         virtual void draw(SkCanvas* canvas) = 0;
 
+        struct ExtensionFilter {
+            std::string name;
+            std::string extensions;
+        };
+
+        typedef std::function<void(const std::filesystem::path&, const ExtensionFilter& extensionSelected)> OpenFileSelectorCallback;
+        struct NativeFilePicker {
+            std::atomic<bool> isOpen = false;
+            std::vector<ExtensionFilter> extensionFiltersComplete;
+            std::vector<SDL_DialogFileFilter> sdlFileFilters;
+            OpenFileSelectorCallback postSelectionFunc;
+        };
+        static NativeFilePicker nativeFilePicker;
+
         virtual void gui_layout_run();
         virtual bool app_close_requested();
         virtual void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
@@ -53,7 +67,11 @@ class Screen {
         virtual void input_app_about_to_go_to_background_callback();
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
+        virtual void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);
+
         virtual ~Screen();
     protected:
+        static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
+
         MainProgram& main;
 };

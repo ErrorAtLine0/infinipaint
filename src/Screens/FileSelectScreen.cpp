@@ -29,6 +29,8 @@
 #include "../GUIStuff/Elements/SVGIcon.hpp"
 #include "../GUIStuff/Elements/TextParagraph.hpp"
 #include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include "../GUIStuff/Elements/PositionAdjustingPopupMenu.hpp"
 #include "../World.hpp"
 #include "Helpers/StringHelpers.hpp"
@@ -181,15 +183,17 @@ void FileSelectScreen::main_display() {
                         .layoutDirection = CLAY_TOP_TO_BOTTOM,
                     },
                 }) {
-                    file_view();
                     switch(selectedMenu) {
                         case SelectedMenu::FILES:
+                            file_view();
                             if(!editMode)
                                 create_file_button();
                             break;
                         case SelectedMenu::TRASH:
+                            file_view();
                             break;
                         case SelectedMenu::SETTINGS:
+                            settings_view();
                             break;
                     }
                 }
@@ -479,51 +483,71 @@ void FileSelectScreen::title_bar() {
                             }
                         });
                         if(moreButton->get_bb().has_value() && moreOptionsMenu != MoreOptionsMenu::CLOSED) {
+                            size_t elemCount = 0;
+                            if(moreOptionsMenu == MoreOptionsMenu::MAIN)
+                                elemCount = 2;
+                            else if(moreOptionsMenu == MoreOptionsMenu::VIEW)
+                                elemCount = 4;
                             gui.set_z_index(gui.get_z_index() + 10, [&] {
-                                gui.element<PositionAdjustingPopupMenu>("more options popup", moreButton->get_bb().value().top_right(), [&] {
-                                    CLAY_AUTO_ID({
-                                        .layout = {
-                                            .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0)},
-                                            .layoutDirection = CLAY_TOP_TO_BOTTOM
-                                        },
-                                        .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
-                                        .cornerRadius = CLAY_CORNER_RADIUS(4)
-                                    }) {
+                                dropdown_many_element_popup_layout(gui, "more options popup", {
+                                    .button = moreButton,
+                                    .clickUpAwayCallback = [&] {
+                                        gui.set_post_callback_func_high_priority([&] { // Cancel actions on other buttons
+                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                            main.g.gui.set_to_layout();
+                                        });
+                                    },
+                                    .entrySize = {200.0f, 30.0f},
+                                    .entryCount = elemCount,
+                                    .entryLayout = [&] (size_t i) {
                                         if(moreOptionsMenu == MoreOptionsMenu::MAIN) {
-                                            text_transparent_option_button("Edit", "Edit", [&] {
-                                                moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                start_edit_mode();
-                                            });
-                                            text_transparent_option_button("View", "View", [&] {
-                                                moreOptionsMenu = MoreOptionsMenu::VIEW;
-                                            });
+                                            switch(i) {
+                                                case 0: {
+                                                    text_transparent_option_button("Edit", "Edit", [&] {
+                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                        start_edit_mode();
+                                                    });
+                                                    break;
+                                                }
+                                                case 1: {
+                                                    text_transparent_option_button("View", "View", [&] {
+                                                        moreOptionsMenu = MoreOptionsMenu::VIEW;
+                                                    });
+                                                    break;
+                                                }
+                                            }
                                         }
                                         else if(moreOptionsMenu == MoreOptionsMenu::VIEW) {
-                                            text_transparent_option_button("Large Grid", "Large Grid", [&] {
-                                                fileViewType = FileViewType::LARGE_GRID;
-                                                moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                            });
-                                            text_transparent_option_button("Medium Grid", "Medium Grid", [&] {
-                                                fileViewType = FileViewType::MEDIUM_GRID;
-                                                moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                            });
-                                            text_transparent_option_button("Small Grid", "Small Grid", [&] {
-                                                fileViewType = FileViewType::SMALL_GRID;
-                                                moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                            });
-                                            text_transparent_option_button("List", "List", [&] {
-                                                fileViewType = FileViewType::LIST;
-                                                moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                            });
-                                        }
-                                    }
-                                }, LayoutElement::Callbacks{
-                                    .onClick = [&](LayoutElement* l, const InputManager::MouseButtonCallbackArgs& m) {
-                                        if(!l->mouseHovering && !m.down) {
-                                            gui.set_post_callback_func_high_priority([&] { // Cancel actions on other buttons
-                                                moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                main.g.gui.set_to_layout();
-                                            });
+                                            switch(i) {
+                                                case 0: {
+                                                    text_transparent_option_button("Large Grid", "Large Grid", [&] {
+                                                        fileViewType = FileViewType::LARGE_GRID;
+                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                    });
+                                                    break;
+                                                }
+                                                case 1: {
+                                                    text_transparent_option_button("Medium Grid", "Medium Grid", [&] {
+                                                        fileViewType = FileViewType::MEDIUM_GRID;
+                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                    });
+                                                    break;
+                                                }
+                                                case 2: {
+                                                    text_transparent_option_button("Small Grid", "Small Grid", [&] {
+                                                        fileViewType = FileViewType::SMALL_GRID;
+                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                    });
+                                                    break;
+                                                }
+                                                case 3: {
+                                                    text_transparent_option_button("List", "List", [&] {
+                                                        fileViewType = FileViewType::LIST;
+                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                    });
+                                                    break;
+                                                }
+                                            }
                                         }
                                     }
                                 });
@@ -541,6 +565,7 @@ void FileSelectScreen::text_transparent_option_button(const char* id, const char
     text_button(gui, id, text, {
         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
         .wide = true,
+        .growHeight = true,
         .centered = false,
         .onClick = onClick
     });
@@ -569,7 +594,7 @@ void FileSelectScreen::main_menu() {
                     gui.element<LayoutElement>("inner main menu element", [&] (LayoutElement*, const Clay_ElementId& lId) {
                         CLAY(lId, {
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIXED(300.0f * mainMenuOpenAnim->get_val()), .height = CLAY_SIZING_GROW(0)},
+                                .sizing = {.width = CLAY_SIZING_FIXED(200.0f * mainMenuOpenAnim->get_val()), .height = CLAY_SIZING_GROW(0)},
                                 .padding = CLAY_PADDING_ALL(gui.io.theme->padding1),
                                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
                             },
@@ -579,18 +604,18 @@ void FileSelectScreen::main_menu() {
                                     selectedMenu = SelectedMenu::FILES;
                                     update_file_list(fileList, savePath, false);
                                     mainMenuOpenAnim->animation_trigger_reverse();
-                                    if(fileViewScrollArea) fileViewScrollArea->reset_scroll();
+                                    if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
                                 });
                                 icon_text_transparent_option_selected_button("Trash", "data/icons/trash.svg", "Trash", selectedMenu == SelectedMenu::TRASH, [&] {
                                     selectedMenu = SelectedMenu::TRASH;
                                     update_file_list(fileList, trashPath, true);
                                     mainMenuOpenAnim->animation_trigger_reverse();
-                                    if(fileViewScrollArea) fileViewScrollArea->reset_scroll();
+                                    if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
                                 });
                                 icon_text_transparent_option_selected_button("Settings", "data/icons/RemixIcon/settings-3-line.svg", "Settings", selectedMenu == SelectedMenu::SETTINGS, [&] {
                                     selectedMenu = SelectedMenu::SETTINGS;
                                     mainMenuOpenAnim->animation_trigger_reverse();
-                                    if(fileViewScrollArea) fileViewScrollArea->reset_scroll();
+                                    if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
                                 });
                             }
                         }
@@ -602,11 +627,6 @@ void FileSelectScreen::main_menu() {
 }
 
 void FileSelectScreen::file_view() {
-    if(selectedMenu == SelectedMenu::SETTINGS) {
-        fileViewScrollArea = nullptr;
-        return;
-    }
-
     auto& gui = main.g.gui;
     std::filesystem::path folderPath = (selectedMenu == SelectedMenu::TRASH) ? trashPath : savePath;
 
@@ -615,14 +635,21 @@ void FileSelectScreen::file_view() {
         gui.element<SelectableButton>("file button", SelectableButton::Data{
             .isSelected = editMode && fileList[i].selected,
             .onClick = [&, filePath, i] {
-                if(editMode)
+                if(selectedMenu == SelectedMenu::TRASH) {
+                    if(!editMode)
+                        start_edit_mode();
                     fileList[i].selected = !fileList[i].selected;
+                }
                 else {
-                    CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
-                        .isClient = false,
-                        .saveThumbnail = true,
-                        .filePathSource = filePath
-                    });
+                    if(editMode)
+                        fileList[i].selected = !fileList[i].selected;
+                    else {
+                        CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+                            .isClient = false,
+                            .saveThumbnail = true,
+                            .filePathSource = filePath
+                        });
+                    }
                 }
             },
             .innerContent = [&](const SelectableButton::InnerContentCallbackParameters& c){
@@ -701,7 +728,7 @@ void FileSelectScreen::file_view() {
     };
 
     if(fileViewType == FileViewType::LIST) {
-        fileViewScrollArea = gui.element<ManyElementScrollArea>("File selector list", ManyElementScrollArea::Options{
+        mainViewScrollArea = gui.element<ManyElementScrollArea>("File selector list", ManyElementScrollArea::Options{
             .entryHeight = 150.0f,
             .entryCount = fileList.size(),
             .clipHorizontal = true,
@@ -730,7 +757,7 @@ void FileSelectScreen::file_view() {
             default:
                 break;
         }
-        fileViewScrollArea = gui.element<GridScrollArea>("File selector grid", GridScrollArea::Options{
+        mainViewScrollArea = gui.element<GridScrollArea>("File selector grid", GridScrollArea::Options{
             .entryWidth = entrySize.x(),
             .childAlignmentX = CLAY_ALIGN_X_LEFT,
             .entryHeight = entrySize.y(),
@@ -741,6 +768,40 @@ void FileSelectScreen::file_view() {
             }
         })->scrollArea;
     }
+}
+
+void FileSelectScreen::settings_view() {
+    auto& gui = main.g.gui;
+
+    mainViewScrollArea = gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+        .scrollVertical = true,
+        .clipVertical = true,
+        .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
+        .innerContent = [&] (auto&) {
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                },
+            }) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0, 300), .height = CLAY_SIZING_GROW(0)},
+                        .childGap = gui.io.theme->childGap1,
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                }) {
+                    color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                    input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 1.0f, 2.0f, {
+                        .decimalPrecision = 1,
+                        .onEdit = [&] { main.g.window_update(); }
+                    });
+                    input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+                    checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                }
+            }
+        }
+    });
 }
 
 void FileSelectScreen::menu_black_box() {

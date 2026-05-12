@@ -94,7 +94,7 @@ template <typename T> class DropDown : public Element {
                     gui.set_z_index(gui.get_z_index() + 1, [&] {
                         dropdown_many_element_popup_layout(gui, "DROPDOWN", {
                             .button = this,
-                            .isOpen = &isOpen,
+                            .clickAwayCallback = [&] { isOpen = false; },
                             .entrySize = boundingBox.value().dim(),
                             .entryCount = selections.size(),
                             .entryLayout = [&](size_t i) {

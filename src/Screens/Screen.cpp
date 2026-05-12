@@ -17,10 +17,44 @@
  */
 
 #include "Screen.hpp"
+#include "../MainProgram.hpp"
 
 Screen::Screen(MainProgram& m):
     main(m)
 {}
+
+Screen::NativeFilePicker Screen::nativeFilePicker;
+
+// You can't trust that filter wont be -1 on the platform youre on, so dont use the extension from the callback
+void Screen::sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter) {
+    if(!fileList) {
+        nativeFilePicker.isOpen = false;
+        return;
+    }
+    if(!(*fileList)) {
+        nativeFilePicker.isOpen = false;
+        return;
+    }
+    ExtensionFilter e;
+    if(filter >= 0)
+        e = nativeFilePicker.extensionFiltersComplete[filter];
+    nativeFilePicker.postSelectionFunc(fileList[0], e);
+    nativeFilePicker.isOpen = false;
+}
+
+void Screen::open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
+    if(!nativeFilePicker.isOpen) {
+        nativeFilePicker.postSelectionFunc = postSelectionFunc;
+        nativeFilePicker.extensionFiltersComplete = extensionFilters;
+        nativeFilePicker.sdlFileFilters.clear();
+        for(auto& e : nativeFilePicker.extensionFiltersComplete)
+            nativeFilePicker.sdlFileFilters.emplace_back(e.name.c_str(), e.extensions.c_str());
+        if(isSaving)
+            SDL_ShowSaveFileDialog(sdl_open_file_dialog_callback, nullptr, main.window.sdlWindow, nativeFilePicker.sdlFileFilters.data(), nativeFilePicker.sdlFileFilters.size(), nullptr);
+        else
+            SDL_ShowOpenFileDialog(sdl_open_file_dialog_callback, nullptr, main.window.sdlWindow, nativeFilePicker.sdlFileFilters.data(), nativeFilePicker.sdlFileFilters.size(), nullptr, false);
+    }
+}
 
 void Screen::update() {}
 void Screen::gui_layout_run() {}

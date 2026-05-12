@@ -71,6 +71,8 @@
 #include "GUIStuff/Elements/MovableTabList.hpp"
 #include "GUIStuff/Elements/TextParagraph.hpp"
 
+#include "Screens/DesktopDrawingProgramScreen.hpp"
+
 #define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
 #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
 
@@ -78,60 +80,31 @@
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
-Toolbar::NativeFilePicker Toolbar::nativeFilePicker;
-
 using namespace GUIStuff;
 using namespace ElementHelpers;
 
-Toolbar::Toolbar(MainProgram& initMain):
-    main(initMain)
+Toolbar::Toolbar(MainProgram& initMain, DesktopDrawingProgramScreen& initDrawScreen):
+    main(initMain),
+    drawScreen(initDrawScreen)
 {}
 
-// You can't trust that filter wont be -1 on the platform youre on, so dont use the extension from the callback
-void Toolbar::sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter) {
-    if(!fileList) {
-        nativeFilePicker.isOpen = false;
-        return;
-    }
-    if(!(*fileList)) {
-        nativeFilePicker.isOpen = false;
-        return;
-    }
-    ExtensionFilter e;
-    if(filter >= 0)
-        e = nativeFilePicker.extensionFiltersComplete[filter];
-    nativeFilePicker.postSelectionFunc(fileList[0], e);
-    nativeFilePicker.isOpen = false;
+void Toolbar::open_file_selector(const std::string& filePickerName, const std::vector<Screen::ExtensionFilter>& extensionFilters, Screen::OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
+    drawScreen.open_file_selector(filePickerName, extensionFilters, postSelectionFunc, fileName, isSaving);
 }
 
-void Toolbar::open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
-    if(main.conf.useNativeFilePicker) {
-        if(!nativeFilePicker.isOpen) {
-            nativeFilePicker.postSelectionFunc = postSelectionFunc;
-            nativeFilePicker.extensionFiltersComplete = extensionFilters;
-            nativeFilePicker.sdlFileFilters.clear();
-            for(auto& e : nativeFilePicker.extensionFiltersComplete)
-                nativeFilePicker.sdlFileFilters.emplace_back(e.name.c_str(), e.extensions.c_str());
-            if(isSaving)
-                SDL_ShowSaveFileDialog(sdl_open_file_dialog_callback, nullptr, main.window.sdlWindow, nativeFilePicker.sdlFileFilters.data(), nativeFilePicker.sdlFileFilters.size(), nullptr);
-            else
-                SDL_ShowOpenFileDialog(sdl_open_file_dialog_callback, nullptr, main.window.sdlWindow, nativeFilePicker.sdlFileFilters.data(), nativeFilePicker.sdlFileFilters.size(), nullptr, false);
-        }
-    }
-    else {
-        filePicker.isOpen = true;
-        filePicker.extensionFiltersComplete = extensionFilters;
-        filePicker.extensionFilters.clear();
-        for(auto& [name, exList] : extensionFilters)
-            filePicker.extensionFilters.emplace_back(exList);
-        filePicker.extensionSelected = extensionFilters.size() - 1;
-        filePicker.filePickerWindowName = filePickerName;
-        filePicker.postSelectionFunc = postSelectionFunc;
-        filePicker.fileName = "";
-        filePicker.isSaving = isSaving;
-        filePicker.entriesScrollArea = nullptr;
-        file_picker_gui_refresh_entries();
-    }
+void Toolbar::open_file_selector_non_native(const std::string& filePickerName, const std::vector<Screen::ExtensionFilter>& extensionFilters, Screen::OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
+    filePicker.isOpen = true;
+    filePicker.extensionFiltersComplete = extensionFilters;
+    filePicker.extensionFilters.clear();
+    for(auto& [name, exList] : extensionFilters)
+        filePicker.extensionFilters.emplace_back(exList);
+    filePicker.extensionSelected = extensionFilters.size() - 1;
+    filePicker.filePickerWindowName = filePickerName;
+    filePicker.postSelectionFunc = postSelectionFunc;
+    filePicker.fileName = "";
+    filePicker.isSaving = isSaving;
+    filePicker.entriesScrollArea = nullptr;
+    file_picker_gui_refresh_entries();
 }
 
 void Toolbar::color_button_left(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData) {
@@ -1781,10 +1754,11 @@ void Toolbar::general_settings_inner_gui() {
                         if(!themeData.selectedThemeIndex)
                             reload_theme_list();
 
-                        CLAY_AUTO_ID({.layout = { 
-                              .childGap = io.theme->childGap1,
-                              .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                              .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                        CLAY_AUTO_ID({.layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0)},
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT,
                         }
                         }) {
                             text_label(gui, "Theme: ");

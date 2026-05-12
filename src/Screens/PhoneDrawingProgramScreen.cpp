@@ -175,6 +175,20 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
     auto& gui = main.g.gui;
 
     l.emplace_back(TopToolbarRemainingAreaButton{
+        .name = "Add Image",
+        .svgPath = "data/icons/RemixIcon/image-add-line.svg",
+        .onClick = [&] {
+            open_file_selector("Open File", {{"Any File", "*"}}, [&](const std::filesystem::path& p, const auto& e) {
+                CustomEvents::emit_event<CustomEvents::AddFileToCanvasEvent>({
+                    .type = CustomEvents::AddFileToCanvasEvent::Type::PATH,
+                    .filePath = p,
+                    .pos = main.window.size.cast<float>() / 2.0f
+                });
+            });
+        }
+    });
+
+    l.emplace_back(TopToolbarRemainingAreaButton{
         .name = "Canvas Color",
         .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
         .onClick = [&] {
@@ -191,7 +205,7 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
     gui.set_z_index(gui.get_z_index() + 1, [&] {
         dropdown_many_element_popup_layout(gui, "top toolbar hidden button popup", {
             .button = b,
-            .isOpen = &topToolbarButtonPopupOpen,
+            .clickAwayCallback = [&] { topToolbarButtonPopupOpen = false; },
             .entrySize = {150.0f, 30.0f},
             .entryCount = l.size(),
             .entryLayout = [&] (size_t i) {

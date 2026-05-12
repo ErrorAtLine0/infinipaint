@@ -63,11 +63,12 @@ class FileSelectScreen : public Screen {
         GUIStuff::GUIFloatAnimation* mainMenuOpenAnim = nullptr;
         GUIStuff::GUIFloatAnimation* actionBarOpenAnim = nullptr;
 
-        GUIStuff::ScrollArea* fileViewScrollArea = nullptr;
+        GUIStuff::ScrollArea* mainViewScrollArea = nullptr;
 
         void main_display();
         void main_menu();
         void file_view();
+        void settings_view();
         void create_file_button();
         void file_view_edit();
         void menu_black_box();
