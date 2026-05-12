@@ -58,8 +58,7 @@ class DrawingProgram {
         CanvasComponentContainer::ObjInfo* add_file_to_canvas_by_data(const std::string& fileName, std::string_view fileBuffer, Vector2f dropPos);
         void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet);
 
-        Vector4f* color_picker_left(Vector4f* oldColor);
-        Vector4f* color_picker_right(Vector4f* oldColor);
+        Vector4f* color_picker_color(Vector4f* oldColor);
         bool phone_gui_tool_specific_bottom_toolbar_exists();
         void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t);
 

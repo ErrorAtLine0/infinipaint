@@ -92,10 +92,137 @@ void PhoneDrawingProgramScreen::top_toolbar() {
                             main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
                         }
                     });
-                    text_label(gui, main.world->name);
+                    top_toolbar_remaining_area();
                 }
             });
         }
+    });
+}
+
+void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
+    auto& gui = main.g.gui;
+    std::vector<TopToolbarRemainingAreaButton> listOfTopToolbarButtons = {
+        TopToolbarRemainingAreaButton{
+            .name = "Undo",
+            .svgPath = "data/icons/undo.svg",
+            .onClick = [&] {
+                main.world->undo_with_checks();
+            }
+        },
+        TopToolbarRemainingAreaButton{
+            .name = "Redo",
+            .svgPath = "data/icons/redo.svg",
+            .onClick = [&] {
+                main.world->redo_with_checks();
+            }
+        },
+    };
+    gui.element<LayoutElement>("remaining area", [&](LayoutElement* l, const Clay_ElementId& lId) {
+        CLAY(lId, {
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
+            }
+        }) {
+            if(l->get_bb().has_value()) {
+                constexpr float MINIMUM_SPACE_FOR_NAME = 100.0f;
+                constexpr float BUTTON_WIDTH = BIG_BUTTON_SIZE;
+                float spaceForWorldName = l->get_bb().value().width() - BUTTON_WIDTH;
+                if(spaceForWorldName < 4.0f)
+                    spaceForWorldName = 4.0f;
+                size_t buttonFreeSpace;
+                for(buttonFreeSpace = 0; buttonFreeSpace < listOfTopToolbarButtons.size(); buttonFreeSpace++) {
+                    if(spaceForWorldName <= MINIMUM_SPACE_FOR_NAME + BUTTON_WIDTH)
+                        break;
+                    spaceForWorldName -= BUTTON_WIDTH;
+                }
+                input_text(gui, "world name text", &main.world->name, {
+                    .decorations = false,
+                    .onSelect = [&] {
+                        fileOldPath = main.world->filePath;
+                    },
+                    .onDeselect = [&] {
+                        std::filesystem::remove(fileOldPath);
+                        std::filesystem::remove(fileOldPath.parent_path() / (fileOldPath.stem().string() + ".jpg"));
+                        main.world->autosave_to_directory(main.world->filePath.parent_path());
+                    }
+                });
+                gui.new_id("visible buttons", [&] {
+                    for(size_t i = 0; i < buttonFreeSpace; i++) {
+                        gui.new_id(i, [&] {
+                            svg_icon_button(gui, "button", listOfTopToolbarButtons.front().svgPath, {
+                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .onClick = listOfTopToolbarButtons.front().onClick
+                            });
+                            listOfTopToolbarButtons.erase(listOfTopToolbarButtons.begin());
+                        });
+                    }
+                });
+                Element* e = svg_icon_button(gui, "Hidden buttons", "data/icons/RemixIcon/more-2-fill.svg", {
+                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                    .onClick = [&] {
+                        topToolbarButtonPopupOpen = !topToolbarButtonPopupOpen;
+                    }
+                });
+                if(topToolbarButtonPopupOpen)
+                    top_toolbar_hidden_button_popup(e, listOfTopToolbarButtons);
+            }
+        }
+    });
+}
+
+void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Element* b, std::vector<TopToolbarRemainingAreaButton> l) {
+    auto& gui = main.g.gui;
+
+    l.emplace_back(TopToolbarRemainingAreaButton{
+        .name = "Canvas Color",
+        .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
+        .onClick = [&] {
+            settingsMenuPopup = SettingsMenuPopup::SETTINGS;
+            colorPickerPtr = &backgroundColorTemporary;
+            colorPickerData = {
+                .onChange = [&] {
+                    main.world->canvasTheme.set_back_color({backgroundColorTemporary.x(), backgroundColorTemporary.y(), backgroundColorTemporary.z()});
+                }
+            };
+        }
+    });
+
+    gui.set_z_index(gui.get_z_index() + 1, [&] {
+        dropdown_many_element_popup_layout(gui, "top toolbar hidden button popup", {
+            .button = b,
+            .isOpen = &topToolbarButtonPopupOpen,
+            .entrySize = {150.0f, 30.0f},
+            .entryCount = l.size(),
+            .entryLayout = [&] (size_t i) {
+                auto& listItem = l[i];
+                gui.element<SelectableButton>("button", SelectableButton::Data{
+                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                    .onClick = [&, oC = listItem.onClick] {
+                        oC();
+                        topToolbarButtonPopupOpen = false;
+                    },
+                    .innerContent = [&] (auto&) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)},
+                                .childGap = gui.io.theme->childGap1,
+                                .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                            }
+                        }) {
+                            CLAY_AUTO_ID({
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)},
+                                }
+                            }) {
+                                gui.element<SVGIcon>("icon", listItem.svgPath);
+                            }
+                            mutable_text_label(gui, "text", listItem.name);
+                        }
+                    }
+                });
+            }
+        });
     });
 }
 
@@ -144,7 +271,8 @@ void PhoneDrawingProgramScreen::default_bottom_toolbar() {
                     colorPickerPtr = nullptr;
                     break;
                 case SettingsMenuPopup::SETTINGS:
-                    colorPickerPtr = main.world->drawProg.color_picker_right(colorPickerPtr);
+                    if(colorPickerPtr != &backgroundColorTemporary)
+                        colorPickerPtr = main.world->drawProg.color_picker_color(colorPickerPtr);
                     if(colorPickerPtr) {
                         if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
                             CLAY_AUTO_ID({
@@ -167,8 +295,7 @@ void PhoneDrawingProgramScreen::default_bottom_toolbar() {
                         tool_settings_popup();
                     }
                     break;
-                case SettingsMenuPopup::FG_COLOR:
-                case SettingsMenuPopup::BG_COLOR:
+                case SettingsMenuPopup::COLOR_CHANGE:
                     if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
                         CLAY_AUTO_ID({
                             .layout = {
@@ -176,9 +303,7 @@ void PhoneDrawingProgramScreen::default_bottom_toolbar() {
                             }
                         }) {}
                     }
-                    colorPickerData = ColorSelectorData();
-                    colorPickerPtr = nullptr;
-                    color_settings_popup(settingsMenuPopup == SettingsMenuPopup::FG_COLOR ? &main.toolConfig.globalConf.foregroundColor : &main.toolConfig.globalConf.backgroundColor, {}, nullptr);
+                    color_settings_popup(colorPickerPtr, colorPickerData, nullptr);
                     break;
             }
         }
@@ -612,19 +737,35 @@ void PhoneDrawingProgramScreen::bottom_extra_toolbar_gui() {
 
     color_button(gui, "foreground color", &main.toolConfig.globalConf.foregroundColor, {
         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-        .isSelected = settingsMenuPopup == SettingsMenuPopup::FG_COLOR,
+        .isSelected = settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.foregroundColor,
         .hasAlpha = true,
         .onClick = [&] {
-            settingsMenuPopup = (settingsMenuPopup == SettingsMenuPopup::FG_COLOR) ? SettingsMenuPopup::NONE : SettingsMenuPopup::FG_COLOR;
+            if(settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.foregroundColor) {
+                colorPickerPtr = nullptr;
+                settingsMenuPopup = SettingsMenuPopup::NONE;
+            }
+            else {
+                colorPickerPtr = &main.toolConfig.globalConf.foregroundColor;
+                settingsMenuPopup = SettingsMenuPopup::COLOR_CHANGE;
+            }
+            colorPickerData = ColorSelectorData();
         }
     });
 
     color_button(gui, "background color", &main.toolConfig.globalConf.backgroundColor, {
         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-        .isSelected = settingsMenuPopup == SettingsMenuPopup::BG_COLOR,
+        .isSelected = settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.backgroundColor,
         .hasAlpha = true,
         .onClick = [&] {
-            settingsMenuPopup = (settingsMenuPopup == SettingsMenuPopup::BG_COLOR) ? SettingsMenuPopup::NONE : SettingsMenuPopup::BG_COLOR;
+            if(settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.backgroundColor) {
+                colorPickerPtr = nullptr;
+                settingsMenuPopup = SettingsMenuPopup::NONE;
+            }
+            else {
+                colorPickerPtr = &main.toolConfig.globalConf.backgroundColor;
+                settingsMenuPopup = SettingsMenuPopup::COLOR_CHANGE;
+            }
+            colorPickerData = ColorSelectorData();
         }
     });
 }
@@ -659,7 +800,7 @@ void PhoneDrawingProgramScreen::color_selector_button(const char* id, Vector4f* 
             color_selector(color, {
                 .onChange = colorSelectorData.onChange,
                 .onSelect = colorSelectorData.onSelect,
-                .onDeselect = colorSelectorData.onDeselect,
+                .onDeselect = colorSelectorData.onDeselect
             });
         }
     });

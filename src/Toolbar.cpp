@@ -1186,7 +1186,7 @@ void Toolbar::drawing_program_gui() {
     }) {
         main.world->drawProg.toolbar_gui(*this);
 
-        colorLeft = main.world->drawProg.color_picker_left(colorLeft);
+        colorLeft = main.world->drawProg.color_picker_color(colorLeft);
         if(colorLeft)
             color_picker_window("Drawing program gui color picker left", &colorLeft, colorLeftButton, colorLeftData);
         CLAY_AUTO_ID({
@@ -1194,7 +1194,7 @@ void Toolbar::drawing_program_gui() {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}
             }
         }) {}
-        colorRight = main.world->drawProg.color_picker_right(colorRight);
+        colorRight = main.world->drawProg.color_picker_color(colorRight);
         if(colorRight)
             color_picker_window("Drawing program gui color picker right", &colorRight, colorRightButton, colorRightData);
 

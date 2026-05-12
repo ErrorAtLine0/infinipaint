@@ -54,21 +54,31 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         void color_settings_popup(Vector4f* color, const ColorSelectorData& d, std::function<void()> backOnPaletteButton = nullptr, bool setAlphaToOne = false, bool setToTransparentCancelButton = false);
         void reset_color_picker_popup_data();
     private:
+        bool topToolbarButtonPopupOpen = false;
+        std::filesystem::path fileOldPath;
+        struct TopToolbarRemainingAreaButton {
+            std::string name;
+            std::string svgPath;
+            std::function<void()> onClick;
+        };
+        enum class SettingsMenuPopup {
+            NONE,
+            SETTINGS,
+            COLOR_CHANGE
+        } settingsMenuPopup = SettingsMenuPopup::NONE;
+
+        Vector4f backgroundColorTemporary;
+        Vector4f* colorPickerPtr = nullptr;
+        ColorSelectorData colorPickerData;
+
         void default_bottom_toolbar();
         void bottom_toolbar_gui();
         void bottom_extra_toolbar_gui();
         void save_files();
         void top_toolbar();
+        void top_toolbar_remaining_area();
+        void top_toolbar_hidden_button_popup(GUIStuff::Element* b, std::vector<TopToolbarRemainingAreaButton> l);
         void bottom_toolbar();
         void main_display();
         void tool_settings_popup();
-        enum class SettingsMenuPopup {
-            NONE,
-            SETTINGS,
-            FG_COLOR,
-            BG_COLOR
-        } settingsMenuPopup = SettingsMenuPopup::NONE;
-
-        Vector4f* colorPickerPtr = nullptr;
-        ColorSelectorData colorPickerData;
 };

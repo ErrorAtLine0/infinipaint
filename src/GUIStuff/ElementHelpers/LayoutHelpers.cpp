@@ -291,9 +291,14 @@ void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_Floatin
         offsetY = gui.io.safeWindowRect.min.y();
     else if(offsetY + dropdownHeight > gui.io.safeWindowRect.max.y())
         offsetY -= (offsetY + dropdownHeight) - gui.io.safeWindowRect.max.y();
+    float offsetX = 0.0f;
+    if(isRightSide)
+        offsetX = bb.max.x() + d.dropdownOffset;
+    else
+        offsetX = bb.min.x() - d.entrySize.x() - d.dropdownOffset;
     floatConfig = {
         .offset = {
-            .x = isRightSide ? bb.max.x() + d.dropdownOffset : bb.min.x() - bb.width() - d.dropdownOffset,
+            .x = offsetX,
             .y = offsetY
         },
         .zIndex = gui.get_z_index(),
@@ -306,9 +311,10 @@ void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_Floatin
     maxHeight = gui.io.safeWindowRect.height();
 }
 
-void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, const DropDownPopupLayout& d) {
+void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, DropDownPopupLayout d) {
     if(!d.button->get_bb().has_value())
         return;
+    d.entrySize.x() = std::min(d.entrySize.x(), gui.io.windowSize.x());
     gui.element<LayoutElement>(id, [&](LayoutElement* l, const Clay_ElementId& lId) {
         float dropdownHeight = d.entrySize.y() * d.entryCount + d.dropdownOffset;
         Clay_FloatingElementConfig floatConfig;

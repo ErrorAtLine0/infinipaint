@@ -29,6 +29,7 @@ template <typename T, typename OptT> TextBoxData<T> textbox_options_to_data(cons
     toRet.onEnter = options.onEnter;
     toRet.onEdit = options.onEdit;
     toRet.immutable = options.immutable;
+    toRet.decorations = options.decorations;
     toRet.onSelect = options.onSelect;
     toRet.onDeselect = options.onDeselect;
     toRet.emptyText = options.emptyText;
@@ -37,6 +38,7 @@ template <typename T, typename OptT> TextBoxData<T> textbox_options_to_data(cons
 
 struct TextBoxOptions {
     bool immutable = false;
+    bool decorations = true;
     std::string emptyText;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -47,6 +49,7 @@ struct TextBoxOptions {
 struct TextBoxScalarOptions {
     int decimalPrecision = 0;
     bool immutable = false;
+    bool decorations = true;
     std::string emptyText;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -57,6 +60,7 @@ struct TextBoxScalarOptions {
 struct TextBoxScalarsOptions {
     int decimalPrecision = 0;
     bool immutable = false;
+    bool decorations = true;
     std::string emptyText;
     std::function<void(size_t)> onEnter;
     std::function<void(size_t)> onEdit;
@@ -67,6 +71,7 @@ struct TextBoxScalarsOptions {
 struct TextBoxPathOptions {
     std::filesystem::file_type fileTypeRestriction;
     bool immutable = false;
+    bool decorations = true;
     std::string emptyText;
     std::function<void()> onEnter;
     std::function<void()> onEdit;
@@ -77,6 +82,7 @@ struct TextBoxPathOptions {
 struct TextBoxHexColorOptions {
     bool hasAlpha = true;
     bool immutable = false;
+    bool decorations = true;
     std::string emptyText;
     std::function<void()> onEnter;
     std::function<void()> onEdit;

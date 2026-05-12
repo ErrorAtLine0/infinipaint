@@ -782,15 +782,11 @@ void DrawingProgram::get_used_resources(std::unordered_set<NetworkingObjects::Ne
     layerMan.get_used_resources(resourceSet);
 }
 
-Vector4f* DrawingProgram::color_picker_left(Vector4f* oldColor) {
+Vector4f* DrawingProgram::color_picker_color(Vector4f* oldColor) {
     if(oldColor == &world.main.toolConfig.globalConf.foregroundColor)
         return oldColor;
     else if(oldColor == &world.main.toolConfig.globalConf.backgroundColor)
         return oldColor;
-    return nullptr;
-}
-
-Vector4f* DrawingProgram::color_picker_right(Vector4f* oldColor) {
     return drawTool->color_picker_color(oldColor);
 }
 

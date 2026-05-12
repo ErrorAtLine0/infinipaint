@@ -470,10 +470,10 @@ void World::autosave_to_directory(const std::filesystem::path& directoryToSaveAt
     catch(...) {
     }
     std::string nameToSaveUnder = ensure_string_unique(strList, name);
-    save_to_file(directoryToSaveAt / std::filesystem::path(nameToSaveUnder + "." + FILE_EXTENSION), true);
+    save_to_file(directoryToSaveAt / std::filesystem::path(nameToSaveUnder + "." + FILE_EXTENSION));
 }
 
-void World::save_to_file(const std::filesystem::path& filePathToSaveAt, bool disableThumbnailSaving) {
+void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
     try {
         filePath = filePathToSaveAt;
 
@@ -505,7 +505,7 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt, bool dis
         #else
             if(!SDL_SaveFile(filePath.string().c_str(), f.view().data(), f.view().size()))
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
-            else if(saveThumbnail && !disableThumbnailSaving) {
+            else if(saveThumbnail) {
                 Vector2f imageCenter{main.window.size.x() * 0.5f, main.window.size.y() * 0.5f};
                 float imageDim = std::max(main.window.size.x(), main.window.size.y());
                 Vector2f imageDimVec{imageDim * 0.5f, imageDim * 0.5f};

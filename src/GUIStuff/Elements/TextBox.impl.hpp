@@ -66,14 +66,16 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
     canvas->save();
     SkRect r = SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height());
 
-    canvas->drawRect(r, SkPaint(io.theme->backColor2));
-    SkPaint outline(is_selected() ? io.theme->fillColor1 : io.theme->backColor2);
-    outline.setStroke(true);
-    outline.setStrokeWidth(2.0f);
-    outline.setAntiAlias(skiaAA);
-    canvas->drawRoundRect(r, 2.0f, 2.0f, outline);
+    if(userInfo.decorations) {
+        canvas->drawRect(r, SkPaint(io.theme->backColor2));
+        SkPaint outline(is_selected() ? io.theme->fillColor1 : io.theme->backColor2);
+        outline.setStroke(true);
+        outline.setStrokeWidth(2.0f);
+        outline.setAntiAlias(skiaAA);
+        canvas->drawRoundRect(r, 2.0f, 2.0f, outline);
+    }
 
-    canvas->clipRect(SkRect::MakeXYWH(bb.min.x(), bb.min.y(), bb.width(), bb.height()));
+    canvas->clipRect(r);
 
     float yOffset = bb.height() * 0.5f;
     yOffset -= textbox->get_height() * 0.5f;
@@ -105,7 +107,6 @@ template <typename T> void TextBox<T>::select() {
         if(isEmptyText)
             textbox->clear_text();
         edit = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, nullptr);
-        Logger::get().log("INFO", "Select");
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
     }
 }
@@ -114,7 +115,6 @@ template <typename T> void TextBox<T>::deselect() {
     if(is_selected()) {
         edit = nullptr;
         if(userInfo.onDeselect) userInfo.onDeselect();
-        Logger::get().log("INFO", "Deselect");
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
         reset_textbox_text();
         populate_empty_textbox();

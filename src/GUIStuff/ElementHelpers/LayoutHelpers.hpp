@@ -50,6 +50,6 @@ struct DropDownPopupLayout {
     std::function<void(size_t i)> entryLayout;
 };
 
-void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, const DropDownPopupLayout& d);
+void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, DropDownPopupLayout d);
 
 }}

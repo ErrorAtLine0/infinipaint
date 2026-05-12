@@ -33,6 +33,7 @@ template <typename T> struct TextBoxData {
     std::function<std::string(const T&)> toStr;
     bool singleLine = true;
     bool immutable = false;
+    bool decorations = true;
     InputManager::TextInputProperties textInputProps;
     std::string emptyText;
     std::function<void()> onEdit;
