@@ -758,7 +758,7 @@ CanvasComponentContainer::ObjInfo* DrawingProgram::add_file_to_canvas_by_data(co
 }
 
 float DrawingProgram::drag_point_radius() {
-    return 8.0f * world.main.g.final_gui_scale();
+    return (world.main.g.gui.io.isTouchDevice ? 10.0f : 8.0f) * world.main.g.final_gui_scale();
 }
 
 void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, const SkColor4f& c, const DrawData& drawData, float radiusMultiplier) {

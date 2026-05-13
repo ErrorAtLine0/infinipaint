@@ -39,12 +39,29 @@ class FileSelectScreen : public Screen {
             std::unordered_map<std::string, TrashFile> files;
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(TrashInfo, files)
         };
-        ~FileSelectScreen();
 
+        struct SaveInfo {
+            TrashInfo trash;
+            enum class FileSort {
+                ALPHABETICAL_ASCENDING,
+                ALPHABETICAL_DESCENDING,
+                TIME_ASCENDING,
+                TIME_DESCENDING
+            } fileSort = FileSort::ALPHABETICAL_ASCENDING;
+            enum class FileViewType {
+                LARGE_GRID,
+                MEDIUM_GRID,
+                SMALL_GRID,
+                LIST
+            } fileViewType = FileViewType::MEDIUM_GRID;
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(SaveInfo, trash, fileSort, fileViewType)
+        } saveInfo;
+
+        ~FileSelectScreen();
     private:
         std::filesystem::path savePath;
         std::filesystem::path trashPath;
-        std::filesystem::path trashInfoPath;
+        std::filesystem::path infoPath;
 
         void save_files();
 
@@ -56,8 +73,8 @@ class FileSelectScreen : public Screen {
         };
 
         void update_file_list(std::vector<FileInfo>& fL, const std::filesystem::path& savePath, bool trashUpdate);
+        void sort_file_list(std::vector<FileInfo>& fL);
 
-        TrashInfo trashInfo;
         std::vector<FileInfo> fileList;
 
         GUIStuff::GUIFloatAnimation* mainMenuOpenAnim = nullptr;
@@ -88,17 +105,11 @@ class FileSelectScreen : public Screen {
         void duplicate_selected_files(const std::filesystem::path& inPath);
         void delete_selected_files_in_trash();
 
-        enum class FileViewType {
-            LARGE_GRID,
-            MEDIUM_GRID,
-            SMALL_GRID,
-            LIST
-        } fileViewType = FileViewType::LARGE_GRID;
-
         enum class MoreOptionsMenu {
             CLOSED,
             MAIN,
-            VIEW
+            VIEW,
+            SORT
         } moreOptionsMenu = MoreOptionsMenu::CLOSED;
 
         enum class SelectedMenu {
@@ -111,3 +122,17 @@ class FileSelectScreen : public Screen {
         size_t numberOfSelectedEntries;
         bool editMode = false;
 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(FileSelectScreen::SaveInfo::FileSort, {
+    {FileSelectScreen::SaveInfo::FileSort::ALPHABETICAL_ASCENDING, "Alphabetical Ascending"},
+    {FileSelectScreen::SaveInfo::FileSort::ALPHABETICAL_DESCENDING, "Alphabetical Descending"},
+    {FileSelectScreen::SaveInfo::FileSort::TIME_ASCENDING, "Time Ascending"},
+    {FileSelectScreen::SaveInfo::FileSort::TIME_DESCENDING, "Time Descending"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(FileSelectScreen::SaveInfo::FileViewType, {
+    {FileSelectScreen::SaveInfo::FileViewType::LARGE_GRID, "Large Grid"},
+    {FileSelectScreen::SaveInfo::FileViewType::MEDIUM_GRID, "Medium Grid"},
+    {FileSelectScreen::SaveInfo::FileViewType::SMALL_GRID, "Small Grid"},
+    {FileSelectScreen::SaveInfo::FileViewType::LIST, "List"},
+})

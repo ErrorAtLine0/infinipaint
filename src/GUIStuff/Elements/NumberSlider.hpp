@@ -43,9 +43,10 @@ template <typename T> class NumberSlider : public Element {
             dd.maxData = maxData;
             this->config = config;
 
+            float height = gui.io.isTouchDevice ? 25 : 10;
             CLAY(id, {
                 .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(100), .height = CLAY_SIZING_FIXED(10)}
+                    .sizing = {.width = CLAY_SIZING_GROW(100), .height = CLAY_SIZING_FIXED(height)}
                 },
                 .custom = { .customData = this }
             }) {

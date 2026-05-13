@@ -29,9 +29,10 @@ void RadioButton::layout(const Clay_ElementId& id, const std::function<bool()>& 
     this->onClick = onClick;
     this->isTicked = isTicked;
 
+    float size = gui.io.isTouchDevice ? 25 : 20;
     CLAY(id, {
         .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
+            .sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size)}
         },
         .custom = { .customData = this }
     }) {}

@@ -56,6 +56,13 @@ class GridManager {
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void finalize_grid_modify(const NetworkingObjects::NetObjTemporaryPtr<WorldGrid>& wGrid, const WorldGrid& oldGridData);
+        void refresh_gui_data();
+        void setup_list_gui(const std::function<void()>& onStartModify);
+
+        struct GridMenuGUIData {
+            std::string newName;
+            uint32_t selectedGrid = std::numeric_limits<uint32_t>::max();
+        } gridMenu;
 
         NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjOrderedList<WorldGrid>> grids;
         World& world;

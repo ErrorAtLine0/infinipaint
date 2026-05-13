@@ -536,8 +536,12 @@ void World::load_empty_canvas(const std::optional<std::filesystem::path>& filePa
     drawProg.server_init_no_file();
     canvasTheme.server_init_no_file();
 
-    if(filePathEmptyAutoSaveDir.has_value())
+    if(filePathEmptyAutoSaveDir.has_value()) {
+        bool oldSaveThumbnail = true;
+        saveThumbnail = false;
         autosave_to_directory(filePathEmptyAutoSaveDir.value());
+        saveThumbnail = oldSaveThumbnail;
+    }
 }
 
 void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer) {

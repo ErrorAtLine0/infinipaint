@@ -127,6 +127,7 @@ void MainProgram::save_config() {
     std::stringstream f;
     f << std::setw(4) << j;
     SDL_SaveFile((conf.configPath / "config.json").string().c_str(), f.view().data(), f.view().size());
+
     conf.save_palettes();
 }
 
@@ -290,6 +291,7 @@ void MainProgram::post_callback() {
 
 void MainProgram::input_app_about_to_go_to_background_callback() {
     screen->input_app_about_to_go_to_background_callback();
+    save_config();
     post_callback();
 }
 

@@ -574,7 +574,7 @@ void GUIManager::layout_if_necessary() {
 }
 
 void GUIManager::layout() {
-    constexpr int LAYOUT_RUN_COUNT = 6;
+    constexpr int LAYOUT_RUN_COUNT = 8;
     for(int i = 0; i < LAYOUT_RUN_COUNT; i++)
         single_layout_run();
 }

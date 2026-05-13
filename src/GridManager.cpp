@@ -20,6 +20,15 @@
 #include "World.hpp"
 #include "MainProgram.hpp"
 #include "WorldUndoManager.hpp"
+#include "GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+#include "GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+#include "GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
+#include "GUIStuff/Elements/ManyElementScrollArea.hpp"
+#include "GUIStuff/Elements/LayoutElement.hpp"
+#include "GUIStuff/Elements/SelectableButton.hpp"
+#include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
+#include "WorldGrid.hpp"
 #include <cereal/types/unordered_map.hpp>
 
 GridManager::GridManager(World& w):
@@ -253,4 +262,100 @@ void GridManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber
         for(auto& [netID, wGrid] : gridMap)
             grids->emplace_back_direct(grids, wGrid);
     }
+}
+
+void GridManager::setup_list_gui(const std::function<void()>& onStartModify) {
+    auto& gui = world.main.g.gui;
+    auto& main = world.main;
+
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
+    auto add_grid = [&, onStartModify] {
+        if(!gridMenu.newName.empty()) {
+            main.world->gridMan.add_default_grid(gridMenu.newName);
+            main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
+            if(onStartModify) onStartModify();
+        }
+    };
+
+    float ENTRY_HEIGHT = 25.0f;
+    if(main.world->gridMan.grids->empty())
+        text_label_centered(gui, "No grids exist.");
+    gui.element<ManyElementScrollArea>("grid menu entries", ManyElementScrollArea::Options{
+        .entryHeight = ENTRY_HEIGHT,
+        .entryCount = main.world->gridMan.grids->size(),
+        .clipHorizontal = true,
+        .elementContent = [&, onStartModify](size_t i) {
+            auto& grid = main.world->gridMan.grids->at(i)->obj;
+            bool selectedEntry = gridMenu.selectedGrid == i;
+            gui.element<LayoutElement>("elem", [&, onStartModify] (LayoutElement*, const Clay_ElementId& lId2) {
+                CLAY(lId2, {
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ENTRY_HEIGHT)},
+                        .childGap = 2,
+                        .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT 
+                    },
+                    .backgroundColor = selectedEntry ? convert_vec4<Clay_Color>(gui.io.theme->backColor1) : convert_vec4<Clay_Color>(gui.io.theme->backColor2)
+                }) {
+                    text_label(gui, grid->get_display_name());
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                            .childGap = 1,
+                            .childAlignment = {.x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_CENTER},
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                        }
+                    }) {
+                        auto list_button = [&](const char* id, const char* svgPath, const std::function<void()>& onClick) {
+                            gui.set_z_index_keep_clipping_region(gui.get_z_index() + 1, [&] {
+                                svg_icon_button(gui, id, svgPath, {
+                                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                    .size = ENTRY_HEIGHT,
+                                    .onClick = onClick
+                                });
+                            });
+                        };
+                        list_button("visibility eye", grid->visible ? "data/icons/eyeopen.svg" : "data/icons/eyeclose.svg", [&] {
+                            grid->visible = !grid->visible;
+                            NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
+                        });
+                        list_button("edit pencil", "data/icons/pencil.svg", [&, onStartModify] {
+                            main.world->drawProg.modify_grid(grid);
+                            if(onStartModify) onStartModify();
+                        });
+                        list_button("delete trash", "data/icons/trash.svg", [&, i] {
+                            main.world->gridMan.remove_grid(i);
+                        });
+                    }
+                }
+            }, LayoutElement::Callbacks {
+                .onClick = [&, i, onStartModify] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                    if(l->mouseHovering && button.down && button.button == InputManager::MouseButton::LEFT) {
+                        gridMenu.selectedGrid = i;
+                        if(button.clicks == 2) {
+                            main.world->drawProg.modify_grid(grid);
+                            if(onStartModify) onStartModify();
+                        }
+                        gui.set_to_layout();
+                    }
+                }
+            });
+        }
+    });
+    left_to_right_line_layout(gui, [&]() {
+        input_text(gui, "grid text input", &gridMenu.newName, {
+            .onEnter = [add_grid]() { add_grid(); }
+        });
+        svg_icon_button(gui, "grid add button", "data/icons/plusbold.svg", {
+            .size = SMALL_BUTTON_SIZE,
+            .onClick = [add_grid] { add_grid(); }
+        });
+    });
+}
+
+void GridManager::refresh_gui_data() {
+    gridMenu.newName.clear();
+    gridMenu.selectedGrid = std::numeric_limits<uint32_t>::max();
 }

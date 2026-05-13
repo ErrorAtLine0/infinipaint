@@ -92,7 +92,6 @@ class Toolbar {
         void global_log();
         void top_toolbar();
         void grid_menu(GUIStuff::Element* gridMenuButton);
-        void add_grid();
         void stop_displaying_grid_menu();
         void stop_displaying_bookmark_menu();
         void stop_displaying_layer_menu();
@@ -110,8 +109,7 @@ class Toolbar {
         void load_default_theme();
         void about_menu_inner_gui();
         void web_version_welcome();
-        void still_connecting_center_message();
-        void no_layers_being_edited_message();
+        void center_message(const char* id, const std::string& m);
         void close_popup_gui();
         void add_world_to_close_popup_data(const std::shared_ptr<World>& w);
         void general_settings_inner_gui();
@@ -190,12 +188,7 @@ class Toolbar {
 
         bool bookmarkMenuPopupOpen = false;
         bool layerMenuPopupOpen = false;
-
-        struct GridMenu {
-            bool popupOpen = false;
-            std::string newName;
-            uint32_t selectedGrid = std::numeric_limits<uint32_t>::max();
-        } gridMenu;
+        bool gridMenuPopupOpen = false;
 
         struct FilePicker {
             bool isOpen = false;

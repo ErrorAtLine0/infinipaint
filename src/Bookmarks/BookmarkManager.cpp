@@ -75,7 +75,7 @@ void BookmarkManager::setup_list_gui() {
     if(bookmarkListRoot) {
         auto& gui = world.main.g.gui;
         if(bookmarkListRoot->get_folder_list()->empty())
-            text_label_centered(gui, "No bookmarks yet...");
+            text_label_centered(gui, "No bookmarks exist.");
         else {
             gui.element<TreeListing>("bookmark list", TreeListing::Data {
                 .selectedIndices = &selectedBookmarkIndices,
@@ -110,7 +110,7 @@ void BookmarkManager::setup_list_gui() {
                             .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
                         },
                     }) {
-                        text_label(gui, bookmark->get_name());
+                        ellipse_wide_paragraph_label(gui, "bookmark name", bookmark->get_name());
                     }
                     if(!bookmark->is_folder()) {
                         gui.set_z_index_keep_clipping_region(gui.get_z_index() + 1, [&] {
@@ -375,7 +375,7 @@ void BookmarkManager::setup_list_gui() {
 
         auto editingBookmarkLock = editingBookmark.lock();
         if(editingBookmarkLock) {
-            text_label_centered(gui, editingBookmarkLock->is_folder() ? "Edit Bookmark Folder" : "Edit Bookmark");
+            text_label_centered(gui, editingBookmarkLock->is_folder() ? "Edit Folder" : "Edit Bookmark");
             input_text_field(gui, "input edit name", "Name", &nameToEdit, {
                 .onEdit = [&] {
                     auto editingBookmarkLock = editingBookmark.lock();

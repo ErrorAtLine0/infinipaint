@@ -22,12 +22,13 @@
 #include "ResourceDisplay/ImageResourceDisplay.hpp"
 #include "DrawingProgram/DrawingProgramCache.hpp"
 #include <SDL3/SDL_time.h>
-#include <fstream>
 
 GlobalConfig::GlobalConfig() {
     load_default_palette();
     displayName = Random::get().alphanumeric_str(10);
     SDL_GetDateTimeLocalePreferences(&dateFormat, &timeFormat);
+    if(dateFormat == SDL_DATE_FORMAT_YYYYMMDD) // Can't display this in a friendly way, so changing it for now
+        dateFormat = SDL_DATE_FORMAT_DDMMYYYY;
 }
 
 nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
@@ -151,14 +152,12 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
 }
 
 void GlobalConfig::save_palettes() {
-    using json = nlohmann::json;
-    json j;
+    nlohmann::json j;
     auto palettesToSave = palettes;
     palettesToSave.erase(palettesToSave.begin());
     nlohmann::to_json(j, palettesToSave);
-    std::stringstream f;
-    f << j;
-    SDL_SaveFile((configPath / "palettes.json").string().c_str(), f.view().data(), f.view().size());
+    std::string saveJson = nlohmann::to_string(j);
+    SDL_SaveFile((configPath / "palettes.json").string().c_str(), saveJson.c_str(), saveJson.size());
 }
 
 void GlobalConfig::load_palettes() {
@@ -166,9 +165,9 @@ void GlobalConfig::load_palettes() {
     using json = nlohmann::json;
     try {
         json j(nlohmann::json::parse(read_file_to_string(configPath / "palettes.json")));
-        std::vector<Palette> palettes;
-        j.get_to(palettes);
-        palettes.insert(palettes.end(), palettes.begin(), palettes.end());
+        std::vector<Palette> p;
+        j.get_to(p);
+        palettes.insert(palettes.end(), p.begin(), p.end());
     } catch(...) {}
 }
 

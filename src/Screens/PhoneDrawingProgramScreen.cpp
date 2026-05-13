@@ -42,6 +42,34 @@ void PhoneDrawingProgramScreen::update() {
     DrawingProgramScreen::update();
 }
 
+void PhoneDrawingProgramScreen::center_message(const char* id, const std::string& m) {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
+    gui.set_z_index(gui.get_z_index() + 1, [&] {
+        gui.element<LayoutElement>(id, [&] (LayoutElement*, const Clay_ElementId& lId) {
+            CLAY(lId, {
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                    .childGap = io.theme->childGap1,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                .floating = {
+                    .zIndex = gui.get_z_index(),
+                    .attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER},
+                    .attachTo = CLAY_ATTACH_TO_PARENT,
+                }
+            }) {
+                text_label(gui, m);
+            }
+        });
+    });
+}
+
 void PhoneDrawingProgramScreen::gui_layout_run() {
     main_display();
 }
@@ -56,10 +84,105 @@ void PhoneDrawingProgramScreen::main_display() {
         },
     }) {
         top_toolbar();
+        top_toolbar_settings_popup();
         CLAY_AUTO_ID({
             .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
         }) {}
         bottom_toolbar();
+        if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
+            center_message("Select layer to edit message", "Select a layer to edit");
+    }
+}
+
+void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+    switch(topToolbarSettingsPopup) {
+        case TopToolbarSettingsPopup::NONE:
+            break;
+        case TopToolbarSettingsPopup::HIDDEN_BUTTONS:
+            break;
+        case TopToolbarSettingsPopup::BOOKMARKS: {
+            gui.set_z_index(gui.get_z_index() + 20, [&] {
+                gui.element<LayoutElement>("bookmark menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                    Vector2f popupSize = {
+                        std::clamp(gui.io.safeWindowRect.width() - 10.0f, 20.0f, 300.0f),
+                        std::clamp(gui.io.safeWindowRect.height() - 40.0f, 50.0f, 600.0f)
+                    };
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIT(popupSize.x()), .height = CLAY_SIZING_FIT(0, popupSize.y()) },
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    }) {
+                        text_label_centered(gui, "Bookmarks");
+                        main.world->bMan.setup_list_gui();
+                    }
+                });
+            });
+            break;
+        }
+        case TopToolbarSettingsPopup::LAYERS: {
+            gui.set_z_index(gui.get_z_index() + 20, [&] {
+                gui.element<LayoutElement>("layer menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                    Vector2f popupSize = {
+                        std::clamp(gui.io.safeWindowRect.width() - 10.0f, 20.0f, 300.0f),
+                        std::clamp(gui.io.safeWindowRect.height() - 40.0f, 50.0f, 600.0f)
+                    };
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIT(popupSize.x()), .height = CLAY_SIZING_FIT(0, popupSize.y()) },
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    }) {
+                        text_label_centered(gui, "Layers");
+                        main.world->drawProg.layerMan.listGUI.setup_list_gui();
+                    }
+                });
+            });
+            break;
+        }
+        case TopToolbarSettingsPopup::GRIDS: {
+            gui.set_z_index(gui.get_z_index() + 20, [&] {
+                gui.element<LayoutElement>("grid menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                    Vector2f popupSize = {
+                        std::clamp(gui.io.safeWindowRect.width() - 10.0f, 20.0f, 300.0f),
+                        std::clamp(gui.io.safeWindowRect.height() - 40.0f, 50.0f, 600.0f)
+                    };
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIT(popupSize.x()), .height = CLAY_SIZING_FIT(0, popupSize.y()) },
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    }) {
+                        text_label_centered(gui, "Grids");
+                        main.world->gridMan.setup_list_gui([&] {
+                            topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                            settingsMenuPopup = SettingsMenuPopup::SETTINGS;
+                        });
+                    }
+                });
+            });
+            break;
+        }
     }
 }
 
@@ -93,6 +216,7 @@ void PhoneDrawingProgramScreen::top_toolbar() {
                         }
                     });
                     top_toolbar_remaining_area();
+                    top_toolbar_settings_popup();
                 }
             });
         }
@@ -114,6 +238,30 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
             .svgPath = "data/icons/redo.svg",
             .onClick = [&] {
                 main.world->redo_with_checks();
+            }
+        },
+        TopToolbarRemainingAreaButton{
+            .name = "Bookmarks",
+            .svgPath = "data/icons/bookmark.svg",
+            .isSelected = topToolbarSettingsPopup == TopToolbarSettingsPopup::BOOKMARKS,
+            .onClick = [&] {
+                topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::BOOKMARKS ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::BOOKMARKS;
+            }
+        },
+        TopToolbarRemainingAreaButton{
+            .name = "Layers",
+            .svgPath = "data/icons/layer.svg",
+            .isSelected = topToolbarSettingsPopup == TopToolbarSettingsPopup::LAYERS,
+            .onClick = [&] {
+                topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::LAYERS ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::LAYERS;
+            }
+        },
+        TopToolbarRemainingAreaButton{
+            .name = "Grids",
+            .svgPath = "data/icons/grid.svg",
+            .isSelected = topToolbarSettingsPopup == TopToolbarSettingsPopup::GRIDS,
+            .onClick = [&] {
+                topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::GRIDS ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::GRIDS;
             }
         },
     };
@@ -152,6 +300,7 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
                         gui.new_id(i, [&] {
                             svg_icon_button(gui, "button", listOfTopToolbarButtons.front().svgPath, {
                                 .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .isSelected = listOfTopToolbarButtons.front().isSelected,
                                 .onClick = listOfTopToolbarButtons.front().onClick
                             });
                             listOfTopToolbarButtons.erase(listOfTopToolbarButtons.begin());
@@ -161,10 +310,10 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
                 Element* e = svg_icon_button(gui, "Hidden buttons", "data/icons/RemixIcon/more-2-fill.svg", {
                     .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                     .onClick = [&] {
-                        topToolbarButtonPopupOpen = !topToolbarButtonPopupOpen;
+                        topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::HIDDEN_BUTTONS ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::HIDDEN_BUTTONS;
                     }
                 });
-                if(topToolbarButtonPopupOpen)
+                if(topToolbarSettingsPopup == TopToolbarSettingsPopup::HIDDEN_BUTTONS)
                     top_toolbar_hidden_button_popup(e, listOfTopToolbarButtons);
             }
         }
@@ -202,10 +351,10 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
         }
     });
 
-    gui.set_z_index(gui.get_z_index() + 1, [&] {
+    gui.set_z_index(gui.get_z_index() + 20, [&] {
         dropdown_many_element_popup_layout(gui, "top toolbar hidden button popup", {
             .button = b,
-            .clickAwayCallback = [&] { topToolbarButtonPopupOpen = false; },
+            .clickAwayCallback = [&] { topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE; },
             .entrySize = {150.0f, 30.0f},
             .entryCount = l.size(),
             .entryLayout = [&] (size_t i) {
@@ -213,8 +362,9 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
                 gui.element<SelectableButton>("button", SelectableButton::Data{
                     .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                     .onClick = [&, oC = listItem.onClick] {
+                        if(topToolbarSettingsPopup == TopToolbarSettingsPopup::HIDDEN_BUTTONS)
+                            topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
                         oC();
-                        topToolbarButtonPopupOpen = false;
                     },
                     .innerContent = [&] (auto&) {
                         CLAY_AUTO_ID({

@@ -31,12 +31,12 @@
 #include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
-#include "../GUIStuff/Elements/PositionAdjustingPopupMenu.hpp"
 #include "../World.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "PhoneDrawingProgramScreen.hpp"
 #include <SDL3/SDL_time.h>
 #include <SDL3/SDL_timer.h>
+#include <algorithm>
 
 #define MAIN_MENU_SIZE 300
 
@@ -44,16 +44,17 @@ using namespace GUIStuff;
 using namespace ElementHelpers;
 
 FileSelectScreen::FileSelectScreen(MainProgram& m): Screen(m) {
+    main.g.gui.io.isTouchDevice = true;
     savePath = main.conf.configPath / "saves";
     trashPath = main.conf.configPath / "trash";
-    trashInfoPath = main.conf.configPath / "trashInfo.json";
+    infoPath = main.conf.configPath / "fileSelectInfo.json";
 
     SDL_CreateDirectory(savePath.string().c_str());
     SDL_CreateDirectory(trashPath.string().c_str());
 
     try {
-        nlohmann::json j(nlohmann::json::parse(read_file_to_string(trashInfoPath)));
-        j.get_to(trashInfo);
+        nlohmann::json j(nlohmann::json::parse(read_file_to_string(infoPath)));
+        j.get_to(saveInfo);
     }
     catch(...) {}
 
@@ -88,9 +89,9 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
                 fileInfoToAdd.fileName = p.stem().string();
 
                 if(trashUpdate) {
-                    auto it = trashInfo.files.find(fileInfoToAdd.fileName);
-                    if(it == trashInfo.files.end()) {
-                        trashInfo.files[fileInfoToAdd.fileName].trashTime = currentTime;
+                    auto it = saveInfo.trash.files.find(fileInfoToAdd.fileName);
+                    if(it == saveInfo.trash.files.end()) {
+                        saveInfo.trash.files[fileInfoToAdd.fileName].trashTime = currentTime;
                         fileInfoToAdd.lastModifyTime = currentTime;
                     }
                     else
@@ -102,7 +103,7 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
                         // Remove file and thumbnail
                         SDL_RemovePath(fullPath.string().c_str());
                         SDL_RemovePath((savePath / fileInfoToAdd.fileName / ".jpg").string().c_str());
-                        trashInfo.files.erase(it);
+                        saveInfo.trash.files.erase(it);
                         continue;
                     }
                     else if(daysSinceMovedToTrash == 29)
@@ -129,6 +130,33 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
     }
     else
         SDL_CreateDirectory(savePath.string().c_str());
+
+    sort_file_list(fL);
+}
+
+void FileSelectScreen::sort_file_list(std::vector<FileInfo>& fL) {
+    switch(saveInfo.fileSort) {
+        case SaveInfo::FileSort::ALPHABETICAL_ASCENDING:
+            std::stable_sort(fL.begin(), fL.end(), [&](const FileInfo& a, const FileInfo& b) {
+                return std::lexicographical_compare(a.fileName.begin(), a.fileName.end(), b.fileName.begin(), b.fileName.end());
+            });
+            break;
+        case SaveInfo::FileSort::ALPHABETICAL_DESCENDING:
+            std::stable_sort(fL.begin(), fL.end(), [&](const FileInfo& a, const FileInfo& b) {
+                return std::lexicographical_compare(b.fileName.begin(), b.fileName.end(), a.fileName.begin(), a.fileName.end());
+            });
+            break;
+        case SaveInfo::FileSort::TIME_ASCENDING:
+            std::stable_sort(fL.begin(), fL.end(), [&](const FileInfo& a, const FileInfo& b) {
+                return b.lastModifyTime < a.lastModifyTime;
+            });
+            break;
+        case SaveInfo::FileSort::TIME_DESCENDING:
+            std::stable_sort(fL.begin(), fL.end(), [&](const FileInfo& a, const FileInfo& b) {
+                return a.lastModifyTime < b.lastModifyTime;
+            });
+            break;
+    }
 }
 
 void FileSelectScreen::main_display() {
@@ -289,12 +317,12 @@ void FileSelectScreen::move_selected_files(const std::filesystem::path& fromPath
                 case TrashMoveType::NONE:
                     break;
                 case TrashMoveType::MOVE_TO_TRASH:
-                    trashInfo.files[newFileName] = TrashInfo::TrashFile{
+                    saveInfo.trash.files[newFileName] = TrashInfo::TrashFile{
                         .trashTime = currentTime
                     };
                     break;
                 case TrashMoveType::MOVE_OUT_OF_TRASH:
-                    trashInfo.files.erase(f.fileName);
+                    saveInfo.trash.files.erase(f.fileName);
                     break;
             }
         }
@@ -330,7 +358,7 @@ void FileSelectScreen::delete_selected_files_in_trash() {
             std::filesystem::path thumbnailPath = trashPath / (f.fileName + ".jpg");
             SDL_RemovePath(filePath.string().c_str());
             SDL_RemovePath(thumbnailPath.string().c_str());
-            trashInfo.files.erase(f.fileName);
+            saveInfo.trash.files.erase(f.fileName);
         }
     }
 }
@@ -338,71 +366,71 @@ void FileSelectScreen::delete_selected_files_in_trash() {
 void FileSelectScreen::edit_action_bar() {
     auto& gui = main.g.gui;
     if(actionBarOpenAnim->get_val()) {
-    gui.set_z_index(gui.get_z_index() + 3, [&] {
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .floating = {
-                .zIndex = gui.get_z_index(),
-                .attachPoints = {
-                    .element = CLAY_ATTACH_POINT_LEFT_TOP,
-                    .parent = CLAY_ATTACH_POINT_LEFT_TOP,
-                },
-                .attachTo = CLAY_ATTACH_TO_PARENT,
-            }
-        }) {
+        gui.set_z_index(gui.get_z_index() + 3, [&] {
             CLAY_AUTO_ID({
-                .layout = { .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}},
-            }) {}
-            gui.element<LayoutElement>("edit action bar bottom fill", [&](LayoutElement*, const Clay_ElementId& lId) {
-                CLAY(lId, {}) {
-                    window_fill_side_bar(gui, {
-                        .dir = WindowFillSideBarConfig::Direction::BOTTOM,
-                        .backgroundColor = gui.io.theme->backColor1
-                    }, [&] {
-                        gui.element<LayoutElement>("edit action bar", [&](LayoutElement*, const Clay_ElementId& lId) {
-                            CLAY(lId, {
-                                .layout = {
-                                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(50 * actionBarOpenAnim->get_val())},
-                                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
-                                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                                }
-                            }) {
-                                if(actionBarOpenAnim->is_at_end()) {
-                                    if(selectedMenu == SelectedMenu::FILES) {
-                                        edit_action_bar_button("trash", "data/icons/trash.svg", "Trash", [&] {
-                                            move_selected_files(savePath, trashPath, TrashMoveType::MOVE_TO_TRASH);
-                                            update_file_list(fileList, savePath, false);
-                                            editMode = false;
-                                        });
-                                        edit_action_bar_button("duplicate", "data/icons/RemixIcon/file-copy-line.svg", "Duplicate", [&] {
-                                            duplicate_selected_files(savePath);
-                                            update_file_list(fileList, savePath, false);
-                                            editMode = false;
-                                        });
-                                    }
-                                    else if(selectedMenu == SelectedMenu::TRASH) {
-                                        edit_action_bar_button("restore", "data/icons/RemixIcon/refresh-line.svg", "Restore", [&] {
-                                            move_selected_files(trashPath, savePath, TrashMoveType::MOVE_OUT_OF_TRASH);
-                                            update_file_list(fileList, trashPath, true);
-                                            editMode = false;
-                                        });
-                                        edit_action_bar_button("delete", "data/icons/trash.svg", "Delete", [&] {
-                                            delete_selected_files_in_trash();
-                                            update_file_list(fileList, trashPath, true);
-                                            editMode = false;
-                                        });
-                                    }
-                                }
-                            }
-                        });
-                    });
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .floating = {
+                    .zIndex = gui.get_z_index(),
+                    .attachPoints = {
+                        .element = CLAY_ATTACH_POINT_LEFT_TOP,
+                        .parent = CLAY_ATTACH_POINT_LEFT_TOP,
+                    },
+                    .attachTo = CLAY_ATTACH_TO_PARENT,
                 }
-            });
-        }
-    });
+            }) {
+                CLAY_AUTO_ID({
+                    .layout = { .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}},
+                }) {}
+                gui.element<LayoutElement>("edit action bar bottom fill", [&](LayoutElement*, const Clay_ElementId& lId) {
+                    CLAY(lId, {}) {
+                        window_fill_side_bar(gui, {
+                            .dir = WindowFillSideBarConfig::Direction::BOTTOM,
+                            .backgroundColor = gui.io.theme->backColor1
+                        }, [&] {
+                            gui.element<LayoutElement>("edit action bar", [&](LayoutElement*, const Clay_ElementId& lId) {
+                                CLAY(lId, {
+                                    .layout = {
+                                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(50 * actionBarOpenAnim->get_val())},
+                                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
+                                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                                    }
+                                }) {
+                                    if(actionBarOpenAnim->is_at_end()) {
+                                        if(selectedMenu == SelectedMenu::FILES) {
+                                            edit_action_bar_button("trash", "data/icons/trash.svg", "Trash", [&] {
+                                                move_selected_files(savePath, trashPath, TrashMoveType::MOVE_TO_TRASH);
+                                                update_file_list(fileList, savePath, false);
+                                                editMode = false;
+                                            });
+                                            edit_action_bar_button("duplicate", "data/icons/RemixIcon/file-copy-line.svg", "Duplicate", [&] {
+                                                duplicate_selected_files(savePath);
+                                                update_file_list(fileList, savePath, false);
+                                                editMode = false;
+                                            });
+                                        }
+                                        else if(selectedMenu == SelectedMenu::TRASH) {
+                                            edit_action_bar_button("restore", "data/icons/RemixIcon/refresh-line.svg", "Restore", [&] {
+                                                move_selected_files(trashPath, savePath, TrashMoveType::MOVE_OUT_OF_TRASH);
+                                                update_file_list(fileList, trashPath, true);
+                                                editMode = false;
+                                            });
+                                            edit_action_bar_button("delete", "data/icons/trash.svg", "Delete", [&] {
+                                                delete_selected_files_in_trash();
+                                                update_file_list(fileList, trashPath, true);
+                                                editMode = false;
+                                            });
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        });
     }
 }
 
@@ -484,10 +512,19 @@ void FileSelectScreen::title_bar() {
                         });
                         if(moreButton->get_bb().has_value() && moreOptionsMenu != MoreOptionsMenu::CLOSED) {
                             size_t elemCount = 0;
-                            if(moreOptionsMenu == MoreOptionsMenu::MAIN)
-                                elemCount = 2;
-                            else if(moreOptionsMenu == MoreOptionsMenu::VIEW)
-                                elemCount = 4;
+                            switch(moreOptionsMenu) {
+                                case MoreOptionsMenu::CLOSED:
+                                    break;
+                                case MoreOptionsMenu::MAIN:
+                                    elemCount = 3;
+                                    break;
+                                case MoreOptionsMenu::VIEW:
+                                    elemCount = 4;
+                                    break;
+                                case MoreOptionsMenu::SORT:
+                                    elemCount = 4;
+                                    break;
+                            }
                             gui.set_z_index(gui.get_z_index() + 10, [&] {
                                 dropdown_many_element_popup_layout(gui, "more options popup", {
                                     .button = moreButton,
@@ -500,53 +537,98 @@ void FileSelectScreen::title_bar() {
                                     .entrySize = {200.0f, 30.0f},
                                     .entryCount = elemCount,
                                     .entryLayout = [&] (size_t i) {
-                                        if(moreOptionsMenu == MoreOptionsMenu::MAIN) {
-                                            switch(i) {
-                                                case 0: {
-                                                    text_transparent_option_button("Edit", "Edit", [&] {
-                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                        start_edit_mode();
-                                                    });
-                                                    break;
+                                        switch(moreOptionsMenu) {
+                                            case MoreOptionsMenu::CLOSED:
+                                                break;
+                                            case MoreOptionsMenu::MAIN: {
+                                                switch(i) {
+                                                    case 0: {
+                                                        text_transparent_option_button("Edit", "Edit", [&] {
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                            start_edit_mode();
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 1: {
+                                                        text_transparent_option_button("View", "View", [&] {
+                                                            moreOptionsMenu = MoreOptionsMenu::VIEW;
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 2: {
+                                                        text_transparent_option_button("Sort", "Sort", [&] {
+                                                            moreOptionsMenu = MoreOptionsMenu::SORT;
+                                                        });
+                                                        break;
+                                                    }
                                                 }
-                                                case 1: {
-                                                    text_transparent_option_button("View", "View", [&] {
-                                                        moreOptionsMenu = MoreOptionsMenu::VIEW;
-                                                    });
-                                                    break;
-                                                }
+                                                break;
                                             }
-                                        }
-                                        else if(moreOptionsMenu == MoreOptionsMenu::VIEW) {
-                                            switch(i) {
-                                                case 0: {
-                                                    text_transparent_option_button("Large Grid", "Large Grid", [&] {
-                                                        fileViewType = FileViewType::LARGE_GRID;
-                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                    });
-                                                    break;
+                                            case MoreOptionsMenu::VIEW: {
+                                                switch(i) {
+                                                    case 0: {
+                                                        text_transparent_option_button("Large Grid", "Large Grid", [&] {
+                                                            saveInfo.fileViewType = SaveInfo::FileViewType::LARGE_GRID;
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 1: {
+                                                        text_transparent_option_button("Medium Grid", "Medium Grid", [&] {
+                                                            saveInfo.fileViewType = SaveInfo::FileViewType::MEDIUM_GRID;
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 2: {
+                                                        text_transparent_option_button("Small Grid", "Small Grid", [&] {
+                                                            saveInfo.fileViewType = SaveInfo::FileViewType::SMALL_GRID;
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 3: {
+                                                        text_transparent_option_button("List", "List", [&] {
+                                                            saveInfo.fileViewType = SaveInfo::FileViewType::LIST;
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
+                                                        });
+                                                        break;
+                                                    }
                                                 }
-                                                case 1: {
-                                                    text_transparent_option_button("Medium Grid", "Medium Grid", [&] {
-                                                        fileViewType = FileViewType::MEDIUM_GRID;
-                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                    });
-                                                    break;
+                                                break;
+                                            }
+                                            case MoreOptionsMenu::SORT: {
+                                                switch(i) {
+                                                    case 0: {
+                                                        text_transparent_option_button("Alphabetical Ascending", "Alphabetical ↑", [&] {
+                                                            saveInfo.fileSort = SaveInfo::FileSort::ALPHABETICAL_ASCENDING;
+                                                            sort_file_list(fileList);
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 1: {
+                                                        text_transparent_option_button("Alphabetical Descending", "Alphabetical ↓", [&] {
+                                                            saveInfo.fileSort = SaveInfo::FileSort::ALPHABETICAL_DESCENDING;
+                                                            sort_file_list(fileList);
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 2: {
+                                                        text_transparent_option_button("Time Ascending", "Date modified ↑", [&] {
+                                                            saveInfo.fileSort = SaveInfo::FileSort::TIME_ASCENDING;
+                                                            sort_file_list(fileList);
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 3: {
+                                                        text_transparent_option_button("Time Descending", "Date modified ↓", [&] {
+                                                            saveInfo.fileSort = SaveInfo::FileSort::TIME_DESCENDING;
+                                                            sort_file_list(fileList);
+                                                        });
+                                                        break;
+                                                    }
                                                 }
-                                                case 2: {
-                                                    text_transparent_option_button("Small Grid", "Small Grid", [&] {
-                                                        fileViewType = FileViewType::SMALL_GRID;
-                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                    });
-                                                    break;
-                                                }
-                                                case 3: {
-                                                    text_transparent_option_button("List", "List", [&] {
-                                                        fileViewType = FileViewType::LIST;
-                                                        moreOptionsMenu = MoreOptionsMenu::CLOSED;
-                                                    });
-                                                    break;
-                                                }
+                                                break;
                                             }
                                         }
                                     }
@@ -679,8 +761,8 @@ void FileSelectScreen::file_view() {
                                 .layoutDirection = CLAY_TOP_TO_BOTTOM
                             }
                         }) {
-                            text_label(gui, fileList[i].fileName);
-                            text_label_light(gui, fileList[i].lastModifyDate);
+                            mutable_text_label(gui, "file name label", fileList[i].fileName);
+                            mutable_text_label_light(gui, "last modify date", fileList[i].lastModifyDate);
                         }
                     }
                 }
@@ -720,14 +802,14 @@ void FileSelectScreen::file_view() {
                                 }
                             }
                         });
-                        text_label_light(gui, fileList[i].lastModifyDate);
+                        mutable_text_label_light(gui, "last modify date", fileList[i].lastModifyDate);
                     }
                 }
             }
         });
     };
 
-    if(fileViewType == FileViewType::LIST) {
+    if(saveInfo.fileViewType == SaveInfo::FileViewType::LIST) {
         mainViewScrollArea = gui.element<ManyElementScrollArea>("File selector list", ManyElementScrollArea::Options{
             .entryHeight = 150.0f,
             .entryCount = fileList.size(),
@@ -741,16 +823,16 @@ void FileSelectScreen::file_view() {
     else {
         Vector2f entrySize{0.0f, 0.0f};
         Vector2f iconSize{0.0f, 0.0f};
-        switch(fileViewType) {
-            case FileViewType::LARGE_GRID:
+        switch(saveInfo.fileViewType) {
+            case SaveInfo::FileViewType::LARGE_GRID:
                 entrySize = {170.0f, 210.0f};
                 iconSize = {130.0f, 130.0f};
                 break;
-            case FileViewType::MEDIUM_GRID:
+            case SaveInfo::FileViewType::MEDIUM_GRID:
                 entrySize = {140.0f, 180.0f};
                 iconSize = {100.0f, 100.0f};
                 break;
-            case FileViewType::SMALL_GRID:
+            case SaveInfo::FileViewType::SMALL_GRID:
                 entrySize = {110.0f, 150.0f};
                 iconSize = {70.0f, 70.0f};
                 break;
@@ -863,9 +945,9 @@ void FileSelectScreen::draw(SkCanvas* canvas) {
 
 void FileSelectScreen::save_files() {
     nlohmann::json j;
-    nlohmann::to_json(j, trashInfo);
+    nlohmann::to_json(j, saveInfo);
     std::string saveJson = nlohmann::to_string(j);
-    SDL_SaveFile(trashInfoPath.string().c_str(), saveJson.c_str(), saveJson.size());
+    SDL_SaveFile(infoPath.string().c_str(), saveJson.c_str(), saveJson.size());
 }
 
 void FileSelectScreen::input_app_about_to_go_to_background_callback() {

@@ -122,7 +122,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
                             .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER}
                         },
                     }) {
-                        text_label(gui, layer->get_name());
+                        ellipse_wide_paragraph_label(gui, "layer name", layer->get_name());
                     }
                     if(!layer->is_folder()) {
                         gui.set_z_index_keep_clipping_region(gui.get_z_index() + 1, [&] {
@@ -411,7 +411,7 @@ void DrawingProgramLayerManagerGUI::setup_list_gui() {
 
         auto editingLayerLock = editingLayer.lock();
         if(editingLayerLock) {
-            text_label_centered(gui, editingLayerLock->is_folder() ? "Edit Layer Folder" : "Edit Layer");
+            text_label_centered(gui, editingLayerLock->is_folder() ? "Edit Folder" : "Edit Layer");
             input_text_field(gui, "input edit name", "Name", &nameToEdit, {
                 .onEdit = [&] {
                     auto editingLayerLock = editingLayer.lock();

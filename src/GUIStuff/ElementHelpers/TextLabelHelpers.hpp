@@ -29,5 +29,8 @@ void text_label_light_centered(GUIManager& gui, std::string_view val);
 void text_label_centered(GUIManager& gui, std::string_view val);
 
 void mutable_text_label(GUIManager& gui, const char* id, const std::string& val);
+void mutable_text_label_light(GUIManager& gui, const char* id, const std::string& val);
+
+void ellipse_wide_paragraph_label(GUIManager& gui, const char* id, const std::string& val);
 
 }}

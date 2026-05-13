@@ -45,6 +45,7 @@ void GridModifyTool::set_grid(const NetObjWeakPtr<WorldGrid>& newGrid) {
         oldGrid = g;
         CoordSpaceHelper newCam;
         newCam.inverseScale = g.size / WorldScalar(WorldGrid::GRID_UNIT_PIXEL_SIZE);
+        newCam.inverseScale = newCam.inverseScale.divide_double(drawP.world.main.g.final_gui_scale());
         newCam.pos = g.offset - drawP.world.main.window.size.cast<WorldScalar>() * newCam.inverseScale * WorldScalar(0.5);
         newCam.rotation = 0.0;
         drawP.world.drawData.cam.smooth_move_to(drawP.world, newCam, drawP.world.main.window.size.cast<float>());
@@ -219,7 +220,8 @@ void GridModifyTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
                 else
                     g.bounds = std::nullopt;
             });
-            checkbox_boolean_field(gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
+            // Very hard to not have a rotated canvas on phone
+            //checkbox_boolean_field(gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
         }
     });
 }

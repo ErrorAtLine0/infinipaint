@@ -18,6 +18,8 @@
 
 #include "TextLabelHelpers.hpp"
 #include "../Elements/MutableTextLabel.hpp"
+#include "../Elements/TextParagraph.hpp"
+#include "../Elements/LayoutElement.hpp"
 #include "Helpers/ConvertVec.hpp"
 
 namespace GUIStuff { namespace ElementHelpers {
@@ -63,6 +65,30 @@ void text_label_light_centered(GUIManager& gui, std::string_view val) {
 void mutable_text_label(GUIManager& gui, const char* id, const std::string& val) {
     Clay_TextElementConfig textConfig = CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(gui.io.theme->frontColor1), .fontSize = gui.io.fontSize });
     gui.element<MutableTextLabel>(id, val, textConfig);
+}
+
+void mutable_text_label_light(GUIManager& gui, const char* id, const std::string& val) {
+    Clay_TextElementConfig textConfig = CLAY_TEXT_CONFIG({.textColor = convert_vec4<Clay_Color>(gui.io.theme->frontColor2), .fontSize = gui.io.fontSize });
+    gui.element<MutableTextLabel>(id, val, textConfig);
+}
+
+void ellipse_wide_paragraph_label(GUIManager& gui, const char* id, const std::string& val) {
+    gui.element<LayoutElement>(id, [&](LayoutElement* l, const Clay_ElementId& lId) {
+        CLAY(lId, {
+            .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}}
+        }) {
+            if(l->get_bb().has_value()) {
+                RichText::TextData t;
+                t.paragraphs.emplace_back();
+                t.paragraphs.back().text = val;
+                gui.element<TextParagraph>("p", TextParagraph::Data{
+                    .text = t,
+                    .maxGrowX = l->get_bb().value().width(),
+                    .ellipsis = true
+                });
+            }
+        }
+    });
 }
 
 }}
