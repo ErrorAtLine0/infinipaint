@@ -31,7 +31,7 @@ void CheckBox::layout(const Clay_ElementId& id, const std::function<bool()>& isT
     this->isTicked = isTicked;
     this->onClick = onClick;
 
-    float size = gui.io.isTouchDevice ? 25 : 15;
+    float size = 20;
     CLAY(id, {
         .layout = {
             .sizing = {.width = CLAY_SIZING_FIXED(size), .height = CLAY_SIZING_FIXED(size)}

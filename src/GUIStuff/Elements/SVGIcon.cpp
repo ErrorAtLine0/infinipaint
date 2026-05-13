@@ -29,7 +29,7 @@ namespace GUIStuff {
 SVGIcon::SVGIcon(GUIManager& gui):
     Element(gui) {}
 
-void SVGIcon::layout(const Clay_ElementId& id, const std::string& newSvgPath, bool newIsHighlighted) {
+void SVGIcon::layout(const Clay_ElementId& id, const std::string& newSvgPath, bool newIsHighlighted, bool newInverse) {
     bool redraw = false;
 
     auto& io = gui.io;
@@ -42,7 +42,9 @@ void SVGIcon::layout(const Clay_ElementId& id, const std::string& newSvgPath, bo
     }
 
     redraw |= highlighted != newIsHighlighted;
+    redraw |= inverse != newInverse;
     highlighted = newIsHighlighted;
+    inverse = newInverse;
 
     if(redraw)
         gui.invalidate_draw_element(this);
@@ -66,7 +68,10 @@ void SVGIcon::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderComman
     SkRect r = SkRect::MakeXYWH(0.0f, 0.0f, bb.width(), bb.height());
     canvas->clipRect(r);
     SkPaint blendingPaint;
-    blendingPaint.setColorFilter(SkColorFilters::Blend(highlighted ? io.theme->frontColor1 : io.theme->frontColor2, SkColorSpace::MakeSRGB(), SkBlendMode::kSrcIn));
+    if(inverse)
+        blendingPaint.setColorFilter(SkColorFilters::Blend(highlighted ? io.theme->backColor1 : io.theme->backColor2, SkColorSpace::MakeSRGB(), SkBlendMode::kSrcIn));
+    else
+        blendingPaint.setColorFilter(SkColorFilters::Blend(highlighted ? io.theme->frontColor1 : io.theme->frontColor2, SkColorSpace::MakeSRGB(), SkBlendMode::kSrcIn));
     canvas->saveLayer(r, &blendingPaint);
     canvas->scale(bb.width() / svgDom->containerSize().width(), bb.height() / svgDom->containerSize().height());
     svgDom->render(canvas);

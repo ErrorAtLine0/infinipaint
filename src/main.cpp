@@ -216,7 +216,7 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, VersionConstants::CURRENT_VERSION_STRING.c_str());
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.infinipaint.infinipaint");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "Yousef Khadadeh (ErrorAtLine0)");
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "Copyright (c) 2026 Yousef Khadadeh");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "Copyright (C) 2025-2026 Yousef Khadadeh");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://infinipaint.com/");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
 

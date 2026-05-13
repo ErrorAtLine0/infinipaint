@@ -1428,7 +1428,9 @@ void Toolbar::options_menu() {
     switch(optionsMenuType) {
         case HOST_MENU: {
             center_obstructing_window_gui("host menu", CLAY_SIZING_FIT(650), CLAY_SIZING_FIT(0), [&] {
-                input_text_field(gui, "lobby", "Lobby", &serverToConnectTo);
+                input_text_field(gui, "lobby", "Lobby", &serverToConnectTo, {
+                    .immutable = true
+                });
                 left_to_right_line_layout(gui, [&]() {
                     text_button_wide("copy lobby address", "Copy Lobby Address", [&] {
                         main.input.set_clipboard_str(serverToConnectTo);

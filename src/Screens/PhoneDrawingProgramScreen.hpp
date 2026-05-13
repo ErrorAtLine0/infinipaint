@@ -72,13 +72,17 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
             HIDDEN_BUTTONS,
             BOOKMARKS,
             LAYERS,
-            GRIDS
+            GRIDS,
+            HOST
         } topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+
+        bool hideGUI = false;
 
         Vector4f backgroundColorTemporary;
         Vector4f* colorPickerPtr = nullptr;
         ColorSelectorData colorPickerData;
 
+        void hidden_gui();
         void center_message(const char* id, const std::string& m);
         void default_bottom_toolbar();
         void bottom_toolbar_gui();
@@ -91,4 +95,7 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         void bottom_toolbar();
         void main_display();
         void tool_settings_popup();
+
+        std::string serverToConnectTo;
+        std::string serverLocalID;
 };

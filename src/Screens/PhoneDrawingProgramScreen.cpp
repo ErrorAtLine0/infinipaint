@@ -83,15 +83,37 @@ void PhoneDrawingProgramScreen::main_display() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
     }) {
-        top_toolbar();
-        top_toolbar_settings_popup();
-        CLAY_AUTO_ID({
-            .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
-        }) {}
-        bottom_toolbar();
+        if(hideGUI)
+            hidden_gui();
+        else {
+            top_toolbar();
+            top_toolbar_settings_popup();
+            CLAY_AUTO_ID({
+                .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
+            }) {}
+            bottom_toolbar();
+        }
         if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
             center_message("Select layer to edit message", "Select a layer to edit");
     }
+}
+
+void PhoneDrawingProgramScreen::hidden_gui() {
+    auto& gui = main.g.gui;
+
+    window_fill_side_bar(gui, WindowFillSideBarConfig{
+        .dir = WindowFillSideBarConfig::Direction::TOP
+    }, [&] {
+        CLAY_AUTO_ID({
+            .layout = {.sizing = {.width = CLAY_SIZING_GROW(0)}}
+        });
+        svg_icon_button(gui, "show gui button", "data/icons/eyeopen.svg", {
+            .isSelected = true,
+            .onClick = [&] {
+                hideGUI = false;
+            }
+        });
+    });
 }
 
 void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
@@ -183,6 +205,42 @@ void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
             });
             break;
         }
+        case TopToolbarSettingsPopup::HOST: {
+            gui.set_z_index(gui.get_z_index() + 20, [&] {
+                gui.element<LayoutElement>("host lobby menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                    Vector2f popupSize = {
+                        std::clamp(gui.io.safeWindowRect.width() - 10.0f, 20.0f, 300.0f),
+                        std::clamp(gui.io.safeWindowRect.height() - 40.0f, 50.0f, 600.0f)
+                    };
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIT(popupSize.x()), .height = CLAY_SIZING_FIT(0, popupSize.y()) },
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    }) {
+                        text_label_centered(gui, "Host");
+                        input_text_field(gui, "lobby", "Lobby", &serverToConnectTo, {
+                            .immutable = true
+                        });
+                        text_button(gui, "Host button", "Copy & Host", {
+                            .wide = true,
+                            .onClick = [&] {
+                                main.input.set_clipboard_str(serverToConnectTo);
+                                main.world->start_hosting(serverToConnectTo, serverLocalID);
+                                topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                            }
+                        });
+                    }
+                });
+            });
+            break;
+        }
     }
 }
 
@@ -264,6 +322,14 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
                 topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::GRIDS ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::GRIDS;
             }
         },
+        TopToolbarRemainingAreaButton{
+            .name = "Hide Toolbars",
+            .svgPath = "data/icons/eyeopen.svg",
+            .isSelected = false,
+            .onClick = [&] {
+                hideGUI = true;
+            }
+        },
     };
     gui.element<LayoutElement>("remaining area", [&](LayoutElement* l, const Clay_ElementId& lId) {
         CLAY(lId, {
@@ -309,6 +375,7 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
                 });
                 Element* e = svg_icon_button(gui, "Hidden buttons", "data/icons/RemixIcon/more-2-fill.svg", {
                     .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                    .isSelected = topToolbarSettingsPopup == TopToolbarSettingsPopup::HIDDEN_BUTTONS,
                     .onClick = [&] {
                         topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::HIDDEN_BUTTONS ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::HIDDEN_BUTTONS;
                     }
@@ -348,6 +415,16 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
                     main.world->canvasTheme.set_back_color({backgroundColorTemporary.x(), backgroundColorTemporary.y(), backgroundColorTemporary.z()});
                 }
             };
+        }
+    });
+
+    l.emplace_back(TopToolbarRemainingAreaButton{
+        .name = "Host",
+        .svgPath = "data/icons/network.svg",
+        .onClick = [&] {
+            serverLocalID = NetLibrary::get_random_server_local_id();
+            serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+            topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::HOST ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::HOST;
         }
     });
 
@@ -935,10 +1012,16 @@ void PhoneDrawingProgramScreen::bottom_extra_toolbar_gui() {
 }
 
 void PhoneDrawingProgramScreen::input_global_back_button_callback() {
-    main.world->save_to_file(main.world->filePath);
-    main.set_tab_to_close(main.world.get());
-    main.g.gui.set_to_layout();
-    main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
+    if(hideGUI) {
+        hideGUI = false;
+        main.g.gui.set_to_layout();
+    }
+    else {
+        main.world->save_to_file(main.world->filePath);
+        main.set_tab_to_close(main.world.get());
+        main.g.gui.set_to_layout();
+        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
+    }
 }
 
 void PhoneDrawingProgramScreen::input_app_about_to_go_to_background_callback() {

@@ -24,9 +24,10 @@ namespace GUIStuff {
 class SVGIcon : public Element {
     public:
         SVGIcon(GUIManager& gui);
-        void layout(const Clay_ElementId& id, const std::string& newSvgPath, bool newIsHighlighted = false);
+        void layout(const Clay_ElementId& id, const std::string& newSvgPath, bool newIsHighlighted = false, bool newInverse = false);
         virtual void clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) override;
     private:
+        bool inverse;
         bool highlighted;
         sk_sp<SkSVGDOM> svgDom;
 };

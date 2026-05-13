@@ -152,6 +152,10 @@ void TreeListing::layout(const Clay_ElementId& id, const Data& newDisplayData) {
                                         }
                                     }
                                     d.drawObjGUI(objInfo.objIndex);
+                                    // Gap for scroll bar
+                                    CLAY_AUTO_ID({
+                                        .layout = {.sizing = {.width = CLAY_SIZING_FIT(15), .height = CLAY_SIZING_GROW(0)}}
+                                    }) {}
                                 }
                             }
                         }, LayoutElement::Callbacks {

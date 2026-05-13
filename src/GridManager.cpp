@@ -328,6 +328,10 @@ void GridManager::setup_list_gui(const std::function<void()>& onStartModify) {
                         list_button("delete trash", "data/icons/trash.svg", [&, i] {
                             main.world->gridMan.remove_grid(i);
                         });
+                        // Gap for scroll bar
+                        CLAY_AUTO_ID({
+                            .layout = {.sizing = {.width = CLAY_SIZING_FIT(15), .height = CLAY_SIZING_GROW(0)}}
+                        }) {}
                     }
                 }
             }, LayoutElement::Callbacks {

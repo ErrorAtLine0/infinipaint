@@ -241,7 +241,7 @@ void FileSelectScreen::create_file_button() {
             CLAY(lId, {
                 .layout = {.sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}},
                 .floating = {
-                    .offset = {-5, -5},
+                    .offset = {-25, -25},
                     .zIndex = gui.get_z_index(),
                     .attachPoints = {
                         .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
@@ -251,6 +251,8 @@ void FileSelectScreen::create_file_button() {
                 }
             }) {
                 svg_icon_button(gui, "add button", "data/icons/plus.svg", {
+                    .drawType = SelectableButton::DrawType::FILLED_INVERSE,
+                    .size = 40.0f,
                     .onClick = [&] {
                         CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
                             .isClient = false,
