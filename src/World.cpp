@@ -227,6 +227,7 @@ bool World::connection_update() {
             Logger::get().log("USERINFO", "Client connection failed");
             netObjMan.disconnect();
             main.set_tab_to_close(this);
+            netClient = nullptr;
             return false;
         }
         netClient->update();

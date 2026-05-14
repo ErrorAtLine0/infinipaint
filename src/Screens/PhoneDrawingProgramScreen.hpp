@@ -28,6 +28,7 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         virtual void gui_layout_run() override;
         virtual void input_global_back_button_callback() override;
         virtual void input_app_about_to_go_to_background_callback() override;
+        virtual void on_tab_close() override;
         struct ColorSelectorData {
             std::function<void()> onChange;
             std::function<void()> onSelect;
@@ -73,7 +74,9 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
             BOOKMARKS,
             LAYERS,
             GRIDS,
-            HOST
+            HOST,
+            LOBBY_INFO,
+            PLAYER_LIST
         } topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
 
         bool hideGUI = false;
@@ -82,6 +85,7 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         Vector4f* colorPickerPtr = nullptr;
         ColorSelectorData colorPickerData;
 
+        void gui_layout_safety_checks();
         void hidden_gui();
         void center_message(const char* id, const std::string& m);
         void default_bottom_toolbar();
@@ -95,6 +99,7 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         void bottom_toolbar();
         void main_display();
         void tool_settings_popup();
+        void save_to_file();
 
         std::string serverToConnectTo;
         std::string serverLocalID;

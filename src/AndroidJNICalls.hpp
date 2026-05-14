@@ -27,6 +27,8 @@ namespace AndroidJNICalls {
     extern InputManager* globalInputManager;
 
     void startTextInput(CustomEvents::InputTextBoxID newTextboxID, const std::shared_ptr<RichText::TextBox>& newTextbox, const std::shared_ptr<RichText::TextBox::Cursor>& newCursor, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& modMap, int inputType);
+    void startNetworkService();
+    void stopNetworkService();
     void updateCursorPos(CustomEvents::InputTextBoxID tId, const std::shared_ptr<RichText::TextBox::Cursor>& newCursor);
     void updateModMap(CustomEvents::InputTextBoxID tId, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& newModMap);
     void updateTextboxAndCursorPos(CustomEvents::InputTextBoxID tId, const std::shared_ptr<RichText::TextBox>& newTextbox, const std::shared_ptr<RichText::TextBox::Cursor>& newCursor);

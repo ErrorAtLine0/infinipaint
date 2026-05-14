@@ -39,7 +39,8 @@ typedef uint8_t NetTypeIDType;
 
 class NetLibrary {
     public:
-        static void init(const std::filesystem::path& p2pConfigPath);
+        static void init_config(const std::filesystem::path& p2pConfigPath);
+        static void init_websocket();
         static void copy_default_p2p_config_to_path(const std::filesystem::path& newP2PConfigPath);
         static void update();
         static std::string get_random_server_local_id();
@@ -48,7 +49,8 @@ class NetLibrary {
         static void register_server(std::shared_ptr<NetServer> server);
         static void register_client(std::shared_ptr<NetClient> client);
 
-        static void destroy();
+        static bool is_initialized();
+        static void destroy_websocket();
 
         static constexpr size_t LOCALID_LEN = 10;
         static constexpr size_t GLOBALID_LEN = 40;

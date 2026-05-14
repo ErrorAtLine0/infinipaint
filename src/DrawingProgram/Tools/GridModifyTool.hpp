@@ -28,6 +28,7 @@ class GridModifyTool : public DrawingProgramToolBase {
         GridModifyTool(DrawingProgram& initDrawP);
         void set_grid(const NetworkingObjects::NetObjWeakPtr<WorldGrid>& newGrid);
         virtual DrawingProgramToolType get_type() override;
+        virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
         virtual void gui_toolbox(Toolbar& t) override;
         virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos) override;

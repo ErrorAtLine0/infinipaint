@@ -25,6 +25,7 @@
 #include <string>
 #include <modules/skunicode/include/SkUnicode.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
+#include "NetThreadManager.hpp"
 
 std::string jstring2string(JNIEnv *env, jstring jStr) {
     if (!jStr)
@@ -90,6 +91,26 @@ namespace AndroidJNICalls {
         env->CallStaticVoidMethod(clazz, method_id, textboxID, string2jstring(env, textBox->get_string()),
                                   get_android_text_pos_from_cursor_pos(textBox, std::min(cursor->selectionBeginPos, cursor->selectionEndPos)),
                                   get_android_text_pos_from_cursor_pos(textBox, std::max(cursor->selectionBeginPos, cursor->selectionEndPos)), inputType);
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
+    }
+
+    void startNetworkService() {
+        JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+        jobject activity = (jobject)SDL_GetAndroidActivity();
+        jclass clazz = env->GetObjectClass(activity);
+        jmethodID method_id = env->GetStaticMethodID(clazz, "startNetworkService", "()V");
+        env->CallStaticVoidMethod(clazz, method_id);
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
+    }
+
+    void stopNetworkService() {
+        JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+        jobject activity = (jobject)SDL_GetAndroidActivity();
+        jclass clazz = env->GetObjectClass(activity);
+        jmethodID method_id = env->GetStaticMethodID(clazz, "stopNetworkService", "()V");
+        env->CallStaticVoidMethod(clazz, method_id);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
     }
@@ -307,6 +328,18 @@ Java_com_erroratline0_infinipaint_InfiniPaintTextBoxInputConnection_nativeSetSel
             CustomEvents::AndroidTextBoxInputEvent{
                     .command = CustomEvents::AndroidTextBoxInputEvent::CommandType::COMMIT_ALL,
             });
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_erroratline0_infinipaint_InfiniPaintNetworkService_networkServiceStarted(JNIEnv *env, jclass clazz) {
+    NetThreadManager::get().init_thread();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_erroratline0_infinipaint_InfiniPaintNetworkService_networkServiceDestroyed(JNIEnv *env, jclass clazz) {
+    NetThreadManager::get().destroy_thread();
 }
 
 #endif

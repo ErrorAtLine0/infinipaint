@@ -83,3 +83,14 @@ void DesktopDrawingProgramScreen::open_file_selector(const std::string& filePick
     else
         toolbar.open_file_selector_non_native(filePickerName, extensionFilters, postSelectionFunc, fileName, isSaving);
 }
+
+void DesktopDrawingProgramScreen::on_tab_close() {
+    if(main.worlds.empty())
+        main.create_new_tab({
+            .isClient = false
+        });
+    else if(main.world)
+        main.worldIndex = std::find(main.worlds.begin(), main.worlds.end(), main.world) - main.worlds.begin();
+    else
+        main.switch_to_tab(0);
+}

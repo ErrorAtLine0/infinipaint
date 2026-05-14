@@ -27,6 +27,7 @@ class FileSelectScreen : public Screen {
         FileSelectScreen(MainProgram& m);
         virtual void gui_layout_run() override;
         virtual void draw(SkCanvas* canvas) override;
+        virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_global_back_button_callback() override;
         virtual void input_app_about_to_go_to_background_callback() override;
@@ -65,6 +66,9 @@ class FileSelectScreen : public Screen {
 
         void save_files();
 
+        bool connectOnPaste = false;
+        std::string connectLobbyStr;
+
         struct FileInfo {
             std::string fileName;
             SDL_Time lastModifyTime;
@@ -85,6 +89,7 @@ class FileSelectScreen : public Screen {
         void main_display();
         void main_menu();
         void file_view();
+        void connect_view();
         void settings_view();
         void create_file_button();
         void file_view_edit();
@@ -115,6 +120,7 @@ class FileSelectScreen : public Screen {
         enum class SelectedMenu {
             FILES,
             TRASH,
+            CONNECT,
             SETTINGS
         } selectedMenu = SelectedMenu::FILES;
 

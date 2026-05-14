@@ -20,6 +20,8 @@
     void startTextInput(long, java.lang.String, int, int, int);
     void updateCursorPos(int, int);
     void updateTextboxAndCursorPos(java.lang.String, int, int);
+    void startNetworkService();
+    void stopNetworkService();
 }
 
 -keep,includedescriptorclasses,allowoptimization class org.libsdl.app.SDLActivity {

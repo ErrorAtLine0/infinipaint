@@ -65,6 +65,8 @@ class Screen {
         virtual void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w);
         virtual void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w);
         virtual void input_app_about_to_go_to_background_callback();
+        virtual void input_app_about_to_go_to_foreground_callback();
+        virtual void on_tab_close();
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
         virtual void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false);

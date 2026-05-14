@@ -19,6 +19,7 @@
 package com.erroratline0.infinipaint;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -141,5 +142,11 @@ public class InfiniPaint extends SDLActivity {
     }
     static public void updateTextboxAndCursorPos(String str, int selectionBegin, int selectionEnd) {
         mSingleton.commandHandler.post(new InfiniPaintUpdateTextboxAndCursorPosTask(str, selectionBegin, selectionEnd));
+    }
+    static public void startNetworkService() {
+        mSingleton.startForegroundService(new Intent(mSingleton, InfiniPaintNetworkService.class));
+    }
+    static public void stopNetworkService() {
+        mSingleton.stopService(new Intent(mSingleton, InfiniPaintNetworkService.class));
     }
 }

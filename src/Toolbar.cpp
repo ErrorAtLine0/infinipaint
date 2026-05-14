@@ -1601,8 +1601,11 @@ void Toolbar::general_settings_inner_gui() {
             switch(generalSettingsOptions) {
                 case GSETTINGS_GENERAL: {
                     general_scroll_area("general settings", [&] {
-                        input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
-                        main.update_display_names();
+                        input_text_field(gui, "display name input", "Display name", &main.conf.displayName, {
+                            .onEdit = [&] {
+                                main.update_display_names();
+                            }
+                        });
                         color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
                         #ifndef __EMSCRIPTEN__
                             checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);

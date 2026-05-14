@@ -29,6 +29,7 @@
 #include "../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
 #include "FileSelectScreen.hpp"
+#include "../NetThreadManager.hpp"
 #include <Helpers/Logger.hpp>
 
 using namespace GUIStuff;
@@ -71,7 +72,19 @@ void PhoneDrawingProgramScreen::center_message(const char* id, const std::string
 }
 
 void PhoneDrawingProgramScreen::gui_layout_run() {
+    gui_layout_safety_checks();
     main_display();
+}
+
+void PhoneDrawingProgramScreen::gui_layout_safety_checks() {
+    if(!main.world->netServer) {
+        if(topToolbarSettingsPopup == TopToolbarSettingsPopup::LOBBY_INFO)
+            topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+    }
+    if(!main.world->netClient && !main.world->netServer) {
+        if(topToolbarSettingsPopup == TopToolbarSettingsPopup::PLAYER_LIST)
+            topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+    }
 }
 
 void PhoneDrawingProgramScreen::main_display() {
@@ -83,18 +96,22 @@ void PhoneDrawingProgramScreen::main_display() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
     }) {
-        if(hideGUI)
-            hidden_gui();
+        if(main.world->netClient && main.world->clientStillConnecting)
+            center_message("Connecting to server message", "Connecting to server...");
         else {
-            top_toolbar();
-            top_toolbar_settings_popup();
-            CLAY_AUTO_ID({
-                .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
-            }) {}
-            bottom_toolbar();
+            if(hideGUI)
+                hidden_gui();
+            else {
+                top_toolbar();
+                top_toolbar_settings_popup();
+                CLAY_AUTO_ID({
+                    .layout = {.sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}
+                }) {}
+                bottom_toolbar();
+            }
+            if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
+                center_message("Select layer to edit message", "Select a layer to edit");
         }
-        if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
-            center_message("Select layer to edit message", "Select a layer to edit");
     }
 }
 
@@ -241,6 +258,97 @@ void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
             });
             break;
         }
+        case TopToolbarSettingsPopup::LOBBY_INFO: {
+            gui.set_z_index(gui.get_z_index() + 20, [&] {
+                gui.element<LayoutElement>("host lobby info menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                    Vector2f popupSize = {
+                        std::clamp(gui.io.safeWindowRect.width() - 10.0f, 20.0f, 300.0f),
+                        std::clamp(gui.io.safeWindowRect.height() - 40.0f, 50.0f, 600.0f)
+                    };
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIT(popupSize.x()), .height = CLAY_SIZING_FIT(0, popupSize.y()) },
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    }) {
+                        text_label_centered(gui, "Lobby Info");
+                        input_text_field(gui, "lobby", "Lobby", &serverToConnectTo, {
+                            .immutable = true
+                        });
+                        text_button(gui, "Copy button", "Copy", {
+                            .wide = true,
+                            .onClick = [&] {
+                                main.input.set_clipboard_str(serverToConnectTo);
+                                topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                            }
+                        });
+                    }
+                });
+            });
+            break;
+        }
+        case TopToolbarSettingsPopup::PLAYER_LIST: {
+            gui.set_z_index(gui.get_z_index() + 20, [&] {
+                gui.element<LayoutElement>("player list menu", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                    Vector2f popupSize = {
+                        std::clamp(gui.io.safeWindowRect.width() - 10.0f, 20.0f, 300.0f),
+                        std::clamp(gui.io.safeWindowRect.height() - 40.0f, 50.0f, 600.0f)
+                    };
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_FIT(popupSize.x()), .height = CLAY_SIZING_FIT(0, popupSize.y()) },
+                            .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                            .childGap = io.theme->childGap1,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM
+                        },
+                        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
+                        .floating = {.offset = {.x = 0, .y = static_cast<float>(io.theme->padding1)}, .zIndex = gui.get_z_index(), .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+                    }) {
+                        text_label_centered(gui, "Player List");
+                        left_to_right_line_layout(gui, [&]() {
+                            CLAY_AUTO_ID({
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
+                                },
+                                .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{main.world->ownClientData->get_cursor_color().x(), main.world->ownClientData->get_cursor_color().y(), main.world->ownClientData->get_cursor_color().z(), 1.0f}),
+                                .cornerRadius = CLAY_CORNER_RADIUS(3)
+                            }) {}
+                            ellipse_wide_paragraph_label(gui, "own player name", main.world->ownClientData->get_display_name());
+                        });
+                        size_t num = 0;
+                        for(auto& client : main.world->clients->get_data()) {
+                            if(client != main.world->ownClientData) {
+                                gui.new_id(num++, [&] {
+                                    left_to_right_line_layout(gui, [&]() {
+                                        CLAY_AUTO_ID({
+                                            .layout = {
+                                                .sizing = {.width = CLAY_SIZING_FIXED(20), .height = CLAY_SIZING_FIXED(20)}
+                                            },
+                                            .backgroundColor = convert_vec4<Clay_Color>(SkColor4f{client->get_cursor_color().x(), client->get_cursor_color().y(), client->get_cursor_color().z(), 1.0f}),
+                                            .cornerRadius = CLAY_CORNER_RADIUS(3)
+                                        }) {}
+                                        ellipse_wide_paragraph_label(gui, "other player name", client->get_display_name());
+                                        text_button(gui, "teleport button", "Jump To", { .onClick = [&] {
+                                            main.world->drawData.cam.smooth_move_to(*main.world, client->get_cam_coords(), client->get_window_size());
+                                            topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                                        }});
+                                    });
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+            break;
+        }
     }
 }
 
@@ -268,9 +376,8 @@ void PhoneDrawingProgramScreen::top_toolbar() {
                     svg_icon_button(gui, "back exit button", "data/icons/RemixIcon/arrow-left-s-line.svg", {
                         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                         .onClick = [&] {
-                            main.world->save_to_file(main.world->filePath);
+                            save_to_file();
                             main.set_tab_to_close(main.world.get());
-                            main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
                         }
                     });
                     top_toolbar_remaining_area();
@@ -350,17 +457,24 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
                         break;
                     spaceForWorldName -= BUTTON_WIDTH;
                 }
-                input_text(gui, "world name text", &main.world->name, {
-                    .decorations = false,
-                    .onSelect = [&] {
-                        fileOldPath = main.world->filePath;
-                    },
-                    .onDeselect = [&] {
-                        std::filesystem::remove(fileOldPath);
-                        std::filesystem::remove(fileOldPath.parent_path() / (fileOldPath.stem().string() + ".jpg"));
-                        main.world->autosave_to_directory(main.world->filePath.parent_path());
-                    }
-                });
+                if(main.world->netClient) {
+                    CLAY_AUTO_ID({
+                        .layout = {.sizing = {.width = CLAY_SIZING_GROW(0)}}
+                    }) { }
+                }
+                else {
+                    input_text(gui, "world name text", &main.world->name, {
+                        .decorations = false,
+                        .onSelect = [&] {
+                            fileOldPath = main.world->filePath;
+                        },
+                        .onDeselect = [&] {
+                            std::filesystem::remove(fileOldPath);
+                            std::filesystem::remove(fileOldPath.parent_path() / (fileOldPath.stem().string() + ".jpg"));
+                            main.world->autosave_to_directory(main.world->filePath.parent_path());
+                        }
+                    });
+                }
                 gui.new_id("visible buttons", [&] {
                     for(size_t i = 0; i < buttonFreeSpace; i++) {
                         gui.new_id(i, [&] {
@@ -418,15 +532,37 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
         }
     });
 
-    l.emplace_back(TopToolbarRemainingAreaButton{
-        .name = "Host",
-        .svgPath = "data/icons/network.svg",
-        .onClick = [&] {
-            serverLocalID = NetLibrary::get_random_server_local_id();
-            serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
-            topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::HOST ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::HOST;
-        }
-    });
+    if(!main.world->netClient && !main.world->netServer) {
+        l.emplace_back(TopToolbarRemainingAreaButton{
+            .name = "Host",
+            .svgPath = "data/icons/network.svg",
+            .onClick = [&] {
+                serverLocalID = NetLibrary::get_random_server_local_id();
+                serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+                topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::HOST ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::HOST;
+            }
+        });
+    }
+
+    if(main.world->netServer) {
+        l.emplace_back(TopToolbarRemainingAreaButton{
+            .name = "Lobby Info",
+            .svgPath = "data/icons/network.svg",
+            .onClick = [&] {
+                topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::LOBBY_INFO ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::LOBBY_INFO;
+            }
+        });
+    }
+
+    if(main.world->netClient || main.world->netServer) {
+        l.emplace_back(TopToolbarRemainingAreaButton{
+            .name = "Player List",
+            .svgPath = "data/icons/list.svg",
+            .onClick = [&] {
+                topToolbarSettingsPopup = topToolbarSettingsPopup == TopToolbarSettingsPopup::PLAYER_LIST ? TopToolbarSettingsPopup::NONE : TopToolbarSettingsPopup::PLAYER_LIST;
+            }
+        });
+    }
 
     gui.set_z_index(gui.get_z_index() + 20, [&] {
         dropdown_many_element_popup_layout(gui, "top toolbar hidden button popup", {
@@ -1017,15 +1153,23 @@ void PhoneDrawingProgramScreen::input_global_back_button_callback() {
         main.g.gui.set_to_layout();
     }
     else {
-        main.world->save_to_file(main.world->filePath);
+        save_to_file();
         main.set_tab_to_close(main.world.get());
         main.g.gui.set_to_layout();
-        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
     }
 }
 
+void PhoneDrawingProgramScreen::save_to_file() {
+    if(!main.world->netClient)
+        main.world->save_to_file(main.world->filePath);
+}
+
 void PhoneDrawingProgramScreen::input_app_about_to_go_to_background_callback() {
-    main.world->save_to_file(main.world->filePath);
+    save_to_file();
+}
+
+void PhoneDrawingProgramScreen::on_tab_close() {
+    main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
 }
 
 void PhoneDrawingProgramScreen::color_selector(Vector4f* color, const ColorSelectorData& colorSelectorData) {

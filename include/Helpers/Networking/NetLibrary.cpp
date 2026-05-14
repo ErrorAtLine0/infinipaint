@@ -78,10 +78,7 @@ NetLibrary::LoadP2PSettingsInPathResult NetLibrary::load_p2p_settings_in_path(co
     return LoadP2PSettingsInPathResult::SUCCESS;
 }
 
-void NetLibrary::init(const std::filesystem::path& p2pConfigPath) {
-    if(alreadyInitialized)
-        return;
-
+void NetLibrary::init_config(const std::filesystem::path& p2pConfigPath) {
     rtc::InitLogger(rtc::LogLevel::Info, [](rtc::LogLevel level, std::string message) {
         Logger::get().log("INFO", "[LibDataChannel Log Level " + std::to_string(static_cast<int>(level)) + "] " + message);
     });
@@ -104,7 +101,11 @@ void NetLibrary::init(const std::filesystem::path& p2pConfigPath) {
             }
             break;
     }
+}
 
+void NetLibrary::init_websocket() {
+    if(alreadyInitialized)
+        return;
     // Not sure why, but TLS verification fails on mac
     // Should be fixed later, but for now this is fine, as the signaling server doesn't have
     // critical information
@@ -130,7 +131,7 @@ void NetLibrary::init(const std::filesystem::path& p2pConfigPath) {
 
     ws->onClosed([]() {
         Logger::get().log("INFO", "Websocket closed");
-        destroy();
+        destroy_websocket();
     });
 
     ws->onMessage([wws = make_weak_ptr(ws)](auto data) {
@@ -187,7 +188,6 @@ void NetLibrary::init(const std::filesystem::path& p2pConfigPath) {
 
     Logger::get().log("INFO", "NetLibrary waiting for signaling to be connected...");
     //wsFuture.get();
-
     alreadyInitialized = true;
 }
 
@@ -228,7 +228,7 @@ void NetLibrary::register_server(std::shared_ptr<NetServer> server) {
 
 void NetLibrary::register_client(std::shared_ptr<NetClient> client) {
     client->localID = Random::get().alphanumeric_str(LOCALID_LEN);
-    std::scoped_lock serverListLock(clientListMutex);
+    std::scoped_lock clientListLock(clientListMutex);
     clients.emplace_back(client);
 }
 
@@ -429,7 +429,14 @@ MessageOrder NetLibrary::get_message_order(rtc::binary& message) {
     return u.o;
 }
 
-void NetLibrary::destroy() {
+bool NetLibrary::is_initialized() {
+    return alreadyInitialized;
+}
+
+void NetLibrary::destroy_websocket() {
+    if(!alreadyInitialized)
+        return;
+
     ws = nullptr;
     {
         std::scoped_lock peerListLock(peerListMutex);
@@ -454,6 +461,6 @@ void NetLibrary::destroy() {
         servers.clear();
     }
     wsPromise = std::promise<void>();
-    //globalID.clear(); // Do we need to do this? (Causes problems when global ID changes from the user's side after they copy a lobby address
     alreadyInitialized = false;
+    //globalID.clear(); // Do we need to do this? (Causes problems when global ID changes from the user's side after they copy a lobby address
 }

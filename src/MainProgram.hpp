@@ -111,6 +111,7 @@ class MainProgram {
 
         MainProgram();
         void update();
+        void background_update();
         void draw_world(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData);
         void draw(SkCanvas* canvas);
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
@@ -156,6 +157,7 @@ class MainProgram {
         void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
 
         void input_app_about_to_go_to_background_callback();
+        void input_app_about_to_go_to_foreground_callback();
         void input_global_back_button_callback();
         bool input_keybind_callback(const Vector2ui32& newKey);
         void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);

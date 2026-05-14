@@ -23,7 +23,7 @@
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
-
+#include "../../Screens/PhoneDrawingProgramScreen.hpp"
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
@@ -130,6 +130,16 @@ void GridModifyTool::input_mouse_motion_callback(const InputManager::MouseMotion
     }
 }
 
+Vector4f* GridModifyTool::color_picker_color(Vector4f* oldColor) {
+    NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
+    if(gLock) {
+        WorldGrid& g = *gLock;
+        if(oldColor == &g.color)
+            return oldColor;
+    }
+    return nullptr;
+}
+
 void GridModifyTool::gui_toolbox(Toolbar& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
@@ -208,6 +218,10 @@ void GridModifyTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
             });
             checkbox_boolean_field(gui, "Subdivide outwards", "Subdivide when zooming out", &g.removeDivisionsOutwards, [&] {
                 g.set_remove_divisions_outwards(g.removeDivisionsOutwards);
+            });
+            left_to_right_line_layout(gui, [&]() {
+                t.color_selector_button("Grid Color", &g.color);
+                text_label(gui, "Grid Color");
             });
             auto bounded = std::make_shared<bool>(g.bounds.has_value());
             checkbox_boolean_field(gui, "Bounded", "Bounded", bounded.get(), [&, bounded] {

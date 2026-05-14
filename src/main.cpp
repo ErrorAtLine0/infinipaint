@@ -670,6 +670,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 Logger::get().log("INFO", "[SDL_AppEvent] Entering background");
                 mS.m->input_app_about_to_go_to_background_callback();
                 break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND:
+                Logger::get().log("INFO", "[SDL_AppEvent] Entering foreground");
+                mS.m->input_app_about_to_go_to_foreground_callback();
+                break;
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                 if(event->window.windowID == SDL_GetWindowID(mS.window)) {
                     if(mS.m->app_close_requested())

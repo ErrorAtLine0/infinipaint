@@ -30,6 +30,7 @@
 #include <include/core/SkData.h>
 #include <include/core/SkSurfaceProps.h>
 #include "InputManager.hpp"
+#include "NetThreadManager.hpp"
 #include <cereal/types/vector.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <Eigen/Core>
@@ -90,10 +91,18 @@ void MainProgram::update() {
     input.update();
     g.update();
     screen->update();
-    for(auto& w : worlds)
-        w->update();
-    NetLibrary::update();
+    background_update();
     post_callback();
+}
+
+void MainProgram::background_update() {
+    bool isAnyWorldConnected = false;
+    for(auto& w : worlds) {
+        w->update();
+        isAnyWorldConnected |= ((w->netServer && !w->netServer->is_disconnected()) || (w->netClient && !w->netClient->is_disconnected()));
+    }
+    if(!isAnyWorldConnected)
+        NetThreadManager::get().destroy();
 }
 
 bool MainProgram::app_close_requested() {
@@ -108,7 +117,7 @@ void MainProgram::update_display_names() {
 }
 
 void MainProgram::init_net_library() {
-    NetLibrary::init(conf.configPath / "p2p.json");
+    NetThreadManager::get().init(this);
 }
 
 void MainProgram::save_config() {
@@ -183,6 +192,7 @@ void MainProgram::load_config() {
     conf.load_licenses();
 
     NetLibrary::copy_default_p2p_config_to_path(conf.configPath / "p2p.json");
+    NetLibrary::init_config(conf.configPath / "p2p.json");
 
     update_display_names();
     set_vsync_value(conf.vsyncValue);
@@ -284,14 +294,21 @@ void MainProgram::switch_to_tab(size_t wIndex) {
 
 void MainProgram::post_callback() {
     g.gui.run_post_callback_func();
-    run_new_screen_func();
     close_set_to_close_tabs();
+    run_new_screen_func();
     g.gui.layout_if_necessary();
 }
 
 void MainProgram::input_app_about_to_go_to_background_callback() {
     screen->input_app_about_to_go_to_background_callback();
     save_config();
+    post_callback();
+    NetThreadManager::get().go_to_background();
+}
+
+void MainProgram::input_app_about_to_go_to_foreground_callback() {
+    NetThreadManager::get().go_to_foreground();
+    screen->input_app_about_to_go_to_foreground_callback();
     post_callback();
 }
 
@@ -488,15 +505,8 @@ void MainProgram::close_set_to_close_tabs() {
             }
             return false;
         });
-        if(worlds.empty())
-            create_new_tab({
-                .isClient = false
-            });
-        else if(world)
-            worldIndex = std::find(worlds.begin(), worlds.end(), world) - worlds.begin();
-        else
-            switch_to_tab(0);
         tabsToClose.clear();
+        screen->on_tab_close();
         g.gui.set_to_layout();
     }
 }
@@ -524,5 +534,5 @@ void MainProgram::early_destroy() {
 
 MainProgram::~MainProgram() {
     screen = nullptr; // Destroy screen first to let destructor run
-    NetLibrary::destroy();
+    NetThreadManager::get().destroy();
 }

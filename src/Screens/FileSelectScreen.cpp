@@ -220,6 +220,9 @@ void FileSelectScreen::main_display() {
                         case SelectedMenu::TRASH:
                             file_view();
                             break;
+                        case SelectedMenu::CONNECT:
+                            connect_view();
+                            break;
                         case SelectedMenu::SETTINGS:
                             settings_view();
                             break;
@@ -491,13 +494,16 @@ void FileSelectScreen::title_bar() {
                     });
                     switch(selectedMenu) {
                         case SelectedMenu::FILES:
-                            mutable_text_label(gui, "main screen header text", "Files");
+                            mutable_text_label(gui, "main screen header text files", "Files");
                             break;
                         case SelectedMenu::TRASH:
-                            mutable_text_label(gui, "main screen header text", "Trash");
+                            mutable_text_label(gui, "main screen header text trash", "Trash");
+                            break;
+                        case SelectedMenu::CONNECT:
+                            mutable_text_label(gui, "main screen header text connect", "Connect");
                             break;
                         case SelectedMenu::SETTINGS:
-                            mutable_text_label(gui, "main screen header text", "Settings");
+                            mutable_text_label(gui, "main screen header text settings", "Settings");
                             break;
                     }
                     CLAY_AUTO_ID({
@@ -696,6 +702,11 @@ void FileSelectScreen::main_menu() {
                                     mainMenuOpenAnim->animation_trigger_reverse();
                                     if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
                                 });
+                                icon_text_transparent_option_selected_button("Connect", "data/icons/network.svg", "Connect", selectedMenu == SelectedMenu::CONNECT, [&] {
+                                    selectedMenu = SelectedMenu::CONNECT;
+                                    mainMenuOpenAnim->animation_trigger_reverse();
+                                    if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
+                                });
                                 icon_text_transparent_option_selected_button("Settings", "data/icons/RemixIcon/settings-3-line.svg", "Settings", selectedMenu == SelectedMenu::SETTINGS, [&] {
                                     selectedMenu = SelectedMenu::SETTINGS;
                                     mainMenuOpenAnim->animation_trigger_reverse();
@@ -854,6 +865,50 @@ void FileSelectScreen::file_view() {
     }
 }
 
+void FileSelectScreen::connect_view() {
+    auto& gui = main.g.gui;
+
+    mainViewScrollArea = gui.element<ScrollArea>("connect scroll area", ScrollArea::Options{
+        .scrollVertical = true,
+        .clipVertical = true,
+        .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
+        .innerContent = [&] (auto&) {
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                },
+            }) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0, 300), .height = CLAY_SIZING_GROW(0)},
+                        .childGap = gui.io.theme->childGap1,
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM
+                    },
+                }) {
+                    input_text_field(gui, "Connect lobby field", "Lobby", &connectLobbyStr);
+                    text_button(gui, "Connect button", "Connect", {
+                        .wide = true,
+                        .onClick = [&] {
+                            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+                                .isClient = true,
+                                .netSource = connectLobbyStr
+                            });
+                        }
+                    });
+                    text_button(gui, "Paste and Connect button", "Paste & Connect", {
+                        .wide = true,
+                        .onClick = [&] {
+                            connectOnPaste = true;
+                            main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = false });
+                        }
+                    });
+                }
+            }
+        }
+    });
+}
+
 void FileSelectScreen::settings_view() {
     auto& gui = main.g.gui;
 
@@ -875,6 +930,7 @@ void FileSelectScreen::settings_view() {
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     },
                 }) {
+                    input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
                     color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
                     input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 1.0f, 2.0f, {
                         .decimalPrecision = 1,
@@ -924,6 +980,15 @@ void FileSelectScreen::start_edit_mode() {
     for(auto& f : fileList)
         f.selected = false;
     editMode = true;
+}
+
+void FileSelectScreen::input_paste_callback(const CustomEvents::PasteEvent& paste) {
+    if(connectOnPaste && paste.type == CustomEvents::PasteEvent::DataType::TEXT) {
+        CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+            .isClient = true,
+            .netSource = paste.data
+        });
+    }
 }
 
 void FileSelectScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
