@@ -9,6 +9,7 @@ class NetThreadManager {
     public:
         static NetThreadManager& get();
         void init(MainProgram* m);
+        void synchronous_update();
         void thread_update();
         void destroy();
         void init_thread();

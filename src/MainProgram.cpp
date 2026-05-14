@@ -92,6 +92,7 @@ void MainProgram::update() {
     g.update();
     screen->update();
     background_update();
+    NetThreadManager::get().synchronous_update();
     post_callback();
 }
 
@@ -183,10 +184,6 @@ void MainProgram::load_config() {
         }
         catch(...) {}
     } catch(...) {}
-#ifdef __EMSCRIPTEN__
-    else
-        conf.viewWebVersionWelcome = true;
-#endif
     conf.load_palettes();
     g.load_theme(conf.configPath, conf.themeCurrentlyLoaded);
     conf.load_licenses();

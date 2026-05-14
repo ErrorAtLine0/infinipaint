@@ -57,7 +57,6 @@ class SelectableButton : public Element {
         bool instantResponse = false;
         bool isHeld = false;
         bool isHovering = false;
-        bool moved = false;
         std::function<void()> onClick;
 };
 

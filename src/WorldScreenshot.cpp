@@ -108,11 +108,10 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
         }
     #else
         if(success) {
-            std::string mimeTypeArray[] = {"image/jpeg", "image/png", "image/webp"};
             auto skData = out.detachAsData();
             emscripten_browser_file::download(
-                "screenshot" + controls.typeSelections[screenshotType],
-                mimeTypeArray[screenshotType],
+                "screenshot" + world_screenshot_info_get_extension_from_type(info.type),
+                world_screenshot_info_get_mime_from_type(info.type),
                 std::string_view((const char*)skData->bytes(), skData->size())
             );
         }
@@ -139,8 +138,8 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
     #else
         auto skData = out.detachAsData();
         emscripten_browser_file::download(
-            "screenshot.svg",
-            "image/svg+xml",
+            "screenshot" + world_screenshot_info_get_extension_from_type(info.type),
+            world_screenshot_info_get_mime_from_type(info.type),
             std::string_view((const char*)skData->bytes(), skData->size())
         );
     #endif
@@ -212,4 +211,32 @@ void take_screenshot_area_hw(const std::shared_ptr<World>& w, const sk_sp<SkSurf
     SkPixmap aaImgData(aaImgInfo, fullImgRawDataStartPt, fullImageSize.x() * 4);
     if(!surface->readPixels(aaImgData, 0, 0))
         throw std::runtime_error("[ScreenshotTool::take_screenshot_area_hw] Error copy pixmap");
+}
+
+std::string world_screenshot_info_get_extension_from_type(WorldScreenshotInfo::ScreenshotType t) {
+    switch(t) {
+        case WorldScreenshotInfo::ScreenshotType::JPG:
+            return ".jpg";
+        case WorldScreenshotInfo::ScreenshotType::PNG:
+            return ".png";
+        case WorldScreenshotInfo::ScreenshotType::WEBP:
+            return ".webp";
+        case WorldScreenshotInfo::ScreenshotType::SVG:
+            return ".svg";
+    }
+    return "";
+}
+
+std::string world_screenshot_info_get_mime_from_type(WorldScreenshotInfo::ScreenshotType t) {
+    switch(t) {
+        case WorldScreenshotInfo::ScreenshotType::JPG:
+            return "image/jpeg";
+        case WorldScreenshotInfo::ScreenshotType::PNG:
+            return "image/png";
+        case WorldScreenshotInfo::ScreenshotType::WEBP:
+            return "image/webp";
+        case WorldScreenshotInfo::ScreenshotType::SVG:
+            return "image/svg+xml";
+    }
+    return "";
 }

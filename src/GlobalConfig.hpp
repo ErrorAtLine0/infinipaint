@@ -43,13 +43,21 @@ class GlobalConfig {
 
         std::filesystem::path configPath;
 
-        float guiScale = 1.0f;
+        #ifdef __ANDROID__
+            float guiScale = 1.2f;
+        #else
+            float guiScale = 1.0f;
+        #endif
 
         double dragZoomSpeed = 0.02;
         double scrollZoomSpeed = 0.4;
         float jumpTransitionTime = 0.5f;
         Vector4f jumpTransitionEasing{0.75, 0.25, 0.25, 0.75};
+#ifdef __EMSCRIPTEN__
+        bool viewWebVersionWelcome = true;
+#else
         bool viewWebVersionWelcome = false;
+#endif
 
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;

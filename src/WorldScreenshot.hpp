@@ -45,3 +45,5 @@ NLOHMANN_JSON_SERIALIZE_ENUM(WorldScreenshotInfo::ScreenshotType, {
 })
 
 void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreenshotInfo& info);
+std::string world_screenshot_info_get_extension_from_type(WorldScreenshotInfo::ScreenshotType t);
+std::string world_screenshot_info_get_mime_from_type(WorldScreenshotInfo::ScreenshotType t);

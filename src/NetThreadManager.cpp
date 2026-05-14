@@ -14,10 +14,16 @@ void NetThreadManager::init(MainProgram* m) {
         return;
     started = true;
     main = m;
-#ifndef __ANDROID__
-    init_thread();
-#else
+#ifdef __ANDROID__
     AndroidJNICalls::startNetworkService();
+#else
+    NetLibrary::init_websocket();
+#endif
+}
+
+void NetThreadManager::synchronous_update() {
+#ifndef __ANDROID__
+    NetLibrary::update();
 #endif
 }
 
@@ -71,9 +77,9 @@ void NetThreadManager::destroy() {
     if(!started)
         return;
     started = false;
-#ifndef __ANDROID__
-    destroy_thread();
-#else
+#ifdef __ANDROID__
     AndroidJNICalls::stopNetworkService();
+#else
+    NetLibrary::destroy_websocket();
 #endif
 }

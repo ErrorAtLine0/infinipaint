@@ -90,7 +90,7 @@ void ScreenshotTool::gui_toolbox(Toolbar& t) {
                 .onClick = [&] {
                     controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
                     #ifdef __EMSCRIPTEN__
-                        take_screenshot("a" + controls.typeSelections[screenshotConfig.selectedType], screenshotConfig.selectedType);
+                        take_screenshot("a" + world_screenshot_info_get_extension_from_type(screenshotConfig.selectedType), screenshotConfig.selectedType);
                     #else
                         // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
                         Screen::ExtensionFilter setExtensionFilter;
