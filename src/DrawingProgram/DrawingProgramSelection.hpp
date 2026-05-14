@@ -30,6 +30,7 @@ class DrawingProgramSelection {
         DrawingProgramSelection(DrawingProgram& initDrawP);
         void selection_gui(Toolbar& t);
         void phone_selection_gui(PhoneDrawingProgramScreen& t);
+        void phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t);
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void erase_component(CanvasComponentContainer::ObjInfo* objToCheck);
@@ -54,6 +55,7 @@ class DrawingProgramSelection {
         void input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion);
     private:
+        void phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t);
         void translate_key(unsigned keyPressed, bool pressed);
         bool mouse_collided_with_selection_aabb();
         bool mouse_collided_with_scale_point();

@@ -1,5 +1,6 @@
 #include "NetThreadManager.hpp"
 #include <Helpers/Networking/NetLibrary.hpp>
+#include <Helpers/Logger.hpp>
 #include "AndroidJNICalls.hpp"
 #include "MainProgram.hpp"
 
@@ -30,6 +31,7 @@ void NetThreadManager::synchronous_update() {
 void NetThreadManager::init_thread() {
     if(t)
         throw std::runtime_error("[NetThreadManager::init_thread] Thread can't exist when init_thread is called");
+    Logger::get().log("INFO", "[NetThreadManager::init_thread] Starting network thread");
     destroyThread = false;
     t = std::make_unique<std::thread>([&]{ thread_update(); });
 }
@@ -58,6 +60,7 @@ void NetThreadManager::thread_update() {
 void NetThreadManager::destroy_thread() {
     if(!t)
         throw std::runtime_error("[NetThreadManager::init_thread] Thread can't be null when destroy_thread is called");
+    Logger::get().log("INFO", "[NetThreadManager::destroy_thread] Stopping network thread");
     destroyThread = true;
     t->join();
     t = nullptr;

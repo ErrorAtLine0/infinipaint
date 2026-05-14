@@ -75,7 +75,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["tablet"] = tablet;
 
     json debugJson;
-    debugJson["showPerformance"] = showPerformance;
+    debugJson["mobileUI"] = mobileUI;
     debugJson["jumpTransitionEasing"] = jumpTransitionEasing;
     debugJson["imageLoadMaxThreads"] = ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX;
     debugJson["cacheNodeResolution"] = DrawingProgramCache::CACHE_NODE_RESOLUTION;
@@ -142,7 +142,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
     try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
 
-    try{j.at("debug").at("showPerformance").get_to(showPerformance);} catch(...) {}  
+    try{j.at("debug").at("mobileUI").get_to(mobileUI);} catch(...) {}
     try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}
     try{j.at("debug").at("imageLoadMaxThreads").get_to(ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX);} catch(...) {}
     try{j.at("debug").at("cacheNodeResolution").get_to(DrawingProgramCache::CACHE_NODE_RESOLUTION);} catch(...) {}

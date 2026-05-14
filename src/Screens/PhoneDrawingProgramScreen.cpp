@@ -532,6 +532,14 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
         }
     });
 
+    l.emplace_back(TopToolbarRemainingAreaButton{
+        .name = "Paste",
+        .svgPath = "data/icons/RemixIcon/clipboard-line.svg",
+        .onClick = [&] {
+            main.world->drawProg.paste_object_clipboard(main.window.safeArea.center());
+        }
+    });
+
     if(!main.world->netClient && !main.world->netServer) {
         l.emplace_back(TopToolbarRemainingAreaButton{
             .name = "Host",

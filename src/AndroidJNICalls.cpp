@@ -23,6 +23,7 @@
 #include "MainProgram.hpp"
 #include <SDL3/SDL_system.h>
 #include <string>
+#include <Helpers/Logger.hpp>
 #include <modules/skunicode/include/SkUnicode.h>
 #include <modules/skunicode/include/SkUnicode_icu.h>
 #include "NetThreadManager.hpp"
@@ -96,6 +97,7 @@ namespace AndroidJNICalls {
     }
 
     void startNetworkService() {
+        Logger::get().log("INFO", "[AndroidJNICalls::startNetworkService] Start service");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
         jobject activity = (jobject)SDL_GetAndroidActivity();
         jclass clazz = env->GetObjectClass(activity);
@@ -106,6 +108,7 @@ namespace AndroidJNICalls {
     }
 
     void stopNetworkService() {
+        Logger::get().log("INFO", "[AndroidJNICalls::stopNetworkService] Stop service");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
         jobject activity = (jobject)SDL_GetAndroidActivity();
         jclass clazz = env->GetObjectClass(activity);

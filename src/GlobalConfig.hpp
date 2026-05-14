@@ -59,6 +59,12 @@ class GlobalConfig {
         bool viewWebVersionWelcome = false;
 #endif
 
+#ifdef __ANDROID__
+        bool mobileUI = true;
+#else
+        bool mobileUI = false;
+#endif
+
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;
             float smoothingSamplingTime = 0.04f;

@@ -547,19 +547,22 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         mS.m->window.canCreateSurfaces = true;
         resize_window(mS);
 
-        mS.m->set_first_screen(std::make_unique<FileSelectScreen>(*mS.m));
-
-        if(listOfFilesToOpenFromCommand.empty()) {
-            //mS.m->create_new_tab({
-            //    .isClient = false
-            //});
-        }
+        if(mS.m->conf.mobileUI)
+            mS.m->set_first_screen(std::make_unique<FileSelectScreen>(*mS.m));
         else {
-            for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
+            mS.m->set_first_screen(std::make_unique<DesktopDrawingProgramScreen>(*mS.m));
+            if(listOfFilesToOpenFromCommand.empty()) {
                 mS.m->create_new_tab({
-                    .isClient = false,
-                    .filePathSource = f
+                    .isClient = false
                 });
+            }
+            else {
+                for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
+                    mS.m->create_new_tab({
+                        .isClient = false,
+                        .filePathSource = f
+                    });
+                }
             }
         }
 

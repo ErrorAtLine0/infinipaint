@@ -102,6 +102,8 @@ class DrawingProgram {
         void set_right_click_popup_location(const Vector2f& newLoc);
         void clear_right_click_popup();
 
+        void paste_object_clipboard(const Vector2f& pos);
+
         std::unique_ptr<DrawingProgramToolBase> drawTool;
     private:
         void process_transform_message(const std::vector<std::pair<NetworkingObjects::NetObjID, CoordSpaceHelper>>& transforms);
@@ -153,7 +155,6 @@ class DrawingProgram {
             std::shared_ptr<FileDownloader::DownloadData> downData;
         };
         std::vector<DroppedDownloadingFile> droppedDownloadingFiles;
-
 
         std::optional<Vector2f> rightClickPopupLocation;
 

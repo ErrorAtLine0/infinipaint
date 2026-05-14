@@ -234,9 +234,6 @@ void Toolbar::layout_run() {
                 player_list();
             else if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
                 center_message("Select layer to edit message", "Select a layer to edit");
-
-            if(showPerformance)
-                performance_metrics();
         }
         if(!main.world->clientStillConnecting)
             chat_box();
@@ -1251,62 +1248,6 @@ void Toolbar::color_palette(const char* id, Vector4f* color, const std::function
     });
 }
 
-void Toolbar::performance_metrics() {
-    auto& gui = main.g.gui;
-    auto& io = gui.io;
-
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-            .childGap = io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        },
-        .floating = {.offset = {-10, -10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_BOTTOM, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .pointerCaptureMode = CLAY_POINTER_CAPTURE_MODE_PASSTHROUGH, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                .childGap = io.theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, 0.7f)),
-        }) {
-            text_label(gui, "Undo queue");
-            std::vector<std::string> undoList = main.world->undo.get_front_undo_queue_names(10);
-            for(const std::string& u : undoList)
-                text_label(gui, u);
-        }
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
-                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                .childGap = io.theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, 0.7f)),
-        }) {
-            std::stringstream a;
-            a << "FPS: " << std::fixed << std::setprecision(0) << (1.0 / main.deltaTime);
-            text_label(gui, a.str());
-            text_label(gui, "Item Count: " + std::to_string(main.world->drawProg.layerMan.total_component_count()));
-            std::stringstream b;
-            b << "Coord: " << main.world->drawData.cam.c.pos.x().display_int_str(5) << ", " << main.world->drawData.cam.c.pos.y().display_int_str(5);
-            text_label(gui, b.str());
-            std::stringstream c;
-            c << "Zoom: " << main.world->drawData.cam.c.inverseScale.display_int_str(5);
-            text_label(gui, c.str());
-            std::stringstream d;
-            d << "Rotation: " << main.world->drawData.cam.c.rotation;
-            text_label(gui, d.str());
-        }
-    }
-}
-
 void Toolbar::player_list() {
     auto& gui = main.g.gui;
 
@@ -1767,7 +1708,7 @@ void Toolbar::general_settings_inner_gui() {
                 }
                 case GSETTINGS_DEBUG: {
                     general_scroll_area("debug settings menu", [&] {
-                        checkbox_boolean_field(gui, "show performance metrics", "Show metrics", &showPerformance);
+                        checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
                         input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
                         input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
                         text_label_light(gui, "Cache related settings");

@@ -44,7 +44,6 @@ using namespace GUIStuff;
 using namespace ElementHelpers;
 
 FileSelectScreen::FileSelectScreen(MainProgram& m): Screen(m) {
-    main.g.gui.io.isTouchDevice = true;
     savePath = main.conf.configPath / "saves";
     trashPath = main.conf.configPath / "trash";
     infoPath = main.conf.configPath / "fileSelectInfo.json";
@@ -938,6 +937,9 @@ void FileSelectScreen::settings_view() {
                     });
                     input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
                     checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+#ifndef __ANDROID__
+                    checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+#endif
                 }
             }
         }

@@ -43,6 +43,7 @@
 #include "../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
 
 DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
@@ -89,6 +90,85 @@ void DrawingProgramSelection::phone_selection_gui(PhoneDrawingProgramScreen& t) 
         radio_button_selector(gui, "layer selector", &drawP.controls.layerSelector, {
             {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
             {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
+        });
+    });
+}
+
+void DrawingProgramSelection::phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
+    auto& gui = drawP.world.main.g.gui;
+
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+            .childGap = gui.io.theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+            .layoutDirection = CLAY_LEFT_TO_RIGHT
+        }
+    }) {
+        gui.element<LayoutElement>("selection bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
+            CLAY(lId, {
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}
+                },
+                .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
+                .cornerRadius = CLAY_CORNER_RADIUS(gui.io.theme->windowCorners1)
+            }) {
+                gui.clipping_element<ScrollArea>("selection tools scroll", ScrollArea::Options{
+                    .scrollHorizontal = true,
+                    .clipHorizontal = true,
+                    .scrollbarX = ScrollArea::ScrollbarType::NONE,
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .xAlign = CLAY_ALIGN_X_LEFT,
+                    .yAlign = CLAY_ALIGN_Y_CENTER,
+                    .innerContent = [&](auto&) {
+                        phone_bottom_toolbar_gui(t);
+                    }
+                });
+            }
+        });
+    }
+}
+
+void DrawingProgramSelection::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
+    auto& gui = drawP.world.main.g.gui;
+
+    gui.new_id("phone selection bottom toolbar", [&] {
+        svg_icon_button(gui, "Copy button", "data/icons/RemixIcon/file-copy-line.svg", {
+            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+            .onClick = [&] {
+                selection_to_clipboard();
+            }
+        });
+        svg_icon_button(gui, "Cut button", "data/icons/RemixIcon/scissors-line.svg", {
+            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+            .onClick = [&] {
+                selection_to_clipboard();
+                delete_all();
+            }
+        });
+        svg_icon_button(gui, "Delete button", "data/icons/trash.svg", {
+            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+            .onClick = [&] {
+                delete_all();
+            }
+        });
+        svg_icon_button(gui, "Bring to front of layer", "data/icons/RemixIcon/bring-to-front.svg", {
+            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+            .onClick = [&] {
+                push_selection_to_front();
+            }
+        });
+        svg_icon_button(gui, "Send to back of layer", "data/icons/RemixIcon/send-to-back.svg", {
+            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+            .onClick = [&] {
+                push_selection_to_back();
+            }
         });
     });
 }

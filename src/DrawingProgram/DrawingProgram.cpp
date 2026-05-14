@@ -443,6 +443,12 @@ void DrawingProgram::clear_right_click_popup() {
     }
 }
 
+void DrawingProgram::paste_object_clipboard(const Vector2f& pos) {
+    selection.deselect_all();
+    selection.paste_clipboard(pos);
+    world.main.g.gui.set_to_layout();
+}
+
 void DrawingProgram::popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick) {
     GUIStuff::GUIManager& gui = world.main.g.gui;
 
@@ -793,11 +799,16 @@ Vector4f* DrawingProgram::color_picker_color(Vector4f* oldColor) {
 }
 
 bool DrawingProgram::phone_gui_tool_specific_bottom_toolbar_exists() {
+    if(selection.is_something_selected())
+        return true;
     return drawTool->phone_gui_tool_specific_bottom_toolbar_exists();
 }
 
 void DrawingProgram::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {
-    drawTool->phone_gui_tool_specific_bottom_toolbar(t);
+    if(selection.is_something_selected())
+        selection.phone_selection_bottom_toolbar(t);
+    else
+        drawTool->phone_gui_tool_specific_bottom_toolbar(t);
 }
 
 void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {

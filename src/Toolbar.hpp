@@ -102,7 +102,6 @@ class Toolbar {
         void file_picker_gui_refresh_entries();
         void file_picker_gui_done();
         void file_picker_gui();
-        void performance_metrics();
         void color_picker_window(const char* id, Vector4f** color, GUIStuff::Element* b, const ColorSelectorData& colorSelectorData);
         void color_palette(const char* id, Vector4f* color, const std::function<void()>& onChange);
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID);
@@ -158,8 +157,6 @@ class Toolbar {
             std::optional<size_t> selectedThemeIndex;
             bool openedSaveAsMenu = false;
         } themeData;
-
-        bool showPerformance = false;
 
         bool menuPopUpOpen = false;
         bool optionsMenuOpen = false;

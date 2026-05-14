@@ -310,7 +310,7 @@ void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgram
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
             }
         }) {
-            gui.element<LayoutElement>("bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
+            gui.element<LayoutElement>("text bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
                 CLAY(lId, {
                     .layout = {
                         .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}
@@ -318,7 +318,7 @@ void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgram
                     .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
                     .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
                 }) {
-                    gui.clipping_element<ScrollArea>("tools scroll", ScrollArea::Options{
+                    gui.clipping_element<ScrollArea>("text tools scroll", ScrollArea::Options{
                         .scrollHorizontal = true,
                         .clipHorizontal = true,
                         .scrollbarX = ScrollArea::ScrollbarType::NONE,

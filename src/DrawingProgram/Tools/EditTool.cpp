@@ -182,6 +182,7 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
             if(pointDragging)
                 pointDragging = nullptr;
         }
+        drawP.world.main.g.gui.set_to_layout();
     }
 }
 

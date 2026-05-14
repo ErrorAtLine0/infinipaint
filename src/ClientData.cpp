@@ -23,6 +23,12 @@
 #include "MainProgram.hpp"
 #include "ScaleUpCanvas.hpp"
 
+#include <modules/skparagraph/src/ParagraphBuilderImpl.h>
+#include <modules/skparagraph/include/ParagraphStyle.h>
+#include <modules/skparagraph/include/FontCollection.h>
+#include <modules/skparagraph/include/TextStyle.h>
+#include <modules/skunicode/include/SkUnicode_icu.h>
+
 using namespace NetworkingObjects;
 
 enum class ClientDataCommand : uint8_t {
@@ -210,28 +216,42 @@ void ClientData::draw_cursor(SkCanvas* canvas, const DrawData& drawData) const {
 
         canvas->translate(cursorPos.x(), cursorPos.y());
 
-        SkPaint p(SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.2f});
-        p.setAntiAlias(drawData.skiaAA);
-        canvas->drawCircle(0.0f, 0.0f, 4.5f, p);
-        p.setStroke(true);
-        p.setStrokeWidth(1.0f);
-        p.setColor4f({cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.7f});
-        canvas->drawCircle(0.0f, 0.0f, 5.0f, p);
+        {
+            SkPaint p(SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.3f});
+            p.setAntiAlias(drawData.skiaAA);
+            canvas->drawCircle(0.0f, 0.0f, 4.5f, p);
+            p.setStroke(true);
+            p.setStrokeWidth(1.0f);
+            p.setColor4f({cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.6f});
+            canvas->drawCircle(0.0f, 0.0f, 5.0f, p);
+        }
 
-        SkFont f = drawData.main->g.gui.io.get_font(18.0f);
-        SkFontMetrics metrics;
-        f.getMetrics(&metrics);
+        Vector2f bounds;
+        std::unique_ptr<skia::textlayout::Paragraph> paragraph; 
+        {
+            skia::textlayout::ParagraphStyle pStyle;
+            pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
+            skia::textlayout::TextStyle tStyle;
+            tStyle.setFontSize(18.0f);
+            tStyle.setFontFamilies(drawData.main->g.gui.io.fonts->get_default_font_families());
+            tStyle.setForegroundPaint(SkPaint{SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.6f}});
+            pStyle.setTextStyle(tStyle);
 
-        float nextText = f.measureText(displayName.c_str(), displayName.length(), SkTextEncoding::kUTF8, nullptr);
-        Vector2f bounds{nextText, - metrics.fAscent + metrics.fDescent};
+            skia::textlayout::ParagraphBuilderImpl a(pStyle, drawData.main->g.gui.io.fonts->collection, SkUnicodes::ICU::Make());
+            a.addText(displayName.c_str(), displayName.length());
+            paragraph = a.Build();
+            paragraph->layout(std::numeric_limits<float>::max());
+            
+            bounds = {paragraph->getMaxIntrinsicWidth(), paragraph->getHeight()};
+        }
 
-        SkPaint p2(SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.5f});
-        p2.setAntiAlias(drawData.skiaAA);
-        canvas->drawSimpleText(displayName.c_str(), displayName.length(), SkTextEncoding::kUTF8, 6.0f, -metrics.fDescent, f, p2);
+        Vector2f textPos = {6.0f, -bounds.y()};
 
-        SkPaint p3(color_mul_alpha(drawData.main->g.gui.io.theme->backColor1, 0.5f));
+        SkPaint p3(color_mul_alpha(drawData.main->g.gui.io.theme->backColor1, 0.6f));
         p3.setAntiAlias(drawData.skiaAA);
-        canvas->drawRoundRect(SkRect::MakeXYWH(6.0f, -bounds.y(), bounds.x(), bounds.y()), 3.0f, 3.0f, p3);
+        canvas->drawRoundRect(SkRect::MakeXYWH(textPos.x(), textPos.y(), bounds.x(), bounds.y()), 3.0f, 3.0f, p3);
+
+        paragraph->paint(canvas, textPos.x(), textPos.y());
 
         canvas->restore();
     }

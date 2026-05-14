@@ -29,6 +29,7 @@
 #include <optional>
 
 #include <Helpers/Logger.hpp>
+#include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
 #include "AndroidJNICalls.hpp"
 
@@ -820,6 +821,17 @@ void InputManager::backend_touch_finger_up_update(const SDL_TouchFingerEvent& e)
 }
 
 void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e) {
+    constexpr float MINIMUM_MOTION_TO_CONSIDER_SQRD = 20.0f * 20.0f;
+
+    isTouchDevice = true;
+
+    if(touch.fingers.size() == 1 && touch.touchEventType == Touch::NO_TOUCH_EVENT) {
+        Vector2f newPos = backend_touch_cursor_pos_calculation({e.x, e.y}) * main.window.scale;
+        Vector2f oldPos = backend_touch_cursor_pos_calculation({touch.fingers[0].x, touch.fingers[0].y}) * main.window.scale;
+        if(vec_distance_sqrd(newPos, oldPos) < MINIMUM_MOTION_TO_CONSIDER_SQRD)
+            return;
+    }
+
     switch(touch.touchEventType) {
         case Touch::NO_TOUCH_EVENT: {
             touch_finger_do_mouse_down();
@@ -855,8 +867,6 @@ void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent
         .move = backend_touch_cursor_delta_calculation({e.dx, e.dy}),
         .fingerDownCount = touch.fingers.size()
     });
-
-    isTouchDevice = true;
 }
 
 void InputManager::update_safe_area() {
@@ -1133,10 +1143,10 @@ void InputManager::Mouse::set_pos(const Vector2f& newPos) {
 }
 
 void InputManager::update() {
-    if(touch.touchEventType == Touch::NO_TOUCH_EVENT && (SDL_GetTicksNS() - touch.fingers[0].timestamp) > (200 * 1000000)) { // 200ms to determine whether touch is with a single finger
-        touch_finger_do_mouse_down();
-        touch.touchEventType = Touch::ONE_FINGER_EVENT;
-    }
+    //if(touch.touchEventType == Touch::NO_TOUCH_EVENT && (SDL_GetTicksNS() - touch.fingers[0].timestamp) > (200 * 1000000)) { // 200ms to determine whether touch is with a single finger
+    //    touch_finger_do_mouse_down();
+    //    touch.touchEventType = Touch::ONE_FINGER_EVENT;
+    //}
 }
 
 void InputManager::frame_reset(const Vector2i& windowSize) {
