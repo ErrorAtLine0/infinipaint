@@ -29,6 +29,8 @@ GlobalConfig::GlobalConfig() {
     SDL_GetDateTimeLocalePreferences(&dateFormat, &timeFormat);
     if(dateFormat == SDL_DATE_FORMAT_YYYYMMDD) // Can't display this in a friendly way, so changing it for now
         dateFormat = SDL_DATE_FORMAT_DDMMYYYY;
+    if(timeFormat == SDL_TIME_FORMAT_24HR)
+        timeFormat = SDL_TIME_FORMAT_12HR; // For now, lock at 12 hour since it's the most used format, and time format detection doesn't work properly all the time
 }
 
 nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {

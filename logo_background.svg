@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="128.00002"
+   height="127.99999"
+   viewBox="0 0 33.866671 33.866665"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   sodipodi:docname="logo_background.svg"
+   inkscape:export-filename="android-project/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+   inkscape:export-xdpi="144"
+   inkscape:export-ydpi="144"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="currentColor"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="2.0000001"
+     inkscape:cx="69.499998"
+     inkscape:cy="-14.5"
+     inkscape:window-width="1606"
+     inkscape:window-height="1188"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1"
+     showgrid="true">
+    <inkscape:grid
+       id="grid2"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="1.0583333"
+       spacingy="1.0583333"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       enabled="true"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <rect
+     ry="0"
+     rx="0"
+     y="-21.166662"
+     x="-21.16667"
+     height="76.199997"
+     width="76.199997"
+     id="rect2896-3"
+     style="display:inline;opacity:1;fill:#11181a;fill-opacity:1;stroke:none;stroke-width:4.48268;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;marker-start:none;marker-mid:none;marker-end:none;paint-order:normal;enable-background:new"
+     inkscape:label="logoFill" />
+  <path
+     id="path4"
+     style="opacity:1;baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#21292b;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1;fill-opacity:1"
+     d="M 57.679684 110.45888 A 1.118185 1.118185 0 0 0 56.560372 111.5782 L 56.560372 145.85362 L 41.827938 145.85362 L 41.827938 114.30103 A 1.081515 1.081515 0 0 0 40.746351 113.21892 A 1.081515 1.081515 0 0 0 39.664246 114.30103 L 39.664246 145.85362 L -0.52916665 145.85362 A 1.253865 1.253865 0 0 0 -1.7833537 147.10729 A 1.253865 1.253865 0 0 0 -0.52916665 148.36148 L 39.664246 148.36148 L 39.664246 162.80453 L -2.6463501 162.80453 A 1.237355 1.237355 0 0 0 -3.8829671 164.04114 A 1.237355 1.237355 0 0 0 -2.6463501 165.27931 L 39.664246 165.27931 L 39.664246 207.43384 A 1.081515 1.081515 0 0 0 40.746351 208.51543 A 1.081515 1.081515 0 0 0 41.827938 207.43384 L 41.827938 165.27931 L 56.560372 165.27931 L 56.560372 208.49218 A 1.118185 1.118185 0 0 0 57.679684 209.60942 A 1.118185 1.118185 0 0 0 58.796928 208.49218 L 58.796928 165.27931 L 111.42782 165.27931 A 1.237355 1.237355 0 0 0 112.66599 164.04114 A 1.237355 1.237355 0 0 0 111.42782 162.80453 L 58.796928 162.80453 L 58.796928 148.36148 L 101.07032 148.36148 A 1.253865 1.253865 0 0 0 102.32399 147.10729 A 1.253865 1.253865 0 0 0 101.07032 145.85362 L 58.796928 145.85362 L 58.796928 111.5782 A 1.118185 1.118185 0 0 0 57.679684 110.45888 z M 41.827938 148.36148 L 56.560372 148.36148 L 56.560372 162.80453 L 41.827938 162.80453 L 41.827938 148.36148 z "
+     transform="translate(-32.279167,-138.64166)" />
+</svg>
