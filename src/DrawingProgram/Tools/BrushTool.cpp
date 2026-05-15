@@ -29,9 +29,9 @@
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 
-#define VEL_SMOOTH_MIN 0.6
-#define VEL_SMOOTH_MAX 1.0
 #define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
+#define SMOOTH_FACTOR 0.707f
+#define DRAW_MINIMUM_LIMIT 1.0f
 
 BrushTool::BrushTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -50,11 +50,39 @@ void BrushTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
         objInfoBeingEdited = nullptr;
 }
 
+void BrushTool::smooth_out_points(float smoothFactor) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
+        auto& brushPoints = *brushStroke.d.points;
+        if(brushPoints.size() >= 2) {
+            brushPoints.back().width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width * smoothFactor);
+            for(size_t i = brushPoints.size() - 1; i > 0; i--) {
+                if(brushPoints[i].width * smoothFactor > brushPoints[i - 1].width)
+                    brushPoints[i - 1].width = brushPoints[i].width * smoothFactor;
+                else
+                    break;
+            }
+        }
+    }
+}
+
+void BrushTool::fix_tip() {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
+        auto& brushPoints = *brushStroke.d.points;
+        if(brushPoints.size() >= 2) {
+            brushPoints[brushPoints.size() - 2].width = brushPoints[brushPoints.size() - 1].width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width);
+        }
+    }
+}
+
 void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
         if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
-            if(drawP.world.main.input.pen.isDown) {
+            if(button.deviceType == InputManager::MouseDeviceType::PEN) {
                 penWidth = drawP.world.main.input.pen.pressure;
                 if(penWidth != 0.0f) {
                     float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
@@ -102,35 +130,48 @@ void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallb
         p.pos = containerPtr->coords.from_cam_space_to_this(drawP.world, motion.pos);
         p.width = width;
 
+        // Temporary point is a point that follows the cursor until it is placed
         if(!addedTemporaryPoint) {
+            // Temporary point is close enough to be placed
             if(extensive_point_checking(brushStroke, p.pos)) {
                 brushPoints.emplace_back(p);
                 addedTemporaryPoint = true;
             }
             else
+                // Temporary point not close enough yet, so change the width of the previous point based on the current pen width until it can be placed
                 brushPoints.back().width = std::max(brushPoints.back().width, p.width);
         }
 
         if(addedTemporaryPoint) {
             const BrushStrokeCanvasComponentPoint& prevP = brushPoints[brushPoints.size() - 2];
             float distToPrev = (p.pos - prevP.pos).norm();
+            // If the cursor isnt too close to the previous points, move the temporary point to the cursor and change the width of the temporary point to the current pen width
             if(extensive_point_checking_back(brushStroke, p.pos)) {
                 brushPoints.back().pos = p.pos;
                 brushPoints.back().width = std::max(brushPoints.back().width, p.width);
-                brushPoints[brushPoints.size() - 2].width = std::max(brushPoints[brushPoints.size() - 2].width, p.width);
             }
-            if((!drawingMinimumRelativeToSize && distToPrev >= 10.0) || (drawingMinimumRelativeToSize && distToPrev >= width * BrushStrokeCanvasComponent::DRAW_MINIMUM_LIMIT)) {
-                brushPoints.back() = p;
+
+            float maxWidthToCompareTo = std::max(brushPoints.back().width, p.width);
+            maxWidthToCompareTo = std::max(maxWidthToCompareTo, 5.0f);
+            if(brushPoints.size() >= 2)
+                maxWidthToCompareTo = std::max(brushPoints[brushPoints.size() - 2].width, maxWidthToCompareTo);
+            if(brushPoints.size() >= 3)
+                maxWidthToCompareTo = std::max(brushPoints[brushPoints.size() - 3].width, maxWidthToCompareTo);
+
+            // If the temporary point (cursor) is far enough from the point before it, make the temporary point permanent
+            if(distToPrev >= maxWidthToCompareTo * DRAW_MINIMUM_LIMIT) {
+                brushPoints.back().pos = p.pos;
+                brushPoints.back().width = std::max(brushPoints.back().width, p.width);
                 addedTemporaryPoint = false;
 
-                if(midwayInterpolation) {
-                    if(brushPoints.size() != 2) // Don't interpolate the first point
-                        brushPoints[brushPoints.size() - 2].pos = (prevPointUnaltered + p.pos) * 0.5;
-                    prevPointUnaltered = p.pos;
-                }
+                // Midway interpolation moves the point before the last one to a position that leads to a smoother line
+                if(brushPoints.size() != 2) // Don't interpolate the first point
+                    brushPoints[brushPoints.size() - 2].pos = (prevPointUnaltered + p.pos) * 0.5;
+                prevPointUnaltered = p.pos;
             }
         }
 
+        smooth_out_points(SMOOTH_FACTOR);
         containerPtr->send_comp_update(drawP, false);
         containerPtr->commit_update(drawP);
     }
@@ -142,6 +183,17 @@ void BrushTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs&
         if(penWidth != 0.0f) {
             float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
             penWidth = brushMinSize + penWidth * (1.0f - brushMinSize);
+            if(objInfoBeingEdited) {
+                auto& toolConfig = drawP.world.main.toolConfig;
+                NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+                BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
+                auto& brushPoints = *brushStroke.d.points;
+                float width = toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value() * penWidth;
+                brushPoints.back().width = std::max(brushPoints.back().width, width);
+                smooth_out_points(SMOOTH_FACTOR);
+                containerPtr->send_comp_update(drawP, false);
+                containerPtr->commit_update(drawP);
+            }
         }
     }
 }
@@ -176,6 +228,7 @@ void BrushTool::tool_update() {
 void BrushTool::commit_stroke() {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        fix_tip();
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
         if(containerPtr->get_world_bounds().has_value())

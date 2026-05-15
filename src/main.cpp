@@ -221,6 +221,7 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
 
     SDL_SetHint(SDL_HINT_APP_NAME, "InfiniPaint");
+    SDL_SetHint(SDL_HINT_PEN_TOUCH_EVENTS, "0");
     SDL_SetHint(SDL_HINT_PEN_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");

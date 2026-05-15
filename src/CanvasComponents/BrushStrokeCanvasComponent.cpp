@@ -256,7 +256,7 @@ std::vector<BrushStrokeCanvasComponentPoint> BrushStrokeCanvasComponent::smooth_
     std::vector<BrushStrokeCanvasComponentPoint> toRet;
 
     BrushStrokeCanvasComponentPoint p0 = points[beginIndex];
-    p0.pos = p0.pos + p0.width * (p0.pos - points[beginIndex + 1].pos).normalized() * DRAW_MINIMUM_LIMIT;
+    p0.pos = p0.pos + p0.width * (p0.pos - points[beginIndex + 1].pos).normalized();
     BrushStrokeCanvasComponentPoint p1 = points[beginIndex];
     BrushStrokeCanvasComponentPoint p2 = points[beginIndex + 1];
     BrushStrokeCanvasComponentPoint p3;
@@ -265,7 +265,7 @@ std::vector<BrushStrokeCanvasComponentPoint> BrushStrokeCanvasComponent::smooth_
 
         if(i == endIndex - 1) {
             p3 = points[i + 1];
-            p3.pos = p3.pos + p3.width * (p3.pos - points[i].pos).normalized() * DRAW_MINIMUM_LIMIT;
+            p3.pos = p3.pos + p3.width * (p3.pos - points[i].pos).normalized();
         }
         else
             p3 = points[i + 2];

@@ -48,6 +48,8 @@ class BrushTool : public DrawingProgramToolBase {
     private:
         bool extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
         bool extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
+        void smooth_out_points(float smoothFactor);
+        void fix_tip();
         void commit_stroke();
 
         float penWidth = 1.0f;
@@ -55,7 +57,5 @@ class BrushTool : public DrawingProgramToolBase {
 
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 
-        bool drawingMinimumRelativeToSize = true;
-        bool midwayInterpolation = true;
         Vector2f prevPointUnaltered = {0, 0};
 };
