@@ -67,10 +67,10 @@ class GlobalConfig {
 
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;
-            float smoothingSamplingTime = 0.04f;
             uint8_t middleClickButton = 1;
             uint8_t rightClickButton = 2;
             bool ignoreMouseMovementWhenPenInProximity = false;
+            bool disableTouchWhenPenInProximity = false;
             float brushMinimumSize = 0.0f;
             bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;

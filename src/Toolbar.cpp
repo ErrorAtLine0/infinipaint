@@ -1590,7 +1590,6 @@ void Toolbar::general_settings_inner_gui() {
                 case GSETTINGS_TABLET: {
                     general_scroll_area("tablet settings", [&] {
                         checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
-                        slider_scalar_field(gui, "smoothing time", "Smoothing sampling time", &main.conf.tabletOptions.smoothingSamplingTime, 0.001f, 1.0f, {.decimalPrecision = 3});
                         input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &main.conf.tabletOptions.middleClickButton, 1, 255);
                         input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &main.conf.tabletOptions.rightClickButton, 1, 255);
                         slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
@@ -1598,6 +1597,7 @@ void Toolbar::general_settings_inner_gui() {
                         #ifdef _WIN32
                             checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &main.conf.tabletOptions.ignoreMouseMovementWhenPenInProximity);
                         #endif
+                        checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
                     });
                     break;
                 }

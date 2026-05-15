@@ -31,6 +31,7 @@
 #include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
 #include "../World.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "PhoneDrawingProgramScreen.hpp"
@@ -938,7 +939,10 @@ void FileSelectScreen::settings_view() {
                         .onEdit = [&] { main.g.window_update(); }
                     });
                     input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+                    checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
                     checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                    slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
+                    checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
 #ifndef __ANDROID__
                     checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
 #endif
