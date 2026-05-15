@@ -68,7 +68,7 @@ void FileSelectScreen::gui_layout_run() {
     main_display();
 }
 
-void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::filesystem::path& savePath, bool trashUpdate) {
+void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::filesystem::path& folderPath, bool trashUpdate) {
     constexpr SDL_Time NS_IN_DAY = SDL_SECONDS_TO_NS(24 * 3600);
     constexpr int64_t DAYS_TO_DELETION = 30;
 
@@ -77,13 +77,13 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
 
     fL.clear();
     int globCount;
-    char** filesInPath = SDL_GlobDirectory(savePath.string().c_str(), "*", 0, &globCount);
+    char** filesInPath = SDL_GlobDirectory(folderPath.string().c_str(), "*", 0, &globCount);
     if(filesInPath) {
         for(int i = 0; i < globCount; i++) {
             std::filesystem::path p = filesInPath[i];
             std::string fExt = p.extension().string();
             if(fExt == World::DOT_FILE_EXTENSION) {
-                std::filesystem::path fullPath = savePath / filesInPath[i];
+                std::filesystem::path fullPath = folderPath / filesInPath[i];
                 FileInfo fileInfoToAdd;
                 fileInfoToAdd.fileName = p.stem().string();
 
@@ -100,8 +100,10 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
 
                     if(daysSinceMovedToTrash >= DAYS_TO_DELETION) {
                         // Remove file and thumbnail
+                        std::filesystem::path thumbnailPath = folderPath / (fileInfoToAdd.fileName + ".jpg");
+                        Logger::get().log("INFO", "Deleting file in trash: " + fullPath.string() + " with thumbnail: " + thumbnailPath.string());
                         SDL_RemovePath(fullPath.string().c_str());
-                        SDL_RemovePath((savePath / fileInfoToAdd.fileName / ".jpg").string().c_str());
+                        SDL_RemovePath(thumbnailPath.string().c_str());
                         saveInfo.trash.files.erase(it);
                         continue;
                     }
@@ -128,7 +130,7 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
         }
     }
     else
-        SDL_CreateDirectory(savePath.string().c_str());
+        SDL_CreateDirectory(folderPath.string().c_str());
 
     sort_file_list(fL);
 }

@@ -76,7 +76,7 @@ class FileSelectScreen : public Screen {
             bool selected = false;
         };
 
-        void update_file_list(std::vector<FileInfo>& fL, const std::filesystem::path& savePath, bool trashUpdate);
+        void update_file_list(std::vector<FileInfo>& fL, const std::filesystem::path& folderPath, bool trashUpdate);
         void sort_file_list(std::vector<FileInfo>& fL);
 
         std::vector<FileInfo> fileList;
