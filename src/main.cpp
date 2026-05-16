@@ -300,7 +300,7 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
             glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mS.defaultFBO);
         #endif
 
-        Logger::get().log("INFO", "GL Version: " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))));
+        Logger::get().log(Logger::LogType::INFO, "GL Version: " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))));
     #endif
 
 #endif
@@ -375,18 +375,18 @@ void init_logs(MainStruct& mS) {
     SDL_free(configPathSDL);
 #endif
     mS.logFile = std::ofstream(mS.configPath / "log.txt");
-    Logger::get().add_log("FATAL", [&, mS = &mS](const std::string& text) {
+    Logger::get().set_log_function(Logger::LogType::FATAL, [&, mS = &mS](const std::string& text) {
         mS->logFile << "[FATAL] " << text << std::endl;
         std::cerr << "[FATAL] " << text << std::endl;
         mS->logFile.close();
     });
-    Logger::get().add_log("INFO", [&, mS = &mS](const std::string& text) {
+    Logger::get().set_log_function(Logger::LogType::INFO, [&, mS = &mS](const std::string& text) {
         mS->logFile << "[INFO] " << text << std::endl;
         Logger::get().cross_platform_println("[INFO] " + text);
     });
 
-    Logger::get().log("INFO", "Home Path: " + mS.homePath.string());
-    Logger::get().log("INFO", "Config Path: " + mS.configPath.string());
+    Logger::get().log(Logger::LogType::INFO, "Home Path: " + mS.homePath.string());
+    Logger::get().log(Logger::LogType::INFO, "Config Path: " + mS.configPath.string());
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
@@ -572,7 +572,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #ifdef NDEBUG
     }
     catch(const std::exception& e) {
-        Logger::get().log("FATAL", e.what());
+        Logger::get().log(Logger::LogType::FATAL, e.what());
         return SDL_APP_FAILURE;
     }
 #endif
@@ -648,7 +648,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 #ifdef NDEBUG
     }
     catch(const std::exception& e) {
-        Logger::get().log("FATAL", e.what());
+        Logger::get().log(Logger::LogType::FATAL, e.what());
         return SDL_APP_FAILURE;
     }
 #endif
@@ -666,16 +666,16 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 #endif
         switch(event->type) {
             case SDL_EVENT_QUIT:
-                Logger::get().log("INFO", "[SDL_AppEvent] Quit");
+                Logger::get().log(Logger::LogType::INFO, "[SDL_AppEvent] Quit");
                 if(mS.m->app_close_requested())
                     return SDL_APP_SUCCESS;
                 break;
             case SDL_EVENT_WILL_ENTER_BACKGROUND:
-                Logger::get().log("INFO", "[SDL_AppEvent] Entering background");
+                Logger::get().log(Logger::LogType::INFO, "[SDL_AppEvent] Entering background");
                 mS.m->input_app_about_to_go_to_background_callback();
                 break;
             case SDL_EVENT_WILL_ENTER_FOREGROUND:
-                Logger::get().log("INFO", "[SDL_AppEvent] Entering foreground");
+                Logger::get().log(Logger::LogType::INFO, "[SDL_AppEvent] Entering foreground");
                 mS.m->input_app_about_to_go_to_foreground_callback();
                 break;
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
@@ -835,7 +835,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 #ifdef NDEBUG
     }
     catch(const std::exception& e) {
-        Logger::get().log("FATAL", e.what());
+        Logger::get().log(Logger::LogType::FATAL, e.what());
         return SDL_APP_FAILURE;
     }
 #endif
@@ -861,7 +861,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         sdl_terminate(mS);
     }
     catch(const std::exception& e) {
-        Logger::get().log("FATAL", e.what());
+        Logger::get().log(Logger::LogType::FATAL, e.what());
     }
 
     delete (&mS);

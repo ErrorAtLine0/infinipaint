@@ -232,7 +232,7 @@ void ClientData::draw_cursor(SkCanvas* canvas, const DrawData& drawData) const {
             skia::textlayout::ParagraphStyle pStyle;
             pStyle.setTextAlign(skia::textlayout::TextAlign::kLeft);
             skia::textlayout::TextStyle tStyle;
-            tStyle.setFontSize(18.0f);
+            tStyle.setFontSize(18.0f * drawData.main->g.final_gui_scale());
             tStyle.setFontFamilies(drawData.main->g.gui.io.fonts->get_default_font_families());
             tStyle.setForegroundPaint(SkPaint{SkColor4f{cursorColor.x(), cursorColor.y(), cursorColor.z(), 0.6f}});
             pStyle.setTextStyle(tStyle);

@@ -97,7 +97,7 @@ namespace AndroidJNICalls {
     }
 
     void startNetworkService() {
-        Logger::get().log("INFO", "[AndroidJNICalls::startNetworkService] Start service");
+        Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::startNetworkService] Start service");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
         jobject activity = (jobject)SDL_GetAndroidActivity();
         jclass clazz = env->GetObjectClass(activity);
@@ -108,7 +108,7 @@ namespace AndroidJNICalls {
     }
 
     void stopNetworkService() {
-        Logger::get().log("INFO", "[AndroidJNICalls::stopNetworkService] Stop service");
+        Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::stopNetworkService] Stop service");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
         jobject activity = (jobject)SDL_GetAndroidActivity();
         jclass clazz = env->GetObjectClass(activity);

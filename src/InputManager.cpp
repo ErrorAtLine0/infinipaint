@@ -265,10 +265,10 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
                             throw std::runtime_error("Bitmap format is unsupported");
                     }
                     catch(const std::runtime_error& e) {
-                        Logger::get().log("INFO", std::string("[InputManager::get_clipboard_image_data_SDL] Error thrown: ") + e.what());
+                        Logger::get().log(Logger::LogType::INFO, std::string("[InputManager::get_clipboard_image_data_SDL] Error thrown: ") + e.what());
                     }
                     catch(...) {
-                        Logger::get().log("INFO", "[InputManager::get_clipboard_image_data_SDL] Unknown error thrown");
+                        Logger::get().log(Logger::LogType::INFO, "[InputManager::get_clipboard_image_data_SDL] Unknown error thrown");
                     }
                     if(!result.empty())
                         callback(std::string_view((char*)(result.data()), result.size())); // This part of the code should throw errors

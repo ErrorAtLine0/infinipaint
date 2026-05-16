@@ -29,17 +29,15 @@ Logger& Logger::get() {
     return global;
 }
 
-void Logger::add_log(const std::string& log, const std::function<void(const std::string&)> callback) {
+void Logger::set_log_function(LogType log, const std::function<void(const std::string&)> callback) {
     std::scoped_lock logLock(logMutex);
     logs[log] = callback;
 }
 
-void Logger::log(const std::string& log, const std::string& text) {
+void Logger::log(LogType log, const std::string& text) {
     std::scoped_lock logLock(logMutex);
     auto it = logs.find(log);
-    if(it == logs.end())
-        throw std::runtime_error("[Logger::log] Log " + log + " does not exist to log text: " + text);
-    else
+    if(it != logs.end())
         it->second(text);
 }
 

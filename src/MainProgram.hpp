@@ -52,6 +52,11 @@ struct UserLogMessage {
         COLOR_NORMAL = 0,
         COLOR_ERROR
     } color;
+    enum {
+        DISPLAY_FOR_ALL,
+        DISPLAY_PHONE_ONLY,
+        DISPLAY_DESKTOP_ONLY
+    } whereToDisplay = DISPLAY_DESKTOP_ONLY;
     TimePoint time;
 };
 

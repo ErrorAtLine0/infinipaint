@@ -769,7 +769,7 @@ void DrawingProgramSelection::paste_clipboard(Vector2f pasteScreenPos) {
         WorldScalar scaleLimit(0.001);
         for(auto& c : drawP.world.main.clipboard.components) {
             if((c->coords.inverseScale / scaleMultiplier) < scaleLimit) {
-                Logger::get().log("WORLDFATAL", "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
+                Logger::get().log(Logger::LogType::WORLDFATAL, "Some pasted objects will be too small! Scale up the canvas first (zoom in alot)");
                 return;
             }
         }

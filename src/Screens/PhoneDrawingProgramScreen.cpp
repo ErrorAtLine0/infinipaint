@@ -40,6 +40,14 @@ PhoneDrawingProgramScreen::PhoneDrawingProgramScreen(MainProgram& m):
 {}
 
 void PhoneDrawingProgramScreen::update() {
+    std::erase_if(main.logMessages, [&](auto& logM) {
+        logM.time.update_time_since();
+        if(logM.time > UserLogMessage::FADE_START_TIME) {
+            main.g.gui.set_to_layout();
+            return logM.time >= UserLogMessage::DISPLAY_TIME;
+        }
+        return false;
+    });
     DrawingProgramScreen::update();
 }
 
@@ -352,6 +360,63 @@ void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
     }
 }
 
+void PhoneDrawingProgramScreen::global_log() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
+    float notificationSize = std::min(300.0f, gui.io.safeWindowRect.width() - 20.0f);
+
+    gui.new_id("Global log popup list", [&] {
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIXED(notificationSize), .height = CLAY_SIZING_FIT(0) },
+                .childGap = io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            },
+            .floating = {.offset = {0, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+        }) {
+            for(size_t i = 0; i < main.logMessages.size(); i++) {
+                auto& logM = main.logMessages[i];
+                logM.time.update_time_since();
+                if(logM.time < UserLogMessage::DISPLAY_TIME) {
+                    if(logM.whereToDisplay == UserLogMessage::DISPLAY_DESKTOP_ONLY)
+                        continue;
+                    float a = 1.0f - lerp_time<float>(logM.time, UserLogMessage::DISPLAY_TIME, UserLogMessage::FADE_START_TIME);
+                    gui.new_id(i, [&] {
+                        gui.element<LayoutElement>("Global log message", [&] (LayoutElement*, const Clay_ElementId& lId) {
+                            CLAY(lId, {
+                                .layout = {
+                                    .sizing = {.width = CLAY_SIZING_FIT(notificationSize), .height = CLAY_SIZING_FIT(0) },
+                                    .padding = CLAY_PADDING_ALL(io.theme->padding1),
+                                    .childGap = 0,
+                                    .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                                },
+                                .backgroundColor = convert_vec4<Clay_Color>(color_mul_alpha(io.theme->backColor1, a)),
+                                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+                            }) {
+                                SkColor4f c{0, 0, 0, 0};
+                                switch(logM.color) {
+                                    case UserLogMessage::COLOR_NORMAL:
+                                        c = io.theme->frontColor1;
+                                        break;
+                                    case UserLogMessage::COLOR_ERROR:
+                                        c = io.theme->errorColor;
+                                        break;
+                                }
+                                text_label_color(gui, logM.text, color_mul_alpha(c, a));
+                            }
+                        });
+                    });
+                }
+                else
+                    break;
+            }
+        }
+    });
+}
+
 void PhoneDrawingProgramScreen::top_toolbar() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
@@ -381,6 +446,7 @@ void PhoneDrawingProgramScreen::top_toolbar() {
                         }
                     });
                     top_toolbar_remaining_area();
+                    global_log();
                     top_toolbar_settings_popup();
                 }
             });

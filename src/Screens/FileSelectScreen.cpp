@@ -102,7 +102,7 @@ void FileSelectScreen::update_file_list(std::vector<FileInfo>& fL, const std::fi
                     if(daysSinceMovedToTrash >= DAYS_TO_DELETION) {
                         // Remove file and thumbnail
                         std::filesystem::path thumbnailPath = folderPath / (fileInfoToAdd.fileName + ".jpg");
-                        Logger::get().log("INFO", "Deleting file in trash: " + fullPath.string() + " with thumbnail: " + thumbnailPath.string());
+                        Logger::get().log(Logger::LogType::INFO, "Deleting file in trash: " + fullPath.string() + " with thumbnail: " + thumbnailPath.string());
                         SDL_RemovePath(fullPath.string().c_str());
                         SDL_RemovePath(thumbnailPath.string().c_str());
                         saveInfo.trash.files.erase(it);

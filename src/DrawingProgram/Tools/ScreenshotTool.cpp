@@ -26,7 +26,6 @@
 #include <include/core/SkPathBuilder.h>
 
 #include "../../GridManager.hpp"
-#include <Helpers/Logger.hpp>
 
 #include "../../MainProgram.hpp"
 

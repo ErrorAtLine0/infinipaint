@@ -85,6 +85,7 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         Vector4f* colorPickerPtr = nullptr;
         ColorSelectorData colorPickerData;
 
+        void global_log();
         void gui_layout_safety_checks();
         void hidden_gui();
         void center_message(const char* id, const std::string& m);

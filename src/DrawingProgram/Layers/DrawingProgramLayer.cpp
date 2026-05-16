@@ -94,7 +94,7 @@ void DrawingProgramLayer::erase_invalid_components() {
             compsToErase.emplace_back(it);
     }
     if(!compsToErase.empty()) {
-        Logger::get().log("INFO", "[DrawingProgramLayer::erase_invalid_components] Erased " + std::to_string(compsToErase.size()) + " invalid component(s) from layer");
+        Logger::get().log(Logger::LogType::INFO, "[DrawingProgramLayer::erase_invalid_components] Erased " + std::to_string(compsToErase.size()) + " invalid component(s) from layer");
         components->erase_list(components, compsToErase);
     }
 }

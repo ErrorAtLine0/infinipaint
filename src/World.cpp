@@ -115,9 +115,11 @@ Vector3f World::get_random_cursor_color() {
 void World::init_client_data_list_callbacks() {
     clients->set_insert_callback([&](const NetworkingObjects::NetObjOwnerPtr<ClientData>& objPtr) {
         add_chat_message(objPtr->get_display_name(), "joined", Toolbar::ChatMessage::Type::JOIN);
+        Logger::get().log(Logger::LogType::PHONE_USERINFO, objPtr->get_display_name() + " joined");
     });
     clients->set_erase_callback([&](const NetworkingObjects::NetObjOwnerPtr<ClientData>& objPtr) {
         add_chat_message(objPtr->get_display_name(), "left", Toolbar::ChatMessage::Type::JOIN);
+        Logger::get().log(Logger::LogType::PHONE_USERINFO, objPtr->get_display_name() + " left");
     });
 }
 
@@ -209,7 +211,7 @@ void World::focus_update() {
 bool World::connection_update() {
     if(netServer) {
         if(netServer->is_disconnected()) {
-            Logger::get().log("USERINFO", "Host connection failed");
+            Logger::get().log(Logger::LogType::USERINFO, "Host connection failed");
             netSource.clear();
             netServer = nullptr;
             netObjMan.disconnect();
@@ -224,7 +226,7 @@ bool World::connection_update() {
     }
     else if(netClient) {
         if(netClient->is_disconnected()) {
-            Logger::get().log("USERINFO", "Client connection failed");
+            Logger::get().log(Logger::LogType::USERINFO, "Client connection failed");
             netObjMan.disconnect();
             main.set_tab_to_close(this);
             netClient = nullptr;
@@ -383,7 +385,7 @@ void World::send_chat_message(const std::string& message) {
 }
 
 void World::add_chat_message(const std::string& name, const std::string& message, Toolbar::ChatMessage::Type type) {
-    Logger::get().log("CHAT", type == Toolbar::ChatMessage::JOIN ? (name + " " + message) : ("[" + name + "] " + message));
+    Logger::get().log(Logger::LogType::CHAT, type == Toolbar::ChatMessage::JOIN ? (name + " " + message) : ("[" + name + "] " + message));
     chatMessages.emplace_front(Toolbar::ChatMessage{name, message, type});
     if(chatMessages.size() == CHAT_SIZE)
         chatMessages.pop_back();
@@ -523,11 +525,11 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
             }
         #endif
 
-        Logger::get().log("USERINFO", "File saved");
+        Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "File saved");
         undo.set_save_action();
     }
     catch(const std::exception& e) {
-        Logger::get().log("WORLDFATAL", std::string("Save error: ") + e.what());
+        Logger::get().log(Logger::LogType::WORLDFATAL, std::string("Save error: ") + e.what());
     }
 }
 
@@ -573,12 +575,12 @@ void World::load_from_file(const std::filesystem::path& filePathToLoadFrom, std:
 
     ByteMemStream f((char*)uncompressedDataView.data(), uncompressedDataView.size());
 
-    Logger::get().log("INFO", "Loading file from version " + version_numbers_to_version_str(fileVersion));
+    Logger::get().log(Logger::LogType::INFO, "Loading file from version " + version_numbers_to_version_str(fileVersion));
 
     cereal::PortableBinaryInputArchive a(f);
     load_file(a, fileVersion);
 
-    Logger::get().log("USERINFO", "File loaded");
+    Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "File loaded");
     set_name(filePath.stem().string());
 }
 
@@ -621,7 +623,7 @@ void World::scale_up_step() {
 }
 
 void World::scale_up(const WorldScalar& scaleUpAmount) {
-    Logger::get().log("USERINFO", "Canvas scaled up");
+    Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Canvas scaled up");
     bMan.scale_up(scaleUpAmount);
     gridMan.scale_up(scaleUpAmount);
     drawData.cam.scale_up(*this, scaleUpAmount);

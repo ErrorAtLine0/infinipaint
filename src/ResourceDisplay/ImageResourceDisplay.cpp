@@ -170,7 +170,7 @@ bool ImageResourceDisplay::load(ResourceManager& rMan, const std::string& fileNa
         }
 
         if(rotate) {
-            Logger::get().log("INFO", "Image loaded is rotated, so must rotate dimensions");
+            Logger::get().log(Logger::LogType::INFO, "Image loaded is rotated, so must rotate dimensions");
             imageInfo = imageInfo.makeDimensions(SkISize(imageInfo.height(), imageInfo.width()));
         }
         codec = nullptr;

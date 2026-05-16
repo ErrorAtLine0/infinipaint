@@ -621,7 +621,7 @@ void GUIManager::single_layout_run() {
 }
 
 void GUIManager::clay_error_handler(Clay_ErrorData errorData) {
-    Logger::get().log("INFO", "[Clay Error] " + std::string(errorData.errorText.chars));
+    Logger::get().log(Logger::LogType::INFO, "[Clay Error] " + std::string(errorData.errorText.chars));
 }
 
 void GUIManager::in_dynamic_area(const std::function<void()>& f) {

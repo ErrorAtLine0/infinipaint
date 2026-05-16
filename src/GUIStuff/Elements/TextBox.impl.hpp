@@ -287,10 +287,8 @@ template <typename T> bool TextBox<T>::update_data() {
 }
 
 template <typename T> TextBox<T>::~TextBox() {
-    if(is_selected()) {
-        Logger::get().log("INFO", "Destroy");
+    if(is_selected())
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
-    }
 }
 
 }

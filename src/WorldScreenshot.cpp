@@ -67,7 +67,7 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
         sk_sp<SkSurface> surface = w->main.create_native_surface(w->main.window.size, true);
         SkCanvas* screenshotCanvas = surface->getCanvas();
         if(!screenshotCanvas) {
-            Logger::get().log("INFO", "Screenshot Tool could not make canvas");
+            Logger::get().log(Logger::LogType::INFO, "[world_take_screenshot] Could not make canvas");
             return;
         }
     
@@ -92,7 +92,7 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
                 break;
         }
         if(!success) {
-            Logger::get().log("WORLDFATAL", "[ScreenshotTool::take_screenshot] Could not encode and write screenshot");
+            Logger::get().log(Logger::LogType::WORLDFATAL, "[world_take_screenshot] Could not encode and write screenshot");
             return;
         }
         out.flush();
@@ -104,7 +104,7 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
-            Logger::get().log("WORLDFATAL", std::string("[ScreenshotTool::take_screenshot] Save screenshot error: ") + e.what());
+            Logger::get().log(Logger::LogType::WORLDFATAL, std::string("[world_take_screenshot] Save screenshot error: ") + e.what());
         }
     #else
         if(success) {
@@ -133,7 +133,7 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
-            Logger::get().log("WORLDFATAL", std::string("[ScreenshotTool::take_screenshot] Save screenshot error: ") + e.what());
+            Logger::get().log(Logger::LogType::WORLDFATAL, std::string("[world_take_screenshot] Save screenshot error: ") + e.what());
         }
     #else
         auto skData = out.detachAsData();
@@ -210,7 +210,7 @@ void take_screenshot_area_hw(const std::shared_ptr<World>& w, const sk_sp<SkSurf
     void* fullImgRawDataStartPt = (uint8_t*)fullImgRawData + 4 * (size_t)sectionImagePos.x() + 4 * (size_t)fullImageSize.x() * (size_t)sectionImagePos.y();
     SkPixmap aaImgData(aaImgInfo, fullImgRawDataStartPt, fullImageSize.x() * 4);
     if(!surface->readPixels(aaImgData, 0, 0))
-        throw std::runtime_error("[ScreenshotTool::take_screenshot_area_hw] Error copy pixmap");
+        throw std::runtime_error("[take_screenshot_area_hw] Error copy pixmap");
 }
 
 std::string world_screenshot_info_get_extension_from_type(WorldScreenshotInfo::ScreenshotType t) {

@@ -689,23 +689,23 @@ void Toolbar::update_notification_check() {
                             VersionNumber& newV = newVersion.value();
                             VersionNumber& currentV = currentVersion.value();
                             updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
-                            Logger::get().log("INFO", "Latest online version is v" + updateCheckerData.newVersionStr);
+                            Logger::get().log(Logger::LogType::INFO, "Latest online version is v" + updateCheckerData.newVersionStr);
                             if(newV > currentV) {
                                 updateCheckerData.showGui = true;
                                 main.g.gui.set_to_layout();
                             }
                             else if(newV == currentV)
-                                Logger::get().log("INFO", "Current version is up to date");
+                                Logger::get().log(Logger::LogType::INFO, "Current version is up to date");
                             else
-                                Logger::get().log("INFO", "Local version has larger version number than the latest online one");
+                                Logger::get().log(Logger::LogType::INFO, "Local version has larger version number than the latest online one");
                         }
                         else
-                            Logger::get().log("INFO", "Update notification file couldn't be converted to version numbers");
+                            Logger::get().log(Logger::LogType::INFO, "Update notification file couldn't be converted to version numbers");
                         updateCheckerData.versionFile = nullptr;
                         break;
                     }
                     case FileDownloader::DownloadData::Status::FAILURE:
-                        Logger::get().log("INFO", "Failed to check for updates");
+                        Logger::get().log(Logger::LogType::INFO, "Failed to check for updates");
                         updateCheckerData.updateCheckDone = true;
                         updateCheckerData.versionFile = nullptr;
                         break;
@@ -1013,6 +1013,8 @@ void Toolbar::global_log() {
                 auto& logM = main.logMessages[i];
                 logM.time.update_time_since();
                 if(logM.time < UserLogMessage::DISPLAY_TIME) {
+                    if(logM.whereToDisplay == UserLogMessage::DISPLAY_PHONE_ONLY)
+                        continue;
                     float a = 1.0f - lerp_time<float>(logM.time, UserLogMessage::DISPLAY_TIME, UserLogMessage::FADE_START_TIME);
                     gui.new_id(i, [&] {
                         gui.element<LayoutElement>("Global log message", [&] (LayoutElement*, const Clay_ElementId& lId) {
@@ -1393,9 +1395,9 @@ void Toolbar::options_menu() {
                 left_to_right_line_layout(gui, [&]() {
                     text_button_wide("connect", "Connect", [&] {
                         if(serverToConnectTo.length() != (NetLibrary::LOCALID_LEN + NetLibrary::GLOBALID_LEN))
-                            Logger::get().log("USERINFO", "Connect issue: Incorrect address length");
+                            Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Connect issue: Incorrect address length");
                         else if(serverToConnectTo.substr(0, NetLibrary::GLOBALID_LEN) == NetLibrary::get_global_id())
-                            Logger::get().log("USERINFO", "Connect issue: Can't connect to your own address");
+                            Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Connect issue: Can't connect to your own address");
                         else {
                             CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
                                 .isClient = true,
@@ -1842,7 +1844,7 @@ void Toolbar::file_picker_gui_refresh_entries() {
             break;
         }
         catch(const std::exception& e) {
-            Logger::get().log("INFO", e.what());
+            Logger::get().log(Logger::LogType::INFO, e.what());
             if(main.conf.currentSearchPath == main.homePath) // The home path must exist. If we get errors on the home path, we have a real problem
                 throw e;
             main.conf.currentSearchPath = main.homePath;

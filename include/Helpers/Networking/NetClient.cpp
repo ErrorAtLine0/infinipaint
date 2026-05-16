@@ -55,7 +55,7 @@ void NetClient::init_channel(const std::string& channelName, std::shared_ptr<rtc
             cLock->isDisconnected = true;
     });
     channels[channelName] = channel;
-    Logger::get().log("INFO", "Client channel setup: " + channelName);
+    Logger::get().log(Logger::LogType::INFO, "Client channel setup: " + channelName);
     lastMessageTime = std::chrono::steady_clock::now();
 }
 
@@ -63,7 +63,7 @@ void NetClient::update() {
     if(isDisconnected)
         return;
     if(std::chrono::steady_clock::now() - lastMessageTime >= NetLibrary::TIMEOUT_DURATION) {
-        Logger::get().log("INFO", "[NetClient::update] Connection timed out");
+        Logger::get().log(Logger::LogType::INFO, "[NetClient::update] Connection timed out");
         isDisconnected = true;
         return;
     }
@@ -75,11 +75,11 @@ void NetClient::update() {
 #ifdef NDEBUG
     }
     catch(const std::exception& e) {
-        Logger::get().log("INFO", "[NetClient::update] Exception thrown while parsing and sending messages: " + std::string(e.what()));
+        Logger::get().log(Logger::LogType::INFO, "[NetClient::update] Exception thrown while parsing and sending messages: " + std::string(e.what()));
         isDisconnected = true;
     }
     catch(...) {
-        Logger::get().log("INFO", "[NetClient::update] Unknown exception thrown while parsing and sending messages.");
+        Logger::get().log(Logger::LogType::INFO, "[NetClient::update] Unknown exception thrown while parsing and sending messages.");
         isDisconnected = true;
     }
 #endif

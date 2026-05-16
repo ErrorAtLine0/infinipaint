@@ -680,7 +680,7 @@ void DrawingProgram::update_downloading_dropped_files() {
                 NetworkingObjects::NetObjID imageID = world.rMan.add_resource(newResource).get_net_id();
                 ResourceDisplay* display = world.rMan.get_display_data(imageID);
                 if(display->get_type() == ResourceDisplay::Type::FILE) {
-                    Logger::get().log("WORLDFATAL", "Failed to parse image from URL");
+                    Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to parse image from URL");
                     auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
                     parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo);
                 }
@@ -699,7 +699,7 @@ void DrawingProgram::update_downloading_dropped_files() {
                 return true;
             }
             case FileDownloader::DownloadData::Status::FAILURE: {
-                Logger::get().log("WORLDFATAL", "Failed to download data from URL");
+                Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to download data from URL");
                 auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
                 parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo);
                 return true;

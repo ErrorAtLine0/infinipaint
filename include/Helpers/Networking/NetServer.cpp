@@ -28,7 +28,7 @@
 
 NetServer::NetServer(const std::string& serverLocalID) {
     localID = serverLocalID;
-    Logger::get().log("INFO", "[NetServer::NetServer] Server has local id: " + serverLocalID);
+    Logger::get().log(Logger::LogType::INFO, "[NetServer::NetServer] Server has local id: " + serverLocalID);
 }
 
 void NetServer::update() {
@@ -39,7 +39,7 @@ void NetServer::update() {
             bool timedOut = std::chrono::steady_clock::now() - client->lastMessageTime > NetLibrary::TIMEOUT_DURATION;
             if(timedOut) {
                 client->setToDisconnect = true;
-                Logger::get().log("INFO", "Connection timed out");
+                Logger::get().log(Logger::LogType::INFO, "Connection timed out");
             }
             if(client->setToDisconnect)
                 disconnectCallback(client);
@@ -52,12 +52,12 @@ void NetServer::update() {
                 #ifdef NDEBUG
                 }
                 catch(const std::exception& e) {
-                    Logger::get().log("INFO", "[NetServer::update] Exception thrown while parsing and sending messages for a client: " + std::string(e.what()));
+                    Logger::get().log(Logger::LogType::INFO, "[NetServer::update] Exception thrown while parsing and sending messages for a client: " + std::string(e.what()));
                     client->setToDisconnect = true;
                     disconnectCallback(client);
                 }
                 catch(...) {
-                    Logger::get().log("INFO", "[NetServer::update] Unknown exception thrown while parsing and sending messages for a client.");
+                    Logger::get().log(Logger::LogType::INFO, "[NetServer::update] Unknown exception thrown while parsing and sending messages for a client.");
                     client->setToDisconnect = true;
                     disconnectCallback(client);
                 }
@@ -90,7 +90,7 @@ void NetServer::client_connected(std::shared_ptr<rtc::PeerConnection> connection
         clientsToAdd.emplace_back(newClient);
     }
 
-    Logger::get().log("INFO", "Client connected and creating channels for: " + clientLocalID);
+    Logger::get().log(Logger::LogType::INFO, "Client connected and creating channels for: " + clientLocalID);
     newClient->channels.emplace(RELIABLE_COMMAND_CHANNEL, connection->createDataChannel(clientLocalID + RELIABLE_COMMAND_CHANNEL));
     newClient->channels.emplace(RESOURCE_COMMAND_CHANNEL, connection->createDataChannel(clientLocalID + RESOURCE_COMMAND_CHANNEL));
     rtc::DataChannelInit unreliableCommandInit;

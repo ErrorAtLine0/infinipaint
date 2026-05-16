@@ -80,19 +80,19 @@ NetLibrary::LoadP2PSettingsInPathResult NetLibrary::load_p2p_settings_in_path(co
 
 void NetLibrary::init_config(const std::filesystem::path& p2pConfigPath) {
     rtc::InitLogger(rtc::LogLevel::Info, [](rtc::LogLevel level, std::string message) {
-        Logger::get().log("INFO", "[LibDataChannel Log Level " + std::to_string(static_cast<int>(level)) + "] " + message);
+        Logger::get().log(Logger::LogType::INFO, "[LibDataChannel Log Level " + std::to_string(static_cast<int>(level)) + "] " + message);
     });
 
     switch(load_p2p_settings_in_path(p2pConfigPath)) {
         case LoadP2PSettingsInPathResult::SUCCESS:
-            Logger::get().log("INFO", "Successfully loaded local P2P configuration");
+            Logger::get().log(Logger::LogType::INFO, "Successfully loaded local P2P configuration");
             break;
         case LoadP2PSettingsInPathResult::FAILED_TO_READ:
-            Logger::get().log("USERINFO", "Invalid custom P2P config, using defaults");
+            Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Invalid custom P2P config, using defaults");
         case LoadP2PSettingsInPathResult::FAILED_TO_OPEN:
             switch(load_p2p_settings_in_path("data/config/default_p2p.json")) {
                 case LoadP2PSettingsInPathResult::SUCCESS:
-                    Logger::get().log("INFO", "Successfully loaded default P2P configuration");
+                    Logger::get().log(Logger::LogType::INFO, "Successfully loaded default P2P configuration");
                     break;
                 case LoadP2PSettingsInPathResult::FAILED_TO_READ:
                     throw std::runtime_error("[NetLibrary::init] Failed to read default_p2p.json");
@@ -119,17 +119,17 @@ void NetLibrary::init_websocket() {
     auto wsFuture = wsPromise.get_future();
 
     ws->onOpen([]() {
-        Logger::get().log("INFO", "Websocket connected, signaling ready");
+        Logger::get().log(Logger::LogType::INFO, "Websocket connected, signaling ready");
         wsPromise.set_value();
     });
 
     ws->onError([](std::string s) {
-        Logger::get().log("INFO", "Websocket error: " + s);
+        Logger::get().log(Logger::LogType::INFO, "Websocket error: " + s);
         wsPromise.set_exception(std::make_exception_ptr(std::runtime_error(s)));
     });
 
     ws->onClosed([]() {
-        Logger::get().log("INFO", "Websocket closed");
+        Logger::get().log(Logger::LogType::INFO, "Websocket closed");
         destroy_websocket();
     });
 
@@ -154,7 +154,7 @@ void NetLibrary::init_websocket() {
             if(peerIt != peers.end())
                 peerConnection = peerIt->second->connection;
             else if(type == "offer") {
-                Logger::get().log("INFO", "Websocket answering to " + id);
+                Logger::get().log(Logger::LogType::INFO, "Websocket answering to " + id);
                 auto peer = setup_peer_connection(config, wws, id);
                 peers[id] = peer;
                 peerConnection = peer->connection;
@@ -177,15 +177,15 @@ void NetLibrary::init_websocket() {
 
     get_global_id();
 
-    Logger::get().log("INFO", "NetLibrary global id: " + globalID);
+    Logger::get().log(Logger::LogType::INFO, "NetLibrary global id: " + globalID);
 
     const std::string wsPrefix = signalingAddr.find("://") == std::string::npos ? "ws://" : "";
     const std::string url = wsPrefix + signalingAddr + "/" + globalID;
 
-    Logger::get().log("INFO", "Websocket URL is: " + url);
+    Logger::get().log(Logger::LogType::INFO, "Websocket URL is: " + url);
     ws->open(url);
 
-    Logger::get().log("INFO", "NetLibrary waiting for signaling to be connected...");
+    Logger::get().log(Logger::LogType::INFO, "NetLibrary waiting for signaling to be connected...");
     //wsFuture.get();
     alreadyInitialized = true;
 }
@@ -193,7 +193,7 @@ void NetLibrary::init_websocket() {
 void NetLibrary::copy_default_p2p_config_to_path(const std::filesystem::path& newP2PConfigPath) {
     try {
         std::string readLocalP2PConfig = read_file_to_string(newP2PConfigPath); // If it doesnt fail, then file exists, so dont copy p2p config
-        Logger::get().log("INFO", "Local P2P configuration already exists");
+        Logger::get().log(Logger::LogType::INFO, "Local P2P configuration already exists");
         return;
     } catch(...) {}
 
@@ -202,11 +202,11 @@ void NetLibrary::copy_default_p2p_config_to_path(const std::filesystem::path& ne
         std::stringstream newFileSS;
         newFileSS << std::setw(4) << j;
         if(SDL_SaveFile(newP2PConfigPath.string().c_str(), newFileSS.view().data(), newFileSS.view().size()))
-            Logger::get().log("INFO", "New P2P configuration created");
+            Logger::get().log(Logger::LogType::INFO, "New P2P configuration created");
         else
-            Logger::get().log("INFO", "[NetLibrary::copy_default_p2p_config_to_path] Could not open new p2p.json to write to");
+            Logger::get().log(Logger::LogType::INFO, "[NetLibrary::copy_default_p2p_config_to_path] Could not open new p2p.json to write to");
     } catch(...) {
-        Logger::get().log("INFO", "[NetLibrary::copy_default_p2p_config_to_path] Could not open default_p2p.json");
+        Logger::get().log(Logger::LogType::INFO, "[NetLibrary::copy_default_p2p_config_to_path] Could not open default_p2p.json");
     }
 }
 
@@ -246,7 +246,7 @@ void NetLibrary::finish_client_registration(std::shared_ptr<NetClient> client) {
         client->fullyRegistered = true;
     }
     catch(const std::exception& e) {
-        Logger::get().log("INFO", "Invalid client registration: " + std::string(e.what()));
+        Logger::get().log(Logger::LogType::INFO, "Invalid client registration: " + std::string(e.what()));
         client->isDisconnected = true;
     }
 }
@@ -282,7 +282,7 @@ void NetLibrary::update() {
                 if(p->channel->isOpen()) {
                     while(!p->messageQueue.empty()) {
                         p->channel->send(p->messageQueue.front());
-                        Logger::get().log("INFO", "Sent main channel message: " + p->messageQueue.front());
+                        Logger::get().log(Logger::LogType::INFO, "Sent main channel message: " + p->messageQueue.front());
                         p->messageQueue.pop();
                     }
                 }
@@ -325,7 +325,7 @@ std::shared_ptr<NetLibrary::PeerData> NetLibrary::setup_peer_connection(const rt
                     setup_main_data_channel(peer, id);
                 }
                 else {
-                    Logger::get().log("INFO", "Client connected with incorrect first channel name: " + dc->label() + ". Could be from a different version of the program");
+                    Logger::get().log(Logger::LogType::INFO, "Client connected with incorrect first channel name: " + dc->label() + ". Could be from a different version of the program");
                     dc->send("REFUSE");
                     peer->connection->close();
                 }
@@ -340,19 +340,19 @@ std::shared_ptr<NetLibrary::PeerData> NetLibrary::setup_peer_connection(const rt
 
 void NetLibrary::setup_main_data_channel(std::shared_ptr<PeerData> peer, const std::string& id) {
     peer->channel->onOpen([id]() { 
-        Logger::get().log("INFO", "Main data channel has opened on " + id);
+        Logger::get().log(Logger::LogType::INFO, "Main data channel has opened on " + id);
     });
     peer->channel->onClosed([id]() {
-        Logger::get().log("INFO", "Main data channel has closed on " + id);
+        Logger::get().log(Logger::LogType::INFO, "Main data channel has closed on " + id);
     });
     peer->channel->onMessage([id, pConWeak = make_weak_ptr(peer->connection)](auto data) {
 		if(!std::holds_alternative<std::string>(data)) { // Main channel messages will only carry text
-            Logger::get().log("INFO", "Main data channel received binary message, which is not expected");
+            Logger::get().log(Logger::LogType::INFO, "Main data channel received binary message, which is not expected");
             return;
         }
         std::string message = std::get<std::string>(data);
         if(message == "REFUSE") {
-            Logger::get().log("USERINFO", "Refused connection. Could be on a different version");
+            Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Refused connection. Could be on a different version");
             auto pConLock = pConWeak.lock();
             if(pConLock)
                 pConLock->close();
@@ -360,7 +360,7 @@ void NetLibrary::setup_main_data_channel(std::shared_ptr<PeerData> peer, const s
         else {
             std::string clientLocalID = message.substr(0, LOCALID_LEN);
             std::string serverLocalID = message.substr(LOCALID_LEN);
-            Logger::get().log("INFO", "Main data channel received message " + message);
+            Logger::get().log(Logger::LogType::INFO, "Main data channel received message " + message);
             auto pConLock = pConWeak.lock();
             if(pConLock)
                 assign_client_connection_to_server(serverLocalID, clientLocalID, pConLock);

@@ -114,11 +114,11 @@ NetworkingObjects::NetObjTemporaryPtr<ResourceData> ResourceManager::add_resourc
         *resource.data = read_file_to_string(filePath);
     }
     catch(...) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource_file] Could not open file " + filePath.string());
+        Logger::get().log(Logger::LogType::INFO, "[ResourceManager::add_resource_file] Could not open file " + filePath.string());
         return {};
     }
 
-    Logger::get().log("INFO", "[ResourceManager::add_resource_file] Successfully read file " + filePath.string());
+    Logger::get().log(Logger::LogType::INFO, "[ResourceManager::add_resource_file] Successfully read file " + filePath.string());
 
     return add_resource(resource);
 }
@@ -128,7 +128,7 @@ const NetworkingObjects::NetObjOwnerPtr<ResourceData>& ResourceManager::add_reso
         return p->data == resource.data || (*p->data) == (*resource.data);
     });
     if(it != resourceList.end()) {
-        Logger::get().log("INFO", "[ResourceManager::add_resource] File " + std::string(resource.name) + " is a duplicate");
+        Logger::get().log(Logger::LogType::INFO, "[ResourceManager::add_resource] File " + std::string(resource.name) + " is a duplicate");
         return *it;
     }
     auto& resourceInsert = resourceList.emplace_back(world.netObjMan.make_obj_direct<ResourceData>(resource));

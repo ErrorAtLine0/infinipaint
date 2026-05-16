@@ -90,10 +90,10 @@ void ToolConfiguration::print_relative_width_fail_message(RelativeWidthFailCode 
         case RelativeWidthFailCode::SUCCESS:
             break;
         case RelativeWidthFailCode::TOO_ZOOMED_IN:
-            Logger::get().log("USERINFO", "Zoomed in too much! Unlock size or zoom out");
+            Logger::get().log(Logger::LogType::USERINFO, "Zoomed in too much! Unlock size or zoom out");
             break;
         case RelativeWidthFailCode::TOO_ZOOMED_OUT:
-            Logger::get().log("USERINFO", "Zoomed out too much! Unlock size or zoom in");
+            Logger::get().log(Logger::LogType::USERINFO, "Zoomed out too much! Unlock size or zoom in");
             break;
     }
 }

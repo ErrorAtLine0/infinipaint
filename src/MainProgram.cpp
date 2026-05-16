@@ -61,25 +61,43 @@ MainProgram::MainProgram():
         screen->gui_layout_run();
     };
 
-    Logger::get().add_log("WORLDFATAL", [&](const std::string& text) {
+    Logger::get().set_log_function(Logger::LogType::WORLDFATAL, [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
         std::cout << "[WORLDFATAL] " << text << std::endl;
-        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR});
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR, UserLogMessage::DISPLAY_DESKTOP_ONLY});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
         g.gui.set_to_layout();
     });
 
-    Logger::get().add_log("USERINFO", [&](const std::string& text) {
+    Logger::get().set_log_function(Logger::LogType::USERINFO, [&](const std::string& text) {
         *logFile << "[USERINFO] " << text << std::endl;
         std::cout << "[USERINFO] " << text << std::endl;
-        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_NORMAL});
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_NORMAL, UserLogMessage::DISPLAY_FOR_ALL});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
         g.gui.set_to_layout();
     });
 
-    Logger::get().add_log("CHAT", [&](const std::string& text) {
+    Logger::get().set_log_function(Logger::LogType::DESKTOP_USERINFO, [&](const std::string& text) {
+        *logFile << "[DESKTOP_USERINFO] " << text << std::endl;
+        std::cout << "[DESKTOP_USERINFO] " << text << std::endl;
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_NORMAL, UserLogMessage::DISPLAY_DESKTOP_ONLY});
+        if(logMessages.size() == LOG_SIZE)
+            logMessages.pop_back();
+        g.gui.set_to_layout();
+    });
+
+    Logger::get().set_log_function(Logger::LogType::PHONE_USERINFO, [&](const std::string& text) {
+        *logFile << "[PHONE_USERINFO] " << text << std::endl;
+        std::cout << "[PHONE_USERINFO] " << text << std::endl;
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_NORMAL, UserLogMessage::DISPLAY_PHONE_ONLY});
+        if(logMessages.size() == LOG_SIZE)
+            logMessages.pop_back();
+        g.gui.set_to_layout();
+    });
+
+    Logger::get().set_log_function(Logger::LogType::CHAT, [&](const std::string& text) {
         *logFile << "[CHAT] " << text << std::endl;
         std::cout << "[CHAT] " << text << std::endl;
     });
@@ -198,9 +216,9 @@ void MainProgram::load_config() {
 
 void MainProgram::set_vsync_value(int vsyncValue) {
     if(!SDL_GL_SetSwapInterval(vsyncValue)) {
-        Logger::get().log("INFO", "Vsync value " + std::to_string(vsyncValue) + " not available. Setting to 1");
+        Logger::get().log(Logger::LogType::INFO, "Vsync value " + std::to_string(vsyncValue) + " not available. Setting to 1");
         if(vsyncValue == -1) {
-            Logger::get().log("USERINFO", "Adaptive VSync not available. Setting Vsync to On");
+            Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Adaptive VSync not available. Setting Vsync to On");
             vsyncValue = 1;
         }
         SDL_GL_SetSwapInterval(1);
@@ -272,7 +290,7 @@ void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& o
         newWorld = std::make_shared<World>(*this, openFile);
     }
     catch(const std::runtime_error& e) {
-        Logger::get().log("WORLDFATAL", "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
+        Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
         return;
     }
     worlds.emplace_back(newWorld);
