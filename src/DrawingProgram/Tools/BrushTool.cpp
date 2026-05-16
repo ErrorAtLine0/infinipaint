@@ -81,7 +81,7 @@ void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseB
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
         if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
-            if(button.deviceType == InputManager::MouseDeviceType::PEN) {
+            if(button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
                 penWidth = drawP.world.main.input.pen.pressure;
                 if(penWidth != 0.0f) {
                     float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
@@ -177,7 +177,7 @@ void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallb
 }
 
 void BrushTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
-    if(axis.axis == SDL_PEN_AXIS_PRESSURE) {
+    if(axis.axis == SDL_PEN_AXIS_PRESSURE && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
         penWidth = axis.value;
         if(penWidth != 0.0f) {
             float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;

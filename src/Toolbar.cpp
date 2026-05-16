@@ -1711,7 +1711,9 @@ void Toolbar::general_settings_inner_gui() {
                 }
                 case GSETTINGS_DEBUG: {
                     general_scroll_area("debug settings menu", [&] {
-                        checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+                        #ifndef __EMSCRIPTEN__
+                            checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+                        #endif
                         input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
                         input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
                         text_label_light(gui, "Cache related settings");
