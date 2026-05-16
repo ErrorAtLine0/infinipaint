@@ -30,7 +30,6 @@
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 
 #define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
-#define SMOOTH_FACTOR 0.707f
 #define DRAW_MINIMUM_LIMIT 1.0f
 
 BrushTool::BrushTool(DrawingProgram& initDrawP):
@@ -171,7 +170,7 @@ void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallb
             }
         }
 
-        smooth_out_points(SMOOTH_FACTOR);
+        smooth_out_points(drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
         containerPtr->send_comp_update(drawP, false);
         containerPtr->commit_update(drawP);
     }
@@ -190,7 +189,7 @@ void BrushTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs&
                 auto& brushPoints = *brushStroke.d.points;
                 float width = toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value() * penWidth;
                 brushPoints.back().width = std::max(brushPoints.back().width, width);
-                smooth_out_points(SMOOTH_FACTOR);
+                smooth_out_points(drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
                 containerPtr->send_comp_update(drawP, false);
                 containerPtr->commit_update(drawP);
             }

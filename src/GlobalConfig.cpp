@@ -67,6 +67,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
 #endif
 
     json tablet;
+    tablet["brushPressureSmoothingFactor"] = tabletOptions.brushPressureSmoothingFactor;
     tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
     tablet["middleClickButton"] = tabletOptions.middleClickButton;
     tablet["rightClickButton"] = tabletOptions.rightClickButton;
@@ -136,6 +137,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
 #endif
     try{j.at("antialiasing").get_to(antialiasing);} catch(...) {}  
 
+    try{j.at("tablet").at("brushPressureSmoothingFactor").get_to(tabletOptions.brushPressureSmoothingFactor);} catch(...) {}
     try{j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);} catch(...) {}
     try{j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);} catch(...) {}
     try{j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);} catch(...) {}

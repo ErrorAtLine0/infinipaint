@@ -39,6 +39,7 @@ class TextBoxTool : public DrawingProgramToolBase {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
         void commit();
+        void make_sure_textbox_is_big();
 
         Vector2f startAt;
         Vector2f endAt;

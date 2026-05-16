@@ -69,6 +69,7 @@ void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::Mous
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
         }
         else if(!button.down && objInfoBeingEdited) {
+            make_sure_textbox_is_big();
             auto editTool = std::make_unique<EditTool>(drawP);
             editTool->edit_start(objInfoBeingEdited, false);
             drawP.toolToSwitchToAfterUpdate = std::move(editTool);
@@ -96,6 +97,16 @@ void TextBoxTool::input_mouse_motion_callback(const InputManager::MouseMotionCal
     }
 }
 
+void TextBoxTool::make_sure_textbox_is_big() {
+    if(objInfoBeingEdited) {
+        const Vector2f TEXTBOX_MINIMUM_DIMENSIONS{200.0f, 100.0f};
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        TextBoxCanvasComponent& textBox = static_cast<TextBoxCanvasComponent&>(containerPtr->get_comp());
+        if(vec_distance(textBox.d.p1, textBox.d.p2) < 20.0f)
+            textBox.d.p2 = textBox.d.p1 + TEXTBOX_MINIMUM_DIMENSIONS;
+    }
+}
+
 void TextBoxTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     if(objInfoBeingEdited == erasedComp)
         objInfoBeingEdited = nullptr;
@@ -119,6 +130,7 @@ bool TextBoxTool::prevent_undo_or_redo() {
 void TextBoxTool::commit() {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        make_sure_textbox_is_big();
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
         drawP.layerMan.add_undo_place_component(objInfoBeingEdited);

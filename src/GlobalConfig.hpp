@@ -72,6 +72,7 @@ class GlobalConfig {
             bool ignoreMouseMovementWhenPenInProximity = false;
             bool disableTouchWhenPenInProximity = false;
             float brushMinimumSize = 0.0f;
+            float brushPressureSmoothingFactor = 0.707f;
             bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;
 
