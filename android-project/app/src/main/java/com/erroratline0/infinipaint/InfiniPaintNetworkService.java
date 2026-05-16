@@ -44,8 +44,8 @@ public class InfiniPaintNetworkService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("Online canvas")
-                .setContentText("Currently online")
+                .setContentTitle("Currently online")
+                .setSmallIcon(R.drawable.logo_foreground_tiny)
                 .build();
         startForeground(1, notification);
         networkServiceStarted();

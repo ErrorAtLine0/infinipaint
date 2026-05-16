@@ -115,8 +115,8 @@ class CompressorRecipe(ConanFile):
             self.requires("onetbb/2022.0.0")
 
         if self.settings.os != "Emscripten":
-            self.requires("libdatachannel/0.23.2")
-            self.requires("libcurl/8.17.0")
+            self.requires("libdatachannel/0.24.0")
+            self.requires("libcurl/8.20.0")
             
         self.requires("zstd/1.5.7")
         self.requires("icu-infinipaint/77.1")

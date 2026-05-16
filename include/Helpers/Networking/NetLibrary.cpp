@@ -106,9 +106,8 @@ void NetLibrary::init_config(const std::filesystem::path& p2pConfigPath) {
 void NetLibrary::init_websocket() {
     if(alreadyInitialized)
         return;
-    // Not sure why, but TLS verification fails on mac
-    // Should be fixed later, but for now this is fine, as the signaling server doesn't have
-    // critical information
+    // TLS verification fails on mac and android due to incorrect cert location
+    // Should be fixed later
 #if defined(__APPLE__) || defined(__ANDROID__)
     rtc::WebSocket::Configuration wsConfig;
     wsConfig.disableTlsVerification = true;
