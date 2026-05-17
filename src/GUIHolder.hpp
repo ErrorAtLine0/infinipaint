@@ -55,9 +55,10 @@ class GUIHolder {
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
         float final_gui_scale();
+        float final_gui_scale_not_fit();
+
     private:
         void calculate_final_gui_scale();
-        float final_gui_scale_not_fit();
 
         float finalCalculatedGuiScale;
 

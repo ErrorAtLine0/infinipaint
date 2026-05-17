@@ -94,3 +94,9 @@ void DesktopDrawingProgramScreen::on_tab_close() {
     else
         main.switch_to_tab(0);
 }
+
+float DesktopDrawingProgramScreen::calculate_gui_scale() {
+    Vector2f maxWindowSizeBeforeForcedFit = main.g.final_gui_scale_not_fit() * Vector2f{700.0f, 700.0f};
+    Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
+    return main.g.final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
+}

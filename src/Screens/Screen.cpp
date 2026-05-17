@@ -85,6 +85,7 @@ void Screen::input_window_scale_callback(const InputManager::WindowScaleCallback
 void Screen::input_app_about_to_go_to_background_callback() {}
 void Screen::input_app_about_to_go_to_foreground_callback() {}
 void Screen::on_tab_close() {}
+float Screen::calculate_gui_scale() { return main.g.final_gui_scale_not_fit(); }
 std::optional<InputManager::TextBoxStartInfo> Screen::get_text_box_start_info() { return std::nullopt; }
 
 Screen::~Screen() {}

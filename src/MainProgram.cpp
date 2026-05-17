@@ -557,6 +557,10 @@ void MainProgram::run_new_screen_func() {
     }
 }
 
+float MainProgram::calculate_gui_scale() {
+    return screen->calculate_gui_scale();
+}
+
 void MainProgram::set_screen(std::function<std::unique_ptr<Screen>(std::unique_ptr<Screen>)> screenFunc) {
     newScreenFunc = screenFunc;
 }
