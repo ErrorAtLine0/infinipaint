@@ -1172,13 +1172,15 @@ void Toolbar::color_palette(const char* id, Vector4f* color, const std::function
                     paletteData.addingPalette = !paletteData.addingPalette;
                 }
             });
-            svg_icon_button(gui, "paletteremove", "data/icons/close.svg", {
-                .size = 25.0f,
-                .onClick = [&] {
-                    main.conf.palettes.erase(main.conf.palettes.begin() + paletteData.selectedPalette);
-                    paletteData.selectedPalette = 0;
-                }
-            });
+            if(paletteData.selectedPalette != 0) {
+                svg_icon_button(gui, "paletteremove", "data/icons/close.svg", {
+                    .size = 25.0f,
+                    .onClick = [&] {
+                        main.conf.palettes.erase(main.conf.palettes.begin() + paletteData.selectedPalette);
+                        paletteData.selectedPalette = 0;
+                    }
+                });
+            }
         }
         if(paletteData.addingPalette) {
             input_text_field(gui, "paletteinputname", "Name", &paletteData.newPaletteStr);
