@@ -1202,6 +1202,12 @@ void FileSelectScreen::input_global_back_button_callback() {
         mainMenuOpenAnim->animation_trigger_reverse();
     else if(editMode)
         editMode = false;
+    else if(selectedMenu != SelectedMenu::FILES) {
+        selectedMenu = SelectedMenu::FILES;
+        update_file_list(fileList, savePath, false);
+        mainMenuOpenAnim->animation_trigger_reverse();
+        if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
+    }
     else
         main.setToQuit = true;
     main.g.gui.set_to_layout();
@@ -1218,7 +1224,7 @@ void FileSelectScreen::save_files() {
     SDL_SaveFile(infoPath.string().c_str(), saveJson.c_str(), saveJson.size());
 }
 
-void FileSelectScreen::input_app_about_to_go_to_background_callback() {
+void FileSelectScreen::input_android_on_stop_callback() {
     save_files();
 }
 

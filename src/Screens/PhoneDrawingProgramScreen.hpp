@@ -24,10 +24,11 @@
 class PhoneDrawingProgramScreen : public DrawingProgramScreen {
     public:
         PhoneDrawingProgramScreen(MainProgram& m);
+        ~PhoneDrawingProgramScreen();
         virtual void update() override;
         virtual void gui_layout_run() override;
         virtual void input_global_back_button_callback() override;
-        virtual void input_app_about_to_go_to_background_callback() override;
+        virtual void input_android_on_stop_callback() override;
         virtual void on_tab_close() override;
         struct ColorSelectorData {
             std::function<void()> onChange;
@@ -100,7 +101,7 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         void bottom_toolbar();
         void main_display();
         void tool_settings_popup();
-        void save_to_file();
+        void save_to_file(bool saveThumbnail);
 
         std::string serverToConnectTo;
         std::string serverLocalID;

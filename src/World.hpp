@@ -84,7 +84,7 @@ class World {
         bool clientStillConnecting = false;
 
         void autosave_to_directory(const std::filesystem::path& directoryToSaveAt);
-        void save_to_file(const std::filesystem::path& filePathToSaveAt);
+        void save_to_file(const std::filesystem::path& filePathToSaveAt, bool saveThumbnailIfAvailable = true);
         void load_from_file(const std::filesystem::path& filePathToLoadFrom, std::string_view buffer);
 
         void undo_with_checks();

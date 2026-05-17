@@ -49,6 +49,7 @@ jstring string2jstring(JNIEnv* env, const std::string& s) {
 
 namespace AndroidJNICalls {
     InputManager* globalInputManager;
+    std::mutex globalMutex;
 
     std::mutex textboxMutex;
     CustomEvents::InputTextBoxID textboxID = 0;
@@ -343,6 +344,14 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_erroratline0_infinipaint_InfiniPaintNetworkService_networkServiceDestroyed(JNIEnv *env, jclass clazz) {
     NetThreadManager::get().destroy_thread();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_erroratline0_infinipaint_InfiniPaint_androidOnStop(JNIEnv *env, jclass clazz) {
+    std::scoped_lock a{globalMutex};
+    if(AndroidJNICalls::globalInputManager)
+        AndroidJNICalls::globalInputManager->main.input_android_on_stop_callback();
 }
 
 #endif
