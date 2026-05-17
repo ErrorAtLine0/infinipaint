@@ -576,6 +576,12 @@ void Toolbar::top_toolbar() {
                                 optionsMenuOpen = true;
                                 optionsMenuType = ABOUT_MENU;
                             });
+                            menu_popup_text_button("website menu button", "Website", [&] {
+                                SDL_OpenURL("https://infinipaint.com/");
+                            });
+                            menu_popup_text_button("donate menu button", "Donate", [&] {
+                                SDL_OpenURL("https://infinipaint.com/donate.html");
+                            });
                             #ifndef __EMSCRIPTEN__
                                 menu_popup_text_button("quit button", "Quit", [&] {
                                     if(main.app_close_requested())
