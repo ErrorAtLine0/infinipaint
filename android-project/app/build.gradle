@@ -28,12 +28,12 @@ task conanInstall {
 
 android {
     namespace = "com.erroratline0.infinipaint"
-    compileSdk 35
+    compileSdk 36
     ndkVersion = "29.0.14206865"
     defaultConfig {
         applicationId 'com.erroratline0.InfiniPaint'
         minSdkVersion 27
-        targetSdk 35
+        targetSdk 36
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
@@ -49,7 +49,7 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             externalNativeBuild {
                 cmake {
                     cppFlags "-fexceptions", "-frtti"
