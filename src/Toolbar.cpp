@@ -73,9 +73,6 @@
 
 #include "Screens/DesktopDrawingProgramScreen.hpp"
 
-#define UPDATE_DOWNLOAD_URL "https://infinipaint.com/download.html"
-#define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
-
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
@@ -199,10 +196,6 @@ void Toolbar::layout_run() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-#ifndef __EMSCRIPTEN__
-    update_notification_check();
-#endif
-
     if(drawGui) {
         CLAY_AUTO_ID({
             .layout = {
@@ -220,10 +213,8 @@ void Toolbar::layout_run() {
                 close_popup_gui();
             if(main.conf.viewWebVersionWelcome)
                 web_version_welcome();
-#ifndef __EMSCRIPTEN__
-            else if(updateCheckerData.showGui)
+            else if(main.updateCheckerData.showGui)
                 update_notification_gui();
-#endif
             else if(filePicker.isOpen)
                 file_picker_gui();
             else if(optionsMenuOpen)
@@ -671,82 +662,35 @@ void Toolbar::center_message(const char* id, const std::string& m) {
     });
 }
 
-#ifndef __EMSCRIPTEN__
-void Toolbar::update_notification_check() {
-    if(!updateCheckerData.updateCheckDone) {
-        if(main.conf.checkForUpdates) {
-            if(!updateCheckerData.versionFile)
-                updateCheckerData.versionFile = FileDownloader::download_data_from_url(UPDATE_NOTIFICATION_URL);
-            else {
-                switch(updateCheckerData.versionFile->status) {
-                    case FileDownloader::DownloadData::Status::IN_PROGRESS:
-                        break;
-                    case FileDownloader::DownloadData::Status::SUCCESS: {
-                        updateCheckerData.updateCheckDone = true;
-                        std::optional<VersionNumber> newVersion = version_str_to_version_numbers(updateCheckerData.versionFile->str);
-                        std::optional<VersionNumber> currentVersion = VersionConstants::CURRENT_VERSION_NUMBER;
-                        if(newVersion.has_value() && currentVersion.has_value()) {
-                            VersionNumber& newV = newVersion.value();
-                            VersionNumber& currentV = currentVersion.value();
-                            updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
-                            Logger::get().log(Logger::LogType::INFO, "Latest online version is v" + updateCheckerData.newVersionStr);
-                            if(newV > currentV) {
-                                updateCheckerData.showGui = true;
-                                main.g.gui.set_to_layout();
-                            }
-                            else if(newV == currentV)
-                                Logger::get().log(Logger::LogType::INFO, "Current version is up to date");
-                            else
-                                Logger::get().log(Logger::LogType::INFO, "Local version has larger version number than the latest online one");
-                        }
-                        else
-                            Logger::get().log(Logger::LogType::INFO, "Update notification file couldn't be converted to version numbers");
-                        updateCheckerData.versionFile = nullptr;
-                        break;
-                    }
-                    case FileDownloader::DownloadData::Status::FAILURE:
-                        Logger::get().log(Logger::LogType::INFO, "Failed to check for updates");
-                        updateCheckerData.updateCheckDone = true;
-                        updateCheckerData.versionFile = nullptr;
-                        break;
-                }
-            }
-        }
-        else
-            updateCheckerData.updateCheckDone = true;
-    }
-}
-
 void Toolbar::update_notification_gui() {
     auto& gui = main.g.gui;
 
     center_obstructing_window_gui("Update notifications GUI", CLAY_SIZING_FIXED(700), CLAY_SIZING_FIT(0), [&] {
         gui.new_id("update notification gui", [&] {
-            text_label_centered(gui, "Update v" + updateCheckerData.newVersionStr + " available!");
+            text_label_centered(gui, "Update v" + main.updateCheckerData.newVersionStr + " available!");
             text_button(gui, "download", "Open download page in web browser", {
                 .wide = true,
                 .onClick = [&]{
-                    SDL_OpenURL(UPDATE_DOWNLOAD_URL);
-                    updateCheckerData.showGui = false;
+                    SDL_OpenURL(MainProgram::UPDATE_DOWNLOAD_URL);
+                    main.updateCheckerData.showGui = false;
                 }
             });
             text_button(gui, "ignore forever", "Ignore and don't notify again (can be changed in settings)", {
                 .wide = true,
                 .onClick = [&]{
                     main.conf.checkForUpdates = false;
-                    updateCheckerData.showGui = false;
+                    main.updateCheckerData.showGui = false;
                 }
             });
             text_button(gui, "ignore for now", "Ignore for now", {
                 .wide = true,
                 .onClick = [&]{
-                    updateCheckerData.showGui = false;
+                    main.updateCheckerData.showGui = false;
                 }
             });
         });
     });
 }
-#endif
 
 void Toolbar::grid_menu(Element* gridMenuButton) {
     auto& gui = main.g.gui;

@@ -52,6 +52,8 @@
 
 #include <Helpers/Logger.hpp>
 
+#define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
+
 MainProgram::MainProgram():
     input(*this),
     fonts(std::make_shared<FontData>()),
@@ -108,10 +110,59 @@ void MainProgram::update() {
     deltaTime.update_time_point();
     input.update();
     g.update();
+    update_notification_check();
     screen->update();
     background_update();
     NetThreadManager::get().synchronous_update();
     post_callback();
+}
+
+void MainProgram::update_notification_check() {
+#ifndef __EMSCRIPTEN__
+    if(!updateCheckerData.updateCheckDone) {
+        if(conf.checkForUpdates) {
+            if(!updateCheckerData.versionFile)
+                updateCheckerData.versionFile = FileDownloader::download_data_from_url(UPDATE_NOTIFICATION_URL);
+            else {
+                switch(updateCheckerData.versionFile->status) {
+                    case FileDownloader::DownloadData::Status::IN_PROGRESS:
+                        break;
+                    case FileDownloader::DownloadData::Status::SUCCESS: {
+                        updateCheckerData.updateCheckDone = true;
+                        std::optional<VersionNumber> newVersion = version_str_to_version_numbers(updateCheckerData.versionFile->str);
+                        std::optional<VersionNumber> currentVersion = VersionConstants::CURRENT_VERSION_NUMBER;
+                        if(newVersion.has_value() && currentVersion.has_value()) {
+                            VersionNumber& newV = newVersion.value();
+                            VersionNumber& currentV = currentVersion.value();
+                            updateCheckerData.newVersionStr = version_numbers_to_version_str(newV);
+                            Logger::get().log(Logger::LogType::INFO, "Latest online version is v" + updateCheckerData.newVersionStr);
+                            if(newV > currentV) {
+                                updateCheckerData.showGui = true;
+                                Logger::get().log(Logger::LogType::PHONE_USERINFO, "New version v" + updateCheckerData.newVersionStr + " available");
+                                g.gui.set_to_layout();
+                            }
+                            else if(newV == currentV)
+                                Logger::get().log(Logger::LogType::INFO, "Current version is up to date");
+                            else
+                                Logger::get().log(Logger::LogType::INFO, "Local version has larger version number than the latest online one");
+                        }
+                        else
+                            Logger::get().log(Logger::LogType::INFO, "Update notification file couldn't be converted to version numbers");
+                        updateCheckerData.versionFile = nullptr;
+                        break;
+                    }
+                    case FileDownloader::DownloadData::Status::FAILURE:
+                        Logger::get().log(Logger::LogType::INFO, "Failed to check for updates");
+                        updateCheckerData.updateCheckDone = true;
+                        updateCheckerData.versionFile = nullptr;
+                        break;
+                }
+            }
+        }
+        else
+            updateCheckerData.updateCheckDone = true;
+    }
+#endif
 }
 
 void MainProgram::background_update() {

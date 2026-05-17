@@ -366,7 +366,7 @@ void PhoneDrawingProgramScreen::global_log() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    float notificationSize = std::min(300.0f, gui.io.safeWindowRect.width() - 20.0f);
+    float notificationSize = std::min(240.0f, gui.io.safeWindowRect.width() - 20.0f);
 
     gui.new_id("Global log popup list phone drawing screen", [&] {
         CLAY_AUTO_ID({

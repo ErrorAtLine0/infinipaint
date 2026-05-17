@@ -63,6 +63,7 @@ struct UserLogMessage {
 class MainProgram {
     public:
         static constexpr size_t LOG_SIZE = 30;
+        static constexpr const char* UPDATE_DOWNLOAD_URL = "https://infinipaint.com/download.html";
 
         InputManager input;
 
@@ -191,6 +192,15 @@ class MainProgram {
         void switch_to_tab(size_t wIndex);
 
         ~MainProgram();
+
+        void update_notification_check();
+        struct UpdateCheckerData {
+            bool showGui = false;
+            bool updateCheckDone = false;
+            std::string newVersionStr;
+            std::shared_ptr<FileDownloader::DownloadData> versionFile;
+        } updateCheckerData;
+
     private:
         std::unordered_set<World*> tabsToClose;
         void close_set_to_close_tabs();

@@ -93,10 +93,12 @@ class FileSelectScreen : public Screen {
         void file_view();
         void connect_view();
         void settings_view();
+        void about_view();
         void create_file_button();
         void file_view_edit();
         void menu_black_box();
         void edit_action_bar();
+        void about_bottom_bar();
         void edit_title_bar();
         void title_bar();
         void text_transparent_option_button(const char* id, const char* text, const std::function<void()>& onClick);
@@ -123,8 +125,11 @@ class FileSelectScreen : public Screen {
             FILES,
             TRASH,
             CONNECT,
-            SETTINGS
+            SETTINGS,
+            ABOUT
         } selectedMenu = SelectedMenu::FILES;
+
+        int selectedLicense = -1;
 
         void start_edit_mode();
         size_t numberOfSelectedEntries;

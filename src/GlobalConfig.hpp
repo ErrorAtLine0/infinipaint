@@ -85,8 +85,7 @@ class GlobalConfig {
         void load_palettes();
         void load_licenses();
 
-        bool showPerformance = false;
-        bool checkForUpdates = false;
+        bool checkForUpdates = true;
         bool useNativeFilePicker = true;
 
         std::string themeCurrentlyLoaded = "Default";

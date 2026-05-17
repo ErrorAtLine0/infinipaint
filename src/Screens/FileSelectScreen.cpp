@@ -151,7 +151,7 @@ void FileSelectScreen::global_log() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    float notificationSize = std::min(300.0f, gui.io.safeWindowRect.width() - 20.0f);
+    float notificationSize = std::min(240.0f, gui.io.safeWindowRect.width() - 20.0f);
 
     gui.set_z_index(gui.get_z_index() + 100, [&] {
         gui.new_id("Global log popup list file select screen", [&] {
@@ -298,13 +298,33 @@ void FileSelectScreen::main_display() {
                         case SelectedMenu::SETTINGS:
                             settings_view();
                             break;
+                        case SelectedMenu::ABOUT:
+                            about_view();
+                            break;
                     }
                     global_log();
                 }
                 window_gap_side_bar(gui, WindowFillSideBarConfig::Direction::RIGHT);
             }
-            window_gap_side_bar(gui, WindowFillSideBarConfig::Direction::BOTTOM);
-            edit_action_bar();
+            switch(selectedMenu) {
+                case SelectedMenu::FILES:
+                    window_gap_side_bar(gui, WindowFillSideBarConfig::Direction::BOTTOM);
+                    edit_action_bar();
+                    break;
+                case SelectedMenu::TRASH:
+                    window_gap_side_bar(gui, WindowFillSideBarConfig::Direction::BOTTOM);
+                    edit_action_bar();
+                    break;
+                case SelectedMenu::CONNECT:
+                    window_gap_side_bar(gui, WindowFillSideBarConfig::Direction::BOTTOM);
+                    break;
+                case SelectedMenu::SETTINGS:
+                    window_gap_side_bar(gui, WindowFillSideBarConfig::Direction::BOTTOM);
+                    break;
+                case SelectedMenu::ABOUT:
+                    about_bottom_bar();
+                    break;
+            }
             menu_black_box();
         }
     }
@@ -439,6 +459,69 @@ void FileSelectScreen::delete_selected_files_in_trash() {
             saveInfo.trash.files.erase(f.fileName);
         }
     }
+}
+
+void FileSelectScreen::about_bottom_bar() {
+    auto& gui = main.g.gui;
+    gui.element<LayoutElement>("about bottom bar fill", [&](LayoutElement*, const Clay_ElementId& lId) {
+        CLAY(lId, {}) {
+            window_fill_side_bar(gui, {
+                .dir = WindowFillSideBarConfig::Direction::BOTTOM,
+                .backgroundColor = gui.io.theme->backColor1
+            }, [&] {
+                gui.element<LayoutElement>("about bottom bar", [&](LayoutElement*, const Clay_ElementId& lId) {
+                    CLAY(lId, {
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(40)},
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                        }
+                    }) {
+                        gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
+                            .scrollHorizontal = true,
+                            .clipHorizontal = true,
+                            .scrollbarX = ScrollArea::ScrollbarType::NORMAL,
+                            .innerContent = [&] (auto&) {
+                                CLAY_AUTO_ID({
+                                    .layout = {
+                                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                                        .layoutDirection = CLAY_LEFT_TO_RIGHT
+                                    },
+                                }) {
+                                    CLAY_AUTO_ID({
+                                        .layout = {
+                                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
+                                        }
+                                    }) {
+                                        text_button(gui, "infinipaintnoticebutton", "InfiniPaint", {
+                                            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                            .isSelected = selectedLicense == -1,
+                                            .onClick = [&] { selectedLicense = -1; }
+                                        });
+                                    }
+                                    for(int i = 0; i < static_cast<int>(main.conf.thirdPartyLicenses.size()); i++) {
+                                        CLAY_AUTO_ID({
+                                            .layout = {
+                                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                                .padding = CLAY_PADDING_ALL(1)
+                                            }
+                                        }) {
+                                            gui.new_id(i, [&] {
+                                                text_button(gui, "noticebutton", main.conf.thirdPartyLicenses[i].first, {
+                                                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                                    .isSelected = selectedLicense == i,
+                                                    .onClick = [&, i] { selectedLicense = i; }
+                                                });
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    });
 }
 
 void FileSelectScreen::edit_action_bar() {
@@ -577,6 +660,9 @@ void FileSelectScreen::title_bar() {
                             break;
                         case SelectedMenu::SETTINGS:
                             mutable_text_label(gui, "main screen header text settings", "Settings");
+                            break;
+                        case SelectedMenu::ABOUT:
+                            mutable_text_label(gui, "main screen header about", "About");
                             break;
                     }
                     CLAY_AUTO_ID({
@@ -784,6 +870,17 @@ void FileSelectScreen::main_menu() {
                                     selectedMenu = SelectedMenu::SETTINGS;
                                     mainMenuOpenAnim->animation_trigger_reverse();
                                     if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
+                                });
+                                icon_text_transparent_option_selected_button("About", "data/icons/RemixIcon/question-line.svg", "About", selectedMenu == SelectedMenu::ABOUT, [&] {
+                                    selectedMenu = SelectedMenu::ABOUT;
+                                    mainMenuOpenAnim->animation_trigger_reverse();
+                                    if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
+                                });
+                                icon_text_transparent_option_selected_button("Website", "data/icons/RemixIcon/global-line.svg", "Website", false, [&] {
+                                    SDL_OpenURL("https://infinipaint.com/");
+                                });
+                                icon_text_transparent_option_selected_button("Donate", "data/icons/RemixIcon/hand-coin-line.svg", "Donate", false, [&] {
+                                    SDL_OpenURL("https://infinipaint.com/donate.html");
                                 });
                             }
                         }
@@ -1015,10 +1112,34 @@ void FileSelectScreen::settings_view() {
                     slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
                     slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
                     checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
-#ifndef __ANDROID__
-                    checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
-#endif
+                    #ifndef __ANDROID__
+                        checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+                    #endif
+                    #ifndef __EMSCRIPTEN__
+                        checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
+                    #endif
                 }
+            }
+        }
+    });
+}
+
+void FileSelectScreen::about_view() {
+    auto& gui = main.g.gui;
+    auto& io = gui.io;
+
+    mainViewScrollArea = gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
+        .scrollVertical = true,
+        .clipVertical = true,
+        .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
+        .innerContent = [&] (auto&) {
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                },
+            }) {
+                text_label_size(gui, (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second, 0.8f);
             }
         }
     });
@@ -1027,7 +1148,7 @@ void FileSelectScreen::settings_view() {
 void FileSelectScreen::menu_black_box() {
     auto& gui = main.g.gui;
     if(!mainMenuOpenAnim->is_at_start()) {
-        gui.set_z_index(gui.get_z_index() + 1, [&] {
+        gui.set_z_index(gui.get_z_index() + 2000, [&] {
             gui.element<LayoutElement>("file list disable fill", [&] (LayoutElement* l, const Clay_ElementId& lId) {
                 CLAY(lId, {
                     .layout = {

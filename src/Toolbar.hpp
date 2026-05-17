@@ -131,16 +131,7 @@ class Toolbar {
             bool closeAppWhenDone = false;
         } closePopupData;
 
-        #ifndef __EMSCRIPTEN__
         void update_notification_gui();
-        void update_notification_check();
-        struct UpdateCheckerData {
-            bool showGui = false;
-            bool updateCheckDone = false;
-            std::string newVersionStr;
-            std::shared_ptr<FileDownloader::DownloadData> versionFile;
-        } updateCheckerData;
-        #endif
 
         int selectedLicense = -1;
 
