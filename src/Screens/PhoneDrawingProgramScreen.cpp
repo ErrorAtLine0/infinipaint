@@ -104,8 +104,10 @@ void PhoneDrawingProgramScreen::main_display() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
     }) {
-        if(main.world->netClient && main.world->clientStillConnecting)
+        if(main.world->netClient && main.world->clientStillConnecting) {
+            top_toolbar();
             center_message("Connecting to server message", "Connecting to server...");
+        }
         else {
             if(hideGUI)
                 hidden_gui();
@@ -366,7 +368,7 @@ void PhoneDrawingProgramScreen::global_log() {
 
     float notificationSize = std::min(300.0f, gui.io.safeWindowRect.width() - 20.0f);
 
-    gui.new_id("Global log popup list", [&] {
+    gui.new_id("Global log popup list phone drawing screen", [&] {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_FIXED(notificationSize), .height = CLAY_SIZING_FIT(0) },
@@ -374,7 +376,7 @@ void PhoneDrawingProgramScreen::global_log() {
                 .childAlignment = { .x = CLAY_ALIGN_X_RIGHT, .y = CLAY_ALIGN_Y_TOP},
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             },
-            .floating = {.offset = {0, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
+            .floating = {.offset = {-10, 10}, .attachPoints = {.element = CLAY_ATTACH_POINT_RIGHT_TOP, .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM}, .attachTo = CLAY_ATTACH_TO_PARENT}
         }) {
             for(size_t i = 0; i < main.logMessages.size(); i++) {
                 auto& logM = main.logMessages[i];
@@ -445,9 +447,11 @@ void PhoneDrawingProgramScreen::top_toolbar() {
                             main.set_tab_to_close(main.world.get());
                         }
                     });
-                    top_toolbar_remaining_area();
                     global_log();
-                    top_toolbar_settings_popup();
+                    if(!(main.world->netClient && main.world->clientStillConnecting)) {
+                        top_toolbar_remaining_area();
+                        top_toolbar_settings_popup();
+                    }
                 }
             });
         }

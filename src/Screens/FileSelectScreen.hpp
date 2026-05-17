@@ -26,6 +26,7 @@ class FileSelectScreen : public Screen {
     public:
         FileSelectScreen(MainProgram& m);
         virtual void gui_layout_run() override;
+        virtual void update() override;
         virtual void draw(SkCanvas* canvas) override;
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
@@ -86,6 +87,7 @@ class FileSelectScreen : public Screen {
 
         GUIStuff::ScrollArea* mainViewScrollArea = nullptr;
 
+        void global_log();
         void main_display();
         void main_menu();
         void file_view();
