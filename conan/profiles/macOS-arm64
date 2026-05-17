@@ -6,7 +6,10 @@ compiler.cppstd=gnu23
 compiler.libcxx=libc++
 compiler.version=17
 os=Macos
-os.version=11.0
+os.version=13.3
 
 [tool_requires]
 cmake/3.27.0
+
+[conf]
+tools.build:cxxflags=["-fexceptions", "-frtti"]

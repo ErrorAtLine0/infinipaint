@@ -32,7 +32,7 @@ android {
     ndkVersion = "29.0.14206865"
     defaultConfig {
         applicationId 'com.erroratline0.InfiniPaint'
-        minSdkVersion 26
+        minSdkVersion 27
         targetSdk 35
         versionCode 1
         versionName "1.0"

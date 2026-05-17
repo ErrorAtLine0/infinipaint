@@ -1,0 +1,15 @@
+include(default)
+
+[settings]
+os=Android
+os.api_level=27
+arch=armv8
+compiler=clang
+compiler.version=21
+compiler.libcxx=c++_shared
+compiler.cppstd=23
+
+[conf]
+tools.build:cxxflags=["-fexceptions", "-frtti"]
+# Set your NDK path here
+tools.android:ndk_path=/NDK/PATH/HERE
