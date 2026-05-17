@@ -60,6 +60,39 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.5.0" date="2026-05-17">
+            <description>
+                <p>Major update:</p>
+                <ul>
+                    <li>Big improvements to responsiveness and performance of the program overall</li>
+                    <li>Changed how images are loaded to reduce memory usage</li>
+                    <li>Touchscreen support</li>
+                    <li>Improved anti-aliasing</li>
+                    <li>Improved brush pressure smoothing</li>
+                    <li>Slight changes to GUI</li>
+                    <li>New mobile UI accessible through debug settings</li>
+                </ul>
+            </description>
+        </release>
+        <release version="0.4.3" date="2026-04-16">
+            <description>
+                <p>Patch update:</p>
+                <ul>
+                    <li>Fixed black screen bug on some Intel integrated GPUs</li>
+                </ul>
+            </description>
+        </release>
+        <release version="0.4.2" date="2026-03-28">
+            <description>
+                <p>Patch update:</p>
+                <ul>
+                    <li>Fixed "Integer division by zero" error when loading some files</li>
+                    <li>Brush, eraser, and selection tools change color depending on the objects behind them</li>
+                    <li>Clamp brush pressure to stop incompatible drivers from breaking InfiniPaint</li>
+                    <li>Added limit to image crop bounds</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.4.1" date="2026-02-09">
             <description>
                 <p>Minor update:</p>
