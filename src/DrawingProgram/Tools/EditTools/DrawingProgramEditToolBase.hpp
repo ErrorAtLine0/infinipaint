@@ -30,7 +30,7 @@ class DrawingProgramEditToolBase {
         DrawingProgramEditToolBase(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
         virtual void edit_start(EditTool& editTool, std::any& prevData) = 0;
         virtual void commit_edit_updates(std::any& prevData) = 0;
-        virtual bool edit_update() = 0;
+        virtual void edit_update() = 0;
         virtual void edit_gui(Toolbar& t) = 0;
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) = 0;
         virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos);

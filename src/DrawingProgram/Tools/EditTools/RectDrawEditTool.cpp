@@ -120,6 +120,5 @@ void RectDrawEditTool::edit_start(EditTool& editTool, std::any& prevData) {
 void RectDrawEditTool::commit_edit_updates(std::any& prevData) {
 }
 
-bool RectDrawEditTool::edit_update() {
-    return true;
+void RectDrawEditTool::edit_update() {
 }

@@ -45,8 +45,10 @@ void BrushTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void BrushTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
+    if(objInfoBeingEdited == erasedComp) {
         objInfoBeingEdited = nullptr;
+        commitUpdate = false;
+    }
 }
 
 void BrushTool::smooth_out_points(float smoothFactor) {
@@ -171,8 +173,7 @@ void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallb
         }
 
         smooth_out_points(drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
-        containerPtr->send_comp_update(drawP, false);
-        containerPtr->commit_update(drawP);
+        commitUpdate = true;
     }
 }
 
@@ -190,8 +191,7 @@ void BrushTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs&
                 float width = toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value() * penWidth;
                 brushPoints.back().width = std::max(brushPoints.back().width, width);
                 smooth_out_points(drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
-                containerPtr->send_comp_update(drawP, false);
-                containerPtr->commit_update(drawP);
+                commitUpdate = true;
             }
         }
     }
@@ -222,6 +222,13 @@ bool BrushTool::extensive_point_checking_back(const BrushStrokeCanvasComponent& 
 void BrushTool::tool_update() {
     if(!drawP.world.main.g.gui.cursor_obstructed())
         drawP.world.main.input.hideCursor = true;
+
+    if(commitUpdate && objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->send_comp_update(drawP, false);
+        containerPtr->commit_update(drawP);
+        commitUpdate = false;
+    }
 }
 
 void BrushTool::commit_stroke() {
@@ -237,6 +244,7 @@ void BrushTool::commit_stroke() {
             components->erase(components, containerPtr->objInfo);
         }
         objInfoBeingEdited = nullptr;
+        commitUpdate = false;
     }
 }
 

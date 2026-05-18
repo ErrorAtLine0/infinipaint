@@ -54,6 +54,7 @@ class BrushTool : public DrawingProgramToolBase {
 
         float penWidth = 1.0f;
         bool addedTemporaryPoint = false;
+        bool commitUpdate = false;
 
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 

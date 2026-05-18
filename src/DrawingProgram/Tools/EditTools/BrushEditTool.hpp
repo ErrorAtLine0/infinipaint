@@ -28,10 +28,11 @@ class BrushEditTool : public DrawingProgramEditToolBase {
         BrushEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
         virtual void edit_start(EditTool& editTool, std::any& prevData) override;
         virtual void commit_edit_updates(std::any& prevData) override;
-        virtual bool edit_update() override;
+        virtual void edit_update() override;
         virtual void edit_gui(Toolbar& t) override;
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
         virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
     private:
+        bool commitUpdate = false;
         Vector4f oldColor;
 };

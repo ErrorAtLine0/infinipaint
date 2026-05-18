@@ -122,6 +122,5 @@ void EllipseDrawEditTool::edit_start(EditTool& editTool, std::any& prevData) {
 void EllipseDrawEditTool::commit_edit_updates(std::any& prevData) {
 }
 
-bool EllipseDrawEditTool::edit_update() {
-    return true;
+void EllipseDrawEditTool::edit_update() {
 }

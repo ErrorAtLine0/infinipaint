@@ -36,7 +36,7 @@ void BrushEditTool::edit_gui(Toolbar& t) {
 
     auto& a = static_cast<BrushStrokeCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
-    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
+    auto commit_update_func = [&] { commitUpdate = true; };
 
     gui.new_id("edit tool brush", [&] {
         text_label_centered(gui, "Edit Brush Stroke");
@@ -53,7 +53,7 @@ void BrushEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
     auto& a = static_cast<BrushStrokeCanvasComponent&>(comp->obj->get_comp());
     auto& gui = drawP.world.main.g.gui;
-    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
+    auto commit_update_func = [&] { commitUpdate = true; };
 
     gui.new_id("edit tool brush", [&] {
         left_to_right_line_layout(gui, [&]() {
@@ -78,6 +78,9 @@ void BrushEditTool::edit_start(EditTool& editTool, std::any& prevData) {
 void BrushEditTool::commit_edit_updates(std::any& prevData) {
 }
 
-bool BrushEditTool::edit_update() {
-    return true;
+void BrushEditTool::edit_update() {
+    if(commitUpdate) {
+        comp->obj->commit_update(drawP);
+        commitUpdate = false;
+    }
 }

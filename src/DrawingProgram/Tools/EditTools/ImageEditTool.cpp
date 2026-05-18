@@ -59,8 +59,7 @@ void ImageEditTool::commit_edit_updates(std::any& prevData) {
     comp->obj->commit_update(drawP);
 }
 
-bool ImageEditTool::edit_update() {
-    return true;
+void ImageEditTool::edit_update() {
 }
 
 void ImageEditTool::edit_gui(Toolbar& t) {

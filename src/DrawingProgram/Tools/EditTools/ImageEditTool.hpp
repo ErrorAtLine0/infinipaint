@@ -27,7 +27,7 @@ class ImageEditTool : public DrawingProgramEditToolBase {
         ImageEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
         virtual void edit_start(EditTool& editTool, std::any& prevData) override;
         virtual void commit_edit_updates(std::any& prevData) override;
-        virtual bool edit_update() override;
+        virtual void edit_update() override;
         virtual void edit_gui(Toolbar& t) override;
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
 };

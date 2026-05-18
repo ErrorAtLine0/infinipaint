@@ -31,11 +31,10 @@ class EllipseDrawEditTool : public DrawingProgramEditToolBase {
         virtual void edit_start(EditTool& editTool, std::any& prevData) override;
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
         virtual void commit_edit_updates(std::any& prevData) override;
-        virtual bool edit_update() override;
+        virtual void edit_update() override;
         virtual void edit_gui(Toolbar& t) override;
         virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
     private:
         void commit();
-
         std::optional<EllipseCanvasComponent::Data> oldData;
 };

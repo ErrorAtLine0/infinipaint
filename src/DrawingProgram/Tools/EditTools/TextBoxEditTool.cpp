@@ -796,6 +796,5 @@ void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
 }
 
-bool TextBoxEditTool::edit_update() {
-    return true;
+void TextBoxEditTool::edit_update() {
 }
