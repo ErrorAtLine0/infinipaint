@@ -44,7 +44,7 @@ public class InfiniPaintNetworkService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("Currently online")
+                .setContentTitle("Connected")
                 .setSmallIcon(R.drawable.logo_foreground_tiny)
                 .build();
         startForeground(1, notification);
@@ -68,7 +68,7 @@ public class InfiniPaintNetworkService extends Service {
         NotificationChannel serviceChannel = new NotificationChannel(
                 CHANNEL_ID,
                 "Network Service Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_LOW
         );
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(serviceChannel);
