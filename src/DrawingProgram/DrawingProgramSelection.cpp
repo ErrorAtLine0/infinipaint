@@ -95,8 +95,10 @@ void DrawingProgramSelection::phone_selection_gui(PhoneDrawingProgramScreen& t) 
 }
 
 Vector4f* DrawingProgramSelection::color_picker_color(Vector4f* oldColor) {
-    if(oldColor == &strokeColorChangeData.newColor)
-        return oldColor;
+    if(is_something_selected()) {
+        if(oldColor == &strokeColorChangeData.newColor)
+            return oldColor;
+    }
     return nullptr;
 }
 
