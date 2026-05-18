@@ -25,6 +25,7 @@ modules:
     sources:
       - type: git
         tag: v1.5.7
+        commit: f8745da6ff1ad1e7bab384bd1f9d742439278e99
         url: https://github.com/facebook/zstd.git
   - name: libdatachannel
     buildsystem: cmake-ninja
@@ -33,7 +34,8 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: git
-        tag: v0.23.2
+        tag: v0.24.0
+        commit: 8c31097ea78f051e857d0aa1b2f6efb26cd12b7e
         url: https://github.com/paullouisageneau/libdatachannel.git
   - name: oneTBB
     buildsystem: cmake-ninja
@@ -42,6 +44,7 @@ modules:
     sources:
       - type: git
         tag: v2022.0.0
+        commit: 0c0ff192a2304e114bc9e6557582dfba101360ff
         url: https://github.com/uxlfoundation/oneTBB.git
   - name: SDL3
     buildsystem: cmake-ninja
@@ -57,7 +60,8 @@ modules:
         - -DSDL_X11=ON
     sources:
       - type: git
-        tag: release-3.4.4
+        tag: release-3.4.8
+        commit: d9d5536704d585616d4db3c8ba3c4ff6fc2757e1
         url: https://github.com/libsdl-org/SDL.git
   - name: Skia
     buildsystem: simple
