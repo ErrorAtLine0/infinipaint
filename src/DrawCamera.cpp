@@ -213,6 +213,7 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
 
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
     if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y() && !w.main.g.gui.cursor_obstructed()) {
+        // Doesn't take tickAmount magnitude into account, since that results in scrolling that's way too fast on macOS
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
         WorldScalar zoomFactor(1.0 + w.main.conf.scrollZoomSpeed);
 
@@ -220,17 +221,15 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
             zoomFactor = WorldScalar(0.000001);
 
         if(zoomFactor != WorldScalar(0)) {
-            if(wheel.tickAmount.y() < 0.0)
+            if(wheel.tickAmount.y() < 0)
                 zoomFactor = WorldScalar(1) / zoomFactor;
 
-            for(int i = 0; i < std::abs(wheel.tickAmount.y()); i++) {
-                c.scale(zoomFactor);
-                if(c.inverseScale < WorldScalar(0.0001))
-                    c.inverseScale = WorldScalar(0.0001);
-                else {
-                    WorldVec mVec = c.pos - mouseWorldPos;
-                    c.pos = mouseWorldPos + mVec / zoomFactor;
-                }
+            c.scale(zoomFactor);
+            if(c.inverseScale < WorldScalar(0.0001))
+                c.inverseScale = WorldScalar(0.0001);
+            else {
+                WorldVec mVec = c.pos - mouseWorldPos;
+                c.pos = mouseWorldPos + mVec / zoomFactor;
             }
         }
 
