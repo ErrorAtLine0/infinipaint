@@ -38,6 +38,8 @@ class RectDrawTool : public DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
+        bool commitUpdate = false;
+
         void commit();
 
         Vector2f startAt;

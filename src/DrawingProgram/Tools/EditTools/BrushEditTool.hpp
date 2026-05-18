@@ -33,6 +33,5 @@ class BrushEditTool : public DrawingProgramEditToolBase {
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
         virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
     private:
-        bool commitUpdate = false;
         Vector4f oldColor;
 };

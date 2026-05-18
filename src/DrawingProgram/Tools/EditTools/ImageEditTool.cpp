@@ -50,13 +50,12 @@ void ImageEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     editTool.add_point_handle({&a.d.cropP1, &staticZero, &a.d.cropP2, 0.0f, MINIMUM_DISTANCE_BETWEEN_IMAGE_CROP_POINTS, transformMat});
     editTool.add_point_handle({&a.d.cropP2, &a.d.cropP1, &staticOne, MINIMUM_DISTANCE_BETWEEN_IMAGE_CROP_POINTS, 0.0f, transformMat});
     a.d.editing = true;
-    comp->obj->commit_update(drawP);
+    commitUpdate = true;
 }
 
 void ImageEditTool::commit_edit_updates(std::any& prevData) {
     auto& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     a.d.editing = false;
-    comp->obj->commit_update(drawP);
 }
 
 void ImageEditTool::edit_update() {

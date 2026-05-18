@@ -47,13 +47,13 @@ TextBoxEditTool::TextBoxEditTool(DrawingProgram& initDrawP, CanvasComponentConta
 {}
 
 void TextBoxEditTool::commit_update_func_no_android_update() {
-    comp->obj->commit_update(drawP);
+    commitUpdate = true;
     if(userInput)
         userInput->android_force_update_modmap();
 }
 
 void TextBoxEditTool::commit_update_and_layout_func_no_android_update() {
-    comp->obj->commit_update(drawP);
+    commitUpdate = true;
     drawP.world.main.g.gui.set_to_layout();
     // modmap update is required at the very least in response to input from the C++ side
     if(userInput)
@@ -61,13 +61,13 @@ void TextBoxEditTool::commit_update_and_layout_func_no_android_update() {
 }
 
 void TextBoxEditTool::commit_update_func_and_android_update() {
-    comp->obj->commit_update(drawP);
+    commitUpdate = true;
     if(userInput)
         userInput->android_force_update_textbox_and_cursor();
 }
 
 void TextBoxEditTool::commit_update_and_layout_func_and_android_update() {
-    comp->obj->commit_update(drawP);
+    commitUpdate = true;
     drawP.world.main.g.gui.set_to_layout();
     if(userInput)
         userInput->android_force_update_textbox_and_cursor();
@@ -760,7 +760,6 @@ void TextBoxEditTool::set_styles_at_selection(TextBoxCanvasComponent& a) {
 void TextBoxEditTool::commit_edit_updates(std::any& prevData) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     a.d.editing = false;
-    comp->obj->commit_update(drawP);
     userInput = nullptr;
     CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
 }
@@ -790,7 +789,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     editTool.add_point_handle({&a.d.p1, nullptr, &a.d.p2});
     editTool.add_point_handle({&a.d.p2, &a.d.p1, nullptr});
 
-    comp->obj->commit_update(drawP);
+    commitUpdate = true;
 
     userInput = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, currentModsPtr);
     CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});

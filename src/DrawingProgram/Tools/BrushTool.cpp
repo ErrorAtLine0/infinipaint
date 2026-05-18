@@ -225,8 +225,8 @@ void BrushTool::tool_update() {
 
     if(commitUpdate && objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        containerPtr->send_comp_update(drawP, false);
         containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, false);
         commitUpdate = false;
     }
 }
@@ -237,6 +237,7 @@ void BrushTool::commit_stroke() {
         fix_tip();
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
+        commitUpdate = false;
         if(containerPtr->get_world_bounds().has_value())
             drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         else {
@@ -244,7 +245,6 @@ void BrushTool::commit_stroke() {
             components->erase(components, containerPtr->objInfo);
         }
         objInfoBeingEdited = nullptr;
-        commitUpdate = false;
     }
 }
 

@@ -39,6 +39,7 @@ class LineDrawTool : public DrawingProgramToolBase {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
         void commit();
+        bool commitUpdate = false;
 
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

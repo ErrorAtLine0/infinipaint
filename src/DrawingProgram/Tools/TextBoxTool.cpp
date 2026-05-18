@@ -70,6 +70,7 @@ void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::Mous
         }
         else if(!button.down && objInfoBeingEdited) {
             make_sure_textbox_is_big();
+            tool_update();
             auto editTool = std::make_unique<EditTool>(drawP);
             editTool->edit_start(objInfoBeingEdited, false);
             drawP.toolToSwitchToAfterUpdate = std::move(editTool);
@@ -91,9 +92,7 @@ void TextBoxTool::input_mouse_motion_callback(const InputManager::MouseMotionCal
         textBox.d.p1 = cwise_vec_min(endAt, startAt);
         textBox.d.p2 = cwise_vec_max(endAt, startAt);
         textBox.d.p2 = ensure_points_have_distance(textBox.d.p1, textBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-
-        containerPtr->send_comp_update(drawP, false);
-        containerPtr->commit_update(drawP);
+        commitUpdate = true;
     }
 }
 
@@ -108,8 +107,10 @@ void TextBoxTool::make_sure_textbox_is_big() {
 }
 
 void TextBoxTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
+    if(objInfoBeingEdited == erasedComp) {
         objInfoBeingEdited = nullptr;
+        commitUpdate = false;
+    }
 }
 
 void TextBoxTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
@@ -121,6 +122,12 @@ void TextBoxTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void TextBoxTool::tool_update() {
+    if(commitUpdate && objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, false);
+        commitUpdate = false;
+    }
 }
 
 bool TextBoxTool::prevent_undo_or_redo() {
@@ -133,6 +140,7 @@ void TextBoxTool::commit() {
         make_sure_textbox_is_big();
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
+        commitUpdate = false;
         drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         objInfoBeingEdited = nullptr;
     }

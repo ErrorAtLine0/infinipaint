@@ -106,14 +106,15 @@ void LineDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCa
             newPos = oldPos + diffLength * Vector2f{cos(angle), sin(angle)};
         }
         brushStroke.d.points->back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
-        containerPtr->send_comp_update(drawP, false);
-        containerPtr->commit_update(drawP);
+        commitUpdate = true;
     }
 }
 
 void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
+    if(objInfoBeingEdited == erasedComp) {
         objInfoBeingEdited = nullptr;
+        commitUpdate = false;
+    }
 }
 
 void LineDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
@@ -125,6 +126,12 @@ void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void LineDrawTool::tool_update() {
+    if(commitUpdate && objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, false);
+        commitUpdate = false;
+    }
 }
 
 bool LineDrawTool::prevent_undo_or_redo() {
@@ -136,6 +143,7 @@ void LineDrawTool::commit() {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
+        commitUpdate = false;
         if(containerPtr->get_world_bounds().has_value())
             drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         else {

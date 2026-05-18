@@ -46,6 +46,8 @@ class DrawingProgramEditToolBase {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint);
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
         virtual ~DrawingProgramEditToolBase(); 
+
+        bool commitUpdate = false;
     protected:
         DrawingProgram& drawP;
         CanvasComponentContainer::ObjInfo* comp;

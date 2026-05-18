@@ -119,14 +119,15 @@ void EllipseDrawTool::input_mouse_motion_callback(const InputManager::MouseMotio
         ellipse.d.p1 = cwise_vec_min(startAt, newPos);
         ellipse.d.p2 = cwise_vec_max(startAt, newPos);
         ellipse.d.p2 = ensure_points_have_distance(ellipse.d.p1, ellipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-        containerPtr->send_comp_update(drawP, false);
-        containerPtr->commit_update(drawP);
+        commitUpdate = true;
     }
 }
 
 void EllipseDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
+    if(objInfoBeingEdited == erasedComp) {
         objInfoBeingEdited = nullptr;
+        commitUpdate = false;
+    }
 }
 
 void EllipseDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
@@ -138,6 +139,12 @@ void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void EllipseDrawTool::tool_update() {
+    if(commitUpdate && objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, false);
+        commitUpdate = false;
+    }
 }
 
 bool EllipseDrawTool::prevent_undo_or_redo() {
@@ -149,6 +156,7 @@ void EllipseDrawTool::commit() {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
+        commitUpdate = false;
         if(containerPtr->get_world_bounds().has_value())
             drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         else {

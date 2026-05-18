@@ -79,8 +79,4 @@ void BrushEditTool::commit_edit_updates(std::any& prevData) {
 }
 
 void BrushEditTool::edit_update() {
-    if(commitUpdate) {
-        comp->obj->commit_update(drawP);
-        commitUpdate = false;
-    }
 }

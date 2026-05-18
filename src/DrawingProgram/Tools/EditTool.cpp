@@ -196,7 +196,7 @@ void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallba
                 if(pointDragging->max)
                     newPos = cwise_vec_min((*pointDragging->max - Vector2f{pointDragging->minimumDistanceBetweenMaxAndPoint, pointDragging->minimumDistanceBetweenMaxAndPoint}).eval(), newPos);
                 *pointDragging->p = newPos;
-                objInfoBeingEdited->obj->commit_update(drawP);
+                compEditTool->commitUpdate = true;
             }
         }
         compEditTool->input_mouse_motion_callback(motion, pointDragging);
@@ -319,7 +319,11 @@ bool EditTool::is_editable(CanvasComponentContainer::ObjInfo* comp) {
 void EditTool::tool_update() {
     if(objInfoBeingEdited) {
         compEditTool->edit_update();
-        objInfoBeingEdited->obj->send_comp_update(drawP, false);
+        if(compEditTool->commitUpdate) {
+            objInfoBeingEdited->obj->commit_update(drawP);
+            objInfoBeingEdited->obj->send_comp_update(drawP, false);
+            compEditTool->commitUpdate = false;
+        }
     }
 }
 

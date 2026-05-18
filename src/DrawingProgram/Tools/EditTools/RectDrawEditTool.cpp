@@ -36,10 +36,10 @@ void RectDrawEditTool::edit_gui(Toolbar& t) {
 
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     auto commit_update_and_layout_func = [&] {
-        comp->obj->commit_update(drawP);
+        commitUpdate = true;
         drawP.world.main.g.gui.set_to_layout();
     };
-    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
+    auto commit_update_func = [&] { commitUpdate = true; };
 
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("edit tool rectangle", [&] {
@@ -81,10 +81,10 @@ void RectDrawEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     auto commit_update_and_layout_func = [&] {
-        comp->obj->commit_update(drawP);
+        commitUpdate = true;
         drawP.world.main.g.gui.set_to_layout();
     };
-    auto commit_update_func = [&] { comp->obj->commit_update(drawP); };
+    auto commit_update_func = [&] { commitUpdate = true; };
 
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("edit tool rectangle", [&] {

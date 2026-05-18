@@ -125,14 +125,15 @@ void RectDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCa
         rectangle.d.p1 = cwise_vec_min(startAt, newPos);
         rectangle.d.p2 = cwise_vec_max(startAt, newPos);
         rectangle.d.p2 = ensure_points_have_distance(rectangle.d.p1, rectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
-        containerPtr->send_comp_update(drawP, false);
-        containerPtr->commit_update(drawP);
+        commitUpdate = true;
     }
 }
 
 void RectDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
-    if(objInfoBeingEdited == erasedComp)
+    if(objInfoBeingEdited == erasedComp) {
         objInfoBeingEdited = nullptr;
+        commitUpdate = false;
+    }
 }
 
 void RectDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
@@ -144,6 +145,12 @@ void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void RectDrawTool::tool_update() {
+    if(commitUpdate && objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        containerPtr->commit_update(drawP);
+        containerPtr->send_comp_update(drawP, false);
+        commitUpdate = false;
+    }
 }
 
 bool RectDrawTool::prevent_undo_or_redo() {
@@ -155,6 +162,7 @@ void RectDrawTool::commit() {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, true);
+        commitUpdate = false;
         if(containerPtr->get_world_bounds().has_value())
             drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         else {

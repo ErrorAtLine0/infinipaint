@@ -41,6 +41,8 @@ class EllipseDrawTool : public DrawingProgramToolBase {
     private:
         void commit();
 
+        bool commitUpdate = false;
+
         Vector2f startAt;
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };
