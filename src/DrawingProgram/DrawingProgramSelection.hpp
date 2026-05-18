@@ -29,6 +29,7 @@ class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
         void selection_gui(Toolbar& t);
+        Vector4f* color_picker_color(Vector4f* oldColor);
         void phone_selection_gui(PhoneDrawingProgramScreen& t);
         void phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t);
         void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);

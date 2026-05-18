@@ -114,6 +114,10 @@ bool RectSelectTool::prevent_undo_or_redo() {
     return drawP.selection.is_something_selected() || controls.isSelecting;
 }
 
+Vector4f* RectSelectTool::color_picker_color(Vector4f* oldColor) {
+    return drawP.selection.color_picker_color(oldColor);
+}
+
 void RectSelectTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(controls.isSelecting) {
         Vector2f mPos = controls.selectEndAt;

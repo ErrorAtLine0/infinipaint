@@ -138,6 +138,10 @@ void LassoSelectTool::input_mouse_motion_callback(const InputManager::MouseMotio
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
 }
 
+Vector4f* LassoSelectTool::color_picker_color(Vector4f* oldColor) {
+    return drawP.selection.color_picker_color(oldColor);
+}
+
 void LassoSelectTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 

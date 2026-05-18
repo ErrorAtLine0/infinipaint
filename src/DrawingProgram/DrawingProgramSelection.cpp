@@ -94,6 +94,12 @@ void DrawingProgramSelection::phone_selection_gui(PhoneDrawingProgramScreen& t) 
     });
 }
 
+Vector4f* DrawingProgramSelection::color_picker_color(Vector4f* oldColor) {
+    if(oldColor == &strokeColorChangeData.newColor)
+        return oldColor;
+    return nullptr;
+}
+
 void DrawingProgramSelection::phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
