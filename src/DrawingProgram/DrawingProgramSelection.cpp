@@ -187,10 +187,10 @@ void DrawingProgramSelection::update_selection_stroke_color() {
             if(c->obj->get_comp().get_stroke_color() != std::nullopt) {
                 strokeColorChangeData.oldColorData.emplace(c->obj.get_net_id(), c->obj->get_comp().get_stroke_color().value());
                 c->obj->get_comp().change_stroke_color(strokeColorChangeData.newColor);
-                c->obj->commit_update_dont_invalidate_cache(drawP); // Object isn't in the cache since it's selected
-                c->obj->send_comp_update(drawP, false);
+                c->obj->send_comp_update(drawP, false); // Might be deselected, so make sure to send update before its deselected
             }
         }
+        commitChangeColorUpdate = true;
         strokeColorChangeData.oldColor = strokeColorChangeData.newColor;
     }
 }
@@ -480,6 +480,13 @@ void DrawingProgramSelection::commit_transform_selection() {
 }
 
 void DrawingProgramSelection::update() {
+    if(commitChangeColorUpdate) {
+        for(auto& c : selectedSet) {
+            if(c->obj->get_comp().get_stroke_color() != std::nullopt)
+                c->obj->commit_update_dont_invalidate_cache(drawP); // Object isn't in the cache since it's selected
+        }
+        commitChangeColorUpdate = false;
+    }
 }
 
 void DrawingProgramSelection::input_key_callback_modify_selection(const InputManager::KeyCallbackArgs& key) {

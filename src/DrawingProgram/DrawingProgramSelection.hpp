@@ -56,6 +56,8 @@ class DrawingProgramSelection {
         void input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion);
     private:
+        bool commitChangeColorUpdate = false;
+
         void phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t);
         void translate_key(unsigned keyPressed, bool pressed);
         bool mouse_collided_with_selection_aabb();
