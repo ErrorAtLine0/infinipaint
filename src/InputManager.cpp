@@ -84,7 +84,6 @@ InputManager::InputManager(MainProgram& initMain):
     defaultKeyAssignments[{0, SDLK_P}] = KEY_DRAW_TOOL_SCREENSHOT;
     defaultKeyAssignments[{0, SDLK_N}] = KEY_DRAW_TOOL_LINE;
     defaultKeyAssignments[{0, SDLK_F1}] = KEY_OPEN_CHAT;
-    defaultKeyAssignments[{0, SDLK_F3}] = KEY_SHOW_METRICS;
     defaultKeyAssignments[{0, SDLK_F2}] = KEY_SHOW_PLAYER_LIST;
     defaultKeyAssignments[{0, SDLK_SPACE}] = KEY_HOLD_TO_PAN;
     defaultKeyAssignments[{0, SDLK_Z}] = KEY_HOLD_TO_ZOOM;
