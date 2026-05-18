@@ -78,6 +78,7 @@ class Toolbar {
 
         void open_chatbox();
         void close_chatbox();
+        void toggle_player_list();
 
         bool drawGui = true;
 

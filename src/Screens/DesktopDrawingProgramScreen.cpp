@@ -62,6 +62,11 @@ void DesktopDrawingProgramScreen::input_key_callback(const InputManager::KeyCall
                 toolbar.open_chatbox();
             break;
         }
+        case InputManager::KEY_SHOW_PLAYER_LIST: {
+            if(key.down && !key.repeat)
+                toolbar.toggle_player_list();
+            break;
+        }
     }
     DrawingProgramScreen::input_key_callback(key);
 }

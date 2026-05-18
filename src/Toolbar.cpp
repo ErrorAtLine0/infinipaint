@@ -192,6 +192,11 @@ void Toolbar::close_chatbox() {
     }
 }
 
+void Toolbar::toggle_player_list() {
+    playerMenuOpen = !playerMenuOpen;
+    main.g.gui.set_to_layout();
+}
+
 void Toolbar::layout_run() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
