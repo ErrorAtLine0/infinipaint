@@ -616,9 +616,6 @@ void regular_draw(MainStruct& mS) {
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
-#ifdef __ANDROID__
-    std::scoped_lock a{AndroidJNICalls::globalMutex};
-#endif
     std::chrono::steady_clock::time_point frameTimeStart = std::chrono::steady_clock::now();
 
     MainStruct& mS = *((MainStruct*)appstate);
@@ -658,10 +655,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
-#ifdef __ANDROID__
-    std::scoped_lock a{AndroidJNICalls::globalMutex};
-#endif
-
     MainStruct& mS = *((MainStruct*)appstate);
 
 #ifdef NDEBUG

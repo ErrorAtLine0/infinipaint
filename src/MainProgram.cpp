@@ -365,13 +365,9 @@ void MainProgram::post_callback() {
     g.gui.layout_if_necessary();
 }
 
-void MainProgram::input_android_on_stop_callback() {
-    Logger::get().log(Logger::LogType::INFO, "[input_android_on_stop_callback] onStop received");
-    save_config();
-    screen->input_android_on_stop_callback();
-}
-
 void MainProgram::input_app_about_to_go_to_background_callback() {
+    screen->input_app_about_to_go_to_background_callback();
+    save_config();
     NetThreadManager::get().go_to_background();
 }
 

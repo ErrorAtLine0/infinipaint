@@ -31,7 +31,7 @@ class FileSelectScreen : public Screen {
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_global_back_button_callback() override;
-        virtual void input_android_on_stop_callback() override;
+        virtual void input_app_about_to_go_to_background_callback() override;
 
         struct TrashInfo {
             struct TrashFile {

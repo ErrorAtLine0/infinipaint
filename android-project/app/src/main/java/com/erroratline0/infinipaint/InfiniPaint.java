@@ -36,8 +36,6 @@ import org.libsdl.app.SDLDummyEdit;
 import org.libsdl.app.SDLSurface;
 
 public class InfiniPaint extends SDLActivity {
-    public static native void androidOnStop();
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Window window = this.getWindow();
@@ -49,11 +47,6 @@ public class InfiniPaint extends SDLActivity {
         // Transparent navigation
         //if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         //    window.setNavigationBarContrastEnforced(false);
-    }
-
-    protected void onStop() {
-        androidOnStop();
-        super.onStop();
     }
 
     protected SDLSurface createSDLSurface(Context context) {

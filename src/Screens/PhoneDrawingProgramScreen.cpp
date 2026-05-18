@@ -443,7 +443,7 @@ void PhoneDrawingProgramScreen::top_toolbar() {
                     svg_icon_button(gui, "back exit button", "data/icons/RemixIcon/arrow-left-s-line.svg", {
                         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                         .onClick = [&] {
-                            save_to_file(true);
+                            save_to_file();
                             main.set_tab_to_close(main.world.get());
                         }
                     });
@@ -1231,19 +1231,19 @@ void PhoneDrawingProgramScreen::input_global_back_button_callback() {
         main.g.gui.set_to_layout();
     }
     else {
-        save_to_file(true);
+        save_to_file();
         main.set_tab_to_close(main.world.get());
         main.g.gui.set_to_layout();
     }
 }
 
-void PhoneDrawingProgramScreen::save_to_file(bool saveThumbnail) {
+void PhoneDrawingProgramScreen::save_to_file() {
     if(!main.world->netClient)
-        main.world->save_to_file(main.world->filePath, saveThumbnail);
+        main.world->save_to_file(main.world->filePath);
 }
 
-void PhoneDrawingProgramScreen::input_android_on_stop_callback() {
-    save_to_file(false); // not saving thumbnail for now, since thumbnail requires GPU
+void PhoneDrawingProgramScreen::input_app_about_to_go_to_background_callback() {
+    save_to_file();
 }
 
 void PhoneDrawingProgramScreen::on_tab_close() {
@@ -1277,6 +1277,6 @@ void PhoneDrawingProgramScreen::color_selector_button(const char* id, Vector4f* 
 
 PhoneDrawingProgramScreen::~PhoneDrawingProgramScreen() {
 #ifndef __ANDROID__
-    save_to_file(true);
+    save_to_file();
 #endif
 }

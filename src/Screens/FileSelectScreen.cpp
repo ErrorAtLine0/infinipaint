@@ -1224,7 +1224,7 @@ void FileSelectScreen::save_files() {
     SDL_SaveFile(infoPath.string().c_str(), saveJson.c_str(), saveJson.size());
 }
 
-void FileSelectScreen::input_android_on_stop_callback() {
+void FileSelectScreen::input_app_about_to_go_to_background_callback() {
     save_files();
 }
 

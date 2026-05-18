@@ -162,7 +162,6 @@ class MainProgram {
         void input_paste_callback(const CustomEvents::PasteEvent& paste);
         void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
 
-        void input_android_on_stop_callback();
         void input_app_about_to_go_to_background_callback();
         void input_app_about_to_go_to_foreground_callback();
         void input_global_back_button_callback();
