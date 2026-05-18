@@ -626,8 +626,12 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 #endif
         mS.m->update();
 
-        if(mS.m->setToQuit)
+        if(mS.m->setToQuit) {
+            #ifdef __ANDROID__
+                mS.m->input_app_about_to_go_to_background_callback();
+            #endif
             return SDL_APP_SUCCESS;
+        }
 
         if(mS.m->input.hideCursor) {
             SDL_HideCursor();
@@ -836,8 +840,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
 #endif
 
-    if(mS.m->setToQuit)
+    if(mS.m->setToQuit) {
+        #ifdef __ANDROID__
+            mS.m->input_app_about_to_go_to_background_callback();
+        #endif
         return SDL_APP_SUCCESS;
+    }
     return SDL_APP_CONTINUE;
 }
 
