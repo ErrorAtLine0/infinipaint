@@ -84,6 +84,7 @@ struct ColorPickerData {
 template <typename T> class ColorPicker : public Element {
     public:
         ColorPicker(GUIManager& gui);
+        virtual void update() override;
         void layout(const Clay_ElementId& id, T* data, bool selectAlpha, const ColorPickerData& conf = {});
     private:
         void set_rgb_from_hsv(const Vector3f& hsv);

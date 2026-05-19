@@ -128,6 +128,13 @@ template <typename T> void ColorPicker<T>::layout(const Clay_ElementId& id, T* d
     }
 }
 
+template <typename T> void ColorPicker<T>::update() {
+    if(!oldData.has_value() || oldData.value() != *data) {
+        savedHsv = rgb_to_hsv<Vector3f, T>(*data);
+        oldData = *data;
+    }
+}
+
 template <typename T> void ColorPicker<T>::set_rgb_from_hsv(const Vector3f& hsv) {
     Vector3f a = hsv_to_rgb<Vector3f>(hsv);
     (*data)[0] = a.x();
