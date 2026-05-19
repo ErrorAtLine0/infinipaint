@@ -1238,7 +1238,7 @@ void PhoneDrawingProgramScreen::input_global_back_button_callback() {
 }
 
 void PhoneDrawingProgramScreen::save_to_file() {
-    if(!main.world->netClient)
+    if(main.world && !main.world->netClient)
         main.world->save_to_file(main.world->filePath);
 }
 
