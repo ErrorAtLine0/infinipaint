@@ -220,10 +220,13 @@ void TextBoxEditTool::edit_gui(Toolbar& t) {
                 .onChange = [&] {
                     currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
                     a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
-                    commit_update_and_layout_func_and_android_update();
+                    commit_update_func_and_android_update();
                 },
                 .onSelect = [&] { hold_undo_data("Highlight Color", a); },
-                .onDeselect = [&] { release_undo_data("Highlight Color"); }
+                .onDeselect = [&] {
+                    release_undo_data("Highlight Color");
+                    gui.set_to_layout();
+                }
             });
             if(newHighlightColor.w() != 0.0f) {
                 svg_icon_button(gui, "Remove Highlight Color", "data/icons/close.svg", {
@@ -374,10 +377,13 @@ void TextBoxEditTool::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t) {
                 .onChange = [&] {
                     currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
                     a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
-                    commit_update_and_layout_func_and_android_update();
+                    commit_update_func_and_android_update();
                 },
                 .onSelect = [&] { hold_undo_data("Highlight Color", a); },
-                .onDeselect = [&] { release_undo_data("Highlight Color"); }
+                .onDeselect = [&] {
+                    release_undo_data("Highlight Color");
+                    gui.set_to_layout();
+                }
             };
         }
     });

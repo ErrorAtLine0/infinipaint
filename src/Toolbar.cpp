@@ -392,6 +392,8 @@ void Toolbar::paint_popup(Vector2f popupPos) {
             .onRotate = [&, newRotationAngle] {
                 main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), *newRotationAngle - main.world->drawData.cam.c.rotation);
                 *newRotationAngle = main.world->drawData.cam.c.rotation;
+            },
+            .onRotateDone = [&] {
                 gui.set_to_layout();
             },
             .onPaletteClick = [&] {

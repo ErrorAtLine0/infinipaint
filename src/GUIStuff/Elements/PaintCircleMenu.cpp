@@ -61,7 +61,10 @@ void PaintCircleMenu::input_mouse_button_callback(const InputManager::MouseButto
     if(d.mouseButton) d.mouseButton(button, mouseHovering);
     dd.isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
     update_paint_circle_menu_mouse_hover(button.pos);
+    bool isRotateBarHeldOld = dd.isRotateBarHeld;
     dd.isRotateBarHeld = dd.isRotateBarHovered && dd.isHeld;
+    if(isRotateBarHeldOld && !dd.isRotateBarHeld && d.onRotateDone)
+        d.onRotateDone();
     update_paint_circle_menu_mouse(button.pos, button.button == InputManager::MouseButton::LEFT && button.down);
 }
 

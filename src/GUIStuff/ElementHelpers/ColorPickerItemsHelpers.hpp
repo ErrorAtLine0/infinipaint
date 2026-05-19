@@ -34,8 +34,8 @@ struct ColorPickerItemsOptions {
 
 template <typename T> void color_picker_items(GUIManager& gui, const char* id, T* val, const ColorPickerItemsOptions& options = {}) {
     gui.new_id(id, [&] {
-        auto fullOnEdit = [&gui, oE = options.onEdit]() {
-            if(oE) oE();
+        auto fullOnDeselect = [&gui, oD = options.onDeselect]() {
+            if(oD) oD();
             gui.set_to_layout();
         };
         CLAY_AUTO_ID({
@@ -44,24 +44,24 @@ template <typename T> void color_picker_items(GUIManager& gui, const char* id, T
             },
             .aspectRatio = {options.forceAspectRatioOnColorPicker ? 1.0f : 0.0f}
         }) {
-            gui.element<ColorPicker<T>>("c", val, options.hasAlpha, ColorPickerData{ .onChange = fullOnEdit, .onHold = options.onSelect, .onRelease = options.onDeselect });
+            gui.element<ColorPicker<T>>("c", val, options.hasAlpha, ColorPickerData{ .onChange = options.onEdit, .onHold = options.onSelect, .onRelease = fullOnDeselect });
         }
         if(!gui.io.isTouchDevice) {
             left_to_right_line_layout(gui, [&]() {
                 text_label(gui, "R");
-                input_color_component_255(gui, "r", &(*val)[0], { .onEdit = fullOnEdit, .onSelect = options.onSelect, .onDeselect = options.onDeselect });
+                input_color_component_255(gui, "r", &(*val)[0], { .onEdit = options.onEdit, .onSelect = options.onSelect, .onDeselect = fullOnDeselect });
                 text_label(gui, "G");
-                input_color_component_255(gui, "g", &(*val)[1], { .onEdit = fullOnEdit, .onSelect = options.onSelect, .onDeselect = options.onDeselect });
+                input_color_component_255(gui, "g", &(*val)[1], { .onEdit = options.onEdit, .onSelect = options.onSelect, .onDeselect = fullOnDeselect });
                 text_label(gui, "B");
-                input_color_component_255(gui, "b", &(*val)[2], { .onEdit = fullOnEdit, .onSelect = options.onSelect, .onDeselect = options.onDeselect });
+                input_color_component_255(gui, "b", &(*val)[2], { .onEdit = options.onEdit, .onSelect = options.onSelect, .onDeselect = fullOnDeselect });
                 if(options.hasAlpha) {
                     text_label(gui, "A");
-                    input_color_component_255(gui, "a", &(*val)[3], { .onEdit = fullOnEdit, .onSelect = options.onSelect, .onDeselect = options.onDeselect });
+                    input_color_component_255(gui, "a", &(*val)[3], { .onEdit = options.onEdit, .onSelect = options.onSelect, .onDeselect = fullOnDeselect });
                 }
             });
             left_to_right_line_layout(gui, [&]() {
                 text_label(gui, "Hex");
-                input_color_hex(gui, "h", val, { .hasAlpha = options.hasAlpha, .onEdit = fullOnEdit, .onSelect = options.onSelect, .onDeselect = options.onDeselect });
+                input_color_hex(gui, "h", val, { .hasAlpha = options.hasAlpha, .onEdit = options.onEdit, .onSelect = options.onSelect, .onDeselect = fullOnDeselect });
             });
         }
     });

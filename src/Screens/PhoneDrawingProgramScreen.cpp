@@ -1002,12 +1002,12 @@ void PhoneDrawingProgramScreen::color_settings_popup(Vector4f* color, const Colo
             .aspectRatio = {1.0f}
         }) {
             gui.element<ColorPicker<Vector4f>>("color picker element", color, true, ColorPickerData{
-                .onChange = [&, d] {
-                    if(d.onChange) d.onChange();
-                    gui.set_to_layout();
-                },
+                .onChange = d.onChange,
                 .onHold = d.onSelect,
-                .onRelease = d.onDeselect
+                .onRelease = [&, d] {
+                    if(d.onDeselect) d.onDeselect();
+                    main.g.gui.set_to_layout();
+                }
             });
         }
         CLAY_AUTO_ID({

@@ -51,6 +51,8 @@ template <typename T> void TextBox<T>::layout(const Clay_ElementId& id, const Te
 }
 
 template <typename T> void TextBox<T>::update() {
+    if(!is_selected())
+        reset_textbox_text();
     std::string newTextboxStr = textbox->get_string();
     if(oldDD.isSelected != is_selected() || oldDD.textboxStr != newTextboxStr || oldDD.cur != *cur) {
         oldDD.isSelected = is_selected();

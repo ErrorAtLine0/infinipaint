@@ -29,6 +29,7 @@ class PaintCircleMenu : public Element {
             Vector4f* selectedColor = nullptr;
             std::vector<Vector3f> palette;
             std::function<void()> onRotate;
+            std::function<void()> onRotateDone;
             std::function<void()> onPaletteClick;
             std::function<void(const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering)> mouseButton;
         };
