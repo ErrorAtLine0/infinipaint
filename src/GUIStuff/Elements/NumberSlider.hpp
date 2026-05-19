@@ -54,6 +54,8 @@ template <typename T> class NumberSlider : public Element {
         }
 
         virtual void update() override {
+            if(!dd.isHeld && data)
+                dd.val = *data;
             smooth_two_way_animation_time(dd.holdAnimation, gui.io.deltaTime, dd.isHeld, HOLD_ANIMATION_TIME);
             smooth_two_way_animation_time(dd.hoverAnimation, gui.io.deltaTime, mouseHovering && !gui.last_interaction_is_touch(), gui.io.theme->hoverExpandTime);
             if(oldDD != dd) {
