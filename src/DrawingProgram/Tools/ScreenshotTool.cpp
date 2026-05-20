@@ -24,6 +24,7 @@
 #include "Helpers/SCollision.hpp"
 #include <filesystem>
 #include <include/core/SkPathBuilder.h>
+#include "../../FileHelpers.hpp"
 
 #include "../../GridManager.hpp"
 
@@ -111,6 +112,10 @@ void ScreenshotTool::gui_toolbox(Toolbar& t) {
                             auto world = w.lock();
                             if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
                                 ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
+                                if(world->main.conf.forceExtensionOnPath)
+                                    screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
+                                else
+                                    screenshotTool->controls.screenshotSavePath = p;
                                 screenshotTool->controls.screenshotSavePath = p;
                                 screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
                                 screenshotTool->controls.setToTakeScreenshot = true;

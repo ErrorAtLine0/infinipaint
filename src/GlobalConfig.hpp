@@ -49,6 +49,12 @@ class GlobalConfig {
             float guiScale = 1.0f;
         #endif
 
+        #if defined(__EMSCRIPTEN__) || defined(_WIN32)
+            bool forceExtensionOnPath = true;
+        #else
+            bool forceExtensionOnPath = false;
+        #endif
+
         double dragZoomSpeed = 0.02;
         double scrollZoomSpeed = 0.4;
         float jumpTransitionTime = 0.5f;

@@ -49,6 +49,7 @@
 #include "CanvasComponents/CanvasComponentContainer.hpp"
 #include "CanvasComponents/CanvasComponentAllocator.hpp"
 #include "WorldScreenshot.hpp"
+#include "FileHelpers.hpp"
 
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
@@ -478,7 +479,10 @@ void World::autosave_to_directory(const std::filesystem::path& directoryToSaveAt
 
 void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
     try {
-        filePath = filePathToSaveAt;
+        if(main.conf.forceExtensionOnPath)
+            filePath = force_extension_on_path(filePathToSaveAt, FILE_EXTENSION);
+        else
+            filePath = filePathToSaveAt;
 
         std::stringstream f;
         f.write(VersionConstants::CURRENT_SAVEFILE_HEADER.c_str(), VersionConstants::SAVEFILE_HEADER_LEN);

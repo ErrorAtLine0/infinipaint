@@ -1545,6 +1545,7 @@ void Toolbar::general_settings_inner_gui() {
                             main.set_vsync_value(main.conf.vsyncValue);
                         });
 
+                        checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
                         #ifndef __EMSCRIPTEN__
                         checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
                         #endif
