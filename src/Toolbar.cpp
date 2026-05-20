@@ -559,12 +559,14 @@ void Toolbar::top_toolbar() {
                                         optionsMenuType = LOBBY_INFO_MENU;
                                     });
                                 }
-                                menu_popup_text_button("start hosting", "Host", [&] {
-                                    serverLocalID = NetLibrary::get_random_server_local_id();
-                                    serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
-                                    optionsMenuOpen = true;
-                                    optionsMenuType = HOST_MENU;
-                                });
+                                else {
+                                    menu_popup_text_button("start hosting", "Host", [&] {
+                                        serverLocalID = NetLibrary::get_random_server_local_id();
+                                        serverToConnectTo = NetLibrary::get_global_id() + serverLocalID;
+                                        optionsMenuOpen = true;
+                                        optionsMenuType = HOST_MENU;
+                                    });
+                                }
                                 menu_popup_text_button("canvas specific settings", "Canvas Settings", [&] {
                                     optionsMenuOpen = true;
                                     optionsMenuType = CANVAS_SETTINGS_MENU;
