@@ -116,7 +116,6 @@ void ScreenshotTool::gui_toolbox(Toolbar& t) {
                                     screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
                                 else
                                     screenshotTool->controls.screenshotSavePath = p;
-                                screenshotTool->controls.screenshotSavePath = p;
                                 screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
                                 screenshotTool->controls.setToTakeScreenshot = true;
                             }
