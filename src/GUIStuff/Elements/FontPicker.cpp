@@ -209,7 +209,7 @@ void FontPicker::layout(const Clay_ElementId& id, std::string* newFontName, cons
                         });
                     }
                 }, LayoutElement::Callbacks{
-                    .mouseButton = [&, textboxElement, dropdownButton] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
+                    .onClick = [&, textboxElement, dropdownButton] (LayoutElement* l, const InputManager::MouseButtonCallbackArgs& button) {
                         if(!textboxElement->mouseHovering && !dropdownButton->mouseHovering && !l->mouseHovering && !l->childMouseHovering) {
                             dropdownOpen = false;
                             gui.set_to_layout();
