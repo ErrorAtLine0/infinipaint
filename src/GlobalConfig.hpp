@@ -49,10 +49,10 @@ class GlobalConfig {
             float guiScale = 1.0f;
         #endif
 
-        #if defined(__EMSCRIPTEN__) || defined(_WIN32)
-            bool forceExtensionOnPath = true;
-        #else
+        #if defined(__ANDROID__) || defined(__APPLE__)
             bool forceExtensionOnPath = false;
+        #else
+            bool forceExtensionOnPath = true;
         #endif
 
         double dragZoomSpeed = 0.02;
