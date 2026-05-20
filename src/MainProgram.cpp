@@ -52,7 +52,11 @@
 
 #include <Helpers/Logger.hpp>
 
-#define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
+#ifdef __ANDROID__
+    #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersionAndroid.txt"
+#else
+    #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
+#endif
 
 MainProgram::MainProgram():
     input(*this),
