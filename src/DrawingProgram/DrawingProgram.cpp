@@ -712,7 +712,11 @@ void DrawingProgram::update_downloading_dropped_files() {
 }
 
 void DrawingProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
-    add_file_to_canvas_by_path(addFile.filePath, addFile.pos);
+    if(addFile.type == CustomEvents::AddFileToCanvasEvent::Type::PATH)
+        add_file_to_canvas_by_path(addFile.filePath, addFile.pos);
+    else
+        add_file_to_canvas_by_data(addFile.name, addFile.buffer, addFile.pos);
+
 }
 
 void DrawingProgram::add_file_to_canvas_by_path(const std::filesystem::path& filePath, Vector2f dropPos) {

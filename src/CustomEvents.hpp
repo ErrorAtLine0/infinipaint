@@ -87,7 +87,7 @@ namespace CustomEvents {
         std::string name;
         std::string buffer;
         std::filesystem::path filePath;
-        Vector2f pos;
+        Vector2f pos = {0.0f, 0.0f};
     };
 
     struct RefreshTextBoxInputEvent {

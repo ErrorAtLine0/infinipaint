@@ -537,10 +537,12 @@ void Toolbar::top_toolbar() {
                                     #ifdef __EMSCRIPTEN__
                                         emscripten_browser_file::upload("*", [](std::string const& fileName, std::string const& mimeType, std::string_view buffer, void* callbackData) {
                                             if(!buffer.empty()) {
+                                                MainProgram* m = static_cast<MainProgram*>(callbackData);
                                                 CustomEvents::emit_event<CustomEvents::AddFileToCanvasEvent>({
                                                     .type = CustomEvents::AddFileToCanvasEvent::Type::BUFFER,
                                                     .name = fileName,
-                                                    .buffer = std::string(buffer)
+                                                    .buffer = std::string(buffer),
+                                                    .pos = m->window.size.cast<float>() / 2.0f
                                                 });
                                             }
                                         }, &main);
