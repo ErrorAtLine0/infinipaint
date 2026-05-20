@@ -369,6 +369,7 @@ void Toolbar::save_as_func() {
     #ifdef __EMSCRIPTEN__
         optionsMenuOpen = true;
         optionsMenuType = SET_DOWNLOAD_NAME;
+        main.g.gui.set_to_layout();
     #else
         open_file_selector("Save", {{"InfiniPaint Canvas", World::FILE_EXTENSION}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
             auto world = w.lock();
