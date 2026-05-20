@@ -75,7 +75,7 @@ namespace CustomEvents {
         std::optional<std::filesystem::path> filePathSource;
         std::string netSource;
         std::string serverLocalID;
-        std::string_view fileDataBuffer;
+        std::string fileDataBuffer;
     };
 
     struct AddFileToCanvasEvent {

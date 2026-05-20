@@ -1278,7 +1278,7 @@ void Toolbar::open_world_file(bool isClient, const std::string& netSource, const
                 .filePathSource = std::filesystem::path(fileName),
                 .netSource = uD->nS,
                 .serverLocalID = uD->sLID,
-                .fileDataBuffer = buffer
+                .fileDataBuffer = std::string(buffer)
             });
         }
     }, &uploadData);

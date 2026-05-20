@@ -38,6 +38,20 @@ bool DesktopDrawingProgramScreen::app_close_requested() {
     return toolbar.app_close_requested();
 }
 
+void DesktopDrawingProgramScreen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
+    if(std::filesystem::is_regular_file(drop.data)) {
+        std::filesystem::path droppedFilePath(drop.data);
+        if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
+            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+                .isClient = false,
+                .filePathSource = droppedFilePath
+            });
+            return;
+        }
+    }
+    main.world->input_drop_file_callback(drop);
+}
+
 void DesktopDrawingProgramScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     switch(key.key) {
         case InputManager::KEY_NOGUI: {

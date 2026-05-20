@@ -48,16 +48,6 @@ void DrawingProgramScreen::input_android_text_box_input_callback(const CustomEve
 }
 
 void DrawingProgramScreen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
-    if(std::filesystem::is_regular_file(drop.data)) {
-        std::filesystem::path droppedFilePath(drop.data);
-        if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == std::string("." + World::FILE_EXTENSION)) {
-            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
-                .isClient = false,
-                .filePathSource = droppedFilePath
-            });
-            return;
-        }
-    }
     main.world->input_drop_file_callback(drop);
 }
 
