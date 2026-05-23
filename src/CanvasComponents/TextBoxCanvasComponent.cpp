@@ -24,6 +24,7 @@
 #include "../DrawingProgram/DrawingProgram.hpp"
 #include "CanvasComponentContainer.hpp"
 #include "../DrawCollision.hpp"
+#include <include/pathops/SkPathOps.h>
 
 using namespace RichText;
 
@@ -125,23 +126,17 @@ Vector2f TextBoxCanvasComponent::get_mouse_pos(DrawingProgram& drawP) const {
 
 void TextBoxCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     init_text_box(drawP);
-    create_collider();
 }
 
 bool TextBoxCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return collisionTree.is_collide(checkAgainst);
+    return false;
 }
 
-void TextBoxCanvasComponent::create_collider() {
-    using namespace SCollision;
-    ColliderCollection<float> strokeObjects;
-    std::array<Vector2f, 4> newT = triangle_from_rect_points(d.p1, d.p2);
-    strokeObjects.triangle.emplace_back(newT[0], newT[1], newT[2]);
-    strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
-    collisionTree.clear();
-    collisionTree.calculate_bvh_recursive(strokeObjects);
+bool TextBoxCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
+    SkPath p = SkPath::Rect(SCollision::AABB<float>(d.p1, d.p2).get_sk_rect());
+    return checkAgainst.getBounds().intersects(p.getBounds()) && Op(checkAgainst, p, SkPathOp::kIntersect_SkPathOp);
 }
 
 SCollision::AABB<float> TextBoxCanvasComponent::get_obj_coord_bounds() const {
-    return collisionTree.objects.bounds;
+    return {d.p1, d.p2};
 }

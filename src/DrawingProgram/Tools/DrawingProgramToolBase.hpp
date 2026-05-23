@@ -30,6 +30,7 @@ class PhoneDrawingProgramScreen;
 enum class DrawingProgramToolType : int {
     BRUSH = 0,
     ERASER,
+    FILL,
     LASSOSELECT,
     RECTSELECT,
     RECTANGLE,

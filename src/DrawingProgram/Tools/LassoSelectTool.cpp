@@ -25,29 +25,10 @@
 #include "Helpers/SCollision.hpp"
 #include "../../CoordSpaceHelper.hpp"
 #include <ranges>
-#include <earcut.hpp>
 #include <include/core/SkPathBuilder.h>
+#include "../../EarcutIncludes.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
-
-namespace mapbox {
-namespace util {
-
-template <>
-struct nth<0, Vector2f> {
-    inline static auto get(const Vector2f &t) {
-        return t.x();
-    };
-};
-template <>
-struct nth<1, Vector2f> {
-    inline static auto get(const Vector2f &t) {
-        return t.y();
-    };
-};
-
-} // namespace util
-} // namespace mapbox
 
 LassoSelectTool::LassoSelectTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)

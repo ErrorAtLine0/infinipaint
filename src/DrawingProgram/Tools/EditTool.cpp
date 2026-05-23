@@ -30,7 +30,7 @@
 #include "EditTools/RectDrawEditTool.hpp"
 #include "EditTools/ImageEditTool.hpp"
 #include "EditTools/EllipseDrawEditTool.hpp"
-#include "EditTools/BrushEditTool.hpp"
+#include "EditTools/MeshEditTool.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 
@@ -294,8 +294,8 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
             compEditTool = std::make_unique<ImageEditTool>(drawP, comp);
             break;
         }
-        case CanvasComponentType::BRUSHSTROKE: {
-            compEditTool = std::make_unique<BrushEditTool>(drawP, comp);
+        case CanvasComponentType::MESH: {
+            compEditTool = std::make_unique<MeshEditTool>(drawP, comp);
             break;
         }
         default: {

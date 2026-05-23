@@ -400,6 +400,7 @@ void DrawingProgram::toolbar_gui(Toolbar& t) {
 
                 tool_button("Brush Toolbar Button", "data/icons/brush.svg", DrawingProgramToolType::BRUSH);
                 tool_button("Eraser Toolbar Button", "data/icons/eraser.svg", DrawingProgramToolType::ERASER);
+                tool_button("Fill Toolbar Button", "data/icons/RemixIcon/paint-line.svg", DrawingProgramToolType::FILL);
                 tool_button("Line Toolbar Button", "data/icons/line.svg", DrawingProgramToolType::LINE);
                 tool_button("Text Toolbar Button", "data/icons/text.svg", DrawingProgramToolType::TEXTBOX);
                 tool_button("Ellipse Toolbar Button", "data/icons/circle.svg", DrawingProgramToolType::ELLIPSE);

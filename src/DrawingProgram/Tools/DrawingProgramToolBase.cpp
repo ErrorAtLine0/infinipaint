@@ -20,6 +20,7 @@
 
 #include "BrushTool.hpp"
 #include "EraserTool.hpp"
+#include "FillTool.hpp"
 #include "PanCanvasTool.hpp"
 #include "RectSelectTool.hpp"
 #include "LassoSelectTool.hpp"
@@ -45,6 +46,8 @@ std::unique_ptr<DrawingProgramToolBase> DrawingProgramToolBase::allocate_tool_ty
             return std::make_unique<BrushTool>(drawP);
         case DrawingProgramToolType::ERASER:
             return std::make_unique<EraserTool>(drawP);
+        case DrawingProgramToolType::FILL:
+            return std::make_unique<FillTool>(drawP);
         case DrawingProgramToolType::LASSOSELECT:
             return std::make_unique<LassoSelectTool>(drawP);
         case DrawingProgramToolType::RECTSELECT:

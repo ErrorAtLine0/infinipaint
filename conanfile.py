@@ -118,6 +118,7 @@ class CompressorRecipe(ConanFile):
             self.requires("libdatachannel/0.24.0")
             self.requires("libcurl/8.20.0")
             
+        self.requires("clipper2/2.0.1")
         self.requires("zstd/1.5.7")
         self.requires("icu-infinipaint/77.1")
 

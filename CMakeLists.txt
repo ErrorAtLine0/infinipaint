@@ -86,6 +86,7 @@ set(sources "src/main.cpp"
             "src/DrawingProgram/Tools/EyeDropperTool.cpp"
             "src/DrawingProgram/Tools/ScreenshotTool.cpp"
             "src/DrawingProgram/Tools/EditTool.cpp"
+            "src/DrawingProgram/Tools/FillTool.cpp"
             "src/DrawingProgram/Tools/ZoomCanvasTool.cpp"
             "src/DrawingProgram/Tools/PanCanvasTool.cpp"
             "src/DrawingProgram/Tools/GridModifyTool.cpp"
@@ -95,7 +96,7 @@ set(sources "src/main.cpp"
             "src/DrawingProgram/Tools/EditTools/EllipseDrawEditTool.cpp"
             "src/DrawingProgram/Tools/EditTools/RectDrawEditTool.cpp"
             "src/DrawingProgram/Tools/EditTools/TextBoxEditTool.cpp"
-            "src/DrawingProgram/Tools/EditTools/BrushEditTool.cpp"
+            "src/DrawingProgram/Tools/EditTools/MeshEditTool.cpp"
             "src/DrawingProgram/Layers/DrawingProgramLayerManagerGUI.cpp"
             "src/DrawingProgram/Layers/DrawingProgramLayerManager.cpp"
             "src/DrawingProgram/Layers/DrawingProgramLayerListItem.cpp"
@@ -104,11 +105,12 @@ set(sources "src/main.cpp"
             "src/DrawingProgram/Layers/SerializedBlendMode.cpp"
             "src/CanvasComponents/CanvasComponentContainer.cpp"
             "src/CanvasComponents/CanvasComponentAllocator.cpp"
-            "src/CanvasComponents/BrushStrokeCanvasComponent.cpp"
+            "src/CanvasComponents/MeshCanvasComponent.cpp"
             "src/CanvasComponents/RectangleCanvasComponent.cpp"
             "src/CanvasComponents/TextBoxCanvasComponent.cpp"
             "src/CanvasComponents/EllipseCanvasComponent.cpp"
             "src/CanvasComponents/ImageCanvasComponent.cpp"
+            "src/CanvasComponents/BrushComponentCode.cpp"
             "src/CanvasComponents/CanvasComponent.cpp"
             "src/GUIStuff/GUIManager.cpp"
             "src/GUIStuff/GUIFloatAnimation.cpp"
@@ -228,6 +230,7 @@ if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX AND
 endif()
 
 find_package(zstd REQUIRED)
+find_package(clipper2 REQUIRED)
 
 message("Skia root: " ${SKIA_INCLUDE})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -357,7 +360,7 @@ if((NOT EMSCRIPTEN) AND (NOT APPLE) AND (NOT ANDROID))
     endif()
 endif()
 
-target_link_libraries(main zstd::libzstd_static)
+target_link_libraries(main zstd::libzstd_static Clipper2::clipper2)
 
 if((NOT EMSCRIPTEN) AND WIN32)
     target_link_libraries(main dwrite)

@@ -22,6 +22,7 @@
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkPaint.h>
 #include <include/core/SkPathBuilder.h>
+#include <include/pathops/SkPathOps.h>
 #include "../SharedTypes.hpp"
 #include "../DrawCollision.hpp"
 
@@ -84,11 +85,10 @@ void RectangleCanvasComponent::set_data_from(const CanvasComponent& other) {
 
 void RectangleCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
-    create_collider();
 }
 
 bool RectangleCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return collisionTree.is_collide(checkAgainst);
+    return false;
 }
 
 void RectangleCanvasComponent::create_draw_data() {
@@ -105,36 +105,10 @@ void RectangleCanvasComponent::create_draw_data() {
     }
 }
 
-void RectangleCanvasComponent::create_collider() {
-    using namespace SCollision;
-    ColliderCollection<float> strokeObjects;
-    if(d.fillStrokeMode == 0) {
-        std::array<Vector2f, 4> newT = triangle_from_rect_points(d.p1, d.p2);
-        strokeObjects.triangle.emplace_back(newT[0], newT[1], newT[2]);
-        strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
-    }
-    else if(d.fillStrokeMode == 1) {
-        if(d.p1.x() == d.p2.x() || d.p1.y() == d.p2.y()) {
-            std::vector<Vector2f> points = {d.p1, d.p2};
-            generate_polyline(strokeObjects, points, d.strokeWidth, true);
-        }
-        else {
-            std::array<Vector2f, 4> pointArr = triangle_from_rect_points(d.p1, d.p2);
-            std::vector<Vector2f> points(pointArr.begin(), pointArr.end());
-            generate_polyline(strokeObjects, points, d.strokeWidth, true);
-        }
-    }
-    else if(d.fillStrokeMode == 2) {
-        float strokeRadius = d.strokeWidth * 0.5f;
-        std::array<Vector2f, 4> newT = triangle_from_rect_points((d.p1 - Vector2f{strokeRadius, strokeRadius}).eval(), (d.p2 + Vector2f{strokeRadius, strokeRadius}).eval());
-        strokeObjects.triangle.emplace_back(newT[0], newT[1], newT[2]);
-        strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
-    }
-
-    collisionTree.clear();
-    collisionTree.calculate_bvh_recursive(strokeObjects);
+bool RectangleCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
+    return checkAgainst.getBounds().intersects(rectPath.getBounds()) && Op(checkAgainst, rectPath, SkPathOp::kIntersect_SkPathOp);
 }
 
 SCollision::AABB<float> RectangleCanvasComponent::get_obj_coord_bounds() const {
-    return collisionTree.objects.bounds;
+    return rectPath.getBounds();
 }
