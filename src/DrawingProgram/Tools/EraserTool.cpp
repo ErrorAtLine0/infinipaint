@@ -169,7 +169,7 @@ void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     bool first = erasedComponents.empty(); // erase_component_container will call EraserTool::erase_component, which will clear erasedComponents eventually
     drawP.layerMan.erase_component_container(erasedComponents);
     for(auto& [comp, oldData] : updatedComponents) {
-        comp->obj->commit_update(drawP);
+        comp->obj->commit_update_dont_invalidate_cache(drawP);
         comp->obj->send_comp_update(drawP, true);
         if(first) {
             first = false;
