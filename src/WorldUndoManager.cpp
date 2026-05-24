@@ -19,6 +19,7 @@
 #include "WorldUndoManager.hpp"
 #include "World.hpp"
 #include "MainProgram.hpp"
+#include <Helpers/Logger.hpp>
 
 void WorldUndoAction::scale_up(const WorldScalar& scaleAmount) {}
 WorldUndoAction::~WorldUndoAction() {}
@@ -81,8 +82,10 @@ void WorldUndoManager::undo() {
         }
     }
 
-    if(undoFail)
+    if(undoFail) {
         clear();
+        Logger::get().log(Logger::LogType::INFO, "[WorldUndoManager::undo] Undo failed");
+    }
     else {
         push_redo(std::move(undoQueue.back()));
         undoQueue.pop_back();
@@ -107,8 +110,10 @@ void WorldUndoManager::redo() {
         }
     }
 
-    if(redoFail)
+    if(redoFail) {
         clear();
+        Logger::get().log(Logger::LogType::INFO, "[WorldUndoManager::redo] Redo failed");
+    }
     else {
         push_undo(std::move(redoQueue.back()));
         redoQueue.pop_back();

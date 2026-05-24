@@ -127,7 +127,12 @@ void EraserTool::erase_between_points() {
                         case CanvasComponentEraseDetailResult::CHANGED: {
                             if(!updatedComponents.contains(c))
                                 updatedComponents.emplace(c, std::move(dataCopy));
-                            c->obj->commit_update(drawP);
+                            // NOTE: commit_update is what should be run here, but invalidate_cache is being run instead. This is for a few reasons:
+                            // - Mesh initialize_draw_data does nothing, so commit_update isnt necessary
+                            // - worldAABB only shrinks, which means that invalidate_cache_at_optional_aabb will invalidate a "good enough" space even if worldAABB isn't updated (which commit_update does)
+                            // - commit_update can't be run inside a traverse_bvh_run_function call (causes segfault and other issues). If that were necessary, we would have to defer that call for after the traversal is done
+                            // - commit_update will be run at switch_tool time instead
+                            drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                             return false;
                         }
                         case CanvasComponentEraseDetailResult::REMOVED:
@@ -161,11 +166,12 @@ void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) 
 }
 
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
+    bool first = erasedComponents.empty(); // erase_component_container will call EraserTool::erase_component, which will clear erasedComponents eventually
     drawP.layerMan.erase_component_container(erasedComponents);
-    bool first = true;
     for(auto& [comp, oldData] : updatedComponents) {
+        comp->obj->commit_update(drawP);
         comp->obj->send_comp_update(drawP, true);
-        if(erasedComponents.empty() && first) {
+        if(first) {
             first = false;
             drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
         }
