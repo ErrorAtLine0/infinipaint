@@ -38,6 +38,7 @@ class EraserTool : public DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
 
+        std::unordered_map<CanvasComponentContainer::ObjInfo*, std::unique_ptr<CanvasComponent>> updatedComponents;
         std::unordered_set<CanvasComponentContainer::ObjInfo*> erasedComponents; // Pointers will be erased from this set if theyre erased in the main list (done by callback)
     private:
         SkPath erasePath;

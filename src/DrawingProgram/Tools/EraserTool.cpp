@@ -23,9 +23,11 @@
 #include <include/core/SkBlendMode.h>
 #include <include/core/SkPathBuilder.h>
 #include "../../CanvasComponents/BrushComponentCode.hpp"
+#include "../EditCanvasComponentWorldUndoAction.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -48,6 +50,7 @@ void EraserTool::gui_toolbox(Toolbar& t) {
             {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
             {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
         });
+        checkbox_boolean_field(gui, "erase details", "Erase details", &drawP.world.main.toolConfig.eraser.eraseDetail);
     });
 }
 
@@ -64,6 +67,7 @@ void EraserTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
             {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
             {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
         });
+        checkbox_boolean_field(gui, "erase details", "Erase details", &drawP.world.main.toolConfig.eraser.eraseDetail);
     });
 }
 
@@ -98,6 +102,11 @@ void EraserTool::erase_between_points() {
             drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
                 drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto c) {
                     if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
+                        auto it = updatedComponents.find(c);
+                        if(it != updatedComponents.end()) {
+                            c->obj->get_comp().set_data_from(*(it->second));
+                            updatedComponents.erase(it);
+                        }
                         erasedComponents.emplace(c);
                         return true;
                     }
@@ -108,10 +117,37 @@ void EraserTool::erase_between_points() {
             return false;
         }
         drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
-            if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, erasePath)) {
-                erasedComponents.emplace(c);
-                drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
-                return true;
+            if(drawP.world.main.toolConfig.eraser.eraseDetail) {
+                if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
+                    auto dataCopy = c->obj->get_comp().get_data_copy();
+                    CanvasComponentEraseDetailResult result = c->obj->collides_with_erase_detail(drawP.world.drawData.cam.c, erasePath);
+                    switch(result) {
+                        case CanvasComponentEraseDetailResult::NO_CHANGE:
+                            return false;
+                        case CanvasComponentEraseDetailResult::CHANGED: {
+                            if(!updatedComponents.contains(c))
+                                updatedComponents.emplace(c, std::move(dataCopy));
+                            c->obj->commit_update(drawP);
+                            return false;
+                        }
+                        case CanvasComponentEraseDetailResult::REMOVED:
+                            auto it = updatedComponents.find(c);
+                            if(it != updatedComponents.end()) {
+                                c->obj->get_comp().set_data_from(*(it->second));
+                                updatedComponents.erase(it);
+                            }
+                            erasedComponents.emplace(c);
+                            drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
+                            return true;
+                    }
+                }
+            }
+            else {
+                if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, erasePath)) {
+                    erasedComponents.emplace(c);
+                    drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
+                    return true;
+                }
             }
             return false;
         });
@@ -121,10 +157,23 @@ void EraserTool::erase_between_points() {
 
 void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     erasedComponents.erase(erasedComp);
+    updatedComponents.erase(erasedComp);
 }
 
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     drawP.layerMan.erase_component_container(erasedComponents);
+    bool first = true;
+    for(auto& [comp, oldData] : updatedComponents) {
+        comp->obj->send_comp_update(drawP, true);
+        if(erasedComponents.empty() && first) {
+            first = false;
+            drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+        }
+        else
+            drawP.world.undo.push_on_last(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+    }
+    erasedComponents.clear();
+    updatedComponents.clear();
     isErasing = false;
 }
 

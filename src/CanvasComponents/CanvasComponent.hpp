@@ -29,6 +29,7 @@ class DrawingProgram;
 
 class CanvasComponent {
     public:
+
         virtual CanvasComponentType get_type() const = 0;
         virtual ~CanvasComponent();
         static CanvasComponent* allocate_comp(CanvasComponentType type);
@@ -58,6 +59,9 @@ class CanvasComponent {
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
         virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const = 0;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const = 0;
+
+        virtual bool can_erase_detail() const;
+        virtual CanvasComponentEraseDetailResult erase_detail(const SkPath& eraseAgainst);
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const = 0;
 

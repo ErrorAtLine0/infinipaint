@@ -30,6 +30,12 @@ class DrawingProgram;
 class DrawingProgramLayerListItem;
 struct DrawingProgramCacheBVHNode;
 
+enum class CanvasComponentEraseDetailResult {
+    NO_CHANGE,
+    CHANGED,
+    REMOVED
+};
+
 class CanvasComponentContainer {
     public:
         typedef NetworkingObjects::NetObjOrderedList<CanvasComponentContainer> NetList;
@@ -83,6 +89,7 @@ class CanvasComponentContainer {
         void commit_transform(DrawingProgram& drawP);
         void commit_update_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         bool should_draw(const DrawData& drawData) const;
+        CanvasComponentEraseDetailResult collides_with_erase_detail(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const;
         bool collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const;
         bool collides_with_point(const CoordSpaceHelper& camCoords, const Vector2f& checkAgainstCam) const;
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);

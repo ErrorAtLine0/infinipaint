@@ -71,4 +71,12 @@ bool CanvasComponent::should_draw_extra(const DrawData& drawData, const CoordSpa
     return true;
 }
 
+bool CanvasComponent::can_erase_detail() const {
+    return false;
+}
+
+CanvasComponentEraseDetailResult CanvasComponent::erase_detail(const SkPath& eraseAgainst) {
+    return CanvasComponentEraseDetailResult::NO_CHANGE;
+}
+
 CanvasComponent::~CanvasComponent() {}

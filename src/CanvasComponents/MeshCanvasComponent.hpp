@@ -47,6 +47,8 @@ class MeshCanvasComponent : public CanvasComponent {
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
         virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
+        virtual bool can_erase_detail() const override;
+        virtual CanvasComponentEraseDetailResult erase_detail(const SkPath& eraseAgainst) override;
         bool should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const override;
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
         SCollision::BVHContainer<float> collisionTree;

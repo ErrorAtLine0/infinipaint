@@ -36,15 +36,24 @@ bool WorldUndoManager::can_redo() {
 }
 
 void WorldUndoManager::push(std::unique_ptr<WorldUndoAction> undoAction) {
-    push_undo(std::move(undoAction));
+    std::vector<std::unique_ptr<WorldUndoAction>> fullUndoAction;
+    fullUndoAction.emplace_back(std::move(undoAction));
+    push_undo(std::move(fullUndoAction));
     redoQueue.clear();
     world.set_has_unsaved_local_changes(true);
 }
 
-void WorldUndoManager::push_undo(std::unique_ptr<WorldUndoAction> undoAction) {
+void WorldUndoManager::push_on_last(std::unique_ptr<WorldUndoAction> undoAction) {
+    if(undoQueue.empty())
+        push(std::move(undoAction));
+    else
+        undoQueue.back().emplace_back(std::move(undoAction));
+}
+
+void WorldUndoManager::push_undo(std::vector<std::unique_ptr<WorldUndoAction>> undoAction) {
     if(undoQueue.size() == UNDO_QUEUE_LIMIT) {
         if(undoActionSavedAt.has_value()) {
-            if(undoQueue.front().get() == undoActionSavedAt.value())
+            if(undoQueue.front().front().get() == undoActionSavedAt.value())
                 undoActionSavedAt = nullptr;
             else if(undoActionSavedAt.value() == nullptr)
                 undoActionSavedAt = std::nullopt;
@@ -54,7 +63,7 @@ void WorldUndoManager::push_undo(std::unique_ptr<WorldUndoAction> undoAction) {
     undoQueue.emplace_back(std::move(undoAction));
 }
 
-void WorldUndoManager::push_redo(std::unique_ptr<WorldUndoAction> undoAction) {
+void WorldUndoManager::push_redo(std::vector<std::unique_ptr<WorldUndoAction>> undoAction) {
     redoQueue.emplace_back(std::move(undoAction));
 }
 
@@ -63,8 +72,16 @@ void WorldUndoManager::undo() {
         return;
 
     world.bMan.refresh_gui_data();
-    
-    if(!undoQueue.back()->undo(*this))
+
+    bool undoFail = false;
+    for(auto& u : std::views::reverse(undoQueue.back())) {
+        if(!u->undo(*this)) {
+            undoFail = true;
+            break;
+        }
+    }
+
+    if(undoFail)
         clear();
     else {
         push_redo(std::move(undoQueue.back()));
@@ -82,7 +99,15 @@ void WorldUndoManager::redo() {
 
     world.bMan.refresh_gui_data();
 
-    if(!redoQueue.back()->redo(*this))
+    bool redoFail = false;
+    for(auto& u : redoQueue.back()) {
+        if(!u->redo(*this)) {
+            redoFail = true;
+            break;
+        }
+    }
+
+    if(redoFail)
         clear();
     else {
         push_undo(std::move(redoQueue.back()));
@@ -101,10 +126,14 @@ void WorldUndoManager::clear() {
 }
 
 void WorldUndoManager::scale_up(const WorldScalar& scaleAmount) {
-    for(auto& u : undoQueue)
-        u->scale_up(scaleAmount);
-    for(auto& r : redoQueue)
-        r->scale_up(scaleAmount);
+    for(auto& u : undoQueue) {
+        for(auto& uStep : u)
+            uStep->scale_up(scaleAmount);
+    }
+    for(auto& r : redoQueue) {
+        for(auto& uStep : r)
+            uStep->scale_up(scaleAmount);
+    }
 }
 
 void WorldUndoManager::reassign_netid(const NetworkingObjects::NetObjID& oldNetObjID, const NetworkingObjects::NetObjID& newNetObjID) {
@@ -177,7 +206,7 @@ bool WorldUndoManager::fill_netid_list_from_undoid_list(std::vector<NetworkingOb
 std::vector<std::string> WorldUndoManager::get_front_undo_queue_names(unsigned count) {
     std::vector<std::string> toRet;
     for(auto& u : undoQueue | std::views::reverse) {
-        toRet.emplace_back(u->get_name());
+        toRet.emplace_back(u.front()->get_name());
         if(toRet.size() == count)
             return toRet;
     }
@@ -188,7 +217,7 @@ void WorldUndoManager::set_save_action() {
     if(undoQueue.empty())
         undoActionSavedAt = nullptr;
     else
-        undoActionSavedAt = undoQueue.back().get();
+        undoActionSavedAt = undoQueue.back().front().get();
     world.set_has_unsaved_local_changes(false);
 }
 
@@ -203,6 +232,6 @@ void WorldUndoManager::set_world_has_unsaved_local_changes() {
         if(undoQueue.empty())
             world.set_has_unsaved_local_changes(undoActionSavedAt.value() != nullptr);
         else
-            world.set_has_unsaved_local_changes(undoActionSavedAt.value() != undoQueue.back().get());
+            world.set_has_unsaved_local_changes(undoActionSavedAt.value() != undoQueue.back().front().get());
     }
 }

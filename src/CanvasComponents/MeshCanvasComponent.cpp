@@ -23,6 +23,7 @@
 #include <limits>
 #include <Eigen/Geometry>
 #include "BrushComponentCode.hpp"
+#include "CanvasComponent.hpp"
 #include "Eigen/Core"
 #include "Helpers/MathExtras.hpp"
 #include "../TimePoint.hpp"
@@ -261,6 +262,24 @@ bool MeshCanvasComponent::should_draw_extra(const DrawData& drawData, const Coor
     viewGenerousColliderInObjSpace.max += Vector2f{1.0f, 1.0f};
     return true;
     //return collisionTree.is_collide(viewGenerousColliderInObjSpace);
+}
+
+bool MeshCanvasComponent::can_erase_detail() const {
+    return true;
+}
+
+CanvasComponentEraseDetailResult MeshCanvasComponent::erase_detail(const SkPath& eraseAgainst) {
+    bool intersectsAABB = d.meshPath.getBounds().intersects(eraseAgainst.getBounds());
+    if(!intersectsAABB)
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    std::optional<SkPath> newPath = Op(d.meshPath, eraseAgainst, SkPathOp::kDifference_SkPathOp);
+    if(newPath.has_value()) {
+        d.meshPath = newPath.value();
+        if(d.meshPath.isEmpty())
+            return CanvasComponentEraseDetailResult::REMOVED;
+        return CanvasComponentEraseDetailResult::CHANGED;
+    }
+    return CanvasComponentEraseDetailResult::NO_CHANGE;
 }
 
 SCollision::AABB<float> MeshCanvasComponent::get_obj_coord_bounds() const {

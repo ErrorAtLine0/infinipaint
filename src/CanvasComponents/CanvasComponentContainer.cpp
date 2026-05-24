@@ -142,6 +142,28 @@ void CanvasComponentContainer::commit_transform_dont_invalidate_cache() {
     calculate_world_bounds();
 }
 
+CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_detail(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const {
+    if(!worldAABB.has_value())
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY)) {
+        if(checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min))))
+            return CanvasComponentEraseDetailResult::REMOVED;
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    }
+    else if(get_comp().can_erase_detail()) {
+        TransformData drawTransform = calculate_draw_transform(camCoords);
+        SkMatrix m = SkMatrix::I();
+        m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
+        std::optional<SkPath> transformedPath = checkAgainstCam.tryMakeTransform(m);
+        if(!transformedPath.has_value())
+            return CanvasComponentEraseDetailResult::NO_CHANGE;
+        return get_comp().erase_detail(transformedPath.value());
+    }
+    return CanvasComponentEraseDetailResult::NO_CHANGE;
+}
+
 // We could just send one of the checkAgainst colliders, since they represent the same thing, but sending both saves on redundant transformations, since we can save both of the versions on the executor side
 bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const {
     if(!worldAABB.has_value())
