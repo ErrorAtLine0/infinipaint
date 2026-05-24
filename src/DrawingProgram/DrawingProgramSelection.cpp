@@ -252,7 +252,7 @@ void DrawingProgramSelection::check_add_stroke_color_change_undo() {
     }
 }
 
-void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
+void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
     check_add_stroke_color_change_undo();
 
     std::vector<CanvasComponentContainer::ObjInfo*> selectedComponents;
@@ -264,13 +264,13 @@ void DrawingProgramSelection::add_from_cam_coord_collider_to_selection(const SCo
         }
     }
     else {
-        auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
-        drawP.drawCache.traverse_bvh_run_function(cCWorld.bounds, erase_select_objects_in_bvh_func(selectedComponents, cC, cCWorld, layerSelector));
+        auto cCWorldBounds = drawP.world.drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(cC.getBounds());
+        drawP.drawCache.traverse_bvh_run_function(cCWorldBounds, erase_select_objects_in_bvh_func(selectedComponents, cC, layerSelector));
     }
     add_to_selection(selectedComponents);
 }
 
-void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
+void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly) {
     check_add_stroke_color_change_undo();
 
     if(frontObjectOnly) {
@@ -281,9 +281,8 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
         }
     }
     else {
-        auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
         std::erase_if(selectedSet, [&](auto& c) {
-            if(drawP.layerMan.component_passes_layer_selector(c, layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
+            if(drawP.layerMan.component_passes_layer_selector(c, layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cC)) {
                 drawP.drawCache.add_component(c);
                 return true;
             }
@@ -294,13 +293,13 @@ void DrawingProgramSelection::remove_from_cam_coord_collider_to_selection(const 
     calculate_aabb();
 }
 
-std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::vector<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector) {
+std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingProgramSelection::erase_select_objects_in_bvh_func(std::vector<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector) {
     auto toRet = [&](const auto& bvhNode) {
         if(bvhNode && (bvhNode->coords.inverseScale << 9) < drawP.world.drawData.cam.c.inverseScale &&
-           SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min)) &&
-           SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max)) &&
-           SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right())) &&
-           SCollision::collide(cC, drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left()))) {
+           cC.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min))) &&
+           cC.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max))) &&
+           cC.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right()))) &&
+           cC.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left())))) {
             drawP.drawCache.invalidate_cache_at_aabb(bvhNode->bounds);
             drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
                 drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto c) {
@@ -315,7 +314,7 @@ std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> DrawingP
             return false;
         }
         drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
-            if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC)) {
+            if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, cC)) {
                 selectedComponents.emplace_back(c);
                 drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                 return true;
@@ -741,11 +740,10 @@ void DrawingProgramSelection::erase_component(CanvasComponentContainer::ObjInfo*
         reset_all();
 }
 
-CanvasComponentContainer::ObjInfo* DrawingProgramSelection::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
-    auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
+CanvasComponentContainer::ObjInfo* DrawingProgramSelection::get_front_object_colliding_with_in_editing_layer(const SkPath& cC) {
     CanvasComponentContainer::ObjInfo* p = nullptr;
     for(auto& c : selectedSet) {
-        if(drawP.layerMan.component_passes_layer_selector(c, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED) && (!p || c->pos >= p->pos) && c->obj->collides_with(drawP.world.drawData.cam.c, cCWorld, cC))
+        if(drawP.layerMan.component_passes_layer_selector(c, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED) && (!p || c->pos >= p->pos) && c->obj->collides_with(drawP.world.drawData.cam.c, cC))
             p = c;
     }
     return p;

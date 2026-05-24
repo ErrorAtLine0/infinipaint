@@ -87,10 +87,6 @@ void RectangleCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
 }
 
-bool RectangleCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return false;
-}
-
 void RectangleCanvasComponent::create_draw_data() {
     SkPathBuilder rectPathBuilder;
     if(d.p1.x() == d.p2.x() || d.p1.y() == d.p2.y()) {
@@ -105,8 +101,19 @@ void RectangleCanvasComponent::create_draw_data() {
     }
 }
 
+bool RectangleCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    bool intersectsAABB = rectPath.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return rectPath.contains(checkAgainst.x(), checkAgainst.y());
+}
+
 bool RectangleCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
-    return checkAgainst.getBounds().intersects(rectPath.getBounds()) && Op(checkAgainst, rectPath, SkPathOp::kIntersect_SkPathOp);
+    bool intersectsAABB = rectPath.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, rectPath, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> RectangleCanvasComponent::get_obj_coord_bounds() const {

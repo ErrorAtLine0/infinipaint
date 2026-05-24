@@ -59,10 +59,10 @@ void FillTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
             MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(newContainer->get_comp());
 
             newMesh.d.color = toolConfig.globalConf.foregroundColor;
-            newMesh.d.points.fill.emplace_back();
-            newMesh.d.points.fill.back().emplace_back(button.pos + Vector2f{0.0f, 100.0f});
-            newMesh.d.points.fill.back().emplace_back(button.pos + Vector2f{-100.0f, -100.0f});
-            newMesh.d.points.fill.back().emplace_back(button.pos + Vector2f{100.0f, -100.0f});
+            //newMesh.d.points.contours.emplace_back();
+            //newMesh.d.points.contours.back().emplace_back(button.pos + Vector2f{0.0f, 100.0f});
+            //newMesh.d.points.contours.back().emplace_back(button.pos + Vector2f{-100.0f, -100.0f});
+            //newMesh.d.points.contours.back().emplace_back(button.pos + Vector2f{100.0f, -100.0f});
             newContainer->coords = drawP.world.drawData.cam.c;
 
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);

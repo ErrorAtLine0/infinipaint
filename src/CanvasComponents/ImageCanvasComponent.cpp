@@ -78,7 +78,7 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
         return;
     if(compContainer->should_draw(drawData)) {
         canvas->save();
-        compContainer->canvas_do_transform(canvas, compContainer->calculate_draw_transform(drawData));
+        compContainer->canvas_do_transform(canvas, compContainer->calculate_draw_transform(drawData.cam.c));
         SkPaint p;
         p.setStroke(true);
         p.setStrokeWidth(10.0f);
@@ -157,8 +157,12 @@ void ImageCanvasComponent::update(DrawingProgram& drawP) {
 void ImageCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
 }
 
-bool ImageCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return false;
+bool ImageCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    SkPath p = SkPath::Rect(SCollision::AABB<float>(d.p1, d.p2).get_sk_rect());
+    bool intersectsAABB = p.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return p.contains(checkAgainst.x(), checkAgainst.y());
 }
 
 bool ImageCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
@@ -168,7 +172,11 @@ bool ImageCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgai
     else
         startingRect = get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2);
     SkPath p = SkPath::Rect(startingRect);
-    return startingRect.intersects(checkAgainst.getBounds()) && Op(checkAgainst, p, SkPathOp::kIntersect_SkPathOp);
+    bool intersectsAABB = p.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, p, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> ImageCanvasComponent::get_obj_coord_bounds() const {

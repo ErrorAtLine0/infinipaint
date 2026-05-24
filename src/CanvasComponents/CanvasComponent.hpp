@@ -56,7 +56,7 @@ class CanvasComponent {
 
         virtual void draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const = 0;
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
-        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const = 0;
+        virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const = 0;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const = 0;
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const = 0;

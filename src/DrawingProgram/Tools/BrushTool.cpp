@@ -117,7 +117,7 @@ void BrushTool::commit_data(bool final) {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(containerPtr->get_comp());
-        newMesh.d.points = BrushComponentCode::brush_stroke_to_mesh_points(brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
+        newMesh.d.meshPath = BrushComponentCode::brush_stroke_to_skpath(brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, final);
     }

@@ -19,8 +19,10 @@
 #include "MeshCanvasComponent.hpp"
 #include <Helpers/Serializers.hpp>
 #include <cereal/types/vector.hpp>
+#include <include/core/SkPathTypes.h>
 #include <limits>
 #include <Eigen/Geometry>
+#include "BrushComponentCode.hpp"
 #include "Eigen/Core"
 #include "Helpers/MathExtras.hpp"
 #include "../TimePoint.hpp"
@@ -34,26 +36,75 @@
 
 #define BVH_LEVELS 3
 
+template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
+    std::vector<uint32_t> contourSizes;
+    uint32_t contourSize = 0;
+    auto verbs = p.verbs();
+    auto points = p.points();
+    for(size_t verbIndex = 0; verbIndex < verbs.size(); verbIndex++) {
+        switch(verbs[verbIndex]) {
+            case SkPathVerb::kClose:
+                contourSizes.emplace_back(contourSize);
+                contourSize = 0;
+                break;
+            case SkPathVerb::kMove:
+            case SkPathVerb::kLine:
+                contourSize++;
+                break;
+            default:
+                throw std::runtime_error("[skpath_write] Illegal verb " + std::to_string(static_cast<unsigned>(verbs[verbIndex])));
+                break;
+        }
+    }
+    a(contourSizes);
+    for(const SkPoint& p : points)
+        a(p);
+}
+
+template <typename Archive> SkPath skpath_read(Archive& a) {
+    SkPathBuilder builder;
+    std::vector<uint32_t> contourSizes;
+    a(contourSizes);
+    for(uint32_t contourSize : contourSizes) {
+        SkPoint p;
+        if(contourSize == 0)
+            continue;
+        a(p);
+        builder.moveTo(p);
+        for(uint32_t i = 1; i < contourSize; i++) {
+            a(p);
+            builder.lineTo(p);
+        }
+        builder.close();
+    }
+    return builder.detach();
+}
+
 void MeshCanvasComponent::save(cereal::PortableBinaryOutputArchive& a) const {
-    a(d.points, d.color);
+    skpath_write(d.meshPath, a);
+    a(d.color);
 }
 
 void MeshCanvasComponent::load(cereal::PortableBinaryInputArchive& a) {
-    a(d.points, d.color);
+    d.meshPath = skpath_read(a);
+    a(d.color);
 }
 
 void MeshCanvasComponent::save_file(cereal::PortableBinaryOutputArchive& a) const {
-    a(d.points, d.color);
+    skpath_write(d.meshPath, a);
+    a(d.color);
 }
 
 void MeshCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
-    if(version >= VersionNumber(0, 6, 0))
-        a(d.points, d.color);
+    if(version >= VersionNumber(0, 6, 0)) {
+        d.meshPath = skpath_read(a);
+        a(d.color);
+    }
     else {
         std::vector<BrushComponentCode::BrushPoint> brushPoints;
         bool hasRoundCaps;
         a(brushPoints, d.color, hasRoundCaps);
-        d.points = BrushComponentCode::brush_stroke_to_mesh_points(brushPoints, hasRoundCaps);
+        d.meshPath = BrushComponentCode::brush_stroke_to_skpath(brushPoints, hasRoundCaps);
     }
 }
 
@@ -79,7 +130,7 @@ void MeshCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const
     SkPaint paint;
     paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
     paint.setAntiAlias(drawData.skiaAA);
-    canvas->drawPath(meshPath, paint);
+    canvas->drawPath(d.meshPath, paint);
 
     //SkPaint paint2;
     //paint2.setColor4f(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
@@ -187,35 +238,31 @@ void MeshCanvasComponent::set_data_from(const CanvasComponent& other) {
 }
 
 void MeshCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
-    if(!d.points.contours.empty()) {
-        SkPathBuilder meshPathBuilder;
-
-        for(auto& contour : d.points.contours) {
-            if(!contour.empty())
-                meshPathBuilder.moveTo(contour.front().x(), contour.front().y());
-            for(size_t i = 1; i < contour.size(); i++) {
-                auto& p = contour[i];
-                meshPathBuilder.lineTo(p.x(), p.y());
-            }
-            meshPathBuilder.close();
-        }
-
-        meshPath = meshPathBuilder.detach();
-    }
 }
 
-bool MeshCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return false;
+bool MeshCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    bool intersectsAABB = d.meshPath.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return d.meshPath.contains(checkAgainst.x(), checkAgainst.y());
+}
+
+bool MeshCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
+    bool intersectsAABB = d.meshPath.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, d.meshPath, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 bool MeshCanvasComponent::should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const {
     SCollision::AABB<float> viewGenerousColliderInObjSpace = coords.world_collider_to_coords<SCollision::AABB<float>>(drawData.cam.viewingAreaGenerousCollider);
     viewGenerousColliderInObjSpace.min -= Vector2f{1.0f, 1.0f};
     viewGenerousColliderInObjSpace.max += Vector2f{1.0f, 1.0f};
-    return false;
+    return true;
     //return collisionTree.is_collide(viewGenerousColliderInObjSpace);
 }
 
 SCollision::AABB<float> MeshCanvasComponent::get_obj_coord_bounds() const {
-    return meshPath.getBounds();
+    return d.meshPath.getBounds();
 }

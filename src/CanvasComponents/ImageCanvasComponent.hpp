@@ -55,7 +55,7 @@ class ImageCanvasComponent : public CanvasComponent {
     private:
         virtual void draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
-        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
+        virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 };

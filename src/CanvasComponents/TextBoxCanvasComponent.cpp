@@ -128,13 +128,21 @@ void TextBoxCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     init_text_box(drawP);
 }
 
-bool TextBoxCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return false;
+bool TextBoxCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    SkPath p = SkPath::Rect(SCollision::AABB<float>(d.p1, d.p2).get_sk_rect());
+    bool intersectsAABB = p.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return p.contains(checkAgainst.x(), checkAgainst.y());
 }
 
 bool TextBoxCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
     SkPath p = SkPath::Rect(SCollision::AABB<float>(d.p1, d.p2).get_sk_rect());
-    return checkAgainst.getBounds().intersects(p.getBounds()) && Op(checkAgainst, p, SkPathOp::kIntersect_SkPathOp);
+    bool intersectsAABB = p.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, p, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> TextBoxCanvasComponent::get_obj_coord_bounds() const {

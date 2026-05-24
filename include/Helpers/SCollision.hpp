@@ -40,8 +40,8 @@ namespace SCollision {
                 max(initMax)
             {}
             AABB(const SkRect& r):
-                min(r.TL),
-                max(r.BR)
+                min(r.TL().x(), r.TL().y()),
+                max(r.BR().x(), r.BR().y())
             {}
             Vector<T, 2> min;
             Vector<T, 2> max;

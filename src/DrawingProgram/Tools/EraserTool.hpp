@@ -40,7 +40,12 @@ class EraserTool : public DrawingProgramToolBase {
 
         std::unordered_set<CanvasComponentContainer::ObjInfo*> erasedComponents; // Pointers will be erased from this set if theyre erased in the main list (done by callback)
     private:
-        void erase_between_points(const Vector2f& start, const Vector2f& end);
-        std::optional<Vector2f> lastPosOpt;
+        SkPath erasePath;
+        SkPath eraseBorderPath;
+
+        Vector2f start;
+        Vector2f end;
+
+        void erase_between_points();
         bool isErasing = false;
 };

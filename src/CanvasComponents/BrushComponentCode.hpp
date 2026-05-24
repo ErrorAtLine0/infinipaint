@@ -36,8 +36,8 @@ namespace BrushComponentCode {
         }
     };
 
-    MeshShapeData brush_stroke_to_mesh_points(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps);
-    void create_triangles(std::vector<Vector2f>& brushMeshPointList, const std::vector<BrushPoint>& regularPoints, const std::vector<BrushPoint>& smoothedPoints, bool hasRoundCaps);
+    SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps);
+    SkPath create_triangles(const std::vector<BrushPoint>& regularPoints, const std::vector<BrushPoint>& smoothedPoints, bool hasRoundCaps);
     std::vector<size_t> get_wedge_indices(const std::vector<BrushPoint>& points);
     std::vector<BrushPoint> smooth_points(const std::vector<BrushPoint>& points, size_t beginIndex, size_t endIndex, unsigned numOfDivisions);
 }

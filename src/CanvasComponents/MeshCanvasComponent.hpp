@@ -37,7 +37,7 @@ class MeshCanvasComponent : public CanvasComponent {
         virtual void set_data_from(const CanvasComponent& other) override;
 
         struct Data {
-            MeshShapeData points;
+            SkPath meshPath;
             Vector4f color;
         } d;
     private:
@@ -45,11 +45,10 @@ class MeshCanvasComponent : public CanvasComponent {
         virtual bool accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords, const std::shared_ptr<void>& predrawData) const override;
         virtual std::shared_ptr<void> get_predraw_data_accurate(const DrawData& drawData, const CoordSpaceHelper& coords) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
-        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
+        virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
         bool should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const override;
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
-        SkPath meshPath;
         SCollision::BVHContainer<float> collisionTree;
 };
 

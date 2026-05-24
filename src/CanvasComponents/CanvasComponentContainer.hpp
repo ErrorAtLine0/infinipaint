@@ -77,15 +77,14 @@ class CanvasComponentContainer {
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void draw_with_predraw_data(SkCanvas* canvas, const DrawData& drawData, const PreDrawData& preDrawData) const;
         PreDrawData calculate_predraw_data(const DrawData& drawData) const;
-        TransformData calculate_draw_transform(const DrawData& drawData) const;
+        TransformData calculate_draw_transform(const CoordSpaceHelper& camCoords) const;
         void commit_update(DrawingProgram& drawP);
         void commit_transform_dont_invalidate_cache(); // Must be thread safe
         void commit_transform(DrawingProgram& drawP);
         void commit_update_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         bool should_draw(const DrawData& drawData) const;
-        bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) const;
-        bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
-        bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
+        bool collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const;
+        bool collides_with_point(const CoordSpaceHelper& camCoords, const Vector2f& checkAgainstCam) const;
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
         void scale_up(const WorldScalar& scaleUpAmount);
 

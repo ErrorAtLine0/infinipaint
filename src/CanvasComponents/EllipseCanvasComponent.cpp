@@ -90,12 +90,19 @@ void EllipseCanvasComponent::set_data_from(const CanvasComponent& other) {
     d = otherEllipse.d;
 }
 
-bool EllipseCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return false;
+bool EllipseCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    bool intersectsAABB = ellipsePath.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return ellipsePath.contains(checkAgainst.x(), checkAgainst.y());
 }
 
 bool EllipseCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
-    return checkAgainst.getBounds().intersects(ellipsePath.getBounds()) && Op(checkAgainst, ellipsePath, SkPathOp::kIntersect_SkPathOp);
+    bool intersectsAABB = ellipsePath.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, ellipsePath, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> EllipseCanvasComponent::get_obj_coord_bounds() const {

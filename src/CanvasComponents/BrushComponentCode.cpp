@@ -27,39 +27,9 @@
 
 namespace BrushComponentCode {
 
-MeshShapeData brush_stroke_to_mesh_points(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps) {
+SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps) {
     std::vector<BrushPoint> points = smooth_points(brushPoints, 0, brushPoints.size() - 1, DEFAULT_SMOOTHNESS);
-    std::vector<Vector2f> unprocessedPoints;
-    create_triangles(unprocessedPoints, brushPoints, points, hasRoundCaps);
-    using namespace Clipper2Lib;
-    PathsD clippingSubjects;
-    auto& shape = clippingSubjects.emplace_back();
-    for(const Vector2f& p : unprocessedPoints)
-        shape.emplace_back(p.x(), p.y());
-    clippingSubjects = SimplifyPaths(clippingSubjects, 0.1);
-
-    ClipperD clipper;
-    PolyTreeD solutionTree;
-
-    clipper.AddSubject(clippingSubjects);
-    clipper.AddClip(clippingSubjects);
-    clipper.Execute(ClipType::Union, FillRule::NonZero, solutionTree);
-
-    MeshShapeData meshData;
-
-    for(auto& treeChild : solutionTree) {
-        meshData.contours.emplace_back();
-        for(auto& point : treeChild->Polygon())
-            meshData.contours.back().emplace_back(point.x, point.y);
-        for(auto& hole : *treeChild) {
-            meshData.contours.emplace_back();
-            for(auto& point : hole->Polygon())
-                meshData.contours.back().emplace_back(point.x, point.y);
-        }
-        break;
-    }
-
-    return meshData;
+    return create_triangles(brushPoints, points, hasRoundCaps);
 }
 
 std::vector<size_t> get_wedge_indices(const std::vector<BrushPoint>& points) {
@@ -119,7 +89,8 @@ std::vector<BrushPoint> smooth_points(const std::vector<BrushPoint>& points, siz
     return toRet;
 }
 
-void create_triangles(std::vector<Vector2f>& brushMeshPointList, const std::vector<BrushPoint>& regularPoints, const std::vector<BrushPoint>& smoothedPoints, bool hasRoundCaps) {
+SkPath create_triangles(const std::vector<BrushPoint>& regularPoints, const std::vector<BrushPoint>& smoothedPoints, bool hasRoundCaps) {
+    SkPathBuilder pathBuilder;
     const int ARC_SMOOTHNESS = 10;
     const int CIRCLE_SMOOTHNESS = 20;
     const std::vector<BrushPoint>& pointsN = regularPoints;
@@ -135,10 +106,10 @@ void create_triangles(std::vector<Vector2f>& brushMeshPointList, const std::vect
 
     if(pointsN.size() < 2) {
         if(!topPoints.empty()) {
-            for(auto& p : topPoints)
-                brushMeshPointList.emplace_back(convert_vec2<Vector2f>(p));
+            pathBuilder.addPolygon({topPoints.data(), topPoints.size()}, true);
+            return pathBuilder.detach();
         }
-        return;
+        return SkPath();
     }
 
     auto& points = smoothedPoints;
@@ -279,9 +250,10 @@ void create_triangles(std::vector<Vector2f>& brushMeshPointList, const std::vect
 
     if(!topPoints.empty()) {
         topPoints.insert(topPoints.begin(), bottomPoints.rbegin(), bottomPoints.rend());
-        for(auto& p : topPoints)
-            brushMeshPointList.emplace_back(convert_vec2<Vector2f>(p));
+        pathBuilder.addPolygon({topPoints.data(), topPoints.size()}, true);
     }
+
+    return pathBuilder.detach();
 }
 
 }
