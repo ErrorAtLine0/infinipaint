@@ -22,6 +22,7 @@
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkPathBuilder.h>
 #include "../DrawCollision.hpp"
+#include <include/core/SkPathTypes.h>
 #include <include/pathops/SkPathOps.h>
 
 CanvasComponentType EllipseCanvasComponent::get_type() const {
@@ -77,6 +78,43 @@ void EllipseCanvasComponent::create_draw_data() {
 
 void EllipseCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     create_draw_data();
+    create_collider();
+}
+
+void EllipseCanvasComponent::create_collider() {
+    switch(d.fillStrokeMode) {
+        case 0: {
+            colliderPath = ellipsePath;
+            break;
+        }
+        case 1: {
+            float radiusX = d.p2.x() - d.p1.x();
+            float radiusY = d.p2.y() - d.p1.y();
+            if(radiusX < d.strokeWidth || radiusY < d.strokeWidth) {
+                SkRect largeRect = SkRect::MakeLTRB(d.p1.x() - d.strokeWidth * 0.5f, d.p1.y() - d.strokeWidth * 0.5f, d.p2.x() + d.strokeWidth * 0.5f, d.p2.y() + d.strokeWidth * 0.5f);
+                SkPathBuilder ellipsePathBuilder;
+                ellipsePathBuilder.addOval(largeRect);
+                colliderPath = ellipsePathBuilder.detach();
+            }
+            else {
+                SkRect smallRect = SkRect::MakeLTRB(d.p1.x() + d.strokeWidth * 0.5f, d.p1.y() + d.strokeWidth * 0.5f, d.p2.x() - d.strokeWidth * 0.5f, d.p2.y() - d.strokeWidth * 0.5f);
+                SkRect largeRect = SkRect::MakeLTRB(d.p1.x() - d.strokeWidth * 0.5f, d.p1.y() - d.strokeWidth * 0.5f, d.p2.x() + d.strokeWidth * 0.5f, d.p2.y() + d.strokeWidth * 0.5f);
+                SkPathBuilder ellipsePathBuilder;
+                ellipsePathBuilder.addOval(largeRect);
+                ellipsePathBuilder.addOval(smallRect);
+                ellipsePathBuilder.setFillType(SkPathFillType::kEvenOdd);
+                colliderPath = ellipsePathBuilder.detach();
+            }
+            break;
+        }
+        case 2: {
+            SkRect largeRect = SkRect::MakeLTRB(d.p1.x() - d.strokeWidth * 0.5f, d.p1.y() - d.strokeWidth * 0.5f, d.p2.x() + d.strokeWidth * 0.5f, d.p2.y() + d.strokeWidth * 0.5f);
+            SkPathBuilder ellipsePathBuilder;
+            ellipsePathBuilder.addOval(largeRect);
+            colliderPath = ellipsePathBuilder.detach();
+            break;
+        }
+    }
 }
 
 std::unique_ptr<CanvasComponent> EllipseCanvasComponent::get_data_copy() const {
@@ -91,20 +129,20 @@ void EllipseCanvasComponent::set_data_from(const CanvasComponent& other) {
 }
 
 bool EllipseCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
-    bool intersectsAABB = ellipsePath.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    bool intersectsAABB = colliderPath.getBounds().contains(checkAgainst.x(), checkAgainst.y());
     if(!intersectsAABB)
         return false;
-    return ellipsePath.contains(checkAgainst.x(), checkAgainst.y());
+    return colliderPath.contains(checkAgainst.x(), checkAgainst.y());
 }
 
 bool EllipseCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
-    bool intersectsAABB = ellipsePath.getBounds().intersects(checkAgainst.getBounds());
+    bool intersectsAABB = colliderPath.getBounds().intersects(checkAgainst.getBounds());
     if(!intersectsAABB)
         return false;
-    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, ellipsePath, SkPathOp::kIntersect_SkPathOp);
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, colliderPath, SkPathOp::kIntersect_SkPathOp);
     return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> EllipseCanvasComponent::get_obj_coord_bounds() const {
-    return ellipsePath.getBounds();
+    return colliderPath.getBounds();
 }

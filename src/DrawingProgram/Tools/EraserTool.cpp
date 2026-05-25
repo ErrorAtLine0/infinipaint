@@ -255,7 +255,7 @@ bool EraserTool::prevent_undo_or_redo() {
 }
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed() && !erasePath.isEmpty()) {
+    if(!drawP.world.main.input.isTouchDevice && (!drawData.main->g.gui.cursor_obstructed() || isErasing) && !erasePath.isEmpty()) {
         SkPaint linePaint;
         linePaint.setAntiAlias(drawData.skiaAA);
         linePaint.setColor4f({0.0f, 0.0f, 0.0f, 0.4f});

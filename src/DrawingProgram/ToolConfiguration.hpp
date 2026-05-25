@@ -39,7 +39,7 @@ class ToolConfiguration {
 
         struct EllipseDrawToolConfig {
             float relativeWidth = 15.0f;
-            int fillStrokeMode = 1;
+            unsigned fillStrokeMode = 1;
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(EllipseDrawToolConfig, relativeWidth, fillStrokeMode)
         } ellipseDraw;
 

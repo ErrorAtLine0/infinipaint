@@ -52,8 +52,9 @@ class RectangleCanvasComponent : public CanvasComponent {
         virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
         void create_draw_data();
+        void create_collider();
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
-
         SkPath rectPath;
+        SkPath colliderPath;
 };
 

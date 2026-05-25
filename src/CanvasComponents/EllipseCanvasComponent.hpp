@@ -51,6 +51,8 @@ class EllipseCanvasComponent : public CanvasComponent {
         virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
+        void create_collider();
         void create_triangles(const std::function<bool(Vector2f, Vector2f, Vector2f)>& passTriangleFunc);
+        SkPath colliderPath;
         SkPath ellipsePath;
 };
