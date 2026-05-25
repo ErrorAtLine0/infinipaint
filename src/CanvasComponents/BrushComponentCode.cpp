@@ -20,10 +20,14 @@
 #include <Helpers/ConvertVec.hpp>
 #include <Helpers/MathExtras.hpp>
 #include "../TimePoint.hpp"
-#include <clipper2/clipper.core.h>
-#include <clipper2/clipper.h>
+#include "../DrawingProgram/DrawingProgram.hpp"
+#include "../World.hpp"
+#include "../MainProgram.hpp"
 
 #define DEFAULT_SMOOTHNESS 3
+#define MINIMUM_DISTANCE_FROM_FIRST_POINT 3.0f
+#define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
+#define DRAW_MINIMUM_LIMIT 1.0f
 
 namespace BrushComponentCode {
 
@@ -254,6 +258,127 @@ SkPath create_triangles(const std::vector<BrushPoint>& regularPoints, const std:
     }
 
     return pathBuilder.detach();
+}
+
+void smooth_out_points(std::vector<BrushPoint>& brushPoints, float smoothFactor) {
+    if(brushPoints.size() >= 2) {
+        brushPoints.back().width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width * smoothFactor);
+        for(size_t i = brushPoints.size() - 1; i > 0; i--) {
+            if(brushPoints[i].width * smoothFactor > brushPoints[i - 1].width)
+                brushPoints[i - 1].width = brushPoints[i].width * smoothFactor;
+            else
+                break;
+        }
+    }
+}
+
+void fix_tip(std::vector<BrushPoint>& brushPoints) {
+    if(brushPoints.size() >= 2)
+        brushPoints[brushPoints.size() - 2].width = brushPoints[brushPoints.size() - 1].width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width);
+}
+
+void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize) {
+    if(button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
+        genData.penWidth = drawP.world.main.input.pen.pressure;
+        if(genData.penWidth != 0.0f) {
+            float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
+            genData.penWidth = brushMinSize + genData.penWidth * (1.0f - brushMinSize);
+        }
+    }
+    else
+        genData.penWidth = 1.0f;
+
+    float width = brushSize * genData.penWidth;
+    genData.coords = strokeCoordSpace;
+
+    genData.brushPoints.clear();
+    BrushComponentCode::BrushPoint p;
+    p.pos = button.pos;
+    p.width = width;
+    genData.prevPointUnaltered = p.pos;
+    genData.brushPoints.emplace_back(p);
+    genData.addedTemporaryPoint = false;
+}
+
+void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize) {
+    BrushComponentCode::BrushPoint p;
+    p.pos = genData.coords.to_space(drawP.world.drawData.cam.c.from_space(motionPos));
+    p.width = brushSize * genData.penWidth;
+
+    // Temporary point is a point that follows the cursor until it is placed
+    if(!genData.addedTemporaryPoint) {
+        // Temporary point is close enough to be placed
+        if(extensive_point_checking(genData.brushPoints, p.pos, genData.brushPoints.size() == 1 ? MINIMUM_DISTANCE_FROM_FIRST_POINT : MINIMUM_DISTANCE_TO_NEXT_POINT)) {
+            genData.brushPoints.emplace_back(p);
+            genData.addedTemporaryPoint = true;
+        }
+        else
+            // Temporary point not close enough yet, so change the width of the previous point based on the current pen width until it can be placed
+            genData.brushPoints.back().width = std::max(genData.brushPoints.back().width, p.width);
+    }
+
+    if(genData.addedTemporaryPoint) {
+        const BrushComponentCode::BrushPoint& prevP = genData.brushPoints[genData.brushPoints.size() - 2];
+        float distToPrev = (p.pos - prevP.pos).norm();
+        // If the cursor isnt too close to the previous points, move the temporary point to the cursor and change the width of the temporary point to the current pen width
+        if(extensive_point_checking_back(genData.brushPoints, p.pos)) {
+            genData.brushPoints.back().pos = p.pos;
+            genData.brushPoints.back().width = std::max(genData.brushPoints.back().width, p.width);
+        }
+
+        float maxWidthToCompareTo = std::max(genData.brushPoints.back().width, p.width);
+        maxWidthToCompareTo = std::max(maxWidthToCompareTo, 5.0f);
+        if(genData.brushPoints.size() >= 2)
+            maxWidthToCompareTo = std::max(genData.brushPoints[genData.brushPoints.size() - 2].width, maxWidthToCompareTo);
+        if(genData.brushPoints.size() >= 3)
+            maxWidthToCompareTo = std::max(genData.brushPoints[genData.brushPoints.size() - 3].width, maxWidthToCompareTo);
+
+        // If the temporary point (cursor) is far enough from the point before it, make the temporary point permanent
+        if(distToPrev >= maxWidthToCompareTo * DRAW_MINIMUM_LIMIT) {
+            genData.brushPoints.back().pos = p.pos;
+            genData.brushPoints.back().width = std::max(genData.brushPoints.back().width, p.width);
+            genData.addedTemporaryPoint = false;
+
+            // Midway interpolation moves the point before the last one to a position that leads to a smoother line
+            if(genData.brushPoints.size() != 2) // Don't interpolate the first point
+                genData.brushPoints[genData.brushPoints.size() - 2].pos = (genData.prevPointUnaltered + p.pos) * 0.5;
+            genData.prevPointUnaltered = p.pos;
+        }
+    }
+
+    smooth_out_points(genData.brushPoints, drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
+}
+
+void pen_pressure(DrawingProgram& drawP, BrushStrokeGenerationData& genData, float brushSize) {
+    if(drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
+        if(genData.penWidth != 0.0f) {
+            float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
+            genData.penWidth = brushMinSize + genData.penWidth * (1.0f - brushMinSize);
+            float width = brushSize * genData.penWidth;
+            genData.brushPoints.back().width = std::max(genData.brushPoints.back().width, width);
+            smooth_out_points(genData.brushPoints, drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
+        }
+    }
+}
+
+bool extensive_point_checking(const std::vector<BrushPoint>& points, const Vector2f& newPoint, float minimumDistance) {
+    if(points.size() >= 1 && (newPoint - points[points.size() - 1].pos).norm() < minimumDistance)
+        return false;
+    if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < minimumDistance)
+        return false;
+    if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < minimumDistance)
+        return false;
+    return true;
+}
+
+bool extensive_point_checking_back(const std::vector<BrushPoint>& points, const Vector2f& newPoint) {
+    if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
+        return false;
+    if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
+        return false;
+    if(points.size() >= 4 && (newPoint - points[points.size() - 4].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
+        return false;
+    return true;
 }
 
 }

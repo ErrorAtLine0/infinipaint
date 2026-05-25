@@ -47,20 +47,10 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
     private:
-        bool extensive_point_checking_back(const Vector2f& newPoint);
-        bool extensive_point_checking(const Vector2f& newPoint);
-        void smooth_out_points(float smoothFactor);
-        void fix_tip();
         void commit_stroke();
         void commit_data(bool final);
 
-        float penWidth = 1.0f;
-        bool addedTemporaryPoint = false;
+        BrushComponentCode::BrushStrokeGenerationData genData;
         bool commitUpdate = false;
-
-        std::vector<BrushComponentCode::BrushPoint> brushPoints;
-
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
-
-        Vector2f prevPointUnaltered = {0, 0};
 };

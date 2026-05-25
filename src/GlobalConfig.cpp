@@ -62,6 +62,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["themeInUse"] = themeCurrentlyLoaded;
     toRet["defaultCanvasBackgroundColor"] = defaultCanvasBackgroundColor;
     toRet["flipZoomToolDirection"] = flipZoomToolDirection;
+    toRet["realTimeEraser"] = realTimeEraser;
 #ifndef __EMSCRIPTEN__
     toRet["checkForUpdates"] = checkForUpdates;
 #endif
@@ -132,6 +133,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     if(version >= VersionNumber(0, 3, 0))
         try{j.at("defaultCanvasBackgroundColor").get_to(defaultCanvasBackgroundColor);} catch(...) {}
     try{j.at("flipZoomToolDirection").get_to(flipZoomToolDirection);} catch(...) {}
+    try{j.at("realTimeEraser").get_to(realTimeEraser);} catch(...) {}
 #ifndef __EMSCRIPTEN__
     try{j.at("checkForUpdates").get_to(checkForUpdates);} catch(...) {}
 #endif

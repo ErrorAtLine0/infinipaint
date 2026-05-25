@@ -71,6 +71,8 @@ class GlobalConfig {
         bool mobileUI = false;
 #endif
 
+        bool realTimeEraser = true;
+
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;
             uint8_t middleClickButton = 1;

@@ -78,19 +78,43 @@ void EraserTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
 void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         if(button.down && !isErasing && !drawP.world.main.g.gui.cursor_obstructed()) {
+            auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+            if(!relativeWidthResult.first.has_value()) {
+                drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+                return;
+            }
+
+            BrushComponentCode::mouse_button(drawP, genData, drawP.world.drawData.cam.c, button, relativeWidthResult.first.value());
             isErasing = true;
-            start = end = button.pos;
         }
-        else if(!button.down && isErasing)
-            switch_tool(get_type());
+        else if(!button.down && isErasing) {
+            erase_on_path();
+            reset_erasing_stroke();
+            commit_erase();
+            isErasing = false;
+        }
     }
 }
 
 void EraserTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    end = motion.pos;
+    if(isErasing) {
+        auto& toolConfig = drawP.world.main.toolConfig;
+        BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value());
+    }
 }
 
-void EraserTool::erase_between_points() {
+void EraserTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
+    if(axis.axis == SDL_PEN_AXIS_PRESSURE && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
+        genData.penWidth = axis.value;
+        if(genData.penWidth != 0.0f && isErasing) {
+            auto& toolConfig = drawP.world.main.toolConfig;
+            float width = toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value();
+            BrushComponentCode::pen_pressure(drawP, genData, width);
+        }
+    }
+}
+
+void EraserTool::erase_on_path() {
     auto cCWorldBounds = drawP.world.drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(erasePath.getBounds());
     drawP.drawCache.traverse_bvh_run_function(cCWorldBounds, [&](const auto& bvhNode) {
         if(bvhNode &&
@@ -141,6 +165,8 @@ void EraserTool::erase_between_points() {
                                 c->obj->get_comp().set_data_from(*(it->second));
                                 updatedComponents.erase(it);
                             }
+                            else
+                                c->obj->get_comp().set_data_from(*dataCopy);
                             erasedComponents.emplace(c);
                             drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                             return true;
@@ -160,12 +186,22 @@ void EraserTool::erase_between_points() {
     });
 }
 
+void EraserTool::reset_erasing_stroke() {
+    if(!genData.brushPoints.empty()) {
+        auto lastBrushPoint = genData.brushPoints.back();
+        genData.brushPoints.clear();
+        genData.brushPoints.emplace_back(lastBrushPoint);
+        genData.prevPointUnaltered = genData.coords.get_mouse_pos(drawP.world);
+        genData.addedTemporaryPoint = false;
+    }
+}
+
 void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     erasedComponents.erase(erasedComp);
     updatedComponents.erase(erasedComp);
 }
 
-void EraserTool::switch_tool(DrawingProgramToolType newTool) {
+void EraserTool::commit_erase() {
     bool first = erasedComponents.empty(); // erase_component_container will call EraserTool::erase_component, which will clear erasedComponents eventually
     drawP.layerMan.erase_component_container(erasedComponents);
     for(auto& [comp, oldData] : updatedComponents) {
@@ -180,37 +216,38 @@ void EraserTool::switch_tool(DrawingProgramToolType newTool) {
     }
     erasedComponents.clear();
     updatedComponents.clear();
-    isErasing = false;
+}
+
+void EraserTool::switch_tool(DrawingProgramToolType newTool) {
+    commit_erase();
+}
+
+void EraserTool::commit_data() {
+    if(isErasing) {
+        erasePath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
+        if(drawP.world.main.conf.realTimeEraser) {
+            erase_on_path();
+            reset_erasing_stroke();
+        }
+    }
+    else {
+        auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+        if(!relativeWidthResult.first.has_value()) {
+            erasePath = SkPath();
+            return;
+        }
+        float width = relativeWidthResult.first.value() * 0.5f;
+        erasePath = SkPath::Circle(drawP.world.main.input.mouse.pos.x(), drawP.world.main.input.mouse.pos.y(), width);
+    }
 }
 
 void EraserTool::tool_update() {
     if(!drawP.world.main.g.gui.cursor_obstructed())
         drawP.world.main.input.hideCursor = true;
 
-    auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
-    if(!relativeWidthResult.first.has_value()) {
-        isErasing = false;
-        erasePath = eraseBorderPath = SkPath();
-        return;
-    }
-
-    float width = relativeWidthResult.first.value() * 0.5f;
     using namespace BrushComponentCode;
-    std::vector<BrushPoint> brushPoints;
-    brushPoints.emplace_back(start, width);
-    if(start != end)
-        brushPoints.emplace_back(end, width);
-    erasePath = brush_stroke_to_skpath(brushPoints, true);
-    brushPoints.clear();
-    brushPoints.emplace_back(start, width + 1.0f);
-    if(start != end)
-        brushPoints.emplace_back(end, width + 1.0f);
-    eraseBorderPath = brush_stroke_to_skpath(brushPoints, true);
 
-    if(isErasing)
-        erase_between_points();
-
-    start = end;
+    commit_data();
 }
 
 bool EraserTool::prevent_undo_or_redo() {
@@ -218,7 +255,7 @@ bool EraserTool::prevent_undo_or_redo() {
 }
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed() && !erasePath.isEmpty() && !eraseBorderPath.isEmpty()) {
+    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed() && !erasePath.isEmpty()) {
         SkPaint linePaint;
         linePaint.setAntiAlias(drawData.skiaAA);
         linePaint.setColor4f({0.0f, 0.0f, 0.0f, 0.4f});
@@ -226,6 +263,6 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
         canvas->drawPath(erasePath, linePaint);
 
         linePaint.setColor4f({1.0f, 1.0f, 1.0f, 0.4f});
-        canvas->drawPath(eraseBorderPath, linePaint);
+        canvas->drawPath(erasePath, linePaint);
     }
 }
