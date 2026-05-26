@@ -115,13 +115,13 @@ void EraserTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs
 }
 
 void EraserTool::erase_on_path() {
-    auto cCWorldBounds = drawP.world.drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(erasePath.getBounds());
+    auto cCWorldBounds = genData.coords.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(erasePath.getBounds());
     drawP.drawCache.traverse_bvh_run_function(cCWorldBounds, [&](const auto& bvhNode) {
         if(bvhNode &&
-           erasePath.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.min))) &&
-           erasePath.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.max))) &&
-           erasePath.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.top_right()))) &&
-           erasePath.contains(convert_vec2<SkPoint>(drawP.world.drawData.cam.c.to_space(bvhNode->bounds.bottom_left())))) {
+           erasePath.contains(convert_vec2<SkPoint>(genData.coords.to_space(bvhNode->bounds.min))) &&
+           erasePath.contains(convert_vec2<SkPoint>(genData.coords.to_space(bvhNode->bounds.max))) &&
+           erasePath.contains(convert_vec2<SkPoint>(genData.coords.to_space(bvhNode->bounds.top_right()))) &&
+           erasePath.contains(convert_vec2<SkPoint>(genData.coords.to_space(bvhNode->bounds.bottom_left())))) {
             drawP.drawCache.invalidate_cache_at_aabb(bvhNode->bounds);
             drawP.drawCache.traverse_bvh_run_function_starting_at_node_no_collision_check(bvhNode, [&](const auto& bvhNodeChild) {
                 drawP.drawCache.node_loop_erase_if_components(bvhNodeChild, [&](auto c) {
@@ -144,7 +144,7 @@ void EraserTool::erase_on_path() {
             if(drawP.world.main.toolConfig.eraser.eraseDetail) {
                 if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
                     auto dataCopy = c->obj->get_comp().get_data_copy();
-                    CanvasComponentEraseDetailResult result = c->obj->collides_with_erase_detail(drawP.world.drawData.cam.c, erasePath);
+                    CanvasComponentEraseDetailResult result = c->obj->collides_with_erase_detail(genData.coords, erasePath);
                     switch(result) {
                         case CanvasComponentEraseDetailResult::NO_CHANGE:
                             return false;
@@ -174,7 +174,7 @@ void EraserTool::erase_on_path() {
                 }
             }
             else {
-                if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(drawP.world.drawData.cam.c, erasePath)) {
+                if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector) && c->obj->collides_with(genData.coords, erasePath)) {
                     erasedComponents.emplace(c);
                     drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                     return true;
@@ -256,6 +256,11 @@ bool EraserTool::prevent_undo_or_redo() {
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     if(!drawP.world.main.input.isTouchDevice && (!drawData.main->g.gui.cursor_obstructed() || isErasing) && !erasePath.isEmpty()) {
+        if(isErasing) {
+            CanvasComponentContainer::TransformData drawTransform = CanvasComponentContainer::calculate_draw_transform(drawData.cam.c, genData.coords);
+            canvas->save();
+            CanvasComponentContainer::canvas_do_transform(canvas, drawTransform);
+        }
         SkPaint linePaint;
         linePaint.setAntiAlias(drawData.skiaAA);
         linePaint.setColor4f({0.0f, 0.0f, 0.0f, 0.4f});
@@ -264,5 +269,7 @@ void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 
         linePaint.setColor4f({1.0f, 1.0f, 1.0f, 0.4f});
         canvas->drawPath(erasePath, linePaint);
+        if(isErasing)
+            canvas->restore();
     }
 }

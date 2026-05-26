@@ -78,7 +78,7 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
         return;
     if(compContainer->should_draw(drawData)) {
         canvas->save();
-        compContainer->canvas_do_transform(canvas, compContainer->calculate_draw_transform(drawData.cam.c));
+        compContainer->canvas_do_transform(canvas, compContainer->calculate_draw_transform(drawData.cam.c, compContainer->coords));
         SkPaint p;
         p.setStroke(true);
         p.setStrokeWidth(10.0f);

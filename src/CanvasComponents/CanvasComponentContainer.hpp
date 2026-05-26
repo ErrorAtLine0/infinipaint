@@ -83,7 +83,8 @@ class CanvasComponentContainer {
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void draw_with_predraw_data(SkCanvas* canvas, const DrawData& drawData, const PreDrawData& preDrawData) const;
         PreDrawData calculate_predraw_data(const DrawData& drawData) const;
-        TransformData calculate_draw_transform(const CoordSpaceHelper& camCoords) const;
+        static TransformData calculate_draw_transform(const CoordSpaceHelper& camCoords, const CoordSpaceHelper& coords);
+        static void canvas_do_transform(SkCanvas* canvas, const TransformData& transformData);
         void commit_update(DrawingProgram& drawP);
         void commit_transform_dont_invalidate_cache(); // Must be thread safe
         void commit_transform(DrawingProgram& drawP);
@@ -107,7 +108,6 @@ class CanvasComponentContainer {
 
         unsigned get_mipmap_level(const DrawData& drawData) const;
         CanvasComponent* allocate_comp(CanvasComponentType type);
-        void canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) const;
         void calculate_world_bounds();
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;

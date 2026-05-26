@@ -153,7 +153,7 @@ CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_d
         return CanvasComponentEraseDetailResult::NO_CHANGE;
     }
     else if(get_comp().can_erase_detail()) {
-        TransformData drawTransform = calculate_draw_transform(camCoords);
+        TransformData drawTransform = calculate_draw_transform(camCoords, coords);
         SkMatrix m = SkMatrix::I();
         m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
         std::optional<SkPath> transformedPath = checkAgainstCam.tryMakeTransform(m);
@@ -173,7 +173,7 @@ bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, 
     else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY))
         return checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min)));
     else {
-        TransformData drawTransform = calculate_draw_transform(camCoords);
+        TransformData drawTransform = calculate_draw_transform(camCoords, coords);
         SkMatrix m = SkMatrix::I();
         m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
         std::optional<SkPath> transformedPath = checkAgainstCam.tryMakeTransform(m);
@@ -191,7 +191,7 @@ bool CanvasComponentContainer::collides_with_point(const CoordSpaceHelper& camCo
     else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY)) // Object is too tiny, just dismiss the collision
         return false;
     else {
-        TransformData drawTransform = calculate_draw_transform(camCoords);
+        TransformData drawTransform = calculate_draw_transform(camCoords, coords);
         SkMatrix m = SkMatrix::I();
         m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
         SkPoint p = m.mapPoint(convert_vec2<SkPoint>(checkAgainstCam));
@@ -199,7 +199,7 @@ bool CanvasComponentContainer::collides_with_point(const CoordSpaceHelper& camCo
     }
 }
 
-void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) const {
+void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) {
     canvas->scale(transformData.scale, transformData.scale);
     canvas->rotate(transformData.rotation);
     canvas->translate(transformData.translation.x(), transformData.translation.y());
@@ -211,7 +211,7 @@ bool CanvasComponentContainer::should_draw(const DrawData& drawData) const {
 
 CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predraw_data(const DrawData& drawData) const {
     PreDrawData toRet;
-    toRet.transformData = calculate_draw_transform(drawData.cam.c);
+    toRet.transformData = calculate_draw_transform(drawData.cam.c, coords);
     if(toRet.transformData.scale < COMP_MAX_BEFORE_STOP_SCALING)
         toRet.extraData = get_comp().get_predraw_data(drawData);
     else
@@ -219,7 +219,7 @@ CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predra
     return toRet;
 }
 
-CanvasComponentContainer::TransformData CanvasComponentContainer::calculate_draw_transform(const CoordSpaceHelper& camCoords) const {
+CanvasComponentContainer::TransformData CanvasComponentContainer::calculate_draw_transform(const CoordSpaceHelper& camCoords, const CoordSpaceHelper& coords) {
     TransformData toRet;
     toRet.translation = -coords.to_space(camCoords.pos);
     toRet.rotation = (coords.rotation - camCoords.rotation) * 180.0 / std::numbers::pi;
