@@ -24,6 +24,7 @@
 #include <include/core/SkPathBuilder.h>
 #include "../../CanvasComponents/BrushComponentCode.hpp"
 #include "../EditCanvasComponentWorldUndoAction.hpp"
+#include <include/pathops/SkPathOps.h>
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
@@ -88,6 +89,10 @@ void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::Mouse
             isErasing = true;
         }
         else if(!button.down && isErasing) {
+            // If not real time eraser, we can benefit from simplifying the path
+            std::optional<SkPath> simplified = Simplify(erasePath);
+            if(simplified.has_value())
+                erasePath = simplified.value();
             erase_on_path();
             reset_erasing_stroke();
             commit_erase();
@@ -202,8 +207,30 @@ void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) 
 }
 
 void EraserTool::commit_erase() {
-    bool first = erasedComponents.empty(); // erase_component_container will call EraserTool::erase_component, which will clear erasedComponents eventually
-    drawP.layerMan.erase_component_container(erasedComponents);
+    bool placedNewObject = false;
+    std::unordered_map<DrawingProgramLayerListItem*, std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>> newObjectsToPlace;
+    std::erase_if(updatedComponents, [&] (auto& p) {
+        auto& [comp, oldData] = p;
+        std::vector<CanvasComponentContainer*> splitComps = comp->obj->get_comp().attempt_split(drawP);
+        if(!splitComps.empty()) {
+            for(CanvasComponentContainer* c : splitComps)
+                newObjectsToPlace[comp->obj->parentLayer].emplace_back(std::next(comp->obj->objInfo), c);
+            placedNewObject = true;
+            erasedComponents.emplace(comp);
+            comp->obj->get_comp().set_data_from(*oldData);
+            return true;
+        }
+        return false;
+    });
+    bool firstPlacement = true;
+    for(auto& [layer, compMap] : newObjectsToPlace) {
+        drawP.layerMan.add_many_components_to_layer(layer, compMap, firstPlacement);
+        firstPlacement = false;
+    }
+    bool objectsToErase = !erasedComponents.empty();
+    if(objectsToErase)
+        drawP.layerMan.erase_component_container(erasedComponents, !placedNewObject);
+    bool first = !objectsToErase && !placedNewObject;
     for(auto& [comp, oldData] : updatedComponents) {
         comp->obj->commit_update_dont_invalidate_cache(drawP);
         comp->obj->send_comp_update(drawP, true);

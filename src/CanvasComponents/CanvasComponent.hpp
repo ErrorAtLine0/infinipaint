@@ -41,6 +41,7 @@ class CanvasComponent {
         virtual void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
         virtual void remap_resource_ids(const std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID>& resourceOldToNewMap);
         virtual void change_stroke_color(const Vector4f& newStrokeColor);
+        virtual std::vector<CanvasComponentContainer*> attempt_split(DrawingProgram& drawP) const;
         virtual std::optional<Vector4f> get_stroke_color() const;
 
         virtual void set_data_from(const CanvasComponent& other) = 0;

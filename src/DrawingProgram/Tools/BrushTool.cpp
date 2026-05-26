@@ -25,9 +25,9 @@
 #include "../../CanvasComponents/MeshCanvasComponent.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
-
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+#include <include/pathops/SkPathOps.h>
 
 #define MINIMUM_DISTANCE_FROM_FIRST_POINT 3.0f
 #define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
@@ -83,6 +83,11 @@ void BrushTool::commit_data(bool final) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(containerPtr->get_comp());
         newMesh.d.meshPath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
+        if(final) {
+            std::optional<SkPath> simplified = Simplify(newMesh.d.meshPath);
+            if(simplified.has_value())
+                newMesh.d.meshPath = simplified.value();
+        }
         containerPtr->commit_update(drawP);
         containerPtr->send_comp_update(drawP, final);
     }

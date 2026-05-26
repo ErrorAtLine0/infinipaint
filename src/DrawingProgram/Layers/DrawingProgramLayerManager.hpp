@@ -31,9 +31,9 @@ class DrawingProgramLayerManager {
         NetworkingObjects::NetObjOwnerPtr<DrawingProgramLayerListItem> layerTreeRoot;
         NetworkingObjects::NetObjWeakPtr<DrawingProgramLayerListItem> editingLayer;
         void set_initial_editing_layer();
-        void add_undo_erase_components(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap);
-        void add_undo_place_components(DrawingProgramLayerListItem* parent, const std::vector<CanvasComponentContainer::ObjInfoIterator>& placeList);
-        void erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap);
+        void add_undo_erase_components(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap, bool newUndo = true);
+        void add_undo_place_components(DrawingProgramLayerListItem* parent, const std::vector<CanvasComponentContainer::ObjInfoIterator>& placeList, bool newUndo = true);
+        void erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap, bool newUndo = true);
         bool commitUpdateOnComponentInsert = true;
         bool addToCacheOnComponentInsert = true;
     public:
@@ -49,7 +49,7 @@ class DrawingProgramLayerManager {
         void read_components_client(cereal::PortableBinaryInputArchive& a);
         bool is_a_layer_being_edited();
         void scale_up(const WorldScalar& scaleUpAmount);
-        template <typename List> void erase_component_container(const List& compsToErase) {
+        template <typename List> void erase_component_container(const List& compsToErase, bool newUndo = true) {
             if(!compsToErase.empty()) {
                 std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>> idsToEraseInSpecificLayers;
                 for(auto& c : compsToErase)
@@ -59,7 +59,7 @@ class DrawingProgramLayerManager {
                         return a->pos < b->pos;
                     });
                 }
-                erase_component_map(idsToEraseInSpecificLayers);
+                erase_component_map(idsToEraseInSpecificLayers, newUndo);
             }
         }
         uint32_t edited_layer_component_count();
@@ -80,6 +80,7 @@ class DrawingProgramLayerManager {
 
         CanvasComponentContainer::ObjInfo* add_component_to_layer_being_edited(CanvasComponentContainer* newObj);
         std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer_being_edited(const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs);
+        std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer(DrawingProgramLayerListItem* layer, const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs, bool newUndo = true);
         std::vector<CanvasComponentContainer::ObjInfo*> get_flattened_component_list() const;
         std::vector<DrawingProgramLayerListItem*> get_flattened_layer_list();
         void add_undo_place_component(CanvasComponentContainer::ObjInfo* objInfo);

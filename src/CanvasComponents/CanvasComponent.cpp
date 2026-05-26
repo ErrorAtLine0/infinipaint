@@ -75,6 +75,8 @@ bool CanvasComponent::can_erase_detail() const {
     return false;
 }
 
+std::vector<CanvasComponentContainer*> CanvasComponent::attempt_split(DrawingProgram& drawP) const { return {}; }
+
 CanvasComponentEraseDetailResult CanvasComponent::erase_detail(const SkPath& eraseAgainst) {
     return CanvasComponentEraseDetailResult::NO_CHANGE;
 }

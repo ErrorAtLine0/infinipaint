@@ -33,9 +33,10 @@
 #include "../DrawCollision.hpp"
 #include "CanvasComponentContainer.hpp"
 #include "Helpers/SCollision.hpp"
+#include "../DrawingProgram/DrawingProgram.hpp"
+#include "../World.hpp"
 #include <CDT/include/CDT.h>
-
-#define BVH_LEVELS 3
+#include <clipper2/clipper.h>
 
 template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
     std::vector<uint32_t> contourSizes;
@@ -106,6 +107,9 @@ void MeshCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Versi
         bool hasRoundCaps;
         a(brushPoints, d.color, hasRoundCaps);
         d.meshPath = BrushComponentCode::brush_stroke_to_skpath(brushPoints, hasRoundCaps);
+        std::optional<SkPath> simplified = Simplify(d.meshPath);
+        if(simplified.has_value())
+            d.meshPath = simplified.value();
     }
 }
 
@@ -266,6 +270,104 @@ bool MeshCanvasComponent::should_draw_extra(const DrawData& drawData, const Coor
 
 bool MeshCanvasComponent::can_erase_detail() const {
     return true;
+}
+
+void sort_tree_into_sk_paths(std::vector<SkPath>& paths, const Clipper2Lib::PolyTreeD& tree) {
+    using namespace Clipper2Lib;
+    for(auto& treeChild : tree) {
+        SkPathBuilder newPath;
+        {
+            const PathD& poly = treeChild->Polygon();
+            if(poly.empty()) {
+                continue;
+            }
+            newPath.moveTo(poly.front().x, poly.front().y);
+            for(size_t i = 1; i < poly.size(); i++)
+                newPath.lineTo(poly[i].x, poly[i].y);
+            newPath.close();
+        }
+        for(auto& child : *treeChild) {
+            if(child->IsHole()) {
+                const PathD& poly = child->Polygon();
+                newPath.moveTo(poly.front().x, poly.front().y);
+                for(size_t i = 1; i < poly.size(); i++)
+                    newPath.lineTo(poly[i].x, poly[i].y);
+                newPath.close();
+                for(auto& childChild : *child) {
+                    if(childChild->IsHole())
+                        continue;
+                    else {
+                        sort_tree_into_sk_paths(paths, *child);
+                    }
+                }
+            }
+            else {
+                sort_tree_into_sk_paths(paths, *child);
+            }
+        }
+        paths.emplace_back(newPath.detach());
+    }
+}
+
+std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(DrawingProgram& drawP) const {
+    using namespace Clipper2Lib;
+
+    std::vector<CanvasComponentContainer*> toRet;
+
+    PathsD clippingSubjects;
+
+    SkPath::Iter iter(d.meshPath, false);
+
+    size_t moveCount = 0;
+    for(;;) {
+        std::optional<SkPath::IterRec> rec = iter.next();
+        if(!rec.has_value())
+            break;
+
+        switch(rec->fVerb) {
+            case SkPathVerb::kClose:
+                break;
+            case SkPathVerb::kLine:
+                clippingSubjects.back().emplace_back(rec->fPoints[1].x(), rec->fPoints[1].y());
+                break;
+            case SkPathVerb::kMove:
+                clippingSubjects.emplace_back();
+                clippingSubjects.back().emplace_back(rec->fPoints[0].x(), rec->fPoints[0].y());
+                moveCount++;
+                break;
+            default:
+                throw std::runtime_error("[attempt_split] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
+                break;
+        }
+    }
+
+    if(moveCount <= 1)
+        return {};
+
+    ClipperD clipper;
+    PolyTreeD solutionTree;
+
+    clipper.AddSubject(clippingSubjects);
+    clipper.AddClip(clippingSubjects);
+    clipper.Execute(ClipType::Union, FillRule::EvenOdd, solutionTree);
+
+    std::vector<SkPath> splitPaths;
+
+    sort_tree_into_sk_paths(splitPaths, solutionTree);
+
+    if(splitPaths.size() <= 1)
+        return toRet;
+
+    for(const SkPath& p : splitPaths) {
+        CanvasComponentContainer* newComp = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::MESH);
+        MeshCanvasComponent& mesh = static_cast<MeshCanvasComponent&>(newComp->get_comp());
+        mesh.d.color = d.color;
+        mesh.d.meshPath = p;
+        newComp->coords = compContainer->coords;
+        toRet.emplace_back(newComp);
+    }
+
+    return toRet;
 }
 
 CanvasComponentEraseDetailResult MeshCanvasComponent::erase_detail(const SkPath& eraseAgainst) {

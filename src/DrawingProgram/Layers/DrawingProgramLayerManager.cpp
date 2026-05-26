@@ -250,6 +250,12 @@ std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManage
     return {};
 }
 
+std::vector<CanvasComponentContainer::ObjInfoIterator> DrawingProgramLayerManager::add_many_components_to_layer(DrawingProgramLayerListItem* layer, const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs, bool newUndo) {
+    auto toRet = layer->get_layer().components->insert_sorted_list_and_send_create(layer->get_layer().components, newObjs);
+    add_undo_place_components(layer, toRet, newUndo);
+    return toRet;
+}
+
 void DrawingProgramLayerManager::disable_add_to_cache_block(const std::function<void()>& toRun) {
     addToCacheOnComponentInsert = false;
     toRun();
@@ -368,8 +374,8 @@ void DrawingProgramLayerManager::add_undo_place_component(CanvasComponentContain
     drawP.world.undo.push(std::make_unique<AddCanvasComponentWorldUndoAction>(objInfo->pos, drawP.world.undo.get_undoid_from_netid(objInfo->obj.get_net_id()), drawP.world.undo.get_undoid_from_netid(objInfo->obj->parentLayer->get_layer().components.get_net_id())));
 }
 
-void DrawingProgramLayerManager::erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap) {
-    add_undo_erase_components(eraseMap);
+void DrawingProgramLayerManager::erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap, bool newUndo) {
+    add_undo_erase_components(eraseMap, newUndo);
     drawP.world.netObjMan.send_multi_update_messsage([&]() {
         for(auto& [layerListItem, netObjSetToErase] : eraseMap) {
             auto& layerComponentList = layerListItem->get_layer().components;
@@ -378,7 +384,7 @@ void DrawingProgramLayerManager::erase_component_map(const std::unordered_map<Dr
     }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
 }
 
-void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap) {
+void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap, bool newUndo) {
     using namespace NetworkingObjects;
 
     struct EraseListData {
@@ -485,10 +491,14 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
             ++i;
         }
     }
-    undoMan.push(std::make_unique<EraseCanvasComponentsWorldUndoAction>(std::move(undoMap)));
+
+    if(newUndo)
+        undoMan.push(std::make_unique<EraseCanvasComponentsWorldUndoAction>(std::move(undoMap)));
+    else
+        undoMan.push_on_last(std::make_unique<EraseCanvasComponentsWorldUndoAction>(std::move(undoMap)));
 }
 
-void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerListItem* parent, const std::vector<CanvasComponentContainer::ObjInfoIterator>& placeList) {
+void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerListItem* parent, const std::vector<CanvasComponentContainer::ObjInfoIterator>& placeList, bool newUndo) {
     using namespace NetworkingObjects;
 
     struct PlaceListData {
@@ -575,5 +585,8 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
         undoData.pos.emplace_back(comp->pos - i);
         ++i;
     }
-    undoMan.push(std::make_unique<PlaceCanvasComponentsWorldUndoAction>(undoMan.get_undoid_from_netid(parent->get_layer().components.get_net_id()), std::move(undoData)));
+    if(newUndo)
+        undoMan.push(std::make_unique<PlaceCanvasComponentsWorldUndoAction>(undoMan.get_undoid_from_netid(parent->get_layer().components.get_net_id()), std::move(undoData)));
+    else
+        undoMan.push_on_last(std::make_unique<PlaceCanvasComponentsWorldUndoAction>(undoMan.get_undoid_from_netid(parent->get_layer().components.get_net_id()), std::move(undoData)));
 }
