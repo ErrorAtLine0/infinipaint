@@ -19,6 +19,8 @@
 #include "BrushComponentCode.hpp"
 #include <Helpers/ConvertVec.hpp>
 #include <Helpers/MathExtras.hpp>
+#include <clipper2/clipper.h>
+#include <include/core/SkPathTypes.h>
 #include "../TimePoint.hpp"
 #include "../DrawingProgram/DrawingProgram.hpp"
 #include "../World.hpp"
@@ -30,6 +32,110 @@
 #define DRAW_MINIMUM_LIMIT 1.0f
 
 namespace BrushComponentCode {
+
+void skpath_to_clipper2_pathsd(Clipper2Lib::PathsD& clipperPath, const SkPath& skPath) {
+    SkPath::Iter iter(skPath, false);
+
+    for(;;) {
+        std::optional<SkPath::IterRec> rec = iter.next();
+        if(!rec.has_value())
+            break;
+
+        switch(rec->fVerb) {
+            case SkPathVerb::kClose:
+                break;
+            case SkPathVerb::kLine:
+                clipperPath.back().emplace_back(rec->fPoints[1].x(), rec->fPoints[1].y());
+                break;
+            case SkPathVerb::kMove:
+                clipperPath.emplace_back();
+                clipperPath.back().emplace_back(rec->fPoints[0].x(), rec->fPoints[0].y());
+                break;
+            default:
+                throw std::runtime_error("[skpath_to_clipper2_pathsd] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
+                break;
+        }
+    }
+}
+
+bool clipper2_polygon_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PathD& clipperPath) {
+    if(clipperPath.empty())
+        return false;
+    skPathBuilder.moveTo(clipperPath.front().x, clipperPath.front().y);
+    for(size_t i = 1; i < clipperPath.size(); i++)
+        skPathBuilder.lineTo(clipperPath[i].x, clipperPath[i].y);
+    skPathBuilder.close();
+    return true;
+}
+
+void sort_clipper_polytreed_into_skpaths(std::vector<SkPath>& paths, const Clipper2Lib::PolyTreeD& tree) {
+    using namespace Clipper2Lib;
+    for(auto& treeChild : tree) {
+        SkPathBuilder newPath;
+        if(!clipper2_polygon_to_skpath_builder(newPath, treeChild->Polygon()))
+            continue;
+        for(auto& child : *treeChild) {
+            if(child->IsHole()) {
+                clipper2_polygon_to_skpath_builder(newPath, child->Polygon());
+                for(auto& childChild : *child) {
+                    if(childChild->IsHole())
+                        continue;
+                    else
+                        sort_clipper_polytreed_into_skpaths(paths, *child);
+                }
+            }
+            else
+                sort_clipper_polytreed_into_skpaths(paths, *child);
+        }
+        paths.emplace_back(newPath.detach());
+    }
+}
+
+void sort_clipper_polytreed_into_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PolyTreeD& tree) {
+    using namespace Clipper2Lib;
+    for(auto& treeChild : tree) {
+        if(!clipper2_polygon_to_skpath_builder(skPathBuilder, treeChild->Polygon()))
+            continue;
+        for(auto& child : *treeChild) {
+            if(child->IsHole()) {
+                clipper2_polygon_to_skpath_builder(skPathBuilder, child->Polygon());
+                for(auto& childChild : *child) {
+                    if(childChild->IsHole())
+                        continue;
+                    else
+                        sort_clipper_polytreed_into_skpath_builder(skPathBuilder, *child);
+                }
+            }
+            else
+                sort_clipper_polytreed_into_skpath_builder(skPathBuilder, *child);
+        }
+    }
+}
+
+void clipper2_polygons_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PathsD& clipperPath) {
+    for(auto& p : clipperPath)
+        clipper2_polygon_to_skpath_builder(skPathBuilder, p);
+}
+
+std::optional<SkPath> skpath_simplify_only_lines(const SkPath& skPath) {
+    using namespace Clipper2Lib;
+    PathsD clippingSubjects;
+    skpath_to_clipper2_pathsd(clippingSubjects, skPath);
+    ClipperD clipper;
+    PathsD solutionPaths;
+
+    clipper.AddSubject(clippingSubjects);
+    clipper.AddClip(clippingSubjects);
+    if(!clipper.Execute(ClipType::Union, skPath.getFillType() == SkPathFillType::kEvenOdd ? FillRule::EvenOdd : FillRule::NonZero, solutionPaths))
+        return std::nullopt;
+
+    SimplifyPaths(solutionPaths, 0.01);
+
+    SkPathBuilder newPath;
+    newPath.setFillType(skPath.getFillType());
+    clipper2_polygons_to_skpath_builder(newPath, solutionPaths);
+    return newPath.detach();
+}
 
 SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps) {
     std::vector<BrushPoint> points = smooth_points(brushPoints, 0, brushPoints.size() - 1, DEFAULT_SMOOTHNESS);

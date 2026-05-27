@@ -86,6 +86,8 @@ void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::Mouse
             }
 
             BrushComponentCode::mouse_button(drawP, genData, drawP.world.drawData.cam.c, button, relativeWidthResult.first.value());
+            // NOTE: Must set erase path when isErasing is set to true to make sure that the Circle path from not erasing part doesn't reach the erase_on_path code
+            erasePath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
             isErasing = true;
         }
         else if(!button.down && isErasing) {
@@ -232,6 +234,7 @@ void EraserTool::commit_erase() {
         drawP.layerMan.erase_component_container(erasedComponents, !placedNewObject);
     bool first = !objectsToErase && !placedNewObject;
     for(auto& [comp, oldData] : updatedComponents) {
+        comp->obj->get_comp().simplify_paths();
         comp->obj->commit_update_dont_invalidate_cache(drawP);
         comp->obj->send_comp_update(drawP, true);
         if(first) {

@@ -36,6 +36,7 @@ class MeshCanvasComponent : public CanvasComponent {
         virtual std::vector<CanvasComponentContainer*> attempt_split(DrawingProgram& drawP) const override;
         virtual std::optional<Vector4f> get_stroke_color() const override;
         virtual void set_data_from(const CanvasComponent& other) override;
+        virtual void simplify_paths() override;
 
         struct Data {
             SkPath meshPath;

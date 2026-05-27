@@ -272,43 +272,6 @@ bool MeshCanvasComponent::can_erase_detail() const {
     return true;
 }
 
-void sort_tree_into_sk_paths(std::vector<SkPath>& paths, const Clipper2Lib::PolyTreeD& tree) {
-    using namespace Clipper2Lib;
-    for(auto& treeChild : tree) {
-        SkPathBuilder newPath;
-        {
-            const PathD& poly = treeChild->Polygon();
-            if(poly.empty()) {
-                continue;
-            }
-            newPath.moveTo(poly.front().x, poly.front().y);
-            for(size_t i = 1; i < poly.size(); i++)
-                newPath.lineTo(poly[i].x, poly[i].y);
-            newPath.close();
-        }
-        for(auto& child : *treeChild) {
-            if(child->IsHole()) {
-                const PathD& poly = child->Polygon();
-                newPath.moveTo(poly.front().x, poly.front().y);
-                for(size_t i = 1; i < poly.size(); i++)
-                    newPath.lineTo(poly[i].x, poly[i].y);
-                newPath.close();
-                for(auto& childChild : *child) {
-                    if(childChild->IsHole())
-                        continue;
-                    else {
-                        sort_tree_into_sk_paths(paths, *child);
-                    }
-                }
-            }
-            else {
-                sort_tree_into_sk_paths(paths, *child);
-            }
-        }
-        paths.emplace_back(newPath.detach());
-    }
-}
-
 std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(DrawingProgram& drawP) const {
     using namespace Clipper2Lib;
 
@@ -316,32 +279,9 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
 
     PathsD clippingSubjects;
 
-    SkPath::Iter iter(d.meshPath, false);
+    BrushComponentCode::skpath_to_clipper2_pathsd(clippingSubjects, d.meshPath);
 
-    size_t moveCount = 0;
-    for(;;) {
-        std::optional<SkPath::IterRec> rec = iter.next();
-        if(!rec.has_value())
-            break;
-
-        switch(rec->fVerb) {
-            case SkPathVerb::kClose:
-                break;
-            case SkPathVerb::kLine:
-                clippingSubjects.back().emplace_back(rec->fPoints[1].x(), rec->fPoints[1].y());
-                break;
-            case SkPathVerb::kMove:
-                clippingSubjects.emplace_back();
-                clippingSubjects.back().emplace_back(rec->fPoints[0].x(), rec->fPoints[0].y());
-                moveCount++;
-                break;
-            default:
-                throw std::runtime_error("[attempt_split] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
-                break;
-        }
-    }
-
-    if(moveCount <= 1)
+    if(clippingSubjects.size() <= 1)
         return {};
 
     ClipperD clipper;
@@ -353,7 +293,7 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
 
     std::vector<SkPath> splitPaths;
 
-    sort_tree_into_sk_paths(splitPaths, solutionTree);
+    BrushComponentCode::sort_clipper_polytreed_into_skpaths(splitPaths, solutionTree);
 
     if(splitPaths.size() <= 1)
         return toRet;
@@ -364,6 +304,7 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
         mesh.d.color = d.color;
         mesh.d.meshPath = p;
         newComp->coords = compContainer->coords;
+        mesh.simplify_paths();
         toRet.emplace_back(newComp);
     }
 
@@ -376,12 +317,19 @@ CanvasComponentEraseDetailResult MeshCanvasComponent::erase_detail(const SkPath&
         return CanvasComponentEraseDetailResult::NO_CHANGE;
     std::optional<SkPath> newPath = Op(d.meshPath, eraseAgainst, SkPathOp::kDifference_SkPathOp);
     if(newPath.has_value()) {
+        auto oldPath = d.meshPath;
         d.meshPath = newPath.value();
         if(d.meshPath.isEmpty())
             return CanvasComponentEraseDetailResult::REMOVED;
         return CanvasComponentEraseDetailResult::CHANGED;
     }
     return CanvasComponentEraseDetailResult::NO_CHANGE;
+}
+
+void MeshCanvasComponent::simplify_paths() {
+    auto newPath = Simplify(d.meshPath);
+    if(newPath.has_value())
+        d.meshPath = newPath.value();
 }
 
 SCollision::AABB<float> MeshCanvasComponent::get_obj_coord_bounds() const {

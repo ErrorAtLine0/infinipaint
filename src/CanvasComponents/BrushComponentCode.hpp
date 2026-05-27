@@ -20,6 +20,7 @@
 #include "../CoordSpaceHelper.hpp"
 #include <include/core/SkPathBuilder.h>
 #include "../InputManager.hpp"
+#include <clipper2/clipper.h>
 
 class DrawingProgram;
 
@@ -31,6 +32,7 @@ struct MeshShapeData {
 };
 
 namespace BrushComponentCode {
+    constexpr float CLIPPER_SIMPLIFY_EPSILON = 0.1;
     struct BrushPoint {
         Vector2f pos;
         float width;
@@ -46,6 +48,12 @@ namespace BrushComponentCode {
         float penWidth = 1.0f;
         CoordSpaceHelper coords;
     };
+
+    void skpath_to_clipper2_pathsd(Clipper2Lib::PathsD& clipperPath, const SkPath& skPath);
+    bool clipper2_polygon_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PathD& clipperPath);
+    void sort_clipper_polytreed_into_skpaths(std::vector<SkPath>& paths, const Clipper2Lib::PolyTreeD& tree);
+    void clipper2_polygons_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PathsD& clipperPath);
+    std::optional<SkPath> skpath_simplify_only_lines(const SkPath& skPath);
 
     SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps);
     SkPath create_triangles(const std::vector<BrushPoint>& regularPoints, const std::vector<BrushPoint>& smoothedPoints, bool hasRoundCaps);
