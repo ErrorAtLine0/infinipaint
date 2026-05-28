@@ -129,7 +129,7 @@ std::optional<SkPath> skpath_simplify_only_lines(const SkPath& skPath) {
     if(!clipper.Execute(ClipType::Union, skPath.getFillType() == SkPathFillType::kEvenOdd ? FillRule::EvenOdd : FillRule::NonZero, solutionPaths))
         return std::nullopt;
 
-    SimplifyPaths(solutionPaths, 0.01);
+    SimplifyPaths(solutionPaths, CLIPPER_SIMPLIFY_EPSILON);
 
     SkPathBuilder newPath;
     newPath.setFillType(skPath.getFillType());

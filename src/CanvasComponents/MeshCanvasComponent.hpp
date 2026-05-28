@@ -37,6 +37,7 @@ class MeshCanvasComponent : public CanvasComponent {
         virtual std::optional<Vector4f> get_stroke_color() const override;
         virtual void set_data_from(const CanvasComponent& other) override;
         virtual void simplify_paths() override;
+        virtual void normalize_object_coordinates(CoordSpaceHelper& coords) override;
 
         struct Data {
             SkPath meshPath;

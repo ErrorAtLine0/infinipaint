@@ -104,6 +104,12 @@ void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, 
         compAllocator->comp->load_file(a, version);
         compAllocator->comp->compContainer = this;
     }
+    if(version < VersionNumber(0, 6, 0))
+        normalize_object_coordinates();
+}
+
+void CanvasComponentContainer::normalize_object_coordinates() {
+    get_comp().normalize_object_coordinates(coords);
 }
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {

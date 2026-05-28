@@ -311,6 +311,26 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
     return toRet;
 }
 
+void MeshCanvasComponent::normalize_object_coordinates(CoordSpaceHelper& coords) {
+    SkRect pathBounds = d.meshPath.getBounds();
+    SkPoint center = pathBounds.center();
+    float maxDimScaleFactor = 1.0 / (std::max(pathBounds.width(), pathBounds.height()) * 0.5f); // Scale must be uniform. This scale factor should force the maximum coordinate = 1 after translation
+    SkMatrix m = SkMatrix::I();
+    // Might not be in correct order. Translate to origin first, then scale to normalize coordinates
+    m.postTranslate(-center.x(), -center.y()).postScale(maxDimScaleFactor, maxDimScaleFactor);
+    std::optional<SkPath> tryTransformPath = d.meshPath.tryMakeTransform(m);
+    if(tryTransformPath) {
+        d.meshPath = tryTransformPath.value();
+        //for(auto& p : d.meshPath.points())
+        //    std::cout << vec_pretty(convert_vec2<Vector2f>(p)) << std::endl;
+        WorldVec newCenter = WorldVec{center.x(), center.y()} * coords.inverseScale;
+        newCenter = rotate_world_coord(newCenter, coords.rotation);
+        coords.translate(newCenter);
+        coords.scale_about_double(coords.pos, maxDimScaleFactor);
+    }
+    //std::cout << vec_pretty(convert_vec2<Vector2f>(center)) << " " << coords.pos.x().display_int_str(3) << " " << coords.pos.y().display_int_str(3) << " " << coords.inverseScale << std::endl;
+}
+
 CanvasComponentEraseDetailResult MeshCanvasComponent::erase_detail(const SkPath& eraseAgainst) {
     bool intersectsAABB = d.meshPath.getBounds().intersects(eraseAgainst.getBounds());
     if(!intersectsAABB)

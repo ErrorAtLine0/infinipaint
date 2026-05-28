@@ -95,6 +95,7 @@ class CanvasComponentContainer {
         bool collides_with_point(const CoordSpaceHelper& camCoords, const Vector2f& checkAgainstCam) const;
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
         void scale_up(const WorldScalar& scaleUpAmount);
+        void normalize_object_coordinates();
 
         std::weak_ptr<DrawingProgramCacheBVHNode> cacheParentBvhNode;
         DrawingProgramLayerListItem* parentLayer = nullptr;

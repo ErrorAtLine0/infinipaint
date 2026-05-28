@@ -78,6 +78,9 @@ bool CanvasComponent::can_erase_detail() const {
 void CanvasComponent::simplify_paths() {
 }
 
+void CanvasComponent::normalize_object_coordinates(CoordSpaceHelper& coords) {
+}
+
 std::vector<CanvasComponentContainer*> CanvasComponent::attempt_split(DrawingProgram& drawP) const { return {}; }
 
 CanvasComponentEraseDetailResult CanvasComponent::erase_detail(const SkPath& eraseAgainst) {

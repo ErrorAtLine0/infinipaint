@@ -44,6 +44,7 @@ class CanvasComponent {
         virtual std::vector<CanvasComponentContainer*> attempt_split(DrawingProgram& drawP) const;
         virtual void simplify_paths();
         virtual std::optional<Vector4f> get_stroke_color() const;
+        virtual void normalize_object_coordinates(CoordSpaceHelper& coords);
 
         virtual void set_data_from(const CanvasComponent& other) = 0;
         virtual std::unique_ptr<CanvasComponent> get_data_copy() const = 0;
