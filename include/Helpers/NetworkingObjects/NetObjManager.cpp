@@ -68,7 +68,7 @@ namespace NetworkingObjects {
         destroyCallback = newDestroyCallback;
     }
     void NetObjManager::send_multi_update_messsage(std::function<void()> captureSendBlock, SendUpdateType updateType, const std::shared_ptr<NetServer::ClientData>& specificClient) {
-        if(is_connected()) {
+        if(is_connected() && multiUpdateData.expired()) { // Check for multiUpdateData.expired() to make sure we aren't overriding a previous call to send_multi_update_messsage
             std::shared_ptr<MultiUpdateData> d = std::make_shared<MultiUpdateData>();
             d->ss = std::make_shared<std::stringstream>(std::ios::binary | std::ios::out);
             d->outArchive = std::make_unique<cereal::PortableBinaryOutputArchive>(*d->ss);

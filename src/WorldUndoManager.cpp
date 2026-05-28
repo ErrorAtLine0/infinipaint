@@ -75,12 +75,15 @@ void WorldUndoManager::undo() {
     world.bMan.refresh_gui_data();
 
     bool undoFail = false;
-    for(auto& u : std::views::reverse(undoQueue.back())) {
-        if(!u->undo(*this)) {
-            undoFail = true;
-            break;
+
+    world.netObjMan.send_multi_update_messsage([&]() {
+        for(auto& u : std::views::reverse(undoQueue.back())) {
+            if(!u->undo(*this)) {
+                undoFail = true;
+                break;
+            }
         }
-    }
+    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
 
     if(undoFail) {
         clear();
@@ -103,12 +106,14 @@ void WorldUndoManager::redo() {
     world.bMan.refresh_gui_data();
 
     bool redoFail = false;
-    for(auto& u : redoQueue.back()) {
-        if(!u->redo(*this)) {
-            redoFail = true;
-            break;
+    world.netObjMan.send_multi_update_messsage([&]() {
+        for(auto& u : redoQueue.back()) {
+            if(!u->redo(*this)) {
+                redoFail = true;
+                break;
+            }
         }
-    }
+    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
 
     if(redoFail) {
         clear();

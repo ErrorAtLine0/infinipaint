@@ -79,6 +79,7 @@ class DrawingProgramLayerManager {
         uint32_t total_component_count();
 
         CanvasComponentContainer::ObjInfo* add_component_to_layer_being_edited(CanvasComponentContainer* newObj);
+        // BOTH add_many_components_to_layer CALLS REQUIRE A SORTED INSERT LIST
         std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer_being_edited(const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs);
         std::vector<CanvasComponentContainer::ObjInfoIterator> add_many_components_to_layer(DrawingProgramLayerListItem* layer, const std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>& newObjs, bool newUndo = true);
         std::vector<CanvasComponentContainer::ObjInfo*> get_flattened_component_list() const;

@@ -218,7 +218,7 @@ void DrawingProgramSelection::check_add_stroke_color_change_undo() {
                     if(!undoMan.fill_netid_list_from_undoid_list(netIDs, undoIDs))
                         return false;
 
-                    undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                    {
                         for(size_t i = 0; i < netIDs.size(); i++) {
                             auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(netIDs[i]);
                             if(objPtr) {
@@ -229,7 +229,7 @@ void DrawingProgramSelection::check_add_stroke_color_change_undo() {
                                 objPtr->send_comp_update(undoMan.world.drawProg, true);
                             }
                         }
-                    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                    }
 
                     return true;
                 }

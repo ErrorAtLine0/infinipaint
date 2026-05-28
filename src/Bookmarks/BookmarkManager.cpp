@@ -170,7 +170,7 @@ void BookmarkManager::setup_list_gui() {
                     uint32_t insertUndoPosition;
                     std::vector<WorldUndoManager::UndoObjectID> insertedUndoIDs;
 
-                    world.netObjMan.send_multi_update_messsage([&]() {
+                    {
                         std::unordered_map<NetObjID, std::vector<NetObjOrderedListIterator<BookmarkListItem>>> toEraseMap;
                         uint32_t newIndex = index;
                         std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
@@ -218,7 +218,7 @@ void BookmarkManager::setup_list_gui() {
                         insertUndoPosition = newIndex;
                         for(auto& it : insertedIterators)
                             insertedUndoIDs.emplace_back(world.undo.get_undoid_from_netid(it->obj.get_net_id()));
-                    }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                    }
 
                     class MoveBookmarksWorldUndoAction : public WorldUndoAction {
                         public:
@@ -269,7 +269,7 @@ void BookmarkManager::setup_list_gui() {
                                     }
                                 }
 
-                                undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                                {
                                     eraseListPtr->erase_list(eraseListPtr, toEraseList, &toMoveObjs);
 
                                     for(auto& [parentNetID, indexNetIDListPair] : toInsertToMap) {
@@ -286,7 +286,7 @@ void BookmarkManager::setup_list_gui() {
                                         }
                                         parentListPtr->insert_sorted_list_and_send_create(parentListPtr, toInsert);
                                     }
-                                }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                                }
                                 return true;
                             }
                             bool redo(WorldUndoManager& undoMan) override {
@@ -316,7 +316,7 @@ void BookmarkManager::setup_list_gui() {
                                         return false;
                                 }
 
-                                undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                                {
                                     std::vector<NetObjOwnerPtr<BookmarkListItem>> toInsertObjPtrs;
 
                                     for(auto& [listToEraseFrom, setToErase] : toEraseMap) {
@@ -334,7 +334,8 @@ void BookmarkManager::setup_list_gui() {
                                         toInsert.back().second.reassign_ids();
                                     }
                                     listPtr->insert_sorted_list_and_send_create(listPtr, toInsert);
-                                }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                                }
+
                                 return true;
                             }
                             ~MoveBookmarksWorldUndoAction() {}

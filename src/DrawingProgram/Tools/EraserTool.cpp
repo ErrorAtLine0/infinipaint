@@ -29,6 +29,7 @@
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+#include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -224,26 +225,32 @@ void EraserTool::commit_erase() {
         }
         return false;
     });
-    bool firstPlacement = true;
-    for(auto& [layer, compMap] : newObjectsToPlace) {
-        drawP.layerMan.add_many_components_to_layer(layer, compMap, firstPlacement);
-        firstPlacement = false;
-    }
-    bool objectsToErase = !erasedComponents.empty();
-    if(objectsToErase)
-        drawP.layerMan.erase_component_container(erasedComponents, !placedNewObject);
-    bool first = !objectsToErase && !placedNewObject;
-    for(auto& [comp, oldData] : updatedComponents) {
-        comp->obj->get_comp().simplify_paths();
-        comp->obj->commit_update_dont_invalidate_cache(drawP);
-        comp->obj->send_comp_update(drawP, true);
-        if(first) {
-            first = false;
-            drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+
+    drawP.world.netObjMan.send_multi_update_messsage([&]() {
+        bool firstPlacement = true;
+        for(auto& [layer, compMap] : newObjectsToPlace) {
+            layer->get_layer().components->sort_netobj_ordered_list_iterator_insert_list(layer->get_layer().components, compMap);
+            drawP.layerMan.add_many_components_to_layer(layer, compMap, firstPlacement);
+            firstPlacement = false;
         }
-        else
-            drawP.world.undo.push_on_last(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
-    }
+        bool objectsToErase = !erasedComponents.empty();
+        if(objectsToErase)
+            drawP.layerMan.erase_component_container(erasedComponents, !placedNewObject);
+        bool first = !objectsToErase && !placedNewObject;
+        for(auto& [comp, oldData] : updatedComponents) {
+            comp->obj->get_comp().simplify_paths();
+            comp->obj->normalize_object_coordinates();
+            comp->obj->commit_update_dont_invalidate_cache(drawP);
+            drawP.send_transforms_for({comp});
+            comp->obj->send_comp_update(drawP, true);
+            if(first) {
+                first = false;
+                drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+            }
+            else
+                drawP.world.undo.push_on_last(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+        }
+    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
     erasedComponents.clear();
     updatedComponents.clear();
 }

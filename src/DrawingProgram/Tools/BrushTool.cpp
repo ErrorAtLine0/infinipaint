@@ -87,9 +87,13 @@ void BrushTool::commit_data(bool final) {
             std::optional<SkPath> simplified = Simplify(newMesh.d.meshPath);
             if(simplified.has_value())
                 newMesh.d.meshPath = simplified.value();
+            containerPtr->normalize_object_coordinates();
         }
         containerPtr->commit_update(drawP);
-        containerPtr->send_comp_update(drawP, final);
+        drawP.world.netObjMan.send_multi_update_messsage([&]() {
+            drawP.send_transforms_for({objInfoBeingEdited});
+            containerPtr->send_comp_update(drawP, final);
+        }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
     }
     commitUpdate = false;
 }

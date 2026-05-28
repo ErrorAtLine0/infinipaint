@@ -305,6 +305,7 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
         mesh.d.meshPath = p;
         newComp->coords = compContainer->coords;
         mesh.simplify_paths();
+        newComp->normalize_object_coordinates();
         toRet.emplace_back(newComp);
     }
 
@@ -314,21 +315,18 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
 void MeshCanvasComponent::normalize_object_coordinates(CoordSpaceHelper& coords) {
     SkRect pathBounds = d.meshPath.getBounds();
     SkPoint center = pathBounds.center();
-    float maxDimScaleFactor = 1.0 / (std::max(pathBounds.width(), pathBounds.height()) * 0.5f); // Scale must be uniform. This scale factor should force the maximum coordinate = 1 after translation
+    constexpr float MAX_COORDINATE = 1000.0f;
+    float maxDimScaleFactor = MAX_COORDINATE / (std::max(pathBounds.width(), pathBounds.height()) * 0.5f); // Scale must be uniform. This scale factor should force the maximum coordinate = MAX_COORDINATE after transformation
     SkMatrix m = SkMatrix::I();
-    // Might not be in correct order. Translate to origin first, then scale to normalize coordinates
     m.postTranslate(-center.x(), -center.y()).postScale(maxDimScaleFactor, maxDimScaleFactor);
     std::optional<SkPath> tryTransformPath = d.meshPath.tryMakeTransform(m);
     if(tryTransformPath) {
         d.meshPath = tryTransformPath.value();
-        //for(auto& p : d.meshPath.points())
-        //    std::cout << vec_pretty(convert_vec2<Vector2f>(p)) << std::endl;
         WorldVec newCenter = WorldVec{center.x(), center.y()} * coords.inverseScale;
         newCenter = rotate_world_coord(newCenter, coords.rotation);
         coords.translate(newCenter);
         coords.scale_about_double(coords.pos, maxDimScaleFactor);
     }
-    //std::cout << vec_pretty(convert_vec2<Vector2f>(center)) << " " << coords.pos.x().display_int_str(3) << " " << coords.pos.y().display_int_str(3) << " " << coords.inverseScale << std::endl;
 }
 
 CanvasComponentEraseDetailResult MeshCanvasComponent::erase_detail(const SkPath& eraseAgainst) {

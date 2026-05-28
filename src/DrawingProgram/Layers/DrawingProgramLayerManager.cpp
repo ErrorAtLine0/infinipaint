@@ -203,12 +203,12 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                     }
                 }
 
-                undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                {
                     for(auto& [compNetID, moveData] : toMoveObjs) {
                         auto components = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer::NetList>(compNetID);
                         std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, NetObjOwnerPtr<CanvasComponentContainer>>> toInsert;
                         std::vector<NetObjOrderedListIterator<CanvasComponentContainer>> toErase = components->get_list(moveData.objs);
-                        components->sort_it_list(toErase); // There's a chance that objects could have changed order on the client side, so sort them
+                        components->sort_netobj_ordered_list_iterator_list(components, toErase); // There's a chance that objects could have changed order on the client side, so sort them
 
                         std::vector<NetObjOwnerPtr<CanvasComponentContainer>> erasedObjs;
                         std::vector<uint32_t> newPos;
@@ -228,7 +228,7 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
                         components->insert_sorted_list_and_send_create(components, toInsert);
                         *moveData.oldPos = newPos;
                     }
-                }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                }
                 return true;
             }
             ~MoveComponentsUndoAction() {}
@@ -423,7 +423,7 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
                     }
                 }
 
-                undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                {
                     for(auto& [parentNetID, insertData] : insertMap) {
                         auto parentListPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<NetObjOrderedList<CanvasComponentContainer>>(parentNetID);
                         std::vector<std::pair<NetObjOrderedListIterator<CanvasComponentContainer>, NetObjOwnerPtr<CanvasComponentContainer>>> toInsert(insertData.it.size());
@@ -435,7 +435,7 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
                         parentListPtr->insert_sorted_list_and_send_create(parentListPtr, toInsert);
                         insertData.copyData->clear();
                     }
-                }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                }
 
                 return true;
             }
@@ -458,12 +458,12 @@ void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_
                     }
                 }
 
-                undoMan.world.netObjMan.send_multi_update_messsage([&]() {
+                {
                     for(auto& [parentNetID, eData] : eraseMap) {
                         auto parentListPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<NetObjOrderedList<CanvasComponentContainer>>(parentNetID);
                         parentListPtr->erase_list(parentListPtr, eData);
                     }
-                }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                }
 
                 return true;
             }
@@ -543,6 +543,8 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
             bool redo(WorldUndoManager& undoMan) override {
                 std::vector<NetObjOrderedListIterator<CanvasComponentContainer>> it;
                 NetObjTemporaryPtr<NetObjOrderedList<CanvasComponentContainer>> parentListPtr;
+                
+                auto p = std::chrono::steady_clock::now();
 
                 {
                     std::optional<NetObjID> parentNetID = undoMan.get_netid_from_undoid(parentUndoID);
@@ -551,9 +553,13 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
                     parentListPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<NetObjOrderedList<CanvasComponentContainer>>(parentNetID.value());
                 }
 
+                p = std::chrono::steady_clock::now();
+
                 {
                     it = parentListPtr->at_ordered_indices(undoPlaceData.pos);
                 }
+
+                p = std::chrono::steady_clock::now();
 
                 std::vector<std::pair<NetObjOrderedListIterator<CanvasComponentContainer>, NetObjOwnerPtr<CanvasComponentContainer>>> toInsert(it.size());
                 for(size_t i = 0; i < it.size(); i++) {
@@ -561,7 +567,12 @@ void DrawingProgramLayerManager::add_undo_place_components(DrawingProgramLayerLi
                     toInsert[i].second = undoMan.world.netObjMan.make_obj_direct<CanvasComponentContainer>(undoMan.world.netObjMan, *undoPlaceData.copyData.at(i));
                     undoMan.register_new_netid_to_existing_undoid(undoPlaceData.undoID.at(i), toInsert[i].second.get_net_id());
                 }
+
+                p = std::chrono::steady_clock::now();
+
                 parentListPtr->insert_sorted_list_and_send_create(parentListPtr, toInsert);
+
+                p = std::chrono::steady_clock::now();
 
                 undoPlaceData.copyData.clear();
                 return true;
