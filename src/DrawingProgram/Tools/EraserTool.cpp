@@ -124,6 +124,9 @@ void EraserTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs
 
 void EraserTool::erase_on_path() {
     auto cCWorldBounds = genData.coords.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(erasePath.getBounds());
+    WorldScalar eraseScaleToCheckAgainst = WorldScalar(drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value()) * genData.coords.inverseScale;
+    if(eraseScaleToCheckAgainst == WorldScalar(0))
+        return;
     drawP.drawCache.traverse_bvh_run_function(cCWorldBounds, [&](const auto& bvhNode) {
         if(bvhNode &&
            erasePath.contains(convert_vec2<SkPoint>(genData.coords.to_space(bvhNode->bounds.min))) &&
@@ -152,7 +155,7 @@ void EraserTool::erase_on_path() {
             if(drawP.world.main.toolConfig.eraser.eraseDetail) {
                 if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
                     auto dataCopy = c->obj->get_comp().get_data_copy();
-                    CanvasComponentEraseDetailResult result = c->obj->collides_with_erase_detail(genData.coords, erasePath);
+                    CanvasComponentEraseDetailResult result = c->obj->collides_with_erase_detail(genData.coords, eraseScaleToCheckAgainst, erasePath);
                     switch(result) {
                         case CanvasComponentEraseDetailResult::NO_CHANGE:
                             return false;

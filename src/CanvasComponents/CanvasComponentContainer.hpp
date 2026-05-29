@@ -44,7 +44,6 @@ class CanvasComponentContainer {
         typedef NetworkingObjects::NetObjOrderedListObjectInfo<CanvasComponentContainer> ObjInfo;
         typedef NetworkingObjects::NetObjOrderedListIterator<CanvasComponentContainer> ObjInfoIterator;
 
-        constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_ERASE = 7;
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS = 14;
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_SCALING = 14;
         constexpr static float COMP_MAX_BEFORE_STOP_SCALING = 1 << COMP_MAX_SHIFT_BEFORE_STOP_SCALING;
@@ -91,7 +90,7 @@ class CanvasComponentContainer {
         void commit_transform(DrawingProgram& drawP);
         void commit_update_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         bool should_draw(const DrawData& drawData) const;
-        CanvasComponentEraseDetailResult collides_with_erase_detail(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const;
+        CanvasComponentEraseDetailResult collides_with_erase_detail(const CoordSpaceHelper& camCoords, const WorldScalar& camCoordsScaleToCheckAgainst, const SkPath& checkAgainstCam) const;
         bool collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const;
         bool collides_with_point(const CoordSpaceHelper& camCoords, const Vector2f& checkAgainstCam) const;
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);

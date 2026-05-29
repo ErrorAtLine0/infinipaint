@@ -148,12 +148,14 @@ void CanvasComponentContainer::commit_transform_dont_invalidate_cache() {
     calculate_world_bounds();
 }
 
-CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_detail(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const {
+// camCoordsScaleToCheckAgainst is different from camCoords.inverseScale if we locked the eraser's scale.
+CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_detail(const CoordSpaceHelper& camCoords, const WorldScalar& camCoordsScaleToCheckAgainst, const SkPath& checkAgainstCam) const {
+    constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_ERASE = 3;
     if(!worldAABB.has_value())
         return CanvasComponentEraseDetailResult::NO_CHANGE;
-    if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_ERASE) < coords.inverseScale) // Object is too large, just dismiss the collision
+    if((camCoordsScaleToCheckAgainst << COMP_MAX_SHIFT_BEFORE_STOP_ERASE) < coords.inverseScale) // Object is too large, just dismiss the collision
         return CanvasComponentEraseDetailResult::NO_CHANGE;
-    else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY)) {
+    else if(coords.inverseScale < (camCoordsScaleToCheckAgainst >> COMP_COLLIDE_MIN_SHIFT_TINY)) {
         if(checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min))))
             return CanvasComponentEraseDetailResult::REMOVED;
         return CanvasComponentEraseDetailResult::NO_CHANGE;
@@ -170,7 +172,6 @@ CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_d
     return CanvasComponentEraseDetailResult::NO_CHANGE;
 }
 
-// We could just send one of the checkAgainst colliders, since they represent the same thing, but sending both saves on redundant transformations, since we can save both of the versions on the executor side
 bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const {
     if(!worldAABB.has_value())
         return false;
