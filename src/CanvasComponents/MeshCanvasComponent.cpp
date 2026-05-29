@@ -138,11 +138,6 @@ void MeshCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const
     paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
     paint.setAntiAlias(drawData.skiaAA);
     canvas->drawPath(d.meshPath, paint);
-
-    //SkPaint paint2;
-    //paint2.setColor4f(SkColor4f{1.0f, 0.0f, 0.0f, 1.0f});
-    //paint2.setStroke(true);
-    //draw_collider(canvas, drawData, collisionTree, paint2);
 }
 
 std::shared_ptr<void> MeshCanvasComponent::get_predraw_data_accurate(const DrawData& drawData, const CoordSpaceHelper& coords) const {
@@ -234,44 +229,21 @@ std::shared_ptr<void> MeshCanvasComponent::get_predraw_data_accurate(const DrawD
 
     if(finalTrianglePoints.empty())
         return nullptr;
-    else if(drawData.isSVGRender) {
-        auto pathsToDraw = std::make_shared<std::vector<SkPath>>();
-        for(auto& finalTriangle : finalTrianglePoints) {
-            SkPathBuilder pathBuilder;
-            pathBuilder.addPolygon({finalTriangle.data(), finalTriangle.size()}, true);
-            pathsToDraw->emplace_back(pathBuilder.detach());
-        }
-        return pathsToDraw;
-    }
-    else {
-        std::vector<SkPoint> pointVec(finalTrianglePoints.size() * 3);
-        for(size_t i = 0; i < finalTrianglePoints.size(); i++) {
-            pointVec[i * 3 + 0] = finalTrianglePoints[i][0];
-            pointVec[i * 3 + 1] = finalTrianglePoints[i][1];
-            pointVec[i * 3 + 2] = finalTrianglePoints[i][2];
-        }
-        auto verticesToDraw = std::make_shared<sk_sp<SkVertices>>();
-        *verticesToDraw = SkVertices::MakeCopy(SkVertices::kTriangles_VertexMode, pointVec.size(), pointVec.data(), nullptr, nullptr);
-        return verticesToDraw;
-    }
-    return nullptr;
+    SkPathBuilder pathBuilder;
+    for(auto& finalTriangle : finalTrianglePoints)
+        pathBuilder.addPolygon({finalTriangle.data(), finalTriangle.size()}, true);
+    return std::make_shared<SkPath>(pathBuilder.detach());
 }
 
 bool MeshCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords, const std::shared_ptr<void>& predrawData) const {
     if(predrawData) {
-        if(drawData.isSVGRender) { // SVG renders can't use saveLayer, so use this despite it being buggy in some scenarios
-            auto pathsToDraw = std::static_pointer_cast<std::vector<SkPath>>(predrawData);
+        auto pathToDraw = std::static_pointer_cast<SkPath>(predrawData);
+        if(pathToDraw) {
             SkPaint paint;
             paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
-            for(const SkPath& p : *pathsToDraw)
-                canvas->drawPath(p, paint);
+            paint.setAntiAlias(drawData.skiaAA);
+            canvas->drawPath(*pathToDraw, paint);
         }
-        else {
-            auto verticesToDraw = std::static_pointer_cast<sk_sp<SkVertices>>(predrawData);
-            SkPaint paint;
-            paint.setColor4f(SkColor4f{d.color.x(), d.color.y(), d.color.z(), d.color.w()});
-            canvas->drawVertices(*verticesToDraw, SkBlendMode::kSrcOver, paint);
-        } // Test not using the saveLayerAlphaf code path, since I'm changing how the triangles are generated to prevent overlap
     }
 
     return true;
