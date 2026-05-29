@@ -34,7 +34,7 @@
 namespace BrushComponentCode {
 
 void skpath_to_clipper2_pathsd(Clipper2Lib::PathsD& clipperPath, const SkPath& skPath) {
-    SkPath::Iter iter(skPath, false);
+    SkPath::Iter iter(skPath, true);
 
     for(;;) {
         std::optional<SkPath::IterRec> rec = iter.next();
