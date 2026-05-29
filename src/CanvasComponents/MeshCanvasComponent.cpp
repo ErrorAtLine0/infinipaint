@@ -58,15 +58,17 @@ template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
                 break;
         }
     }
-    a(contourSizes);
+    a(p.getFillType() == SkPathFillType::kEvenOdd, contourSizes);
     for(const SkPoint& p : points)
         a(p);
 }
 
 template <typename Archive> SkPath skpath_read(Archive& a) {
+    bool isEvenOdd;
     SkPathBuilder builder;
     std::vector<uint32_t> contourSizes;
-    a(contourSizes);
+    a(isEvenOdd, contourSizes);
+    builder.setFillType(isEvenOdd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
     for(uint32_t contourSize : contourSizes) {
         SkPoint p;
         if(contourSize == 0)
@@ -289,7 +291,7 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
 
     clipper.AddSubject(clippingSubjects);
     clipper.AddClip(clippingSubjects);
-    clipper.Execute(ClipType::Union, FillRule::EvenOdd, solutionTree);
+    clipper.Execute(ClipType::Union, d.meshPath.getFillType() == SkPathFillType::kEvenOdd ? FillRule::EvenOdd : FillRule::NonZero, solutionTree);
 
     std::vector<SkPath> splitPaths;
 

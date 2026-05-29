@@ -84,9 +84,7 @@ void BrushTool::commit_data(bool final) {
         MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(containerPtr->get_comp());
         newMesh.d.meshPath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
         if(final) {
-            std::optional<SkPath> simplified = Simplify(newMesh.d.meshPath);
-            if(simplified.has_value())
-                newMesh.d.meshPath = simplified.value();
+            containerPtr->get_comp().simplify_paths();
             containerPtr->normalize_object_coordinates();
         }
         containerPtr->commit_update(drawP);
