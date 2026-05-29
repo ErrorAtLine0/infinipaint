@@ -31,3 +31,17 @@ class EditCanvasComponentWorldUndoAction : public WorldUndoAction {
         std::unique_ptr<CanvasComponent> data;
         WorldUndoManager::UndoObjectID undoID;
 };
+
+class EditTransformCanvasComponentWorldUndoAction : public WorldUndoAction {
+    public:
+        EditTransformCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponent> initData, const CoordSpaceHelper& initCoords, WorldUndoManager::UndoObjectID initUndoID);
+        std::string get_name() const override;
+        bool undo(WorldUndoManager& undoMan) override;
+        bool redo(WorldUndoManager& undoMan) override;
+        bool undo_redo(WorldUndoManager& undoMan);
+        ~EditTransformCanvasComponentWorldUndoAction();
+
+        std::unique_ptr<CanvasComponent> data;
+        CoordSpaceHelper coords;
+        WorldUndoManager::UndoObjectID undoID;
+};

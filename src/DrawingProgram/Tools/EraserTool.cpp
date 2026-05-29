@@ -139,7 +139,7 @@ void EraserTool::erase_on_path() {
                     if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
                         auto it = updatedComponents.find(c);
                         if(it != updatedComponents.end()) {
-                            c->obj->get_comp().set_data_from(*(it->second));
+                            c->obj->get_comp().set_data_from(*it->second->obj);
                             updatedComponents.erase(it);
                         }
                         erasedComponents.emplace(c);
@@ -154,7 +154,7 @@ void EraserTool::erase_on_path() {
         drawP.drawCache.node_loop_erase_if_components(bvhNode, [&](auto c) {
             if(drawP.world.main.toolConfig.eraser.eraseDetail) {
                 if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
-                    auto dataCopy = c->obj->get_comp().get_data_copy();
+                    auto dataCopy = c->obj->get_data_copy();
                     CanvasComponentEraseDetailResult result = c->obj->collides_with_erase_detail(genData.coords, eraseScaleToCheckAgainst, erasePath);
                     switch(result) {
                         case CanvasComponentEraseDetailResult::NO_CHANGE:
@@ -173,11 +173,11 @@ void EraserTool::erase_on_path() {
                         case CanvasComponentEraseDetailResult::REMOVED:
                             auto it = updatedComponents.find(c);
                             if(it != updatedComponents.end()) {
-                                c->obj->get_comp().set_data_from(*(it->second));
+                                c->obj->get_comp().set_data_from(*it->second->obj);
                                 updatedComponents.erase(it);
                             }
                             else
-                                c->obj->get_comp().set_data_from(*dataCopy);
+                                c->obj->get_comp().set_data_from(*dataCopy->obj);
                             erasedComponents.emplace(c);
                             drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                             return true;
@@ -223,7 +223,7 @@ void EraserTool::commit_erase() {
                 newObjectsToPlace[comp->obj->parentLayer].emplace_back(std::next(comp->obj->objInfo), c);
             placedNewObject = true;
             erasedComponents.emplace(comp);
-            comp->obj->get_comp().set_data_from(*oldData);
+            comp->obj->get_comp().set_data_from(*oldData->obj);
             return true;
         }
         return false;
@@ -248,10 +248,10 @@ void EraserTool::commit_erase() {
             comp->obj->send_comp_update(drawP, true);
             if(first) {
                 first = false;
-                drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+                drawP.world.undo.push(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData->obj), oldData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
             }
             else
-                drawP.world.undo.push_on_last(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+                drawP.world.undo.push_on_last(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData->obj), oldData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
         }
     }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
     erasedComponents.clear();

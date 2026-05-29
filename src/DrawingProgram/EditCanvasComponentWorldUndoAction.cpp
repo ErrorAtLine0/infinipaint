@@ -51,3 +51,41 @@ bool EditCanvasComponentWorldUndoAction::undo_redo(WorldUndoManager& undoMan) {
 }
 
 EditCanvasComponentWorldUndoAction::~EditCanvasComponentWorldUndoAction() {}
+
+
+
+
+EditTransformCanvasComponentWorldUndoAction::EditTransformCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponent> initData, const CoordSpaceHelper& initCoords, WorldUndoManager::UndoObjectID initUndoID):
+    data(std::move(initData)),
+    coords(initCoords),
+    undoID(initUndoID)
+{}
+
+std::string EditTransformCanvasComponentWorldUndoAction::get_name() const {
+    return "Edit Canvas Component With Transform";
+}
+
+bool EditTransformCanvasComponentWorldUndoAction::undo(WorldUndoManager& undoMan) {
+    return undo_redo(undoMan);
+}
+
+bool EditTransformCanvasComponentWorldUndoAction::redo(WorldUndoManager& undoMan) {
+    return undo_redo(undoMan);
+}
+
+bool EditTransformCanvasComponentWorldUndoAction::undo_redo(WorldUndoManager& undoMan) {
+    std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
+    if(!toEditID.has_value())
+        return false;
+    auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
+    std::unique_ptr<CanvasComponent> newData = objPtr->get_comp().get_data_copy();
+    objPtr->get_comp().set_data_from(*data);
+    data = std::move(newData);
+    std::swap(coords, objPtr->coords);
+    undoMan.world.drawProg.send_transforms_for({&(*objPtr->objInfo)});
+    objPtr->commit_update(undoMan.world.drawProg);
+    objPtr->send_comp_update(undoMan.world.drawProg, true);
+    return true;
+}
+
+EditTransformCanvasComponentWorldUndoAction::~EditTransformCanvasComponentWorldUndoAction() {}

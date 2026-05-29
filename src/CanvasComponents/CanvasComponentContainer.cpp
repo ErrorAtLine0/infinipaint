@@ -151,11 +151,12 @@ void CanvasComponentContainer::commit_transform_dont_invalidate_cache() {
 // camCoordsScaleToCheckAgainst is different from camCoords.inverseScale if we locked the eraser's scale.
 CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_detail(const CoordSpaceHelper& camCoords, const WorldScalar& camCoordsScaleToCheckAgainst, const SkPath& checkAgainstCam) const {
     constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_ERASE = 3;
+    constexpr static int COMP_COMPLETE_ERASE_SHIFT = 13;
     if(!worldAABB.has_value())
         return CanvasComponentEraseDetailResult::NO_CHANGE;
     if((camCoordsScaleToCheckAgainst << COMP_MAX_SHIFT_BEFORE_STOP_ERASE) < coords.inverseScale) // Object is too large, just dismiss the collision
         return CanvasComponentEraseDetailResult::NO_CHANGE;
-    else if(coords.inverseScale < (camCoordsScaleToCheckAgainst >> COMP_COLLIDE_MIN_SHIFT_TINY)) {
+    else if(coords.inverseScale < (camCoordsScaleToCheckAgainst >> COMP_COMPLETE_ERASE_SHIFT)) {
         if(checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min))))
             return CanvasComponentEraseDetailResult::REMOVED;
         return CanvasComponentEraseDetailResult::NO_CHANGE;
