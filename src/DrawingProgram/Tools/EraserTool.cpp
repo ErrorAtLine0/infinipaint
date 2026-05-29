@@ -30,6 +30,7 @@
 #include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
+#include "Helpers/Parallel.hpp"
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -139,7 +140,7 @@ void EraserTool::erase_on_path() {
                     if(drawP.layerMan.component_passes_layer_selector(c, drawP.controls.layerSelector)) {
                         auto it = updatedComponents.find(c);
                         if(it != updatedComponents.end()) {
-                            c->obj->get_comp().set_data_from(*it->second->obj);
+                            c->obj->get_comp().set_data_from(*it->second.copyData->obj);
                             updatedComponents.erase(it);
                         }
                         erasedComponents.emplace(c);
@@ -173,7 +174,7 @@ void EraserTool::erase_on_path() {
                         case CanvasComponentEraseDetailResult::REMOVED:
                             auto it = updatedComponents.find(c);
                             if(it != updatedComponents.end()) {
-                                c->obj->get_comp().set_data_from(*it->second->obj);
+                                c->obj->get_comp().set_data_from(*it->second.copyData->obj);
                                 updatedComponents.erase(it);
                             }
                             else
@@ -215,15 +216,19 @@ void EraserTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) 
 void EraserTool::commit_erase() {
     bool placedNewObject = false;
     std::unordered_map<DrawingProgramLayerListItem*, std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>> newObjectsToPlace;
+
+    parallel_loop_container_mutable(updatedComponents, [&](auto& compPair) {
+        compPair.second.splitComps = compPair.first->obj->get_comp().attempt_split(drawP);
+    });
+
     std::erase_if(updatedComponents, [&] (auto& p) {
         auto& [comp, oldData] = p;
-        std::vector<CanvasComponentContainer*> splitComps = comp->obj->get_comp().attempt_split(drawP);
-        if(!splitComps.empty()) {
-            for(CanvasComponentContainer* c : splitComps)
+        if(!oldData.splitComps.empty()) {
+            for(CanvasComponentContainer* c : oldData.splitComps)
                 newObjectsToPlace[comp->obj->parentLayer].emplace_back(std::next(comp->obj->objInfo), c);
             placedNewObject = true;
             erasedComponents.emplace(comp);
-            comp->obj->get_comp().set_data_from(*oldData->obj);
+            comp->obj->get_comp().set_data_from(*oldData.copyData->obj);
             return true;
         }
         return false;
@@ -240,18 +245,21 @@ void EraserTool::commit_erase() {
         if(objectsToErase)
             drawP.layerMan.erase_component_container(erasedComponents, !placedNewObject);
         bool first = !objectsToErase && !placedNewObject;
-        for(auto& [comp, oldData] : updatedComponents) {
+        parallel_loop_container(updatedComponents, [&](auto& compPair) {
+            auto& [comp, oldData] = compPair;
             comp->obj->get_comp().simplify_paths();
             comp->obj->normalize_object_coordinates();
+        });
+        for(auto& [comp, oldData] : updatedComponents) {
             comp->obj->commit_update_dont_invalidate_cache(drawP);
             drawP.send_transforms_for({comp});
             comp->obj->send_comp_update(drawP, true);
             if(first) {
                 first = false;
-                drawP.world.undo.push(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData->obj), oldData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+                drawP.world.undo.push(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData.copyData->obj), oldData.copyData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
             }
             else
-                drawP.world.undo.push_on_last(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData->obj), oldData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
+                drawP.world.undo.push_on_last(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData.copyData->obj), oldData.copyData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
         }
     }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
     erasedComponents.clear();

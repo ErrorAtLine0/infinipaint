@@ -292,7 +292,7 @@ std::vector<CanvasComponentContainer*> MeshCanvasComponent::attempt_split(Drawin
     if(clippingSubjects.size() <= 1)
         return {};
 
-    ClipperD clipper;
+    ClipperD clipper(4);
     PolyTreeD solutionTree;
 
     clipper.AddSubject(clippingSubjects);
