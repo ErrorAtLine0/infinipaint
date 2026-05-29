@@ -151,7 +151,7 @@ void CanvasComponentContainer::commit_transform_dont_invalidate_cache() {
 CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_detail(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const {
     if(!worldAABB.has_value())
         return CanvasComponentEraseDetailResult::NO_CHANGE;
-    if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
+    if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_ERASE) < coords.inverseScale) // Object is too large, just dismiss the collision
         return CanvasComponentEraseDetailResult::NO_CHANGE;
     else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY)) {
         if(checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min))))
@@ -212,7 +212,7 @@ void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const Trans
 }
 
 bool CanvasComponentContainer::should_draw(const DrawData& drawData) const {
-    return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && worldAABB.has_value() && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
+    return (drawData.clampDrawMinimum < coords.inverseScale) && worldAABB.has_value() && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
 }
 
 CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predraw_data(const DrawData& drawData) const {
@@ -236,15 +236,6 @@ CanvasComponentContainer::TransformData CanvasComponentContainer::calculate_draw
 void CanvasComponentContainer::scale_up(const WorldScalar& scaleUpAmount) {
     coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
     calculate_world_bounds();
-}
-
-unsigned CanvasComponentContainer::get_mipmap_level(const DrawData& drawData) const {
-    if(drawData.mipMapLevelTwo > coords.inverseScale)
-        return 2;
-    else if(drawData.mipMapLevelOne > coords.inverseScale)
-        return 1;
-    else
-        return 0;
 }
 
 void CanvasComponentContainer::calculate_world_bounds() {

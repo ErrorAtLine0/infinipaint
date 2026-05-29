@@ -44,6 +44,7 @@ class CanvasComponentContainer {
         typedef NetworkingObjects::NetObjOrderedListObjectInfo<CanvasComponentContainer> ObjInfo;
         typedef NetworkingObjects::NetObjOrderedListIterator<CanvasComponentContainer> ObjInfoIterator;
 
+        constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_ERASE = 7;
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS = 14;
         constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_SCALING = 14;
         constexpr static float COMP_MAX_BEFORE_STOP_SCALING = 1 << COMP_MAX_SHIFT_BEFORE_STOP_SCALING;
@@ -107,10 +108,10 @@ class CanvasComponentContainer {
 
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a);
 
-        unsigned get_mipmap_level(const DrawData& drawData) const;
         CanvasComponent* allocate_comp(CanvasComponentType type);
         void calculate_world_bounds();
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
+
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentAllocator> compAllocator;
 };

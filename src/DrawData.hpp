@@ -32,12 +32,9 @@ struct DrawData {
     MainProgram* main;
     bool takingScreenshot = false;
     bool isSVGRender = false;
-    bool clampDrawBetween = true;
     bool drawGrids = true;
     bool transparentBackground = false;
     bool skiaAA = false;
     WorldScalar clampDrawMinimum;
-    WorldScalar mipMapLevelOne;
-    WorldScalar mipMapLevelTwo;
     void refresh_draw_optimizing_values();
 };

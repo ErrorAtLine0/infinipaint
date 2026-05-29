@@ -68,48 +68,23 @@ bool clipper2_polygon_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clip
     return true;
 }
 
-void sort_clipper_polytreed_into_skpaths(std::vector<SkPath>& paths, const Clipper2Lib::PolyTreeD& tree) {
+void sort_clipper_polytreed_into_skpaths_CHILD(std::vector<SkPath> &paths, const Clipper2Lib::PolyTreeD &tree) {
     using namespace Clipper2Lib;
+    SkPathBuilder newPath;
+    if(!clipper2_polygon_to_skpath_builder(newPath, tree.Polygon()))
+        return;
     for(auto& treeChild : tree) {
-        SkPathBuilder newPath;
-        if(!clipper2_polygon_to_skpath_builder(newPath, treeChild->Polygon()))
-            continue;
-        for(auto& child : *treeChild) {
-            if(child->IsHole()) {
-                clipper2_polygon_to_skpath_builder(newPath, child->Polygon());
-                for(auto& childChild : *child) {
-                    if(childChild->IsHole())
-                        continue;
-                    else
-                        sort_clipper_polytreed_into_skpaths(paths, *child);
-                }
-            }
-            else
-                sort_clipper_polytreed_into_skpaths(paths, *child);
-        }
-        paths.emplace_back(newPath.detach());
+        clipper2_polygon_to_skpath_builder(newPath, treeChild->Polygon());
+        for(auto& childChild : *treeChild)
+            sort_clipper_polytreed_into_skpaths_CHILD(paths, *childChild);
     }
+    paths.emplace_back(newPath.detach());
 }
 
-void sort_clipper_polytreed_into_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PolyTreeD& tree) {
+void sort_clipper_polytreed_into_skpaths(std::vector<SkPath>& paths, const Clipper2Lib::PolyTreeD& tree) {
     using namespace Clipper2Lib;
-    for(auto& treeChild : tree) {
-        if(!clipper2_polygon_to_skpath_builder(skPathBuilder, treeChild->Polygon()))
-            continue;
-        for(auto& child : *treeChild) {
-            if(child->IsHole()) {
-                clipper2_polygon_to_skpath_builder(skPathBuilder, child->Polygon());
-                for(auto& childChild : *child) {
-                    if(childChild->IsHole())
-                        continue;
-                    else
-                        sort_clipper_polytreed_into_skpath_builder(skPathBuilder, *child);
-                }
-            }
-            else
-                sort_clipper_polytreed_into_skpath_builder(skPathBuilder, *child);
-        }
-    }
+    for(auto& treeChild : tree)
+        sort_clipper_polytreed_into_skpaths_CHILD(paths, *treeChild);
 }
 
 void clipper2_polygons_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PathsD& clipperPath) {
