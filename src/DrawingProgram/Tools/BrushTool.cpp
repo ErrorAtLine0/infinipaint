@@ -88,10 +88,14 @@ void BrushTool::commit_data(bool final) {
             containerPtr->normalize_object_coordinates();
         }
         containerPtr->commit_update(drawP);
-        drawP.world.netObjMan.send_multi_update_messsage([&]() {
-            drawP.send_transforms_for({objInfoBeingEdited});
+        if(final) {
+            drawP.world.netObjMan.send_multi_update_messsage([&]() {
+                drawP.send_transforms_for({objInfoBeingEdited});
+                containerPtr->send_comp_update(drawP, final);
+            }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+        }
+        else
             containerPtr->send_comp_update(drawP, final);
-        }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
     }
     commitUpdate = false;
 }

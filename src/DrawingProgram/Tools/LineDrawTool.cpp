@@ -22,6 +22,7 @@
 #include "../../DrawData.hpp"
 #include "DrawingProgramToolBase.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
+#include "../../CanvasComponents/MeshCanvasComponent.hpp"
 #include "Helpers/MathExtras.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
@@ -47,6 +48,28 @@ void LineDrawTool::gui_toolbox(Toolbar& t) {
     });
 }
 
+void LineDrawTool::commit_data(bool final) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(containerPtr->get_comp());
+        newMesh.d.meshPath = BrushComponentCode::brush_stroke_to_skpath(brushPoints, drawP.world.main.toolConfig.lineDraw.hasRoundCaps);
+        if(final) {
+            containerPtr->get_comp().simplify_paths();
+            containerPtr->normalize_object_coordinates();
+        }
+        containerPtr->commit_update(drawP);
+        if(final) {
+            drawP.world.netObjMan.send_multi_update_messsage([&]() {
+                drawP.send_transforms_for({objInfoBeingEdited});
+                containerPtr->send_comp_update(drawP, final);
+            }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+        }
+        else
+            containerPtr->send_comp_update(drawP, final);
+    }
+    commitUpdate = false;
+}
+
 void LineDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
@@ -62,26 +85,29 @@ void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::Mou
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
         if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
-            //auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
-            //if(!relativeWidthResult.first.has_value()) {
-            //    drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
-            //    return;
-            //}
-            //float width = relativeWidthResult.first.value();
+            auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
+            if(!relativeWidthResult.first.has_value()) {
+                drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
+                return;
+            }
+            float width = relativeWidthResult.first.value();
 
-            //CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
-            //BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
+            brushPoints.clear();
 
-            //BrushStrokeCanvasComponentPoint p;
-            //p.pos = drawP.world.main.input.mouse.pos;
-            //p.width = width;
-            //newBrushStroke.d.points->emplace_back(p);
-            //p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
-            //newBrushStroke.d.points->emplace_back(p);
-            //newBrushStroke.d.color = toolConfig.globalConf.foregroundColor;
-            //newBrushStroke.d.hasRoundCaps = toolConfig.lineDraw.hasRoundCaps;
-            //newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
-            //objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
+            CanvasComponentContainer* newMeshContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::MESH);
+            MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(newMeshContainer->get_comp());
+
+            newMesh.d.color = toolConfig.globalConf.foregroundColor;
+            newMeshContainer->coords = drawP.world.drawData.cam.c;
+
+            BrushComponentCode::BrushPoint p;
+            p.pos = drawP.world.main.input.mouse.pos;
+            p.width = width;
+            brushPoints.emplace_back(p);
+            p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
+            brushPoints.emplace_back(p);
+            objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newMeshContainer);
+            commit_data(false);
         }
         else if(!button.down && objInfoBeingEdited)
             commit();
@@ -90,22 +116,20 @@ void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::Mou
 
 void LineDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(objInfoBeingEdited) {
-        //constexpr float SNAP_DIVISION_COUNT = 12.0f;
-        //NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        //BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-        //Vector2f newPos = containerPtr->coords.from_cam_space_to_this(drawP.world, motion.pos);
-        //Vector2f oldPos = brushStroke.d.points->front().pos;
-        //if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
-        //    Vector2f diff = (newPos - oldPos);
-        //    float diffLength = diff.norm();
-        //    diff.normalize();
-        //    float angle = (std::atan2(diff.y(), diff.x()) / std::numbers::pi) * SNAP_DIVISION_COUNT;
-        //    angle = std::round(angle);
-        //    angle = (angle * std::numbers::pi) / SNAP_DIVISION_COUNT;
-        //    newPos = oldPos + diffLength * Vector2f{cos(angle), sin(angle)};
-        //}
-        //brushStroke.d.points->back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
-        //commitUpdate = true;
+        constexpr float SNAP_DIVISION_COUNT = 12.0f;
+        Vector2f newPos = objInfoBeingEdited->obj->coords.from_cam_space_to_this(drawP.world, motion.pos);
+        Vector2f oldPos = brushPoints.front().pos;
+        if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held) {
+            Vector2f diff = (newPos - oldPos);
+            float diffLength = diff.norm();
+            diff.normalize();
+            float angle = (std::atan2(diff.y(), diff.x()) / std::numbers::pi) * SNAP_DIVISION_COUNT;
+            angle = std::round(angle);
+            angle = (angle * std::numbers::pi) / SNAP_DIVISION_COUNT;
+            newPos = oldPos + diffLength * Vector2f{cos(angle), sin(angle)};
+        }
+        brushPoints.back().pos = ensure_points_have_distance(oldPos, newPos, 1.0f);
+        commitUpdate = true;
     }
 }
 
@@ -125,12 +149,8 @@ void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {
 }
 
 void LineDrawTool::tool_update() {
-    if(commitUpdate && objInfoBeingEdited) {
-        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        containerPtr->commit_update(drawP);
-        containerPtr->send_comp_update(drawP, false);
-        commitUpdate = false;
-    }
+    if(commitUpdate && objInfoBeingEdited)
+        commit_data(false);
 }
 
 bool LineDrawTool::prevent_undo_or_redo() {
@@ -140,9 +160,7 @@ bool LineDrawTool::prevent_undo_or_redo() {
 void LineDrawTool::commit() {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        containerPtr->commit_update(drawP);
-        containerPtr->send_comp_update(drawP, true);
-        commitUpdate = false;
+        commit_data(true);
         if(containerPtr->get_world_bounds().has_value())
             drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         else {
@@ -150,6 +168,7 @@ void LineDrawTool::commit() {
             components->erase(components, containerPtr->objInfo);
         }
         objInfoBeingEdited = nullptr;
+        brushPoints.clear();
     }
 }
 
