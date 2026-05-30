@@ -26,9 +26,13 @@
 WorldScalar get_canvas_scale_up_amount(uint32_t newGridSize, uint32_t oldGridSize);
 
 template <typename T> void canvas_scale_up_check(T& obj, World& world, const std::shared_ptr<NetServer::ClientData>& c) {
-    if(c) {
+    if(c) { // Server, compare server's grid size with client's (c) grid size
         auto clientData = world.netObjMan.get_obj_temporary_ref_from_id<ClientData>(NetworkingObjects::NetObjID(c->customID));
         if(clientData->get_grid_size() < world.ownClientData->get_grid_size())
             obj.scale_up(get_canvas_scale_up_amount(world.ownClientData->get_grid_size(), clientData->get_grid_size()));
+    }
+    else { // Client, compare own grid size (world.ownClientData) with server's grid size
+        if(world.serverClientData->get_grid_size() < world.ownClientData->get_grid_size())
+            obj.scale_up(get_canvas_scale_up_amount(world.ownClientData->get_grid_size(), world.serverClientData->get_grid_size()));
     }
 }

@@ -80,10 +80,16 @@ void ClientData::register_class(World& world) {
                     break;
                 }
                 case ClientDataCommand::SET_GRID_SIZE: {
-                    uint32_t oldGridSize = o->gridSize;
                     a(o->gridSize);
-                    if(oldGridSize < o->gridSize)
-                        world.scale_up(get_canvas_scale_up_amount(o->gridSize, oldGridSize));
+                    if(o != world.ownClientData) {
+                        if(world.ownClientData->gridSize < o->gridSize) {
+                            world.scale_up(get_canvas_scale_up_amount(o->gridSize, world.ownClientData->gridSize));
+                            world.ownClientData->gridSize = o->gridSize;
+                            world.ownClientData.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
+                                a(ClientDataCommand::SET_GRID_SIZE, o->gridSize);
+                            });
+                        }
+                    }
                     break;
                 }
             }
@@ -122,10 +128,14 @@ void ClientData::register_class(World& world) {
                     break;
                 }
                 case ClientDataCommand::SET_GRID_SIZE: {
-                    uint32_t oldGridSize = o->gridSize;
                     a(o->gridSize);
-                    if(oldGridSize < o->gridSize)
-                        world.scale_up(get_canvas_scale_up_amount(o->gridSize, oldGridSize));
+                    if(world.ownClientData->gridSize < o->gridSize) {
+                        world.scale_up(get_canvas_scale_up_amount(o->gridSize, world.ownClientData->gridSize));
+                        world.ownClientData->gridSize = o->gridSize;
+                        world.ownClientData.send_update_to_all(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
+                            a(ClientDataCommand::SET_GRID_SIZE, o->gridSize);
+                        });
+                    }
                     o.send_server_update_to_all_clients(RELIABLE_COMMAND_CHANNEL, [](const NetObjTemporaryPtr<ClientData>& o, cereal::PortableBinaryOutputArchive & a) {
                         a(ClientDataCommand::SET_GRID_SIZE, o->gridSize);
                     });
