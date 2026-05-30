@@ -79,6 +79,10 @@ void CanvasComponentContainer::send_comp_update(DrawingProgram& drawP, bool fina
     drawP.world.delayedUpdateObjectManager.send_update_to_all<CanvasComponentAllocator>(compAllocator, finalUpdate);
 }
 
+void CanvasComponentContainer::set_object_update_lock(DrawingProgram& drawP, bool lockSet) {
+    drawP.world.delayedUpdateObjectManager.set_object_update_lock<CanvasComponentAllocator>(compAllocator, lockSet);
+}
+
 void CanvasComponentContainer::write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a) {
     a(o->coords);
     o->compAllocator.write_create_message(a);

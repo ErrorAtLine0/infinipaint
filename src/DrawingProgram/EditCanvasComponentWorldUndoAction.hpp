@@ -39,6 +39,7 @@ class EditTransformCanvasComponentWorldUndoAction : public WorldUndoAction {
         bool undo(WorldUndoManager& undoMan) override;
         bool redo(WorldUndoManager& undoMan) override;
         bool undo_redo(WorldUndoManager& undoMan);
+        void scale_up(const WorldScalar& scaleAmount) override;
         ~EditTransformCanvasComponentWorldUndoAction();
 
         std::unique_ptr<CanvasComponent> data;

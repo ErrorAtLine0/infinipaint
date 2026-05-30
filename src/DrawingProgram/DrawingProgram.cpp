@@ -300,11 +300,11 @@ void DrawingProgram::server_init_no_file() {
 
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
     selection.deselect_all();
+    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
     layerMan.scale_up(scaleUpAmount);
     if(controls.lockedCameraScale.has_value())
         controls.lockedCameraScale.value() *= scaleUpAmount;
     rebuild_cache();
-    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
 }
 
 void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive& a) {

@@ -628,13 +628,13 @@ void World::scale_up_step() {
 
 void World::scale_up(const WorldScalar& scaleUpAmount) {
     Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Canvas scaled up");
+    // drawProg will be sending info on committed objects/modified grids. These objects will NOT be scaled up.
+    // This means that the scale up message must be sent AFTER the World::scale_up function is called on our end
+    // if this client is the one responsible for the scale up
+    drawProg.scale_up(scaleUpAmount);
     bMan.scale_up(scaleUpAmount);
     gridMan.scale_up(scaleUpAmount);
     drawData.cam.scale_up(*this, scaleUpAmount);
-    // drawProg will be sending info on committed objects/modified grids. These objects will be scaled up already.
-    // This means that the scale up message must be send BEFORE the World::scale_up function is called on our end
-    // if this client is the one responsible for the scale up
-    drawProg.scale_up(scaleUpAmount);
     undo.scale_up(scaleUpAmount);
 }
 

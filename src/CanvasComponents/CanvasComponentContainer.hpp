@@ -96,6 +96,7 @@ class CanvasComponentContainer {
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
         void scale_up(const WorldScalar& scaleUpAmount);
         void normalize_object_coordinates();
+        void set_object_update_lock(DrawingProgram& drawP, bool lockSet);
 
         std::weak_ptr<DrawingProgramCacheBVHNode> cacheParentBvhNode;
         DrawingProgramLayerListItem* parentLayer = nullptr;

@@ -88,4 +88,8 @@ bool EditTransformCanvasComponentWorldUndoAction::undo_redo(WorldUndoManager& un
     return true;
 }
 
+void EditTransformCanvasComponentWorldUndoAction::scale_up(const WorldScalar& scaleAmount) {
+    coords.scale_about(WorldVec{0, 0}, scaleAmount, true);
+}
+
 EditTransformCanvasComponentWorldUndoAction::~EditTransformCanvasComponentWorldUndoAction() {}
