@@ -28,6 +28,23 @@
 #include <modules/skunicode/include/SkUnicode_icu.h>
 #include "NetThreadManager.hpp"
 
+template <typename T> class JNILocalRef {
+    public:
+        JNILocalRef(JNIEnv* e, T r):
+            env(e),
+            ref(r) {}
+        ~JNILocalRef() {
+            env->DeleteLocalRef(ref);
+        }
+        T get() const { return ref; }
+        operator T() const { return ref; }
+        JNILocalRef(const JNILocalRef<T>&) = delete;
+        JNILocalRef& operator=(const JNILocalRef<T>&) = delete;
+    private:
+        JNIEnv* env;
+        T ref;
+};
+
 std::string jstring2string(JNIEnv *env, jstring jStr) {
     if (!jStr)
         return "";
@@ -42,9 +59,9 @@ std::string jstring2string(JNIEnv *env, jstring jStr) {
     return std::string(str.c_str(), str.size());
 }
 
-jstring string2jstring(JNIEnv* env, const std::string& s) {
+JNILocalRef<jstring> string2jstring(JNIEnv* env, const std::string& s) {
     std::u16string u16str = SkUnicodes::ICU::Make()->convertUtf8ToUtf16(s.c_str(), s.size());
-    return env->NewString((const jchar*)u16str.data(), u16str.length());
+    return JNILocalRef<jstring>(env, env->NewString((const jchar*)u16str.data(), u16str.length()));
 }
 
 namespace AndroidJNICalls {
@@ -58,26 +75,31 @@ namespace AndroidJNICalls {
     bool textChanged = false;
     bool cursorChanged = false;
 
-    void shareInternalFile(const std::string& filePath, const std::string& mimeType) {
-        Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::shareInternalFile] Share internal file " + filePath);
+    void shareInternalFiles(const std::vector<std::string>& filePaths, const std::string& mimeType) {
+        if(filePaths.empty())
+            return;
+        Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::shareInternalFile] Share internal files");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-        jobject activity = (jobject)SDL_GetAndroidActivity();
-        jclass clazz = env->GetObjectClass(activity);
-        jmethodID method_id = env->GetStaticMethodID(clazz, "shareInternalFile", "(Ljava/lang/String;Ljava/lang/String;)V");
-        env->CallStaticVoidMethod(clazz, method_id, string2jstring(env, filePath), string2jstring(env, mimeType));
-        env->DeleteLocalRef(activity);
-        env->DeleteLocalRef(clazz);
+        JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+        JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+        JNILocalRef<jclass> jStrClass(env, env->FindClass("java/lang/String"));
+        JNILocalRef<jobjectArray> jFilePathArray(env, env->NewObjectArray(filePaths.size(), jStrClass, nullptr));
+        for(size_t i = 0; i < filePaths.size(); i++) {
+            JNILocalRef<jstring> s = string2jstring(env, filePaths[i]);
+            env->SetObjectArrayElement(jFilePathArray, i, s);
+        }
+
+        jmethodID method_id = env->GetStaticMethodID(clazz.get(), "shareInternalFiles", "([Ljava/lang/String;Ljava/lang/String;)V");
+        env->CallStaticVoidMethod(clazz, method_id, jFilePathArray.get(), string2jstring(env, mimeType).get());
     }
 
     void shareText(const std::string& str) {
         Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::shareText] Share text " + str);
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-        jobject activity = (jobject)SDL_GetAndroidActivity();
-        jclass clazz = env->GetObjectClass(activity);
-        jmethodID method_id = env->GetStaticMethodID(clazz, "shareText", "(Ljava/lang/String;)V");
-        env->CallStaticVoidMethod(clazz, method_id, string2jstring(env, str));
-        env->DeleteLocalRef(activity);
-        env->DeleteLocalRef(clazz);
+        JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+        JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+        jmethodID method_id = env->GetStaticMethodID(clazz.get(), "shareText", "(Ljava/lang/String;)V");
+        env->CallStaticVoidMethod(clazz, method_id, string2jstring(env, str).get());
     }
 
     int get_android_text_pos_from_cursor_pos(const std::shared_ptr<RichText::TextBox>& t, const RichText::TextPosition& p) {
@@ -108,36 +130,30 @@ namespace AndroidJNICalls {
             modMap = nullptr;
 
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-        jobject activity = (jobject)SDL_GetAndroidActivity();
-        jclass clazz = env->GetObjectClass(activity);
-        jmethodID method_id = env->GetStaticMethodID(clazz, "startTextInput", "(JLjava/lang/String;III)V");
-        env->CallStaticVoidMethod(clazz, method_id, textboxID, string2jstring(env, textBox->get_string()),
+        JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+        JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+        jmethodID method_id = env->GetStaticMethodID(clazz.get(), "startTextInput", "(JLjava/lang/String;III)V");
+        env->CallStaticVoidMethod(clazz, method_id, textboxID, string2jstring(env, textBox->get_string()).get(),
                                   get_android_text_pos_from_cursor_pos(textBox, std::min(cursor->selectionBeginPos, cursor->selectionEndPos)),
                                   get_android_text_pos_from_cursor_pos(textBox, std::max(cursor->selectionBeginPos, cursor->selectionEndPos)), inputType);
-        env->DeleteLocalRef(activity);
-        env->DeleteLocalRef(clazz);
     }
 
     void startNetworkService() {
         Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::startNetworkService] Start service");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-        jobject activity = (jobject)SDL_GetAndroidActivity();
-        jclass clazz = env->GetObjectClass(activity);
-        jmethodID method_id = env->GetStaticMethodID(clazz, "startNetworkService", "()V");
+        JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+        JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+        jmethodID method_id = env->GetStaticMethodID(clazz.get(), "startNetworkService", "()V");
         env->CallStaticVoidMethod(clazz, method_id);
-        env->DeleteLocalRef(activity);
-        env->DeleteLocalRef(clazz);
     }
 
     void stopNetworkService() {
         Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::stopNetworkService] Stop service");
         JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-        jobject activity = (jobject)SDL_GetAndroidActivity();
-        jclass clazz = env->GetObjectClass(activity);
-        jmethodID method_id = env->GetStaticMethodID(clazz, "stopNetworkService", "()V");
+        JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+        JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+        jmethodID method_id = env->GetStaticMethodID(clazz.get(), "stopNetworkService", "()V");
         env->CallStaticVoidMethod(clazz, method_id);
-        env->DeleteLocalRef(activity);
-        env->DeleteLocalRef(clazz);
     }
 
     void updateModMap(CustomEvents::InputTextBoxID tId, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& newModMap) {
@@ -153,14 +169,12 @@ namespace AndroidJNICalls {
             *cursor = *newCursor;
 
             JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-            jobject activity = (jobject)SDL_GetAndroidActivity();
-            jclass clazz = env->GetObjectClass(activity);
-            jmethodID method_id = env->GetStaticMethodID(clazz, "updateCursorPos", "(II)V");
+            JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+            JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+            jmethodID method_id = env->GetStaticMethodID(clazz.get(), "updateCursorPos", "(II)V");
             env->CallStaticVoidMethod(clazz, method_id,
                                       get_android_text_pos_from_cursor_pos(textBox, std::min(cursor->selectionBeginPos, cursor->selectionEndPos)),
                                       get_android_text_pos_from_cursor_pos(textBox, std::max(cursor->selectionBeginPos, cursor->selectionEndPos)));
-            env->DeleteLocalRef(activity);
-            env->DeleteLocalRef(clazz);
         }
     }
 
@@ -172,14 +186,12 @@ namespace AndroidJNICalls {
             textBox->set_rich_text_data(newTextbox->get_rich_text_data());
 
             JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
-            jobject activity = (jobject)SDL_GetAndroidActivity();
-            jclass clazz = env->GetObjectClass(activity);
-            jmethodID method_id = env->GetStaticMethodID(clazz, "updateCursorPos", "(II)V");
+            JNILocalRef<jobject> activity(env, (jobject)SDL_GetAndroidActivity());
+            JNILocalRef<jclass> clazz(env, env->GetObjectClass(activity));
+            jmethodID method_id = env->GetStaticMethodID(clazz.get(), "updateCursorPos", "(II)V");
             env->CallStaticVoidMethod(clazz, method_id,
                                       get_android_text_pos_from_cursor_pos(textBox, std::min(cursor->selectionBeginPos, cursor->selectionEndPos)),
                                       get_android_text_pos_from_cursor_pos(textBox, std::max(cursor->selectionBeginPos, cursor->selectionEndPos)));
-            env->DeleteLocalRef(activity);
-            env->DeleteLocalRef(clazz);
         }
     }
 

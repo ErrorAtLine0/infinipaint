@@ -39,6 +39,7 @@ import org.libsdl.app.SDLDummyEdit;
 import org.libsdl.app.SDLSurface;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class InfiniPaint extends SDLActivity {
     protected void onCreate(Bundle savedInstanceState) {
@@ -154,24 +155,43 @@ public class InfiniPaint extends SDLActivity {
         mSingleton.stopService(new Intent(mSingleton, InfiniPaintNetworkService.class));
     }
 
-    static public void shareInternalFile(String filePath, String mimeType) {
-        File newFile = new File(getContext().getFilesDir(), filePath);
-        Uri contentUri;
+    static public void shareInternalFiles(String[] filePaths, String mimeType) {
+        if(filePaths.length == 1) {
+            File newFile = new File(getContext().getFilesDir(), filePaths[0]);
+            Uri contentUri;
 
-        try {
-            contentUri = getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile);
-        }
-        catch (Exception e) {
-            Log.v("INFO", "[shareInternalFile] Exception " + e);
-            return;
-        }
+            try {
+                contentUri = getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile);
+            } catch (Exception e) {
+                Log.v("INFO", "[shareInternalFile] Exception " + e);
+                return;
+            }
 
-        Intent sendIntent = new Intent();
-        sendIntent.setAction(Intent.ACTION_SEND);
-        sendIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-        sendIntent.setType(mimeType);
-        Intent shareIntent = Intent.createChooser(sendIntent, null);
-        getContext().startActivity(shareIntent);
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            sendIntent.setType(mimeType);
+            Intent shareIntent = Intent.createChooser(sendIntent, null);
+            getContext().startActivity(shareIntent);
+        }
+        else if(filePaths.length > 1) {
+            ArrayList<Uri> arrayList = new ArrayList<Uri>();
+            for(String str : filePaths) {
+                File newFile = new File(getContext().getFilesDir(), str);
+                try {
+                    arrayList.add(getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile));
+                } catch (Exception e) {
+                    Log.v("INFO", "[shareInternalFile] Exception " + e);
+                    return;
+                }
+            }
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+            sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayList);
+            sendIntent.setType(mimeType);
+            Intent shareIntent = Intent.createChooser(sendIntent, null);
+            getContext().startActivity(shareIntent);
+        }
     }
 
     static public void shareText(String textToSend) {

@@ -428,14 +428,15 @@ void FileSelectScreen::move_selected_files(const std::filesystem::path& fromPath
 }
 
 void FileSelectScreen::share_selected_files() {
-    for(const FileInfo& f : fileList) {
-        if(f.selected) {
 #ifdef __ANDROID__
-            AndroidJNICalls::shareInternalFile("saves/" + f.fileName + ".infpnt", "application/octet-stream");
-#endif
-            break;
-        }
+    std::vector<std::string> filesToSend;
+    for(const FileInfo& f : fileList) {
+        if(f.selected)
+            filesToSend.emplace_back("saves/" + f.fileName + ".infpnt");
     }
+    if(!filesToSend.empty())
+        AndroidJNICalls::shareInternalFiles(filesToSend, "application/octet-stream");
+#endif
 }
 
 void FileSelectScreen::duplicate_selected_files(const std::filesystem::path& inPath) {
@@ -583,13 +584,11 @@ void FileSelectScreen::edit_action_bar() {
                                                 editMode = false;
                                             });
 #ifdef __ANDROID__
-                                            if(numberOfSelectedEntries == 1) {
-                                                edit_action_bar_button("share", "data/icons/RemixIcon/share-line.svg", "Share", [&] {
-                                                    share_selected_files();
-                                                    update_file_list(fileList, savePath, false);
-                                                    editMode = false;
-                                                });
-                                            }
+                                            edit_action_bar_button("share", "data/icons/RemixIcon/share-line.svg", "Share", [&] {
+                                                share_selected_files();
+                                                update_file_list(fileList, savePath, false);
+                                                editMode = false;
+                                            });
 #endif
                                         }
                                         else if(selectedMenu == SelectedMenu::TRASH) {
