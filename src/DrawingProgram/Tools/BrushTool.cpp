@@ -29,10 +29,6 @@
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include <include/pathops/SkPathOps.h>
 
-#define MINIMUM_DISTANCE_FROM_FIRST_POINT 3.0f
-#define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
-#define DRAW_MINIMUM_LIMIT 1.0f
-
 BrushTool::BrushTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}

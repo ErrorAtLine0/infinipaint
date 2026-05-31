@@ -18,8 +18,11 @@
 
 package com.erroratline0.infinipaint;
 
+import static androidx.core.content.FileProvider.getUriForFile;
+
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -34,6 +37,8 @@ import android.widget.RelativeLayout;
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLDummyEdit;
 import org.libsdl.app.SDLSurface;
+
+import java.io.File;
 
 public class InfiniPaint extends SDLActivity {
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,5 +152,34 @@ public class InfiniPaint extends SDLActivity {
     }
     static public void stopNetworkService() {
         mSingleton.stopService(new Intent(mSingleton, InfiniPaintNetworkService.class));
+    }
+
+    static public void shareInternalFile(String filePath, String mimeType) {
+        File newFile = new File(getContext().getFilesDir(), filePath);
+        Uri contentUri;
+
+        try {
+            contentUri = getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile);
+        }
+        catch (Exception e) {
+            Log.v("INFO", "[shareInternalFile] Exception " + e);
+            return;
+        }
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+        sendIntent.setType(mimeType);
+        Intent shareIntent = Intent.createChooser(sendIntent, null);
+        getContext().startActivity(shareIntent);
+    }
+
+    static public void shareText(String textToSend) {
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, textToSend);
+        sendIntent.setType("text/plain");
+        Intent shareIntent = Intent.createChooser(sendIntent, null);
+        getContext().startActivity(shareIntent);
     }
 }

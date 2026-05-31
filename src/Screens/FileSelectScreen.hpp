@@ -112,6 +112,7 @@ class FileSelectScreen : public Screen {
         };
         void move_selected_files(const std::filesystem::path& fromPath, const std::filesystem::path& toPath, TrashMoveType trashMoveType);
         void duplicate_selected_files(const std::filesystem::path& inPath);
+        void share_selected_files();
         void delete_selected_files_in_trash();
 
         enum class MoreOptionsMenu {

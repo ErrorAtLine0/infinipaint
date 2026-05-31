@@ -26,6 +26,8 @@ struct InputManager;
 namespace AndroidJNICalls {
     extern InputManager* globalInputManager;
 
+    void shareInternalFile(const std::string& filePath, const std::string& mimeType);
+    void shareText(const std::string& str);
     void startTextInput(CustomEvents::InputTextBoxID newTextboxID, const std::shared_ptr<RichText::TextBox>& newTextbox, const std::shared_ptr<RichText::TextBox::Cursor>& newCursor, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& modMap, int inputType);
     void startNetworkService();
     void stopNetworkService();

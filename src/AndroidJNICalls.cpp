@@ -58,6 +58,28 @@ namespace AndroidJNICalls {
     bool textChanged = false;
     bool cursorChanged = false;
 
+    void shareInternalFile(const std::string& filePath, const std::string& mimeType) {
+        Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::shareInternalFile] Share internal file " + filePath);
+        JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+        jobject activity = (jobject)SDL_GetAndroidActivity();
+        jclass clazz = env->GetObjectClass(activity);
+        jmethodID method_id = env->GetStaticMethodID(clazz, "shareInternalFile", "(Ljava/lang/String;Ljava/lang/String;)V");
+        env->CallStaticVoidMethod(clazz, method_id, string2jstring(env, filePath), string2jstring(env, mimeType));
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
+    }
+
+    void shareText(const std::string& str) {
+        Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::shareText] Share text " + str);
+        JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+        jobject activity = (jobject)SDL_GetAndroidActivity();
+        jclass clazz = env->GetObjectClass(activity);
+        jmethodID method_id = env->GetStaticMethodID(clazz, "shareText", "(Ljava/lang/String;)V");
+        env->CallStaticVoidMethod(clazz, method_id, string2jstring(env, str));
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
+    }
+
     int get_android_text_pos_from_cursor_pos(const std::shared_ptr<RichText::TextBox>& t, const RichText::TextPosition& p) {
         return t->get_utf16_location_from_codepoint_location(t->get_codepoint_location_from_text_position(p));
     }
