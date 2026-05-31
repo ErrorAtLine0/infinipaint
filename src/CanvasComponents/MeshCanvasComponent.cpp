@@ -19,6 +19,7 @@
 #include "MeshCanvasComponent.hpp"
 #include <Helpers/Serializers.hpp>
 #include <cereal/types/vector.hpp>
+#include <chrono>
 #include <include/core/SkPathTypes.h>
 #include <limits>
 #include <Eigen/Geometry>
@@ -37,48 +38,50 @@
 #include "../World.hpp"
 #include <CDT/include/CDT.h>
 #include <clipper2/clipper.h>
+#include <Helpers/Logger.hpp>
 
 template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
-    std::vector<uint32_t> contourSizes;
-    uint32_t contourSize = 0;
-    auto verbs = p.verbs();
-    auto points = p.points();
-    for(size_t verbIndex = 0; verbIndex < verbs.size(); verbIndex++) {
-        switch(verbs[verbIndex]) {
+    std::vector<std::vector<SkPoint>> contours;
+
+    SkPath::Iter iter(p, true);
+    for(;;) {
+        std::optional<SkPath::IterRec> rec = iter.next();
+        if(!rec.has_value())
+            break;
+
+        switch(rec->fVerb) {
             case SkPathVerb::kClose:
-                contourSizes.emplace_back(contourSize);
-                contourSize = 0;
+                if(!contours.back().empty())
+                    contours.back().pop_back();
+                break;
+            case SkPathVerb::kLine:
+                contours.back().emplace_back(rec->fPoints[1]);
                 break;
             case SkPathVerb::kMove:
-            case SkPathVerb::kLine:
-                contourSize++;
+                contours.emplace_back();
+                contours.back().emplace_back(rec->fPoints[0]);
                 break;
             default:
-                throw std::runtime_error("[skpath_write] Illegal verb " + std::to_string(static_cast<unsigned>(verbs[verbIndex])));
+                throw std::runtime_error("[get_predraw_data_accurate] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
                 break;
         }
     }
-    a(p.getFillType() == SkPathFillType::kEvenOdd, contourSizes);
-    for(const SkPoint& p : points)
-        a(p);
+
+    a(p.getFillType() == SkPathFillType::kEvenOdd, contours);
 }
 
 template <typename Archive> SkPath skpath_read(Archive& a) {
     bool isEvenOdd;
-    SkPathBuilder builder;
-    std::vector<uint32_t> contourSizes;
-    a(isEvenOdd, contourSizes);
-    builder.setFillType(isEvenOdd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
-    for(uint32_t contourSize : contourSizes) {
-        SkPoint p;
-        if(contourSize == 0)
+    std::vector<std::vector<SkPoint>> contours;
+    a(isEvenOdd, contours);
+    // NOTE: setFillType doesn't properly set the fill type for the path IN DEBUG BUILDS. Setting fill type in builder constructor meanwhile works for both debug and release builds
+    SkPathBuilder builder(isEvenOdd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+    for(const std::vector<SkPoint>& contour : contours) {
+        if(contour.size() == 0)
             continue;
-        a(p);
-        builder.moveTo(p);
-        for(uint32_t i = 1; i < contourSize; i++) {
-            a(p);
-            builder.lineTo(p);
-        }
+        builder.moveTo(contour[0]);
+        for(uint32_t i = 1; i < contour.size(); i++)
+            builder.lineTo(contour[i]);
         builder.close();
     }
     return builder.detach();
@@ -141,98 +144,128 @@ void MeshCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, const
 }
 
 std::shared_ptr<void> MeshCanvasComponent::get_predraw_data_accurate(const DrawData& drawData, const CoordSpaceHelper& coords) const {
-    SCollision::AABB<float> viewGenerousColliderInObjSpace = coords.world_collider_to_coords<SCollision::AABB<float>>(drawData.cam.viewingAreaGenerousCollider);
-    viewGenerousColliderInObjSpace.min -= Vector2f{1.0f, 1.0f};
-    viewGenerousColliderInObjSpace.max += Vector2f{1.0f, 1.0f};
+    try {
+        SCollision::AABB<float> viewGenerousColliderInObjSpace = coords.world_collider_to_coords<SCollision::AABB<float>>(drawData.cam.viewingAreaGenerousCollider);
+        viewGenerousColliderInObjSpace.min -= Vector2f{1.0f, 1.0f};
+        viewGenerousColliderInObjSpace.max += Vector2f{1.0f, 1.0f};
 
-    SkPath::Iter iter(d.meshPath, true);
-    std::vector<CDT::V2d<float>> points;
-    std::vector<CDT::Edge> edges;
+        // GrTriangulator is faster, but isn't as robust
+        //GrCpuVertexAllocator cpuAlloc;
+        //bool isLinear;
+        //GrTriangulator::PathToTriangles(d.meshPath, 0.0001f, viewGenerousColliderInObjSpace.get_sk_rect(), &cpuAlloc, &isLinear);
+        //sk_sp<GrThreadSafeCache::VertexData> detachedVertexData = cpuAlloc.detachVertexData();
+        //if(!detachedVertexData)
+        //    return nullptr;
+        //if(detachedVertexData->vertexSize() != 8)
+        //    throw std::runtime_error("[MeshCanvasComponent::get_predraw_data_accurate] Vertex data vertex size not equal to 8");
 
-    for(;;) {
-        std::optional<SkPath::IterRec> rec = iter.next();
-        if(!rec.has_value())
-            break;
+        // Triangulation implementation using CDT
+        SkPath::Iter iter(d.meshPath, true);
+        std::vector<CDT::V2d<float>> points;
+        std::vector<CDT::Edge> edges;
 
-        switch(rec->fVerb) {
-            case SkPathVerb::kClose:
+        // Makes duplicate vertices by default, but duplicates are impossible to completely remove, so just rely on RemoveDuplicatesAndRemapEdges
+        for(;;) {
+            std::optional<SkPath::IterRec> rec = iter.next();
+            if(!rec.has_value())
                 break;
-            case SkPathVerb::kLine:
-                points.emplace_back(rec->fPoints[1].x(), rec->fPoints[1].y());
-                edges.emplace_back(points.size() - 2, points.size() - 1);
-                break;
-            case SkPathVerb::kMove:
-                points.emplace_back(rec->fPoints[0].x(), rec->fPoints[0].y());
-                break;
-            default:
-                throw std::runtime_error("[get_predraw_data_accurate] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
-                break;
-        }
-    }
 
-    CDT::RemoveDuplicatesAndRemapEdges(
-        points,
-        edges
-    );
-
-    CDT::Triangulation<float> cdt(CDT::VertexInsertionOrder::Auto, CDT::IntersectingConstraintEdges::TryResolve, 0.001f);
-    cdt.insertVertices(points);
-    cdt.insertEdges(edges);
-    cdt.eraseOuterTrianglesAndHoles();
-
-    std::vector<std::array<SkPoint, 3>> finalTrianglePoints;
-
-    auto clipListFunc = [](const std::vector<std::array<WorldVec, 3>>& clipList, const std::array<WorldVec, 2>& axisLineSegment, const std::function<bool(const WorldVec&)>& isInClippingAreaFunc) {
-        std::vector<std::array<WorldVec, 3>> resultList;
-        for(auto& t : clipList)
-            clip_triangle_against_axis(resultList, t, axisLineSegment, isInClippingAreaFunc);
-        return resultList;
-    };
-
-    for(auto& tri : cdt.triangles) {
-        SCollision::Triangle triCollider(Vector2f{points[tri.vertices[0]].x, points[tri.vertices[0]].y}, Vector2f{points[tri.vertices[1]].x, points[tri.vertices[1]].y}, Vector2f{points[tri.vertices[2]].x, points[tri.vertices[2]].y});
-        if(SCollision::collide(triCollider.bounds, viewGenerousColliderInObjSpace)) {
-            std::vector<std::array<WorldVec, 3>> clipList;
-            clipList.emplace_back(std::array<WorldVec, 3>{coords.from_space(triCollider.p[0]), coords.from_space(triCollider.p[1]), coords.from_space(triCollider.p[2])});
-            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
-                return p.y() > drawData.cam.viewingAreaGenerousCollider.min.y();
-            });
-            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.max, drawData.cam.viewingAreaGenerousCollider.bottom_left()}, [&](const WorldVec& p) {
-                return p.y() < drawData.cam.viewingAreaGenerousCollider.max.y();
-            });
-            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.bottom_left()}, [&](const WorldVec& p) {
-                return p.x() > drawData.cam.viewingAreaGenerousCollider.min.x();
-            });
-            clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.max, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
-                return p.x() < drawData.cam.viewingAreaGenerousCollider.max.x();
-            });
-            for(auto& tri : clipList) {
-                auto& c = drawData.cam.c;
-                finalTrianglePoints.emplace_back(std::array<SkPoint, 3>{convert_vec2<SkPoint>(c.to_space(tri[0])), convert_vec2<SkPoint>(c.to_space(tri[1])), convert_vec2<SkPoint>(c.to_space(tri[2]))});
+            switch(rec->fVerb) {
+                case SkPathVerb::kClose:
+                    break;
+                case SkPathVerb::kLine: {
+                    CDT::V2d<float> newPoint{rec->fPoints[1].x(), rec->fPoints[1].y()};
+                    points.emplace_back(newPoint);
+                    edges.emplace_back(points.size() - 2, points.size() - 1);
+                    break;
+                }
+                case SkPathVerb::kMove:
+                    points.emplace_back(rec->fPoints[0].x(), rec->fPoints[0].y());
+                    break;
+                default:
+                    throw std::runtime_error("[get_predraw_data_accurate] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
+                    break;
             }
         }
+
+        CDT::RemoveDuplicatesAndRemapEdges(
+            points,
+            edges
+        );
+
+        CDT::Triangulation<float> cdt(CDT::VertexInsertionOrder::Auto, CDT::IntersectingConstraintEdges::TryResolve, 0.001f);
+        cdt.insertVertices(points);
+        cdt.insertEdges(edges);
+        cdt.eraseOuterTrianglesAndHoles();
+
+        std::vector<std::array<SkPoint, 3>> finalTrianglePoints;
+
+        auto clipListFunc = [](const std::vector<std::array<WorldVec, 3>>& clipList, const std::array<WorldVec, 2>& axisLineSegment, const std::function<bool(const WorldVec&)>& isInClippingAreaFunc) {
+            std::vector<std::array<WorldVec, 3>> resultList;
+            for(auto& t : clipList)
+                clip_triangle_against_axis(resultList, t, axisLineSegment, isInClippingAreaFunc);
+            return resultList;
+        };
+
+        // GrTriangulator
+        //for(int i = 0; i < detachedVertexData->numVertices(); i += 3) {
+        //    Vector2f v1 = {static_cast<const float*>(detachedVertexData->vertices())[i], static_cast<const float*>(detachedVertexData->vertices())[i + 1]};
+        //    Vector2f v2 = {static_cast<const float*>(detachedVertexData->vertices())[i + 2], static_cast<const float*>(detachedVertexData->vertices())[i + 3]};
+        //    Vector2f v3 = {static_cast<const float*>(detachedVertexData->vertices())[i + 4], static_cast<const float*>(detachedVertexData->vertices())[i + 5]};
+        // CDT
+        for(size_t i = 0; i < cdt.triangles.size(); i++) {
+            auto& tri = cdt.triangles[i].vertices;
+            Vector2f v1{cdt.vertices[tri[0]].x, cdt.vertices[tri[0]].y};
+            Vector2f v2{cdt.vertices[tri[1]].x, cdt.vertices[tri[1]].y};
+            Vector2f v3{cdt.vertices[tri[2]].x, cdt.vertices[tri[2]].y};
+            SCollision::Triangle triCollider(v1, v2, v3);
+            if(SCollision::collide(triCollider.bounds, viewGenerousColliderInObjSpace)) {
+                std::vector<std::array<WorldVec, 3>> clipList;
+                clipList.emplace_back(std::array<WorldVec, 3>{coords.from_space(triCollider.p[0]), coords.from_space(triCollider.p[1]), coords.from_space(triCollider.p[2])});
+                clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
+                    return p.y() > drawData.cam.viewingAreaGenerousCollider.min.y();
+                });
+                clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.max, drawData.cam.viewingAreaGenerousCollider.bottom_left()}, [&](const WorldVec& p) {
+                    return p.y() < drawData.cam.viewingAreaGenerousCollider.max.y();
+                });
+                clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.min, drawData.cam.viewingAreaGenerousCollider.bottom_left()}, [&](const WorldVec& p) {
+                    return p.x() > drawData.cam.viewingAreaGenerousCollider.min.x();
+                });
+                clipList = clipListFunc(clipList, {drawData.cam.viewingAreaGenerousCollider.max, drawData.cam.viewingAreaGenerousCollider.top_right()}, [&](const WorldVec& p) {
+                    return p.x() < drawData.cam.viewingAreaGenerousCollider.max.x();
+                });
+                for(auto& tri : clipList) {
+                    auto& c = drawData.cam.c;
+                    finalTrianglePoints.emplace_back(std::array<SkPoint, 3>{convert_vec2<SkPoint>(c.to_space(tri[0])), convert_vec2<SkPoint>(c.to_space(tri[1])), convert_vec2<SkPoint>(c.to_space(tri[2]))});
+                }
+            }
+        }
+
+        // Match points that are close enough. I don't think this is required.
+        //if(!finalTrianglePoints.empty()) {
+        //    for(size_t i = 0; i < finalTrianglePoints.size() - 1; i++) {
+        //        for(size_t j = 0; j < 3; j++) {
+        //            for(size_t k = i + 1; k < finalTrianglePoints.size(); k++) {
+        //                for(size_t l = 0; l < 3; l++) {
+        //                    if(std::fabs(finalTrianglePoints[i][j].fX - finalTrianglePoints[k][l].fX) < 0.0001f && std::fabs(finalTrianglePoints[i][j].fY - finalTrianglePoints[k][l].fY) < 0.0001f && finalTrianglePoints[k][l] != finalTrianglePoints[i][j])
+        //                        finalTrianglePoints[k][l] = finalTrianglePoints[i][j];
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+
+        if(finalTrianglePoints.empty())
+            return nullptr;
+        SkPathBuilder pathBuilder;
+        for(auto& finalTriangle : finalTrianglePoints)
+            pathBuilder.addPolygon({finalTriangle.data(), finalTriangle.size()}, true);
+        return std::make_shared<SkPath>(pathBuilder.detach());
     }
-
-    // Match points that are close enough. I don't think this is required.
-    //if(!finalTrianglePoints.empty()) {
-    //    for(size_t i = 0; i < finalTrianglePoints.size() - 1; i++) {
-    //        for(size_t j = 0; j < 3; j++) {
-    //            for(size_t k = i + 1; k < finalTrianglePoints.size(); k++) {
-    //                for(size_t l = 0; l < 3; l++) {
-    //                    if(std::fabs(finalTrianglePoints[i][j].fX - finalTrianglePoints[k][l].fX) < 0.0001f && std::fabs(finalTrianglePoints[i][j].fY - finalTrianglePoints[k][l].fY) < 0.0001f && finalTrianglePoints[k][l] != finalTrianglePoints[i][j])
-    //                        finalTrianglePoints[k][l] = finalTrianglePoints[i][j];
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-
-    if(finalTrianglePoints.empty())
+    catch(...) {
         return nullptr;
-    SkPathBuilder pathBuilder;
-    for(auto& finalTriangle : finalTrianglePoints)
-        pathBuilder.addPolygon({finalTriangle.data(), finalTriangle.size()}, true);
-    return std::make_shared<SkPath>(pathBuilder.detach());
+    }
+    return nullptr;
 }
 
 bool MeshCanvasComponent::accurate_draw(SkCanvas* canvas, const DrawData& drawData, const CoordSpaceHelper& coords, const std::shared_ptr<void>& predrawData) const {

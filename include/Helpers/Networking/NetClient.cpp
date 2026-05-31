@@ -67,12 +67,9 @@ void NetClient::update() {
         isDisconnected = true;
         return;
     }
-#ifdef NDEBUG
     try {
-#endif
         parse_received_messages();
         send_queued_messages();
-#ifdef NDEBUG
     }
     catch(const std::exception& e) {
         Logger::get().log(Logger::LogType::INFO, "[NetClient::update] Exception thrown while parsing and sending messages: " + std::string(e.what()));
@@ -82,7 +79,6 @@ void NetClient::update() {
         Logger::get().log(Logger::LogType::INFO, "[NetClient::update] Unknown exception thrown while parsing and sending messages.");
         isDisconnected = true;
     }
-#endif
 }
 
 void NetClient::parse_received_messages() {
