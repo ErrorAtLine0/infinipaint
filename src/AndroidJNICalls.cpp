@@ -64,6 +64,22 @@ namespace AndroidJNICalls {
     bool textChanged = false;
     bool cursorChanged = false;
 
+    std::string getFileNameFromURI(const std::string& uri) {
+        JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+        std::string strToRet = "";
+        jni_local_frame(env, 16, [&] {
+            jobject activity = (jobject) SDL_GetAndroidActivity();
+            jclass clazz = env->GetObjectClass(activity);
+            jmethodID method_id = env->GetStaticMethodID(clazz, "getFileNameFromUriString",
+                                                         "(Ljava/lang/String;)Ljava/lang/String;");
+            jobject obj = env->CallStaticObjectMethod(clazz, method_id, string2jstring(env, uri));
+            if(obj == nullptr)
+                return;
+            strToRet = jstring2string(env, static_cast<jstring>(obj));
+        });
+        return strToRet;
+    }
+
     void shareInternalFiles(const std::vector<std::string>& filePaths, const std::string& mimeType) {
         if(filePaths.empty())
             return;

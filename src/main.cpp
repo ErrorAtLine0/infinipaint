@@ -829,6 +829,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 }
                 else if(event->type == CustomEvents::AndroidTextBoxInputEvent::EVENT_NUM)
                     mS.m->input_android_text_box_input_callback(*CustomEvents::get_event<CustomEvents::AndroidTextBoxInputEvent>());
+                else if(event->type == CustomEvents::MobileImportCanvasEvent::EVENT_NUM)
+                    mS.m->input_mobile_import_canvas_callback(*CustomEvents::get_event<CustomEvents::MobileImportCanvasEvent>());
                 break;
             }
         }

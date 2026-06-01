@@ -161,6 +161,7 @@ class MainProgram {
         void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
         void input_paste_callback(const CustomEvents::PasteEvent& paste);
         void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
+        void input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport);
 
         void input_app_about_to_go_to_background_callback();
         void input_app_about_to_go_to_foreground_callback();

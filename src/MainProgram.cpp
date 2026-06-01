@@ -70,7 +70,7 @@ MainProgram::MainProgram():
     Logger::get().set_log_function(Logger::LogType::WORLDFATAL, [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
         std::cout << "[WORLDFATAL] " << text << std::endl;
-        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR, UserLogMessage::DISPLAY_DESKTOP_ONLY});
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR, UserLogMessage::DISPLAY_FOR_ALL});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
         g.gui.set_to_layout();
@@ -345,7 +345,11 @@ void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& o
         newWorld = std::make_shared<World>(*this, openFile);
     }
     catch(const std::runtime_error& e) {
+#ifdef __ANDROID__
+        Logger::get().log(Logger::LogType::WORLDFATAL, std::string("Failed to open canvas: ") + e.what());
+#else
         Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
+#endif
         return;
     }
     worlds.emplace_back(newWorld);
@@ -386,6 +390,12 @@ void MainProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileT
 
 void MainProgram::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     screen->input_open_infinipaint_file_callback(openFile);
+    g.gui.set_to_layout();
+    post_callback();
+}
+
+void MainProgram::input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) {
+    screen->input_mobile_import_canvas_callback(mobileImport);
     g.gui.set_to_layout();
     post_callback();
 }

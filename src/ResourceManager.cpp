@@ -32,6 +32,7 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include "MainProgram.hpp"
+#include "AndroidJNICalls.hpp"
 
 ResourceManager::ResourceManager(World& initWorld):
     world(initWorld) 
@@ -108,7 +109,13 @@ void ResourceManager::update() {
 NetworkingObjects::NetObjTemporaryPtr<ResourceData> ResourceManager::add_resource_file(const std::filesystem::path& filePath) {
     ResourceData resource;
     resource.data = std::make_shared<std::string>();
+#ifdef __ANDROID__
+    resource.name = AndroidJNICalls::getFileNameFromURI(filePath.string());
+    if(resource.name.empty())
+        resource.name = "New Resource";
+#else
     resource.name = std::filesystem::path(filePath).filename().string();
+#endif
 
     try {
         *resource.data = read_file_to_string(filePath);

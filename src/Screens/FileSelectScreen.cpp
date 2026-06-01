@@ -44,8 +44,10 @@
 using namespace GUIStuff;
 using namespace ElementHelpers;
 
+#define MAIN_SAVES_FOLDER_STR "saves"
+
 FileSelectScreen::FileSelectScreen(MainProgram& m): Screen(m) {
-    savePath = main.conf.configPath / "saves";
+    savePath = main.conf.configPath / MAIN_SAVES_FOLDER_STR;
     trashPath = main.conf.configPath / "trash";
     infoPath = main.conf.configPath / "fileSelectInfo.json";
 
@@ -432,7 +434,7 @@ void FileSelectScreen::share_selected_files() {
     std::vector<std::string> filesToSend;
     for(const FileInfo& f : fileList) {
         if(f.selected)
-            filesToSend.emplace_back("saves/" + f.fileName + ".infpnt");
+            filesToSend.emplace_back(std::string(MAIN_SAVES_FOLDER_STR) + std::string("/") + f.fileName + ".infpnt");
     }
     if(!filesToSend.empty())
         AndroidJNICalls::shareInternalFiles(filesToSend, "application/octet-stream");
@@ -702,7 +704,10 @@ void FileSelectScreen::title_bar() {
                                 case MoreOptionsMenu::CLOSED:
                                     break;
                                 case MoreOptionsMenu::MAIN:
-                                    elemCount = 3;
+                                    if(selectedMenu == SelectedMenu::FILES)
+                                        elemCount = 4;
+                                    else
+                                        elemCount = 3;
                                     break;
                                 case MoreOptionsMenu::VIEW:
                                     elemCount = 4;
@@ -744,6 +749,17 @@ void FileSelectScreen::title_bar() {
                                                     case 2: {
                                                         text_transparent_option_button("Sort", "Sort", [&] {
                                                             moreOptionsMenu = MoreOptionsMenu::SORT;
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 3: {
+                                                        text_transparent_option_button("Import Canvas", "Import Canvas (.infpnt)", [&] {
+                                                            open_file_selector("Open InfiniPaint Canvas", {{"InfiniPaint Canvas", "infpnt"}}, [&](const std::filesystem::path& p, const auto& e) {
+                                                                CustomEvents::emit_event<CustomEvents::MobileImportCanvasEvent>({
+                                                                    .filePath = p,
+                                                                });
+                                                            });
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
                                                         });
                                                         break;
                                                     }
@@ -1213,7 +1229,10 @@ void FileSelectScreen::input_paste_callback(const CustomEvents::PasteEvent& past
 
 void FileSelectScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     main.create_new_tab(openFile);
-    main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<PhoneDrawingProgramScreen>(main); });
+    if(main.world)
+        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<PhoneDrawingProgramScreen>(main); });
+    else if(!openFile.isClient && openFile.filePathSource.has_value()) // Invalid file, remove it
+        SDL_RemovePath(openFile.filePathSource.value().string().c_str());
 }
 
 void FileSelectScreen::input_global_back_button_callback() {
@@ -1230,6 +1249,22 @@ void FileSelectScreen::input_global_back_button_callback() {
     else
         main.setToQuit = true;
     main.g.gui.set_to_layout();
+}
+
+void FileSelectScreen::input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) {
+#ifdef __ANDROID__
+    std::string name = AndroidJNICalls::getFileNameFromURI(mobileImport.filePath.string());
+    if(name.empty())
+        name = "New File";
+    std::filesystem::path newPath = sdl_safe_copy_file(savePath, mobileImport.filePath, name, World::FILE_EXTENSION);
+#else
+    std::filesystem::path newPath = sdl_safe_copy_file(savePath, mobileImport.filePath, mobileImport.filePath.stem().string(), World::FILE_EXTENSION);
+#endif
+    CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+        .isClient = false,
+        .saveThumbnail = true,
+        .filePathSource = newPath
+    });
 }
 
 void FileSelectScreen::draw(SkCanvas* canvas) {
