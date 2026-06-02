@@ -211,7 +211,7 @@ void get_refresh_rate(MainStruct& mS) {
         mS.frameRefreshDuration = std::chrono::microseconds(static_cast<int>((1.0f / displayMode->refresh_rate) * 1000000.0f));
 }
 
-void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
+void initialize_sdl(MainStruct& mS) {
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "InfiniPaint");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, VersionConstants::CURRENT_VERSION_STRING.c_str());
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.infinipaint.infinipaint");
@@ -258,7 +258,25 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 #endif
 
-    mS.window = SDL_CreateWindow("InfiniPaint", wWidth, wHeight, window_flags);
+    constexpr int DEFAULT_WINDOW_WIDTH = 1000;
+    constexpr int DEFAULT_WINDOW_HEIGHT = 900;
+
+    #ifdef __EMSCRIPTEN__
+    {
+        Vector2d sizeD;
+        EMSCRIPTEN_RESULT result = emscripten_get_element_css_size("#canvas", &sizeD.x(), &sizeD.y());
+        if(result != EMSCRIPTEN_RESULT_SUCCESS)
+            std::cout << "Failed to get canvas size" << std::endl;
+        else {
+            mS.m->window.writtenSize.x() = mS.m->window.size.x() = sizeD.x();
+            mS.m->window.writtenSize.y() = mS.m->window.size.y() = sizeD.y();
+            std::cout << "Initial window size: " << vec_pretty(mS.m->window.size) << std::endl;
+        }
+    }
+    #endif
+
+    mS.window = SDL_CreateWindow("InfiniPaint", mS.m->window.size.x() >= 0 ? mS.m->window.size.x() : DEFAULT_WINDOW_WIDTH, mS.m->window.size.y() >= 0 ? mS.m->window.size.y() : DEFAULT_WINDOW_HEIGHT, window_flags);
+    mS.m->window.sdlWindow = mS.window;
     if(mS.window == nullptr)
         throw std::runtime_error("[SDL_CreateWindow] " + std::string(SDL_GetError()));
 
@@ -305,14 +323,46 @@ void initialize_sdl(MainStruct& mS, int wWidth, int wHeight) {
 
 #endif
 
-    SDL_SetWindowSize(mS.window, wWidth, wHeight);
+#ifdef __EMSCRIPTEN__
+    SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
+    SDL_GetWindowPosition(mS.window, &mS.m->window.pos.x(), &mS.m->window.pos.y());
+    mS.m->window.writtenPos.x() = mS.m->window.pos.x();
+    mS.m->window.writtenPos.y() = mS.m->window.pos.y();
+    mS.m->window.writtenSize.x() = mS.m->window.size.x();
+    mS.m->window.writtenSize.y() = mS.m->window.size.y();
+#else
+    if(mS.m->window.pos.x() >= 0 && mS.m->window.pos.y() >= 0 && mS.m->window.size.x() >= 0 && mS.m->window.size.y() >= 0)
+        SDL_SetWindowPosition(mS.window, mS.m->window.pos.x(), mS.m->window.pos.y());
+    else {
+        SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
+        SDL_GetWindowPosition(mS.window, &mS.m->window.pos.x(), &mS.m->window.pos.y());
+        mS.m->window.writtenPos.x() = mS.m->window.pos.x();
+        mS.m->window.writtenPos.y() = mS.m->window.pos.y();
+        mS.m->window.writtenSize.x() = mS.m->window.size.x();
+        mS.m->window.writtenSize.y() = mS.m->window.size.y();
+    }
+
+    if(mS.m->window.maximized)
+        SDL_MaximizeWindow(mS.window);
+
+    if(mS.m->window.fullscreen)
+        SDL_SetWindowFullscreen(mS.window, true);
+
+#endif
 
     SDL_ShowWindow(mS.window);
+
+    mS.m->set_vsync_value(mS.m->conf.vsyncValue);
 
     for(unsigned i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++)
         mS.systemCursors[i] = SDL_CreateSystemCursor((SDL_SystemCursor)i);
 
     get_refresh_rate(mS);
+
+    SDL_SyncWindow(mS.window);
+    // Take maximize and fullscreen into account
+    SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
+    mS.m->input.update_safe_area();
 }
 
 void sdl_terminate(MainStruct& mS) {
@@ -415,30 +465,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #ifdef NDEBUG
     try {
 #endif
-        int initWidth = 1000;
-        int initHeight = 900;
-
-        #ifdef __EMSCRIPTEN__
-        {
-            Vector2d sizeD;
-            EMSCRIPTEN_RESULT result = emscripten_get_element_css_size("#canvas", &sizeD.x(), &sizeD.y());
-            if(result != EMSCRIPTEN_RESULT_SUCCESS)
-                std::cout << "Failed to get canvas size" << std::endl;
-            else {
-                initWidth = sizeD.x();
-                initHeight = sizeD.y();
-                std::cout << "Initial window size: " << initWidth << " " << initHeight << std::endl;
-            }
-        }
-        #endif
-
-        initialize_sdl(mS, initWidth, initHeight);
-
-        CustomEvents::init();
-
-        int32_t cursorData[2] = {0, 0};
-        mS.hiddenCursor = SDL_CreateCursor((Uint8 *)cursorData, (Uint8 *)cursorData, 8, 8, 4, 4);
-
         mS.m = std::make_unique<MainProgram>();
         mS.m->logFile = &mS.logFile;
         mS.m->conf.configPath = mS.configPath;
@@ -455,9 +481,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             else
                 mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
         #endif
-        mS.m->window.sdlWindow = mS.window;
         mS.m->update_scale_and_density();
         mS.m->load_config();
+
+        initialize_sdl(mS);
+
+        CustomEvents::init();
+
+        int32_t cursorData[2] = {0, 0};
+        mS.hiddenCursor = SDL_CreateCursor((Uint8 *)cursorData, (Uint8 *)cursorData, 8, 8, 4, 4);
         #ifdef __EMSCRIPTEN__
             emscripten_set_beforeunload_callback((void*)mSPtr, emscripten_before_unload);
         #endif
@@ -512,38 +544,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #elif USE_SKIA_BACKEND_GANESH
         mS.m->window.ctx = mS.ctx;
 #endif
-
-#ifdef __EMSCRIPTEN__
-        SDL_GetWindowPosition(mS.window, &mS.m->window.pos.x(), &mS.m->window.pos.y());
-        mS.m->window.writtenPos.x() = mS.m->window.pos.x();
-        mS.m->window.writtenPos.y() = mS.m->window.pos.y();
-        mS.m->window.size.x() = initWidth;
-        mS.m->window.size.y() = initHeight;
-        mS.m->window.writtenSize.x() = initWidth;
-        mS.m->window.writtenSize.y() = initHeight;
-#else
-        if(mS.m->window.pos.x() >= 0 && mS.m->window.pos.y() >= 0 && mS.m->window.size.x() >= 0 && mS.m->window.size.y() >= 0) {
-            SDL_SetWindowSize(mS.window, mS.m->window.size.x(), mS.m->window.size.y());
-            SDL_SetWindowPosition(mS.window, mS.m->window.pos.x(), mS.m->window.pos.y());
-        }
-        else {
-            SDL_GetWindowPosition(mS.window, &mS.m->window.pos.x(), &mS.m->window.pos.y());
-            mS.m->window.writtenPos.x() = mS.m->window.pos.x();
-            mS.m->window.writtenPos.y() = mS.m->window.pos.y();
-            mS.m->window.size.x() = initWidth;
-            mS.m->window.size.y() = initHeight;
-            mS.m->window.writtenSize.x() = initWidth;
-            mS.m->window.writtenSize.y() = initHeight;
-        }
-
-        if(mS.m->window.maximized)
-            SDL_MaximizeWindow(mS.window);
-
-        if(mS.m->window.fullscreen)
-            SDL_SetWindowFullscreen(mS.window, true);
-#endif
-
-        mS.m->input.update_safe_area();
 
         mS.m->window.canCreateSurfaces = true;
         resize_window(mS);

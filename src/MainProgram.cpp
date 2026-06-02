@@ -265,8 +265,6 @@ void MainProgram::load_config() {
     NetLibrary::init_config(conf.configPath / "p2p.json");
 
     update_display_names();
-    set_vsync_value(conf.vsyncValue);
-    refresh_draw_surfaces();
 }
 
 void MainProgram::set_vsync_value(int vsyncValue) {
