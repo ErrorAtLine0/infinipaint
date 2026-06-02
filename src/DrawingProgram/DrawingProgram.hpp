@@ -140,7 +140,6 @@ class DrawingProgram {
 
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;
-
             bool leftClickHeld = false;
             bool middleClickHeld = false;
 

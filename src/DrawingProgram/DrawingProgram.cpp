@@ -784,10 +784,13 @@ void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, co
 }
 
 void DrawingProgram::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    if(version >= VersionNumber(0, 6, 0))
+        a(controls.lockedCameraScale);
     layerMan.load_file(a, version);
 }
 
 void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(controls.lockedCameraScale);
     layerMan.save_file(a);
 }
 
