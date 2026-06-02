@@ -32,6 +32,7 @@
 #include "../GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../World.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "PhoneDrawingProgramScreen.hpp"
@@ -1147,6 +1148,20 @@ void FileSelectScreen::settings_view() {
                     slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
                     slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
                     checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
+                    text_label(gui, "VSync:");
+                    radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
+                        {"On", 1},
+                        {"Off", 0},
+                        {"Adaptive", -1}
+                    }, [&] {
+                        main.set_vsync_value(main.conf.vsyncValue);
+                    });
+                    input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
+                        .onEdit = [&] {
+                            main.conf.update_main_loop_call_rate();
+                        }
+                    });
+                    checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                     #ifndef __ANDROID__
                         checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
                     #endif

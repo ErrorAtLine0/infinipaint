@@ -363,6 +363,7 @@ void initialize_sdl(MainStruct& mS) {
     // Take maximize and fullscreen into account
     SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
     mS.m->input.update_safe_area();
+    mS.m->conf.update_main_loop_call_rate();
 }
 
 void sdl_terminate(MainStruct& mS) {

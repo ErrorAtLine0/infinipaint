@@ -203,7 +203,6 @@ class MainProgram {
         } updateCheckerData;
 
         float calculate_gui_scale();
-
     private:
         std::unordered_set<World*> tabsToClose;
         void close_set_to_close_tabs();

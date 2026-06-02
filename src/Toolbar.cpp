@@ -1546,6 +1546,11 @@ void Toolbar::general_settings_inner_gui() {
                         }, [&] {
                             main.set_vsync_value(main.conf.vsyncValue);
                         });
+                        input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
+                            .onEdit = [&] {
+                                main.conf.update_main_loop_call_rate();
+                            }
+                        });
 
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                         checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);

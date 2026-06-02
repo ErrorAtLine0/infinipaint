@@ -73,6 +73,8 @@ class GlobalConfig {
 
         bool realTimeEraser = true;
 
+        unsigned mainCallbackRate = 144;
+
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;
             uint8_t middleClickButton = 1;
@@ -92,6 +94,7 @@ class GlobalConfig {
         void save_palettes();
         void load_palettes();
         void load_licenses();
+        void update_main_loop_call_rate();
 
         bool checkForUpdates = true;
         bool useNativeFilePicker = true;
@@ -108,7 +111,7 @@ class GlobalConfig {
         bool flipZoomToolDirection = false;
 
         bool disableGraphicsDriverWorkarounds = false;
-        int vsyncValue = 1;
+        int vsyncValue = 0;
 
         SDL_DateFormat dateFormat = SDL_DATE_FORMAT_DDMMYYYY;
         SDL_TimeFormat timeFormat = SDL_TIME_FORMAT_12HR;
