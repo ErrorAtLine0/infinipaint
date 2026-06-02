@@ -59,10 +59,10 @@ void LineDrawTool::commit_data(bool final) {
         }
         containerPtr->commit_update(drawP);
         if(final) {
-            drawP.world.netObjMan.send_multi_update_messsage([&]() {
+            drawP.world.send_reliable_multi_command_to_all([&]() {
                 drawP.send_transforms_for({objInfoBeingEdited});
                 containerPtr->send_comp_update(drawP, final);
-            }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+            });
         }
         else
             containerPtr->send_comp_update(drawP, final);

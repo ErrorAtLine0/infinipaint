@@ -106,6 +106,7 @@ class World {
         void set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal);
         bool is_focus();
         void set_to_layout_gui_if_focus();
+        void send_reliable_multi_command_to_all(const std::function<void()>& captureSendBlock);
 
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
 

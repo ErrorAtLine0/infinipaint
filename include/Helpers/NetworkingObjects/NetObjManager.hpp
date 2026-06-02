@@ -40,8 +40,8 @@ namespace NetworkingObjects {
             NetObjManager(bool initIsServer);
             void read_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom);
             void read_many_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom);
-            void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID, MessageCommandType initMultiUpdateCommandID);
-            void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID, MessageCommandType initMultiUpdateCommandID);
+            void set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID);
+            void set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID);
             void disconnect();
             bool is_server() const;
             bool is_connected() const;
@@ -71,7 +71,6 @@ namespace NetworkingObjects {
                 SEND_TO_ALL_EXCEPT,
                 SEND_TO_SPECIFIC_CLIENT
             };
-            void send_multi_update_messsage(std::function<void()> captureSendBlock, SendUpdateType updateType, const std::shared_ptr<NetServer::ClientData>& specificClient);
 
             // NOTE: DO NOT USE THESE FUNCTIONS UNLESS SITUATION ISN'T NORMAL, EVERY OBJECT SHOULD HAVE A UNIQUE ID AND IDS SHOULDNT BE REUSED UNDER ANY CIRCUMSTANCES
             template <typename T> NetObjOwnerPtr<T> make_obj_with_specific_id(const NetObjID& id) {
@@ -117,49 +116,40 @@ namespace NetworkingObjects {
             }
 
             template <typename T> static void send_client_update(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
-                auto ss = send_update_general_check_for_multi_update(channel, ptr, sendUpdateFunc);
+                auto ss = send_update_general(channel, ptr, sendUpdateFunc);
                 if(ss)
                     ptr.get_obj_man()->client->send_string_stream_to_server(channel, ss);
             }
 
             template <typename T> static void send_server_update_to_client(const NetObjTemporaryPtr<T>& ptr, const std::shared_ptr<NetServer::ClientData>& clientToSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
                 if(clientToSendTo) {
-                    auto ss = send_update_general_check_for_multi_update(channel, ptr, sendUpdateFunc);
+                    auto ss = send_update_general(channel, ptr, sendUpdateFunc);
                     if(ss)
                         ptr.get_obj_man()->server->send_string_stream_to_client(clientToSendTo, channel, ss);
                 }
             }
 
             template <typename T> static void send_server_update_to_all_clients_except(const NetObjTemporaryPtr<T>& ptr, const std::shared_ptr<NetServer::ClientData>& clientToNotSendTo, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
-                auto ss = send_update_general_check_for_multi_update(channel, ptr, sendUpdateFunc);
+                auto ss = send_update_general(channel, ptr, sendUpdateFunc);
                 if(ss)
                     ptr.get_obj_man()->server->send_string_stream_to_all_clients_except(clientToNotSendTo, channel, ss);
             }
 
             template <typename T> static void send_server_update_to_all_clients(const NetObjTemporaryPtr<T>& ptr, const std::string& channel, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
-                auto ss = send_update_general_check_for_multi_update(channel, ptr, sendUpdateFunc);
+                auto ss = send_update_general(channel, ptr, sendUpdateFunc);
                 if(ss)
                     ptr.get_obj_man()->server->send_string_stream_to_all_clients(channel, ss);
             }
 
-            template <typename T> static std::shared_ptr<std::stringstream> send_update_general_check_for_multi_update(const std::string& channel, const NetObjTemporaryPtr<T>& ptr, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
+            template <typename T> static std::shared_ptr<std::stringstream> send_update_general(const std::string& channel, const NetObjTemporaryPtr<T>& ptr, std::function<void(const NetObjTemporaryPtr<T>&, cereal::PortableBinaryOutputArchive&)> sendUpdateFunc) {
                 if(ptr.get_obj_man()->is_connected()) {
-                    std::shared_ptr<MultiUpdateData> mData = ptr.get_obj_man()->multiUpdateData.lock();
-                    if(mData) {
-                        mData->channelToSendTo = channel;
-                        (*mData->outArchive)(true, ptr.get_net_id());
-                        sendUpdateFunc(ptr, *mData->outArchive);
-                        return nullptr;
+                    auto ss(std::make_shared<std::stringstream>(std::ios::binary | std::ios::out));
+                    {
+                        cereal::PortableBinaryOutputArchive m(*ss);
+                        m(ptr.get_obj_man()->updateCommandID, ptr.get_net_id());
+                        sendUpdateFunc(ptr, m);
                     }
-                    else {
-                        auto ss(std::make_shared<std::stringstream>(std::ios::binary | std::ios::out));
-                        {
-                            cereal::PortableBinaryOutputArchive m(*ss);
-                            m(ptr.get_obj_man()->updateCommandID, ptr.get_net_id());
-                            sendUpdateFunc(ptr, m);
-                        }
-                        return ss;
-                    }
+                    return ss;
                 }
                 return nullptr;
             }
@@ -178,18 +168,10 @@ namespace NetworkingObjects {
                 void* p;
             };
 
-            struct MultiUpdateData {
-                std::string channelToSendTo;
-                std::shared_ptr<std::stringstream> ss;
-                std::unique_ptr<cereal::PortableBinaryOutputArchive> outArchive;
-            };
-            std::weak_ptr<MultiUpdateData> multiUpdateData;
-
             bool isServer;
             std::shared_ptr<NetClient> client;
             std::shared_ptr<NetServer> server;
             MessageCommandType updateCommandID;
-            MessageCommandType multiUpdateCommandID;
             std::unordered_map<NetObjID, SingleObjectData> objectData;
             NetObjManagerTypeList typeList;
             NetTypeIDType nextTypeID;

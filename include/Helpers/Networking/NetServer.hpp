@@ -60,6 +60,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
 
             void send_queued_messages(NetServer& server);
             void parse_received_messages(NetServer& server);
+            void parse_multi_command_id(NetServer& server, cereal::PortableBinaryInputArchive& a);
             void send_str_as_bytes(std::shared_ptr<rtc::DataChannel> channel, const std::string& str);
             NetLibrary::DownloadProgress get_progress_into_fragmented_message(const std::string& channel) const;
 
@@ -98,6 +99,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
         void send_string_stream_to_all_clients(const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
         void send_string_stream_to_all_clients_except(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
         void send_string_stream_to_client_if(std::function<bool(const std::shared_ptr<ClientData>&)> clientChecker, const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
+        void send_multi_command_to_all_clients(const std::string& channel, const std::function<void()>& captureSendBlock);
 
         bool is_disconnected() const;
 
@@ -126,6 +128,12 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
 
         NetClient* directConnectClient = nullptr;
         std::shared_ptr<ClientData> directConnectClientData;
+
+        struct MultiCommandData {
+            std::string channelToSendTo;
+            std::vector<std::string> commands;
+        };
+        std::weak_ptr<MultiCommandData> multiCommandData;
 
         friend class NetLibrary;
         friend class NetClient;

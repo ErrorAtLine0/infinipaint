@@ -76,14 +76,14 @@ void WorldUndoManager::undo() {
 
     bool undoFail = false;
 
-    world.netObjMan.send_multi_update_messsage([&]() {
+    world.send_reliable_multi_command_to_all([&]() {
         for(auto& u : std::views::reverse(undoQueue.back())) {
             if(!u->undo(*this)) {
                 undoFail = true;
                 break;
             }
         }
-    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+    });
 
     if(undoFail) {
         clear();
@@ -106,14 +106,14 @@ void WorldUndoManager::redo() {
     world.bMan.refresh_gui_data();
 
     bool redoFail = false;
-    world.netObjMan.send_multi_update_messsage([&]() {
+    world.send_reliable_multi_command_to_all([&]() {
         for(auto& u : redoQueue.back()) {
             if(!u->redo(*this)) {
                 redoFail = true;
                 break;
             }
         }
-    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+    });
 
     if(redoFail) {
         clear();

@@ -149,7 +149,7 @@ void World::init_client(const std::string& serverFullID) {
     netClient = std::make_shared<NetClient>(serverFullID);
     lastKeepAliveSent = std::chrono::steady_clock::now();
     NetLibrary::register_client(netClient);
-    netObjMan.set_client(netClient, SERVER_UPDATE_NETWORK_OBJECT, SERVER_UPDATE_MANY_NETWORK_OBJECTS);
+    netObjMan.set_client(netClient, SERVER_UPDATE_NETWORK_OBJECT);
     set_name("");
 
     rMan.init_client_callbacks();
@@ -179,13 +179,19 @@ void World::init_client(const std::string& serverFullID) {
     netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
     });
-    netClient->add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
-        netObjMan.read_many_update_message(message, nullptr);
-    });
     netClient->add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
 
     netClient->send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, main.conf.displayName);
+}
+
+void World::send_reliable_multi_command_to_all(const std::function<void()>& captureSendBlock) {
+    if(netServer)
+        netServer->send_multi_command_to_all_clients(RELIABLE_COMMAND_CHANNEL, captureSendBlock);
+    else if(netClient)
+        netClient->send_multi_command_to_server(RELIABLE_COMMAND_CHANNEL, captureSendBlock);
+    else 
+        captureSendBlock();
 }
 
 void World::focus_update() {
@@ -417,7 +423,7 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     netServer = std::make_shared<NetServer>(serverLocalID);
     lastKeepAliveSent = std::chrono::steady_clock::now();
     NetLibrary::register_server(netServer);
-    netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT, CLIENT_UPDATE_MANY_NETWORK_OBJECTS);
+    netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT);
     netSource = initNetSource;
     rMan.init_server_callbacks();
     drawProg.init_server_callbacks();
@@ -454,9 +460,6 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     });
     netServer->add_recv_callback(SERVER_UPDATE_NETWORK_OBJECT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, client);
-    });
-    netServer->add_recv_callback(SERVER_UPDATE_MANY_NETWORK_OBJECTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        netObjMan.read_many_update_message(message, client);
     });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });

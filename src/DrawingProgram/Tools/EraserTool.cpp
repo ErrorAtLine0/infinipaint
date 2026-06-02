@@ -242,7 +242,7 @@ void EraserTool::commit_erase() {
         return false;
     });
 
-    drawP.world.netObjMan.send_multi_update_messsage([&]() {
+    drawP.world.send_reliable_multi_command_to_all([&]() {
         bool firstPlacement = true;
         for(auto& [layer, compMap] : newObjectsToPlace) {
             layer->get_layer().components->sort_netobj_ordered_list_iterator_insert_list(layer->get_layer().components, compMap);
@@ -269,7 +269,7 @@ void EraserTool::commit_erase() {
             else
                 drawP.world.undo.push_on_last(std::make_unique<EditTransformCanvasComponentWorldUndoAction>(std::move(oldData.copyData->obj), oldData.copyData->coords, drawP.world.undo.get_undoid_from_netid(comp->obj.get_net_id())));
         }
-    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+    });
     erasedComponents.clear();
     updatedComponents.clear();
 }

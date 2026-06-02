@@ -23,6 +23,7 @@
 #include "../../MainProgram.hpp"
 #include "DrawingProgramToolBase.hpp"
 #include "../../CanvasComponents/MeshCanvasComponent.hpp"
+#include "Helpers/Networking/NetLibrary.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
@@ -85,10 +86,10 @@ void BrushTool::commit_data(bool final) {
         }
         containerPtr->commit_update(drawP);
         if(final) {
-            drawP.world.netObjMan.send_multi_update_messsage([&]() {
+            drawP.world.send_reliable_multi_command_to_all([&]() {
                 drawP.send_transforms_for({objInfoBeingEdited});
-                containerPtr->send_comp_update(drawP, final);
-            }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+                containerPtr->send_comp_update(drawP, true);
+            });
         }
         else
             containerPtr->send_comp_update(drawP, final);

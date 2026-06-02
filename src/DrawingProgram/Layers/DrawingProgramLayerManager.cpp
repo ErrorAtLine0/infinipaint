@@ -127,7 +127,7 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
 
     auto& undoMan = drawP.world.undo;
 
-    drawP.world.netObjMan.send_multi_update_messsage([&]() {
+    drawP.world.send_reliable_multi_command_to_all([&]() {
         std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfo*>> toEraseMap;
         std::vector<NetObjOwnerPtr<DrawingProgramLayerListItem>> toInsertObjPtrs;
 
@@ -168,7 +168,7 @@ void DrawingProgramLayerManager::push_components_to(const std::vector<CanvasComp
             toEraseList.emplace_back(obj->obj->objInfo);
         }
         commitMoveOnLayer();
-    }, NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+    });
 
     class MoveComponentsUndoAction : public WorldUndoAction {
         public:
@@ -376,12 +376,12 @@ void DrawingProgramLayerManager::add_undo_place_component(CanvasComponentContain
 
 void DrawingProgramLayerManager::erase_component_map(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap, bool newUndo) {
     add_undo_erase_components(eraseMap, newUndo);
-    drawP.world.netObjMan.send_multi_update_messsage([&]() {
+    drawP.world.send_reliable_multi_command_to_all([&]() {
         for(auto& [layerListItem, netObjSetToErase] : eraseMap) {
             auto& layerComponentList = layerListItem->get_layer().components;
             layerComponentList->erase_list(layerComponentList, netObjSetToErase);
         }
-    }, NetworkingObjects::NetObjManager::SendUpdateType::SEND_TO_ALL, nullptr);
+    });
 }
 
 void DrawingProgramLayerManager::add_undo_erase_components(const std::unordered_map<DrawingProgramLayerListItem*, std::vector<CanvasComponentContainer::ObjInfoIterator>>& eraseMap, bool newUndo) {

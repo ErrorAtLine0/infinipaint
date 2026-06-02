@@ -21,6 +21,8 @@
 #include "NetServer.hpp"
 #include <chrono>
 #include <Helpers/Logger.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
 
 NetClient::NetClient(const std::string& serverFullID) {
     receiveQueue = std::make_shared<ReceiveQueue>();
@@ -111,9 +113,14 @@ void NetClient::parse_received_messages() {
             decode_fragmented_message(inArchive, spfm, NetLibrary::FRAGMENT_MESSAGE_STRIDE, [&](cereal::PortableBinaryInputArchive& completeArchive) {
                 MessageCommandType completeCommandID;
                 completeArchive(completeCommandID);
-                recvCallbacks[completeCommandID](completeArchive);
+                if(completeCommandID == 1)
+                    parse_multi_command_id(completeArchive);
+                else
+                    recvCallbacks[completeCommandID](completeArchive);
             });
         }
+        else if(commandID == 1)
+            parse_multi_command_id(inArchive);
         else
             recvCallbacks[commandID](inArchive);
 
@@ -121,23 +128,39 @@ void NetClient::parse_received_messages() {
     }
 }
 
+void NetClient::parse_multi_command_id(cereal::PortableBinaryInputArchive& a) {
+    std::vector<std::string> commands;
+    a(commands);
+    for(const std::string& str : commands) {
+        ByteMemStream strm((char*)str.data(), str.size());
+        cereal::PortableBinaryInputArchive inArchive(strm);
+        MessageCommandType commandID;
+        inArchive(commandID);
+        recvCallbacks[commandID](inArchive);
+    }
+}
+
 void NetClient::send_string_stream_to_server(const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
     if(isDisconnected)
         return;
 
-    auto& messageQueue = messageQueues[channel];
-
-    if(channel == UNRELIABLE_COMMAND_CHANNEL) {
-        if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) // Drop unreliable messages that are too big
-            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
-    }
+    if(!multiCommandData.expired() && channel == multiCommandData.lock()->channelToSendTo)
+        multiCommandData.lock()->commands.emplace_back(ss->str());
     else {
-        std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
-        if(fragmentedMessage.empty())
-            messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
+        auto& messageQueue = messageQueues[channel];
+
+        if(channel == UNRELIABLE_COMMAND_CHANNEL) {
+            if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) // Drop unreliable messages that are too big
+                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
+        }
         else {
-            for(auto& ss2 : fragmentedMessage)
-                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss2);
+            std::vector<std::shared_ptr<std::stringstream>> fragmentedMessage = fragment_message(ss->view(), NetLibrary::FRAGMENT_MESSAGE_STRIDE);
+            if(fragmentedMessage.empty())
+                messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss);
+            else {
+                for(auto& ss2 : fragmentedMessage)
+                    messageQueue.emplace(NetLibrary::calc_order_for_queued_message(channel, nextMessageOrderToSend), ss2);
+            }
         }
     }
 }
@@ -192,6 +215,22 @@ void NetClient::send_queued_messages() {
             }
         }
     }
+}
+
+void NetClient::send_multi_command_to_server(const std::string& channel, const std::function<void()>& captureSendBlock) {
+    if(!is_disconnected() && multiCommandData.expired() && !channel.empty()) { // Check for multiUpdateData.expired() to make sure we aren't overriding a previous call to send_multi_update_messsage
+        std::shared_ptr<MultiCommandData> d = std::make_shared<MultiCommandData>();
+        d->channelToSendTo = channel;
+        multiCommandData = d; // Using weak pointer here ensures that object will be freed
+        captureSendBlock();
+        if(!d->commands.empty()) {
+            std::vector<std::string> movedVec = std::move(d->commands);
+            d = nullptr;
+            send_items_to_server(channel, (MessageCommandType)1, movedVec);
+        }
+    }
+    else
+        captureSendBlock();
 }
 
 bool NetClient::is_disconnected() const {
