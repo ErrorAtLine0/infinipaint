@@ -918,6 +918,11 @@ void FileSelectScreen::main_menu() {
                                 icon_text_transparent_option_selected_button("Donate", "data/icons/RemixIcon/hand-coin-line.svg", "Donate", false, [&] {
                                     SDL_OpenURL("https://infinipaint.com/donate.html");
                                 });
+                                if(main.updateCheckerData.showGui) {
+                                    icon_text_transparent_option_selected_button("Get Update", "data/icons/RemixIcon/download-line.svg", "Get Update", false, [&] {
+                                        SDL_OpenURL("https://infinipaint.com/download.html");
+                                    });
+                                }
                             }
                         }
                     });
