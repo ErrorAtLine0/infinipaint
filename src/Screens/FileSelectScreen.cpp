@@ -1152,7 +1152,9 @@ void FileSelectScreen::settings_view() {
                     radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
                         {"On", 1},
                         {"Off", 0},
-                        {"Adaptive", -1}
+                        #ifndef __ANDROID__
+                            {"Adaptive", -1}, // Usually doesn't work on android
+                        #endif
                     }, [&] {
                         main.set_vsync_value(main.conf.vsyncValue);
                     });
