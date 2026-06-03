@@ -127,7 +127,7 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
 
     if(button.down) {
         if(button.button == InputManager::MouseButton::RIGHT) {
-            if(!controls.middleClickHeld && !controls.leftClickHeld) {
+            if(!controls.leftClickHeld) {
                 if(rightClickPopupLocation.has_value())
                     clear_right_click_popup();
                 else
