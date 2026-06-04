@@ -206,8 +206,10 @@ if(NO_CONAN_BUILD)
     find_package(Fontconfig REQUIRED)
     find_package(PNG REQUIRED)
     find_package(ZLIB REQUIRED)
+    find_package(Clipper2 REQUIRED)
 else()
     find_package(skia-infinipaint REQUIRED)
+    find_package(clipper2 REQUIRED)
 endif()
 
 if(NOT EMSCRIPTEN)
@@ -230,7 +232,6 @@ if((NOT (GRAPHICS_BACKEND STREQUAL "Vulkan")) AND (NOT EMSCRIPTEN) AND LINUX AND
 endif()
 
 find_package(zstd REQUIRED)
-find_package(clipper2 REQUIRED)
 
 message("Skia root: " ${SKIA_INCLUDE})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -360,7 +361,13 @@ if((NOT EMSCRIPTEN) AND (NOT APPLE) AND (NOT ANDROID))
     endif()
 endif()
 
-target_link_libraries(main zstd::libzstd_static Clipper2::clipper2)
+target_link_libraries(main zstd::libzstd_static)
+
+if(NO_CONAN_BUILD)
+    target_link_libraries(main zstd::libzstd_static Clipper2::Clipper2)
+else()
+    target_link_libraries(main zstd::libzstd_static Clipper2::clipper2)
+endif()
 
 if((NOT EMSCRIPTEN) AND WIN32)
     target_link_libraries(main dwrite)

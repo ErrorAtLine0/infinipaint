@@ -80,6 +80,18 @@ modules:
       - type: archive
         url: https://github.com/google/skia/archive/da51f0d60ea2b14e845a823dc11b405dbeef42d8.zip
         sha256: 1f5140d5908031d8cdd06429a633a1583b12fc43dc1c768374ed1e91ab9fa596
+  - name: Clipper2
+    buildsystem: cmake-ninja
+    config-opts:
+        - -DCLIPPER2_UTILS=OFF
+        - -DCLIPPER2_EXAMPLES=OFF
+        - -DCLIPPER2_TESTS=OFF
+    subdir: CPP
+    sources:
+      - type: git
+        tag: Clipper2_2.0.1
+        commit: 21ebba05db8894f0c7217ad35ea518080f324946
+        url: https://github.com/AngusJohnson/Clipper2.git
   - name: infinipaint-x86_64
     buildsystem: cmake-ninja
     builddir: true
