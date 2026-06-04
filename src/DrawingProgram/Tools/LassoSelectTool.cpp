@@ -26,7 +26,6 @@
 #include "../../CoordSpaceHelper.hpp"
 #include <ranges>
 #include <include/core/SkPathBuilder.h>
-#include "../../EarcutIncludes.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 
