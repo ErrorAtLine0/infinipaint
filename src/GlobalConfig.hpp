@@ -74,6 +74,7 @@ class GlobalConfig {
         bool realTimeEraser = true;
 
         unsigned mainCallbackRate = 144;
+        unsigned mainCallbackRateBackground = 10;
 
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;
@@ -94,7 +95,6 @@ class GlobalConfig {
         void save_palettes();
         void load_palettes();
         void load_licenses();
-        void update_main_loop_call_rate();
 
         bool checkForUpdates = true;
         bool useNativeFilePicker = true;

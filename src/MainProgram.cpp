@@ -540,6 +540,32 @@ void MainProgram::input_window_scale_callback(const InputManager::WindowScaleCal
     post_callback();
 }
 
+void MainProgram::input_window_mouse_focus_gained() {
+#ifndef __ANDROID__
+    update_main_loop_call_rate(conf.mainCallbackRate);
+#endif
+}
+
+void MainProgram::input_window_mouse_focus_lost() {
+#ifndef __ANDROID__
+    if(!window.mouseFocus && !window.windowFocus)
+        update_main_loop_call_rate(conf.mainCallbackRateBackground);
+#endif
+}
+
+void MainProgram::input_window_focus_gained() {
+#ifndef __ANDROID__
+    update_main_loop_call_rate(conf.mainCallbackRate);
+#endif
+}
+
+void MainProgram::input_window_focus_lost() {
+#ifndef __ANDROID__
+    if(!window.mouseFocus && !window.windowFocus)
+        update_main_loop_call_rate(conf.mainCallbackRateBackground);
+#endif
+}
+
 std::optional<InputManager::TextBoxStartInfo> MainProgram::get_text_box_start_info() {
     auto toRet = g.get_text_box_start_info();
     if(toRet)
@@ -550,6 +576,11 @@ std::optional<InputManager::TextBoxStartInfo> MainProgram::get_text_box_start_in
 void MainProgram::toggle_full_screen() {
     window.fullscreen = !window.fullscreen;
     SDL_SetWindowFullscreen(window.sdlWindow, window.fullscreen);
+}
+
+void MainProgram::update_main_loop_call_rate(unsigned newCallbackRate) {
+    std::cout << "New main callback rate: " << newCallbackRate << std::endl;
+    SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, std::to_string(newCallbackRate).c_str());
 }
 
 void MainProgram::set_first_screen(std::unique_ptr<Screen> firstScreen) {

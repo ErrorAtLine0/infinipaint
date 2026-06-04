@@ -1165,11 +1165,12 @@ void FileSelectScreen::settings_view() {
                     });
                     input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
                         .onEdit = [&] {
-                            main.conf.update_main_loop_call_rate();
+                            main.update_main_loop_call_rate(main.conf.mainCallbackRate);
                         }
                     });
                     checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                     #ifndef __ANDROID__
+                        input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
                         checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
                     #endif
                     #ifndef __EMSCRIPTEN__
@@ -1183,7 +1184,6 @@ void FileSelectScreen::settings_view() {
 
 void FileSelectScreen::about_view() {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
 
     mainViewScrollArea = gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
         .scrollVertical = true,

@@ -1554,9 +1554,10 @@ void Toolbar::general_settings_inner_gui() {
                         });
                         input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
                             .onEdit = [&] {
-                                main.conf.update_main_loop_call_rate();
+                                main.update_main_loop_call_rate(main.conf.mainCallbackRate);
                             }
                         });
+                        input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
                         #ifndef __EMSCRIPTEN__
                             checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
                             checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);

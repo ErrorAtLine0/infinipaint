@@ -362,8 +362,15 @@ void initialize_sdl(MainStruct& mS) {
     SDL_SyncWindow(mS.window);
     // Take maximize and fullscreen into account
     SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
+    SDL_WindowFlags f = SDL_GetWindowFlags(mS.window);
+    mS.m->window.windowFocus = f & SDL_WINDOW_INPUT_FOCUS;
+    mS.m->window.mouseFocus = f & SDL_WINDOW_MOUSE_FOCUS;
     mS.m->input.update_safe_area();
-    mS.m->conf.update_main_loop_call_rate();
+#ifndef __ANDROID__
+    mS.m->update_main_loop_call_rate((mS.m->window.windowFocus || mS.m->window.mouseFocus) ? mS.m->conf.mainCallbackRate : mS.m->conf.mainCallbackRateBackground);
+#else
+    mS.m->update_main_loop_call_rate(mS.m->conf.mainCallbackRate);
+#endif
 }
 
 void sdl_terminate(MainStruct& mS) {
@@ -811,6 +818,26 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
             case SDL_EVENT_DISPLAY_USABLE_BOUNDS_CHANGED: {
                 get_refresh_rate(mS);
+                break;
+            }
+            case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+                mS.m->window.mouseFocus = true;
+                mS.m->input_window_mouse_focus_gained();
+                break;
+            }
+            case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+                mS.m->window.mouseFocus = false;
+                mS.m->input_window_mouse_focus_lost();
+                break;
+            }
+            case SDL_EVENT_WINDOW_FOCUS_GAINED: {
+                mS.m->window.windowFocus = true;
+                mS.m->input_window_focus_gained();
+                break;
+            }
+            case SDL_EVENT_WINDOW_FOCUS_LOST: {
+                mS.m->window.windowFocus = false;
+                mS.m->input_window_focus_lost();
                 break;
             }
             case SDL_EVENT_SCREEN_KEYBOARD_SHOWN:

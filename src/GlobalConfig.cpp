@@ -49,6 +49,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["guiScale"] = guiScale;
     toRet["jumpTransitionTime"] = jumpTransitionTime;
     toRet["mainCallbackRate"] = mainCallbackRate;
+    toRet["mainCallbackRateBackground"] = mainCallbackRateBackground;
     toRet["disableGraphicsDriverWorkarounds"] = disableGraphicsDriverWorkarounds;
     toRet["viewWebVersionWelcome"] = viewWebVersionWelcome;
     toRet["dragZoomSpeed"] = dragZoomSpeed;
@@ -122,6 +123,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("dragZoomSpeed").get_to(dragZoomSpeed);} catch(...) {}
     try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
     try{j.at("mainCallbackRate").get_to(mainCallbackRate);} catch(...) {}
+    try{j.at("mainCallbackRateBackground").get_to(mainCallbackRateBackground);} catch(...) {}
     if(version >= VersionNumber(0, 6, 0))
         try{j.at("vsync").get_to(vsyncValue);} catch(...) {}
 #ifndef __EMSCRIPTEN__
@@ -212,8 +214,4 @@ void GlobalConfig::load_licenses() {
     });
     ownLicenseText = "InfiniPaint v" + VersionConstants::CURRENT_VERSION_STRING + "\n";
     ownLicenseText += read_file_to_string("data/license");
-}
-
-void GlobalConfig::update_main_loop_call_rate() {
-    SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, std::to_string(mainCallbackRate).c_str());
 }
