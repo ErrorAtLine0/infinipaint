@@ -445,9 +445,11 @@ void Toolbar::top_toolbar() {
                 tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
             }
 
+            size_t worldIndex = std::find(main.worlds.begin(), main.worlds.end(), main.world) - main.worlds.begin();
+
             gui.element<MovableTabList>("file tab list", MovableTabListData{
                 .tabNames = tabNames,
-                .selectedTab = main.worldIndex,
+                .selectedTab = worldIndex,
                 .changeSelectedTab = [&] (size_t i) {
                     main.switch_to_tab(i);
                 },

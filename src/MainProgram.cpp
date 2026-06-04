@@ -361,7 +361,6 @@ void MainProgram::set_tab_to_close(World* world) {
 
 void MainProgram::switch_to_tab(size_t wIndex) {
     world = worlds[wIndex];
-    worldIndex = wIndex;
 }
 
 void MainProgram::post_callback() {

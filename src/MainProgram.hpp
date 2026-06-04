@@ -153,7 +153,6 @@ class MainProgram {
 
         bool drawGui = true;
 
-        size_t worldIndex = 0;
         std::shared_ptr<World> world;
         std::vector<std::shared_ptr<World>> worlds;
 

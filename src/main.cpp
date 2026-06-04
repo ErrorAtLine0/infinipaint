@@ -560,18 +560,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             mS.m->set_first_screen(std::make_unique<FileSelectScreen>(*mS.m));
         else {
             mS.m->set_first_screen(std::make_unique<DesktopDrawingProgramScreen>(*mS.m));
-            if(listOfFilesToOpenFromCommand.empty()) {
+            for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
+                mS.m->create_new_tab({
+                    .isClient = false,
+                    .filePathSource = f
+                });
+            }
+            if(mS.m->worlds.empty()) {
                 mS.m->create_new_tab({
                     .isClient = false
                 });
-            }
-            else {
-                for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
-                    mS.m->create_new_tab({
-                        .isClient = false,
-                        .filePathSource = f
-                    });
-                }
             }
         }
 

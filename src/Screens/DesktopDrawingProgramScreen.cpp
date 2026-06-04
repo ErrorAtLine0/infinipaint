@@ -108,9 +108,7 @@ void DesktopDrawingProgramScreen::on_tab_close() {
         main.create_new_tab({
             .isClient = false
         });
-    else if(main.world)
-        main.worldIndex = std::find(main.worlds.begin(), main.worlds.end(), main.world) - main.worlds.begin();
-    else
+    else if(!main.world)
         main.switch_to_tab(0);
 }
 
