@@ -40,6 +40,7 @@ class WorldUndoManager {
         WorldUndoManager(World& initWorld);
         
         void push(std::unique_ptr<WorldUndoAction> undoAction);
+        void push_on_last(std::unique_ptr<WorldUndoAction> undoAction);
         void undo();
         void redo();
         void clear();
@@ -60,14 +61,14 @@ class WorldUndoManager {
 
         World& world;
     private:
-        void push_undo(std::unique_ptr<WorldUndoAction> undoAction);
-        void push_redo(std::unique_ptr<WorldUndoAction> undoAction);
+        void push_undo(std::vector<std::unique_ptr<WorldUndoAction>> undoAction);
+        void push_redo(std::vector<std::unique_ptr<WorldUndoAction>> undoAction);
         constexpr static size_t UNDO_QUEUE_LIMIT = 250;
 
         std::unordered_map<UndoObjectID, NetworkingObjects::NetObjID> undoIDToNetID;
         std::unordered_map<NetworkingObjects::NetObjID, UndoObjectID> netIDToUndoID;
-        std::deque<std::unique_ptr<WorldUndoAction>> undoQueue;
-        std::deque<std::unique_ptr<WorldUndoAction>> redoQueue;
+        std::deque<std::vector<std::unique_ptr<WorldUndoAction>>> undoQueue;
+        std::deque<std::vector<std::unique_ptr<WorldUndoAction>>> redoQueue;
 
         std::optional<WorldUndoAction*> undoActionSavedAt = nullptr;
 

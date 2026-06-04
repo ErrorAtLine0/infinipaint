@@ -20,6 +20,7 @@
 #include <include/core/SkCanvas.h>
 #include "../../DrawData.hpp"
 #include "DrawingProgramToolBase.hpp"
+#include "../../CanvasComponents/BrushComponentCode.hpp"
 
 class DrawingProgram;
 
@@ -37,10 +38,22 @@ class EraserTool : public DrawingProgramToolBase {
         virtual bool prevent_undo_or_redo() override;
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
+        virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
 
+        struct UpdatedComponentData {
+            std::unique_ptr<CanvasComponentContainer::CopyData> copyData;
+            std::vector<CanvasComponentContainer*> splitComps;
+        };
+        std::unordered_map<CanvasComponentContainer::ObjInfo*, UpdatedComponentData> updatedComponents;
         std::unordered_set<CanvasComponentContainer::ObjInfo*> erasedComponents; // Pointers will be erased from this set if theyre erased in the main list (done by callback)
     private:
-        void erase_between_points(const Vector2f& start, const Vector2f& end);
-        std::optional<Vector2f> lastPosOpt;
+        SkPath erasePath;
+
+        BrushComponentCode::BrushStrokeGenerationData genData;
+
+        void reset_erasing_stroke();
+        void erase_on_path();
+        void commit_erase();
+        void commit_data();
         bool isErasing = false;
 };

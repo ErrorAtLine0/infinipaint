@@ -32,6 +32,7 @@ class FileSelectScreen : public Screen {
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_global_back_button_callback() override;
         virtual void input_app_about_to_go_to_background_callback() override;
+        virtual void input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) override;
 
         struct TrashInfo {
             struct TrashFile {
@@ -112,6 +113,7 @@ class FileSelectScreen : public Screen {
         };
         void move_selected_files(const std::filesystem::path& fromPath, const std::filesystem::path& toPath, TrashMoveType trashMoveType);
         void duplicate_selected_files(const std::filesystem::path& inPath);
+        void share_selected_files();
         void delete_selected_files_in_trash();
 
         enum class MoreOptionsMenu {

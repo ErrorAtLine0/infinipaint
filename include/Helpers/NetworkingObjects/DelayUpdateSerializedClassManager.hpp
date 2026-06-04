@@ -24,6 +24,16 @@
 
 namespace NetworkingObjects {
     class DelayUpdateSerializedClassManager {
+        private:
+            struct UpdatingObject {
+                std::shared_ptr<void> objToUpdateCurrentData;
+                std::shared_ptr<bool> doLastAssignment;
+                std::chrono::steady_clock::time_point lastUpdateTimePoint;
+                std::function<void()> setDataAfterTimeout;
+                std::optional<std::chrono::steady_clock::time_point> lastTemporaryUpdateTimePoint;
+                std::function<void()> sendFinalUpdate;
+                bool updateLock = false;
+            };
         public:
             template <typename T> struct CustomConstructors {
                 std::function<void(const T& o, cereal::PortableBinaryOutputArchive& a)> writeConstructor = [](const T& o, cereal::PortableBinaryOutputArchive& a) {
@@ -83,13 +93,27 @@ namespace NetworkingObjects {
                         client_write_update_func(o, a, finalUpdate);
                 });
             }
+            // NOTE: Locked objects will not be erased from the DelayUpdateSerializedClassManager map. Make sure you unlock objects before they're erased
+            template <typename T> void set_object_update_lock(const NetworkingObjects::NetObjTemporaryPtr<T>& o, bool lock) {
+                if(o.get_obj_man()->is_connected()) {
+                    UpdatingObject* updatingObj;
+                    if(o.get_obj_man()->is_server())
+                        updatingObj = server_create_updating_obj_entry(o, false);
+                    else
+                        updatingObj = client_create_updating_obj_entry(o, false);
+                    updatingObj->updateLock = lock;
+                }
+            }
             void update(NetworkingObjects::NetObjManager& netObjMan);
         private:
             template <typename T> void client_write_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a, bool finalUpdate) {
                 a(finalUpdate);
                 typeIndexFuncs[std::type_index(typeid(T))].writeUpdateFunc(static_cast<const void*>(o.get()), a);
-                auto it = updatingObjs.find(o.get_net_id());
+                client_create_updating_obj_entry(o, finalUpdate);
+            }
 
+            template <typename T> UpdatingObject* client_create_updating_obj_entry(const NetObjTemporaryPtr<T>& o, bool finalUpdate) {
+                auto it = updatingObjs.find(o.get_net_id());
                 if(it == updatingObjs.end()) {
                     UpdatingObject toAdd;
                     toAdd.objToUpdateCurrentData = typeIndexFuncs[std::type_index(typeid(T))].allocateCopyFunc(static_cast<const void*>(o.get()));
@@ -112,13 +136,14 @@ namespace NetworkingObjects {
                         }
                     };
                     toAdd.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
-                    updatingObjs.emplace(o.get_net_id(), toAdd);
+                    it = updatingObjs.emplace(o.get_net_id(), toAdd).first;
                 }
                 else {
                     auto& [netID, updatingObjData] = *it;
                     updatingObjData.lastUpdateTimePoint = std::chrono::steady_clock::now();
                     updatingObjData.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
                 }
+                return &it->second;
             }
 
             template <typename T> void client_read_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::function<void(T&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)>& readUpdate) {
@@ -136,6 +161,10 @@ namespace NetworkingObjects {
 
             template <typename T> void server_write_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryOutputArchive& a, bool finalUpdate) {
                 typeIndexFuncs[std::type_index(typeid(T))].writeUpdateFunc(static_cast<const void*>(o.get()), a);
+                server_create_updating_obj_entry(o, finalUpdate);
+            }
+
+            template <typename T> UpdatingObject* server_create_updating_obj_entry(const NetObjTemporaryPtr<T>& o, bool finalUpdate) {
                 auto it = updatingObjs.find(o.get_net_id());
 
                 if(it == updatingObjs.end()) {
@@ -162,7 +191,7 @@ namespace NetworkingObjects {
                         }
                     };
                     toAdd.lastTemporaryUpdateTimePoint = finalUpdate ? std::nullopt : std::optional<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
-                    updatingObjs.emplace(o.get_net_id(), toAdd);
+                    it = updatingObjs.emplace(o.get_net_id(), toAdd).first;
                 }
                 else {
                     auto& [netID, updatingObjData] = *it;
@@ -171,6 +200,8 @@ namespace NetworkingObjects {
                     typeIndexFuncs[std::type_index(typeid(T))].assignmentFunc(static_cast<void*>(updatingObjs[o.get_net_id()].objToUpdateCurrentData.get()), static_cast<const void*>(o.get()));
                     *updatingObjData.doLastAssignment = false;
                 }
+
+                return &it->second;
             }
 
             template <typename T> void server_read_update_func(const NetObjTemporaryPtr<T>& o, cereal::PortableBinaryInputArchive& a, const std::function<void(T&, cereal::PortableBinaryInputArchive&, const std::shared_ptr<NetServer::ClientData>&)>& readUpdate, const std::shared_ptr<NetServer::ClientData>& c) {
@@ -192,14 +223,6 @@ namespace NetworkingObjects {
                 }
             }
 
-            struct UpdatingObject {
-                std::shared_ptr<void> objToUpdateCurrentData;
-                std::shared_ptr<bool> doLastAssignment;
-                std::chrono::steady_clock::time_point lastUpdateTimePoint;
-                std::function<void()> setDataAfterTimeout;
-                std::optional<std::chrono::steady_clock::time_point> lastTemporaryUpdateTimePoint;
-                std::function<void()> sendFinalUpdate;
-            };
             std::unordered_map<NetObjID, UpdatingObject> updatingObjs;
             
             struct ExtraFunctions {

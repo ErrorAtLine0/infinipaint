@@ -22,6 +22,9 @@
     void updateTextboxAndCursorPos(java.lang.String, int, int);
     void startNetworkService();
     void stopNetworkService();
+    void shareText(java.lang.String);
+    void shareInternalFiles(java.lang.String[], java.lang.String);
+    java.lang.String getFileNameFromUriString(java.lang.String);
 }
 
 -keep,includedescriptorclasses,allowoptimization class org.libsdl.app.SDLActivity {

@@ -255,13 +255,25 @@ void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
                         input_text_field(gui, "lobby", "Lobby", &serverToConnectTo, {
                             .immutable = true
                         });
-                        text_button(gui, "Host button", "Copy & Host", {
-                            .wide = true,
-                            .onClick = [&] {
-                                main.input.set_clipboard_str(serverToConnectTo);
-                                main.world->start_hosting(serverToConnectTo, serverLocalID);
-                                topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
-                            }
+                        left_to_right_line_layout(gui, [&] {
+                            text_button(gui, "Host button", "Copy & Host", {
+                                .wide = true,
+                                .onClick = [&] {
+                                    main.input.set_clipboard_str(serverToConnectTo);
+                                    main.world->start_hosting(serverToConnectTo, serverLocalID);
+                                    topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                                }
+                            });
+#ifdef __ANDROID__
+                            text_button(gui, "Share and host button", "Share & Host", {
+                                .wide = true,
+                                .onClick = [&] {
+                                    AndroidJNICalls::shareText(serverToConnectTo);
+                                    main.world->start_hosting(serverToConnectTo, serverLocalID);
+                                    topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                                }
+                            });
+#endif
                         });
                     }
                 });
@@ -291,12 +303,23 @@ void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
                         input_text_field(gui, "lobby", "Lobby", &serverToConnectTo, {
                             .immutable = true
                         });
-                        text_button(gui, "Copy button", "Copy", {
-                            .wide = true,
-                            .onClick = [&] {
-                                main.input.set_clipboard_str(serverToConnectTo);
-                                topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
-                            }
+                        left_to_right_line_layout(gui, [&] {
+                            text_button(gui, "Copy button", "Copy", {
+                                .wide = true,
+                                .onClick = [&] {
+                                    main.input.set_clipboard_str(serverToConnectTo);
+                                    topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                                }
+                            });
+#ifdef __ANDROID__
+                            text_button(gui, "Share button", "Share", {
+                                .wide = true,
+                                .onClick = [&] {
+                                    AndroidJNICalls::shareText(serverToConnectTo);
+                                    topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
+                                }
+                            });
+#endif
                         });
                     }
                 });

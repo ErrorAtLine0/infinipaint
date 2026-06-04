@@ -32,6 +32,7 @@
 #include "../GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../World.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "PhoneDrawingProgramScreen.hpp"
@@ -44,8 +45,10 @@
 using namespace GUIStuff;
 using namespace ElementHelpers;
 
+#define MAIN_SAVES_FOLDER_STR "saves"
+
 FileSelectScreen::FileSelectScreen(MainProgram& m): Screen(m) {
-    savePath = main.conf.configPath / "saves";
+    savePath = main.conf.configPath / MAIN_SAVES_FOLDER_STR;
     trashPath = main.conf.configPath / "trash";
     infoPath = main.conf.configPath / "fileSelectInfo.json";
 
@@ -427,6 +430,18 @@ void FileSelectScreen::move_selected_files(const std::filesystem::path& fromPath
     }
 }
 
+void FileSelectScreen::share_selected_files() {
+#ifdef __ANDROID__
+    std::vector<std::string> filesToSend;
+    for(const FileInfo& f : fileList) {
+        if(f.selected)
+            filesToSend.emplace_back(std::string(MAIN_SAVES_FOLDER_STR) + std::string("/") + f.fileName + ".infpnt");
+    }
+    if(!filesToSend.empty())
+        AndroidJNICalls::shareInternalFiles(filesToSend, "application/octet-stream");
+#endif
+}
+
 void FileSelectScreen::duplicate_selected_files(const std::filesystem::path& inPath) {
     std::vector<std::string> toFolderListNames;
     try {
@@ -571,6 +586,13 @@ void FileSelectScreen::edit_action_bar() {
                                                 update_file_list(fileList, savePath, false);
                                                 editMode = false;
                                             });
+#ifdef __ANDROID__
+                                            edit_action_bar_button("share", "data/icons/RemixIcon/share-line.svg", "Share", [&] {
+                                                share_selected_files();
+                                                update_file_list(fileList, savePath, false);
+                                                editMode = false;
+                                            });
+#endif
                                         }
                                         else if(selectedMenu == SelectedMenu::TRASH) {
                                             edit_action_bar_button("restore", "data/icons/RemixIcon/refresh-line.svg", "Restore", [&] {
@@ -683,7 +705,10 @@ void FileSelectScreen::title_bar() {
                                 case MoreOptionsMenu::CLOSED:
                                     break;
                                 case MoreOptionsMenu::MAIN:
-                                    elemCount = 3;
+                                    if(selectedMenu == SelectedMenu::FILES)
+                                        elemCount = 4;
+                                    else
+                                        elemCount = 3;
                                     break;
                                 case MoreOptionsMenu::VIEW:
                                     elemCount = 4;
@@ -725,6 +750,17 @@ void FileSelectScreen::title_bar() {
                                                     case 2: {
                                                         text_transparent_option_button("Sort", "Sort", [&] {
                                                             moreOptionsMenu = MoreOptionsMenu::SORT;
+                                                        });
+                                                        break;
+                                                    }
+                                                    case 3: {
+                                                        text_transparent_option_button("Import Canvas", "Import Canvas (.infpnt)", [&] {
+                                                            open_file_selector("Open InfiniPaint Canvas", {{"InfiniPaint Canvas", "infpnt"}}, [&](const std::filesystem::path& p, const auto& e) {
+                                                                CustomEvents::emit_event<CustomEvents::MobileImportCanvasEvent>({
+                                                                    .filePath = p,
+                                                                });
+                                                            });
+                                                            moreOptionsMenu = MoreOptionsMenu::CLOSED;
                                                         });
                                                         break;
                                                     }
@@ -882,6 +918,11 @@ void FileSelectScreen::main_menu() {
                                 icon_text_transparent_option_selected_button("Donate", "data/icons/RemixIcon/hand-coin-line.svg", "Donate", false, [&] {
                                     SDL_OpenURL("https://infinipaint.com/donate.html");
                                 });
+                                if(main.updateCheckerData.showGui) {
+                                    icon_text_transparent_option_selected_button("Get Update", "data/icons/RemixIcon/download-line.svg", "Get Update", false, [&] {
+                                        SDL_OpenURL("https://infinipaint.com/download.html");
+                                    });
+                                }
                             }
                         }
                     });
@@ -1112,7 +1153,24 @@ void FileSelectScreen::settings_view() {
                     slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
                     slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
                     checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
+                    text_label(gui, "VSync:");
+                    radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
+                        {"On", 1},
+                        {"Off", 0},
+                        #ifndef __ANDROID__
+                            {"Adaptive", -1}, // Usually doesn't work on android
+                        #endif
+                    }, [&] {
+                        main.set_vsync_value(main.conf.vsyncValue);
+                    });
+                    input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
+                        .onEdit = [&] {
+                            main.update_main_loop_call_rate(main.conf.mainCallbackRate);
+                        }
+                    });
+                    checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                     #ifndef __ANDROID__
+                        input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
                         checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
                     #endif
                     #ifndef __EMSCRIPTEN__
@@ -1126,7 +1184,6 @@ void FileSelectScreen::settings_view() {
 
 void FileSelectScreen::about_view() {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
 
     mainViewScrollArea = gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
         .scrollVertical = true,
@@ -1194,7 +1251,10 @@ void FileSelectScreen::input_paste_callback(const CustomEvents::PasteEvent& past
 
 void FileSelectScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     main.create_new_tab(openFile);
-    main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<PhoneDrawingProgramScreen>(main); });
+    if(main.world)
+        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<PhoneDrawingProgramScreen>(main); });
+    else if(!openFile.isClient && openFile.filePathSource.has_value()) // Invalid file, remove it
+        SDL_RemovePath(openFile.filePathSource.value().string().c_str());
 }
 
 void FileSelectScreen::input_global_back_button_callback() {
@@ -1211,6 +1271,22 @@ void FileSelectScreen::input_global_back_button_callback() {
     else
         main.setToQuit = true;
     main.g.gui.set_to_layout();
+}
+
+void FileSelectScreen::input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) {
+#ifdef __ANDROID__
+    std::string name = AndroidJNICalls::getFileNameFromURI(mobileImport.filePath.string());
+    if(name.empty())
+        name = "New File";
+    std::filesystem::path newPath = sdl_safe_copy_file(savePath, mobileImport.filePath, name, World::FILE_EXTENSION);
+#else
+    std::filesystem::path newPath = sdl_safe_copy_file(savePath, mobileImport.filePath, mobileImport.filePath.stem().string(), World::FILE_EXTENSION);
+#endif
+    CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+        .isClient = false,
+        .saveThumbnail = true,
+        .filePathSource = newPath
+    });
 }
 
 void FileSelectScreen::draw(SkCanvas* canvas) {

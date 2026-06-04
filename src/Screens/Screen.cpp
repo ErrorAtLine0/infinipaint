@@ -61,6 +61,7 @@ void Screen::gui_layout_run() {}
 bool Screen::app_close_requested() { return true; }
 void Screen::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {}
 void Screen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {}
+void Screen::input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) {}
 void Screen::input_paste_callback(const CustomEvents::PasteEvent& paste) {}
 void Screen::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {}
 void Screen::input_global_back_button_callback() {}

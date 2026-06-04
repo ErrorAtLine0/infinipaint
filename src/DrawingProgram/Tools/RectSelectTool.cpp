@@ -68,12 +68,8 @@ void RectSelectTool::input_mouse_button_on_canvas_callback(const InputManager::M
         controls.selectEndAt = controls.coords.from_cam_space_to_this(drawP.world, button.pos);
         Vector2f newP1 = controls.coords.from_this_to_cam_space(drawP.world, cwise_vec_min(controls.selectStartAt, controls.selectEndAt));
         Vector2f newP2 = controls.coords.from_this_to_cam_space(drawP.world, cwise_vec_max(controls.selectStartAt, controls.selectEndAt));
-        std::array<Vector2f, 4> newT = triangle_from_rect_points(newP1, newP2);
 
-        ColliderCollection<float> cC;
-        cC.triangle.emplace_back(newT[0], newT[1], newT[2]);
-        cC.triangle.emplace_back(newT[2], newT[3], newT[0]);
-        cC.recalculate_bounds();
+        SkPath cC = SkPath::Rect(SkRect::MakeLTRB(newP1.x(), newP1.y(), newP2.x(), newP2.y()));
 
         if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
             drawP.selection.add_from_cam_coord_collider_to_selection(cC, drawP.controls.layerSelector, false);

@@ -22,15 +22,13 @@
 #include "../DrawingProgram.hpp"
 #include "../../MainProgram.hpp"
 #include "DrawingProgramToolBase.hpp"
-#include "../../CanvasComponents/BrushStrokeCanvasComponent.hpp"
+#include "../../CanvasComponents/MeshCanvasComponent.hpp"
+#include "Helpers/Networking/NetLibrary.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
-
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
-
-#define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
-#define DRAW_MINIMUM_LIMIT 1.0f
+#include <include/pathops/SkPathOps.h>
 
 BrushTool::BrushTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -51,193 +49,89 @@ void BrushTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     }
 }
 
-void BrushTool::smooth_out_points(float smoothFactor) {
-    if(objInfoBeingEdited) {
-        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-        auto& brushPoints = *brushStroke.d.points;
-        if(brushPoints.size() >= 2) {
-            brushPoints.back().width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width * smoothFactor);
-            for(size_t i = brushPoints.size() - 1; i > 0; i--) {
-                if(brushPoints[i].width * smoothFactor > brushPoints[i - 1].width)
-                    brushPoints[i - 1].width = brushPoints[i].width * smoothFactor;
-                else
-                    break;
-            }
-        }
-    }
-}
-
-void BrushTool::fix_tip() {
-    if(objInfoBeingEdited) {
-        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-        auto& brushPoints = *brushStroke.d.points;
-        if(brushPoints.size() >= 2) {
-            brushPoints[brushPoints.size() - 2].width = brushPoints[brushPoints.size() - 1].width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width);
-        }
-    }
-}
-
 void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
         if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
-            if(button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
-                penWidth = drawP.world.main.input.pen.pressure;
-                if(penWidth != 0.0f) {
-                    float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
-                    penWidth = brushMinSize + penWidth * (1.0f - brushMinSize);
-                }
-            }
-            else
-                penWidth = 1.0f;
-
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             if(!relativeWidthResult.first.has_value()) {
                 drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
                 return;
             }
-            float width = relativeWidthResult.first.value() * penWidth;
 
-            CanvasComponentContainer* newBrushStrokeContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::BRUSHSTROKE);
-            BrushStrokeCanvasComponent& newBrushStroke = static_cast<BrushStrokeCanvasComponent&>(newBrushStrokeContainer->get_comp());
+            CanvasComponentContainer* newMeshContainer = new CanvasComponentContainer(drawP.world.netObjMan, CanvasComponentType::MESH);
+            MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(newMeshContainer->get_comp());
 
-            BrushStrokeCanvasComponentPoint p;
-            p.pos = button.pos;
-            p.width = width;
-            prevPointUnaltered = p.pos;
-            newBrushStroke.d.points->emplace_back(p);
-            newBrushStroke.d.color = toolConfig.globalConf.foregroundColor;
-            newBrushStroke.d.hasRoundCaps = toolConfig.brush.hasRoundCaps;
-            newBrushStrokeContainer->coords = drawP.world.drawData.cam.c;
-            objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newBrushStrokeContainer);
-            addedTemporaryPoint = false;
+            newMesh.d.color = toolConfig.globalConf.foregroundColor;
+            newMeshContainer->coords = drawP.world.drawData.cam.c;
+
+            BrushComponentCode::mouse_button(drawP, genData, newMeshContainer->coords, button, relativeWidthResult.first.value());
+
+            objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newMeshContainer);
+            commit_data(false);
         }
         else if(!button.down && objInfoBeingEdited)
             commit_stroke();
     }
 }
 
+void BrushTool::commit_data(bool final) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        MeshCanvasComponent& newMesh = static_cast<MeshCanvasComponent&>(containerPtr->get_comp());
+        newMesh.d.meshPath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
+        if(final) {
+            containerPtr->get_comp().simplify_paths();
+            containerPtr->normalize_object_coordinates();
+        }
+        containerPtr->commit_update(drawP);
+        if(final) {
+            drawP.world.send_reliable_multi_command_to_all([&]() {
+                drawP.send_transforms_for({objInfoBeingEdited});
+                containerPtr->send_comp_update(drawP, true);
+            });
+        }
+        else
+            containerPtr->send_comp_update(drawP, final);
+    }
+    commitUpdate = false;
+}
+
 void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(objInfoBeingEdited) {
         auto& toolConfig = drawP.world.main.toolConfig;
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-        auto& brushPoints = *brushStroke.d.points;
-        float width = toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value() * penWidth;
-
-        BrushStrokeCanvasComponentPoint p;
-        p.pos = containerPtr->coords.from_cam_space_to_this(drawP.world, motion.pos);
-        p.width = width;
-
-        // Temporary point is a point that follows the cursor until it is placed
-        if(!addedTemporaryPoint) {
-            // Temporary point is close enough to be placed
-            if(extensive_point_checking(brushStroke, p.pos)) {
-                brushPoints.emplace_back(p);
-                addedTemporaryPoint = true;
-            }
-            else
-                // Temporary point not close enough yet, so change the width of the previous point based on the current pen width until it can be placed
-                brushPoints.back().width = std::max(brushPoints.back().width, p.width);
-        }
-
-        if(addedTemporaryPoint) {
-            const BrushStrokeCanvasComponentPoint& prevP = brushPoints[brushPoints.size() - 2];
-            float distToPrev = (p.pos - prevP.pos).norm();
-            // If the cursor isnt too close to the previous points, move the temporary point to the cursor and change the width of the temporary point to the current pen width
-            if(extensive_point_checking_back(brushStroke, p.pos)) {
-                brushPoints.back().pos = p.pos;
-                brushPoints.back().width = std::max(brushPoints.back().width, p.width);
-            }
-
-            float maxWidthToCompareTo = std::max(brushPoints.back().width, p.width);
-            maxWidthToCompareTo = std::max(maxWidthToCompareTo, 5.0f);
-            if(brushPoints.size() >= 2)
-                maxWidthToCompareTo = std::max(brushPoints[brushPoints.size() - 2].width, maxWidthToCompareTo);
-            if(brushPoints.size() >= 3)
-                maxWidthToCompareTo = std::max(brushPoints[brushPoints.size() - 3].width, maxWidthToCompareTo);
-
-            // If the temporary point (cursor) is far enough from the point before it, make the temporary point permanent
-            if(distToPrev >= maxWidthToCompareTo * DRAW_MINIMUM_LIMIT) {
-                brushPoints.back().pos = p.pos;
-                brushPoints.back().width = std::max(brushPoints.back().width, p.width);
-                addedTemporaryPoint = false;
-
-                // Midway interpolation moves the point before the last one to a position that leads to a smoother line
-                if(brushPoints.size() != 2) // Don't interpolate the first point
-                    brushPoints[brushPoints.size() - 2].pos = (prevPointUnaltered + p.pos) * 0.5;
-                prevPointUnaltered = p.pos;
-            }
-        }
-
-        smooth_out_points(drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
+        BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value());
         commitUpdate = true;
     }
 }
 
 void BrushTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
     if(axis.axis == SDL_PEN_AXIS_PRESSURE && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
-        penWidth = axis.value;
-        if(penWidth != 0.0f) {
-            float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
-            penWidth = brushMinSize + penWidth * (1.0f - brushMinSize);
-            if(objInfoBeingEdited) {
-                auto& toolConfig = drawP.world.main.toolConfig;
-                NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-                BrushStrokeCanvasComponent& brushStroke = static_cast<BrushStrokeCanvasComponent&>(containerPtr->get_comp());
-                auto& brushPoints = *brushStroke.d.points;
-                float width = toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value() * penWidth;
-                brushPoints.back().width = std::max(brushPoints.back().width, width);
-                smooth_out_points(drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
-                commitUpdate = true;
-            }
+        genData.penWidth = axis.value;
+        if(genData.penWidth != 0.0f && objInfoBeingEdited) {
+            auto& toolConfig = drawP.world.main.toolConfig;
+            NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+            float width = toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value();
+            BrushComponentCode::pen_pressure(drawP, genData, width);
+            commitUpdate = true;
         }
     }
-}
-
-bool BrushTool::extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
-    auto& points = *brushStroke.d.points;
-    if(points.size() >= 1 && (newPoint - points[points.size() - 1].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
-        return false;
-    if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
-        return false;
-    if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
-        return false;
-    return true;
-}
-
-bool BrushTool::extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint) {
-    auto& points = *brushStroke.d.points;
-    if(points.size() >= 2 && (newPoint - points[points.size() - 2].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
-        return false;
-    if(points.size() >= 3 && (newPoint - points[points.size() - 3].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
-        return false;
-    if(points.size() >= 4 && (newPoint - points[points.size() - 4].pos).norm() < MINIMUM_DISTANCE_TO_NEXT_POINT)
-        return false;
-    return true;
 }
 
 void BrushTool::tool_update() {
     if(!drawP.world.main.g.gui.cursor_obstructed())
         drawP.world.main.input.hideCursor = true;
 
-    if(commitUpdate && objInfoBeingEdited) {
-        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        containerPtr->commit_update(drawP);
-        containerPtr->send_comp_update(drawP, false);
-        commitUpdate = false;
-    }
+    if(commitUpdate && objInfoBeingEdited)
+        commit_data(false);
 }
 
 void BrushTool::commit_stroke() {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        fix_tip();
-        containerPtr->commit_update(drawP);
-        containerPtr->send_comp_update(drawP, true);
-        commitUpdate = false;
+        BrushComponentCode::fix_tip(genData.brushPoints);
+        commit_data(true);
         if(containerPtr->get_world_bounds().has_value())
             drawP.layerMan.add_undo_place_component(objInfoBeingEdited);
         else {
@@ -282,12 +176,12 @@ bool BrushTool::prevent_undo_or_redo() {
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed()) {
+    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.cursor_obstructed() && drawData.main->window.mouseFocus) {
         auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
         if(relativeWidthResult.first.has_value()) {
             float width = relativeWidthResult.first.value();
             if(objInfoBeingEdited)
-                width *= penWidth * 0.5f;
+                width *= genData.penWidth * 0.5f;
             else
                 width *= 0.5f;
             width += 1.0f;

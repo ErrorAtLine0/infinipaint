@@ -18,11 +18,16 @@
 
 package com.erroratline0.infinipaint;
 
+import static androidx.core.content.FileProvider.getUriForFile;
+
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +39,9 @@ import android.widget.RelativeLayout;
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLDummyEdit;
 import org.libsdl.app.SDLSurface;
+
+import java.io.File;
+import java.util.ArrayList;
 
 public class InfiniPaint extends SDLActivity {
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,5 +155,84 @@ public class InfiniPaint extends SDLActivity {
     }
     static public void stopNetworkService() {
         mSingleton.stopService(new Intent(mSingleton, InfiniPaintNetworkService.class));
+    }
+
+    static public void shareInternalFiles(String[] filePaths, String mimeType) {
+        if(filePaths.length == 1) {
+            File newFile = new File(getContext().getFilesDir(), filePaths[0]);
+            Uri contentUri;
+
+            try {
+                contentUri = getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile);
+            } catch (Exception e) {
+                Log.v("INFO", "[shareInternalFile] Exception " + e);
+                return;
+            }
+
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            sendIntent.setType(mimeType);
+            Intent shareIntent = Intent.createChooser(sendIntent, null);
+            getContext().startActivity(shareIntent);
+        }
+        else if(filePaths.length > 1) {
+            ArrayList<Uri> arrayList = new ArrayList<Uri>();
+            for(String str : filePaths) {
+                File newFile = new File(getContext().getFilesDir(), str);
+                try {
+                    arrayList.add(getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile));
+                } catch (Exception e) {
+                    Log.v("INFO", "[shareInternalFile] Exception " + e);
+                    return;
+                }
+            }
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+            sendIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayList);
+            sendIntent.setType(mimeType);
+            Intent shareIntent = Intent.createChooser(sendIntent, null);
+            getContext().startActivity(shareIntent);
+        }
+    }
+
+    static public void shareText(String textToSend) {
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, textToSend);
+        sendIntent.setType("text/plain");
+        Intent shareIntent = Intent.createChooser(sendIntent, null);
+        getContext().startActivity(shareIntent);
+    }
+
+    // https://stackoverflow.com/a/25005243
+    static public String getFileNameFromUriString(String strUri) {
+        if(strUri == null)
+            return null;
+        Uri uri = Uri.parse(strUri);
+        if(uri == null)
+            return null;
+        String result = null;
+        if (uri.getScheme() != null && uri.getScheme().equals("content")) {
+            Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                if(cursor != null)
+                    cursor.close();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            if(result == null)
+                return null;
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
     }
 }

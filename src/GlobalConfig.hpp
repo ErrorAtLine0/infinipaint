@@ -71,6 +71,11 @@ class GlobalConfig {
         bool mobileUI = false;
 #endif
 
+        bool realTimeEraser = true;
+
+        unsigned mainCallbackRate = 144;
+        unsigned mainCallbackRateBackground = 10;
+
         struct TabletOptions {
             bool pressureAffectsBrushWidth = true;
             uint8_t middleClickButton = 1;
@@ -106,7 +111,7 @@ class GlobalConfig {
         bool flipZoomToolDirection = false;
 
         bool disableGraphicsDriverWorkarounds = false;
-        int vsyncValue = 1;
+        int vsyncValue = 0;
 
         SDL_DateFormat dateFormat = SDL_DATE_FORMAT_DDMMYYYY;
         SDL_TimeFormat timeFormat = SDL_TIME_FORMAT_12HR;

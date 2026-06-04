@@ -104,8 +104,8 @@ namespace CustomEvents {
         Vector3i intData;
     };
 
-    struct AndroidInsetsChangedEvent {
+    struct MobileImportCanvasEvent {
         static uint32_t EVENT_NUM;
-        SCollision::AABB<float> safeWindowRect;
+        std::filesystem::path filePath;
     };
 }

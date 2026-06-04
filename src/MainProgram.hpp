@@ -83,6 +83,8 @@ class MainProgram {
 
             float density = 1.0f;
             float scale = 1.0f;
+            bool windowFocus = true;
+            bool mouseFocus = true;
 
             int defaultMSAASampleCount = 0;
             SkSurfaceProps defaultMSAASurfaceProps;
@@ -139,6 +141,7 @@ class MainProgram {
         float get_scale_and_density_factor_gui();
         bool app_close_requested();
         void toggle_full_screen();
+        void update_main_loop_call_rate(unsigned newCallbackRate);
         
         void set_first_screen(std::unique_ptr<Screen> firstScreen);
         void set_screen(std::function<std::unique_ptr<Screen>(std::unique_ptr<Screen>)> screenFunc);
@@ -161,6 +164,7 @@ class MainProgram {
         void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
         void input_paste_callback(const CustomEvents::PasteEvent& paste);
         void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
+        void input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport);
 
         void input_app_about_to_go_to_background_callback();
         void input_app_about_to_go_to_foreground_callback();
@@ -184,6 +188,10 @@ class MainProgram {
         void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
         void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w);
         void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w);
+        void input_window_mouse_focus_gained();
+        void input_window_mouse_focus_lost();
+        void input_window_focus_gained();
+        void input_window_focus_lost();
 
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
@@ -202,7 +210,6 @@ class MainProgram {
         } updateCheckerData;
 
         float calculate_gui_scale();
-
     private:
         std::unordered_set<World*> tabsToClose;
         void close_set_to_close_tabs();

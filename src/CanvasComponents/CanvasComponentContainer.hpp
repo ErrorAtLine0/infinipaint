@@ -30,6 +30,12 @@ class DrawingProgram;
 class DrawingProgramLayerListItem;
 struct DrawingProgramCacheBVHNode;
 
+enum class CanvasComponentEraseDetailResult {
+    NO_CHANGE,
+    CHANGED,
+    REMOVED
+};
+
 class CanvasComponentContainer {
     public:
         typedef NetworkingObjects::NetObjOrderedList<CanvasComponentContainer> NetList;
@@ -77,17 +83,20 @@ class CanvasComponentContainer {
         void draw(SkCanvas* canvas, const DrawData& drawData) const;
         void draw_with_predraw_data(SkCanvas* canvas, const DrawData& drawData, const PreDrawData& preDrawData) const;
         PreDrawData calculate_predraw_data(const DrawData& drawData) const;
-        TransformData calculate_draw_transform(const DrawData& drawData) const;
+        static TransformData calculate_draw_transform(const CoordSpaceHelper& camCoords, const CoordSpaceHelper& coords);
+        static void canvas_do_transform(SkCanvas* canvas, const TransformData& transformData);
         void commit_update(DrawingProgram& drawP);
         void commit_transform_dont_invalidate_cache(); // Must be thread safe
         void commit_transform(DrawingProgram& drawP);
         void commit_update_dont_invalidate_cache(DrawingProgram& drawP); // Must be thread safe
         bool should_draw(const DrawData& drawData) const;
-        bool collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) const;
-        bool collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
-        bool collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const;
+        CanvasComponentEraseDetailResult collides_with_erase_detail(const CoordSpaceHelper& camCoords, const WorldScalar& camCoordsScaleToCheckAgainst, const SkPath& checkAgainstCam) const;
+        bool collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const;
+        bool collides_with_point(const CoordSpaceHelper& camCoords, const Vector2f& checkAgainstCam) const;
         void send_comp_update(DrawingProgram& drawP, bool finalUpdate);
         void scale_up(const WorldScalar& scaleUpAmount);
+        void normalize_object_coordinates();
+        void set_object_update_lock(DrawingProgram& drawP, bool lockSet);
 
         std::weak_ptr<DrawingProgramCacheBVHNode> cacheParentBvhNode;
         DrawingProgramLayerListItem* parentLayer = nullptr;
@@ -99,11 +108,10 @@ class CanvasComponentContainer {
 
         static void write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a);
 
-        unsigned get_mipmap_level(const DrawData& drawData) const;
         CanvasComponent* allocate_comp(CanvasComponentType type);
-        void canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) const;
         void calculate_world_bounds();
 
         std::optional<SCollision::AABB<WorldScalar>> worldAABB;
+
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentAllocator> compAllocator;
 };

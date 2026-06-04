@@ -591,13 +591,11 @@ void TextBoxEditTool::input_mouse_button_on_canvas_callback(const InputManager::
     if(button.button == InputManager::MouseButton::LEFT && !isDraggingPoint && userInput) {
         auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
 
-        SCollision::ColliderCollection<float> mousePointCollection;
-        mousePointCollection.circle.emplace_back(button.pos, 1.0f);
-        mousePointCollection.recalculate_bounds();
+        SkPath mousePoint = SkPath::Circle(button.pos.x(), button.pos.y(), 1.0f);
 
         InputManager& input = drawP.world.main.input;
 
-        bool collidesWithBox = comp->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, mousePointCollection);
+        bool collidesWithBox = comp->obj->collides_with(drawP.world.drawData.cam.c, mousePoint);
 
         auto oldCursor = *a.cursor;
 

@@ -143,12 +143,12 @@ void DrawingProgramCache::clear_own_cached_surfaces() {
         windowCache.attachedDrawingProgramCache = nullptr;
 }
 
-CanvasComponentContainer::ObjInfo* DrawingProgramCache::get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC) {
-    auto cCWorld = drawP.world.drawData.cam.c.collider_to_world<SCollision::ColliderCollection<WorldScalar>, SCollision::ColliderCollection<float>>(cC);
+CanvasComponentContainer::ObjInfo* DrawingProgramCache::get_front_object_colliding_with_in_editing_layer(const SkPath& cC) {
+    auto cCWorldBounds = drawP.world.drawData.cam.c.collider_to_world<SCollision::AABB<WorldScalar>, SCollision::AABB<float>>(cC.getBounds());
     CanvasComponentContainer::ObjInfo* p = nullptr;
-    traverse_bvh_run_function(cCWorld.bounds, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
+    traverse_bvh_run_function(cCWorldBounds, [&](const std::shared_ptr<DrawingProgramCacheBVHNode>& bvhNode) {
         node_loop_components(bvhNode, [&](const auto& c) {
-            if(drawP.layerMan.component_passes_layer_selector(c, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED) && (!p || c->pos >= p->pos) && c->obj->collides_with_world_coords(drawP.world.drawData.cam.c, cCWorld))
+            if(drawP.layerMan.component_passes_layer_selector(c, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED) && (!p || c->pos >= p->pos) && c->obj->collides_with(drawP.world.drawData.cam.c, cC))
                 p = c;
         });
         return true;

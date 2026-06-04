@@ -20,6 +20,7 @@
 #include "DrawingProgramToolBase.hpp"
 #include <Helpers/SCollision.hpp>
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
+#include "../../CanvasComponents/BrushComponentCode.hpp"
 
 class DrawingProgram;
 
@@ -38,8 +39,11 @@ class LineDrawTool : public DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
     private:
+        void commit_data(bool final);
         void commit();
         bool commitUpdate = false;
+
+        std::vector<BrushComponentCode::BrushPoint> brushPoints;
 
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
 };

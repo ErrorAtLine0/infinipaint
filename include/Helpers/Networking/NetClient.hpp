@@ -46,6 +46,7 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
             send_string_stream_to_server(channel, ss);
         }
         void send_string_stream_to_server(const std::string& channel, const std::shared_ptr<std::stringstream>& ss);
+        void send_multi_command_to_server(const std::string& channel, const std::function<void()>& captureSendBlock);
         void update();
         void add_recv_callback(MessageCommandType commandID, const NetClientRecvCallback& callback);
         bool is_disconnected() const;
@@ -58,6 +59,7 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
         void parse_received_messages();
         void send_queued_messages();
         void send_str_as_bytes(std::shared_ptr<rtc::DataChannel> channel, const std::string& str);
+        void parse_multi_command_id(cereal::PortableBinaryInputArchive& inArchive);
 
         struct OutgoingMessage {
             MessageOrder order;
@@ -89,6 +91,12 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
 
         std::string serverFullID;
         bool fullyRegistered = false;
+
+        struct MultiCommandData {
+            std::string channelToSendTo;
+            std::vector<std::string> commands;
+        };
+        std::weak_ptr<MultiCommandData> multiCommandData;
 
         std::chrono::steady_clock::time_point lastMessageTime;
 

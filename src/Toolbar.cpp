@@ -1473,6 +1473,7 @@ void Toolbar::general_settings_inner_gui() {
                 });
             };
             category_button("Generalbutton", "General", GSETTINGS_GENERAL);
+            category_button("Graphicsbutton", "Graphics", GSETTINGS_GRAPHICS);
             category_button("Tabletbutton", "Tablet", GSETTINGS_TABLET);
             category_button("Themebutton", "Theme", GSETTINGS_THEME);
             category_button("Keybindsbutton", "Keybinds", GSETTINGS_KEYBINDS);
@@ -1522,10 +1523,15 @@ void Toolbar::general_settings_inner_gui() {
                         slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &main.conf.scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
                         checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &main.conf.flipZoomToolDirection);
                         checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
-                        #ifndef __EMSCRIPTEN__
-                            checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
-                        #endif
                         input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+
+                        checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
+                        checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
+                    });
+                    break;
+                }
+                case GSETTINGS_GRAPHICS: {
+                    general_scroll_area("graphics settings", [&] {
                         input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {
                             .decimalPrecision = 1,
                             .onEdit = [&] { main.g.window_update(); }
@@ -1546,10 +1552,15 @@ void Toolbar::general_settings_inner_gui() {
                         }, [&] {
                             main.set_vsync_value(main.conf.vsyncValue);
                         });
-
-                        checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
+                        input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
+                            .onEdit = [&] {
+                                main.update_main_loop_call_rate(main.conf.mainCallbackRate);
+                            }
+                        });
+                        input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
                         #ifndef __EMSCRIPTEN__
-                        checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
+                            checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
+                            checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
                         #endif
                     });
                     break;

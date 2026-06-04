@@ -28,6 +28,7 @@
 #include <include/core/SkSamplingOptions.h>
 #include "../DrawCollision.hpp"
 #include "CanvasComponentContainer.hpp"
+#include <include/pathops/SkPathOps.h>
 
 SkRect get_cropped_rectangle(const Vector2f& p1, const Vector2f& p2, const Vector2f& cropP1, const Vector2f& cropP2) {
     float pWidth = p2.x() - p1.x();
@@ -77,7 +78,7 @@ void ImageCanvasComponent::draw_download_progress_bar(SkCanvas* canvas, const Dr
         return;
     if(compContainer->should_draw(drawData)) {
         canvas->save();
-        compContainer->canvas_do_transform(canvas, compContainer->calculate_draw_transform(drawData));
+        compContainer->canvas_do_transform(canvas, compContainer->calculate_draw_transform(drawData.cam.c, compContainer->coords));
         SkPaint p;
         p.setStroke(true);
         p.setStrokeWidth(10.0f);
@@ -154,30 +155,35 @@ void ImageCanvasComponent::update(DrawingProgram& drawP) {
 }
 
 void ImageCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
-    create_collider();
 }
 
-bool ImageCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return collisionTree.is_collide(checkAgainst);
+bool ImageCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    SkPath p = SkPath::Rect(SCollision::AABB<float>(d.p1, d.p2).get_sk_rect());
+    bool intersectsAABB = p.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return p.contains(checkAgainst.x(), checkAgainst.y());
 }
 
-void ImageCanvasComponent::create_collider() {
-    using namespace SCollision;
-    ColliderCollection<float> strokeObjects;
-
+bool ImageCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
     SkRect startingRect;
     if(d.editing)
         startingRect = rect_from_points(d.p1, d.p2);
     else
         startingRect = get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2);
-
-    std::array<Vector2f, 4> newT = triangle_from_rect_points(convert_vec2<Vector2f>(startingRect.TL()), convert_vec2<Vector2f>(startingRect.BR()));
-    strokeObjects.triangle.emplace_back(newT[0], newT[1], newT[2]);
-    strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
-    collisionTree.clear();
-    collisionTree.calculate_bvh_recursive(strokeObjects);
+    SkPath p = SkPath::Rect(startingRect);
+    bool intersectsAABB = p.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, p, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> ImageCanvasComponent::get_obj_coord_bounds() const {
-    return collisionTree.objects.bounds;
+    SkRect startingRect;
+    if(d.editing)
+        startingRect = rect_from_points(d.p1, d.p2);
+    else
+        startingRect = get_cropped_rectangle(d.p1, d.p2, d.cropP1, d.cropP2);
+    return startingRect;
 }

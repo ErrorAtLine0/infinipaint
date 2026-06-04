@@ -33,12 +33,13 @@ class ToolConfiguration {
 
         struct EraserToolConfig {
             float relativeWidth = 15.0f;
-            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(EraserToolConfig, relativeWidth)
+            bool eraseDetail = false;
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(EraserToolConfig, relativeWidth, eraseDetail)
         } eraser;
 
         struct EllipseDrawToolConfig {
             float relativeWidth = 15.0f;
-            int fillStrokeMode = 1;
+            unsigned fillStrokeMode = 1;
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(EllipseDrawToolConfig, relativeWidth, fillStrokeMode)
         } ellipseDraw;
 

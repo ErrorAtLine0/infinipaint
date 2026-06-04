@@ -17,9 +17,9 @@
  */
 
 #include "CanvasComponent.hpp"
-#include "BrushStrokeCanvasComponent.hpp"
 #include "ImageCanvasComponent.hpp"
 #include "EllipseCanvasComponent.hpp"
+#include "MeshCanvasComponent.hpp"
 #include "RectangleCanvasComponent.hpp"
 #include "TextBoxCanvasComponent.hpp"
 
@@ -34,8 +34,8 @@ void CanvasComponent::get_used_resources(std::unordered_set<NetworkingObjects::N
 
 CanvasComponent* CanvasComponent::allocate_comp(CanvasComponentType type) {
     switch(type) {
-        case CanvasComponentType::BRUSHSTROKE:
-            return new BrushStrokeCanvasComponent;
+        case CanvasComponentType::MESH:
+            return new MeshCanvasComponent;
         case CanvasComponentType::RECTANGLE:
             return new RectangleCanvasComponent;
         case CanvasComponentType::ELLIPSE:
@@ -69,6 +69,22 @@ std::shared_ptr<void> CanvasComponent::get_predraw_data_accurate(const DrawData&
 
 bool CanvasComponent::should_draw_extra(const DrawData& drawData, const CoordSpaceHelper& coords) const {
     return true;
+}
+
+bool CanvasComponent::can_erase_detail() const {
+    return false;
+}
+
+void CanvasComponent::simplify_paths() {
+}
+
+void CanvasComponent::normalize_object_coordinates(CoordSpaceHelper& coords) {
+}
+
+std::vector<CanvasComponentContainer*> CanvasComponent::attempt_split(DrawingProgram& drawP) const { return {}; }
+
+CanvasComponentEraseDetailResult CanvasComponent::erase_detail(const SkPath& eraseAgainst) {
+    return CanvasComponentEraseDetailResult::NO_CHANGE;
 }
 
 CanvasComponent::~CanvasComponent() {}

@@ -35,24 +35,13 @@ namespace NetworkingObjects {
             return;
         typeList.get_net_type_data(isServer, it->second.netTypeID).readUpdateFunc(NetObjTemporaryPtr<void>(this, id, it->second.p), a, clientReceivedFrom);
     }
-    void NetObjManager::read_many_update_message(cereal::PortableBinaryInputArchive& a, const std::shared_ptr<NetServer::ClientData>& clientReceivedFrom) {
-        for(;;) {
-            bool objExists;
-            a(objExists);
-            if(!objExists)
-                break;
-            read_update_message(a, clientReceivedFrom);
-        }
-    }
-    void NetObjManager::set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID, MessageCommandType initMultiUpdateCommandID) {
+    void NetObjManager::set_client(std::shared_ptr<NetClient> initClient, MessageCommandType initUpdateCommandID) {
         client = initClient;
         updateCommandID = initUpdateCommandID;
-        multiUpdateCommandID = initMultiUpdateCommandID;
     }
-    void NetObjManager::set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID, MessageCommandType initMultiUpdateCommandID) {
+    void NetObjManager::set_server(std::shared_ptr<NetServer> initServer, MessageCommandType initUpdateCommandID) {
         server = initServer;
         updateCommandID = initUpdateCommandID;
-        multiUpdateCommandID = initMultiUpdateCommandID;
     }
     void NetObjManager::disconnect() {
         server = nullptr;
@@ -66,23 +55,6 @@ namespace NetworkingObjects {
     }
     void NetObjManager::set_netobj_destroy_callback(const std::function<void(const NetworkingObjects::NetObjID& netID)>& newDestroyCallback) {
         destroyCallback = newDestroyCallback;
-    }
-    void NetObjManager::send_multi_update_messsage(std::function<void()> captureSendBlock, SendUpdateType updateType, const std::shared_ptr<NetServer::ClientData>& specificClient) {
-        if(is_connected()) {
-            std::shared_ptr<MultiUpdateData> d = std::make_shared<MultiUpdateData>();
-            d->ss = std::make_shared<std::stringstream>(std::ios::binary | std::ios::out);
-            d->outArchive = std::make_unique<cereal::PortableBinaryOutputArchive>(*d->ss);
-            (*d->outArchive)(multiUpdateCommandID);
-            multiUpdateData = d; // Using weak pointer here ensures that object will be freed
-            captureSendBlock();
-            if(!d->channelToSendTo.empty()) {
-                (*d->outArchive)(false);
-                d->outArchive = nullptr; // Destroy output archive to finalize serialization
-                send_update_data_by_type(d->channelToSendTo, d->ss, updateType, specificClient);
-            }
-        }
-        else
-            captureSendBlock();
     }
 
     void NetObjManager::send_update_data_by_type(const std::string& channel, const std::shared_ptr<std::stringstream>& ss, SendUpdateType updateType, const std::shared_ptr<NetServer::ClientData>& specificClient) {

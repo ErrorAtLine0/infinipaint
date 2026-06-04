@@ -23,6 +23,7 @@
 #include "../World.hpp"
 #include "CanvasComponent.hpp"
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
+#include <include/core/SkScalar.h>
 #include "../ScaleUpCanvas.hpp"
 #include "Helpers/NetworkingObjects/NetObjManager.hpp"
 
@@ -78,6 +79,10 @@ void CanvasComponentContainer::send_comp_update(DrawingProgram& drawP, bool fina
     drawP.world.delayedUpdateObjectManager.send_update_to_all<CanvasComponentAllocator>(compAllocator, finalUpdate);
 }
 
+void CanvasComponentContainer::set_object_update_lock(DrawingProgram& drawP, bool lockSet) {
+    drawP.world.delayedUpdateObjectManager.set_object_update_lock<CanvasComponentAllocator>(compAllocator, lockSet);
+}
+
 void CanvasComponentContainer::write_constructor_func(const NetworkingObjects::NetObjTemporaryPtr<CanvasComponentContainer>& o, cereal::PortableBinaryOutputArchive& a) {
     a(o->coords);
     o->compAllocator.write_create_message(a);
@@ -103,6 +108,12 @@ void CanvasComponentContainer::load_file(cereal::PortableBinaryInputArchive& a, 
         compAllocator->comp->load_file(a, version);
         compAllocator->comp->compContainer = this;
     }
+    if(version < VersionNumber(0, 6, 0))
+        normalize_object_coordinates();
+}
+
+void CanvasComponentContainer::normalize_object_coordinates() {
+    get_comp().normalize_object_coordinates(coords);
 }
 
 void CanvasComponentContainer::draw(SkCanvas* canvas, const DrawData& drawData) const {
@@ -141,47 +152,78 @@ void CanvasComponentContainer::commit_transform_dont_invalidate_cache() {
     calculate_world_bounds();
 }
 
-bool CanvasComponentContainer::collides_with_world_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld) const {
-    return collides_with(camCoords, checkAgainstWorld, camCoords.world_collider_to_coords<SCollision::ColliderCollection<float>>(checkAgainstWorld));
+// camCoordsScaleToCheckAgainst is different from camCoords.inverseScale if we locked the eraser's scale.
+CanvasComponentEraseDetailResult CanvasComponentContainer::collides_with_erase_detail(const CoordSpaceHelper& camCoords, const WorldScalar& camCoordsScaleToCheckAgainst, const SkPath& checkAgainstCam) const {
+    constexpr static int COMP_MAX_SHIFT_BEFORE_STOP_ERASE = 1;
+    constexpr static int COMP_COMPLETE_ERASE_SHIFT = 14;
+    if(!worldAABB.has_value())
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    if((camCoordsScaleToCheckAgainst << COMP_MAX_SHIFT_BEFORE_STOP_ERASE) < coords.inverseScale) // Object is too large, just dismiss the collision
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    else if(coords.inverseScale < (camCoordsScaleToCheckAgainst >> COMP_COMPLETE_ERASE_SHIFT)) {
+        if(checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min))))
+            return CanvasComponentEraseDetailResult::REMOVED;
+        return CanvasComponentEraseDetailResult::NO_CHANGE;
+    }
+    else if(get_comp().can_erase_detail()) {
+        TransformData drawTransform = calculate_draw_transform(camCoords, coords);
+        SkMatrix m = SkMatrix::I();
+        m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
+        std::optional<SkPath> transformedPath = checkAgainstCam.tryMakeTransform(m);
+        if(!transformedPath.has_value())
+            return CanvasComponentEraseDetailResult::NO_CHANGE;
+        return get_comp().erase_detail(transformedPath.value());
+    }
+    return CanvasComponentEraseDetailResult::NO_CHANGE;
 }
 
-bool CanvasComponentContainer::collides_with_cam_coords(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<float>& checkAgainstCam) const {
-    return collides_with(camCoords, camCoords.collider_to_world<SCollision::ColliderCollection<WorldScalar>>(checkAgainstCam), checkAgainstCam);
-}
-
-// We could just send one of the checkAgainst colliders, since they represent the same thing, but sending both saves on redundant transformations, since we can save both of the versions on the executor side
-bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, const SCollision::ColliderCollection<WorldScalar>& checkAgainstWorld, const SCollision::ColliderCollection<float>& checkAgainstCam) const {
+bool CanvasComponentContainer::collides_with(const CoordSpaceHelper& camCoords, const SkPath& checkAgainstCam) const {
     if(!worldAABB.has_value())
         return false;
     if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
         return false;
     else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY))
-        return SCollision::collide(checkAgainstCam, camCoords.to_space(worldAABB.value().min));
+        return checkAgainstCam.contains(convert_vec2<SkPoint>(camCoords.to_space(worldAABB.value().min)));
     else {
-        auto c = checkAgainstWorld.transform<float>(
-        [&coords = coords](const WorldVec& a) {
-            return coords.to_space(a);
-        },
-        [&coords = coords](const WorldScalar& a) {
-            return coords.scalar_to_space(a);
-        });
-        return get_comp().collides_within_coords(c);
+        TransformData drawTransform = calculate_draw_transform(camCoords, coords);
+        SkMatrix m = SkMatrix::I();
+        m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
+        std::optional<SkPath> transformedPath = checkAgainstCam.tryMakeTransform(m);
+        if(!transformedPath.has_value())
+            return false;
+        return get_comp().collides_within_coords_skpath(transformedPath.value());
     }
 }
 
-void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) const {
+bool CanvasComponentContainer::collides_with_point(const CoordSpaceHelper& camCoords, const Vector2f& checkAgainstCam) const {
+    if(!worldAABB.has_value())
+        return false;
+    if((camCoords.inverseScale << COMP_MAX_SHIFT_BEFORE_STOP_COLLISIONS) < coords.inverseScale) // Object is too large, just dismiss the collision
+        return false;
+    else if(coords.inverseScale < (camCoords.inverseScale >> COMP_COLLIDE_MIN_SHIFT_TINY)) // Object is too tiny, just dismiss the collision
+        return false;
+    else {
+        TransformData drawTransform = calculate_draw_transform(camCoords, coords);
+        SkMatrix m = SkMatrix::I();
+        m.postScale(1.0 / drawTransform.scale, 1.0 / drawTransform.scale).postRotate(-drawTransform.rotation).postTranslate(-drawTransform.translation.x(), -drawTransform.translation.y());
+        SkPoint p = m.mapPoint(convert_vec2<SkPoint>(checkAgainstCam));
+        return get_comp().collides_within_coords_point(convert_vec2<Vector2f>(p));
+    }
+}
+
+void CanvasComponentContainer::canvas_do_transform(SkCanvas* canvas, const TransformData& transformData) {
     canvas->scale(transformData.scale, transformData.scale);
     canvas->rotate(transformData.rotation);
     canvas->translate(transformData.translation.x(), transformData.translation.y());
 }
 
 bool CanvasComponentContainer::should_draw(const DrawData& drawData) const {
-    return (!drawData.clampDrawBetween || (drawData.clampDrawMinimum < coords.inverseScale)) && worldAABB.has_value() && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
+    return (drawData.clampDrawMinimum < coords.inverseScale) && worldAABB.has_value() && SCollision::collide(worldAABB.value(), drawData.cam.viewingAreaGenerousCollider) && get_comp().should_draw_extra(drawData, coords);
 }
 
 CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predraw_data(const DrawData& drawData) const {
     PreDrawData toRet;
-    toRet.transformData = calculate_draw_transform(drawData);
+    toRet.transformData = calculate_draw_transform(drawData.cam.c, coords);
     if(toRet.transformData.scale < COMP_MAX_BEFORE_STOP_SCALING)
         toRet.extraData = get_comp().get_predraw_data(drawData);
     else
@@ -189,26 +231,17 @@ CanvasComponentContainer::PreDrawData CanvasComponentContainer::calculate_predra
     return toRet;
 }
 
-CanvasComponentContainer::TransformData CanvasComponentContainer::calculate_draw_transform(const DrawData& drawData) const {
+CanvasComponentContainer::TransformData CanvasComponentContainer::calculate_draw_transform(const CoordSpaceHelper& camCoords, const CoordSpaceHelper& coords) {
     TransformData toRet;
-    toRet.translation = -coords.to_space(drawData.cam.c.pos);
-    toRet.rotation = (coords.rotation - drawData.cam.c.rotation) * 180.0 / std::numbers::pi;
-    toRet.scale = std::min(static_cast<float>(coords.inverseScale / drawData.cam.c.inverseScale), COMP_MAX_BEFORE_STOP_SCALING);
+    toRet.translation = -coords.to_space(camCoords.pos);
+    toRet.rotation = (coords.rotation - camCoords.rotation) * 180.0 / std::numbers::pi;
+    toRet.scale = std::min(static_cast<float>(coords.inverseScale / camCoords.inverseScale), COMP_MAX_BEFORE_STOP_SCALING);
     return toRet;
 }
 
 void CanvasComponentContainer::scale_up(const WorldScalar& scaleUpAmount) {
     coords.scale_about(WorldVec{0, 0}, scaleUpAmount, true);
     calculate_world_bounds();
-}
-
-unsigned CanvasComponentContainer::get_mipmap_level(const DrawData& drawData) const {
-    if(drawData.mipMapLevelTwo > coords.inverseScale)
-        return 2;
-    else if(drawData.mipMapLevelOne > coords.inverseScale)
-        return 1;
-    else
-        return 0;
 }
 
 void CanvasComponentContainer::calculate_world_bounds() {

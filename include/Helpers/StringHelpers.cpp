@@ -189,3 +189,16 @@ std::vector<std::string> glob_path_as_string_list(const std::filesystem::path& f
         toRet[i] = pathToStr(std::filesystem::path(filesInPath[i]));
     return toRet;
 }
+
+std::filesystem::path sdl_safe_copy_file(const std::filesystem::path& toPath, const std::filesystem::path& fileToCopy, const std::string& fileName, const std::string& fileExtension) {
+    std::vector<std::string> toFolderListNames;
+    try {
+        toFolderListNames = glob_path_as_string_list(toPath, "*", 0, [&](const auto& p){ return p.stem().string();});
+    } catch(...) {
+        SDL_CreateDirectory(toPath.string().c_str());
+    }
+    std::string newFileName = ensure_string_unique(toFolderListNames, std::filesystem::path(fileName).stem().string());
+    std::filesystem::path newPath = toPath / (newFileName + "." + fileExtension);
+    SDL_CopyFile(fileToCopy.string().c_str(), newPath.string().c_str());
+    return newPath;
+}

@@ -45,6 +45,7 @@ class Screen {
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste);
         virtual void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
+        virtual void input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport);
         virtual void input_global_back_button_callback();
         virtual void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         virtual void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);

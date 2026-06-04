@@ -169,6 +169,7 @@ class Toolbar {
         } optionsMenuType;
         enum GeneralSettingsOptions {
             GSETTINGS_GENERAL = 0,
+            GSETTINGS_GRAPHICS,
             GSETTINGS_TABLET,
             GSETTINGS_THEME,
             GSETTINGS_KEYBINDS,

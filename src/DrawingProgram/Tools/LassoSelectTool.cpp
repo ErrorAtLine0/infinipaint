@@ -25,29 +25,10 @@
 #include "Helpers/SCollision.hpp"
 #include "../../CoordSpaceHelper.hpp"
 #include <ranges>
-#include <earcut.hpp>
 #include <include/core/SkPathBuilder.h>
+#include "../../EarcutIncludes.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
-
-namespace mapbox {
-namespace util {
-
-template <>
-struct nth<0, Vector2f> {
-    inline static auto get(const Vector2f &t) {
-        return t.x();
-    };
-};
-template <>
-struct nth<1, Vector2f> {
-    inline static auto get(const Vector2f &t) {
-        return t.y();
-    };
-};
-
-} // namespace util
-} // namespace mapbox
 
 LassoSelectTool::LassoSelectTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -90,25 +71,14 @@ void LassoSelectTool::input_mouse_button_on_canvas_callback(const InputManager::
     }
     else if(controls.isSelecting && button.button == InputManager::MouseButton::LEFT && !button.down) {
         if(controls.lassoPoints.size() > 3) {
-            SCollision::ColliderCollection<float> cC;
+            SkPathBuilder cCBuild;
 
-            std::vector<std::vector<Vector2f>> polygon;
-            polygon.emplace_back(controls.lassoPoints);
-            auto& poly = polygon[0];
-            for(auto& v : poly)
-                v = controls.coords.from_this_to_cam_space(drawP.world, v);
+            cCBuild.moveTo(convert_vec2<SkPoint>(controls.coords.from_this_to_cam_space(drawP.world, controls.lassoPoints[0])));
+            for(size_t i = 1; i < controls.lassoPoints.size(); i++)
+                cCBuild.lineTo(convert_vec2<SkPoint>(controls.coords.from_this_to_cam_space(drawP.world, controls.lassoPoints[i])));
+            cCBuild.close();
 
-            std::vector<unsigned> indices = mapbox::earcut(polygon);
-
-            for(size_t i = 0; i < indices.size(); i += 3) {
-                cC.triangle.emplace_back(
-                    poly[indices[i]],
-                    poly[indices[i + 1]],
-                    poly[indices[i + 2]]
-                );
-            }
-
-            cC.recalculate_bounds();
+            SkPath cC = cCBuild.detach();
 
             if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
                 drawP.selection.add_from_cam_coord_collider_to_selection(cC, drawP.controls.layerSelector, false);

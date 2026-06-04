@@ -70,7 +70,7 @@ MainProgram::MainProgram():
     Logger::get().set_log_function(Logger::LogType::WORLDFATAL, [&](const std::string& text) {
         *logFile << "[WORLDFATAL] " << text << std::endl;
         std::cout << "[WORLDFATAL] " << text << std::endl;
-        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR, UserLogMessage::DISPLAY_DESKTOP_ONLY});
+        logMessages.emplace_front(UserLogMessage{text, UserLogMessage::COLOR_ERROR, UserLogMessage::DISPLAY_FOR_ALL});
         if(logMessages.size() == LOG_SIZE)
             logMessages.pop_back();
         g.gui.set_to_layout();
@@ -265,8 +265,6 @@ void MainProgram::load_config() {
     NetLibrary::init_config(conf.configPath / "p2p.json");
 
     update_display_names();
-    set_vsync_value(conf.vsyncValue);
-    refresh_draw_surfaces();
 }
 
 void MainProgram::set_vsync_value(int vsyncValue) {
@@ -345,7 +343,11 @@ void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& o
         newWorld = std::make_shared<World>(*this, openFile);
     }
     catch(const std::runtime_error& e) {
+#ifdef __ANDROID__
+        Logger::get().log(Logger::LogType::WORLDFATAL, std::string("Failed to open canvas: ") + e.what());
+#else
         Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
+#endif
         return;
     }
     worlds.emplace_back(newWorld);
@@ -386,6 +388,12 @@ void MainProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileT
 
 void MainProgram::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     screen->input_open_infinipaint_file_callback(openFile);
+    g.gui.set_to_layout();
+    post_callback();
+}
+
+void MainProgram::input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) {
+    screen->input_mobile_import_canvas_callback(mobileImport);
     g.gui.set_to_layout();
     post_callback();
 }
@@ -532,6 +540,32 @@ void MainProgram::input_window_scale_callback(const InputManager::WindowScaleCal
     post_callback();
 }
 
+void MainProgram::input_window_mouse_focus_gained() {
+#ifndef __ANDROID__
+    update_main_loop_call_rate(conf.mainCallbackRate);
+#endif
+}
+
+void MainProgram::input_window_mouse_focus_lost() {
+#ifndef __ANDROID__
+    if(!window.mouseFocus && !window.windowFocus)
+        update_main_loop_call_rate(conf.mainCallbackRateBackground);
+#endif
+}
+
+void MainProgram::input_window_focus_gained() {
+#ifndef __ANDROID__
+    update_main_loop_call_rate(conf.mainCallbackRate);
+#endif
+}
+
+void MainProgram::input_window_focus_lost() {
+#ifndef __ANDROID__
+    if(!window.mouseFocus && !window.windowFocus)
+        update_main_loop_call_rate(conf.mainCallbackRateBackground);
+#endif
+}
+
 std::optional<InputManager::TextBoxStartInfo> MainProgram::get_text_box_start_info() {
     auto toRet = g.get_text_box_start_info();
     if(toRet)
@@ -542,6 +576,11 @@ std::optional<InputManager::TextBoxStartInfo> MainProgram::get_text_box_start_in
 void MainProgram::toggle_full_screen() {
     window.fullscreen = !window.fullscreen;
     SDL_SetWindowFullscreen(window.sdlWindow, window.fullscreen);
+}
+
+void MainProgram::update_main_loop_call_rate(unsigned newCallbackRate) {
+    std::cout << "New main callback rate: " << newCallbackRate << std::endl;
+    SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, std::to_string(newCallbackRate).c_str());
 }
 
 void MainProgram::set_first_screen(std::unique_ptr<Screen> firstScreen) {

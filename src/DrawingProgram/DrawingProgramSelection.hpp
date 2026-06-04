@@ -32,8 +32,8 @@ class DrawingProgramSelection {
         Vector4f* color_picker_color(Vector4f* oldColor);
         void phone_selection_gui(PhoneDrawingProgramScreen& t);
         void phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t);
-        void add_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
-        void remove_from_cam_coord_collider_to_selection(const SCollision::ColliderCollection<float>& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
+        void add_from_cam_coord_collider_to_selection(const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
+        void remove_from_cam_coord_collider_to_selection(const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void erase_component(CanvasComponentContainer::ObjInfo* objToCheck);
         bool is_something_selected();
         bool is_selected(CanvasComponentContainer::ObjInfo* objToCheck);
@@ -50,7 +50,7 @@ class DrawingProgramSelection {
         void push_selection_to_back();
         void delete_all();
         void selection_to_clipboard();
-        CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
+        CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SkPath& cC);
         void input_key_callback_modify_selection(const InputManager::KeyCallbackArgs& key);
         void input_key_callback_display_selection(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button);
@@ -85,7 +85,7 @@ class DrawingProgramSelection {
         void calculate_aabb();
         void reset_all();
         void reset_transform_data();
-        std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> erase_select_objects_in_bvh_func(std::vector<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SCollision::ColliderCollection<float>& cC, const SCollision::ColliderCollection<WorldScalar>& cCWorld, DrawingProgramLayerManager::LayerSelector layerSelector);
+        std::function<bool(const std::shared_ptr<DrawingProgramCacheBVHNode>&)> erase_select_objects_in_bvh_func(std::vector<CanvasComponentContainer::ObjInfo*>& selectedComponents, const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector);
 
         SCollision::ColliderCollection<float> camSpaceSelection;
         std::array<WorldVec, 4> selectionRectPoints;

@@ -36,3 +36,4 @@ std::string remove_carriage_returns_from_str(std::string s);
 std::string ensure_string_unique(const std::vector<std::string>& stringList, std::string str);
 std::string sdl_time_to_nice_access_time(const SDL_DateTime& t, SDL_DateFormat dF, SDL_TimeFormat tF);
 std::vector<std::string> glob_path_as_string_list(const std::filesystem::path& folder, const char* globStr, SDL_GlobFlags globFlags, const std::function<std::string(const std::filesystem::path)>& pathToStr);
+std::filesystem::path sdl_safe_copy_file(const std::filesystem::path& toPath, const std::filesystem::path& fileToCopy, const std::string& fileName, const std::string& fileExtension);

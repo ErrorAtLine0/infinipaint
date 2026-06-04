@@ -130,20 +130,26 @@ namespace NetworkingObjects {
         }
     }
 
-    template <typename T> void sort_netobj_ordered_list_iterator_list(const std::list<NetObjOrderedListObjectInfo<T>>& l, std::vector<NetObjOrderedListIterator<T>>& itListToSort) {
-        std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
-            return b == l.end() || (a != l.end() && a->pos < b->pos);
-        });
-    }
-
-    template <typename T> void sort_netobj_ordered_list_iterator_insert_list(const std::list<NetObjOrderedListObjectInfo<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& itListToSort) {
-        std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
-            return b.first == l.end() || (a.first != l.end() && a.first->pos < b.first->pos);
-        });
-    }
-
     template <typename T> class NetObjOrderedList {
         public:
+            static void sort_netobj_ordered_list_iterator_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, std::vector<NetObjOrderedListIterator<T>>& itListToSort) {
+                std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
+                    return b == l->end() || (a != l->end() && a->pos < b->pos);
+                });
+            }
+
+            static void sort_netobj_ordered_list_iterator_insert_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, NetObjOwnerPtr<T>>>& itListToSort) {
+                std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
+                    return b.first == l->end() || (a.first != l->end() && a.first->pos < b.first->pos);
+                });
+            }
+
+            static void sort_netobj_ordered_list_iterator_insert_list(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, std::vector<std::pair<NetObjOrderedListIterator<T>, T*>>& itListToSort) {
+                std::stable_sort(itListToSort.begin(), itListToSort.end(), [&l](auto& a, auto& b) {
+                    return b.first == l->end() || (a.first != l->end() && a.first->pos < b.first->pos);
+                });
+            }
+
             // Don't use this function unless you're sure that class T isn't a base class
             template <typename ...Args> NetObjOrderedListIterator<T> emplace_back_direct(const NetObjTemporaryPtr<NetObjOrderedList<T>>& l, Args&&... items) {
                 return l->insert_single(l, nullptr, l->end(), l.get_obj_man()->template make_obj_direct<T>(items...));
@@ -301,9 +307,6 @@ namespace NetworkingObjects {
                 for(auto& id : ids)
                     toRet.emplace_back(get(id));
                 return toRet;
-            }
-            void sort_it_list(std::vector<NetObjOrderedListIterator<T>>& itList) const {
-                sort_netobj_ordered_list_iterator_list(data_list(), itList);
             }
             bool empty() const {
                 return data_list().empty();

@@ -50,8 +50,8 @@ class TextBoxCanvasComponent : public CanvasComponent {
 
         virtual void draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const override;
         virtual void initialize_draw_data(DrawingProgram& drawP) override;
-        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const override;
-        void create_collider();
+        virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
+        virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
         void init_text_box(DrawingProgram& drawP);
         Vector2f get_mouse_pos(DrawingProgram& drawP) const;
 

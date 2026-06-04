@@ -39,6 +39,10 @@ namespace SCollision {
                 min(initMin),
                 max(initMax)
             {}
+            AABB(const SkRect& r):
+                min(r.TL().x(), r.TL().y()),
+                max(r.BR().x(), r.BR().y())
+            {}
             Vector<T, 2> min;
             Vector<T, 2> max;
             Vector<T, 2> center() const { return (min + max) / T(2); }
@@ -546,6 +550,17 @@ namespace SCollision {
                         children.back().calculate_bvh_recursive(parts[i], maxDepth - 1);
                     }
                 }
+            }
+
+            template <typename Collider> void is_collide_triangle_bounds_func(const Collider& collider, const std::function<void(const Triangle<T>&)> triangleFunc) const {
+                if(!collide(get_bounds(collider), get_bounds(objects)))
+                    return;
+                for(auto& t : objects.triangle) {
+                    if(collide(t.bounds, collider))
+                        triangleFunc(t);
+                }
+                for(const auto& c : children)
+                    c.is_collide_triangle_bounds_func(collider, triangleFunc);
             }
 
             template <typename Collider> bool is_collide(const Collider& collider) const {

@@ -93,18 +93,20 @@ class World {
         std::filesystem::path filePath;
         std::string name;
 
+        NetworkingObjects::NetObjTemporaryPtr<ClientData> serverClientData; // For server, this is equal to ownClientData
         NetworkingObjects::NetObjTemporaryPtr<ClientData> ownClientData;
         NetworkingObjects::NetObjOwnerPtr<NetworkingObjects::NetObjUnorderedSet<ClientData>> clients;
 
         CanvasTheme canvasTheme;
 
-        void scale_up(const WorldScalar& scaleUpAmount);
-        void scale_up_step();
+        void scale_up(const WorldScalar& scaleUpAmount); // Should only be called from ClientData
+        void scale_up_step(); // Call when scale up step happens
 
         bool should_ask_before_closing();
         void set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal);
         bool is_focus();
         void set_to_layout_gui_if_focus();
+        void send_reliable_multi_command_to_all(const std::function<void()>& captureSendBlock);
 
         NetworkingObjects::DelayUpdateSerializedClassManager delayedUpdateObjectManager;
 

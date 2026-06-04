@@ -75,7 +75,7 @@ void ImageEditTool::edit_gui(Toolbar& t) {
             text_label(gui, "Name: " + resourceData->name);
             text_button(gui, "file download", "Download file", {
                 .wide = true,
-                .onClick = [&] {
+                .onClick = [&, resourceData] {
                     #ifdef __EMSCRIPTEN__
                         emscripten_browser_file::download(
                             resourceData->name,

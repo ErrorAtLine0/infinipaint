@@ -30,7 +30,8 @@
 #include "EditTools/RectDrawEditTool.hpp"
 #include "EditTools/ImageEditTool.hpp"
 #include "EditTools/EllipseDrawEditTool.hpp"
-#include "EditTools/BrushEditTool.hpp"
+#include "EditTools/MeshEditTool.hpp"
+#include "../EditCanvasComponentWorldUndoAction.hpp"
 
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 
@@ -108,19 +109,11 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
             if(!objInfoBeingEdited) {
                 WorldVec mouseWorldPos = drawP.world.drawData.cam.c.from_space(button.pos);
 
-                SCollision::AABB<WorldScalar> mouseAABB{mouseWorldPos - WorldVec{0.5f, 0.5f}, mouseWorldPos + WorldVec{0.5f, 0.5f}};
-                SCollision::ColliderCollection<WorldScalar> cMouseAABB;
-                cMouseAABB.aabb.emplace_back(mouseAABB);
-                cMouseAABB.recalculate_bounds();
-
-                SCollision::AABB<float> camMouseAABB{drawP.world.main.input.mouse.pos - Vector2f{0.5f, 0.5f}, button.pos + Vector2f{0.5f, 0.5f}};
-                SCollision::ColliderCollection<float> camCMouseAABB;
-                camCMouseAABB.aabb.emplace_back(camMouseAABB);
-                camCMouseAABB.recalculate_bounds();
+                SkPath camMouseAABB = SkPath::Rect(SkRect::MakeLTRB(drawP.world.main.input.mouse.pos.x() - 0.5f, drawP.world.main.input.mouse.pos.y() - 0.5f, drawP.world.main.input.mouse.pos.x() + 0.5f, drawP.world.main.input.mouse.pos.y() + 0.5f));
 
                 bool modifySelection = !drawP.selection.is_being_transformed();
                 if(button.clicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                    CanvasComponentContainer::ObjInfo* selectedObjectToEdit = drawP.selection.get_front_object_colliding_with_in_editing_layer(camCMouseAABB);
+                    CanvasComponentContainer::ObjInfo* selectedObjectToEdit = drawP.selection.get_front_object_colliding_with_in_editing_layer(camMouseAABB);
 
                     if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
                         drawP.selection.deselect_all();
@@ -130,43 +123,38 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
                 }
                 if(modifySelection) {
                     if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held)
-                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
+                        drawP.selection.add_from_cam_coord_collider_to_selection(camMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
                     else if(drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held)
-                        drawP.selection.remove_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
+                        drawP.selection.remove_from_cam_coord_collider_to_selection(camMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
                     else {
                         drawP.selection.deselect_all();
-                        drawP.selection.add_from_cam_coord_collider_to_selection(camCMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
+                        drawP.selection.add_from_cam_coord_collider_to_selection(camMouseAABB, DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED, true);
                     }
                 }
             }
             else {
-                SCollision::Circle<float> mouseCircle{button.pos, 1.0f};
-                SCollision::ColliderCollection<float> cMouseCircle;
-                cMouseCircle.circle.emplace_back(mouseCircle);
-                cMouseCircle.recalculate_bounds();
-
                 bool isMovingPoint = false;
                 bool clickedAway = false;
 
                 if(!pointDragging) {
                     for(HandleData& h : pointHandles) {
-                        if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
+                        if(SCollision::collide(button.pos, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
                             pointDragging = &h;
                             isMovingPoint = true;
                         }
                     }
-                    if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
+                    if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_point(drawP.world.drawData.cam.c, button.pos))
                         clickedAway = true;
                 }
 
                 for(HandleData& h : pointHandles) {
-                    if(SCollision::collide(mouseCircle, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
+                    if(SCollision::collide(button.pos, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
                         pointDragging = &h;
                         isMovingPoint = true;
                         break;
                     }
                 }
-                if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_cam_coords(drawP.world.drawData.cam.c, cMouseCircle))
+                if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_point(drawP.world.drawData.cam.c, button.pos))
                     clickedAway = true;
 
                 if(clickedAway)
@@ -227,42 +215,8 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
         objInfoBeingEdited->obj->commit_update(drawP);
         objInfoBeingEdited->obj->send_comp_update(drawP, true);
 
-        if(undoAfterEditDone) {
-            class EditCanvasComponentWorldUndoAction : public WorldUndoAction {
-                public:
-                    EditCanvasComponentWorldUndoAction(std::unique_ptr<CanvasComponent> initData, WorldUndoManager::UndoObjectID initUndoID):
-                        data(std::move(initData)),
-                        undoID(initUndoID)
-                    {}
-                    std::string get_name() const override {
-                        return "Edit Canvas Component";
-                    }
-                    bool undo(WorldUndoManager& undoMan) override {
-                        return undo_redo(undoMan);
-                    }
-                    bool redo(WorldUndoManager& undoMan) override {
-                        return undo_redo(undoMan);
-                    }
-                    bool undo_redo(WorldUndoManager& undoMan) {
-                        std::optional<NetworkingObjects::NetObjID> toEditID = undoMan.get_netid_from_undoid(undoID);
-                        if(!toEditID.has_value())
-                            return false;
-                        auto objPtr = undoMan.world.netObjMan.get_obj_temporary_ref_from_id<CanvasComponentContainer>(toEditID.value());
-                        std::unique_ptr<CanvasComponent> newData = objPtr->get_comp().get_data_copy();
-                        objPtr->get_comp().set_data_from(*data);
-                        data = std::move(newData);
-                        objPtr->commit_update(undoMan.world.drawProg);
-                        objPtr->send_comp_update(undoMan.world.drawProg, true);
-                        return true;
-                    }
-                    ~EditCanvasComponentWorldUndoAction() {}
-    
-                    std::unique_ptr<CanvasComponent> data;
-                    WorldUndoManager::UndoObjectID undoID;
-            };
-    
+        if(undoAfterEditDone)
             drawP.world.undo.push(std::make_unique<EditCanvasComponentWorldUndoAction>(std::move(oldData), drawP.world.undo.get_undoid_from_netid(objInfoBeingEdited->obj.get_net_id())));
-        }
 
         oldData = nullptr;
         objInfoBeingEdited = nullptr;
@@ -294,8 +248,8 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
             compEditTool = std::make_unique<ImageEditTool>(drawP, comp);
             break;
         }
-        case CanvasComponentType::BRUSHSTROKE: {
-            compEditTool = std::make_unique<BrushEditTool>(drawP, comp);
+        case CanvasComponentType::MESH: {
+            compEditTool = std::make_unique<MeshEditTool>(drawP, comp);
             break;
         }
         default: {

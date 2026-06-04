@@ -41,6 +41,7 @@ void init() {
         AddFileToCanvasEvent::EVENT_NUM = SDL_RegisterEvents(1);
         RefreshTextBoxInputEvent::EVENT_NUM = SDL_RegisterEvents(1);
         AndroidTextBoxInputEvent::EVENT_NUM = SDL_RegisterEvents(1);
+        MobileImportCanvasEvent::EVENT_NUM = SDL_RegisterEvents(1);
         alreadyInitialized = true;
     }
 }
@@ -50,5 +51,6 @@ uint32_t OpenInfiniPaintFileEvent::EVENT_NUM;
 uint32_t AddFileToCanvasEvent::EVENT_NUM;
 uint32_t RefreshTextBoxInputEvent::EVENT_NUM;
 uint32_t AndroidTextBoxInputEvent::EVENT_NUM;
+uint32_t MobileImportCanvasEvent::EVENT_NUM;
 
 }

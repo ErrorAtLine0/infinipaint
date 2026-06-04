@@ -98,7 +98,7 @@ World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent
 
 void World::init_client_data_list() {
     clients = netObjMan.make_obj<NetworkingObjects::NetObjUnorderedSet<ClientData>>();
-    ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{
+    serverClientData = ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{
         .cursorColor = get_random_cursor_color(),
         .displayName = main.conf.displayName
     });
@@ -149,23 +149,24 @@ void World::init_client(const std::string& serverFullID) {
     netClient = std::make_shared<NetClient>(serverFullID);
     lastKeepAliveSent = std::chrono::steady_clock::now();
     NetLibrary::register_client(netClient);
-    netObjMan.set_client(netClient, SERVER_UPDATE_NETWORK_OBJECT, SERVER_UPDATE_MANY_NETWORK_OBJECTS);
+    netObjMan.set_client(netClient, SERVER_UPDATE_NETWORK_OBJECT);
     set_name("");
 
     rMan.init_client_callbacks();
     drawProg.init_client_callbacks();
     netClient->add_recv_callback(CLIENT_INITIAL_DATA, [&](cereal::PortableBinaryInputArchive& message) {
         std::string fileDisplayName;
-        NetworkingObjects::NetObjID clientDataObjID;
-        message(fileDisplayName, clientDataObjID);
+        NetworkingObjects::NetObjID clientDataObjID, serverDataObjID;
+        message(fileDisplayName, clientDataObjID, serverDataObjID);
         set_name(fileDisplayName);
+        clients = netObjMan.read_create_message<NetworkingObjects::NetObjUnorderedSet<ClientData>>(message, nullptr);
+        ownClientData = netObjMan.get_obj_temporary_ref_from_id<ClientData>(clientDataObjID);
+        serverClientData = netObjMan.get_obj_temporary_ref_from_id<ClientData>(serverDataObjID);
         bMan.read_create_message(message);
         gridMan.read_create_message(message);
         drawProg.read_components_client(message);
         canvasTheme.read_create_message(message);
-        clients = netObjMan.read_create_message<NetworkingObjects::NetObjUnorderedSet<ClientData>>(message, nullptr);
         init_client_data_list_callbacks();
-        ownClientData = netObjMan.get_obj_temporary_ref_from_id<ClientData>(clientDataObjID);
         drawData.cam.smooth_move_to(*main.world, ownClientData->get_cam_coords(), ownClientData->get_window_size(), true);
 
         #ifdef ENABLE_ORDERED_LIST_TEST
@@ -178,13 +179,19 @@ void World::init_client(const std::string& serverFullID) {
     netClient->add_recv_callback(CLIENT_UPDATE_NETWORK_OBJECT, [&](cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, nullptr);
     });
-    netClient->add_recv_callback(CLIENT_UPDATE_MANY_NETWORK_OBJECTS, [&](cereal::PortableBinaryInputArchive& message) {
-        netObjMan.read_many_update_message(message, nullptr);
-    });
     netClient->add_recv_callback(CLIENT_KEEP_ALIVE, [&](cereal::PortableBinaryInputArchive& message) {
     });
 
     netClient->send_items_to_server(RELIABLE_COMMAND_CHANNEL, SERVER_INITIAL_DATA, main.conf.displayName);
+}
+
+void World::send_reliable_multi_command_to_all(const std::function<void()>& captureSendBlock) {
+    if(netServer)
+        netServer->send_multi_command_to_all_clients(RELIABLE_COMMAND_CHANNEL, captureSendBlock);
+    else if(netClient)
+        netClient->send_multi_command_to_server(RELIABLE_COMMAND_CHANNEL, captureSendBlock);
+    else 
+        captureSendBlock();
 }
 
 void World::focus_update() {
@@ -416,7 +423,7 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     netServer = std::make_shared<NetServer>(serverLocalID);
     lastKeepAliveSent = std::chrono::steady_clock::now();
     NetLibrary::register_server(netServer);
-    netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT, CLIENT_UPDATE_MANY_NETWORK_OBJECTS);
+    netObjMan.set_server(netServer, CLIENT_UPDATE_NETWORK_OBJECT);
     netSource = initNetSource;
     rMan.init_server_callbacks();
     drawProg.init_server_callbacks();
@@ -435,12 +442,12 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
         auto ss(std::make_shared<std::stringstream>());
         {
             cereal::PortableBinaryOutputArchive a(*ss);
-            a(CLIENT_INITIAL_DATA, name, clientDataObjPtr.get_net_id());
+            a(CLIENT_INITIAL_DATA, name, clientDataObjPtr.get_net_id(), serverClientData.get_net_id());
+            clients.write_create_message(a);
             bMan.bookmarkListRoot.write_create_message(a);
             gridMan.grids.write_create_message(a);
             drawProg.write_components_server(a);
             canvasTheme.write_create_message(a);
-            clients.write_create_message(a);
             #ifdef ENABLE_ORDERED_LIST_TEST
                 listDebugTest.write_create_message(a);
             #endif
@@ -453,9 +460,6 @@ void World::start_hosting(const std::string& initNetSource, const std::string& s
     });
     netServer->add_recv_callback(SERVER_UPDATE_NETWORK_OBJECT, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
         netObjMan.read_update_message(message, client);
-    });
-    netServer->add_recv_callback(SERVER_UPDATE_MANY_NETWORK_OBJECTS, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
-        netObjMan.read_many_update_message(message, client);
     });
     netServer->add_recv_callback(SERVER_KEEP_ALIVE, [&](std::shared_ptr<NetServer::ClientData> client, cereal::PortableBinaryInputArchive& message) {
     });
@@ -628,13 +632,13 @@ void World::scale_up_step() {
 
 void World::scale_up(const WorldScalar& scaleUpAmount) {
     Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Canvas scaled up");
+    // drawProg will be sending info on committed objects/modified grids. These objects will NOT be scaled up.
+    // This means that the scale up message must be sent AFTER the World::scale_up function is called on our end
+    // if this client is the one responsible for the scale up
+    drawProg.scale_up(scaleUpAmount);
     bMan.scale_up(scaleUpAmount);
     gridMan.scale_up(scaleUpAmount);
     drawData.cam.scale_up(*this, scaleUpAmount);
-    // drawProg will be sending info on committed objects/modified grids. These objects will be scaled up already.
-    // This means that the scale up message must be send BEFORE the World::scale_up function is called on our end
-    // if this client is the one responsible for the scale up
-    drawProg.scale_up(scaleUpAmount);
     undo.scale_up(scaleUpAmount);
 }
 

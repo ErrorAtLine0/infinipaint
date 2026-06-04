@@ -25,6 +25,7 @@
 #include <include/core/SkCanvas.h>
 #include "../../CanvasComponents/CanvasComponentContainer.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
+#include "../../CanvasComponents/BrushComponentCode.hpp"
 
 class DrawingProgram;
 struct DrawData;
@@ -46,17 +47,10 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
     private:
-        bool extensive_point_checking_back(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
-        bool extensive_point_checking(const BrushStrokeCanvasComponent& brushStroke, const Vector2f& newPoint);
-        void smooth_out_points(float smoothFactor);
-        void fix_tip();
         void commit_stroke();
+        void commit_data(bool final);
 
-        float penWidth = 1.0f;
-        bool addedTemporaryPoint = false;
+        BrushComponentCode::BrushStrokeGenerationData genData;
         bool commitUpdate = false;
-
         CanvasComponentContainer::ObjInfo* objInfoBeingEdited = nullptr;
-
-        Vector2f prevPointUnaltered = {0, 0};
 };

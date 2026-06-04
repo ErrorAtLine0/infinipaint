@@ -29,6 +29,7 @@ class DrawingProgram;
 
 class CanvasComponent {
     public:
+
         virtual CanvasComponentType get_type() const = 0;
         virtual ~CanvasComponent();
         static CanvasComponent* allocate_comp(CanvasComponentType type);
@@ -40,7 +41,10 @@ class CanvasComponent {
         virtual void get_used_resources(std::unordered_set<NetworkingObjects::NetObjID>& resourceSet) const;
         virtual void remap_resource_ids(const std::unordered_map<NetworkingObjects::NetObjID, NetworkingObjects::NetObjID>& resourceOldToNewMap);
         virtual void change_stroke_color(const Vector4f& newStrokeColor);
+        virtual std::vector<CanvasComponentContainer*> attempt_split(DrawingProgram& drawP) const;
+        virtual void simplify_paths();
         virtual std::optional<Vector4f> get_stroke_color() const;
+        virtual void normalize_object_coordinates(CoordSpaceHelper& coords);
 
         virtual void set_data_from(const CanvasComponent& other) = 0;
         virtual std::unique_ptr<CanvasComponent> get_data_copy() const = 0;
@@ -56,7 +60,11 @@ class CanvasComponent {
 
         virtual void draw(SkCanvas* canvas, const DrawData& drawData, const std::shared_ptr<void>& predrawData) const = 0;
         virtual void initialize_draw_data(DrawingProgram& drawP) = 0;
-        virtual bool collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const = 0;
+        virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const = 0;
+        virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const = 0;
+
+        virtual bool can_erase_detail() const;
+        virtual CanvasComponentEraseDetailResult erase_detail(const SkPath& eraseAgainst);
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const = 0;
 

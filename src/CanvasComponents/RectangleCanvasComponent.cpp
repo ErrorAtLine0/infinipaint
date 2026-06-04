@@ -22,6 +22,7 @@
 #include "Helpers/SCollision.hpp"
 #include <include/core/SkPaint.h>
 #include <include/core/SkPathBuilder.h>
+#include <include/pathops/SkPathOps.h>
 #include "../SharedTypes.hpp"
 #include "../DrawCollision.hpp"
 
@@ -87,10 +88,6 @@ void RectangleCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {
     create_collider();
 }
 
-bool RectangleCanvasComponent::collides_within_coords(const SCollision::ColliderCollection<float>& checkAgainst) const {
-    return collisionTree.is_collide(checkAgainst);
-}
-
 void RectangleCanvasComponent::create_draw_data() {
     SkPathBuilder rectPathBuilder;
     if(d.p1.x() == d.p2.x() || d.p1.y() == d.p2.y()) {
@@ -106,35 +103,56 @@ void RectangleCanvasComponent::create_draw_data() {
 }
 
 void RectangleCanvasComponent::create_collider() {
-    using namespace SCollision;
-    ColliderCollection<float> strokeObjects;
-    if(d.fillStrokeMode == 0) {
-        std::array<Vector2f, 4> newT = triangle_from_rect_points(d.p1, d.p2);
-        strokeObjects.triangle.emplace_back(newT[0], newT[1], newT[2]);
-        strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
-    }
-    else if(d.fillStrokeMode == 1) {
-        if(d.p1.x() == d.p2.x() || d.p1.y() == d.p2.y()) {
-            std::vector<Vector2f> points = {d.p1, d.p2};
-            generate_polyline(strokeObjects, points, d.strokeWidth, true);
+    switch(d.fillStrokeMode) {
+        case 0: {
+            colliderPath = rectPath;
+            break;
         }
-        else {
-            std::array<Vector2f, 4> pointArr = triangle_from_rect_points(d.p1, d.p2);
-            std::vector<Vector2f> points(pointArr.begin(), pointArr.end());
-            generate_polyline(strokeObjects, points, d.strokeWidth, true);
+        case 1: {
+            float radiusX = d.p2.x() - d.p1.x();
+            float radiusY = d.p2.y() - d.p1.y();
+            if(radiusX < d.strokeWidth || radiusY < d.strokeWidth) {
+                SkRect largeRect = SkRect::MakeLTRB(d.p1.x() - d.strokeWidth * 0.5f, d.p1.y() - d.strokeWidth * 0.5f, d.p2.x() + d.strokeWidth * 0.5f, d.p2.y() + d.strokeWidth * 0.5f);
+                SkPathBuilder rectPathBuilder;
+                rectPathBuilder.addRect(largeRect);
+                colliderPath = rectPathBuilder.detach();
+            }
+            else {
+                SkRect smallRect = SkRect::MakeLTRB(d.p1.x() + d.strokeWidth * 0.5f, d.p1.y() + d.strokeWidth * 0.5f, d.p2.x() - d.strokeWidth * 0.5f, d.p2.y() - d.strokeWidth * 0.5f);
+                SkRect largeRect = SkRect::MakeLTRB(d.p1.x() - d.strokeWidth * 0.5f, d.p1.y() - d.strokeWidth * 0.5f, d.p2.x() + d.strokeWidth * 0.5f, d.p2.y() + d.strokeWidth * 0.5f);
+                SkPathBuilder rectPathBuilder;
+                rectPathBuilder.addRect(largeRect);
+                rectPathBuilder.addRect(smallRect);
+                rectPathBuilder.setFillType(SkPathFillType::kEvenOdd);
+                colliderPath = rectPathBuilder.detach();
+            }
+            break;
+        }
+        case 2: {
+            SkRect largeRect = SkRect::MakeLTRB(d.p1.x() - d.strokeWidth * 0.5f, d.p1.y() - d.strokeWidth * 0.5f, d.p2.x() + d.strokeWidth * 0.5f, d.p2.y() + d.strokeWidth * 0.5f);
+            SkPathBuilder rectPathBuilder;
+            rectPathBuilder.addRect(largeRect);
+            colliderPath = rectPathBuilder.detach();
+            break;
         }
     }
-    else if(d.fillStrokeMode == 2) {
-        float strokeRadius = d.strokeWidth * 0.5f;
-        std::array<Vector2f, 4> newT = triangle_from_rect_points((d.p1 - Vector2f{strokeRadius, strokeRadius}).eval(), (d.p2 + Vector2f{strokeRadius, strokeRadius}).eval());
-        strokeObjects.triangle.emplace_back(newT[0], newT[1], newT[2]);
-        strokeObjects.triangle.emplace_back(newT[2], newT[3], newT[0]);
-    }
+}
 
-    collisionTree.clear();
-    collisionTree.calculate_bvh_recursive(strokeObjects);
+bool RectangleCanvasComponent::collides_within_coords_point(const Vector2f& checkAgainst) const {
+    bool intersectsAABB = colliderPath.getBounds().contains(checkAgainst.x(), checkAgainst.y());
+    if(!intersectsAABB)
+        return false;
+    return colliderPath.contains(checkAgainst.x(), checkAgainst.y());
+}
+
+bool RectangleCanvasComponent::collides_within_coords_skpath(const SkPath& checkAgainst) const {
+    bool intersectsAABB = colliderPath.getBounds().intersects(checkAgainst.getBounds());
+    if(!intersectsAABB)
+        return false;
+    std::optional<SkPath> pathIntersectCheck = Op(checkAgainst, colliderPath, SkPathOp::kIntersect_SkPathOp);
+    return pathIntersectCheck.has_value() && !pathIntersectCheck.value().isEmpty();
 }
 
 SCollision::AABB<float> RectangleCanvasComponent::get_obj_coord_bounds() const {
-    return collisionTree.objects.bounds;
+    return colliderPath.getBounds();
 }

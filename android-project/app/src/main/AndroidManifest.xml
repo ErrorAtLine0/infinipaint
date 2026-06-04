@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="1"
-    android:versionName="1.0"
+    android:versionCode="2"
+    android:versionName="0.6.0"
     android:installLocation="auto">
 
     <!-- OpenGL ES 2.0 -->
@@ -89,15 +89,26 @@
                 android:value="When connected to a server/hosting a server, keep the connection alive even when the application is in the background."/>
         </service>
 
+        <provider
+            android:name="com.erroratline0.infinipaint.InfiniPaintFileProvider"
+            android:authorities="com.erroratline0.infinipaint.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity android:name="com.erroratline0.infinipaint.InfiniPaint"
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustNothing"
             android:alwaysRetainTaskState="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:configChanges="layoutDirection|locale|grammaticalGender|fontScale|fontWeightAdjustment|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
             android:preferMinimalPostProcessing="true"
             android:exported="true"
             >
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -127,7 +127,7 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
 
     if(button.down) {
         if(button.button == InputManager::MouseButton::RIGHT) {
-            if(!controls.middleClickHeld && !controls.leftClickHeld) {
+            if(!controls.leftClickHeld) {
                 if(rightClickPopupLocation.has_value())
                     clear_right_click_popup();
                 else
@@ -300,11 +300,11 @@ void DrawingProgram::server_init_no_file() {
 
 void DrawingProgram::scale_up(const WorldScalar& scaleUpAmount) {
     selection.deselect_all();
+    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
     layerMan.scale_up(scaleUpAmount);
     if(controls.lockedCameraScale.has_value())
         controls.lockedCameraScale.value() *= scaleUpAmount;
     rebuild_cache();
-    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
 }
 
 void DrawingProgram::write_components_server(cereal::PortableBinaryOutputArchive& a) {
@@ -783,10 +783,13 @@ void DrawingProgram::draw_drag_circle(SkCanvas* canvas, const Vector2f& sPos, co
 }
 
 void DrawingProgram::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) {
+    if(version >= VersionNumber(0, 6, 0))
+        a(controls.lockedCameraScale);
     layerMan.load_file(a, version);
 }
 
 void DrawingProgram::save_file(cereal::PortableBinaryOutputArchive& a) const {
+    a(controls.lockedCameraScale);
     layerMan.save_file(a);
 }
 

@@ -59,7 +59,7 @@ class DrawingProgramCache {
         void invalidate_cache_at_optional_aabb(const std::optional<SCollision::AABB<WorldScalar>>& aabb);
         static void delete_all_draw_cache();
 
-        CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SCollision::ColliderCollection<float>& cC);
+        CanvasComponentContainer::ObjInfo* get_front_object_colliding_with_in_editing_layer(const SkPath& cC);
         ~DrawingProgramCache();
     private:
         struct NodeCache {

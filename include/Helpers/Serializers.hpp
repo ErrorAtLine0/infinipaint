@@ -5,8 +5,9 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include "FixedPoint.hpp"
 #include <include/core/SkString.h>
-
+#include <include/core/SkPoint.h>
 #include <include/core/SkColor.h>
+#include "ConvertVec.hpp"
 
 template <class Archive> void save(Archive& ar, SkString const & str) {
     ar(cereal::make_size_tag(static_cast<uint64_t>(str.size())));
@@ -18,6 +19,16 @@ template <class Archive> void load(Archive& ar, SkString& str) {
     ar(cereal::make_size_tag(size));
     str.resize(static_cast<size_t>(size));
     ar(cereal::binary_data(const_cast<char*>(str.data()), static_cast<size_t>(size) * sizeof(char)));
+}
+
+template <class Archive> void save(Archive& ar, const SkPoint& s) {
+    ar(convert_vec2<Eigen::Vector2f>(s));
+}
+
+template <class Archive> void load(Archive& ar, SkPoint& s) {
+    Eigen::Vector2f f;
+    ar(f);
+    s = convert_vec2<SkPoint>(f);
 }
 
 namespace cereal

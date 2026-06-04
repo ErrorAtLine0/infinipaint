@@ -24,7 +24,9 @@
 #include <Helpers/Random.hpp>
 #include <Helpers/Logger.hpp>
 #include "NetClient.hpp"
-#include "cereal/archives/portable_binary.hpp"
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
 
 NetServer::NetServer(const std::string& serverLocalID) {
     localID = serverLocalID;
@@ -44,12 +46,9 @@ void NetServer::update() {
             if(client->setToDisconnect)
                 disconnectCallback(client);
             else {
-                #ifdef NDEBUG
                 try {
-                #endif
                     client->parse_received_messages(*this);
                     client->send_queued_messages(*this);
-                #ifdef NDEBUG
                 }
                 catch(const std::exception& e) {
                     Logger::get().log(Logger::LogType::INFO, "[NetServer::update] Exception thrown while parsing and sending messages for a client: " + std::string(e.what()));
@@ -61,7 +60,6 @@ void NetServer::update() {
                     client->setToDisconnect = true;
                     disconnectCallback(client);
                 }
-                #endif
             }
         }
     }
@@ -128,6 +126,9 @@ void NetServer::client_connected(std::shared_ptr<rtc::PeerConnection> connection
 }
 
 void NetServer::send_string_stream_to_client(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
+    if(!multiCommandData.expired() && channel == multiCommandData.lock()->channelToSendTo)
+        throw std::runtime_error("[NetServer::send_string_stream_to_client] Can't call when in send_multi_command block using same channel");
+
     if(!client)
         return;
 
@@ -148,18 +149,33 @@ void NetServer::send_string_stream_to_client(const std::shared_ptr<ClientData>& 
 }
 
 void NetServer::send_string_stream_to_all_clients(const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
-    send_string_stream_to_client_if([&](const std::shared_ptr<ClientData>& c) {
-        return true;
-    }, channel, ss);
+    if(!multiCommandData.expired() && channel == multiCommandData.lock()->channelToSendTo)
+        multiCommandData.lock()->commands.emplace_back(ss->str());
+    else {
+        send_string_stream_to_client_if([&](const std::shared_ptr<ClientData>& c) {
+            return true;
+        }, channel, ss);
+    }
 }
 
 void NetServer::send_string_stream_to_all_clients_except(const std::shared_ptr<ClientData>& client, const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
-    send_string_stream_to_client_if([&](const std::shared_ptr<ClientData>& c) {
-        return c != client;
-    }, channel, ss);
+    if(!multiCommandData.expired() && channel == multiCommandData.lock()->channelToSendTo) {
+        if(!client)
+            multiCommandData.lock()->commands.emplace_back(ss->str());
+        else
+            throw std::runtime_error("[NetServer::send_string_stream_to_all_clients_except] Can't call when in send_multi_command block using same channel");
+    }
+    else {
+        send_string_stream_to_client_if([&](const std::shared_ptr<ClientData>& c) {
+            return c != client;
+        }, channel, ss);
+    }
 }
 
 void NetServer::send_string_stream_to_client_if(std::function<bool(const std::shared_ptr<ClientData>&)> clientChecker, const std::string& channel, const std::shared_ptr<std::stringstream>& ss) {
+    if(!multiCommandData.expired() && channel == multiCommandData.lock()->channelToSendTo)
+        throw std::runtime_error("[NetServer::send_string_stream_to_client_if] Can't call when in send_multi_command block using same channel");
+
     if(channel == UNRELIABLE_COMMAND_CHANNEL) {
         if(ss->view().length() <= NetLibrary::MAX_UNRELIABLE_MESSAGE_SIZE) { // Drop unreliable messages that are too big
             for(auto& client : clients) {
@@ -185,6 +201,22 @@ void NetServer::send_string_stream_to_client_if(std::function<bool(const std::sh
             }
         }
     }
+}
+
+void NetServer::send_multi_command_to_all_clients(const std::string& channel, const std::function<void()>& captureSendBlock) {
+    if(!is_disconnected() && multiCommandData.expired() && !channel.empty()) { // Check for multiUpdateData.expired() to make sure we aren't overriding a previous call to send_multi_update_messsage
+        std::shared_ptr<MultiCommandData> d = std::make_shared<MultiCommandData>();
+        d->channelToSendTo = channel;
+        multiCommandData = d; // Using weak pointer here ensures that object will be freed
+        captureSendBlock();
+        if(!d->commands.empty()) {
+            std::vector<std::string> movedVec = std::move(d->commands);
+            d = nullptr;
+            send_items_to_all_clients(channel, (MessageCommandType)1, movedVec);
+        }
+    }
+    else
+        captureSendBlock();
 }
 
 void NetServer::ClientData::send_queued_messages(NetServer& server) {
@@ -262,13 +294,30 @@ void NetServer::ClientData::parse_received_messages(NetServer& server) {
             decode_fragmented_message(inArchive, spfm, NetLibrary::FRAGMENT_MESSAGE_STRIDE, [&](cereal::PortableBinaryInputArchive& completeArchive) {
                 MessageCommandType completeCommandID;
                 completeArchive(completeCommandID);
-                server.recvCallbacks[completeCommandID](shared_from_this(), completeArchive);
+                if(completeCommandID == 1)
+                    parse_multi_command_id(server, completeArchive);
+                else
+                    server.recvCallbacks[completeCommandID](shared_from_this(), completeArchive);
             });
         }
+        else if(commandID == 1)
+            parse_multi_command_id(server, inArchive);
         else
             server.recvCallbacks[commandID](shared_from_this(), inArchive);
 
         receivedMessages.pop();
+    }
+}
+
+void NetServer::ClientData::parse_multi_command_id(NetServer& server, cereal::PortableBinaryInputArchive& a) {
+    std::vector<std::string> commands;
+    a(commands);
+    for(const std::string& str : commands) {
+        ByteMemStream strm((char*)str.data(), str.size());
+        cereal::PortableBinaryInputArchive inArchive(strm);
+        MessageCommandType commandID;
+        inArchive(commandID);
+        server.recvCallbacks[commandID](shared_from_this(), inArchive);
     }
 }
 
