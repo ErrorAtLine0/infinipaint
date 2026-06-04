@@ -35,6 +35,7 @@ class TextBoxCanvasComponent : public CanvasComponent {
         virtual void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version) override;
         std::unique_ptr<CanvasComponent> get_data_copy() const override;
         virtual void set_data_from(const CanvasComponent& other) override;
+        void set_initial_text_color(const Vector4f& initialColor);
 
         // User input data
         struct Data {

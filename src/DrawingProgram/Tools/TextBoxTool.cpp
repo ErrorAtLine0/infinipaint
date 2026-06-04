@@ -63,6 +63,7 @@ void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::Mous
             newTextBox.d.p1 = newTextBox.d.p2 = startAt;
             newTextBox.d.p2 = ensure_points_have_distance(newTextBox.d.p1, newTextBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
             newTextBox.d.editing = true;
+            newTextBox.set_initial_text_color(drawP.world.main.toolConfig.globalConf.foregroundColor);
             newContainer->coords = drawP.world.drawData.cam.c;
             newContainer->coords.scale_about_double(drawP.world.drawData.cam.c.from_space(startAt), 1.0 / drawP.world.main.get_scale_and_density_factor_gui());
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);

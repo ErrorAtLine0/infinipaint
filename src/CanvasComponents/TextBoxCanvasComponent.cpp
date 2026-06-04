@@ -35,9 +35,12 @@ TextBoxCanvasComponent::TextBoxCanvasComponent():
     skia::textlayout::TextStyle tStyle;
     textBox->set_initial_text_style(tStyle);
 
-    textBox->set_initial_text_style_modifier(std::make_shared<ColorTextStyleModifier>(Vector4f{1.0f, 1.0f, 1.0f, 1.0f}));
     textBox->set_initial_text_style_modifier(std::make_shared<SizeTextStyleModifier>(18.0f));
     textBox->set_initial_text_style_modifier(std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{"Roboto"}}));
+}
+
+void TextBoxCanvasComponent::set_initial_text_color(const Vector4f& initialColor) {
+    textBox->set_initial_text_style_modifier(std::make_shared<ColorTextStyleModifier>(initialColor));
 }
 
 CanvasComponentType TextBoxCanvasComponent::get_type() const {
