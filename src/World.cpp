@@ -544,6 +544,11 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
 void World::load_empty_canvas(const std::optional<std::filesystem::path>& filePathEmptyAutoSaveDir) {
     gridMan.server_init_no_file();
     bMan.server_init_no_file();
+    BookmarkListItem* originBookmark = new BookmarkListItem(netObjMan, "Origin", false, {
+        .coords = drawData.cam.c,
+        .windowSize = main.window.size
+    });
+    bMan.bookmarkListRoot->get_folder_list()->push_back_and_send_create(bMan.bookmarkListRoot->get_folder_list(), originBookmark);
     drawProg.server_init_no_file();
     canvasTheme.server_init_no_file();
 
