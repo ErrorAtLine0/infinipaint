@@ -60,6 +60,21 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.6.0" date="2026-06-04">
+            <description>
+                <p>Major update:</p>
+                <ul>
+                    <li>Added "Erase details" option to eraser</li>
+                    <li>Meshes (brushstrokes and lines) consume less memory</li>
+                    <li>Zooming into edges is consistent across computers</li>
+                    <li>Fixed canvas scale up bug online</li>
+                    <li>Fixed crash when downloading resource from canvas</li>
+                    <li>Locked brush size saved in files</li>
+                    <li>App doesn't crash when attempting to open an invalid file from "Open with" menu</li>
+                    <li>Added foreground and background FPS cap to improve efficiency</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.5.0" date="2026-05-17">
             <description>
                 <p>Major update:</p>

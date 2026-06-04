@@ -578,7 +578,6 @@ void MainProgram::toggle_full_screen() {
 }
 
 void MainProgram::update_main_loop_call_rate(unsigned newCallbackRate) {
-    std::cout << "New main callback rate: " << newCallbackRate << std::endl;
     SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, std::to_string(newCallbackRate).c_str());
 }
 
