@@ -30,7 +30,6 @@
 #include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
-#include "Helpers/Parallel.hpp"
 
 EraserTool::EraserTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
@@ -224,7 +223,7 @@ void EraserTool::commit_erase() {
     bool placedNewObject = false;
     std::unordered_map<DrawingProgramLayerListItem*, std::vector<std::pair<CanvasComponentContainer::ObjInfoIterator, CanvasComponentContainer*>>> newObjectsToPlace;
 
-    parallel_loop_container_mutable(updatedComponents, [&](auto& compPair) {
+    std::for_each(updatedComponents.begin(), updatedComponents.end(), [&](auto& compPair) {
         compPair.second.splitComps = compPair.first->obj->get_comp().attempt_split(drawP);
     });
 
@@ -253,7 +252,7 @@ void EraserTool::commit_erase() {
         if(objectsToErase)
             drawP.layerMan.erase_component_container(erasedComponents, !placedNewObject);
         bool first = !objectsToErase && !placedNewObject;
-        parallel_loop_container(updatedComponents, [&](auto& compPair) {
+        std::for_each(updatedComponents.begin(), updatedComponents.end(), [&](auto& compPair) {
             auto& [comp, oldData] = compPair;
             comp->obj->get_comp().simplify_paths();
             comp->obj->normalize_object_coordinates();

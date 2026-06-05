@@ -49,7 +49,6 @@
 #include "../CanvasComponents/ImageCanvasComponent.hpp"
 #include "Layers/DrawingProgramLayer.hpp"
 #include "Layers/DrawingProgramLayerListItem.hpp"
-#include <Helpers/Parallel.hpp>
 #include "../ScaleUpCanvas.hpp"
 
 #include "Tools/EraserTool.hpp"
