@@ -172,7 +172,7 @@ void EraserTool::erase_on_path() {
                             // - Mesh initialize_draw_data does nothing, so commit_update isnt necessary
                             // - worldAABB only shrinks, which means that invalidate_cache_at_optional_aabb will invalidate a "good enough" space even if worldAABB isn't updated (which commit_update does)
                             // - commit_update can't be run inside a traverse_bvh_run_function call (causes segfault and other issues). If that were necessary, we would have to defer that call for after the traversal is done
-                            // - commit_update will be run at switch_tool time instead
+                            // - commit_update will be run at commit_erase time instead
                             drawP.drawCache.invalidate_cache_at_optional_aabb(c->obj->get_world_bounds());
                             return false;
                         }
@@ -261,7 +261,7 @@ void EraserTool::commit_erase() {
             comp->obj->normalize_object_coordinates();
         });
         for(auto& [comp, oldData] : updatedComponents) {
-            comp->obj->commit_update_dont_invalidate_cache(drawP);
+            comp->obj->commit_update(drawP); // commit_update_dont_invalidate_cache also works (it's faster), but might cause cache issues if the object changes significantly due to simplify_paths or normalize_object_coordinates
             drawP.send_transforms_for({comp});
             comp->obj->send_comp_update(drawP, true);
             if(first) {
