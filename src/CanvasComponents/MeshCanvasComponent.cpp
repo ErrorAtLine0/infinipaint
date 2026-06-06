@@ -374,13 +374,18 @@ CanvasComponentEraseDetailResult MeshCanvasComponent::erase_detail(const SkPath&
     bool intersectsAABB = d.meshPath.getBounds().intersects(eraseAgainst.getBounds());
     if(!intersectsAABB)
         return CanvasComponentEraseDetailResult::NO_CHANGE;
-    std::optional<SkPath> newPath = Op(d.meshPath, eraseAgainst, SkPathOp::kDifference_SkPathOp);
+    std::optional<SkPath> newPath = Op(Simplify(d.meshPath).value(), Simplify(eraseAgainst).value(), SkPathOp::kDifference_SkPathOp);
     if(newPath.has_value()) {
-        auto oldPath = d.meshPath;
-        d.meshPath = newPath.value();
-        if(d.meshPath.isEmpty())
+        if(newPath.value().isEmpty()) {
+            d.meshPath = newPath.value();
             return CanvasComponentEraseDetailResult::REMOVED;
-        return CanvasComponentEraseDetailResult::CHANGED;
+        }
+        else if(!d.meshPath.getBounds().contains(newPath.value().getBounds())) // If bounds of erased path is larger than bounds of original path (can happen when difference op bugs out with big eraser paths), dont change the path
+            return CanvasComponentEraseDetailResult::NO_CHANGE;
+        else {
+            d.meshPath = newPath.value();
+            return CanvasComponentEraseDetailResult::CHANGED;
+        }
     }
     return CanvasComponentEraseDetailResult::NO_CHANGE;
 }

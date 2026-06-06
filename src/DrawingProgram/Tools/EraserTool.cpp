@@ -89,17 +89,18 @@ void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::Mouse
             BrushComponentCode::mouse_button(drawP, genData, drawP.world.drawData.cam.c, button, relativeWidthResult.first.value());
             // NOTE: Must set erase path when isErasing is set to true to make sure that the Circle path from not erasing part doesn't reach the erase_on_path code
             erasePath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
-            isErasing = true;
+            eraserChanged = isErasing = true;
         }
         else if(!button.down && isErasing) {
             // If not real time eraser, we can benefit from simplifying the path
             std::optional<SkPath> simplified = Simplify(erasePath);
             if(simplified.has_value())
                 erasePath = simplified.value();
-            erase_on_path();
+            if(eraserChanged)
+                erase_on_path();
             reset_erasing_stroke();
             commit_erase();
-            isErasing = false;
+            eraserChanged = isErasing = false;
         }
     }
 }
@@ -108,6 +109,7 @@ void EraserTool::input_mouse_motion_callback(const InputManager::MouseMotionCall
     if(isErasing) {
         auto& toolConfig = drawP.world.main.toolConfig;
         BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value());
+        eraserChanged = true;
     }
 }
 
@@ -118,6 +120,7 @@ void EraserTool::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs
             auto& toolConfig = drawP.world.main.toolConfig;
             float width = toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value();
             BrushComponentCode::pen_pressure(drawP, genData, width);
+            eraserChanged = true;
         }
     }
 }
@@ -281,7 +284,10 @@ void EraserTool::commit_data() {
     if(isErasing) {
         erasePath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, drawP.world.main.toolConfig.brush.hasRoundCaps);
         if(drawP.world.main.conf.realTimeEraser) {
-            erase_on_path();
+            if(eraserChanged) {
+                erase_on_path();
+                eraserChanged = false;
+            }
             reset_erasing_stroke();
         }
     }

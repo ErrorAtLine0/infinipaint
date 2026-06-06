@@ -56,4 +56,5 @@ class EraserTool : public DrawingProgramToolBase {
         void commit_erase();
         void commit_data();
         bool isErasing = false;
+        bool eraserChanged = false;
 };
