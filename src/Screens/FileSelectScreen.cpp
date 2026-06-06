@@ -735,7 +735,11 @@ void FileSelectScreen::title_bar() {
                                             case MoreOptionsMenu::MAIN: {
                                                 switch(i) {
                                                     case 0: {
-                                                        text_transparent_option_button("Edit", "Edit", [&] {
+                                                        #ifdef __ANDROID__
+                                                            text_transparent_option_button("Edit", "Edit / Share", [&] {
+                                                        #else
+                                                            text_transparent_option_button("Edit", "Edit", [&] {
+                                                        #endif
                                                             moreOptionsMenu = MoreOptionsMenu::CLOSED;
                                                             start_edit_mode();
                                                         });
