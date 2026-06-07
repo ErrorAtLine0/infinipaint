@@ -42,6 +42,7 @@
 
 template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
     std::vector<std::vector<SkPoint>> contours;
+    bool moveHappened = false;
 
     SkPath::Iter iter(p, true);
     for(;;) {
@@ -51,8 +52,10 @@ template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
 
         switch(rec->fVerb) {
             case SkPathVerb::kClose:
-                if(!contours.back().empty())
+                if(moveHappened) {
                     contours.back().pop_back();
+                    moveHappened = false;
+                }
                 break;
             case SkPathVerb::kLine:
                 contours.back().emplace_back(rec->fPoints[1]);
@@ -60,6 +63,7 @@ template <typename Archive> void skpath_write(const SkPath& p, Archive& a) {
             case SkPathVerb::kMove:
                 contours.emplace_back();
                 contours.back().emplace_back(rec->fPoints[0]);
+                moveHappened = true;
                 break;
             default:
                 throw std::runtime_error("[get_predraw_data_accurate] Illegal verb " + std::to_string(static_cast<unsigned>(rec->fVerb)));
@@ -357,7 +361,10 @@ void MeshCanvasComponent::normalize_object_coordinates(CoordSpaceHelper& coords)
     SkRect pathBounds = d.meshPath.getBounds();
     SkPoint center = pathBounds.center();
     constexpr float MAX_COORDINATE = 1000.0f;
-    float maxDimScaleFactor = MAX_COORDINATE / (std::max(pathBounds.width(), pathBounds.height()) * 0.5f); // Scale must be uniform. This scale factor should force the maximum coordinate = MAX_COORDINATE after transformation
+    float maxDimScaleFactorDenominator = std::max(pathBounds.width(), pathBounds.height()) * 0.5f;
+    if(maxDimScaleFactorDenominator == 0.0f) // Can't normalize, path probably empty or contains one point
+        return;
+    float maxDimScaleFactor = MAX_COORDINATE / maxDimScaleFactorDenominator; // Scale must be uniform. This scale factor should force the maximum coordinate = MAX_COORDINATE after transformation
     SkMatrix m = SkMatrix::I();
     m.postTranslate(-center.x(), -center.y()).postScale(maxDimScaleFactor, maxDimScaleFactor);
     std::optional<SkPath> tryTransformPath = d.meshPath.tryMakeTransform(m);
