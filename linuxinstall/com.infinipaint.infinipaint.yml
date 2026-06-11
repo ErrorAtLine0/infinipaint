@@ -132,8 +132,7 @@ cleanup:
         
 finish-args:
   - --share=ipc
-  - --socket=wayland
-  - --socket=fallback-x11
+  - --socket=x11 # For now, force X11 since Wayland has issues with tablets
   - --device=all
   - --share=network
   - --filesystem=home
