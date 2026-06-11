@@ -119,6 +119,11 @@ class GlobalConfig {
         #ifndef __EMSCRIPTEN__
             bool applyDisplayScale = true;
         #endif
+
+        #ifdef ADD_PREFER_X11_OPTION
+            bool preferX11 = false;
+        #endif
+
     private:
         void load_default_palette();
 };

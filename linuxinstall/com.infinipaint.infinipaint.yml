@@ -46,23 +46,6 @@ modules:
         tag: v2022.0.0
         commit: 0c0ff192a2304e114bc9e6557582dfba101360ff
         url: https://github.com/uxlfoundation/oneTBB.git
-  - name: SDL3
-    buildsystem: cmake-ninja
-    config-opts:
-        - -DCMAKE_BUILD_TYPE=Release
-        - -DSDL_SHARED=ON
-        - -DSDL_STATIC=OFF
-        - -DSDL_TEST_LIBRARY=OFF
-        - -DSDL_TESTS=OFF
-        - -DSDL_DISABLE_INSTALL_DOCS=OFF
-        - -DSDL_INSTALL_TESTS=OFF
-        - -DSDL_WAYLAND=OFF
-        - -DSDL_X11=ON
-    sources:
-      - type: git
-        tag: release-3.4.8
-        commit: d9d5536704d585616d4db3c8ba3c4ff6fc2757e1
-        url: https://github.com/libsdl-org/SDL.git
   - name: Skia
     buildsystem: simple
     build-commands:
@@ -149,7 +132,8 @@ cleanup:
         
 finish-args:
   - --share=ipc
-  - --socket=x11
+  - --socket=wayland
+  - --socket=fallback-x11
   - --device=all
   - --share=network
   - --filesystem=home

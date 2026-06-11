@@ -227,6 +227,10 @@ void initialize_sdl(MainStruct& mS) {
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas"); // Ensures that SDL only grabs input when browser is focused on canvas
+    #ifdef ADD_PREFER_X11_OPTION
+        if(mS.m->conf.preferX11)
+            SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11,wayland");
+    #endif
 
     if(!SDL_Init(SDL_INIT_VIDEO))
         throw std::runtime_error("[SDL_Init] " + std::string(SDL_GetError()));

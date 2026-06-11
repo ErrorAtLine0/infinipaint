@@ -1529,6 +1529,9 @@ void Toolbar::general_settings_inner_gui() {
 
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                         checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
+                        #ifdef ADD_PREFER_X11_OPTION
+                            checkbox_boolean_field(gui, "prefer x11", "Prefer X11 over Wayland (Requires restart)", &main.conf.preferX11);
+                        #endif
                     });
                     break;
                 }

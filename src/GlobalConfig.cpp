@@ -55,6 +55,9 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
     toRet["vsync"] = vsyncValue;
+#ifdef ADD_PREFER_X11_OPTION
+    toRet["preferX11"] = preferX11;
+#endif
 #ifndef __EMSCRIPTEN__
     toRet["applyDisplayScale"] = applyDisplayScale;
 #endif
@@ -126,6 +129,9 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("mainCallbackRateBackground").get_to(mainCallbackRateBackground);} catch(...) {}
     if(version >= VersionNumber(0, 6, 0))
         try{j.at("vsync").get_to(vsyncValue);} catch(...) {}
+#ifdef ADD_PREFER_X11_OPTION
+    try{j.at("preferX11").get_to(preferX11);} catch(...) {}
+#endif
 #ifndef __EMSCRIPTEN__
     try{j.at("applyDisplayScale").get_to(applyDisplayScale);} catch(...) {}
 #endif
