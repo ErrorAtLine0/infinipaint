@@ -382,11 +382,11 @@ Vector2f InputManager::backend_cursor_delta_calculation(const Vector2f& cursorDe
 }
 
 Vector2f InputManager::backend_touch_cursor_pos_calculation(const Vector2f& cursorPos) {
-    return Vector2f{cursorPos.x() * main.window.size.x() * main.window.density, cursorPos.y() * main.window.size.y() * main.window.density} - screenOffset;
+    return Vector2f{cursorPos.x() * main.window.size.x(), cursorPos.y() * main.window.size.y()} - screenOffset;
 }
 
 Vector2f InputManager::backend_touch_cursor_delta_calculation(const Vector2f& cursorDelta) {
-    return Vector2f{cursorDelta.x() * main.window.size.x() * main.window.density, cursorDelta.y() * main.window.size.y() * main.window.density};
+    return Vector2f{cursorDelta.x() * main.window.size.x(), cursorDelta.y() * main.window.size.y()};
 }
 
 void InputManager::backend_drop_file_event(const SDL_DropEvent& e) {
