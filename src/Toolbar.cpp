@@ -1645,7 +1645,9 @@ void Toolbar::general_settings_inner_gui() {
                         auto theme_color_field = [&](const char* id, const char* name, SkColor4f* c) {
                             color_picker_button_field<SkColor4f>(gui, id, name, c, {});
                         };
+                        theme_color_field("fillColor1", "Fill Color 1", &io.theme->fillColor1);
                         theme_color_field("fillColor2", "Fill Color 2", &io.theme->fillColor2);
+                        theme_color_field("backColor0", "Back Color 0", &io.theme->backColor0);
                         theme_color_field("backColor1", "Back Color 1", &io.theme->backColor1);
                         theme_color_field("backColor2", "Back Color 2", &io.theme->backColor2);
                         theme_color_field("frontColor1", "Front Color 1", &io.theme->frontColor1);
