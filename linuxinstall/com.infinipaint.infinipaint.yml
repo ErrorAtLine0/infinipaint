@@ -12,7 +12,8 @@ modules:
     subdir: source
     build-commands:
       - chmod +x runConfigureICU configure install-sh
-      - ./runConfigureICU Linux --prefix=/app --disable-icu-config --disable-icuio --disable-extras --disable-tools --disable-tests --disable-samples --disable-layoutex --disable-layout
+      # adding --with-data-packaging=archive to prevent creation of .so dat file. Still has to link to a .so dat file though (stubfile)
+      - ./runConfigureICU Linux --prefix=/app --disable-icu-config --disable-icuio --disable-extras --disable-tools --disable-tests --disable-samples --disable-layoutex --disable-layout --with-data-packaging=archive
       - make -j$(nproc)
       - make install
     sources:
@@ -126,7 +127,7 @@ cleanup:
   - /bin/proto*
   - /lib/*.a
   - /lib/libicui18n*
-  - /lib/libicudata*
+  #- /lib/libicudata* # Should just be a stubfile, check the size of the library (should be small, doesn't actually contain data)
   - /bin/zstd*
   - /bin/unzstd
         

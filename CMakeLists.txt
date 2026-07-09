@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.27.0)
-set(CMAKE_CXX_STANDARD 23)
 project(infinipaint)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -189,12 +190,18 @@ if(WIN32)
         "windowsinstall/app.rc")
 endif()
 
+if(ANDROID)
+    add_library(main SHARED ${sources})
+else()
+    add_executable(main ${sources})
+endif()
+
 # Get libraries
-find_package(ICU 77.1 REQUIRED COMPONENTS uc)
 
 if(NO_CONAN_BUILD)
     set(SKIA_INCLUDE "modules/skia" CACHE PATH "Path to Skia root directory")
     set(SKIA_LIB_PATH "modules/skia/out/Static" CACHE PATH "Path to Skia libs")
+
     find_library(SKIA_LIB skia PATHS ${SKIA_LIB_PATH})
     find_library(SKIA_SVG_LIB svg PATHS ${SKIA_LIB_PATH})
     find_library(SKIA_RESOURCES_LIB skresources PATHS ${SKIA_LIB_PATH})
@@ -212,6 +219,8 @@ else()
     find_package(skia-infinipaint REQUIRED)
     find_package(clipper2 REQUIRED)
 endif()
+
+find_package(ICU 77.1 REQUIRED COMPONENTS uc)
 
 if(NOT EMSCRIPTEN)
     if((NOT ANDROID) AND (NOT LINUX))
@@ -236,12 +245,6 @@ find_package(zstd REQUIRED)
 
 message("Skia root: " ${SKIA_INCLUDE})
 message("Build type: " ${CMAKE_BUILD_TYPE})
-
-if(ANDROID)
-    add_library(main SHARED ${sources})
-else()
-    add_executable(main ${sources})
-endif()
 
 if(NOT ANDROID)
     set_target_properties(main PROPERTIES OUTPUT_NAME "infinipaint")
@@ -402,6 +405,8 @@ elseif(LINUX)
     set(SDL_WAYLAND ON CACHE BOOL "Compile SDL for Wayland")
     set(SDL_X11 ON CACHE BOOL "Compile SDL for X11")
     set(SDL_AUDIO OFF CACHE BOOL "Compile SDL Audio")
+    set(SDL_STATIC ON CACHE BOOL "Compile SDL statically")
+    set(SDL_SHARED OFF CACHE BOOL "Compile SDL dynamically")
     add_subdirectory(deps/SDL EXCLUDE_FROM_ALL)
 endif()
 
