@@ -46,7 +46,7 @@ std::shared_ptr<FileDownloader::DownloadData> FileDownloader::download_data_from
 
     curl_easy_setopt(h.eHandle, CURLOPT_URL, url.data());
     curl_easy_setopt(h.eHandle, CURLOPT_NOSIGNAL, 1);
-    curl_easy_setopt(h.eHandle, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_ALL);
+    curl_easy_setopt(h.eHandle, CURLOPT_FOLLOWLOCATION, 1L); // 1L == CURLFOLLOW_ALL (for compatibility with older libcurl versions, use 1L)
     curl_easy_setopt(h.eHandle, CURLOPT_USERAGENT, "InfiniPaint/0.2.0");
     curl_easy_setopt(h.eHandle, CURLOPT_NOPROGRESS, 0);
     curl_easy_setopt(h.eHandle, CURLOPT_XFERINFODATA, h.data.get());
