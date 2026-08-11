@@ -1,0 +1,11 @@
+@echo off
+cd %~dp0
+call .\conan_init_x86_64.bat
+cd %~dp0
+call .\build_x86_64.bat
+cd %~dp0
+call .\package_installer_x86_64.bat
+cd %~dp0
+call .\build_portable_x86_64.bat
+cd %~dp0
+call .\package_portable_x86_64.bat
