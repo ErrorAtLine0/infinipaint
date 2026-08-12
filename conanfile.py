@@ -34,21 +34,40 @@ class CompressorRecipe(ConanFile):
                 "use_conan_libwebp": False
             })
         elif self.settings.os == "Windows":
-            self.requires("skia-infinipaint/143.20251028.0", options = {
-                "use_system_expat": False,
-                "use_freetype": False,
-                "use_system_harfbuzz": True,
-                "use_conan_harfbuzz": True,
-                "use_system_icu": True,
-                "use_conan_icu": True,
-                "use_system_libjpeg_turbo": False,
-                "use_system_libpng": False,
-                "use_system_libwebp": False,
-                "use_system_zlib": False,
-                "enable_svg": True,
-                "enable_skottie": False,
-                "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
-            })
+            if self.settings.arch == "armv8":
+                self.requires("skia-infinipaint/143.20251028.0", options = {
+                    "use_system_expat": False,
+                    "use_freetype": False,
+                    "use_system_harfbuzz": True,
+                    "use_conan_harfbuzz": True,
+                    "use_system_icu": True,
+                    "use_conan_icu": True,
+                    "use_system_libjpeg_turbo": False,
+                    "use_system_libpng": False,
+                    "use_system_libwebp": False,
+                    "use_system_zlib": False,
+                    "enable_svg": True,
+                    "enable_skottie": False,
+                    "enable_bentleyottmann": True, # for some reason, setting this to False results in an error when creating the project
+                    "use_vulkan": True
+                })
+            else:
+                self.requires("skia-infinipaint/143.20251028.0", options = {
+                    "use_system_expat": False,
+                    "use_freetype": False,
+                    "use_system_harfbuzz": True,
+                    "use_conan_harfbuzz": True,
+                    "use_system_icu": True,
+                    "use_conan_icu": True,
+                    "use_system_libjpeg_turbo": False,
+                    "use_system_libpng": False,
+                    "use_system_libwebp": False,
+                    "use_system_zlib": False,
+                    "enable_svg": True,
+                    "enable_skottie": False,
+                    "enable_bentleyottmann": True, # for some reason, setting this to False results in an error when creating the project
+                    "use_vulkan": False
+                })
         elif self.settings.os == "Macos":
             self.requires("skia-infinipaint/143.20251028.0", options = {
                 "use_system_expat": False,
@@ -103,7 +122,7 @@ class CompressorRecipe(ConanFile):
             self.requires("hwloc/2.12.2", options = {
                 "shared": True
             })
-            self.requires("onetbb/2022.0.0")
+            self.requires("onetbb/2023.1.0")
 
         if self.settings.os != "Emscripten":
             self.requires("libdatachannel/0.24.0")

@@ -1,0 +1,11 @@
+@echo off
+cd %~dp0
+call .\conan_init_arm64.bat
+cd %~dp0
+call .\build_arm64.bat
+cd %~dp0
+call .\package_installer_arm64.bat
+cd %~dp0
+call .\build_portable_arm64.bat
+cd %~dp0
+call .\package_portable_arm64.bat

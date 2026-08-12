@@ -1,4 +1,4 @@
-:: @echo off
+@echo off
 cd %~dp0
 rmdir /S /Q portable_package
 del infinipaint-x.y.z-win-x86_64-portable.zip
