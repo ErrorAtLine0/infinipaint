@@ -30,7 +30,7 @@ class CompressorRecipe(ConanFile):
                 "canvaskit_enable_sksl_trace": False,
                 "canvaskit_enable_webgpu": False,
                 "canvaskit_enable_webgl": False,
-                "use_system_libwebp": False, # There's a problem compiling libwebp with emscripten in conan
+                "use_system_libwebp": False,  # There's a problem compiling libwebp with emscripten in conan
                 "use_conan_libwebp": False
             })
         elif self.settings.os == "Windows":
@@ -48,7 +48,7 @@ class CompressorRecipe(ConanFile):
                     "use_system_zlib": False,
                     "enable_svg": True,
                     "enable_skottie": False,
-                    "enable_bentleyottmann": True, # for some reason, setting this to False results in an error when creating the project
+                    "enable_bentleyottmann": True,  # for some reason, setting this to False results in an error when creating the project
                     "use_vulkan": True
                 })
             else:
@@ -84,7 +84,7 @@ class CompressorRecipe(ConanFile):
                 "use_egl": False,
                 "enable_svg": True,
                 "enable_skottie": False,
-                "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
+                "enable_bentleyottmann": True  # for some reason, setting this to False results in an error when creating the project
             })
         else:
             self.requires("skia-infinipaint/143.20251028.0", options = {
@@ -104,10 +104,9 @@ class CompressorRecipe(ConanFile):
                 "use_egl": True,
                 "enable_svg": True,
                 "enable_skottie": False,
-                "enable_bentleyottmann": True # for some reason, setting this to False results in an error when creating the project
+                "enable_bentleyottmann": True  # for some reason, setting this to False results in an error when creating the project
             })
 
-        
         if self.settings.os == "Linux":
             self.requires("fontconfig/2.17.1")
             self.requires("egl/system")
@@ -127,7 +126,7 @@ class CompressorRecipe(ConanFile):
         if self.settings.os != "Emscripten":
             self.requires("libdatachannel/0.24.0")
             self.requires("libcurl/8.20.0")
-            
+
         self.requires("clipper2/2.0.1")
         self.requires("zstd/1.5.7")
         self.requires("icu-infinipaint/77.1")
