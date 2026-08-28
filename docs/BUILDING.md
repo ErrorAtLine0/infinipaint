@@ -55,8 +55,6 @@ cpack -G NSIS
 ## Emscripten
 You can use Emscripten to build a web version of this program. Keep in mind that this version might be more buggy, and is missing a few features. In addition, I have only tried building it on a Linux machine.
 
-You'll need to setup conan toolchains. You can read about that [here](https://github.com/conan-io/conan-toolchains).
-
 After cloning the repository, `cd` into the repo, then update the git submodules to get `datachannel-wasm`:
 ```
 git submodule update --init --recursive
