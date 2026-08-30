@@ -87,6 +87,8 @@ class GlobalConfig {
             bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;
 
+        bool disableTouchForDrawing = false;
+
         Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;
 
         nlohmann::json get_config_json(const InputManager& input) const;

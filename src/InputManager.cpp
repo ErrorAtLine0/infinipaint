@@ -821,7 +821,7 @@ void InputManager::backend_touch_finger_up_update(const SDL_TouchFingerEvent& e)
 }
 
 void InputManager::backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e) {
-    constexpr float MINIMUM_MOTION_TO_CONSIDER_SQRD = 20.0f * 20.0f;
+    constexpr float MINIMUM_MOTION_TO_CONSIDER_SQRD = 30.0f * 30.0f;
 
     isTouchDevice = true;
 

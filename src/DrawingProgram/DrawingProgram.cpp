@@ -121,7 +121,8 @@ void DrawingProgram::input_text_callback(const InputManager::TextCallbackArgs& t
 
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto buttonCallbacks = [&](const InputManager::MouseButtonCallbackArgs& b) {
-        drawTool->input_mouse_button_on_canvas_callback(b);
+        if(b.deviceType == InputManager::MouseDeviceType::TOUCH && !world.main.conf.disableTouchForDrawing)
+            drawTool->input_mouse_button_on_canvas_callback(b);
     };
 
     if(button.down) {
@@ -173,7 +174,8 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
 }
 
 void DrawingProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    drawTool->input_mouse_motion_callback(motion);
+    if(motion.deviceType == InputManager::MouseDeviceType::TOUCH && !world.main.conf.disableTouchForDrawing)
+        drawTool->input_mouse_motion_callback(motion);
 }
 
 void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {

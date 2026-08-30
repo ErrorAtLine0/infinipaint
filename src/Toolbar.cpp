@@ -1528,6 +1528,7 @@ void Toolbar::general_settings_inner_gui() {
                         input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
 
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
+                        checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
                         checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
                         #ifdef ADD_PREFER_X11_OPTION
                             checkbox_boolean_field(gui, "prefer x11", "Prefer X11 over Wayland (Requires restart)", &main.conf.preferX11);
