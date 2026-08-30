@@ -612,6 +612,14 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
     });
 
     l.emplace_back(TopToolbarRemainingAreaButton{
+        .name = "Force Save",
+        .svgPath = "data/icons/RemixIcon/save-line.svg",
+        .onClick = [&] {
+            save_to_file();
+        }
+    });
+
+    l.emplace_back(TopToolbarRemainingAreaButton{
         .name = "Canvas Color",
         .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
         .onClick = [&] {
