@@ -56,10 +56,11 @@
     boolean setSystemCursor(int);
     void setWindowStyle(boolean);
     boolean shouldMinimizeOnFocusLoss();
+    boolean showFileDialog(java.lang.String[], boolean, boolean, int);
     boolean showTextInput(int, int, int, int, int);
     boolean supportsRelativeMouse();
     int openFileDescriptor(java.lang.String, java.lang.String);
-    boolean showFileDialog(java.lang.String[], boolean, boolean, int);
+    boolean showFileDialog(java.lang.String[], boolean, int, java.lang.String, int);
     java.lang.String getPreferredLocales();
     java.lang.String formatLocale(java.util.Locale);
 }
@@ -79,6 +80,7 @@
 }
 
 -keep,includedescriptorclasses,allowoptimization class org.libsdl.app.SDLControllerManager {
+    void joystickSetSensorsEnabled(int, boolean);
     void pollInputDevices();
     void joystickSetLED(int, int, int, int);
     void pollHapticDevices();
