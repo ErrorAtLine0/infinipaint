@@ -68,6 +68,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["defaultCanvasBackgroundColor"] = defaultCanvasBackgroundColor;
     toRet["flipZoomToolDirection"] = flipZoomToolDirection;
     toRet["realTimeEraser"] = realTimeEraser;
+    toRet["disableTouchForDrawing"] = disableTouchForDrawing;
 #ifndef __EMSCRIPTEN__
     toRet["checkForUpdates"] = checkForUpdates;
 #endif
@@ -127,6 +128,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
     try{j.at("mainCallbackRate").get_to(mainCallbackRate);} catch(...) {}
     try{j.at("mainCallbackRateBackground").get_to(mainCallbackRateBackground);} catch(...) {}
+    try{j.at("disableTouchForDrawing").get_to(disableTouchForDrawing);} catch(...) {}
     if(version >= VersionNumber(0, 6, 0))
         try{j.at("vsync").get_to(vsyncValue);} catch(...) {}
 #ifdef ADD_PREFER_X11_OPTION
