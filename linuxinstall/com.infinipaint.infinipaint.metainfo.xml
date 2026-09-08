@@ -60,6 +60,15 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.6.1" date="2026-09-08">
+            <description>
+                <p>Patch update:</p>
+                <ul>
+                    <li>Added fill color 1 and back color 0 to theme editor</li>
+                    <li>Added disable touch for drawing option</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.6.0" date="2026-06-04">
             <description>
                 <p>Major update:</p>
