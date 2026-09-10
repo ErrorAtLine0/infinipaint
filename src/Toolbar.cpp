@@ -619,21 +619,9 @@ void Toolbar::top_toolbar() {
 
 void Toolbar::web_version_welcome() {
     auto& gui = main.g.gui;
-    auto& io = gui.io;
 
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {.width = CLAY_SIZING_FIXED(700), .height = CLAY_SIZING_FIT(0) },
-            .padding = CLAY_PADDING_ALL(io.theme->padding1),
-            .childGap = io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        },
-        .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-        .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1),
-        .floating = {.attachPoints = {.element = CLAY_ATTACH_POINT_CENTER_CENTER, .parent = CLAY_ATTACH_POINT_CENTER_CENTER}, .attachTo = CLAY_ATTACH_TO_PARENT}
-    }) {
-        gui.new_id("web version welcome gui", [&] {
+    center_obstructing_window_gui("web version welcome gui", CLAY_SIZING_FIXED(700), CLAY_SIZING_FIT(0), [&] {
+        gui.new_id("web version welcome notif", [&] {
             text_label_centered(gui, "Welcome to the web version of InfiniPaint!");
             text_label(gui, 
 R"(This version contains more known issues than the native version of the app. This includes:
@@ -651,7 +639,7 @@ If you like this app, consider downloading the native version for your system)")
                 }
             });
         });
-    }
+    });
 }
 
 void Toolbar::center_message(const char* id, const std::string& m) {
