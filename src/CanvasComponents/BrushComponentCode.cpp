@@ -374,7 +374,7 @@ void fix_tip(std::vector<BrushPoint>& brushPoints) {
         brushPoints[brushPoints.size() - 2].width = brushPoints[brushPoints.size() - 1].width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width);
 }
 
-void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath) {
+void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath, bool uniformPeakWidth) {
     genData.penPath = useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN;
     if (genData.penPath) {
         genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
@@ -392,6 +392,7 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     }
 
     float width = brushSize * genData.penWidth;
+    genData.sampleWidths.reset(uniformPeakWidth, width);
     genData.coords = strokeCoordSpace;
 
     genData.brushPoints.clear();
@@ -414,14 +415,18 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
 void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, uint64_t /* timestamp */) {
     if (genData.penPath) {
         // The input adapter caches this report's pressure before its motion.
-        // Appending a point never revisits the width of a preceding point.
+        // Preserve mode keeps earlier widths; peak mode explicitly revises them.
         genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
             drawP.world.main.conf.tabletOptions.brushMinimumSize,
             drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth);
         const float width = brushSize * genData.penWidth;
         if (!motionPos.allFinite() || !std::isfinite(width) || width < 0) return;
         genData.brushPoints.push_back({
-            genData.coords.to_space(genData.penCamera.from_space(motionPos)), width});
+            genData.coords.to_space(genData.penCamera.from_space(motionPos)), genData.sampleWidths.output(width)});
+        const bool widthsChanged = genData.sampleWidths.append(width);
+        genData.brushPoints.back().width = genData.sampleWidths.output(width);
+        if (widthsChanged)
+            for (auto& point : genData.brushPoints) point.width = genData.sampleWidths.output(point.width);
         return;
     }
     BrushComponentCode::BrushPoint p;

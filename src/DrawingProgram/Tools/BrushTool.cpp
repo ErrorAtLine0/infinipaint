@@ -17,6 +17,8 @@
  */
 
 #include "BrushTool.hpp"
+#include "../../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/NumberSliderHelpers.hpp"
 #include <Helpers/ConvertVec.hpp>
 #include "../../GUIStuff/GUIManager.hpp"
 #include "../DrawingProgram.hpp"
@@ -66,7 +68,7 @@ void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseB
             newMeshContainer->coords = drawP.world.drawData.cam.c;
 
             // Capture the brush policy at contact-down; never switch a live stroke's path.
-            BrushComponentCode::mouse_button(drawP, genData, newMeshContainer->coords, button, relativeWidthResult.first.value(), toolConfig.brush.preservePenPressure);
+            BrushComponentCode::mouse_button(drawP, genData, newMeshContainer->coords, button, relativeWidthResult.first.value(), toolConfig.brush.samplePath(), toolConfig.brush.pressureResponse == BrushPressure::Response::Peak);
 
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newMeshContainer);
             commit_data(false);
@@ -158,7 +160,7 @@ void BrushTool::gui_toolbox(Toolbar& t) {
     gui.new_id("brush tool", [&] {
         text_label_centered(gui, "Brush");
         checkbox_boolean_field(gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
-        checkbox_boolean_field(gui, "preserve pen pressure", "Preserve per-point pen pressure", &drawP.world.main.toolConfig.brush.preservePenPressure);
+        gui_pressure_options();
         drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
     });
 }
@@ -171,9 +173,23 @@ void BrushTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
     gui.new_id("brush tool", [&] {
         checkbox_boolean_field(gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
-        checkbox_boolean_field(gui, "preserve pen pressure", "Preserve per-point pen pressure", &drawP.world.main.toolConfig.brush.preservePenPressure);
+        gui_pressure_options();
         drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
     });
+}
+
+void BrushTool::gui_pressure_options() {
+    using namespace GUIStuff::ElementHelpers;
+    using Response = BrushPressure::Response;
+    auto& main = drawP.world.main;
+    auto& gui = main.g.gui;
+    radio_button_selector<Response>(gui, "pressure mode", &main.toolConfig.brush.pressureResponse, {
+        {"Smoothed pressure (default)", Response::Original},
+        {"Preserve samples", Response::Preserve},
+        {"Uniform peak width", Response::Peak}
+    });
+    if (main.toolConfig.brush.pressureResponse == Response::Original)
+        slider_scalar_field(gui, "width propagation", "Width propagation", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
 }
 
 void BrushTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {

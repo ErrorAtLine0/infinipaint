@@ -1,53 +1,48 @@
-# Per-sample pressure for pen brush strokes
+# Pen brush pressure response
 
-Depends on the Windows input change described in WINDOWS_PEN_INPUT.md.
-No wobble filter, prediction, or ARM64 build changes are included.
+This proposal depends on the native history/input changes in PR #96. It has no
+positional filter, source-library dependency, theme, cursor or movable-panel changes.
+The companion optional filter is proposed in PR #98.
 
-## Behavior
+## Choose in Brush (desktop and phone)
 
-Upstream already supports pressure. Its temporary-point width maxima,
-backwards width smoothing and final tip correction can widen previous parts
-of the same stroke. This proposal deliberately changes that behavior for pen
-brush strokes; it is not a claim that pressure smoothing is always undesirable.
+| Mode | Width behavior | Position path in this PR |
+| --- | --- | --- |
+| Smoothed pressure (default) | Existing upstream width propagation, default 0.707 | Original midpoint spacing and Catmull-Rom |
+| Preserve samples | Keep each accepted contact sample's width | Dense measured polyline |
+| Uniform peak width | Whole current stroke uses its highest recorded width | Dense measured polyline |
 
-The Brush panel (desktop and phone) exposes **Preserve per-point pen pressure**.
-It defaults to **off**, including when loading older configuration without the
-new key. Off uses upstream's original stroke/pressure smoothing. Enabling it
-selects the direct pressure-preserving path for subsequent pen brush strokes;
-changing it does not reinterpret an active stroke or existing drawings.
-The choice is saved with the other brush settings.
+The former Preserve per-point pen pressure checkbox is replaced by explicit modes.
+Pressure support already exists upstream; this changes the policy, not the input
+capability. Upstream's original behavior is the default. A propagation value of 1
+spreads peak width in the original engine; it is not a requirement for preservation.
+Preserve and Peak deliberately bypass that propagation slider.
 
-With this option enabled, pen strokes append each contact sample with its own pressure-derived width.
-The same mapping is used at contact-down and motion. The pressure factor and
-minimum size remain configurable; disabling pressure gives a constant width.
-Pressure changes do not run backwards through existing pen points.
+The mode is captured at contact-down. Changing it affects subsequent strokes only.
+Pressure-affects-size and minimum width remain shared brush/eraser settings.
+Mouse, touch and eraser generation are not opted into the new pen path.
+Coincident vertices are collapsed for valid outline normals, retaining the widest
+coincident width: invisible overlapping samples cannot each produce a separate pixel.
 
-The direct pen path also bypasses brush-size-dependent midpoint spacing and
-Catmull-Rom interpolation. Retaining a dense per-sample path is necessary here
-to keep width associated with the corresponding sampled position. Coincident
-vertices are compacted only for outline construction; overlapping marks can
-still visually cover one another.
+## Configuration and compatibility
 
-The eraser and mouse/touch paths retain upstream smoothing. UI text clarifies
-that the old pressure smoothing control is bypassed only when preservation is enabled.
-Changing camera transforms, window position or DPI ends the active pen stroke;
-lift and start again rather than reinterpreting old screen samples.
+Brush configuration saves pressureResponse as original, preserve or peak. Missing
+and unknown modes select Original. The old preservePenPressure boolean migrates to
+Preserve when true and Original otherwise; an explicit new mode takes precedence.
+The compatibility boolean is still written for older fork builds (Peak cannot be
+represented by that old setting). Drawings store derived meshes, not raw pressure.
 
-Existing drawings are unchanged. The existing mesh format persists the resulting
-variable-width geometry, not the original pen pressure reports.
+No operating-system settings, registry entries, build-tool installs or ARM64 build
+workarounds are introduced.
 
-## Validation and review questions
+## Validation
 
-Automated tests cover the pure pressure mapping (minimum size, constant-width
-mode, invalid inputs and a light-heavy-light sequence). They do not compile or
-exercise the full brush/Skia renderer. The complete fork has received a positive
-user drawing report; this isolated PR still needs end-to-end app testing.
+Pure C++ tests cover configuration roundtrips, legacy migration, pressure mapping,
+peak/preserve widths and reset. Source checks cover both panels and contact-down.
+CI compiles patched SDL for Windows x64/ARM64 and runs x64 input tests.
+These are not full application builds, Skia rendering tests or hardware validation.
 
-Reproduce with a continuous light-heavy-light line: earlier light sections
-should not expand when pressure increases later. Also test stationary pressure,
-dots, sharp turns, overlapping/translucent strokes, pan/zoom interruption, undo,
-save/reopen, exports and collaboration. Long dense strokes need performance checks.
-
-The upstream default stroke-generation policy is retained. Preservation is an
-explicit opt-in; no claim is made that it suits every brush. Check default/old
-configuration loading, saving/reloading both choices, and toggling between strokes.
+On a build machine, check light-heavy-light strokes, stationary pressure, dots,
+corners, transparency, long strokes, cancel/pan/zoom/DPI changes, erasing, undo,
+save/reopen, export and collaboration. The combined fork received positive subjective
+feedback on Surface Pro 11 with Metapen M2; this isolated PR still needs testing.
