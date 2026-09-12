@@ -1155,17 +1155,8 @@ void FileSelectScreen::settings_view() {
                     checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
                     checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
                     slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
-                    slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
-                    checkbox_boolean_field(gui, "pen local enabled", "Pen brush: local wobble correction (experimental)", &main.conf.tabletOptions.penFilter.enabled);
-                    slider_scalar_field(gui, "pen local radius", "Local radius (DIP)", &main.conf.tabletOptions.penFilter.radius, 4.0, 20.0, {.decimalPrecision = 1});
-                    slider_scalar_field(gui, "pen local window", "Live-tail revision window (seconds)", &main.conf.tabletOptions.penFilter.window, 0.040, 0.200, {.decimalPrecision = 3});
-                    slider_scalar_field(gui, "pen local cap", "Maximum correction (DIP)", &main.conf.tabletOptions.penFilter.cap, 0.0, 6.0, {.decimalPrecision = 1});
-                    text_label(gui, "Suggested parameters: 12 DIP / 0.120 s / 4 DIP. Changes apply to the next stroke.");
-                    text_label(gui, "Tip stays at reported position; recent line can revise. Larger windows can soften detail.");
-                    text_label(gui, "Wobble correction requires Preserve per-point pen pressure in Brush settings.");
-                    if (!main.toolConfig.brush.preservePenPressure && main.conf.tabletOptions.penFilter.enabled)
-                        text_label(gui, "Wobble correction is inactive while original brush smoothing is selected.");
-                    text_label(gui, "Brush uses original pressure smoothing unless Preserve per-point pen pressure is enabled in Brush settings.");
+                    slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Width propagation (smoothed brush / eraser)", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
+                    text_label(gui, "Pen brush pressure response is selected in the Brush panel. Propagation also affects the eraser.");
                     checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
                     checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
                     text_label(gui, "VSync:");

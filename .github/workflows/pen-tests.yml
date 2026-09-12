@@ -6,20 +6,11 @@ on:
 permissions:
   contents: read
 jobs:
-  pressure:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Test pressure mapping
-        run: |
-          python3 tests/check_pen_pressure_setting.py
-          cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
-          cmake --build build-tests --parallel
-          ctest --test-dir build-tests --output-on-failure
   filter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: git submodule update --init deps/pen-stabilizer
       - uses: actions/checkout@v4
         with:
           repository: alexiokay/pen-trace-lab
@@ -27,6 +18,8 @@ jobs:
           path: reference
       - name: Test against the original PenTraceLab implementation
         run: |
+          python3 tests/check_pen_pressure_setting.py
+          python3 tests/check_pen_library.py
           cmake -S tests -B build-tests -DPENTRACE_REFERENCE="$PWD/reference" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
           cmake --build build-tests --parallel
           ctest --test-dir build-tests --output-on-failure
@@ -38,6 +31,7 @@ jobs:
         arch: [x64, ARM64]
     steps:
       - uses: actions/checkout@v4
+      - run: git submodule update --init deps/pen-stabilizer
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -50,7 +44,7 @@ jobs:
           tar -xf sdl.tar.gz
           python tests/check_sdl_recipe.py SDL3-3.4.16
           if ($LASTEXITCODE) { throw 'SDL patch failed' }
-      - name: Compile patched Windows input and history tests
+      - name: Compile patched Windows input and portable filter tests
         shell: pwsh
         run: |
           cmake -S tests -B build-tests -A ${{ matrix.arch }} "-DSDL_SOURCE=$pwd/SDL3-3.4.16"

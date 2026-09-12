@@ -257,6 +257,7 @@ void MainProgram::load_config() {
         }
         catch(...) {}
     } catch(...) {}
+    toolConfig.brush.migrateCorrection(conf.tabletOptions.penFilter.enabled);
     conf.load_palettes();
     g.load_theme(conf.configPath, conf.themeCurrentlyLoaded);
     conf.load_licenses();

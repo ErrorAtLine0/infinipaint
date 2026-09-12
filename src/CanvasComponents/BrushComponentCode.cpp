@@ -374,24 +374,23 @@ void fix_tip(std::vector<BrushPoint>& brushPoints) {
         brushPoints[brushPoints.size() - 2].width = brushPoints[brushPoints.size() - 1].width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width);
 }
 
-void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath) {
-    genData.penPath = useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN;
-    if (genData.penPath) {
+void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath, bool uniformPeakWidth, bool smoothSampleWidths) {
+    if (useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN) {
         genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
             drawP.world.main.conf.tabletOptions.brushMinimumSize,
             drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth);
-    } else if (button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
-        // Original upstream mapping for the default brush path and the eraser.
+    } else if(button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
         genData.penWidth = drawP.world.main.input.pen.pressure;
-        if (genData.penWidth != 0.0f) {
+        if(genData.penWidth != 0.0f) {
             const float minimum = drawP.world.main.conf.tabletOptions.brushMinimumSize;
             genData.penWidth = minimum + genData.penWidth * (1.0f - minimum);
         }
-    } else {
-        genData.penWidth = 1.0f;
     }
+    else
+        genData.penWidth = 1.0f;
 
     float width = brushSize * genData.penWidth;
+    genData.sampleWidths.reset(uniformPeakWidth, width, smoothSampleWidths, drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
     genData.coords = strokeCoordSpace;
 
     genData.brushPoints.clear();
@@ -400,6 +399,7 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     p.width = width;
     genData.prevPointUnaltered = p.pos;
     genData.deviceType = button.deviceType;
+    genData.penPath = useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN;
     genData.penId = button.penId;
     genData.penCamera = drawP.world.drawData.cam.c;
     genData.penScreenOffset = drawP.world.main.input.screenOffset;
@@ -419,8 +419,8 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
 
 void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, uint64_t timestamp) {
     if (genData.penPath) {
-        // The input adapter caches this report's pressure before its motion.
-        // Appending a point never revisits the width of a preceding point.
+        // Axis events update pressure before the matching native motion event.
+        // Never modify the previous point using the next sample's pressure.
         genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
             drawP.world.main.conf.tabletOptions.brushMinimumSize,
             drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth);
@@ -429,11 +429,14 @@ void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
             timestamp * 1e-9, brushSize * genData.penWidth}, timestamp != 0)) return;
         const auto& positions = genData.stabilizer.positions();
         const auto& samples = genData.stabilizer.samples();
+        const bool widthsChanged = genData.sampleWidths.append(samples.back().width);
         genData.brushPoints.resize(positions.size());
-        for (size_t i=genData.stabilizer.changedBegin(); i<positions.size(); ++i) {
+        // Peak width may revise every width, independently of frozen positions.
+        const size_t changed = widthsChanged ? 0 : genData.stabilizer.changedBegin();
+        for (size_t i=changed; i<positions.size(); ++i) {
             const Vector2f screen{static_cast<float>(positions[i].x*genData.penDisplayScale),
                 static_cast<float>(positions[i].y*genData.penDisplayScale)};
-            genData.brushPoints[i] = {genData.coords.to_space(genData.penCamera.from_space(screen)), samples[i].width};
+            genData.brushPoints[i] = {genData.coords.to_space(genData.penCamera.from_space(screen)), genData.sampleWidths.output(samples[i].width,i)};
         }
         return;
     }
@@ -493,6 +496,12 @@ bool pen_mapping_changed(DrawingProgram& drawP, const BrushStrokeGenerationData&
         (genData.penScreenOffset-drawP.world.main.input.screenOffset).squaredNorm() != 0 ||
         position != genData.penWindowPosition ||
         std::abs(genData.penDisplayScale-SDL_GetWindowDisplayScale(drawP.world.main.window.sdlWindow)) > .001f;
+}
+
+void finish_pen(DrawingProgram&, BrushStrokeGenerationData&, const InputManager::MouseButtonCallbackArgs&) {
+    // The last in-contact report is already the exact live endpoint. A lift,
+    // hover or cancellation report is not another drawing point. No flush,
+    // prediction, appended endpoint or whole-stroke reshaping is necessary.
 }
 
 void pen_pressure(DrawingProgram& drawP, BrushStrokeGenerationData& genData, float brushSize) {

@@ -1,58 +1,81 @@
-# Optional local pen correction
+# Optional shared-source pen correction
 
-Depends on the input and direct-pressure-path changes documented in
-WINDOWS_PEN_INPUT.md and PEN_PRESSURE.md. Correction is opt-in in this upstream
-proposal; it is not an update to saved drawings or the eraser.
+Depends on PR #96 (native input) and #97 (pressure response/sample path).
+The original Smoothed pressure mode with correction Off remains the default.
+Graphite styling, movable panels and cursor changes are NOT part of this PR.
 
-## Algorithm and settings
+## Shared library, not another copy
 
-Streaming port of PenTraceLab 0.4.0 localFilter, commit
-ef6555a6defd12b8dde5afc408df4975eb4492b2 (MIT notice included in app licenses).
+The implementation lives in [pen-stabilizer](https://github.com/alexiokay/pen-stabilizer),
+MIT-licensed C++17 header-only source. Git submodule deps/pen-stabilizer pins
+**adbdce4e902433fcd14fba16e08863f2ec909f79**, package **v0.1.0**, algorithm revision **1**.
+src/PenStabilizer.hpp is only the InfiniPaint validation/type adapter.
+CMake links an INTERFACE target: no DLL, service, executable or runtime download.
 
-The filter integrates symmetric arc-length neighborhoods, applies only the
-local-normal component of displacement, tapers at corners/endpoints and clamps
-the maximum correction. Suggested settings are 12 DIP radius, 120 ms live-tail
-revision window and 4 DIP cap, independent of brush width and canvas zoom.
-Settings are captured at contact-down; configuration has a versioned key.
+On the build machine, before configuring:
+```sh
+git submodule update --init deps/pen-stabilizer
+```
+Source ZIPs from GitHub omit submodule contents; use a recursive clone or supply
+the exact pinned source with its LICENSE. Normal recursive setup also works.
+A missing dependency produces an explicit CMake error. Build scripts/ARM64
+configuration from the creator remain unchanged.
 
-The current tip stays at the last in-contact report. A recent tail can revise
-as future measured samples arrive; older points freeze. There is no prediction,
-global line snapping, or post-lift catch-up. Correction requires the Brush panel's
-**Preserve per-point pen pressure** option, which defaults off. With preservation
-off, upstream's original smoothing is used even if a saved filter setting is on;
-the settings UI explains that correction is inactive. With preservation on,
-turning correction off retains the direct unfiltered pen path. Both choices are
-captured at stroke start; the filter never silently opts a brush into preservation.
+[PenTraceLab](https://github.com/alexiokay/pen-trace-lab) 0.4.1 pins the same revision
+and calls filterBatch for its local-correction candidate. InfiniPaint uses append
+for live contact reports. Other Lab comparison candidates are not this filter.
+The CI oracle intentionally remains an independent older diagnostic implementation
+at ef6555a6defd12b8dde5afc408df4975eb4492b2, not the shared code testing itself.
+[Shared overview](https://github.com/alexiokay/pen-tools) explains components and versioning.
 
-This is not recovery of ground-truth pen movement. Larger windows/radii can
-soften intended detail. Slow diagonals are not guaranteed to become straight.
-No universal hardware-wobble elimination or zero-latency claim is made.
+## Pressure and position are independent
 
-## Scope and evidence
+Enable Local wobble correction in the Brush panel (desktop or phone). It works
+with all three pressure modes; changing pressure mode does not toggle correction.
+Settings and width policy are captured at contact-down.
 
-Source positions/timestamps/widths remain immutable while generating a stroke.
-The existing file/network format stores derived mesh geometry, not recoverable
-raw reports. Pressure is not re-filtered by the positional algorithm.
-Transform changes end a stroke; timestamp discontinuities split filter runs.
-The eraser is excluded because revising an already-applied erase path is unsafe.
+| Pressure response | Correction Off | Correction On |
+| --- | --- | --- |
+| Smoothed (default) | Unchanged original generation | Corrected sample path with width propagation |
+| Preserve samples | Raw dense sample path, individual widths | Corrected positions, individual widths |
+| Uniform peak width | Raw dense sample path, whole-stroke peak | Corrected positions, whole-stroke peak |
 
-A separate diagnostic comparison on a user's device motivated the defaults,
-and the complete fork received positive user feedback. This is not controlled
-independent physical-ground-truth validation; private recordings are not included.
+Smoothed + On uses dense reports, not upstream midpoint spacing/Catmull-Rom.
+The same propagation factor can therefore feel different because sample density
+differs. This is not advertised as exact original interpolation with correction On.
+Earlier widths may change in Smoothed/Peak while old corrected positions freeze.
+Source positions, timestamps and widths are never rewritten.
 
-CI checks every live prefix against the pinned original diagnostic implementation
-at 60/120/240/672 Hz for noisy paths, circles, corners, stationary points, equal
-timestamps and gaps. Other invariants cover endpoint preservation, frozen prefixes,
-rotation equivariance, Off mode, displacement caps and unchanged sample widths.
-Linux tests run with ASan/UBSan. Windows input compilation/testing is inherited
-from the first PR. These are not full application builds or GUI/device tests.
+A one-time config migration preserves effective behavior of older fork builds:
+a saved enabled filter that was inactive under Original is switched Off, once.
+Preserve/Peak retain their saved filter choice. A persisted correctionIndependent
+marker prevents later mode changes or reloads from switching it off again.
+Fresh configuration defaults Off.
 
-## Before considering a default change
+## Algorithm and limits
 
-Review handwriting detail, slow diagonals, corners, pressure, transparency,
-cancellation, DPI/zoom, long-stroke performance, undo, save/reopen, exports and
-collaboration. Mesh generation still rebuilds the whole live stroke per frame;
-the bounded filter tail is not a complete rendering-performance redesign.
+Symmetric arc-length neighborhoods, local-normal projection, bounded displacement,
+corner/endpoint tapering and a frozen prefix. Defaults: radius 12 DIP, recent-tail
+revision window 0.120 seconds, correction cap 4 DIP. The newest contact tip is exact;
+the recent trail may revise as future samples arrive. No prediction, global line
+snapping or post-lift catch-up. Timestamp discontinuities split neighborhoods.
+Eraser/mouse/touch are not filtered. Destructive erasing must not use a revisable trail.
 
-Please treat this draft as an optional feature proposal. Input correctness and
-pressure preservation can be considered independently of accepting this filter.
+This cannot recover unknown physical ground truth or guarantee eliminating slow
+diagonal wobble. Larger windows may erase intended detail. Whole-stroke storage
+and mesh rebuilding costs remain; revision duration does not bound sample count.
+Existing drawing formats store derived meshes, not raw reports.
+
+## Validation and update policy
+
+CI: independent oracle at 60/120/240/672 Hz, endpoint/frozen-prefix/cap/rotation/Off
+invariants, source-width immutability, all pressure modes, migration, reset,
+Linux sanitizers, patched SDL x64/ARM64 compilation and native x64 input tests.
+These are NOT full InfiniPaint builds or GUI/physical-pen acceptance tests.
+Test slow diagonals, handwriting, corners, transparency, cancel, pan/zoom/DPI,
+long strokes, selection/deletion, erasing, undo, save/reopen, export and collaboration.
+
+To update: review a library release, explicitly change the pinned commit, run the
+oracle/invariants, replay Lab recordings locally, then build/device-test consumers.
+Each app has its own version. Algorithm changes need a documented behavior revision.
+Do not automatically follow library main. Retain the pinned MIT license on vendoring.
