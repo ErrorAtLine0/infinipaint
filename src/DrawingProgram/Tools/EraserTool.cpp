@@ -93,6 +93,10 @@ void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::Mouse
         }
         else if(!button.down && isErasing && button.deviceType == genData.deviceType &&
             (button.deviceType != InputManager::MouseDeviceType::PEN || button.penId == genData.penId)) {
+            // A contact motion and release can arrive before the next frame.
+            // Apply the pending measured segment, not the previous frame's path.
+            if (eraserChanged)
+                erasePath = BrushComponentCode::brush_stroke_to_skpath(genData.brushPoints, true);
             // If not real time eraser, we can benefit from simplifying the path
             std::optional<SkPath> simplified = Simplify(erasePath);
             if(simplified.has_value())
