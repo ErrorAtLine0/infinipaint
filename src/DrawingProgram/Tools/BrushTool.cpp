@@ -70,7 +70,8 @@ void BrushTool::input_mouse_button_on_canvas_callback(const InputManager::MouseB
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newMeshContainer);
             commit_data(false);
         }
-        else if(!button.down && objInfoBeingEdited)
+        else if(!button.down && objInfoBeingEdited && button.deviceType == genData.deviceType &&
+            (button.deviceType != InputManager::MouseDeviceType::PEN || button.penId == genData.penId))
             commit_stroke();
     }
 }
@@ -98,7 +99,8 @@ void BrushTool::commit_data(bool final) {
 }
 
 void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(objInfoBeingEdited) {
+    if(objInfoBeingEdited && motion.deviceType == genData.deviceType &&
+        (motion.deviceType != InputManager::MouseDeviceType::PEN || (motion.penContact && motion.penId == genData.penId))) {
         auto& toolConfig = drawP.world.main.toolConfig;
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
         BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value());
