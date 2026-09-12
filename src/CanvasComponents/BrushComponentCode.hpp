@@ -17,6 +17,7 @@
  */
 
 #pragma once
+#include "../PenPressure.hpp"
 #include "../CoordSpaceHelper.hpp"
 #include <include/core/SkPathBuilder.h>
 #include "../InputManager.hpp"
@@ -45,8 +46,13 @@ namespace BrushComponentCode {
         bool addedTemporaryPoint = false;
         std::vector<BrushComponentCode::BrushPoint> brushPoints;
         Vector2f prevPointUnaltered = {0, 0};
+        float penDisplayScale = 1;
+        bool penPath = false;
+        uint32_t penId = 0;
+        CoordSpaceHelper penCamera;
+        Vector2f penScreenOffset = {0, 0};
+        Vector2i penWindowPosition = {0, 0};
         InputManager::MouseDeviceType deviceType = InputManager::MouseDeviceType::MOUSE;
-        SDL_PenID penId = 0;
         float penWidth = 1.0f;
         CoordSpaceHelper coords;
     };
@@ -57,14 +63,15 @@ namespace BrushComponentCode {
     void clipper2_polygons_to_skpath_builder(SkPathBuilder& skPathBuilder, const Clipper2Lib::PathsD& clipperPath);
     std::optional<SkPath> skpath_simplify_only_lines(const SkPath& skPath);
 
-    SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps);
+    SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps, bool faithfulPolyline = false);
     SkPath create_triangles(const std::vector<BrushPoint>& regularPoints, const std::vector<BrushPoint>& smoothedPoints, bool hasRoundCaps);
     std::vector<size_t> get_wedge_indices(const std::vector<BrushPoint>& points);
     std::vector<BrushPoint> smooth_points(const std::vector<BrushPoint>& points, size_t beginIndex, size_t endIndex, unsigned numOfDivisions);
     void smooth_out_points(std::vector<BrushPoint>& brushPoints, float smoothFactor);
     void fix_tip(std::vector<BrushPoint>& brushPoints);
-    void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize);
-    void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize);
+    void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath = true);
+    void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, uint64_t timestamp = 0);
+    bool pen_mapping_changed(DrawingProgram& drawP, const BrushStrokeGenerationData& genData);
     void pen_pressure(DrawingProgram& drawP, BrushStrokeGenerationData& genData, float brushSize);
     bool extensive_point_checking(const std::vector<BrushPoint>& points, const Vector2f& newPoint, float minimumDistance);
     bool extensive_point_checking_back(const std::vector<BrushPoint>& points, const Vector2f& newPoint);

@@ -6,6 +6,15 @@ on:
 permissions:
   contents: read
 jobs:
+  pressure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test pressure mapping
+        run: |
+          cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build build-tests --parallel
+          ctest --test-dir build-tests --output-on-failure
   windows-input:
     runs-on: windows-2022
     strategy:

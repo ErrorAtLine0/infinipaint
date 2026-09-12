@@ -17,6 +17,8 @@
  */
 
 #include "BrushComponentCode.hpp"
+#include <algorithm>
+#include <SDL3/SDL_video.h>
 #include <Helpers/ConvertVec.hpp>
 #include <Helpers/MathExtras.hpp>
 #include <clipper2/clipper.h>
@@ -112,7 +114,21 @@ std::optional<SkPath> skpath_simplify_only_lines(const SkPath& skPath) {
     return newPath.detach();
 }
 
-SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps) {
+SkPath brush_stroke_to_skpath(const std::vector<BrushPoint>& brushPoints, bool hasRoundCaps, bool faithfulPolyline) {
+    if (brushPoints.empty()) return SkPath();
+    if (faithfulPolyline) {
+        // Remove only coincident vertices for valid outline normals, not detail
+        // through a brush-size-dependent spacing or another positional filter.
+        std::vector<BrushPoint> points;
+        points.reserve(brushPoints.size());
+        for (const auto& p : brushPoints) {
+            if (!p.pos.allFinite() || !std::isfinite(p.width)) continue;
+            if (!points.empty() && (p.pos-points.back().pos).squaredNorm() == 0)
+                points.back().width = std::max(points.back().width, p.width);
+            else points.push_back(p);
+        }
+        return create_triangles(points, points, hasRoundCaps);
+    }
     std::vector<BrushPoint> points = smooth_points(brushPoints, 0, brushPoints.size() - 1, DEFAULT_SMOOTHNESS);
     return create_triangles(brushPoints, points, hasRoundCaps);
 }
@@ -358,16 +374,11 @@ void fix_tip(std::vector<BrushPoint>& brushPoints) {
         brushPoints[brushPoints.size() - 2].width = brushPoints[brushPoints.size() - 1].width = std::max(brushPoints[brushPoints.size() - 1].width, brushPoints[brushPoints.size() - 2].width);
 }
 
-void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize) {
-    if(button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
-        genData.penWidth = drawP.world.main.input.pen.pressure;
-        if(genData.penWidth != 0.0f) {
-            float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
-            genData.penWidth = brushMinSize + genData.penWidth * (1.0f - brushMinSize);
-        }
-    }
-    else
-        genData.penWidth = 1.0f;
+void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath) {
+    genData.penWidth = button.deviceType == InputManager::MouseDeviceType::PEN ?
+        PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
+            drawP.world.main.conf.tabletOptions.brushMinimumSize,
+            drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) : 1.0f;
 
     float width = brushSize * genData.penWidth;
     genData.coords = strokeCoordSpace;
@@ -378,12 +389,31 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     p.width = width;
     genData.prevPointUnaltered = p.pos;
     genData.deviceType = button.deviceType;
+    genData.penPath = useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN;
     genData.penId = button.penId;
+    genData.penCamera = drawP.world.drawData.cam.c;
+    genData.penScreenOffset = drawP.world.main.input.screenOffset;
+    SDL_GetWindowPosition(drawP.world.main.window.sdlWindow,
+        &genData.penWindowPosition.x(), &genData.penWindowPosition.y());
+    // Pixel density is not Windows display scaling (often 1 even at 200% DPI).
+    genData.penDisplayScale = std::max(0.1f, SDL_GetWindowDisplayScale(drawP.world.main.window.sdlWindow));
     genData.brushPoints.emplace_back(p);
     genData.addedTemporaryPoint = false;
 }
 
-void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize) {
+void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, uint64_t /* timestamp */) {
+    if (genData.penPath) {
+        // The input adapter caches this report's pressure before its motion.
+        // Appending a point never revisits the width of a preceding point.
+        genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
+            drawP.world.main.conf.tabletOptions.brushMinimumSize,
+            drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth);
+        const float width = brushSize * genData.penWidth;
+        if (!motionPos.allFinite() || !std::isfinite(width) || width < 0) return;
+        genData.brushPoints.push_back({
+            genData.coords.to_space(genData.penCamera.from_space(motionPos)), width});
+        return;
+    }
     BrushComponentCode::BrushPoint p;
     p.pos = genData.coords.to_space(drawP.world.drawData.cam.c.from_space(motionPos));
     p.width = brushSize * genData.penWidth;
@@ -432,7 +462,18 @@ void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     smooth_out_points(genData.brushPoints, drawP.world.main.conf.tabletOptions.brushPressureSmoothingFactor);
 }
 
+bool pen_mapping_changed(DrawingProgram& drawP, const BrushStrokeGenerationData& genData) {
+    if (!genData.penPath) return false;
+    Vector2i position = genData.penWindowPosition;
+    SDL_GetWindowPosition(drawP.world.main.window.sdlWindow, &position.x(), &position.y());
+    return genData.penCamera != drawP.world.drawData.cam.c ||
+        (genData.penScreenOffset-drawP.world.main.input.screenOffset).squaredNorm() != 0 ||
+        position != genData.penWindowPosition ||
+        std::abs(genData.penDisplayScale-SDL_GetWindowDisplayScale(drawP.world.main.window.sdlWindow)) > .001f;
+}
+
 void pen_pressure(DrawingProgram& drawP, BrushStrokeGenerationData& genData, float brushSize) {
+    if (genData.penPath || genData.brushPoints.empty()) return;
     if(drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
         if(genData.penWidth != 0.0f) {
             float brushMinSize = drawP.world.main.conf.tabletOptions.brushMinimumSize;
