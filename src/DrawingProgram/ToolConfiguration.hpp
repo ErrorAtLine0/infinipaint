@@ -28,7 +28,8 @@ class ToolConfiguration {
         struct BrushToolConfig {
             bool hasRoundCaps = true;
             float relativeWidth = 15.0f;
-            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(BrushToolConfig, hasRoundCaps, relativeWidth)
+            bool preservePenPressure = false;
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(BrushToolConfig, hasRoundCaps, relativeWidth, preservePenPressure)
         } brush;
 
         struct EraserToolConfig {
