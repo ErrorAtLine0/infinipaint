@@ -397,21 +397,34 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
         &genData.penWindowPosition.x(), &genData.penWindowPosition.y());
     // Pixel density is not Windows display scaling (often 1 even at 200% DPI).
     genData.penDisplayScale = std::max(0.1f, SDL_GetWindowDisplayScale(drawP.world.main.window.sdlWindow));
+    auto settings = drawP.world.main.conf.tabletOptions.penFilter;
+    settings.enabled = settings.enabled && genData.penPath;
+    genData.stabilizer.reset(settings);
+    if (genData.penPath) genData.stabilizer.append({
+        {button.pos.x()/genData.penDisplayScale, button.pos.y()/genData.penDisplayScale},
+        button.timestamp * 1e-9, width});
     genData.brushPoints.emplace_back(p);
     genData.addedTemporaryPoint = false;
 }
 
-void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, uint64_t /* timestamp */) {
+void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, uint64_t timestamp) {
     if (genData.penPath) {
         // The input adapter caches this report's pressure before its motion.
         // Appending a point never revisits the width of a preceding point.
         genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
             drawP.world.main.conf.tabletOptions.brushMinimumSize,
             drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth);
-        const float width = brushSize * genData.penWidth;
-        if (!motionPos.allFinite() || !std::isfinite(width) || width < 0) return;
-        genData.brushPoints.push_back({
-            genData.coords.to_space(genData.penCamera.from_space(motionPos)), width});
+        if (!genData.stabilizer.append({
+            {motionPos.x()/genData.penDisplayScale, motionPos.y()/genData.penDisplayScale},
+            timestamp * 1e-9, brushSize * genData.penWidth}, timestamp != 0)) return;
+        const auto& positions = genData.stabilizer.positions();
+        const auto& samples = genData.stabilizer.samples();
+        genData.brushPoints.resize(positions.size());
+        for (size_t i=genData.stabilizer.changedBegin(); i<positions.size(); ++i) {
+            const Vector2f screen{static_cast<float>(positions[i].x*genData.penDisplayScale),
+                static_cast<float>(positions[i].y*genData.penDisplayScale)};
+            genData.brushPoints[i] = {genData.coords.to_space(genData.penCamera.from_space(screen)), samples[i].width};
+        }
         return;
     }
     BrushComponentCode::BrushPoint p;

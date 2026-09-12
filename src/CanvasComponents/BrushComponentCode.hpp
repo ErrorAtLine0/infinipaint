@@ -18,6 +18,7 @@
 
 #pragma once
 #include "../PenPressure.hpp"
+#include "../PenStabilizer.hpp"
 #include "../CoordSpaceHelper.hpp"
 #include <include/core/SkPathBuilder.h>
 #include "../InputManager.hpp"
@@ -46,6 +47,7 @@ namespace BrushComponentCode {
         bool addedTemporaryPoint = false;
         std::vector<BrushComponentCode::BrushPoint> brushPoints;
         Vector2f prevPointUnaltered = {0, 0};
+        PenInput::Stabilizer stabilizer;
         float penDisplayScale = 1;
         bool penPath = false;
         uint32_t penId = 0;

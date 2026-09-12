@@ -1566,7 +1566,14 @@ void Toolbar::general_settings_inner_gui() {
                         input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &main.conf.tabletOptions.rightClickButton, 1, 255);
                         slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
                         slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
-                        text_label(gui, "Pen brush preserves per-point pressure; this smoothing factor applies to other tools.");
+                        checkbox_boolean_field(gui, "pen local enabled", "Pen brush: local wobble correction (experimental)", &main.conf.tabletOptions.penFilter.enabled);
+                        slider_scalar_field(gui, "pen local radius", "Local radius (DIP)", &main.conf.tabletOptions.penFilter.radius, 4.0, 20.0, {.decimalPrecision = 1});
+                        slider_scalar_field(gui, "pen local window", "Live-tail revision window (seconds)", &main.conf.tabletOptions.penFilter.window, 0.040, 0.200, {.decimalPrecision = 3});
+                        slider_scalar_field(gui, "pen local cap", "Maximum correction (DIP)", &main.conf.tabletOptions.penFilter.cap, 0.0, 6.0, {.decimalPrecision = 1});
+                        text_label(gui, "Suggested parameters: 12 DIP / 0.120 s / 4 DIP. Changes apply to the next stroke.");
+                        text_label(gui, "Tip stays at reported position; recent line can revise. Larger windows can soften detail.");
+                        text_label(gui, "No prediction. Off uses a direct pen path. Eraser keeps upstream behavior.");
+                        text_label(gui, "Pen brush pressure is paired per point, without additional pressure smoothing.");
                         checkbox_boolean_field(gui, "tablet zoom with button method", "Zoom when pen touching tablet and pen button assigned to middle click is held", &main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld);
                         #ifdef _WIN32
                             checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &main.conf.tabletOptions.ignoreMouseMovementWhenPenInProximity);

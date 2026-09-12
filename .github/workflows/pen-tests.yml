@@ -1,4 +1,4 @@
-name: Pen input checks
+name: Pen integration checks
 on:
   push:
   pull_request:
@@ -13,6 +13,20 @@ jobs:
       - name: Test pressure mapping
         run: |
           cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build build-tests --parallel
+          ctest --test-dir build-tests --output-on-failure
+  filter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: alexiokay/pen-trace-lab
+          ref: ef6555a6defd12b8dde5afc408df4975eb4492b2
+          path: reference
+      - name: Test against the original PenTraceLab implementation
+        run: |
+          cmake -S tests -B build-tests -DPENTRACE_REFERENCE="$PWD/reference" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
           cmake --build build-tests --parallel
           ctest --test-dir build-tests --output-on-failure
   windows-input:
