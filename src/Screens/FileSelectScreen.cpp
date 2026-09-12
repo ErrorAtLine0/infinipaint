@@ -1162,8 +1162,10 @@ void FileSelectScreen::settings_view() {
                     slider_scalar_field(gui, "pen local cap", "Maximum correction (DIP)", &main.conf.tabletOptions.penFilter.cap, 0.0, 6.0, {.decimalPrecision = 1});
                     text_label(gui, "Suggested parameters: 12 DIP / 0.120 s / 4 DIP. Changes apply to the next stroke.");
                     text_label(gui, "Tip stays at reported position; recent line can revise. Larger windows can soften detail.");
-                    text_label(gui, "No prediction. Off uses a direct pen path. Eraser keeps upstream behavior.");
-                    text_label(gui, "Pen brush pressure is paired per point, without additional pressure smoothing.");
+                    text_label(gui, "Wobble correction requires Preserve per-point pen pressure in Brush settings.");
+                    if (!main.toolConfig.brush.preservePenPressure && main.conf.tabletOptions.penFilter.enabled)
+                        text_label(gui, "Wobble correction is inactive while original brush smoothing is selected.");
+                    text_label(gui, "Brush uses original pressure smoothing unless Preserve per-point pen pressure is enabled in Brush settings.");
                     checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
                     checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
                     text_label(gui, "VSync:");

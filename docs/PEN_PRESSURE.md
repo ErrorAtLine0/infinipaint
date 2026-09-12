@@ -10,7 +10,14 @@ backwards width smoothing and final tip correction can widen previous parts
 of the same stroke. This proposal deliberately changes that behavior for pen
 brush strokes; it is not a claim that pressure smoothing is always undesirable.
 
-New pen strokes append each contact sample with its own pressure-derived width.
+The Brush panel (desktop and phone) exposes **Preserve per-point pen pressure**.
+It defaults to **off**, including when loading older configuration without the
+new key. Off uses upstream's original stroke/pressure smoothing. Enabling it
+selects the direct pressure-preserving path for subsequent pen brush strokes;
+changing it does not reinterpret an active stroke or existing drawings.
+The choice is saved with the other brush settings.
+
+With this option enabled, pen strokes append each contact sample with its own pressure-derived width.
 The same mapping is used at contact-down and motion. The pressure factor and
 minimum size remain configurable; disabling pressure gives a constant width.
 Pressure changes do not run backwards through existing pen points.
@@ -22,7 +29,7 @@ vertices are compacted only for outline construction; overlapping marks can
 still visually cover one another.
 
 The eraser and mouse/touch paths retain upstream smoothing. UI text clarifies
-that the old pressure smoothing control no longer controls pen brush strokes.
+that the old pressure smoothing control is bypassed only when preservation is enabled.
 Changing camera transforms, window position or DPI ends the active pen stroke;
 lift and start again rather than reinterpreting old screen samples.
 
@@ -41,6 +48,6 @@ should not expand when pressure increases later. Also test stationary pressure,
 dots, sharp turns, overlapping/translucent strokes, pan/zoom interruption, undo,
 save/reopen, exports and collaboration. Long dense strokes need performance checks.
 
-Maintainer decision: this draft changes the pen brush's default stroke-generation
-policy. Keeping a selectable legacy pressure-smoothing policy could be preferable
-for compatibility; no claim is made that the new behavior suits every brush.
+The upstream default stroke-generation policy is retained. Preservation is an
+explicit opt-in; no claim is made that it suits every brush. Check default/old
+configuration loading, saving/reloading both choices, and toggling between strokes.

@@ -375,10 +375,21 @@ void fix_tip(std::vector<BrushPoint>& brushPoints) {
 }
 
 void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize, bool useDirectPenPath) {
-    genData.penWidth = button.deviceType == InputManager::MouseDeviceType::PEN ?
-        PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
+    genData.penPath = useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN;
+    if (genData.penPath) {
+        genData.penWidth = PenInput::pressureFactor(drawP.world.main.input.pen.pressure,
             drawP.world.main.conf.tabletOptions.brushMinimumSize,
-            drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) : 1.0f;
+            drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth);
+    } else if (button.deviceType == InputManager::MouseDeviceType::PEN && drawP.world.main.conf.tabletOptions.pressureAffectsBrushWidth) {
+        // Original upstream mapping for the default brush path and the eraser.
+        genData.penWidth = drawP.world.main.input.pen.pressure;
+        if (genData.penWidth != 0.0f) {
+            const float minimum = drawP.world.main.conf.tabletOptions.brushMinimumSize;
+            genData.penWidth = minimum + genData.penWidth * (1.0f - minimum);
+        }
+    } else {
+        genData.penWidth = 1.0f;
+    }
 
     float width = brushSize * genData.penWidth;
     genData.coords = strokeCoordSpace;
@@ -389,7 +400,6 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     p.width = width;
     genData.prevPointUnaltered = p.pos;
     genData.deviceType = button.deviceType;
-    genData.penPath = useDirectPenPath && button.deviceType == InputManager::MouseDeviceType::PEN;
     genData.penId = button.penId;
     genData.penCamera = drawP.world.drawData.cam.c;
     genData.penScreenOffset = drawP.world.main.input.screenOffset;

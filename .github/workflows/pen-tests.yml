@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test pressure mapping
         run: |
+          python3 tests/check_pen_pressure_setting.py
           cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
           cmake --build build-tests --parallel
           ctest --test-dir build-tests --output-on-failure

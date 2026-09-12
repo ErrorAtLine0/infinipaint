@@ -17,8 +17,12 @@ Settings are captured at contact-down; configuration has a versioned key.
 
 The current tip stays at the last in-contact report. A recent tail can revise
 as future measured samples arrive; older points freeze. There is no prediction,
-global line snapping, or post-lift catch-up. Off retains the direct pen path
-from the pressure PR; it does not restore the old midpoint/Catmull-Rom path.
+global line snapping, or post-lift catch-up. Correction requires the Brush panel's
+**Preserve per-point pen pressure** option, which defaults off. With preservation
+off, upstream's original smoothing is used even if a saved filter setting is on;
+the settings UI explains that correction is inactive. With preservation on,
+turning correction off retains the direct unfiltered pen path. Both choices are
+captured at stroke start; the filter never silently opts a brush into preservation.
 
 This is not recovery of ground-truth pen movement. Larger windows/radii can
 soften intended detail. Slow diagonals are not guaranteed to become straight.
