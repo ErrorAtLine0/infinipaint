@@ -20,6 +20,8 @@ a positional filter or changing ARM64/Vulkan build scripts.
   proximity loss and focus loss terminate the preceding contact. Mouse/touch
   releases cannot consume a pen's release, and the synthetic release used when
   starting a pan retains its originating device.
+- An eraser release applies any pending measured motion before committing, even
+  if motion and release arrived in the same event batch before a render update.
 - SDL's Windows backend still represents native pens as one logical pen. This
   patch does not implement independent multi-pen tracking.
 
