@@ -141,7 +141,7 @@ struct MainStruct {
         #endif
     #elif USE_BACKEND_OPENGL
         unsigned kStencilBits = 8;
-        SDL_GLContext gl_context;
+        SDL_GLContext gl_context = nullptr;
         GLint defaultFBO = 0;
     #endif
 
@@ -153,12 +153,12 @@ struct MainStruct {
 
     std::unique_ptr<MainProgram> m;
     
-    SDL_Window* window;
+    SDL_Window* window = nullptr;
     
-    std::array<SDL_Cursor*, SDL_SYSTEM_CURSOR_COUNT> systemCursors;
+    std::array<SDL_Cursor*, SDL_SYSTEM_CURSOR_COUNT> systemCursors{};
     unsigned currentCursor = 0;
     
-    SkCanvas* canvas;
+    SkCanvas* canvas = nullptr;
 
     SDL_Surface* iconSurface = nullptr;
     std::string iconData;
@@ -168,6 +168,8 @@ struct MainStruct {
     std::filesystem::path configPath;
     std::filesystem::path homePath;
     std::ofstream logFile;
+
+    bool fileDownloaderInitialized = false;
 
     std::chrono::steady_clock::time_point lastRenderTimePoint = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point lastUpdateTimePoint = std::chrono::steady_clock::now();
@@ -283,6 +285,7 @@ void initialize_sdl(MainStruct& mS) {
     mS.m->window.sdlWindow = mS.window;
     if(mS.window == nullptr)
         throw std::runtime_error("[SDL_CreateWindow] " + std::string(SDL_GetError()));
+    mS.m->update_scale_and_density();
 
     if(load_file_to_string(mS.iconData, "data/progicons/icon.png")) {
         sk_sp<SkData> newData = SkData::MakeWithoutCopy(mS.iconData.c_str(), mS.iconData.size());
@@ -378,8 +381,10 @@ void initialize_sdl(MainStruct& mS) {
 }
 
 void sdl_terminate(MainStruct& mS) {
-    for(unsigned i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++)
-        SDL_DestroyCursor(mS.systemCursors[i]);
+    for(unsigned i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++) {
+        if(mS.systemCursors[i])
+            SDL_DestroyCursor(mS.systemCursors[i]);
+    }
     if(mS.iconSurface)
         SDL_DestroySurface(mS.iconSurface);
     if(mS.hiddenCursor)
@@ -425,6 +430,8 @@ const char* emscripten_before_unload(int eventType, const void *reserved, void *
 
 void init_logs(MainStruct& mS) {
     char* homePathSDL = SDL_GetCurrentDirectory();
+    if(!homePathSDL)
+        throw std::runtime_error("[SDL_GetCurrentDirectory] " + std::string(SDL_GetError()));
     mS.homePath = std::filesystem::path(homePathSDL);
     SDL_free(homePathSDL);
 #ifdef CONFIG_NEXT_TO_EXECUTABLE
@@ -433,6 +440,8 @@ void init_logs(MainStruct& mS) {
     mS.configPath = mS.homePath / CONFIG_FOLDER_NAME;
 #else
     char* configPathSDL = SDL_GetPrefPath("ErrorAtLine0", "infinipaint");
+    if(!configPathSDL)
+        throw std::runtime_error("[SDL_GetPrefPath] " + std::string(SDL_GetError()));
     mS.configPath = std::filesystem::path(configPathSDL);
     SDL_free(configPathSDL);
 #endif
@@ -452,6 +461,10 @@ void init_logs(MainStruct& mS) {
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
+#ifdef NDEBUG
+    try {
+#endif
+    *appstate = nullptr;
     std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
     for(int i = 1; i < argc; i++)
         listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(std::u8string_view(reinterpret_cast<char8_t*>(argv[i])))));
@@ -473,10 +486,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     init_logs(mS);
 
     FileDownloader::init();
-
-#ifdef NDEBUG
-    try {
-#endif
+    mS.fileDownloaderInitialized = true;
         mS.m = std::make_unique<MainProgram>();
         mS.m->logFile = &mS.logFile;
         mS.m->conf.configPath = mS.configPath;
@@ -493,7 +503,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
             else
                 mS.m->documentsPath = std::filesystem::path(documentsPathSDL);
         #endif
-        mS.m->update_scale_and_density();
         mS.m->load_config();
 
         initialize_sdl(mS);
@@ -582,7 +591,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #ifdef NDEBUG
     }
     catch(const std::exception& e) {
-        Logger::get().log(Logger::LogType::FATAL, e.what());
+        std::cerr << "[FATAL] " << e.what() << std::endl;
         return SDL_APP_FAILURE;
     }
 #endif
@@ -769,6 +778,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_PEN_PROXIMITY_OUT: {
+                mS.m->input.end_pen_contact(event->common.timestamp);
                 mS.m->input.pen.inProximity = false;
                 break;
             }
@@ -838,6 +848,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 break;
             }
             case SDL_EVENT_WINDOW_FOCUS_LOST: {
+                mS.m->input.end_pen_contact(event->common.timestamp);
                 mS.m->window.windowFocus = false;
                 mS.m->input_window_focus_lost();
                 break;
@@ -884,22 +895,31 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 // NOTE: On Android, SDL_AppQuit is triggered by onDestroy. onDestroy may or may not be called, and even if it is, it may only be partially called. You should not rely on it.
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
 #ifndef __ANDROID__
+    if(!appstate) {
+        SDL_Quit();
+        return;
+    }
+
     DrawingProgramCache::delete_all_draw_cache();
 
     MainStruct& mS = *((MainStruct*)appstate);
     try {
-        mS.m->save_config();
-        mS.m->early_destroy();
-        sdl_terminate(mS);
+        if(mS.m) {
+            mS.m->save_config();
+            mS.m->early_destroy();
+        }
     }
     catch(const std::exception& e) {
         Logger::get().log(Logger::LogType::FATAL, e.what());
     }
+    sdl_terminate(mS);
 
+    const bool fileDownloaderInitialized = mS.fileDownloaderInitialized;
     delete (&mS);
 
     SDL_Quit();
     
-    FileDownloader::cleanup();
+    if(fileDownloaderInitialized)
+        FileDownloader::cleanup();
 #endif
 }

@@ -557,6 +557,12 @@ void InputManager::backend_pen_button_up_update(const SDL_PenButtonEvent& e) {
 }
 
 void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
+    if (pen.isDown) {
+        const float pressure = pen.pressure;
+        end_pen_contact(e.timestamp);
+        pen.pressure = pressure;
+    }
+    pen.activeId = e.which;
     Vector2f mouseNewPos = backend_cursor_pos_calculation({e.x, e.y});
     mouse.set_pos(mouseNewPos);
 
@@ -574,7 +580,9 @@ void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
         .button = MouseButton::LEFT,
         .down = e.down,
         .clicks = pen.leftClicksSaved,
-        .pos = mouseNewPos
+        .pos = mouseNewPos,
+        .timestamp = e.timestamp,
+        .penId = e.which
     });
     main.input_pen_touch_callback({
         .down = e.down,
@@ -586,6 +594,7 @@ void InputManager::backend_pen_touch_down_update(const SDL_PenTouchEvent& e) {
 }
 
 void InputManager::backend_pen_touch_up_update(const SDL_PenTouchEvent& e) {
+    if (!pen.isDown || e.which != pen.activeId) return;
     Vector2f mouseNewPos = backend_cursor_pos_calculation({e.x, e.y});
     mouse.set_pos(mouseNewPos);
 
@@ -600,7 +609,9 @@ void InputManager::backend_pen_touch_up_update(const SDL_PenTouchEvent& e) {
         .button = MouseButton::LEFT,
         .down = e.down,
         .clicks = 0,
-        .pos = mouseNewPos
+        .pos = mouseNewPos,
+        .timestamp = e.timestamp,
+        .penId = e.which
     });
     main.input_pen_touch_callback({
         .down = e.down,
@@ -611,7 +622,19 @@ void InputManager::backend_pen_touch_up_update(const SDL_PenTouchEvent& e) {
     isTouchDevice = false;
 }
 
+void InputManager::end_pen_contact(uint64_t timestamp) {
+    if (!pen.isDown) return;
+    SDL_PenTouchEvent up{};
+    up.which = pen.activeId;
+    up.timestamp = timestamp;
+    up.eraser = pen.isEraser;
+    const auto pos = (pen.previousPos + screenOffset) / main.window.density;
+    up.x = pos.x(); up.y = pos.y();
+    backend_pen_touch_up_update(up);
+}
+
 void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
+    if (pen.isDown && e.which != pen.activeId) return;
     Vector2f mouseNewPos = backend_cursor_pos_calculation({e.x, e.y});
     mouse.set_pos(mouseNewPos);
 
@@ -622,7 +645,10 @@ void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
     main.input_mouse_motion_callback({
         .deviceType = MouseDeviceType::PEN,
         .pos = mouseNewPos,
-        .move = mouseRel
+        .move = mouseRel,
+        .timestamp = e.timestamp,
+        .penId = e.which,
+        .penContact = pen.isDown && (e.pen_state & SDL_PEN_INPUT_DOWN)
     });
     main.input_pen_motion_callback({
         .pos = mouseNewPos,
@@ -633,6 +659,7 @@ void InputManager::backend_pen_motion_update(const SDL_PenMotionEvent& e) {
 }
 
 void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
+    if (pen.isDown && e.which != pen.activeId) return;
     Vector2f mouseNewPos = backend_cursor_pos_calculation({e.x, e.y});
     mouse.set_pos(mouseNewPos);
 
@@ -645,7 +672,8 @@ void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
         main.input_pen_axis_callback({
             .pos = mouseNewPos,
             .axis = e.axis,
-            .value = pen.pressure
+            .value = pen.pressure,
+            .penId = e.which
         });
     }
 }
