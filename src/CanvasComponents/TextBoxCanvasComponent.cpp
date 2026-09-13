@@ -75,7 +75,7 @@ void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
         std::string currentText;
         a(loadedEditing, d.p1, d.p2, textColor, textSize, loadedCursor, currentText);
         textBox->insert({0, 0}, currentText);
-        textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<ColorTextStyleModifier>(textColor));
+        textBox->set_initial_text_style_modifier(std::make_shared<ColorTextStyleModifier>(textColor));
         textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<SizeTextStyleModifier>(textSize));
     }
 }
