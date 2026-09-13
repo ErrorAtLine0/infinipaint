@@ -9,4 +9,4 @@
 	url = https://github.com/libsdl-org/SDL.git
 [submodule "deps/pen-stabilizer"]
 	path = deps/pen-stabilizer
-	url = https://github.com/alexiokay/pen-stabilizer.git
+	url = https://github.com/PenTraceTools/pen-stabilizer.git

@@ -6,7 +6,7 @@ Graphite styling, movable panels and cursor changes are NOT part of this PR.
 
 ## Shared library, not another copy
 
-The implementation lives in [pen-stabilizer](https://github.com/alexiokay/pen-stabilizer),
+The implementation lives in [pen-stabilizer](https://github.com/PenTraceTools/pen-stabilizer),
 MIT-licensed C++17 header-only source. Git submodule deps/pen-stabilizer pins
 **adbdce4e902433fcd14fba16e08863f2ec909f79**, package **v0.1.0**, algorithm revision **1**.
 src/PenStabilizer.hpp is only the InfiniPaint validation/type adapter.
@@ -21,12 +21,12 @@ the exact pinned source with its LICENSE. Normal recursive setup also works.
 A missing dependency produces an explicit CMake error. Build scripts/ARM64
 configuration from the creator remain unchanged.
 
-[PenTraceLab](https://github.com/alexiokay/pen-trace-lab) 0.4.1 pins the same revision
+[PenTraceLab](https://github.com/PenTraceTools/pen-trace-lab) 0.4.1 pins the same revision
 and calls filterBatch for its local-correction candidate. InfiniPaint uses append
 for live contact reports. Other Lab comparison candidates are not this filter.
 The CI oracle intentionally remains an independent older diagnostic implementation
 at ef6555a6defd12b8dde5afc408df4975eb4492b2, not the shared code testing itself.
-[Shared overview](https://github.com/alexiokay/pen-tools) explains components and versioning.
+[Shared overview](https://github.com/PenTraceTools) explains components and versioning.
 
 ## Pressure and position are independent
 

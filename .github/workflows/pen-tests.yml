@@ -13,7 +13,7 @@ jobs:
       - run: git submodule update --init deps/pen-stabilizer
       - uses: actions/checkout@v4
         with:
-          repository: alexiokay/pen-trace-lab
+          repository: PenTraceTools/pen-trace-lab
           ref: ef6555a6defd12b8dde5afc408df4975eb4492b2
           path: reference
       - name: Test against the original PenTraceLab implementation
