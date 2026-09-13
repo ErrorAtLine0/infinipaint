@@ -123,6 +123,12 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
     if(button.deviceType == InputManager::MouseDeviceType::TOUCH && world.main.conf.disableTouchForDrawing)
         return;
 
+    // A mouse/touch release must not consume a pen stroke's eventual release.
+    if (controls.leftClickHeld && button.button == InputManager::MouseButton::LEFT &&
+        (button.deviceType != controls.leftPress.deviceType ||
+         (button.deviceType == InputManager::MouseDeviceType::PEN && button.penId != controls.leftPress.penId)))
+        return;
+
     auto buttonCallbacks = [&](const InputManager::MouseButtonCallbackArgs& b) {
         drawTool->input_mouse_button_on_canvas_callback(b);
     };
@@ -140,15 +146,17 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
             if(!world.main.g.gui.cursor_obstructed()) {
                 if(button.button == InputManager::MouseButton::LEFT && !controls.middleClickHeld) {
                     controls.leftClickHeld = true;
+                    controls.leftPress = button;
                     buttonCallbacks(button);
                 }
                 else if(button.button == InputManager::MouseButton::MIDDLE) {
                     if(controls.leftClickHeld) {
                         controls.leftClickHeld = false;
-                        InputManager::MouseButtonCallbackArgs leftReleaseCallback;
+                        auto leftReleaseCallback = controls.leftPress;
                         leftReleaseCallback.clicks = 0;
                         leftReleaseCallback.down = false;
                         leftReleaseCallback.pos = button.pos;
+                        leftReleaseCallback.timestamp = button.timestamp;
                         leftReleaseCallback.button = InputManager::MouseButton::LEFT;
                         buttonCallbacks(leftReleaseCallback);
                     }

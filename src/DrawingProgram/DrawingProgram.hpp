@@ -141,6 +141,7 @@ class DrawingProgram {
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;
             bool leftClickHeld = false;
+            InputManager::MouseButtonCallbackArgs leftPress{};
             bool middleClickHeld = false;
 
             DrawingProgramLayerManager::LayerSelector layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;

@@ -75,6 +75,9 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
 
     json tablet;
     tablet["brushPressureSmoothingFactor"] = tabletOptions.brushPressureSmoothingFactor;
+    tablet["penLocalFilter"] = {{"version", 1}, {"enabled", tabletOptions.penFilter.enabled},
+        {"radiusDip", tabletOptions.penFilter.radius}, {"windowSeconds", tabletOptions.penFilter.window},
+        {"capDip", tabletOptions.penFilter.cap}};
     tablet["pressureAffectsBrushWidth"] = tabletOptions.pressureAffectsBrushWidth;
     tablet["middleClickButton"] = tabletOptions.middleClickButton;
     tablet["rightClickButton"] = tabletOptions.rightClickButton;
@@ -153,6 +156,18 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("antialiasing").get_to(antialiasing);} catch(...) {}  
 
     try{j.at("tablet").at("brushPressureSmoothingFactor").get_to(tabletOptions.brushPressureSmoothingFactor);} catch(...) {}
+    try {
+        const auto& f = j.at("tablet").at("penLocalFilter");
+        if (f.at("version").get<int>() == 1) {
+            PenInput::Settings settings;
+            f.at("enabled").get_to(settings.enabled);
+            f.at("radiusDip").get_to(settings.radius);
+            f.at("windowSeconds").get_to(settings.window);
+            f.at("capDip").get_to(settings.cap);
+            settings.validate();
+            tabletOptions.penFilter = settings;
+        }
+    } catch(...) {}
     try{j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);} catch(...) {}
     try{j.at("tablet").at("middleClickButton").get_to(tabletOptions.middleClickButton);} catch(...) {}
     try{j.at("tablet").at("rightClickButton").get_to(tabletOptions.rightClickButton);} catch(...) {}

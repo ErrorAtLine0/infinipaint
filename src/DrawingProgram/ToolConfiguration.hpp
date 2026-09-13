@@ -18,6 +18,7 @@
 
 #pragma once
 #include "../SharedTypes.hpp"
+#include "../BrushPressureConfig.hpp"
 #include "nlohmann/json.hpp"
 #include "../GUIStuff/GUIManager.hpp"
 #include "../WorldScreenshot.hpp"
@@ -25,11 +26,8 @@
 
 class ToolConfiguration {
     public:
-        struct BrushToolConfig {
-            bool hasRoundCaps = true;
-            float relativeWidth = 15.0f;
-            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(BrushToolConfig, hasRoundCaps, relativeWidth)
-        } brush;
+        using BrushToolConfig = BrushPressure::Config;
+        BrushToolConfig brush;
 
         struct EraserToolConfig {
             float relativeWidth = 15.0f;
