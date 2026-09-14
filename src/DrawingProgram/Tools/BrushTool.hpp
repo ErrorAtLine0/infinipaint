@@ -47,6 +47,7 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
     private:
+        void gui_pressure_options();
         void commit_stroke();
         void commit_data(bool final);
 
