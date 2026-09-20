@@ -396,35 +396,35 @@ void ScrollArea::input_mouse_motion_callback(const InputManager::MouseMotionCall
         scrollAreaMotion = scrollAreaMotionMax = {0.0f, 0.0f};
 }
 
-void ScrollArea::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-    bool oldScrollAreaHeld = scrollAreaHeld;
-    scrollAreaHeld = mouseHovering && touch.down;
-    if(scrollAreaHeld)
-        scrollAreaMotionMax = scrollAreaMotion = {0.0f, 0.0f};
-    else if(oldScrollAreaHeld) {
-        scrollAreaMotion = scrollAreaMotionMax;
-        if(std::fabs(scrollAreaMotion.x()) < SCROLL_MINIMUM_MOTION_TO_START_MOVE)
-            scrollAreaMotion.x() = 0.0f;
-        if(std::fabs(scrollAreaMotion.y()) < SCROLL_MINIMUM_MOTION_TO_START_MOVE)
-            scrollAreaMotion.y() = 0.0f;
-    }
-}
-
-void ScrollArea::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    if(scrollAreaHeld) {
-        scrollAreaMotion = {opts.scrollHorizontal ? motion.move.x() : 0.0f, opts.scrollVertical ? motion.move.y() : 0.0f};
-        if(std::fabs(scrollAreaMotion.x()) > std::fabs(scrollAreaMotionMax.x()))
-            scrollAreaMotionMax.x() = scrollAreaMotion.x();
-        if(std::fabs(scrollAreaMotion.y()) > std::fabs(scrollAreaMotionMax.y()))
-            scrollAreaMotionMax.y() = scrollAreaMotion.y();
-
-        Vector2f oldScrollOffset = scrollOffset;
-        scrollOffset.x() += scrollAreaMotion.x();
-        scrollOffset.y() += scrollAreaMotion.y();
-        clamp_scroll();
-        if(oldScrollOffset != scrollOffset)
-            gui.set_to_layout();
-    }
-}
+//void ScrollArea::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+//    bool oldScrollAreaHeld = scrollAreaHeld;
+//    scrollAreaHeld = mouseHovering && touch.down;
+//    if(scrollAreaHeld)
+//        scrollAreaMotionMax = scrollAreaMotion = {0.0f, 0.0f};
+//    else if(oldScrollAreaHeld) {
+//        scrollAreaMotion = scrollAreaMotionMax;
+//        if(std::fabs(scrollAreaMotion.x()) < SCROLL_MINIMUM_MOTION_TO_START_MOVE)
+//            scrollAreaMotion.x() = 0.0f;
+//        if(std::fabs(scrollAreaMotion.y()) < SCROLL_MINIMUM_MOTION_TO_START_MOVE)
+//            scrollAreaMotion.y() = 0.0f;
+//    }
+//}
+//
+//void ScrollArea::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
+//    if(scrollAreaHeld) {
+//        scrollAreaMotion = {opts.scrollHorizontal ? motion.move.x() : 0.0f, opts.scrollVertical ? motion.move.y() : 0.0f};
+//        if(std::fabs(scrollAreaMotion.x()) > std::fabs(scrollAreaMotionMax.x()))
+//            scrollAreaMotionMax.x() = scrollAreaMotion.x();
+//        if(std::fabs(scrollAreaMotion.y()) > std::fabs(scrollAreaMotionMax.y()))
+//            scrollAreaMotionMax.y() = scrollAreaMotion.y();
+//
+//        Vector2f oldScrollOffset = scrollOffset;
+//        scrollOffset.x() += scrollAreaMotion.x();
+//        scrollOffset.y() += scrollAreaMotion.y();
+//        clamp_scroll();
+//        if(oldScrollOffset != scrollOffset)
+//            gui.set_to_layout();
+//    }
+//}
 
 }

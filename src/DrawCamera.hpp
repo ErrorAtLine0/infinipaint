@@ -19,6 +19,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <Helpers/ConvertVec.hpp>
+#include "FingerInputTracker.hpp"
 #include "SharedTypes.hpp"
 #include <Helpers/SCollision.hpp>
 #include "CoordSpaceHelper.hpp"
@@ -52,8 +53,7 @@ class DrawCamera {
         void input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel);
-        void input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchCallbackArgs& touch);
-        void input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionCallbackArgs& motion);
+        void input_finger_touch_callback(World& w, const FingerInput::TouchCallbackArgs& touch);
     private:
         struct SmoothMove {
             CoordSpaceHelper start;

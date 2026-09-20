@@ -181,10 +181,7 @@ class MainProgram {
         void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
         void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
-        void input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch);
-        void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion);
-        void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
-        void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
+        void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
         void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w);
         void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w);
         void input_window_mouse_focus_gained();

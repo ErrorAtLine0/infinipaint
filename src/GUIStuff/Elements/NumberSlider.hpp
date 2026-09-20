@@ -135,22 +135,22 @@ template <typename T> class NumberSlider : public Element {
                 update_slider_pos(motion.pos, false);
         }
 
-        virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override {
-            bool oldIsHeld = dd.isHeld;
-            dd.isHeld = mouseHovering && touch.down;
-            if(oldIsHeld && !dd.isHeld) {
-                gui.set_post_callback_func([&] {
-                    if(config.onRelease) config.onRelease();
-                });
-            }
-            else if(dd.isHeld && boundingBox.has_value())
-                update_slider_pos(touch.pos, true);
-        }
+        //virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override {
+        //    bool oldIsHeld = dd.isHeld;
+        //    dd.isHeld = mouseHovering && touch.down;
+        //    if(oldIsHeld && !dd.isHeld) {
+        //        gui.set_post_callback_func([&] {
+        //            if(config.onRelease) config.onRelease();
+        //        });
+        //    }
+        //    else if(dd.isHeld && boundingBox.has_value())
+        //        update_slider_pos(touch.pos, true);
+        //}
 
-        virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override {
-            if(dd.isHeld && boundingBox.has_value())
-                update_slider_pos(motion.pos, false);
-        }
+        //virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override {
+        //    if(dd.isHeld && boundingBox.has_value())
+        //        update_slider_pos(motion.pos, false);
+        //}
 
     private:
         void update_slider_pos(const Vector2f& p, bool justHeld) {

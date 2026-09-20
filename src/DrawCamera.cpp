@@ -237,39 +237,56 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
     }
 }
 
-void DrawCamera::input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchCallbackArgs& touch) {
-    if(!smoothMove.occurring && !isAccurateZooming && !isTouchTransforming && touch.down) {
-        touchInitialPositions = touch.pos;
-        touchInitialC = c;
-        isTouchTransforming = true;
-    }
-    else
+void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchCallbackArgs& touch) {
+    if(touch.fingers.size() != 2)
         isTouchTransforming = false;
-}
+    else {
+        switch(touch.action.type) {
+            case FingerInput::ActionType::UP: {
+                break;
+            }
+            case FingerInput::ActionType::DOWN: {
+                if(!smoothMove.occurring && !isAccurateZooming && !isTouchTransforming) {
+                    touchInitialPositions.clear();
+                    for(const FingerInput::FingerData& f : touch.fingers)
+                        touchInitialPositions.emplace_back(f.pos);
+                    touchInitialC = c;
+                    isTouchTransforming = true;
+                }
+                else
+                    isTouchTransforming = false;
+                break;
+            }
+            case FingerInput::ActionType::MOVE: {
+                if(!smoothMove.occurring && !isAccurateZooming && isTouchTransforming && touch.fingers.size() == 2) {
+                    c = touchInitialC;
 
-void DrawCamera::input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionCallbackArgs& motion) {
-    if(!smoothMove.occurring && !isAccurateZooming && isTouchTransforming) {
-        c = touchInitialC;
+                    Vector2f initialCenter = (touchInitialPositions[0] + touchInitialPositions[1]) * 0.5f;
+                    Vector2f newCenter = (touch.fingers[0].pos + touch.fingers[1].pos) * 0.5f;
+                    c.pos -= c.dir_from_space(newCenter - initialCenter);
+                    WorldVec newCenterWorld = c.from_space(newCenter);
 
-        Vector2f initialCenter = (touchInitialPositions[0] + touchInitialPositions[1]) * 0.5f;
-        Vector2f newCenter = (motion.pos[0] + motion.pos[1]) * 0.5f;
-        c.pos -= c.dir_from_space(newCenter - initialCenter);
-        WorldVec newCenterWorld = c.from_space(newCenter);
+                    float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
+                    float newDistance = vec_distance(touch.fingers[0].pos, touch.fingers[1].pos);
+                    float scaleAmount = newDistance / initialDistance;
+                    c.scale_about_double(newCenterWorld, scaleAmount);
 
-        float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
-        float newDistance = vec_distance(motion.pos[0], motion.pos[1]);
-        float scaleAmount = newDistance / initialDistance;
-        c.scale_about_double(newCenterWorld, scaleAmount);
+                    Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
+                    float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
+                    Vector2f newDiff = touch.fingers[0].pos - newCenter;
+                    float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
+                    float rotateAngle = initialAngle - newAngle;
+                    rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
+                    c.rotate_about(newCenterWorld, rotateAngle);
 
-        Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
-        float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
-        Vector2f newDiff = motion.pos[0] - newCenter;
-        float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
-        float rotateAngle = initialAngle - newAngle;
-        rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
-        c.rotate_about(newCenterWorld, rotateAngle);
-
-        checks_after_input(w);
+                    checks_after_input(w);
+                }
+                else
+                    isTouchTransforming = false;
+                break;
+            }
+            case FingerInput::ActionType::NONE: break;
+        }
     }
 }
 

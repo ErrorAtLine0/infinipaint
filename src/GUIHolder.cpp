@@ -175,12 +175,8 @@ void GUIHolder::input_mouse_wheel_callback(const InputManager::MouseWheelCallbac
     gui.input_mouse_wheel_callback(wheel);
 }
 
-void GUIHolder::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+void GUIHolder::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     gui.input_finger_touch_callback(touch);
-}
-
-void GUIHolder::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    gui.input_finger_motion_callback(motion);
 }
 
 std::optional<InputManager::TextBoxStartInfo> GUIHolder::get_text_box_start_info() {

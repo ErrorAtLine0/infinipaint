@@ -40,10 +40,7 @@ class DrawingProgramScreen : public Screen {
         virtual void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) override;
         virtual void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) override;
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
-        virtual void input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch) override;
-        virtual void input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion) override;
-        virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
-        virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
+        virtual void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
         virtual void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) override;
         virtual void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) override;
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info() override;

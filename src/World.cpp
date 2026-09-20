@@ -27,6 +27,7 @@
 #include <Helpers/NetworkingObjects/DelayUpdateSerializedClassManager.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include "DrawingProgram/Layers/DrawingProgramLayerListItem.hpp"
+#include "FingerInputTracker.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
@@ -371,14 +372,9 @@ void World::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axi
         drawProg.input_pen_axis_callback(axis);
 }
 
-void World::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch) {
+void World::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     if(!clientStillConnecting)
-        drawData.cam.input_multi_finger_touch_callback(*this, touch);
-}
-
-void World::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion) {
-    if(!clientStillConnecting)
-        drawData.cam.input_multi_finger_motion_callback(*this, motion);
+        drawData.cam.input_finger_touch_callback(*this, touch);
 }
 
 std::optional<InputManager::TextBoxStartInfo> World::get_text_box_start_info() {

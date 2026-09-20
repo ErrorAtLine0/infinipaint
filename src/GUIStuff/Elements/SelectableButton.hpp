@@ -49,8 +49,8 @@ class SelectableButton : public Element {
         void layout(const Clay_ElementId& id, const Data& d);
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
-        virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
-        virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
+        //virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
+        //virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
 
     private:
         bool inDynamicArea = false;

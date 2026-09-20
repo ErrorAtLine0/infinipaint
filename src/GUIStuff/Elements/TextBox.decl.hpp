@@ -57,8 +57,8 @@ template <typename T> class TextBox : public Element {
         virtual void input_text_callback(const InputManager::TextCallbackArgs& text) override;
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
-        virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
-        virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
+        //virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
+        //virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info() override;
         ~TextBox();
     private:

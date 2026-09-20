@@ -33,11 +33,40 @@ namespace GUIStuff {
     void Element::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) { }
     void Element::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) { }
     void Element::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) { }
-    void Element::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-        input_mouse_button_callback(InputManager::convert_finger_touch_to_mouse_button(touch));
-    }
-    void Element::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-        input_mouse_motion_callback(InputManager::convert_finger_motion_to_mouse_motion(motion));
+    void Element::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+        // Emulate a mouse by default
+        switch(touch.action.type) {
+            case FingerInput::ActionType::MOVE: {
+                InputManager::MouseMotionCallbackArgs motionArgs;
+                motionArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+                motionArgs.move = touch.action.motion;
+                motionArgs.pos = touch.action.pos;
+                input_mouse_motion_callback(motionArgs);
+                break;
+            }
+            case FingerInput::ActionType::UP: {
+                InputManager::MouseButtonCallbackArgs mouseArgs;
+                mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+                mouseArgs.pos = touch.action.pos;
+                mouseArgs.down = false;
+                mouseArgs.clicks = 0;
+                mouseArgs.button = InputManager::MouseButton::LEFT;
+                input_mouse_button_callback(mouseArgs);
+                break;
+            }
+            case FingerInput::ActionType::DOWN: {
+                InputManager::MouseButtonCallbackArgs mouseArgs;
+                mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+                mouseArgs.pos = touch.action.pos;
+                mouseArgs.down = true;
+                mouseArgs.clicks = 1;
+                mouseArgs.button = InputManager::MouseButton::LEFT;
+                input_mouse_button_callback(mouseArgs);
+                break;
+            }
+            case FingerInput::ActionType::NONE:
+                break;
+        }
     }
     void Element::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
     std::optional<InputManager::TextBoxStartInfo> Element::get_text_box_start_info() { return std::nullopt; }

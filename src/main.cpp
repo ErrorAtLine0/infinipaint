@@ -796,19 +796,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 mS.m->input.backend_pen_button_down_update(event->pbutton);
                 break;
             }
-            case SDL_EVENT_FINGER_DOWN: {
-                if(!mS.m->conf.tabletOptions.disableTouchWhenPenInProximity || !mS.m->input.pen.inProximity)
-                    mS.m->input.backend_touch_finger_down_update(event->tfinger);
-                break;
-            }
-            case SDL_EVENT_FINGER_UP: {
-                if(!mS.m->conf.tabletOptions.disableTouchWhenPenInProximity || !mS.m->input.pen.inProximity)
-                    mS.m->input.backend_touch_finger_up_update(event->tfinger);
-                break;
-            }
+            case SDL_EVENT_FINGER_DOWN:
+            case SDL_EVENT_FINGER_UP:
             case SDL_EVENT_FINGER_MOTION: {
                 if(!mS.m->conf.tabletOptions.disableTouchWhenPenInProximity || !mS.m->input.pen.inProximity)
-                    mS.m->input.backend_touch_finger_motion_update(event->tfinger);
+                    mS.m->input.backend_touch_finger_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_DISPLAY_ORIENTATION:

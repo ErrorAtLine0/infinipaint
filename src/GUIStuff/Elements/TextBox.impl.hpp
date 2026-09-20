@@ -217,33 +217,33 @@ template <typename T> void TextBox<T>::input_mouse_motion_callback(const InputMa
         edit->process_mouse_left_button(motion.pos - boundingBox.value().min, 0, isHeld, gui.io.input->key(InputManager::KEY_GENERIC_LSHIFT).held);
 }
 
-template <typename T> void TextBox<T>::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-    if(boundingBox.has_value()) {
-        if(touch.down) {
-            if(mouseHovering) {
-                if(!is_selected()) {
-                    select();
-                    gui.set_post_callback_func_high_priority([&] {
-                        if(userInfo.onSelect) userInfo.onSelect();
-                    });
-                }
-                isHeld = true;
-                edit->input_finger_touch_down(touch.pos - boundingBox.value().min);
-            }
-            else if(is_selected()) {
-                isHeld = false;
-                deselect();
-            }
-        }
-        else
-            isHeld = false;
-    }
-}
-
-template <typename T> void TextBox<T>::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    if(boundingBox.has_value() && is_selected() && isHeld)
-        edit->input_finger_held_motion(motion.pos - boundingBox.value().min);
-}
+//template <typename T> void TextBox<T>::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+//    if(boundingBox.has_value()) {
+//        if(touch.down) {
+//            if(mouseHovering) {
+//                if(!is_selected()) {
+//                    select();
+//                    gui.set_post_callback_func_high_priority([&] {
+//                        if(userInfo.onSelect) userInfo.onSelect();
+//                    });
+//                }
+//                isHeld = true;
+//                edit->input_finger_touch_down(touch.pos - boundingBox.value().min);
+//            }
+//            else if(is_selected()) {
+//                isHeld = false;
+//                deselect();
+//            }
+//        }
+//        else
+//            isHeld = false;
+//    }
+//}
+//
+//template <typename T> void TextBox<T>::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
+//    if(boundingBox.has_value() && is_selected() && isHeld)
+//        edit->input_finger_held_motion(motion.pos - boundingBox.value().min);
+//}
 
 template <typename T> std::optional<InputManager::TextBoxStartInfo> TextBox<T>::get_text_box_start_info() {
     if(edit) {

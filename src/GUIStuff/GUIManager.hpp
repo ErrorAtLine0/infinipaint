@@ -125,11 +125,11 @@ class GUIManager {
         void input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button);
         void input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion);
         void input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel);
-        void input_finger_touch_callback(InputManager::FingerTouchCallbackArgs touch);
-        void input_finger_motion_callback(InputManager::FingerMotionCallbackArgs motion);
+        void input_finger_touch_callback(FingerInput::TouchCallbackArgs touch);
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
         bool cursor_obstructed() const;
+        bool touch_obstructed() const;
     private:
         std::unordered_map<GUIManagerIDStack, GUIFloatAnimation> animations;
 
@@ -138,7 +138,7 @@ class GUIManager {
         void layout_end();
         void single_layout_run();
 
-        void mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*)>& f);
+        void mouse_callback(const Vector2f& mousePos, bool& obstructed, const std::function<void(ElementContainer*)>& f);
 
         GUIManagerIDStack idStack;
         std::vector<ElementContainer*> orderedElements;
@@ -187,6 +187,7 @@ class GUIManager {
         bool setToLayout;
         bool setToUpdateInvalidateDrawAreaFromLayout;
         bool cursorObstructed;
+        bool touchObstructed;
 };
 
 }

@@ -59,8 +59,8 @@ class ScrollArea : public Element {
         virtual void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) override;
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
-        virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
-        virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
+        //virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override;
+        //virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override;
     private:
         Options opts;
         bool scrollAreaHeld = false;
