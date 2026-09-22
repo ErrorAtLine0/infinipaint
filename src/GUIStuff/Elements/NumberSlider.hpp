@@ -54,9 +54,9 @@ template <typename T> class NumberSlider : public Element {
         }
 
         virtual void update() override {
-            if(!dd.isHeld && data)
+            if(!dd.is_held() && data)
                 dd.val = *data;
-            smooth_two_way_animation_time(dd.holdAnimation, gui.io.deltaTime, dd.isHeld, HOLD_ANIMATION_TIME);
+            smooth_two_way_animation_time(dd.holdAnimation, gui.io.deltaTime, dd.is_held(), HOLD_ANIMATION_TIME);
             smooth_two_way_animation_time(dd.hoverAnimation, gui.io.deltaTime, mouseHovering && !gui.last_interaction_is_touch(), gui.io.theme->hoverExpandTime);
             if(oldDD != dd) {
                 gui.invalidate_draw_element(this, {
@@ -119,39 +119,45 @@ template <typename T> class NumberSlider : public Element {
             canvas->restore();
         }
         virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) override {
-            bool oldIsHeld = dd.isHeld;
-            dd.isHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
-            if(oldIsHeld && !dd.isHeld) {
+            bool oldIsHeld = dd.is_held();
+            dd.isMouseHeld = mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down;
+            if(oldIsHeld && !dd.is_held()) {
                 gui.set_post_callback_func([&] {
                     if(config.onRelease) config.onRelease();
                 });
             }
-            else if(dd.isHeld && boundingBox.has_value())
-                update_slider_pos(button.pos, true);
+            else if(dd.is_held() && boundingBox.has_value())
+                update_slider_pos(button.pos, !oldIsHeld);
         }
 
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override {
-            if(dd.isHeld && boundingBox.has_value())
+            if(dd.isMouseHeld && boundingBox.has_value())
                 update_slider_pos(motion.pos, false);
         }
 
-        //virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) override {
-        //    bool oldIsHeld = dd.isHeld;
-        //    dd.isHeld = mouseHovering && touch.down;
-        //    if(oldIsHeld && !dd.isHeld) {
-        //        gui.set_post_callback_func([&] {
-        //            if(config.onRelease) config.onRelease();
-        //        });
-        //    }
-        //    else if(dd.isHeld && boundingBox.has_value())
-        //        update_slider_pos(touch.pos, true);
-        //}
-
-        //virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) override {
-        //    if(dd.isHeld && boundingBox.has_value())
-        //        update_slider_pos(motion.pos, false);
-        //}
-
+        virtual void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override {
+            switch(touch.action.type) {
+                case FingerInput::ActionType::DOWN:
+                case FingerInput::ActionType::UP: {
+                    bool oldIsHeld = dd.is_held();
+                    dd.isTouchHeld = mouseHovering && touch.action.type == FingerInput::ActionType::DOWN;
+                    if(oldIsHeld && !dd.is_held()) {
+                        gui.set_post_callback_func([&] {
+                            if(config.onRelease) config.onRelease();
+                        });
+                    }
+                    else if(dd.is_held() && boundingBox.has_value())
+                        update_slider_pos(touch.action.pos, !oldIsHeld);
+                    break;
+                }
+                case FingerInput::ActionType::MOVE: {
+                    if(dd.isTouchHeld && boundingBox.has_value())
+                        update_slider_pos(touch.action.pos, false);
+                    break;
+                }
+                case FingerInput::ActionType::NONE: break;
+            }
+        }
     private:
         void update_slider_pos(const Vector2f& p, bool justHeld) {
             gui.set_post_callback_func([&, p, justHeld] {
@@ -165,7 +171,9 @@ template <typename T> class NumberSlider : public Element {
         T* data = nullptr;
 
         struct DisplayData {
-            bool isHeld = false;
+            bool isTouchHeld = false;
+            bool isMouseHeld = false;
+
             T val = 0.0;
 
             T minData = 0.0;
@@ -174,6 +182,7 @@ template <typename T> class NumberSlider : public Element {
             float hoverAnimation = 0.0;
             float holdAnimation = 0.0;
 
+            bool is_held() { return isMouseHeld || isTouchHeld; }
             bool operator!=(const DisplayData&) const = default;
             bool operator==(const DisplayData&) const = default;
         };

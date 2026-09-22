@@ -111,31 +111,32 @@ void SelectableButton::input_mouse_motion_callback(const InputManager::MouseMoti
     isHovering = mouseHovering;
 }
 
-//void SelectableButton::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-//    bool oldIsHeld = isHeld;
-//    bool oldIsHovering = isHovering;
-//    isHeld = mouseHovering && touch.down;
-//    isHovering = mouseHovering && touch.down;
-//    if(isHeld) {
-//        if(instantResponse)
-//            gui.set_post_callback_func(onClick);
-//        gui.set_to_layout();
-//    }
-//    else if(mouseHovering && oldIsHeld && !touch.down) {
-//        if(!instantResponse)
-//            gui.set_post_callback_func(onClick);
-//        gui.set_to_layout();
-//    }
-//    else if(oldIsHovering != isHovering || isHeld != oldIsHeld)
-//        gui.set_to_layout();
-//}
-//
-//void SelectableButton::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-//    if((isHovering || isHeld) && (inDynamicArea || !mouseHovering)) {
-//        isHovering = false;
-//        isHeld = false;
-//        gui.set_to_layout();
-//    }
-//}
+void SelectableButton::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(!instantResponse && mouseHovering && touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::TAP)
+        gui.set_post_callback_func(onClick);
+    switch(touch.action.type) {
+        case FingerInput::ActionType::UP:
+        case FingerInput::ActionType::DOWN: {
+            bool oldIsHeld = isHeld;
+            bool oldIsHovering = isHovering;
+            isHeld = mouseHovering && touch.action.type == FingerInput::ActionType::DOWN;
+            isHovering = mouseHovering && touch.action.type == FingerInput::ActionType::DOWN;
+            if(isHeld && instantResponse)
+                gui.set_post_callback_func(onClick);
+            if(oldIsHovering != isHovering || isHeld != oldIsHeld)
+                gui.set_to_layout();
+            break;
+        }
+        case FingerInput::ActionType::MOVE: {
+            if((isHovering || isHeld) && (inDynamicArea || !mouseHovering)) {
+                isHovering = false;
+                isHeld = false;
+                gui.set_to_layout();
+            }
+            break;
+        }
+        case FingerInput::ActionType::NONE: break;
+    }
+}
 
 }
