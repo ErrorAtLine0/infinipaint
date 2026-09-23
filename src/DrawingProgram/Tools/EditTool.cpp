@@ -176,7 +176,7 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
 
 void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(objInfoBeingEdited) {
-        if(drawP.controls.leftClickHeld && pointDragging) {
+        if(pointDragging) {
             Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
             if(newPos != *pointDragging->p) {
                 if(pointDragging->min)

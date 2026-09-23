@@ -41,6 +41,15 @@ void PanCanvasTool::gui_toolbox(Toolbar& t) {
     });
 }
 
+void PanCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.button == InputManager::MouseButton::LEFT && button.down) {
+        drawP.world.drawData.cam.set_to_pan_control_mode([](World& w, const InputManager::MouseButtonCallbackArgs& b) {
+            if(!b.down && b.button == InputManager::MouseButton::LEFT)
+                w.drawData.cam.clear_control_mode();
+        });
+    }
+}
+
 void PanCanvasTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("Pan canvas tool", [&] {
@@ -66,6 +75,6 @@ void PanCanvasTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void PanCanvasTool::switch_tool(DrawingProgramToolType newTool) {
-    //if(!drawP.is_selection_allowing_tool(newTool))
-    //    drawP.selection.deselect_all();
+    if(!drawP.is_selection_allowing_tool(newTool))
+        drawP.selection.deselect_all();
 }

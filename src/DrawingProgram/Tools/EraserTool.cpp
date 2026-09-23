@@ -312,7 +312,7 @@ void EraserTool::tool_update() {
 }
 
 bool EraserTool::prevent_undo_or_redo() {
-    return drawP.controls.leftClickHeld;
+    return isErasing;
 }
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {

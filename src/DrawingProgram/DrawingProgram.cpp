@@ -71,8 +71,6 @@ DrawingProgram::DrawingProgram(World& initWorld):
 void DrawingProgram::on_tab_out() {
     tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
     selection.deselect_all();
-    controls.leftClickHeld = false;
-    controls.middleClickHeld = false;
 }
 
 void DrawingProgram::input_paste_callback(const CustomEvents::PasteEvent& paste) {
@@ -119,54 +117,67 @@ void DrawingProgram::input_text_callback(const InputManager::TextCallbackArgs& t
     drawTool->input_text_callback(text);
 }
 
+void mouse_middle_click_zoom_callback(World& w, const InputManager::MouseButtonCallbackArgs& b);
+
+void mouse_middle_click_pan_callback(World& w, const InputManager::MouseButtonCallbackArgs& b) {
+    if(!b.down && b.button == InputManager::MouseButton::MIDDLE)
+        w.drawData.cam.clear_control_mode();
+    else if(!w.main.g.gui.cursor_obstructed() && b.down && b.button == InputManager::MouseButton::LEFT && b.deviceType == InputManager::MouseDeviceType::PEN && w.main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld) {
+        w.drawData.cam.clear_control_mode();
+        w.drawData.cam.set_to_accurate_zoom_control_mode(b.pos, mouse_middle_click_zoom_callback);
+    }
+}
+
+void mouse_middle_click_zoom_callback(World& w, const InputManager::MouseButtonCallbackArgs& b) {
+    if(!b.down && b.button == InputManager::MouseButton::MIDDLE)
+        w.drawData.cam.clear_control_mode();
+    else if(!b.down && b.button == InputManager::MouseButton::LEFT) {
+        w.drawData.cam.clear_control_mode();
+        w.drawData.cam.set_to_pan_control_mode(mouse_middle_click_pan_callback);
+    }
+}
+
+void DrawingProgram::mouse_middle_click_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(world.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) {
+        world.drawData.cam.set_to_accurate_zoom_control_mode(button.pos, [](World& w, const InputManager::MouseButtonCallbackArgs& b) {
+            if(!b.down && b.button == InputManager::MouseButton::MIDDLE)
+                w.drawData.cam.clear_control_mode();
+        });
+    }
+    else {
+        world.drawData.cam.set_to_pan_control_mode(mouse_middle_click_pan_callback);
+    }
+}
+
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(button.deviceType == InputManager::MouseDeviceType::TOUCH && world.main.conf.disableTouchForDrawing)
-        return;
-
-    auto buttonCallbacks = [&](const InputManager::MouseButtonCallbackArgs& b) {
-        drawTool->input_mouse_button_on_canvas_callback(b);
-    };
-
-    if(button.down) {
-        if(button.button == InputManager::MouseButton::RIGHT) {
-            if(!controls.leftClickHeld) {
+    switch(button.button) {
+        case InputManager::MouseButton::RIGHT:
+            if(button.down) {
                 if(rightClickPopupLocation.has_value())
                     clear_right_click_popup();
-                else
+                else if(!world.main.g.gui.cursor_obstructed())
                     set_right_click_popup_location(world.main.input.mouse.pos / world.main.g.final_gui_scale());
             }
-        }
-        else {
-            if(!world.main.g.gui.cursor_obstructed()) {
-                if(button.button == InputManager::MouseButton::LEFT && !controls.middleClickHeld) {
-                    controls.leftClickHeld = true;
-                    buttonCallbacks(button);
-                }
-                else if(button.button == InputManager::MouseButton::MIDDLE) {
-                    if(controls.leftClickHeld) {
-                        controls.leftClickHeld = false;
-                        InputManager::MouseButtonCallbackArgs leftReleaseCallback;
-                        leftReleaseCallback.clicks = 0;
-                        leftReleaseCallback.down = false;
-                        leftReleaseCallback.pos = button.pos;
-                        leftReleaseCallback.button = InputManager::MouseButton::LEFT;
-                        buttonCallbacks(leftReleaseCallback);
-                    }
-                    controls.middleClickHeld = true;
-                    buttonCallbacks(button);
-                }
+            break;
+        case InputManager::MouseButton::LEFT:
+            if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.cursor_obstructed()) {
+                pointerDown = PointerDownState::MOUSE_LEFT;
+                drawTool->input_mouse_button_on_canvas_callback(button);
             }
-        }
-    }
-    else if(!button.down) {
-        if(controls.leftClickHeld && button.button == InputManager::MouseButton::LEFT) {
-            controls.leftClickHeld = false;
-            buttonCallbacks(button);
-        }
-        else if(controls.middleClickHeld && button.button == InputManager::MouseButton::MIDDLE) {
-            controls.middleClickHeld = false;
-            buttonCallbacks(button);
-        }
+            else if(!button.down && pointerDown == PointerDownState::MOUSE_LEFT) {
+                drawTool->input_mouse_button_on_canvas_callback(button);
+                pointerDown = PointerDownState::NONE;
+            }
+            break;
+        case InputManager::MouseButton::MIDDLE:
+            if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.cursor_obstructed()) {
+                mouse_middle_click_callback(button);
+                pointerDown = PointerDownState::MOUSE_MIDDLE;
+            }
+            else if(!button.down && pointerDown == PointerDownState::MOUSE_MIDDLE) {
+                pointerDown = PointerDownState::NONE;
+            }
+            break;
     }
 
     if(toolToSwitchToAfterUpdate) {
@@ -293,6 +304,9 @@ void DrawingProgram::input_pen_motion_callback(const InputManager::PenMotionCall
 void DrawingProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
     pen_tool_switch_check();
     drawTool->input_pen_axis_callback(axis);
+}
+
+void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
 }
 
 std::optional<InputManager::TextBoxStartInfo> DrawingProgram::get_text_box_start_info() {

@@ -48,6 +48,15 @@ void ZoomCanvasTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     });
 }
 
+void ZoomCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if(button.button == InputManager::MouseButton::LEFT && button.down) {
+        drawP.world.drawData.cam.set_to_accurate_zoom_control_mode(button.pos, [](World& w, const InputManager::MouseButtonCallbackArgs& b) {
+            if(!b.down && b.button == InputManager::MouseButton::LEFT)
+                w.drawData.cam.clear_control_mode();
+        });
+    }
+}
+
 void ZoomCanvasTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     drawP.selection_action_menu(popupPos);
 }
@@ -66,6 +75,6 @@ void ZoomCanvasTool::draw(SkCanvas* canvas, const DrawData& drawData) {
 }
 
 void ZoomCanvasTool::switch_tool(DrawingProgramToolType newTool) {
-    //if(!drawP.is_selection_allowing_tool(newTool))
-    //    drawP.selection.deselect_all();
+    if(!drawP.is_selection_allowing_tool(newTool))
+        drawP.selection.deselect_all();
 }

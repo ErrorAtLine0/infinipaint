@@ -329,14 +329,13 @@ void World::input_key_callback(const InputManager::KeyCallbackArgs& key) {
             }
         }
         drawProg.input_key_callback(key);
-        drawData.cam.input_key_callback(key);
     }
 }
 
 void World::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(!clientStillConnecting) {
         drawProg.input_mouse_button_callback(button);
-        drawData.cam.input_mouse_button_on_canvas_callback(*this, button);
+        drawData.cam.input_mouse_button_callback(*this, button);
     }
 }
 
@@ -373,8 +372,10 @@ void World::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axi
 }
 
 void World::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
-    if(!clientStillConnecting)
+    if(!clientStillConnecting) {
+        drawProg.input_finger_touch_callback(touch);
         drawData.cam.input_finger_touch_callback(*this, touch);
+    }
 }
 
 std::optional<InputManager::TextBoxStartInfo> World::get_text_box_start_info() {

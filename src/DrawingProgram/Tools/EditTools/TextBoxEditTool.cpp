@@ -629,11 +629,11 @@ void TextBoxEditTool::input_mouse_motion_callback(const InputManager::MouseMotio
         auto oldCursor = *a.cursor;
 
         if(motion.deviceType == InputManager::MouseDeviceType::TOUCH) {
-            if(drawP.controls.leftClickHeld)
-                userInput->input_finger_held_motion(a.get_mouse_pos(drawP));
+            //if(drawP.controls.leftClickHeld)
+            //    userInput->input_finger_held_motion(a.get_mouse_pos(drawP));
         }
         else
-            userInput->process_mouse_left_button(a.get_mouse_pos(drawP), 0, drawP.controls.leftClickHeld, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+            userInput->process_mouse_left_button(a.get_mouse_pos(drawP), 0, drawP.world.main.input.mouse.leftDown, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
         if(oldCursor != *a.cursor) {
             set_styles_at_selection(a);

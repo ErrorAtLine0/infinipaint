@@ -49,11 +49,16 @@ class DrawCamera {
         void save_file(cereal::PortableBinaryOutputArchive& a, const World& w) const;
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version, World& w);
 
-        void input_key_callback(const InputManager::KeyCallbackArgs& key);
-        void input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button);
+        void input_mouse_button_callback(World& w, const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel);
         void input_finger_touch_callback(World& w, const FingerInput::TouchCallbackArgs& touch);
+
+        typedef std::function<void(World& w, const InputManager::MouseButtonCallbackArgs& button)> ControlModeMouseCallback;
+
+        bool set_to_accurate_zoom_control_mode(const Vector2f& buttonPos, const ControlModeMouseCallback& controlModeCallback);
+        bool set_to_pan_control_mode(const ControlModeMouseCallback& controlModeCallback);
+        void clear_control_mode();
     private:
         struct SmoothMove {
             CoordSpaceHelper start;
@@ -62,18 +67,28 @@ class DrawCamera {
             WorldScalar endUniformZoom;
             CoordSpaceHelper end;
             Vector2f endWindowSize;
-            bool occurring = false;
             float moveTime;
         } smoothMove;
 
         WorldScalar startZoomVal;
         WorldVec startZoomMousePos;
         WorldVec startZoomCameraPos;
-        bool isAccurateZooming = false;
+
+        enum class CameraControlMode {
+            NONE,
+            SMOOTH_MOVE,
+            ACCURATE_ZOOM,
+            PAN,
+            TOUCH_TRANSFORM
+        } controlMode = CameraControlMode::NONE;
+
+        void internal_set_control_mode(CameraControlMode newMode, const ControlModeMouseCallback& mouseCallback);
+
+        ControlModeMouseCallback controlModeMouseCallback;
 
         CoordSpaceHelper touchInitialC;
         std::vector<Vector2f> touchInitialPositions;
-        bool isTouchTransforming = false;
+
 
         void check_if_scale_up_required(World& w);
         void checks_after_input(World& w);

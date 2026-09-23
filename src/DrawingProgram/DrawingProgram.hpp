@@ -95,6 +95,7 @@ class DrawingProgram {
         void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
         void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
+        void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
         void set_right_click_popup_location(const Vector2f& newLoc);
@@ -121,10 +122,19 @@ class DrawingProgram {
         bool is_actual_selection_tool(DrawingProgramToolType typeToCheck);
         bool is_selection_allowing_tool(DrawingProgramToolType typeToCheck);
 
+        void mouse_middle_click_callback(const InputManager::MouseButtonCallbackArgs& button);
+
         DrawingProgramSelection selection;
 
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
         std::unordered_set<CanvasComponentContainer::ObjInfo*> updateableComponents;
+
+        enum class PointerDownState {
+            NONE,
+            FINGER,
+            MOUSE_MIDDLE,
+            MOUSE_LEFT
+        } pointerDown = PointerDownState::NONE;
 
         void pen_tool_switch_check();
         enum class TemporaryMoveToolSwitch {
@@ -138,8 +148,6 @@ class DrawingProgram {
 
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;
-            bool leftClickHeld = false;
-            bool middleClickHeld = false;
 
             DrawingProgramLayerManager::LayerSelector layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
 
