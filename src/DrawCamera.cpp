@@ -223,7 +223,7 @@ void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::Mouse
 }
 
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
-    if(controlMode == CameraControlMode::NONE && wheel.tickAmount.y() && !w.main.g.gui.cursor_obstructed()) {
+    if(controlMode == CameraControlMode::NONE && wheel.tickAmount.y() && !w.main.g.gui.mouse_pointer_obstructed()) {
         // Doesn't take tickAmount magnitude into account, since that results in scrolling that's way too fast on macOS
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
         WorldScalar zoomFactor(1.0 + w.main.conf.scrollZoomSpeed);

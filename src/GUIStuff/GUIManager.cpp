@@ -60,8 +60,8 @@ GUIManager::GUIManager()
     setToLayout = true;
     postCallbackFuncIsHighPriority = false;
     lastInteractionIsTouch = false;
-    cursorObstructed = false;
-    touchObstructed = false;
+    mousePointerObstructed = false;
+    touchPointerObstructed = false;
 }
 
 Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData) {
@@ -714,12 +714,16 @@ bool GUIManager::last_interaction_is_touch() {
     return lastInteractionIsTouch;
 }
 
-bool GUIManager::cursor_obstructed() const {
-    return cursorObstructed;
+bool GUIManager::mouse_pointer_obstructed() const {
+    return mousePointerObstructed;
 }
 
-bool GUIManager::touch_obstructed() const {
-    return touchObstructed;
+bool GUIManager::touch_pointer_obstructed() const {
+    return touchPointerObstructed;
+}
+
+bool GUIManager::pointer_action_obstructed() const {
+    return (lastInteractionIsTouch ? touchPointerObstructed : mousePointerObstructed);
 }
 
 void GUIManager::deselect_all() {
@@ -753,25 +757,22 @@ void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void GUIManager::input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button) {
-    if(button.deviceType != InputManager::MouseDeviceType::TOUCH) {
-        lastInteractionIsTouch = false;
-        button.pos /= io.guiScaleMultiplier;
-        mouse_callback(button.pos, cursorObstructed, [&button] (ElementContainer* e) { e->elem->input_mouse_button_callback(button); });
-    }
+    lastInteractionIsTouch = false;
+    button.pos /= io.guiScaleMultiplier;
+    mouse_callback(button.pos, mousePointerObstructed, [&button] (ElementContainer* e) { e->elem->input_mouse_button_callback(button); });
 }
 
 void GUIManager::input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion) {
-    if(motion.deviceType != InputManager::MouseDeviceType::TOUCH) {
-        lastInteractionIsTouch = false;
-        motion.pos /= io.guiScaleMultiplier;
-        motion.move /= io.guiScaleMultiplier;
-        mouse_callback(motion.pos, cursorObstructed, [&motion] (ElementContainer* e) { e->elem->input_mouse_motion_callback(motion); });
-    }
+    lastInteractionIsTouch = false;
+    motion.pos /= io.guiScaleMultiplier;
+    motion.move /= io.guiScaleMultiplier;
+    mouse_callback(motion.pos, mousePointerObstructed, [&motion] (ElementContainer* e) { e->elem->input_mouse_motion_callback(motion); });
 }
 
 void GUIManager::input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel) {
+    lastInteractionIsTouch = false;
     wheel.mousePos /= io.guiScaleMultiplier;
-    mouse_callback(wheel.mousePos, cursorObstructed, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
+    mouse_callback(wheel.mousePos, mousePointerObstructed, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
 }
 
 void GUIManager::input_finger_touch_callback(FingerInput::TouchCallbackArgs touch) {
@@ -785,13 +786,13 @@ void GUIManager::input_finger_touch_callback(FingerInput::TouchCallbackArgs touc
     // Mouse hovering calculations will only work when one finger is used
     if(touch.fingers.size() != 1) {
         // Still check if touch is obstructed by any finger
-        touchObstructed = false;
+        touchPointerObstructed = false;
         for(ElementContainer* e : orderedElements) {
             e->elem->childMouseHovering = false;
             e->elem->mouseHovering = false;
             for(const FingerInput::FingerData& f : touch.fingers) {
                 if(e->elem->collides_with_point(f.pos)) {
-                    touchObstructed = true;
+                    touchPointerObstructed = true;
                     break;
                 }
             }
@@ -799,7 +800,7 @@ void GUIManager::input_finger_touch_callback(FingerInput::TouchCallbackArgs touc
                 auto positionsInGesture = touch.gesture->get_all_positions();
                 for(const Vector2f& p : positionsInGesture) {
                     if(e->elem->collides_with_point(p)) {
-                        touchObstructed = true;
+                        touchPointerObstructed = true;
                         break;
                     }
                 }
@@ -809,7 +810,7 @@ void GUIManager::input_finger_touch_callback(FingerInput::TouchCallbackArgs touc
             e->elem->input_finger_touch_callback(touch);
     }
     else
-        mouse_callback(touch.fingers[0].pos, touchObstructed, [&touch] (ElementContainer* e) { e->elem->input_finger_touch_callback(touch); });
+        mouse_callback(touch.fingers[0].pos, touchPointerObstructed, [&touch] (ElementContainer* e) { e->elem->input_finger_touch_callback(touch); });
 }
 
 std::optional<InputManager::TextBoxStartInfo> GUIManager::get_text_box_start_info() {

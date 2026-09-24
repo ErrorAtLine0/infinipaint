@@ -128,8 +128,9 @@ class GUIManager {
         void input_finger_touch_callback(FingerInput::TouchCallbackArgs touch);
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
-        bool cursor_obstructed() const;
-        bool touch_obstructed() const;
+        bool mouse_pointer_obstructed() const;
+        bool touch_pointer_obstructed() const;
+        bool pointer_action_obstructed() const;
     private:
         std::unordered_map<GUIManagerIDStack, GUIFloatAnimation> animations;
 
@@ -183,11 +184,12 @@ class GUIManager {
         void calculate_new_clip_rect(std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw);
         void clip_rect_transform(SkCanvas* canvas, std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw);
 
-        bool lastInteractionIsTouch;
         bool setToLayout;
         bool setToUpdateInvalidateDrawAreaFromLayout;
-        bool cursorObstructed;
-        bool touchObstructed;
+
+        bool lastInteractionIsTouch;
+        bool mousePointerObstructed;
+        bool touchPointerObstructed;
 };
 
 }

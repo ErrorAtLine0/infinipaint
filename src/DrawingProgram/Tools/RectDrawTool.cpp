@@ -79,7 +79,7 @@ void RectDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
 void RectDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
             auto& toolConfig = drawP.world.main.toolConfig;
             auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
             auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
@@ -126,6 +126,16 @@ void RectDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCa
         rectangle.d.p2 = cwise_vec_max(startAt, newPos);
         rectangle.d.p2 = ensure_points_have_distance(rectangle.d.p1, rectangle.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
         commitUpdate = true;
+    }
+}
+
+void RectDrawTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        auto& components = containerPtr->parentLayer->get_layer().components;
+        components->erase(components, containerPtr->objInfo);
+        objInfoBeingEdited = nullptr;
+        commitUpdate = false;
     }
 }
 

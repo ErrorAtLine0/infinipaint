@@ -132,6 +132,7 @@ class DrawingProgram {
         enum class PointerDownState {
             NONE,
             FINGER,
+            FINGER_DISABLED,
             MOUSE_MIDDLE,
             MOUSE_LEFT
         } pointerDown = PointerDownState::NONE;

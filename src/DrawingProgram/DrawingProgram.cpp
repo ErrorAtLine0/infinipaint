@@ -122,7 +122,7 @@ void mouse_middle_click_zoom_callback(World& w, const InputManager::MouseButtonC
 void mouse_middle_click_pan_callback(World& w, const InputManager::MouseButtonCallbackArgs& b) {
     if(!b.down && b.button == InputManager::MouseButton::MIDDLE)
         w.drawData.cam.clear_control_mode();
-    else if(!w.main.g.gui.cursor_obstructed() && b.down && b.button == InputManager::MouseButton::LEFT && b.deviceType == InputManager::MouseDeviceType::PEN && w.main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld) {
+    else if(!w.main.g.gui.mouse_pointer_obstructed() && b.down && b.button == InputManager::MouseButton::LEFT && b.deviceType == InputManager::MouseDeviceType::PEN && w.main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld) {
         w.drawData.cam.clear_control_mode();
         w.drawData.cam.set_to_accurate_zoom_control_mode(b.pos, mouse_middle_click_zoom_callback);
     }
@@ -155,12 +155,12 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
             if(button.down) {
                 if(rightClickPopupLocation.has_value())
                     clear_right_click_popup();
-                else if(!world.main.g.gui.cursor_obstructed())
+                else if(!world.main.g.gui.mouse_pointer_obstructed())
                     set_right_click_popup_location(world.main.input.mouse.pos / world.main.g.final_gui_scale());
             }
             break;
         case InputManager::MouseButton::LEFT:
-            if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.cursor_obstructed()) {
+            if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.mouse_pointer_obstructed()) {
                 pointerDown = PointerDownState::MOUSE_LEFT;
                 drawTool->input_mouse_button_on_canvas_callback(button);
             }
@@ -170,7 +170,7 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
             }
             break;
         case InputManager::MouseButton::MIDDLE:
-            if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.cursor_obstructed()) {
+            if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.mouse_pointer_obstructed()) {
                 mouse_middle_click_callback(button);
                 pointerDown = PointerDownState::MOUSE_MIDDLE;
             }
@@ -307,6 +307,36 @@ void DrawingProgram::input_pen_axis_callback(const InputManager::PenAxisCallback
 }
 
 void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    switch(pointerDown) {
+        case PointerDownState::NONE:
+            if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::DOWN && !world.main.g.gui.touch_pointer_obstructed()) {
+                clear_right_click_popup();
+                pointerDown = PointerDownState::FINGER;
+                drawTool->input_finger_touch_on_canvas_callback(touch);
+            }
+            break;
+        case PointerDownState::FINGER:
+            if(touch.fingers.size() > 1) {
+                drawTool->cancel_finger_touch_callback(touch);
+                pointerDown = PointerDownState::FINGER_DISABLED;
+            }
+            else {
+                drawTool->input_finger_touch_on_canvas_callback(touch);
+                if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::UP)
+                    pointerDown = PointerDownState::NONE;
+            }
+            break;
+        case PointerDownState::FINGER_DISABLED:
+            if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::UP)
+                pointerDown = PointerDownState::NONE;
+            break;
+        default: break;
+    }
+
+    if(toolToSwitchToAfterUpdate) {
+        switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
+        toolToSwitchToAfterUpdate = nullptr;
+    }
 }
 
 std::optional<InputManager::TextBoxStartInfo> DrawingProgram::get_text_box_start_info() {

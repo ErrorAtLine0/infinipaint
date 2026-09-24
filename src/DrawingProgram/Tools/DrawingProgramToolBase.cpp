@@ -85,6 +85,51 @@ void DrawingProgramToolBase::input_pen_button_callback(const InputManager::PenBu
 void DrawingProgramToolBase::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {}
 void DrawingProgramToolBase::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {}
 void DrawingProgramToolBase::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {}
+void DrawingProgramToolBase::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) {
+    // Emulate a mouse by default
+    switch(touch.action.type) {
+        case FingerInput::ActionType::MOVE: {
+            InputManager::MouseMotionCallbackArgs motionArgs;
+            motionArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            motionArgs.move = touch.action.motion;
+            motionArgs.pos = touch.action.pos;
+            input_mouse_motion_callback(motionArgs);
+            break;
+        }
+        case FingerInput::ActionType::UP: {
+            InputManager::MouseButtonCallbackArgs mouseArgs;
+            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            mouseArgs.pos = touch.action.pos;
+            mouseArgs.down = false;
+            mouseArgs.clicks = 0;
+            mouseArgs.button = InputManager::MouseButton::LEFT;
+            input_mouse_button_on_canvas_callback(mouseArgs);
+            break;
+        }
+        case FingerInput::ActionType::DOWN: {
+            InputManager::MouseButtonCallbackArgs mouseArgs;
+            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            mouseArgs.pos = touch.action.pos;
+            mouseArgs.down = true;
+            mouseArgs.clicks = 1;
+            mouseArgs.button = InputManager::MouseButton::LEFT;
+            input_mouse_button_on_canvas_callback(mouseArgs);
+            break;
+        }
+        case FingerInput::ActionType::NONE:
+            break;
+    }
+}
+void DrawingProgramToolBase::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    // By default, emulate mouse up action from first finger. Ideally, should properly undo everything that happened when first finger went down
+    InputManager::MouseButtonCallbackArgs mouseArgs;
+    mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+    mouseArgs.pos = touch.fingers[0].pos;
+    mouseArgs.down = false;
+    mouseArgs.clicks = 0;
+    mouseArgs.button = InputManager::MouseButton::LEFT;
+    input_mouse_button_on_canvas_callback(mouseArgs);
+}
 bool DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar_exists() { return false; }
 void DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {}
 std::optional<InputManager::TextBoxStartInfo> DrawingProgramToolBase::get_text_box_start_info() { return std::nullopt; }

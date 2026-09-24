@@ -77,7 +77,7 @@ void EllipseDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
 void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
             auto& toolConfig = drawP.world.main.toolConfig;
 
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
@@ -120,6 +120,16 @@ void EllipseDrawTool::input_mouse_motion_callback(const InputManager::MouseMotio
         ellipse.d.p2 = cwise_vec_max(startAt, newPos);
         ellipse.d.p2 = ensure_points_have_distance(ellipse.d.p1, ellipse.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
         commitUpdate = true;
+    }
+}
+
+void EllipseDrawTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        auto& components = containerPtr->parentLayer->get_layer().components;
+        components->erase(components, containerPtr->objInfo);
+        objInfoBeingEdited = nullptr;
+        commitUpdate = false;
     }
 }
 

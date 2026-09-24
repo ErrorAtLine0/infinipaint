@@ -79,7 +79,7 @@ void EraserTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
 
 void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && !isErasing && !drawP.world.main.g.gui.cursor_obstructed()) {
+        if(button.down && !isErasing) {
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             if(!relativeWidthResult.first.has_value()) {
                 drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
@@ -303,7 +303,7 @@ void EraserTool::commit_data() {
 }
 
 void EraserTool::tool_update() {
-    if(!drawP.world.main.g.gui.cursor_obstructed())
+    if(!drawP.world.main.g.gui.mouse_pointer_obstructed())
         drawP.world.main.input.hideCursor = true;
 
     using namespace BrushComponentCode;
@@ -317,7 +317,7 @@ bool EraserTool::prevent_undo_or_redo() {
 
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     bool touchDeviceRequirement = !drawP.world.main.input.isTouchDevice || (isErasing && !drawP.world.main.conf.realTimeEraser);
-    bool overGuiRequirement = !drawData.main->g.gui.cursor_obstructed() || isErasing;
+    bool overGuiRequirement = !drawData.main->g.gui.mouse_pointer_obstructed() || isErasing;
     if(touchDeviceRequirement && overGuiRequirement && !erasePath.isEmpty() && drawData.main->window.mouseFocus) {
         if(isErasing) {
             CanvasComponentContainer::TransformData drawTransform = CanvasComponentContainer::calculate_draw_transform(drawData.cam.c, genData.coords);
