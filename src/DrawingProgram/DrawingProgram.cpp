@@ -94,6 +94,19 @@ void DrawingProgram::input_drop_file_callback(const InputManager::DropCallbackAr
     }
 }
 
+std::optional<Vector2f> DrawingProgram::currently_held_down_pointer_pos() {
+    switch(pointerDown) {
+        case PointerDownState::FINGER: return world.main.input.fingerTracker.fingers[0].pos;
+        case PointerDownState::MOUSE_LEFT: return world.main.input.mouse.pos;
+        default: return std::nullopt;
+    }
+    return std::nullopt;
+}
+
+bool DrawingProgram::is_device_type_down(InputManager::MouseDeviceType deviceType) {
+    return (deviceType == InputManager::MouseDeviceType::TOUCH && pointerDown == DrawingProgram::PointerDownState::FINGER) || (deviceType != InputManager::MouseDeviceType::TOUCH && pointerDown == DrawingProgram::PointerDownState::MOUSE_LEFT);
+}
+
 void DrawingProgram::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
     if(is_valid_http_url(drop.data)) {
         CanvasComponentContainer* newContainer = new CanvasComponentContainer(world.netObjMan, CanvasComponentType::IMAGE);

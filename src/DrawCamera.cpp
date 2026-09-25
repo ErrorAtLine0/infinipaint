@@ -165,15 +165,16 @@ void DrawCamera::check_if_scale_up_required(World& w) {
         w.scale_up_step();
 }
 
+void DrawCamera::internal_start_accurate_zoom(const Vector2f& p) {
+    startZoomMousePos = c.from_space(p);
+    startZoomVal = c.inverseScale;
+    startZoomCameraPos = c.pos;
+}
+
 bool DrawCamera::set_to_accurate_zoom_control_mode(const Vector2f& buttonPos, const ControlModeMouseCallback& controlModeCallback) {
-    auto startAccurateZoom = [&] {
-        startZoomMousePos = c.from_space(buttonPos);
-        startZoomVal = c.inverseScale;
-        startZoomCameraPos = c.pos;
-    };
     if(controlMode != CameraControlMode::NONE)
         return false;
-    startAccurateZoom();
+    internal_start_accurate_zoom(buttonPos);
     internal_set_control_mode(CameraControlMode::ACCURATE_ZOOM, controlModeCallback);
     return true;
 }
@@ -182,6 +183,21 @@ bool DrawCamera::set_to_pan_control_mode(const ControlModeMouseCallback& control
     if(controlMode != CameraControlMode::NONE)
         return false;
     internal_set_control_mode(CameraControlMode::PAN, controlModeCallback);
+    return true;
+}
+
+bool DrawCamera::set_to_accurate_zoom_touch_control_mode(const Vector2f& touchPos) {
+    if(controlMode != CameraControlMode::NONE)
+        return false;
+    internal_start_accurate_zoom(touchPos);
+    internal_set_control_mode(CameraControlMode::TOUCH_ACCURATE_ZOOM, nullptr);
+    return true;
+}
+
+bool DrawCamera::set_to_pan_touch_control_mode() {
+    if(controlMode != CameraControlMode::NONE)
+        return false;
+    internal_set_control_mode(CameraControlMode::TOUCH_PAN, nullptr);
     return true;
 }
 
@@ -197,10 +213,12 @@ void DrawCamera::input_mouse_button_callback(World& w, const InputManager::Mouse
 void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
     switch(controlMode) {
         case CameraControlMode::PAN:
+        case CameraControlMode::TOUCH_PAN:
             c.pos -= c.dir_from_space(motion.move);
             checks_after_input(w);
             break;
         case CameraControlMode::ACCURATE_ZOOM:
+        case CameraControlMode::TOUCH_ACCURATE_ZOOM:
             if(startZoomVal != WorldScalar(0)) {
                 WorldScalar zoomFactor(std::pow(1.0 + w.main.conf.dragZoomSpeed, w.main.conf.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
                 if(zoomFactor < WorldScalar(0.000001))
@@ -251,11 +269,11 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
 void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchCallbackArgs& touch) {
     switch(touch.action.type) {
         case FingerInput::ActionType::UP:
-            if(controlMode == CameraControlMode::TOUCH_TRANSFORM)
+            if(controlMode == CameraControlMode::TOUCH_TRANSFORM || controlMode == CameraControlMode::TOUCH_ACCURATE_ZOOM || controlMode == CameraControlMode::TOUCH_PAN)
                 clear_control_mode();
             break;
         case FingerInput::ActionType::DOWN:
-            if(controlMode == CameraControlMode::NONE && touch.fingers.size() == 2) {
+            if((controlMode == CameraControlMode::NONE || controlMode == CameraControlMode::TOUCH_ACCURATE_ZOOM || controlMode == CameraControlMode::TOUCH_PAN) && touch.fingers.size() == 2) {
                 touchInitialPositions.clear();
                 for(const FingerInput::FingerData& f : touch.fingers)
                     touchInitialPositions.emplace_back(f.pos);
@@ -293,6 +311,8 @@ void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchC
                 else
                     clear_control_mode();
             }
+            else if(controlMode == CameraControlMode::TOUCH_PAN || controlMode == CameraControlMode::TOUCH_ACCURATE_ZOOM)
+                InputManager::convert_touch_to_mouse_input(touch, [&](auto& t){input_mouse_button_callback(w, t);}, [&](auto& t){input_mouse_motion_callback(w, t);});
             break;
         }
         case FingerInput::ActionType::NONE: break;

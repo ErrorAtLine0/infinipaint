@@ -380,6 +380,8 @@ struct InputManager {
         float scale;
     };
 
+    static void convert_touch_to_mouse_input(const FingerInput::TouchCallbackArgs& touch, const std::function<void(const MouseButtonCallbackArgs&)>& buttonFunc, const std::function<void(const MouseMotionCallbackArgs&)>& motionFunc);
+
     std::mutex safeAreaWithoutIMEMutex;
     std::optional<SCollision::AABB<float>> safeAreaWithoutIME;
     std::atomic<bool> excludeIMEFromSafeArea = false;

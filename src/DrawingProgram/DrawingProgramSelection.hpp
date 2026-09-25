@@ -60,10 +60,10 @@ class DrawingProgramSelection {
 
         void phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t);
         void translate_key(unsigned keyPressed, bool pressed);
-        bool mouse_collided_with_selection_aabb();
-        bool mouse_collided_with_scale_point();
-        bool mouse_collided_with_rotate_center_handle_point();
-        bool mouse_collided_with_rotate_handle_point();
+        bool point_collided_with_selection_aabb(const Vector2f& p);
+        bool point_collided_with_scale_point(const Vector2f& p);
+        bool point_collided_with_rotate_center_handle_point(const Vector2f& p);
+        bool point_collided_with_rotate_handle_point(const Vector2f& p);
 
         bool is_empty_transform();
 

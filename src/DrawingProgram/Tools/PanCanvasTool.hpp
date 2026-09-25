@@ -32,6 +32,7 @@ class PanCanvasTool : public DrawingProgramToolBase {
         virtual void tool_update() override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
+        virtual void input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) override;
         virtual bool prevent_undo_or_redo() override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
 };

@@ -91,6 +91,11 @@ void RectSelectTool::input_mouse_motion_callback(const InputManager::MouseMotion
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
 }
 
+void RectSelectTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(controls.isSelecting)
+        controls = RectSelectControls();
+}
+
 void RectSelectTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 

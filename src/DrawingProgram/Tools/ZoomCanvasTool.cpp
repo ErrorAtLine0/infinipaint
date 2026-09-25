@@ -57,6 +57,11 @@ void ZoomCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::M
     }
 }
 
+void ZoomCanvasTool::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(touch.action.type == FingerInput::ActionType::DOWN)
+        drawP.world.drawData.cam.set_to_accurate_zoom_touch_control_mode(touch.action.pos);
+}
+
 void ZoomCanvasTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     drawP.selection_action_menu(popupPos);
 }

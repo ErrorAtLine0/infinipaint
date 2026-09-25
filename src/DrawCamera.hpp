@@ -58,6 +58,8 @@ class DrawCamera {
 
         bool set_to_accurate_zoom_control_mode(const Vector2f& buttonPos, const ControlModeMouseCallback& controlModeCallback);
         bool set_to_pan_control_mode(const ControlModeMouseCallback& controlModeCallback);
+        bool set_to_accurate_zoom_touch_control_mode(const Vector2f& touchPos);
+        bool set_to_pan_touch_control_mode();
         void clear_control_mode();
     private:
         struct SmoothMove {
@@ -79,16 +81,18 @@ class DrawCamera {
             SMOOTH_MOVE,
             ACCURATE_ZOOM,
             PAN,
+            TOUCH_ACCURATE_ZOOM,
+            TOUCH_PAN,
             TOUCH_TRANSFORM
         } controlMode = CameraControlMode::NONE;
 
+        void internal_start_accurate_zoom(const Vector2f& p);
         void internal_set_control_mode(CameraControlMode newMode, const ControlModeMouseCallback& mouseCallback);
 
         ControlModeMouseCallback controlModeMouseCallback;
 
         CoordSpaceHelper touchInitialC;
         std::vector<Vector2f> touchInitialPositions;
-
 
         void check_if_scale_up_required(World& w);
         void checks_after_input(World& w);

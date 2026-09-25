@@ -87,38 +87,7 @@ void DrawingProgramToolBase::input_pen_motion_callback(const InputManager::PenMo
 void DrawingProgramToolBase::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {}
 void DrawingProgramToolBase::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) {
     // Emulate a mouse by default
-    switch(touch.action.type) {
-        case FingerInput::ActionType::MOVE: {
-            InputManager::MouseMotionCallbackArgs motionArgs;
-            motionArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
-            motionArgs.move = touch.action.motion;
-            motionArgs.pos = touch.action.pos;
-            input_mouse_motion_callback(motionArgs);
-            break;
-        }
-        case FingerInput::ActionType::UP: {
-            InputManager::MouseButtonCallbackArgs mouseArgs;
-            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
-            mouseArgs.pos = touch.action.pos;
-            mouseArgs.down = false;
-            mouseArgs.clicks = 0;
-            mouseArgs.button = InputManager::MouseButton::LEFT;
-            input_mouse_button_on_canvas_callback(mouseArgs);
-            break;
-        }
-        case FingerInput::ActionType::DOWN: {
-            InputManager::MouseButtonCallbackArgs mouseArgs;
-            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
-            mouseArgs.pos = touch.action.pos;
-            mouseArgs.down = true;
-            mouseArgs.clicks = 1;
-            mouseArgs.button = InputManager::MouseButton::LEFT;
-            input_mouse_button_on_canvas_callback(mouseArgs);
-            break;
-        }
-        case FingerInput::ActionType::NONE:
-            break;
-    }
+    InputManager::convert_touch_to_mouse_input(touch, [&](const auto& b){input_mouse_button_on_canvas_callback(b);}, [&](const auto& m){input_mouse_motion_callback(m);});
 }
 void DrawingProgramToolBase::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     // By default, emulate mouse up action from first finger. Ideally, should properly undo everything that happened when first finger went down

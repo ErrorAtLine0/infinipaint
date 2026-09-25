@@ -383,20 +383,20 @@ void DrawingProgramSelection::reset_transform_data() {
     rotateData = RotationData();
 }
 
-bool DrawingProgramSelection::mouse_collided_with_selection_aabb() {
-    return SCollision::collide(camSpaceSelection, drawP.world.main.input.mouse.pos);
+bool DrawingProgramSelection::point_collided_with_selection_aabb(const Vector2f& p) {
+    return SCollision::collide(camSpaceSelection, p);
 }
 
-bool DrawingProgramSelection::mouse_collided_with_scale_point() {
-    return SCollision::collide(SCollision::Circle(scaleData.handlePoint, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos);
+bool DrawingProgramSelection::point_collided_with_scale_point(const Vector2f& p) {
+    return SCollision::collide(SCollision::Circle(scaleData.handlePoint, drawP.drag_point_radius()), p);
 }
 
-bool DrawingProgramSelection::mouse_collided_with_rotate_center_handle_point() {
-    return SCollision::collide(SCollision::Circle(rotateData.centerHandlePoint, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos);
+bool DrawingProgramSelection::point_collided_with_rotate_center_handle_point(const Vector2f& p) {
+    return SCollision::collide(SCollision::Circle(rotateData.centerHandlePoint, drawP.drag_point_radius()), p);
 }
 
-bool DrawingProgramSelection::mouse_collided_with_rotate_handle_point() {
-    return SCollision::collide(SCollision::Circle(rotateData.handlePoint, drawP.drag_point_radius() * ROTATION_POINT_RADIUS_MULTIPLIER), drawP.world.main.input.mouse.pos);
+bool DrawingProgramSelection::point_collided_with_rotate_handle_point(const Vector2f& p) {
+    return SCollision::collide(SCollision::Circle(rotateData.handlePoint, drawP.drag_point_radius() * ROTATION_POINT_RADIUS_MULTIPLIER), p);
 }
 
 void DrawingProgramSelection::commit_transform_selection() {
@@ -569,22 +569,22 @@ void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selec
         switch(transformOpHappening) {
             case TransformOperation::NONE: {
                 if(button.down && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
-                    if(mouse_collided_with_scale_point()) {
+                    if(point_collided_with_scale_point(button.pos)) {
                         scaleData.currentPos = scaleData.startPos = selectionTransformCoords.from_space_world(initialSelectionAABB.max);
                         scaleData.centerPos = selectionTransformCoords.from_space_world(initialSelectionAABB.center());
                         transformOpHappening = TransformOperation::SCALE;
                         check_add_stroke_color_change_undo();
                     }
-                    else if(mouse_collided_with_rotate_center_handle_point()) {
+                    else if(point_collided_with_rotate_center_handle_point(button.pos)) {
                         transformOpHappening = TransformOperation::ROTATE_RELOCATE_CENTER;
                         check_add_stroke_color_change_undo();
                     }
-                    else if(mouse_collided_with_rotate_handle_point()) {
+                    else if(point_collided_with_rotate_handle_point(button.pos)) {
                         rotateData.rotationAngle = 0.0;
                         transformOpHappening = TransformOperation::ROTATE;
                         check_add_stroke_color_change_undo();
                     }
-                    else if(mouse_collided_with_selection_aabb()) {
+                    else if(point_collided_with_selection_aabb(button.pos)) {
                         translateData.startPos = drawP.world.drawData.cam.c.from_space(button.pos);
                         transformOpHappening = TransformOperation::TRANSLATE;
                         translateData.translateWithKeys = false;
@@ -610,7 +610,7 @@ void DrawingProgramSelection::input_mouse_button_on_canvas_callback_modify_selec
 }
 
 void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(drawP.world.main.input.mouse.leftDown && is_something_selected()) {
+    if(drawP.is_device_type_down(motion.deviceType) && is_something_selected()) {
         rebuild_cam_space();
 
         switch(transformOpHappening) {
@@ -644,7 +644,7 @@ void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const
                 break;
             }
             case TransformOperation::ROTATE: {
-                Vector2f rotationPointDiff = drawP.world.main.input.mouse.pos - rotateData.centerHandlePoint;
+                Vector2f rotationPointDiff = motion.pos - rotateData.centerHandlePoint;
                 rotateData.rotationAngle = std::atan2(rotationPointDiff.y(), rotationPointDiff.x());
                 selectionTransformCoords = CoordSpaceHelperTransform(rotateData.centerPos, rotateData.rotationAngle);
                 break;

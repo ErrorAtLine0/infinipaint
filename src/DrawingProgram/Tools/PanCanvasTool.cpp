@@ -50,6 +50,11 @@ void PanCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::Mo
     }
 }
 
+void PanCanvasTool::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(touch.action.type == FingerInput::ActionType::DOWN)
+        drawP.world.drawData.cam.set_to_pan_touch_control_mode();
+}
+
 void PanCanvasTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("Pan canvas tool", [&] {

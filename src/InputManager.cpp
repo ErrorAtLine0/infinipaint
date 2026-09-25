@@ -656,6 +656,41 @@ void InputManager::backend_touch_finger_update(const SDL_TouchFingerEvent& e) {
     main.input_finger_touch_callback(callbackArgs);
 }
 
+void InputManager::convert_touch_to_mouse_input(const FingerInput::TouchCallbackArgs& touch, const std::function<void(const MouseButtonCallbackArgs&)>& buttonFunc, const std::function<void(const MouseMotionCallbackArgs&)>& motionFunc) {
+    switch(touch.action.type) {
+        case FingerInput::ActionType::MOVE: {
+            InputManager::MouseMotionCallbackArgs motionArgs;
+            motionArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            motionArgs.move = touch.action.motion;
+            motionArgs.pos = touch.action.pos;
+            motionFunc(motionArgs);
+            break;
+        }
+        case FingerInput::ActionType::UP: {
+            InputManager::MouseButtonCallbackArgs mouseArgs;
+            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            mouseArgs.pos = touch.action.pos;
+            mouseArgs.down = false;
+            mouseArgs.clicks = 0;
+            mouseArgs.button = InputManager::MouseButton::LEFT;
+            buttonFunc(mouseArgs);
+            break;
+        }
+        case FingerInput::ActionType::DOWN: {
+            InputManager::MouseButtonCallbackArgs mouseArgs;
+            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            mouseArgs.pos = touch.action.pos;
+            mouseArgs.down = true;
+            mouseArgs.clicks = 1;
+            mouseArgs.button = InputManager::MouseButton::LEFT;
+            buttonFunc(mouseArgs);
+            break;
+        }
+        case FingerInput::ActionType::NONE:
+            break;
+    }
+}
+
 void InputManager::update_safe_area() {
     SDL_Rect safeArea;
     if(SDL_GetWindowSafeArea(main.window.sdlWindow, &safeArea))

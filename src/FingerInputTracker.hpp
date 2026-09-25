@@ -68,6 +68,7 @@ class InputTracker {
     public:
         TouchCallbackArgs update_finger_data_input_callback(SDL_EventType eventType, SDL_TouchID touchDeviceID, SDL_FingerID fingerID, const Vector2f& pos, const Vector2f& delta);
         void update();
+        std::vector<FingerData> fingers;
     private:
         struct {
             unsigned count = 0;
@@ -80,7 +81,6 @@ class InputTracker {
         } tap;
         void invalidate_tap();
         void reset_tap();
-        std::vector<FingerData> fingers;
 };
 
 }

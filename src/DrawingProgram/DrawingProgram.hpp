@@ -98,6 +98,9 @@ class DrawingProgram {
         void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
+        std::optional<Vector2f> currently_held_down_pointer_pos();
+        bool is_device_type_down(InputManager::MouseDeviceType deviceType);
+
         void set_right_click_popup_location(const Vector2f& newLoc);
         void clear_right_click_popup();
 

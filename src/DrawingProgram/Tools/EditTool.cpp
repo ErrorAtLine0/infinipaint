@@ -109,7 +109,7 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
             if(!objInfoBeingEdited) {
                 WorldVec mouseWorldPos = drawP.world.drawData.cam.c.from_space(button.pos);
 
-                SkPath camMouseAABB = SkPath::Rect(SkRect::MakeLTRB(drawP.world.main.input.mouse.pos.x() - 0.5f, drawP.world.main.input.mouse.pos.y() - 0.5f, drawP.world.main.input.mouse.pos.x() + 0.5f, drawP.world.main.input.mouse.pos.y() + 0.5f));
+                SkPath camMouseAABB = SkPath::Rect(SkRect::MakeLTRB(button.pos.x() - 0.5f, button.pos.y() - 0.5f, button.pos.x() + 0.5f, button.pos.y() + 0.5f));
 
                 bool modifySelection = !drawP.selection.is_being_transformed();
                 if(button.clicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {

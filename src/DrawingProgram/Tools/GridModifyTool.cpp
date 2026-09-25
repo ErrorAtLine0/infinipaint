@@ -69,17 +69,17 @@ void GridModifyTool::input_mouse_button_on_canvas_callback(const InputManager::M
                         WorldGrid& g = *gLock;
                         Vector2f gOffsetScreenPos = drawP.world.drawData.cam.c.to_space(g.offset);
                         Vector2f gSizeScreenPos = drawP.world.drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
-                        if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                        if(SCollision::collide(SCollision::Circle(gOffsetScreenPos, drawP.drag_point_radius()), button.pos))
                             selectionMode = 1;
-                        else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                        else if(SCollision::collide(SCollision::Circle(gSizeScreenPos, drawP.drag_point_radius()), button.pos))
                             selectionMode = 2;
                         else if(g.bounds.has_value()) {
                             const auto& b = g.bounds.value();
                             Vector2f bMin = drawP.world.drawData.cam.c.to_space(b.min);
                             Vector2f bMax = drawP.world.drawData.cam.c.to_space(b.max);
-                            if(SCollision::collide(SCollision::Circle(bMin, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                            if(SCollision::collide(SCollision::Circle(bMin, drawP.drag_point_radius()), button.pos))
                                 selectionMode = 3;
-                            else if(SCollision::collide(SCollision::Circle(bMax, drawP.drag_point_radius()), drawP.world.main.input.mouse.pos))
+                            else if(SCollision::collide(SCollision::Circle(bMax, drawP.drag_point_radius()), button.pos))
                                 selectionMode = 4;
                         }
                     }
@@ -274,12 +274,12 @@ void GridModifyTool::draw(SkCanvas* canvas, const DrawData& drawData) {
                 drawP.draw_drag_circle(canvas, bMin, {0.9f, 0.5f, 0.1f, 1.0f}, drawData);
         }
         if(selectionMode == 0 || selectionMode == 2) {
-            Vector2f gSizeScreenPos;
-            auto mouseWorldPos = drawP.world.drawData.cam.c.from_space(drawData.main->input.mouse.pos);
-            if(mouseWorldPos.x() < g.offset.x() && selectionMode == 2)
-                gSizeScreenPos = drawData.cam.c.to_space(g.offset - WorldVec{g.size, 0});
-            else
-                gSizeScreenPos = drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
+            Vector2f gSizeScreenPos = drawData.cam.c.to_space(g.offset + WorldVec{g.size, 0});
+            if(selectionMode == 2 && drawP.currently_held_down_pointer_pos().has_value()) {
+                auto mouseWorldPos = drawP.world.drawData.cam.c.from_space(drawP.currently_held_down_pointer_pos().value());
+                if(mouseWorldPos.x() < g.offset.x())
+                    gSizeScreenPos = drawData.cam.c.to_space(g.offset - WorldVec{g.size, 0});
+            }
             drawP.draw_drag_circle(canvas, gSizeScreenPos, {0.1f, 0.9f, 0.9f, 1.0f}, drawData);
         }
         if(selectionMode == 0 || selectionMode == 1 || selectionMode == 3 || selectionMode == 4) {
