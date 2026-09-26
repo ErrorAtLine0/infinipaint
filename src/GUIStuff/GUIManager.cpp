@@ -775,12 +775,12 @@ void GUIManager::input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs
     mouse_callback(wheel.mousePos, mousePointerObstructed, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
 }
 
-void GUIManager::input_finger_touch_callback(FingerInput::TouchCallbackArgs touch) {
+void GUIManager::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touchInit) {
     lastInteractionIsTouch = true;
-    touch.scale(io.guiScaleMultiplier);
+    auto touch = touchInit.scaled_clone(io.guiScaleMultiplier);
     // Don't use tap gesture if it uses more than one finger
     if(touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::TAP) {
-        if(std::static_pointer_cast<FingerInput::TapGesture>(touch.gesture)->fingerPositions.size() != 1)
+        if(static_cast<FingerInput::TapGesture&>(*touch.gesture).fingerPositions.size() != 1)
             touch.gesture = nullptr;
     }
     // Mouse hovering calculations will only work when one finger is used

@@ -133,45 +133,56 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
                 }
             }
             else {
-                bool isMovingPoint = false;
-                bool clickedAway = false;
-
-                if(!pointDragging) {
-                    for(HandleData& h : pointHandles) {
-                        if(SCollision::collide(button.pos, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
-                            pointDragging = &h;
-                            isMovingPoint = true;
-                        }
-                    }
-                    if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_point(drawP.world.drawData.cam.c, button.pos))
-                        clickedAway = true;
+                button_down_obj_selected_update(button.pos);
+                if(objInfoBeingEdited) {
+                    if(button.deviceType == InputManager::MouseDeviceType::TOUCH && button.optionalTouchData)
+                        compEditTool->input_finger_touch_on_canvas_callback(*button.optionalTouchData, pointDragging);
+                    else
+                        compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
                 }
-
-                for(HandleData& h : pointHandles) {
-                    if(SCollision::collide(button.pos, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
-                        pointDragging = &h;
-                        isMovingPoint = true;
-                        break;
-                    }
-                }
-                if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_point(drawP.world.drawData.cam.c, button.pos))
-                    clickedAway = true;
-
-                if(clickedAway)
-                    switch_tool(get_type());
-
-                if(objInfoBeingEdited)
-                    compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
             }
         }
         else {
-            if(objInfoBeingEdited)
-                compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
+            if(objInfoBeingEdited) {
+                if(button.deviceType == InputManager::MouseDeviceType::TOUCH && button.optionalTouchData)
+                    compEditTool->input_finger_touch_on_canvas_callback(*button.optionalTouchData, pointDragging);
+                else
+                    compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
+            }
             if(pointDragging)
                 pointDragging = nullptr;
         }
         drawP.world.main.g.gui.set_to_layout();
     }
+}
+
+void EditTool::button_down_obj_selected_update(const Vector2f& buttonPos) {
+    bool isMovingPoint = false;
+    bool clickedAway = false;
+
+    if(!pointDragging) {
+        for(HandleData& h : pointHandles) {
+            if(SCollision::collide(buttonPos, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
+                pointDragging = &h;
+                isMovingPoint = true;
+            }
+        }
+        if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_point(drawP.world.drawData.cam.c, buttonPos))
+            clickedAway = true;
+    }
+
+    for(HandleData& h : pointHandles) {
+        if(SCollision::collide(buttonPos, SCollision::Circle<float>(drawP.world.drawData.cam.c.to_space(objInfoBeingEdited->obj->coords.from_space(h.coordMatrix * (*h.p))), drawP.drag_point_radius()))) {
+            pointDragging = &h;
+            isMovingPoint = true;
+            break;
+        }
+    }
+    if(!isMovingPoint && !objInfoBeingEdited->obj->collides_with_point(drawP.world.drawData.cam.c, buttonPos))
+        clickedAway = true;
+
+    if(clickedAway)
+        switch_tool(get_type());
 }
 
 void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
@@ -187,6 +198,10 @@ void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallba
                 compEditTool->commitUpdate = true;
             }
         }
+        if(motion.deviceType == InputManager::MouseDeviceType::TOUCH && motion.optionalTouchData)
+            compEditTool->input_finger_touch_on_canvas_callback(*motion.optionalTouchData, pointDragging);
+        else
+            compEditTool->input_mouse_motion_callback(motion, pointDragging);
         compEditTool->input_mouse_motion_callback(motion, pointDragging);
     }
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);

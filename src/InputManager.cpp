@@ -29,6 +29,7 @@
 #include <optional>
 
 #include <Helpers/Logger.hpp>
+#include "FingerInputTracker.hpp"
 #include "Helpers/MathExtras.hpp"
 #include "MainProgram.hpp"
 #include "AndroidJNICalls.hpp"
@@ -663,6 +664,7 @@ void InputManager::convert_touch_to_mouse_input(const FingerInput::TouchCallback
             motionArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
             motionArgs.move = touch.action.motion;
             motionArgs.pos = touch.action.pos;
+            motionArgs.optionalTouchData = &touch;
             motionFunc(motionArgs);
             break;
         }
@@ -673,6 +675,7 @@ void InputManager::convert_touch_to_mouse_input(const FingerInput::TouchCallback
             mouseArgs.down = false;
             mouseArgs.clicks = 0;
             mouseArgs.button = InputManager::MouseButton::LEFT;
+            mouseArgs.optionalTouchData = &touch;
             buttonFunc(mouseArgs);
             break;
         }
@@ -682,7 +685,13 @@ void InputManager::convert_touch_to_mouse_input(const FingerInput::TouchCallback
             mouseArgs.pos = touch.action.pos;
             mouseArgs.down = true;
             mouseArgs.clicks = 1;
+            if(touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::PRETAP) {
+                auto& pretapGesture = static_cast<FingerInput::PreTapGesture&>(*touch.gesture.get());
+                if(pretapGesture.fingerPositions.size() == 1)
+                    mouseArgs.clicks = pretapGesture.numberOfTaps;
+            }
             mouseArgs.button = InputManager::MouseButton::LEFT;
+            mouseArgs.optionalTouchData = &touch;
             buttonFunc(mouseArgs);
             break;
         }

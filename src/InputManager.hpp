@@ -327,12 +327,14 @@ struct InputManager {
         bool down;
         uint8_t clicks;
         Vector2f pos;
+        const FingerInput::TouchCallbackArgs* optionalTouchData = nullptr;
     };
 
     struct MouseMotionCallbackArgs {
         MouseDeviceType deviceType;
         Vector2f pos;
         Vector2f move;
+        const FingerInput::TouchCallbackArgs* optionalTouchData = nullptr;
     };
 
     struct MouseWheelCallbackArgs {

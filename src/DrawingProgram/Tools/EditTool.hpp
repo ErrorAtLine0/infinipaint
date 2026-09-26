@@ -70,4 +70,6 @@ class EditTool : public DrawingProgramToolBase {
         bool undoAfterEditDone;
 
         std::unique_ptr<CanvasComponent> oldData;
+    private:
+        void button_down_obj_selected_update(const Vector2f& buttonPos);
 };

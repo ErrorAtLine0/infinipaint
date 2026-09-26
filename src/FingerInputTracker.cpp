@@ -14,8 +14,30 @@ void FingerData::scale(float multiplier) {
     initialTouchPos /= multiplier;
 }
 
+GestureType PreTapGesture::get_type() const { return GestureType::PRETAP; }
 GestureType TapGesture::get_type() const { return GestureType::TAP; }
 GestureType HoldGesture::get_type() const { return GestureType::HOLD; }
+
+std::unique_ptr<BaseGesture> PreTapGesture::clone() const {
+    auto toRet = std::make_unique<PreTapGesture>();
+    *toRet = *this;
+    return toRet;
+}
+
+void PreTapGesture::scale(float multiplier) {
+    for(Vector2f& f : fingerPositions)
+        f /= multiplier;
+}
+
+std::vector<Vector2f> PreTapGesture::get_all_positions() const {
+    return fingerPositions;
+}
+
+std::unique_ptr<BaseGesture> TapGesture::clone() const {
+    auto toRet = std::make_unique<TapGesture>();
+    *toRet = *this;
+    return toRet;
+}
 
 void TapGesture::scale(float multiplier) {
     for(Vector2f& f : fingerPositions)
@@ -26,6 +48,12 @@ std::vector<Vector2f> TapGesture::get_all_positions() const {
     return fingerPositions;
 }
 
+std::unique_ptr<BaseGesture> HoldGesture::clone() const {
+    auto toRet = std::make_unique<HoldGesture>();
+    *toRet = *this;
+    return toRet;
+}
+
 void HoldGesture::scale(float multiplier) {
     fingerPosition /= multiplier;
 }
@@ -34,13 +62,24 @@ std::vector<Vector2f> HoldGesture::get_all_positions() const {
     return {fingerPosition};
 }
 
-void TouchCallbackArgs::scale(float multiplier) {
-    for(FingerData& f : fingers)
-        f.scale(multiplier);
-    action.motion /= multiplier;
-    action.pos /= multiplier;
+TouchCallbackArgs TouchCallbackArgs::clone() const {
+    TouchCallbackArgs toRet;
+    toRet.fingers = fingers;
+    toRet.action = action;
     if(gesture)
-        gesture->scale(multiplier);
+        toRet.gesture = gesture->clone();
+    return toRet;
+}
+
+TouchCallbackArgs TouchCallbackArgs::scaled_clone(float multiplier) const {
+    auto toRet = clone();
+    for(FingerData& f : toRet.fingers)
+        f.scale(multiplier);
+    toRet.action.motion /= multiplier;
+    toRet.action.pos /= multiplier;
+    if(toRet.gesture)
+        toRet.gesture->scale(multiplier);
+    return toRet;
 }
 
 TouchCallbackArgs InputTracker::update_finger_data_input_callback(SDL_EventType eventType, SDL_TouchID touchDeviceID, SDL_FingerID fingerID, const Vector2f& pos, const Vector2f& delta) {
@@ -102,19 +141,26 @@ TouchCallbackArgs InputTracker::update_finger_data_input_callback(SDL_EventType 
                     tap.invalid = false;
                 }
                 else {
-                    auto tapGesture = std::make_shared<TapGesture>();
+                    auto tapGesture = std::make_unique<TapGesture>();
                     tap.count++;
                     tapGesture->fingerPositions = tap.positions;
                     tapGesture->numberOfTaps = tap.count;
-                    toRet.gesture = tapGesture;
+                    toRet.gesture = std::move(tapGesture);
                 }
                 tap.fingersGoingUp = false;
             }
             break;
         }
-        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_DOWN: {
+            if(!tap.invalid && tap.fingerCount == fingers.size() && tap.count >= 1) {
+                auto pretapGesture = std::make_unique<PreTapGesture>();
+                pretapGesture->fingerPositions = tap.positions;
+                pretapGesture->numberOfTaps = tap.count + 1;
+                toRet.gesture = std::move(pretapGesture);
+            }
             toRet.action.type = ActionType::DOWN;
             break;
+        }
         case SDL_EVENT_FINGER_MOTION:
             toRet.action.type = ActionType::MOVE;
             break;

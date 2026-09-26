@@ -44,6 +44,8 @@ class DrawingProgramEditToolBase {
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key);
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button, bool isDraggingPoint);
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint);
+        virtual void input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint);
+        virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint);
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
         virtual ~DrawingProgramEditToolBase(); 
 
