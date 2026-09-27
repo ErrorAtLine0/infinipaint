@@ -91,7 +91,7 @@ struct TouchCallbackArgs {
 
 class InputTracker {
     public:
-        TouchCallbackArgs update_finger_data_input_callback(SDL_EventType eventType, SDL_TouchID touchDeviceID, SDL_FingerID fingerID, const Vector2f& pos, const Vector2f& delta);
+        std::optional<TouchCallbackArgs> update_finger_data_input_callback(SDL_EventType eventType, SDL_TouchID touchDeviceID, SDL_FingerID fingerID, const Vector2f& pos, const Vector2f& delta, bool noNewFingers);
         void update();
         std::vector<FingerData> fingers;
     private:

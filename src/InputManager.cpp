@@ -653,8 +653,10 @@ void InputManager::backend_pen_axis_update(const SDL_PenAxisEvent& e) {
 }
 
 void InputManager::backend_touch_finger_update(const SDL_TouchFingerEvent& e) {
-    auto callbackArgs = fingerTracker.update_finger_data_input_callback(e.type, e.touchID, e.fingerID, backend_touch_cursor_pos_calculation({e.x, e.y}), backend_touch_cursor_delta_calculation({e.dx, e.dy}));
-    main.input_finger_touch_callback(callbackArgs);
+    bool noNewFingerInput = main.conf.tabletOptions.disableTouchWhenPenInProximity && pen.inProximity;
+    std::optional<FingerInput::TouchCallbackArgs> callbackArgs = fingerTracker.update_finger_data_input_callback(e.type, e.touchID, e.fingerID, backend_touch_cursor_pos_calculation({e.x, e.y}), backend_touch_cursor_delta_calculation({e.dx, e.dy}), noNewFingerInput);
+    if(callbackArgs.has_value())
+        main.input_finger_touch_callback(callbackArgs.value());
 }
 
 void InputManager::convert_touch_to_mouse_input(const FingerInput::TouchCallbackArgs& touch, const std::function<void(const MouseButtonCallbackArgs&)>& buttonFunc, const std::function<void(const MouseMotionCallbackArgs&)>& motionFunc) {

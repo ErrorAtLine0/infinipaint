@@ -798,9 +798,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
             case SDL_EVENT_FINGER_DOWN:
             case SDL_EVENT_FINGER_UP:
+            case SDL_EVENT_FINGER_CANCELED:
             case SDL_EVENT_FINGER_MOTION: {
-                if(!mS.m->conf.tabletOptions.disableTouchWhenPenInProximity || !mS.m->input.pen.inProximity)
-                    mS.m->input.backend_touch_finger_update(event->tfinger);
+                mS.m->input.backend_touch_finger_update(event->tfinger);
                 break;
             }
             case SDL_EVENT_DISPLAY_ORIENTATION:

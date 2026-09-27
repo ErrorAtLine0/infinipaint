@@ -375,6 +375,13 @@ void World::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& to
     if(!clientStillConnecting) {
         drawProg.input_finger_touch_callback(touch);
         drawData.cam.input_finger_touch_callback(*this, touch);
+        if(touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::TAP) {
+            auto& tapGesture = static_cast<FingerInput::TapGesture&>(*touch.gesture);
+            if(tapGesture.numberOfTaps >= 2 && tapGesture.fingerPositions.size() == 2)
+                undo_with_checks();
+            else if(tapGesture.numberOfTaps >= 2 && tapGesture.fingerPositions.size() == 3)
+                redo_with_checks();
+        }
     }
 }
 

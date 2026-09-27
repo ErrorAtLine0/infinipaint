@@ -1,5 +1,6 @@
 #include "FingerInputTracker.hpp"
 #include "Helpers/MathExtras.hpp"
+#include "SDL3/SDL_events.h"
 #include <chrono>
 
 namespace FingerInput {
@@ -82,9 +83,11 @@ TouchCallbackArgs TouchCallbackArgs::scaled_clone(float multiplier) const {
     return toRet;
 }
 
-TouchCallbackArgs InputTracker::update_finger_data_input_callback(SDL_EventType eventType, SDL_TouchID touchDeviceID, SDL_FingerID fingerID, const Vector2f& pos, const Vector2f& delta) {
+std::optional<TouchCallbackArgs> InputTracker::update_finger_data_input_callback(SDL_EventType eventType, SDL_TouchID touchDeviceID, SDL_FingerID fingerID, const Vector2f& pos, const Vector2f& delta, bool noNewFingers) {
     switch(eventType) {
         case SDL_EVENT_FINGER_DOWN: {
+            if(noNewFingers)
+                return std::nullopt;
             auto touchTime = std::chrono::steady_clock::now();
             bool isFirstFingerDown = fingers.empty();
             if(tap.fingersGoingUp)
@@ -102,13 +105,22 @@ TouchCallbackArgs InputTracker::update_finger_data_input_callback(SDL_EventType 
         }
         case SDL_EVENT_FINGER_MOTION: {
             auto f = std::find_if(fingers.begin(), fingers.end(), [&](const FingerData& f) { return fingerID == f.fingerID; });
-            if(f != fingers.end()) {
+            if(f == fingers.end())
+                return std::nullopt;
+            else {
                 f->pos = pos;
                 if(vec_distance_sqrd(f->pos, f->initialTouchPos) > MAX_DELTA_MOTION_TO_DISABLE_TAP_SQRD) {
                     f->fingerMovedAlot = true;
                     invalidate_tap();
                 }
             }
+            break;
+        }
+        case SDL_EVENT_FINGER_CANCELED:
+        case SDL_EVENT_FINGER_UP: {
+            auto f = std::find_if(fingers.begin(), fingers.end(), [&](const FingerData& f) { return fingerID == f.fingerID; });
+            if(f == fingers.end())
+                return std::nullopt;
             break;
         }
         default: break;
@@ -122,6 +134,7 @@ TouchCallbackArgs InputTracker::update_finger_data_input_callback(SDL_EventType 
         .motion = delta
     };
     switch(eventType) {
+        case SDL_EVENT_FINGER_CANCELED:
         case SDL_EVENT_FINGER_UP: {
             toRet.action.type = ActionType::UP;
             if(!tap.fingersGoingUp) {

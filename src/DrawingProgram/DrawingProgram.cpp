@@ -319,7 +319,7 @@ void DrawingProgram::input_pen_axis_callback(const InputManager::PenAxisCallback
 void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     switch(pointerDown) {
         case PointerDownState::NONE:
-            if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::DOWN && !world.main.g.gui.touch_pointer_obstructed()) {
+            if(!world.main.conf.disableTouchForDrawing && touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::DOWN && !world.main.g.gui.touch_pointer_obstructed()) {
                 clear_right_click_popup();
                 pointerDown = PointerDownState::FINGER;
                 drawTool->input_finger_touch_on_canvas_callback(touch);
