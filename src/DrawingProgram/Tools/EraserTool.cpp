@@ -211,7 +211,7 @@ void EraserTool::reset_erasing_stroke() {
         auto lastBrushPoint = genData.brushPoints.back();
         genData.brushPoints.clear();
         genData.brushPoints.emplace_back(lastBrushPoint);
-        genData.prevPointUnaltered = genData.coords.get_mouse_pos(drawP.world);
+        genData.prevPointUnaltered = {0.0f, 0.0f};
         genData.addedTemporaryPoint = false;
     }
 }

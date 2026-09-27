@@ -145,6 +145,7 @@ TouchCallbackArgs InputTracker::update_finger_data_input_callback(SDL_EventType 
                     tap.count++;
                     tapGesture->fingerPositions = tap.positions;
                     tapGesture->numberOfTaps = tap.count;
+                    tap.lastTapTime = std::chrono::steady_clock::now();
                     toRet.gesture = std::move(tapGesture);
                 }
                 tap.fingersGoingUp = false;

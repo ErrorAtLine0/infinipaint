@@ -653,6 +653,23 @@ void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const
     }
 }
 
+void DrawingProgramSelection::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(is_something_selected()) {
+        switch(transformOpHappening) {
+            case TransformOperation::NONE:
+                break;
+            case TransformOperation::TRANSLATE:
+            case TransformOperation::ROTATE:
+            case TransformOperation::SCALE:
+                commit_transform_selection();
+                break;
+            case TransformOperation::ROTATE_RELOCATE_CENTER:
+                transformOpHappening = TransformOperation::NONE;
+                break;
+        }
+    }
+}
+
 void DrawingProgramSelection::translate_key(unsigned keyPressed, bool pressed) {
     if(is_something_selected()) {
         if(pressed) {

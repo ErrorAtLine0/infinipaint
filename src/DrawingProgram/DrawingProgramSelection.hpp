@@ -55,6 +55,7 @@ class DrawingProgramSelection {
         void input_key_callback_display_selection(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion);
+        void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
     private:
         bool commitChangeColorUpdate = false;
 

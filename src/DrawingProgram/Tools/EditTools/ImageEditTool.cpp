@@ -38,7 +38,7 @@ ImageEditTool::ImageEditTool(DrawingProgram& initDrawP, CanvasComponentContainer
     DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void ImageEditTool::edit_start(EditTool& editTool, std::any& prevData) {
+void ImageEditTool::edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) {
     auto& a = static_cast<ImageCanvasComponent&>(comp->obj->get_comp());
     static Vector2f staticZero = {0.0f, 0.0f};
     static Vector2f staticOne = {1.0f, 1.0f};

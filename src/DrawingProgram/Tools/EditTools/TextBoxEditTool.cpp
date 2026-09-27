@@ -601,10 +601,10 @@ void TextBoxEditTool::input_mouse_button_on_canvas_callback(const InputManager::
 
         if(button.deviceType == InputManager::MouseDeviceType::TOUCH) {
             if(button.down)
-                userInput->input_finger_touch_down(a.get_mouse_pos(drawP));
+                userInput->input_finger_touch_down(a.get_pointer_pos(drawP, button.pos));
         }
         else
-            userInput->process_mouse_left_button(a.get_mouse_pos(drawP), (button.down && button.clicks && collidesWithBox) ? button.clicks : 0, button.down, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+            userInput->process_mouse_left_button(a.get_pointer_pos(drawP, button.pos), (button.down && button.clicks && collidesWithBox) ? button.clicks : 0, button.down, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
         if(oldCursor != *a.cursor) {
             set_styles_at_selection(a);
@@ -629,11 +629,11 @@ void TextBoxEditTool::input_mouse_motion_callback(const InputManager::MouseMotio
         auto oldCursor = *a.cursor;
 
         if(motion.deviceType == InputManager::MouseDeviceType::TOUCH) {
-            //if(drawP.controls.leftClickHeld)
-            //    userInput->input_finger_held_motion(a.get_mouse_pos(drawP));
+            if(drawP.is_device_type_down(motion.deviceType))
+                userInput->input_finger_held_motion(a.get_pointer_pos(drawP, motion.pos));
         }
         else
-            userInput->process_mouse_left_button(a.get_mouse_pos(drawP), 0, drawP.world.main.input.mouse.leftDown, input.key(InputManager::KEY_GENERIC_LSHIFT).held);
+            userInput->process_mouse_left_button(a.get_pointer_pos(drawP, motion.pos), 0, drawP.is_device_type_down(motion.deviceType), input.key(InputManager::KEY_GENERIC_LSHIFT).held);
 
         if(oldCursor != *a.cursor) {
             set_styles_at_selection(a);
@@ -775,7 +775,7 @@ TextBoxEditTool::TextBoxEditToolAllData TextBoxEditTool::get_all_data(const Text
     };
 }
 
-void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData) {
+void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) {
     auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
     auto& cur = a.cursor;
     auto& textbox = a.textBox;
@@ -783,7 +783,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData) {
     a.init_text_box(drawP);
 
     cur = std::make_shared<TextBox::Cursor>();
-    Vector2f textSelectPos = a.get_mouse_pos(drawP);
+    Vector2f textSelectPos = a.get_pointer_pos(drawP, pointerPos);
     textbox->process_mouse_left_button(*cur, textSelectPos, 1, false, false);
     prevData = get_all_data(a);
     a.d.editing = true;

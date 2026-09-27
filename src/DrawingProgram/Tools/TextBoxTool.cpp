@@ -72,7 +72,7 @@ void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::Mous
             make_sure_textbox_is_big();
             tool_update();
             auto editTool = std::make_unique<EditTool>(drawP);
-            editTool->edit_start(objInfoBeingEdited, false);
+            editTool->edit_start(objInfoBeingEdited, button.pos, false);
             drawP.toolToSwitchToAfterUpdate = std::move(editTool);
         }
     }
@@ -93,6 +93,16 @@ void TextBoxTool::input_mouse_motion_callback(const InputManager::MouseMotionCal
         textBox.d.p2 = cwise_vec_max(endAt, startAt);
         textBox.d.p2 = ensure_points_have_distance(textBox.d.p1, textBox.d.p2, MINIMUM_DISTANCE_BETWEEN_BOUNDS);
         commitUpdate = true;
+    }
+}
+
+void TextBoxTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        auto& components = containerPtr->parentLayer->get_layer().components;
+        components->erase(components, containerPtr->objInfo);
+        objInfoBeingEdited = nullptr;
+        commitUpdate = false;
     }
 }
 

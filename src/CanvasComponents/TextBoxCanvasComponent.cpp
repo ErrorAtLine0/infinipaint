@@ -123,8 +123,8 @@ void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, co
     textBox->paint(canvas, paintOpts);
 }
 
-Vector2f TextBoxCanvasComponent::get_mouse_pos(DrawingProgram& drawP) const {
-    return compContainer->coords.get_mouse_pos(drawP.world) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
+Vector2f TextBoxCanvasComponent::get_pointer_pos(DrawingProgram& drawP, const Vector2f& pointerPos) const {
+    return compContainer->coords.from_cam_space_to_this(drawP.world, pointerPos) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
 }
 
 void TextBoxCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {

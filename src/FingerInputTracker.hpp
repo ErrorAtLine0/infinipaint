@@ -31,44 +31,49 @@ enum class GestureType {
 
 class BaseGesture {
     public:
-        virtual std::unique_ptr<BaseGesture> clone() const = 0;
-        virtual void scale(float multiplier) = 0;
         virtual GestureType get_type() const = 0;
         virtual std::vector<Vector2f> get_all_positions() const = 0;
         virtual ~BaseGesture() {}
+    private:
+        virtual std::unique_ptr<BaseGesture> clone() const = 0;
+        virtual void scale(float multiplier) = 0;
+        friend struct TouchCallbackArgs;
 };
 
 class TapGesture : public BaseGesture {
     public:
-        virtual std::unique_ptr<BaseGesture> clone() const override;
-        virtual void scale(float multiplier) override;
         virtual GestureType get_type() const override;
         virtual std::vector<Vector2f> get_all_positions() const override;
         virtual ~TapGesture() {}
 
         std::vector<Vector2f> fingerPositions;
         unsigned numberOfTaps;
+    private:
+        virtual std::unique_ptr<BaseGesture> clone() const override;
+        virtual void scale(float multiplier) override;
 };
 
 class PreTapGesture : public BaseGesture {
     public:
-        virtual std::unique_ptr<BaseGesture> clone() const override;
-        virtual void scale(float multiplier) override;
         virtual GestureType get_type() const override;
         virtual std::vector<Vector2f> get_all_positions() const override;
         virtual ~PreTapGesture() {}
         std::vector<Vector2f> fingerPositions;
         unsigned numberOfTaps;
+    private:
+        virtual std::unique_ptr<BaseGesture> clone() const override;
+        virtual void scale(float multiplier) override;
 };
 
 class HoldGesture : public BaseGesture {
     public:
-        virtual std::unique_ptr<BaseGesture> clone() const override;
-        virtual void scale(float multiplier) override;
         virtual GestureType get_type() const override;
         virtual std::vector<Vector2f> get_all_positions() const override;
         virtual ~HoldGesture() {}
         Vector2f fingerPosition;
+    private:
+        virtual std::unique_ptr<BaseGesture> clone() const override;
+        virtual void scale(float multiplier) override;
 };
 
 struct TouchCallbackArgs {

@@ -110,6 +110,8 @@ void LassoSelectTool::input_mouse_motion_callback(const InputManager::MouseMotio
 void LassoSelectTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     if(controls.isSelecting)
         controls = LassoSelectControls();
+    drawP.selection.cancel_finger_touch_callback(touch);
+    drawP.world.main.g.gui.set_to_layout();
 }
 
 Vector4f* LassoSelectTool::color_picker_color(Vector4f* oldColor) {

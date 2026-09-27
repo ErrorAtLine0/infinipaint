@@ -28,7 +28,7 @@ class EditTool;
 class DrawingProgramEditToolBase {
     public:
         DrawingProgramEditToolBase(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
-        virtual void edit_start(EditTool& editTool, std::any& prevData) = 0;
+        virtual void edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) = 0;
         virtual void commit_edit_updates(std::any& prevData) = 0;
         virtual void edit_update() = 0;
         virtual void edit_gui(Toolbar& t) = 0;

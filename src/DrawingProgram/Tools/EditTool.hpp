@@ -55,11 +55,12 @@ class EditTool : public DrawingProgramToolBase {
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
+        virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info() override;
         ~EditTool();
 
         void add_point_handle(const HandleData& handle);
-        void edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndoAfterEditDone = true);
+        void edit_start(CanvasComponentContainer::ObjInfo* comp, const Vector2f& pointerPos, bool initUndoAfterEditDone = true);
         bool is_editable(CanvasComponentContainer::ObjInfo* comp);
 
         std::unique_ptr<DrawingProgramEditToolBase> compEditTool;
@@ -70,6 +71,4 @@ class EditTool : public DrawingProgramToolBase {
         bool undoAfterEditDone;
 
         std::unique_ptr<CanvasComponent> oldData;
-    private:
-        void button_down_obj_selected_update(const Vector2f& buttonPos);
 };

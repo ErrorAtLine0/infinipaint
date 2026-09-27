@@ -200,9 +200,6 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
 }
 
 void DrawingProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    if(motion.deviceType == InputManager::MouseDeviceType::TOUCH && world.main.conf.disableTouchForDrawing)
-        return;
-
     drawTool->input_mouse_motion_callback(motion);
 }
 
