@@ -64,10 +64,12 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
             std::function<void()> onClick;
         };
         enum class SettingsMenuPopup {
-            NONE,
-            SETTINGS,
-            COLOR_CHANGE
+            NONE, // No settings open
+            SETTINGS, // Tool settings open. If colorPickerPtr isn't null, it'll show that, but the back button can be pressed to go back to settings
+            COLOR_CHANGE // Settings only meant to change color. No back button
         } settingsMenuPopup = SettingsMenuPopup::NONE;
+        void set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup newSettingsMode, Vector4f* newColorPickerPtr = nullptr, const ColorSelectorData& initColorPickerData = ColorSelectorData());
+        void set_color_picker_data(Vector4f* newColorPickerPtr, const ColorSelectorData& initColorPickerData);
 
         enum class TopToolbarSettingsPopup {
             NONE,

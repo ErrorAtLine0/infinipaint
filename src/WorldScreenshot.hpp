@@ -35,6 +35,7 @@ struct WorldScreenshotInfo {
     SCollision::AABB<float> imageBounds;
     bool transparentBackground;
     bool displayGrid;
+    bool share = false;
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(WorldScreenshotInfo::ScreenshotType, {

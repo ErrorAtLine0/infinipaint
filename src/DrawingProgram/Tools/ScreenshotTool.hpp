@@ -69,6 +69,7 @@ class ScreenshotTool : public DrawingProgramToolBase {
             std::vector<std::string> typeSelections = {".jpg", ".png", ".webp", ".svg"};
 
             std::atomic<bool> setToTakeScreenshot = false;
+            bool setToShareScreenshot = false;
             std::filesystem::path screenshotSavePath;
             WorldScreenshotInfo::ScreenshotType screenshotSaveType;
         } controls;

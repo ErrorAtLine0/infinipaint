@@ -225,7 +225,7 @@ void PhoneDrawingProgramScreen::top_toolbar_settings_popup() {
                         text_label_centered(gui, "Grids");
                         main.world->gridMan.setup_list_gui([&] {
                             topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
-                            settingsMenuPopup = SettingsMenuPopup::SETTINGS;
+                            set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::SETTINGS);
                         });
                     }
                 });
@@ -623,13 +623,11 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
         .name = "Canvas Color",
         .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
         .onClick = [&] {
-            settingsMenuPopup = SettingsMenuPopup::SETTINGS;
-            colorPickerPtr = &backgroundColorTemporary;
-            colorPickerData = {
+            set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::SETTINGS, &backgroundColorTemporary, {
                 .onChange = [&] {
                     main.world->canvasTheme.set_back_color({backgroundColorTemporary.x(), backgroundColorTemporary.y(), backgroundColorTemporary.z()});
                 }
-            };
+            });
         }
     });
 
@@ -638,6 +636,15 @@ void PhoneDrawingProgramScreen::top_toolbar_hidden_button_popup(GUIStuff::Elemen
         .svgPath = "data/icons/RemixIcon/clipboard-line.svg",
         .onClick = [&] {
             main.world->drawProg.paste_object_clipboard(main.window.safeArea.center());
+        }
+    });
+
+    l.emplace_back(TopToolbarRemainingAreaButton{
+        .name = "Export Area",
+        .svgPath = "data/icons/RemixIcon/upload-line.svg",
+        .onClick = [&] {
+            main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
+            set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::SETTINGS);
         }
     });
 
@@ -753,12 +760,12 @@ void PhoneDrawingProgramScreen::default_bottom_toolbar() {
         }) {
             switch(settingsMenuPopup) {
                 case SettingsMenuPopup::NONE:
-                    reset_color_picker_popup_data();
-                    colorPickerPtr = nullptr;
+                    set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::NONE);
                     break;
                 case SettingsMenuPopup::SETTINGS:
                     if(colorPickerPtr != &backgroundColorTemporary)
-                        colorPickerPtr = main.world->drawProg.color_picker_color(colorPickerPtr);
+                        colorPickerPtr = main.world->drawProg.color_picker_color(colorPickerPtr); // Shouldnt use set_color_picker_data here, it'll reset callbacks
+                                                                                                  // This function is only used to make sure the color being pointed to still exists
                     if(colorPickerPtr) {
                         if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
                             CLAY_AUTO_ID({
@@ -768,7 +775,7 @@ void PhoneDrawingProgramScreen::default_bottom_toolbar() {
                             }) {}
                         }
                         color_settings_popup(colorPickerPtr, colorPickerData, [&] {
-                            colorPickerPtr = nullptr;
+                            set_color_picker_data(nullptr, ColorSelectorData());
                         });
                     }
                     else {
@@ -849,7 +856,7 @@ void PhoneDrawingProgramScreen::bottom_toolbar_gui() {
             .isSelected = drawP.drawTool->get_type() == toolType,
             .onClick = [&, toolType] {
                 if(toolType == DrawingProgramToolType::EDIT)
-                    settingsMenuPopup = SettingsMenuPopup::SETTINGS;
+                    set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::SETTINGS);
                 drawP.switch_to_tool(toolType);
             }
         });
@@ -1217,7 +1224,7 @@ void PhoneDrawingProgramScreen::bottom_extra_toolbar_gui() {
         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
         .isSelected = settingsMenuPopup == SettingsMenuPopup::SETTINGS,
         .onClick = [&] {
-            settingsMenuPopup = (settingsMenuPopup == SettingsMenuPopup::SETTINGS) ? SettingsMenuPopup::NONE : SettingsMenuPopup::SETTINGS;
+            set_settings_menu_popup_mode_with_color_picker_data((settingsMenuPopup == SettingsMenuPopup::SETTINGS) ? SettingsMenuPopup::NONE : SettingsMenuPopup::SETTINGS);
         }
     });
 
@@ -1226,15 +1233,10 @@ void PhoneDrawingProgramScreen::bottom_extra_toolbar_gui() {
         .isSelected = settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.foregroundColor,
         .hasAlpha = true,
         .onClick = [&] {
-            if(settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.foregroundColor) {
-                colorPickerPtr = nullptr;
-                settingsMenuPopup = SettingsMenuPopup::NONE;
-            }
-            else {
-                colorPickerPtr = &main.toolConfig.globalConf.foregroundColor;
-                settingsMenuPopup = SettingsMenuPopup::COLOR_CHANGE;
-            }
-            colorPickerData = ColorSelectorData();
+            if(settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.foregroundColor)
+                set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::NONE);
+            else
+                set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::COLOR_CHANGE, &main.toolConfig.globalConf.foregroundColor);
         }
     });
 
@@ -1243,15 +1245,10 @@ void PhoneDrawingProgramScreen::bottom_extra_toolbar_gui() {
         .isSelected = settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.backgroundColor,
         .hasAlpha = true,
         .onClick = [&] {
-            if(settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.backgroundColor) {
-                colorPickerPtr = nullptr;
-                settingsMenuPopup = SettingsMenuPopup::NONE;
-            }
-            else {
-                colorPickerPtr = &main.toolConfig.globalConf.backgroundColor;
-                settingsMenuPopup = SettingsMenuPopup::COLOR_CHANGE;
-            }
-            colorPickerData = ColorSelectorData();
+            if(settingsMenuPopup == SettingsMenuPopup::COLOR_CHANGE && colorPickerPtr == &main.toolConfig.globalConf.backgroundColor)
+                set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::NONE, nullptr);
+            else
+                set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::COLOR_CHANGE, &main.toolConfig.globalConf.backgroundColor);
         }
     });
 }
@@ -1282,12 +1279,10 @@ void PhoneDrawingProgramScreen::on_tab_close() {
 }
 
 void PhoneDrawingProgramScreen::color_selector(Vector4f* color, const ColorSelectorData& colorSelectorData) {
-    if(colorPickerPtr != color) {
-        colorPickerPtr = color;
-        colorPickerData = colorSelectorData;
-    }
+    if(colorPickerPtr != color)
+        set_color_picker_data(color, colorSelectorData);
     else
-        colorPickerPtr = nullptr;
+        set_color_picker_data(nullptr, ColorSelectorData());
     main.g.gui.set_to_layout();
 }
 
@@ -1304,6 +1299,18 @@ void PhoneDrawingProgramScreen::color_selector_button(const char* id, Vector4f* 
             });
         }
     });
+}
+
+
+void PhoneDrawingProgramScreen::set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup newSettingsMode, Vector4f* newColorPickerPtr, const ColorSelectorData& initColorPickerData) {
+    settingsMenuPopup = newSettingsMode;
+    reset_color_picker_popup_data();
+    set_color_picker_data(newColorPickerPtr, initColorPickerData);
+}
+
+void PhoneDrawingProgramScreen::set_color_picker_data(Vector4f* newColorPickerPtr, const ColorSelectorData& initColorPickerData) {
+    colorPickerPtr = newColorPickerPtr;
+    colorPickerData = initColorPickerData;
 }
 
 PhoneDrawingProgramScreen::~PhoneDrawingProgramScreen() {

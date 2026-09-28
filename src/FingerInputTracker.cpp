@@ -184,7 +184,7 @@ std::optional<TouchCallbackArgs> InputTracker::update_finger_data_input_callback
 }
 
 void InputTracker::update() {
-    if(!fingers.empty() && (std::chrono::steady_clock::now() - fingers[0].initialTouchTime) >= DURATION_TO_HOLD && fingers[0].isFirstFingerDown) {
+    if(fingers.size() == 1 && (std::chrono::steady_clock::now() - fingers[0].initialTouchTime) >= DURATION_TO_HOLD && fingers[0].isFirstFingerDown) {
         // HOLD GESTURE
     }
 }
