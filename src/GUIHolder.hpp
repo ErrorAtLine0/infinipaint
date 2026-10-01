@@ -49,8 +49,7 @@ class GUIHolder {
         void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
-        void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
-        void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
+        void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
 
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 

@@ -111,7 +111,7 @@ void EllipseDrawEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     });
 }
 
-void EllipseDrawEditTool::edit_start(EditTool& editTool, std::any& prevData) {
+void EllipseDrawEditTool::edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) {
     auto& a = static_cast<EllipseCanvasComponent&>(comp->obj->get_comp());
 
     prevData = a.d;

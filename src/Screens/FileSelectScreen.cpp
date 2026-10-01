@@ -435,10 +435,10 @@ void FileSelectScreen::share_selected_files() {
     std::vector<std::string> filesToSend;
     for(const FileInfo& f : fileList) {
         if(f.selected)
-            filesToSend.emplace_back(std::string(MAIN_SAVES_FOLDER_STR) + std::string("/") + f.fileName + ".infpnt");
+            filesToSend.emplace_back(std::string(MAIN_SAVES_FOLDER_STR) + std::string("/") + f.fileName + World::DOT_FILE_EXTENSION);
     }
     if(!filesToSend.empty())
-        AndroidJNICalls::shareInternalFiles(filesToSend, "application/octet-stream");
+        AndroidJNICalls::shareInternalFiles(filesToSend, "application/octet-stream", true);
 #endif
 }
 

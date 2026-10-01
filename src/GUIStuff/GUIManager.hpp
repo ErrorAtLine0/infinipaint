@@ -125,11 +125,12 @@ class GUIManager {
         void input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button);
         void input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion);
         void input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel);
-        void input_finger_touch_callback(InputManager::FingerTouchCallbackArgs touch);
-        void input_finger_motion_callback(InputManager::FingerMotionCallbackArgs motion);
+        void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touchInit);
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
-        bool cursor_obstructed() const;
+        bool mouse_pointer_obstructed() const;
+        bool touch_pointer_obstructed() const;
+        bool pointer_action_obstructed() const;
     private:
         std::unordered_map<GUIManagerIDStack, GUIFloatAnimation> animations;
 
@@ -138,7 +139,7 @@ class GUIManager {
         void layout_end();
         void single_layout_run();
 
-        void mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*)>& f);
+        void mouse_callback(const Vector2f& mousePos, bool& obstructed, const std::function<void(ElementContainer*)>& f);
 
         GUIManagerIDStack idStack;
         std::vector<ElementContainer*> orderedElements;
@@ -183,10 +184,12 @@ class GUIManager {
         void calculate_new_clip_rect(std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw);
         void clip_rect_transform(SkCanvas* canvas, std::vector<SCollision::AABB<float>>& clipRectStack, std::optional<SCollision::AABB<float>>& clipRect, bool& clipNoDraw);
 
-        bool lastInteractionIsTouch;
         bool setToLayout;
         bool setToUpdateInvalidateDrawAreaFromLayout;
-        bool cursorObstructed;
+
+        bool lastInteractionIsTouch;
+        bool mousePointerObstructed;
+        bool touchPointerObstructed;
 };
 
 }

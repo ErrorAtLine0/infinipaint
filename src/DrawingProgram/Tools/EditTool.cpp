@@ -105,11 +105,11 @@ void EditTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     drawP.selection.input_mouse_button_on_canvas_callback_modify_selection(button);
     if(button.button == InputManager::MouseButton::LEFT) {
-        if(button.down && !drawP.world.main.g.gui.cursor_obstructed()) {
+        if(button.down) {
             if(!objInfoBeingEdited) {
                 WorldVec mouseWorldPos = drawP.world.drawData.cam.c.from_space(button.pos);
 
-                SkPath camMouseAABB = SkPath::Rect(SkRect::MakeLTRB(drawP.world.main.input.mouse.pos.x() - 0.5f, drawP.world.main.input.mouse.pos.y() - 0.5f, drawP.world.main.input.mouse.pos.x() + 0.5f, drawP.world.main.input.mouse.pos.y() + 0.5f));
+                SkPath camMouseAABB = SkPath::Rect(SkRect::MakeLTRB(button.pos.x() - 0.5f, button.pos.y() - 0.5f, button.pos.x() + 0.5f, button.pos.y() + 0.5f));
 
                 bool modifySelection = !drawP.selection.is_being_transformed();
                 if(button.clicks >= 2 && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LSHIFT).held && !drawP.world.main.input.key(InputManager::KEY_GENERIC_LALT).held) {
@@ -117,7 +117,7 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
 
                     if(selectedObjectToEdit && is_editable(selectedObjectToEdit)) {
                         drawP.selection.deselect_all();
-                        edit_start(selectedObjectToEdit);
+                        edit_start(selectedObjectToEdit, button.pos);
                         modifySelection = false;
                     }
                 }
@@ -160,13 +160,21 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
                 if(clickedAway)
                     switch_tool(get_type());
 
-                if(objInfoBeingEdited)
-                    compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
+                if(objInfoBeingEdited) {
+                    if(button.deviceType == InputManager::MouseDeviceType::TOUCH && button.optionalTouchData)
+                        compEditTool->input_finger_touch_on_canvas_callback(*button.optionalTouchData, pointDragging);
+                    else
+                        compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
+                }
             }
         }
         else {
-            if(objInfoBeingEdited)
-                compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
+            if(objInfoBeingEdited) {
+                if(button.deviceType == InputManager::MouseDeviceType::TOUCH && button.optionalTouchData)
+                    compEditTool->input_finger_touch_on_canvas_callback(*button.optionalTouchData, pointDragging);
+                else
+                    compEditTool->input_mouse_button_on_canvas_callback(button, pointDragging);
+            }
             if(pointDragging)
                 pointDragging = nullptr;
         }
@@ -176,8 +184,8 @@ void EditTool::input_mouse_button_on_canvas_callback(const InputManager::MouseBu
 
 void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(objInfoBeingEdited) {
-        if(drawP.controls.leftClickHeld && pointDragging) {
-            Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.get_mouse_pos(drawP.world);
+        if(pointDragging) {
+            Vector2f newPos = pointDragging->coordMatrix.inverse() * objInfoBeingEdited->obj->coords.from_cam_space_to_this(drawP.world, motion.pos);
             if(newPos != *pointDragging->p) {
                 if(pointDragging->min)
                     newPos = cwise_vec_max((*pointDragging->min + Vector2f{pointDragging->minimumDistanceBetweenMinAndPoint, pointDragging->minimumDistanceBetweenMinAndPoint}).eval(), newPos);
@@ -187,9 +195,21 @@ void EditTool::input_mouse_motion_callback(const InputManager::MouseMotionCallba
                 compEditTool->commitUpdate = true;
             }
         }
-        compEditTool->input_mouse_motion_callback(motion, pointDragging);
+        if(motion.deviceType == InputManager::MouseDeviceType::TOUCH && motion.optionalTouchData)
+            compEditTool->input_finger_touch_on_canvas_callback(*motion.optionalTouchData, pointDragging);
+        else
+            compEditTool->input_mouse_motion_callback(motion, pointDragging);
     }
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
+}
+
+void EditTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    drawP.selection.cancel_finger_touch_callback(touch);
+    if(objInfoBeingEdited)
+        compEditTool->cancel_finger_touch_callback(touch, pointDragging);
+    if(pointDragging)
+        pointDragging = nullptr;
+    drawP.world.main.g.gui.set_to_layout();
 }
 
 std::optional<InputManager::TextBoxStartInfo> EditTool::get_text_box_start_info() {
@@ -229,7 +249,7 @@ void EditTool::switch_tool(DrawingProgramToolType newTool) {
         drawP.selection.deselect_all();
 }
 
-void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndoAfterEditDone) {
+void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, const Vector2f& pointerPos, bool initUndoAfterEditDone) {
     bool isEditing = true;
     switch(comp->obj->get_comp().get_type()) {
         case CanvasComponentType::TEXTBOX: {
@@ -261,7 +281,7 @@ void EditTool::edit_start(CanvasComponentContainer::ObjInfo* comp, bool initUndo
         objInfoBeingEdited = comp;
         oldData = comp->obj->get_comp().get_data_copy();
         undoAfterEditDone = initUndoAfterEditDone;
-        compEditTool->edit_start(*this, prevData);
+        compEditTool->edit_start(*this, prevData, pointerPos);
         drawP.world.main.g.gui.set_to_layout();
     }
 }

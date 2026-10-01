@@ -157,9 +157,13 @@ public class InfiniPaint extends SDLActivity {
         mSingleton.stopService(new Intent(mSingleton, InfiniPaintNetworkService.class));
     }
 
-    static public void shareInternalFiles(String[] filePaths, String mimeType) {
+    static public void shareInternalFiles(String[] filePaths, String mimeType, boolean prependInternalDirPath) {
         if(filePaths.length == 1) {
-            File newFile = new File(getContext().getFilesDir(), filePaths[0]);
+            File newFile;
+            if(prependInternalDirPath)
+                newFile = new File(getContext().getFilesDir(), filePaths[0]);
+            else
+                newFile = new File(filePaths[0]);
             Uri contentUri;
 
             try {
@@ -179,7 +183,11 @@ public class InfiniPaint extends SDLActivity {
         else if(filePaths.length > 1) {
             ArrayList<Uri> arrayList = new ArrayList<Uri>();
             for(String str : filePaths) {
-                File newFile = new File(getContext().getFilesDir(), str);
+                File newFile;
+                if(prependInternalDirPath)
+                    newFile = new File(getContext().getFilesDir(), str);
+                else
+                    newFile = new File(str);
                 try {
                     arrayList.add(getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile));
                 } catch (Exception e) {

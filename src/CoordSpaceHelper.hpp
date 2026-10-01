@@ -120,7 +120,6 @@ class CoordSpaceHelper {
             return toRet;
         }
 
-        Vector2f get_mouse_pos(const World& w) const;
         Vector2f from_cam_space_to_this(const World& w, const Vector2f& coord) const;
         Vector2f from_this_to_cam_space(const World& w, const Vector2f& coord) const;
         //SkMatrix get_sk_matrix_temp(const WorldTransform& tempTransform, const DrawData& drawData) const;

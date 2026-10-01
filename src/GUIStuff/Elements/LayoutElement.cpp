@@ -43,27 +43,39 @@ void LayoutElement::input_mouse_wheel_callback(const InputManager::MouseWheelCal
     if(c.mouseWheel) c.mouseWheel(this, wheel);
 }
 
-void LayoutElement::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+void LayoutElement::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     if(c.fingerTouch) c.fingerTouch(this, touch);
-    if(c.onClick) {
-        c.onClick(this, {
-            .deviceType = InputManager::MouseDeviceType::TOUCH,
-            .button = InputManager::MouseButton::LEFT,
-            .down = touch.down,
-            .clicks = static_cast<uint8_t>(touch.fingerTapCount),
-            .pos = touch.pos
-        });
-    }
-}
-
-void LayoutElement::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    if(c.fingerMotion) c.fingerMotion(this, motion);
-    if(c.onMotion) {
-        c.onMotion(this, {
-            .deviceType = InputManager::MouseDeviceType::TOUCH,
-            .pos = motion.pos,
-            .move = motion.move
-        });
+    switch(touch.action.type) {
+        case FingerInput::ActionType::MOVE: {
+            InputManager::MouseMotionCallbackArgs motionArgs;
+            motionArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            motionArgs.move = touch.action.motion;
+            motionArgs.pos = touch.action.pos;
+            if(c.onMotion) c.onMotion(this, motionArgs);
+            break;
+        }
+        case FingerInput::ActionType::UP: {
+            InputManager::MouseButtonCallbackArgs mouseArgs;
+            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            mouseArgs.pos = touch.action.pos;
+            mouseArgs.down = false;
+            mouseArgs.clicks = 0;
+            mouseArgs.button = InputManager::MouseButton::LEFT;
+            if(c.onClick) c.onClick(this, mouseArgs);
+            break;
+        }
+        case FingerInput::ActionType::DOWN: {
+            InputManager::MouseButtonCallbackArgs mouseArgs;
+            mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+            mouseArgs.pos = touch.action.pos;
+            mouseArgs.down = true;
+            mouseArgs.clicks = 1;
+            mouseArgs.button = InputManager::MouseButton::LEFT;
+            if(c.onClick) c.onClick(this, mouseArgs);
+            break;
+        }
+        case FingerInput::ActionType::NONE:
+            break;
     }
 }
 

@@ -70,7 +70,7 @@ Vector4f* MeshEditTool::color_picker_color(Vector4f* oldColor) {
     return nullptr;
 }
 
-void MeshEditTool::edit_start(EditTool& editTool, std::any& prevData) {
+void MeshEditTool::edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) {
     auto& a = static_cast<MeshCanvasComponent&>(comp->obj->get_comp());
     oldColor = a.d.color;
 }

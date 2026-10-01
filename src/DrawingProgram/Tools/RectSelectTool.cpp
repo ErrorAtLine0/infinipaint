@@ -57,7 +57,7 @@ void RectSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key
 
 void RectSelectTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     drawP.selection.input_mouse_button_on_canvas_callback_modify_selection(button);
-    if(!controls.isSelecting && button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed() && !drawP.world.main.g.gui.cursor_obstructed()) {
+    if(!controls.isSelecting && button.button == InputManager::MouseButton::LEFT && button.down && !drawP.selection.is_being_transformed()) {
         controls = RectSelectControls();
         controls.coords = drawP.world.drawData.cam.c;
         controls.selectStartAt = controls.selectEndAt = button.pos;
@@ -89,6 +89,13 @@ void RectSelectTool::input_mouse_motion_callback(const InputManager::MouseMotion
     if(controls.isSelecting)
         controls.selectEndAt = controls.coords.from_cam_space_to_this(drawP.world, motion.pos);
     drawP.selection.input_mouse_motion_callback_modify_selection(motion);
+}
+
+void RectSelectTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(controls.isSelecting)
+        controls = RectSelectControls();
+    drawP.selection.cancel_finger_touch_callback(touch);
+    drawP.world.main.g.gui.set_to_layout();
 }
 
 void RectSelectTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {

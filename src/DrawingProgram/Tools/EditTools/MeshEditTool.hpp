@@ -26,7 +26,7 @@ class DrawingProgram;
 class MeshEditTool : public DrawingProgramEditToolBase {
     public:
         MeshEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
-        virtual void edit_start(EditTool& editTool, std::any& prevData) override;
+        virtual void edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) override;
         virtual void commit_edit_updates(std::any& prevData) override;
         virtual void edit_update() override;
         virtual void edit_gui(Toolbar& t) override;

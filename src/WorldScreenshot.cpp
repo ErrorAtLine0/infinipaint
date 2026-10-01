@@ -36,6 +36,8 @@
 #include <include/encode/SkJpegEncoder.h>
 #include <include/gpu/GpuTypes.h>
 
+#include "AndroidJNICalls.hpp"
+
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
@@ -100,7 +102,15 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
     #ifndef __EMSCRIPTEN__
         try {
             auto skData = out.detachAsData();
-            if(!SDL_SaveFile(info.filePath.string().c_str(), skData->bytes(), skData->size()))
+            if(info.share) {
+#ifdef __ANDROID__
+                std::string tempSavePath = std::string(SDL_GetAndroidCachePath()) + "/screenshot" + world_screenshot_info_get_extension_from_type(info.type);
+                if(!SDL_SaveFile(tempSavePath.c_str(), skData->bytes(), skData->size()))
+                    throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
+                AndroidJNICalls::shareInternalFiles({tempSavePath}, world_screenshot_info_get_mime_from_type(info.type), false);
+#endif
+            }
+            else if(!SDL_SaveFile(info.filePath.string().c_str(), skData->bytes(), skData->size()))
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {
@@ -129,7 +139,15 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
     #ifndef __EMSCRIPTEN__
         try {
             auto skData = out.detachAsData();
-            if(!SDL_SaveFile(info.filePath.string().c_str(), skData->bytes(), skData->size()))
+            if(info.share) {
+#ifdef __ANDROID__
+                std::string tempSavePath = std::string(SDL_GetAndroidCachePath()) + "/screenshot" + world_screenshot_info_get_extension_from_type(info.type);
+                if(!SDL_SaveFile(tempSavePath.c_str(), skData->bytes(), skData->size()))
+                    throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
+                AndroidJNICalls::shareInternalFiles({tempSavePath}, world_screenshot_info_get_mime_from_type(info.type), false);
+#endif
+            }
+            else if(!SDL_SaveFile(info.filePath.string().c_str(), skData->bytes(), skData->size()))
                 throw std::runtime_error("SDL_SaveFile failed with error: " + std::string(SDL_GetError()));
         }
         catch(const std::exception& e) {

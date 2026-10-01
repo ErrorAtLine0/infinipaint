@@ -65,12 +65,12 @@ void DrawCamera::smooth_move_to(World& w, const CoordSpaceHelper& newCoords, Vec
     float a2(w.main.window.size.y() / windowSize.y());
     smoothMove.endUniformZoom = std::max(smoothMove.end.inverseScale.multiply_double((a1 < a2) ? a1 : a2), WorldScalar(1));
 
-    smoothMove.occurring = true;
+    internal_set_control_mode(CameraControlMode::SMOOTH_MOVE, nullptr);
     smoothMove.moveTime = (instantJump || w.main.conf.jumpTransitionTime <= 0.01f) ? w.main.conf.jumpTransitionTime : 0.0f;
 }
 
 void DrawCamera::scale_up(World& w, const WorldScalar& scaleUpAmount) {
-    smoothMove.occurring = false;
+    clear_control_mode();
     c.scale_about({0, 0}, scaleUpAmount, true);
     startZoomVal *= scaleUpAmount;
     startZoomMousePos *= scaleUpAmount;
@@ -80,7 +80,7 @@ void DrawCamera::scale_up(World& w, const WorldScalar& scaleUpAmount) {
 }
 
 void DrawCamera::update_main(World& w) {
-    if(smoothMove.occurring) {
+    if(controlMode == CameraControlMode::SMOOTH_MOVE) {
         BezierEasing zoomAnim{w.main.conf.jumpTransitionEasing};
         float smoothTime = smooth_two_way_animation_time_get_lerp(smoothMove.moveTime, w.main.deltaTime, true, w.main.conf.jumpTransitionTime);
         float lerpTime;
@@ -126,12 +126,12 @@ void DrawCamera::update_main(World& w) {
             c.pos = smoothMove.endCenter - (w.main.window.size.cast<float>() * 0.5f).cast<WorldScalar>() * c.inverseScale;
             c.set_rotation(0.0);
             c.rotate_about(smoothMove.endCenter, smoothMove.end.rotation);
-            smoothMove.occurring = false;
+            clear_control_mode();
         }
 
         checks_after_input(w);
     }
-    else {
+    else if(controlMode == CameraControlMode::NONE) {
         if(w.main.input.key(InputManager::KEY_CAMERA_ROTATE_COUNTERCLOCKWISE).held && !w.main.input.text_is_accepting_input()) {
             c.rotate_about(c.from_space(w.main.window.size.cast<float>() * 0.5f), -w.main.deltaTime);
             InputManager::MouseMotionCallbackArgs motion{
@@ -165,54 +165,83 @@ void DrawCamera::check_if_scale_up_required(World& w) {
         w.scale_up_step();
 }
 
-void DrawCamera::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+void DrawCamera::internal_start_accurate_zoom(const Vector2f& p) {
+    startZoomMousePos = c.from_space(p);
+    startZoomVal = c.inverseScale;
+    startZoomCameraPos = c.pos;
 }
 
-void DrawCamera::input_mouse_button_on_canvas_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
-    if(!smoothMove.occurring && !isTouchTransforming && !w.main.g.gui.cursor_obstructed()) {
-        bool newIsAccurateZooming = (w.drawProg.controls.middleClickHeld && w.main.input.pen.isDown && w.main.conf.tabletOptions.zoomWhilePenDownAndButtonHeld) || // Hold middle click (pen button assigned to middle click) while pen is down
-                                    (w.drawProg.controls.middleClickHeld && w.main.input.key(InputManager::KEY_GENERIC_LCTRL).held) || // Hold middle click/pen button while holding control
-                                    (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::ZOOM); // Hold left click while on zoom tool
-        if(newIsAccurateZooming && !isAccurateZooming) {
-            startZoomMousePos = c.from_space(button.pos);
-            startZoomVal = c.inverseScale;
-            startZoomCameraPos = c.pos;
-        }
-        isAccurateZooming = newIsAccurateZooming;
+bool DrawCamera::set_to_accurate_zoom_control_mode(const Vector2f& buttonPos, const ControlModeMouseCallback& controlModeCallback) {
+    if(controlMode != CameraControlMode::NONE)
+        return false;
+    internal_start_accurate_zoom(buttonPos);
+    internal_set_control_mode(CameraControlMode::ACCURATE_ZOOM, controlModeCallback);
+    return true;
+}
 
-        checks_after_input(w);
-    }
-    else
-        isAccurateZooming = false;
+bool DrawCamera::set_to_pan_control_mode(const ControlModeMouseCallback& controlModeCallback) {
+    if(controlMode != CameraControlMode::NONE)
+        return false;
+    internal_set_control_mode(CameraControlMode::PAN, controlModeCallback);
+    return true;
+}
+
+bool DrawCamera::set_to_accurate_zoom_touch_control_mode(const Vector2f& touchPos) {
+    if(controlMode != CameraControlMode::NONE)
+        return false;
+    internal_start_accurate_zoom(touchPos);
+    internal_set_control_mode(CameraControlMode::TOUCH_ACCURATE_ZOOM, nullptr);
+    return true;
+}
+
+bool DrawCamera::set_to_pan_touch_control_mode() {
+    if(controlMode != CameraControlMode::NONE)
+        return false;
+    internal_set_control_mode(CameraControlMode::TOUCH_PAN, nullptr);
+    return true;
+}
+
+void DrawCamera::clear_control_mode() {
+    internal_set_control_mode(CameraControlMode::NONE, nullptr);
+}
+
+void DrawCamera::input_mouse_button_callback(World& w, const InputManager::MouseButtonCallbackArgs& button) {
+    if(controlModeMouseCallback)
+        controlModeMouseCallback(w, button);
 }
 
 void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
-    if(!smoothMove.occurring && !isTouchTransforming) {
-        if(isAccurateZooming && startZoomVal != WorldScalar(0)) {
-            WorldScalar zoomFactor(std::pow(1.0 + w.main.conf.dragZoomSpeed, w.main.conf.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
-            if(zoomFactor < WorldScalar(0.000001))
-                zoomFactor = WorldScalar(0.000001);
-
-            c.scale(zoomFactor);
-            if(c.inverseScale < WorldScalar(0.0001))
-                c.inverseScale = WorldScalar(0.0001);
-            else {
-                WorldVec mVec = startZoomCameraPos - startZoomMousePos;
-                WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
-                c.pos = startZoomMousePos + mVec * mX;
-            }
-
-            checks_after_input(w);
-        }
-        else if(w.drawProg.controls.middleClickHeld || (w.drawProg.controls.leftClickHeld && w.drawProg.drawTool->get_type() == DrawingProgramToolType::PAN)) {
+    switch(controlMode) {
+        case CameraControlMode::PAN:
+        case CameraControlMode::TOUCH_PAN:
             c.pos -= c.dir_from_space(motion.move);
             checks_after_input(w);
-        }
+            break;
+        case CameraControlMode::ACCURATE_ZOOM:
+        case CameraControlMode::TOUCH_ACCURATE_ZOOM:
+            if(startZoomVal != WorldScalar(0)) {
+                WorldScalar zoomFactor(std::pow(1.0 + w.main.conf.dragZoomSpeed, w.main.conf.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
+                if(zoomFactor < WorldScalar(0.000001))
+                    zoomFactor = WorldScalar(0.000001);
+
+                c.scale(zoomFactor);
+                if(c.inverseScale < WorldScalar(0.0001))
+                    c.inverseScale = WorldScalar(0.0001);
+                else {
+                    WorldVec mVec = startZoomCameraPos - startZoomMousePos;
+                    WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
+                    c.pos = startZoomMousePos + mVec * mX;
+                }
+
+                checks_after_input(w);
+            }
+            break;
+        default: break;
     }
 }
 
 void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseWheelCallbackArgs& wheel) {
-    if(!smoothMove.occurring && !isTouchTransforming && wheel.tickAmount.y() && !w.main.g.gui.cursor_obstructed()) {
+    if(controlMode == CameraControlMode::NONE && wheel.tickAmount.y() && !w.main.g.gui.mouse_pointer_obstructed()) {
         // Doesn't take tickAmount magnitude into account, since that results in scrolling that's way too fast on macOS
         WorldVec mouseWorldPos = c.from_space(wheel.mousePos);
         WorldScalar zoomFactor(1.0 + w.main.conf.scrollZoomSpeed);
@@ -237,40 +266,62 @@ void DrawCamera::input_mouse_wheel_callback(World& w, const InputManager::MouseW
     }
 }
 
-void DrawCamera::input_multi_finger_touch_callback(World& w, const InputManager::MultiFingerTouchCallbackArgs& touch) {
-    if(!smoothMove.occurring && !isAccurateZooming && !isTouchTransforming && touch.down) {
-        touchInitialPositions = touch.pos;
-        touchInitialC = c;
-        isTouchTransforming = true;
+void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchCallbackArgs& touch) {
+    switch(touch.action.type) {
+        case FingerInput::ActionType::UP:
+            if(controlMode == CameraControlMode::TOUCH_TRANSFORM || controlMode == CameraControlMode::TOUCH_ACCURATE_ZOOM || controlMode == CameraControlMode::TOUCH_PAN)
+                clear_control_mode();
+            break;
+        case FingerInput::ActionType::DOWN:
+            if((controlMode == CameraControlMode::NONE || controlMode == CameraControlMode::TOUCH_ACCURATE_ZOOM || controlMode == CameraControlMode::TOUCH_PAN) && touch.fingers.size() == 2) {
+                touchInitialPositions.clear();
+                for(const FingerInput::FingerData& f : touch.fingers)
+                    touchInitialPositions.emplace_back(f.pos);
+                touchInitialC = c;
+                internal_set_control_mode(CameraControlMode::TOUCH_TRANSFORM, nullptr);
+            }
+            else if(controlMode == CameraControlMode::TOUCH_TRANSFORM)
+                clear_control_mode();
+            break;
+        case FingerInput::ActionType::MOVE: {
+            if(controlMode == CameraControlMode::TOUCH_TRANSFORM) {
+                if(touch.fingers.size() == 2) {
+                    c = touchInitialC;
+
+                    Vector2f initialCenter = (touchInitialPositions[0] + touchInitialPositions[1]) * 0.5f;
+                    Vector2f newCenter = (touch.fingers[0].pos + touch.fingers[1].pos) * 0.5f;
+                    c.pos -= c.dir_from_space(newCenter - initialCenter);
+                    WorldVec newCenterWorld = c.from_space(newCenter);
+
+                    float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
+                    float newDistance = vec_distance(touch.fingers[0].pos, touch.fingers[1].pos);
+                    float scaleAmount = newDistance / initialDistance;
+                    c.scale_about_double(newCenterWorld, scaleAmount);
+
+                    Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
+                    float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
+                    Vector2f newDiff = touch.fingers[0].pos - newCenter;
+                    float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
+                    float rotateAngle = initialAngle - newAngle;
+                    rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
+                    c.rotate_about(newCenterWorld, rotateAngle);
+
+                    checks_after_input(w);
+                }
+                else
+                    clear_control_mode();
+            }
+            else if(controlMode == CameraControlMode::TOUCH_PAN || controlMode == CameraControlMode::TOUCH_ACCURATE_ZOOM)
+                InputManager::convert_touch_to_mouse_input(touch, [&](auto& t){input_mouse_button_callback(w, t);}, [&](auto& t){input_mouse_motion_callback(w, t);});
+            break;
+        }
+        case FingerInput::ActionType::NONE: break;
     }
-    else
-        isTouchTransforming = false;
 }
 
-void DrawCamera::input_multi_finger_motion_callback(World& w, const InputManager::MultiFingerMotionCallbackArgs& motion) {
-    if(!smoothMove.occurring && !isAccurateZooming && isTouchTransforming) {
-        c = touchInitialC;
-
-        Vector2f initialCenter = (touchInitialPositions[0] + touchInitialPositions[1]) * 0.5f;
-        Vector2f newCenter = (motion.pos[0] + motion.pos[1]) * 0.5f;
-        c.pos -= c.dir_from_space(newCenter - initialCenter);
-        WorldVec newCenterWorld = c.from_space(newCenter);
-
-        float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
-        float newDistance = vec_distance(motion.pos[0], motion.pos[1]);
-        float scaleAmount = newDistance / initialDistance;
-        c.scale_about_double(newCenterWorld, scaleAmount);
-
-        Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
-        float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
-        Vector2f newDiff = motion.pos[0] - newCenter;
-        float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
-        float rotateAngle = initialAngle - newAngle;
-        rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
-        c.rotate_about(newCenterWorld, rotateAngle);
-
-        checks_after_input(w);
-    }
+void DrawCamera::internal_set_control_mode(CameraControlMode newMode, const ControlModeMouseCallback& mouseCallback) {
+    controlMode = newMode;
+    controlModeMouseCallback = mouseCallback;
 }
 
 void DrawCamera::save_file(cereal::PortableBinaryOutputArchive& a, const World& w) const {
