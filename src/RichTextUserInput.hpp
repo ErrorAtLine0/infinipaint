@@ -24,7 +24,7 @@
 
 class RichTextUserInput {
     public:
-        RichTextUserInput(CustomEvents::InputTextBoxID initId, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& initModMap);
+        RichTextUserInput(CustomEvents::InputTextBoxID initId, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, std::function<void()> initClearCompositionFunc, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& initModMap);
         struct Changes {
             bool textEdited = false;
             bool cursorChanged = false;
@@ -32,6 +32,7 @@ class RichTextUserInput {
         Changes input_key_callback(InputManager& input, const InputManager::KeyCallbackArgs& key);
         bool input_paste_callback(const CustomEvents::PasteEvent& paste);
         Changes input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
+        void user_input_text_to_textbox(const InputManager::TextCallbackArgs& textEvent);
         void add_text_to_textbox(const std::string& inputText);
         void do_textbox_operation_with_undo(const std::function<void()>& func);
         void add_textbox_undo(const RichText::TextBox::Cursor& prevCursor, const RichText::TextData& prevRichText);
@@ -45,6 +46,7 @@ class RichTextUserInput {
     private:
         std::shared_ptr<RichText::TextBox> textBox;
         std::shared_ptr<RichText::TextBox::Cursor> cursor;
+        std::function<void()> clearCompositionFunc;
         std::shared_ptr<RichText::TextStyleModifier::ModifierMap> modMap;
         UndoManager textboxUndo;
 };

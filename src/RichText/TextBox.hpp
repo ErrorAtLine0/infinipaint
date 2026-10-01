@@ -112,6 +112,14 @@ class TextBox {
             template <typename Archive> void serialize(Archive& a) {
                 a(pos, selectionBeginPos, selectionEndPos);
             }
+            struct ComposingArea {
+                int start = -1;
+                int length = -1;
+                std::string composeText;
+                bool operator==(const ComposingArea& o) const = default;
+                bool operator!=(const ComposingArea& o) const = default;
+            };
+            std::optional<ComposingArea> compose;
             std::optional<float> previousX;
             std::optional<TextPosition> selectionEndPosBeforeHeld;
             bool operator==(const Cursor& o) const;
@@ -120,6 +128,7 @@ class TextBox {
 
         struct PaintOpts {
             Vector3f cursorColor = {1, 0, 0};
+            Vector3f compositionColor = {0, 1, 0};
             std::optional<Cursor> cursor;
             bool skiaAA = false;
         };
@@ -176,15 +185,16 @@ class TextBox {
         void clear_text();
         void set_string(const std::string& str);
 
-        void process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift);
-        void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
+        void process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift, const std::function<void()>& clearCompositionFunc);
+        void process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::function<void()>& clearCompositionFunc, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
 
-        std::pair<std::string, TextData> process_copy(Cursor& cur);
-        std::pair<std::string, TextData> process_cut(Cursor& cur);
+        std::pair<std::string, TextData> process_copy(Cursor& cur, const std::function<void()>& clearCompositionFunc);
+        std::pair<std::string, TextData> process_cut(Cursor& cur, const std::function<void()>& clearCompositionFunc);
         std::string get_text_between(TextPosition p1, TextPosition p2);
         std::string get_string();
-        void process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
-        void process_rich_text_input(Cursor& cur, const TextData& richText);
+        void process_composing_text_input(Cursor& cur, const std::string& in, int editStart, int editLength, const std::function<void()>& clearCompositionFunc, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
+        void process_text_input(Cursor& cur, const std::string& in, const std::function<void()>& clearCompositionFunc, const std::optional<TextStyleModifier::ModifierMap>& inputModMap = std::nullopt);
+        void process_rich_text_input(Cursor& cur, const TextData& richText, const std::function<void()>& clearCompositionFunc);
 
         SkRect get_cursor_rect(TextPosition pos);
 
@@ -199,6 +209,7 @@ class TextBox {
         static size_t next_grapheme(const std::string& text, size_t textBytePos);
         static size_t prev_grapheme(const std::string& text, size_t textBytePos);
         static TextPosition get_text_pos_from_byte_pos(const std::string& text, size_t textBytePos);
+        static size_t get_byte_position_from_codepoint_location_string(const std::string& text, int p);
 
         size_t get_byte_pos_from_text_pos(TextPosition textPos);
 

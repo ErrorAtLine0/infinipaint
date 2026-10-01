@@ -253,11 +253,14 @@ struct InputManager {
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput);
 
+    void clear_window_composition();
+
     Vector2f backend_cursor_pos_calculation(const Vector2f& cursorPos);
     Vector2f backend_cursor_delta_calculation(const Vector2f& cursorDelta);
     Vector2f backend_touch_cursor_pos_calculation(const Vector2f& cursorPos);
     Vector2f backend_touch_cursor_delta_calculation(const Vector2f& cursorDelta);
 
+    void backend_input_text_editing_event(const SDL_TextEditingEvent& edit);
     void backend_input_text_event(const std::string& str);
     void backend_drop_file_event(const SDL_DropEvent& e);
     void backend_drop_text_event(const SDL_DropEvent& e);
@@ -296,7 +299,10 @@ struct InputManager {
     const KeyData& key(KeyCode kCode);
 
     struct TextCallbackArgs {
+        bool isEditingEvent;
         std::string str;
+        int start = -1;
+        int length = -1;
     };
 
     struct KeyCallbackArgs {

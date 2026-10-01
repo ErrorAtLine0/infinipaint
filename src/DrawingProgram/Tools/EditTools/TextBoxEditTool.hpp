@@ -94,5 +94,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
 
         std::shared_ptr<RichText::TextStyleModifier::ModifierMap> currentModsPtr = std::make_shared<RichText::TextStyleModifier::ModifierMap>();
 
+        std::function<void()> clearTextCompositionFunc;
+
         TextBoxEditToolAllData get_all_data(const TextBoxCanvasComponent& a);
 };

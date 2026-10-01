@@ -53,6 +53,7 @@ namespace GUIStuff {
         theme->backColor2 = {0.24f, 0.24f, 0.29f, 1.0f};
         theme->frontColor1 = {0.87f, 0.87f, 0.87f, 1.0f};
         theme->frontColor2 = {0.64f, 0.64f, 0.64f, 1.0f};
+        theme->composeColor = {0.55f, 1.0f, 0.75f};
         return theme;
     }
     

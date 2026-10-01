@@ -1641,6 +1641,7 @@ void Toolbar::general_settings_inner_gui() {
                         theme_color_field("backColor2", "Back Color 2", &io.theme->backColor2);
                         theme_color_field("frontColor1", "Front Color 1", &io.theme->frontColor1);
                         theme_color_field("frontColor2", "Front Color 2", &io.theme->frontColor2);
+                        theme_color_field("composeColor1", "Compose Color", &io.theme->composeColor);
                         theme_color_field("warningColor", "Warning Color", &io.theme->warningColor);
                         theme_color_field("errorColor", "Error Color", &io.theme->errorColor);
                         //gui.slider_scalar_field("hoverExpandTime", "Hover Expand Time", &io.theme->hoverExpandTime, 0.001f, 1.0f);

@@ -227,6 +227,9 @@ void initialize_sdl(MainStruct& mS) {
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas"); // Ensures that SDL only grabs input when browser is focused on canvas
+    #ifndef __ANDROID__
+        SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "composition");
+    #endif
     #ifdef ADD_PREFER_X11_OPTION
         if(mS.m->conf.preferX11)
             SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11,wayland");
@@ -754,6 +757,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                break;
             case SDL_EVENT_KEY_UP:
                 mS.m->input.backend_key_up_update(event->key);
+                break;
+            case SDL_EVENT_TEXT_EDITING:
+                mS.m->input.backend_input_text_editing_event(event->edit);
                 break;
             case SDL_EVENT_TEXT_INPUT:
                 mS.m->input.backend_input_text_event(event->text.text);

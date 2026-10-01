@@ -20,6 +20,7 @@
 #include "CustomEvents.hpp"
 #include "AndroidJNICalls.hpp"
 #include "RichText/TextBox.hpp"
+#include "SDL3/SDL_keyboard.h"
 
 template <typename T> std::optional<T> shared_ptr_to_opt(const std::shared_ptr<T> o) {
     if(o)
@@ -28,10 +29,11 @@ template <typename T> std::optional<T> shared_ptr_to_opt(const std::shared_ptr<T
         return std::nullopt;
 }
 
-RichTextUserInput::RichTextUserInput(CustomEvents::InputTextBoxID initId, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& initModMap):
+RichTextUserInput::RichTextUserInput(CustomEvents::InputTextBoxID initId, const std::shared_ptr<RichText::TextBox>& initTextBox, const std::shared_ptr<RichText::TextBox::Cursor>& initCursor, std::function<void()> initClearCompositionFunc, const std::shared_ptr<RichText::TextStyleModifier::ModifierMap>& initModMap):
     id(initId),
     textBox(initTextBox),
     cursor(initCursor),
+    clearCompositionFunc(initClearCompositionFunc),
     modMap(initModMap)
 {}
 
@@ -59,9 +61,9 @@ bool RichTextUserInput::input_paste_callback(const CustomEvents::PasteEvent& pas
     if(paste.type == CustomEvents::PasteEvent::DataType::TEXT) {
         do_textbox_operation_with_undo([&]() {
             if(paste.richText.has_value())
-                textBox->process_rich_text_input(*cursor, paste.richText.value());
+                textBox->process_rich_text_input(*cursor, paste.richText.value(), clearCompositionFunc);
             else
-                textBox->process_text_input(*cursor, paste.data, shared_ptr_to_opt(modMap));
+                textBox->process_text_input(*cursor, paste.data, clearCompositionFunc, shared_ptr_to_opt(modMap));
         });
         android_force_update_textbox_and_cursor();
         return true;
@@ -92,9 +94,20 @@ RichTextUserInput::Changes RichTextUserInput::input_android_text_box_input_callb
     return toRet;
 }
 
+void RichTextUserInput::user_input_text_to_textbox(const InputManager::TextCallbackArgs& textEvent) {
+    if(textEvent.isEditingEvent) {
+        textBox->process_composing_text_input(*cursor, textEvent.str, textEvent.start, textEvent.length, clearCompositionFunc, shared_ptr_to_opt(modMap));
+    }
+    else {
+        do_textbox_operation_with_undo([&]() {
+            textBox->process_text_input(*cursor, textEvent.str, clearCompositionFunc, shared_ptr_to_opt(modMap));
+        });
+    }
+}
+
 void RichTextUserInput::add_text_to_textbox(const std::string& inputText) {
     do_textbox_operation_with_undo([&]() {
-        textBox->process_text_input(*cursor, inputText, shared_ptr_to_opt(modMap));
+        textBox->process_text_input(*cursor, inputText, clearCompositionFunc, shared_ptr_to_opt(modMap));
     });
 }
 
@@ -102,12 +115,16 @@ void RichTextUserInput::add_textbox_undo(const RichText::TextBox::Cursor& prevCu
     textboxUndo.push({[&, prevCursor = prevCursor, prevRichText = prevRichText]() {
         textBox->set_rich_text_data_for_undo_redo(prevRichText);
         cursor->selectionBeginPos = cursor->selectionEndPos = cursor->pos = std::max(prevCursor.selectionEndPos, prevCursor.selectionBeginPos);
+        cursor->compose = std::nullopt;
+        clearCompositionFunc();
         cursor->previousX = std::nullopt;
         return true;
     },
     [&, currentCursor = *cursor, currentRichText = textBox->get_rich_text_data()]() {
         textBox->set_rich_text_data_for_undo_redo(currentRichText);
         cursor->selectionBeginPos = cursor->selectionEndPos = cursor->pos = std::max(currentCursor.selectionEndPos, currentCursor.selectionBeginPos);
+        cursor->compose = std::nullopt;
+        clearCompositionFunc();
         cursor->previousX = std::nullopt;
         return true;
     }});
@@ -122,7 +139,7 @@ void RichTextUserInput::do_textbox_operation_with_undo(const std::function<void(
 
 void RichTextUserInput::process_mouse_left_button(const Vector2f& pos, int clickCount, bool held, bool shift) {
     RichText::TextBox::Cursor oldCursor = *cursor;
-    textBox->process_mouse_left_button(*cursor, pos, clickCount, held, shift);
+    textBox->process_mouse_left_button(*cursor, pos, clickCount, held, shift, clearCompositionFunc);
     if(oldCursor != *cursor)
         android_force_update_cursor();
 }
@@ -151,41 +168,41 @@ RichTextUserInput::Changes RichTextUserInput::input_key_callback(InputManager& i
 
         switch(key.key) {
             case InputManager::KEY_GENERIC_UP:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::UP, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::UP, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_GENERIC_DOWN:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::DOWN, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::DOWN, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_GENERIC_LEFT:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::LEFT, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::LEFT, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_GENERIC_RIGHT:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::RIGHT, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::RIGHT, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_TEXT_BACKSPACE:
                 do_textbox_operation_with_undo([&] {
-                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::BACKSPACE, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::BACKSPACE, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 });
                 toRet.textEdited = true;
                 break;
             case InputManager::KEY_TEXT_DELETE:
                 do_textbox_operation_with_undo([&] {
-                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::DEL, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::DEL, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 });
                 toRet.textEdited = true;
                 break;
             case InputManager::KEY_TEXT_HOME:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::HOME, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::HOME, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_TEXT_END:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::END, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::END, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_TEXT_COPY:
-                input.set_clipboard_plain_and_richtext_pair(textBox->process_copy(*cursor));
+                input.set_clipboard_plain_and_richtext_pair(textBox->process_copy(*cursor, clearCompositionFunc));
                 break;
             case InputManager::KEY_TEXT_CUT:
                 do_textbox_operation_with_undo([&] {
-                    input.set_clipboard_plain_and_richtext_pair(textBox->process_cut(*cursor));
+                    input.set_clipboard_plain_and_richtext_pair(textBox->process_cut(*cursor, clearCompositionFunc));
                 });
                 toRet.textEdited = true;
                 break;
@@ -193,7 +210,7 @@ RichTextUserInput::Changes RichTextUserInput::input_key_callback(InputManager& i
                 input.call_paste(CustomEvents::PasteEvent::DataType::TEXT);
                 break;
             case InputManager::KEY_TEXT_SELECTALL:
-                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::SELECT_ALL, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                textBox->process_key_input(*cursor, RichText::TextBox::InputKey::SELECT_ALL, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 break;
             case InputManager::KEY_TEXT_UNDO:
                 textboxUndo.undo();
@@ -205,13 +222,13 @@ RichTextUserInput::Changes RichTextUserInput::input_key_callback(InputManager& i
                 break;
             case InputManager::KEY_GENERIC_ENTER:
                 do_textbox_operation_with_undo([&] {
-                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::ENTER, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::ENTER, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 });
                 toRet.textEdited = true;
                 break;
             case InputManager::KEY_TEXT_TAB:
                 do_textbox_operation_with_undo([&] {
-                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::TAB, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, modMapOpt);
+                    textBox->process_key_input(*cursor, RichText::TextBox::InputKey::TAB, input.ctrl_or_meta_held(), input.key(InputManager::KEY_GENERIC_LSHIFT).held, clearCompositionFunc, modMapOpt);
                 });
                 toRet.textEdited = true;
                 break;

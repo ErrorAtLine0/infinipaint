@@ -91,6 +91,7 @@ template <typename T> void TextBox<T>::clay_draw(SkCanvas* canvas, UpdateInputDa
     else
         canvas->translate(bb.min.x() + 2.0f, bb.min.y() + yOffset);
     paintOpts.cursorColor = {io.theme->fillColor1.fR, io.theme->fillColor1.fG, io.theme->fillColor1.fB};
+    paintOpts.compositionColor = {io.theme->composeColor.fR, io.theme->composeColor.fG, io.theme->composeColor.fB};
     paintOpts.skiaAA = skiaAA;
 
     skia::textlayout::TextStyle tStyle;
@@ -108,7 +109,7 @@ template <typename T> void TextBox<T>::select() {
     if(!is_selected()) {
         if(isEmptyText)
             textbox->clear_text();
-        edit = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, nullptr);
+        edit = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, [&] { gui.io.input->clear_window_composition(); }, nullptr);
         CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
     }
 }
@@ -181,7 +182,7 @@ template <typename T> void TextBox<T>::after_text_input_callback() {
 
 template <typename T> void TextBox<T>::input_text_callback(const InputManager::TextCallbackArgs& text) {
     if(is_selected()) {
-        edit->add_text_to_textbox(text.str);
+        edit->user_input_text_to_textbox(text);
         after_text_input_callback();
     }
 }

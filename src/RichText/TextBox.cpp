@@ -118,7 +118,9 @@ bool TextPosition::operator<=(const TextPosition& o) const {
 }
 
 bool TextBox::Cursor::operator==(const Cursor& o) const {
-    return o.selectionBeginPos == selectionBeginPos && o.selectionEndPos == selectionEndPos && o.pos == pos;
+    if(o.selectionBeginPos != selectionBeginPos || o.selectionEndPos != selectionEndPos || o.pos != pos || o.compose.has_value() != compose.has_value())
+        return false;
+    return !o.compose.has_value() || o.compose.value() == compose.value();
 }
 
 bool TextBox::Cursor::operator!=(const Cursor& o) const {
@@ -129,8 +131,11 @@ TextBox::TextBox() {
     paragraphs.emplace_back();
 }
 
-void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift, const std::function<void()>& clearCompositionFunc, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     bool moved = false;
+
+    cur.compose = std::nullopt;
+    clearCompositionFunc();
 
     switch(in) {
         case InputKey::LEFT:
@@ -170,10 +175,10 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
                 cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.pos, move(ctrl ? Movement::RIGHT_WORD : Movement::RIGHT, cur.pos));
             break;
         case InputKey::ENTER:
-            process_text_input(cur, "\n", inputModMap);
+            process_text_input(cur, "\n", clearCompositionFunc, inputModMap);
             break;
         case InputKey::TAB: 
-            process_text_input(cur, "\t", inputModMap);
+            process_text_input(cur, "\t", clearCompositionFunc, inputModMap);
             break;
         case InputKey::SELECT_ALL:
             cur.selectionBeginPos = move(Movement::HOME, cur.pos);
@@ -188,13 +193,18 @@ void TextBox::process_key_input(Cursor& cur, InputKey in, bool ctrl, bool shift,
         cur.previousX = std::nullopt;
 }
 
-void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift) {
+void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int clickCount, bool held, bool shift, const std::function<void()>& clearCompositionFunc) {
     if(clickCount == 1)
         lastClicksAtCursorPos = 1;
     else if(clickCount >= 2) {
         lastClicksAtCursorPos++;
         if(lastClicksAtCursorPos > 3)
             lastClicksAtCursorPos = 1;
+    }
+
+    if(clickCount != 0) {
+        cur.compose = std::nullopt;
+        clearCompositionFunc();
     }
 
     if(clickCount || held) {
@@ -241,12 +251,14 @@ void TextBox::process_mouse_left_button(Cursor& cur, const Vector2f& pos, int cl
         cur.selectionEndPosBeforeHeld = std::nullopt;
 }
 
-std::pair<std::string, TextData> TextBox::process_copy(Cursor& cur) {
+std::pair<std::string, TextData> TextBox::process_copy(Cursor& cur, const std::function<void()>& clearCompositionFunc) {
+    cur.compose = std::nullopt;
+    clearCompositionFunc();
     return {get_text_between(cur.selectionBeginPos, cur.selectionEndPos), get_rich_text_data_between(cur.selectionBeginPos, cur.selectionEndPos)};
 }
 
-std::pair<std::string, TextData> TextBox::process_cut(Cursor& cur) {
-    auto toRet = process_copy(cur);
+std::pair<std::string, TextData> TextBox::process_cut(Cursor& cur, const std::function<void()>& clearCompositionFunc) {
+    auto toRet = process_copy(cur, clearCompositionFunc);
     if(cur.selectionBeginPos != cur.selectionEndPos) {
         cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
         cur.previousX = std::nullopt;
@@ -254,7 +266,21 @@ std::pair<std::string, TextData> TextBox::process_cut(Cursor& cur) {
     return toRet;
 }
 
-void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+void TextBox::process_composing_text_input(Cursor& cur, const std::string& in, int editStart, int editLength, const std::function<void()>& clearCompositionFunc, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
+    if(cur.selectionBeginPos != cur.selectionEndPos)
+        cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
+    if(in.empty()) {
+        cur.compose = std::nullopt;
+        clearCompositionFunc();
+    }
+    else {
+        cur.selectionEndPos = cur.pos = insert(cur.pos, in, inputModMap);
+        cur.compose = {editStart, editLength, in};
+    }
+    cur.previousX = std::nullopt;
+}
+
+void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::function<void()>& clearCompositionFunc, const std::optional<TextStyleModifier::ModifierMap>& inputModMap) {
     if(!in.empty()) {
         if(cur.selectionBeginPos != cur.selectionEndPos)
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
@@ -263,7 +289,9 @@ void TextBox::process_text_input(Cursor& cur, const std::string& in, const std::
     }
 }
 
-void TextBox::process_rich_text_input(Cursor& cur, const TextData& richText) {
+void TextBox::process_rich_text_input(Cursor& cur, const TextData& richText, const std::function<void()>& clearCompositionFunc) {
+    cur.compose = std::nullopt;
+    clearCompositionFunc();
     if(!richText.paragraphs.empty() && !(richText.paragraphs.size() == 1 && richText.paragraphs[0].text.empty())) {
         if(cur.selectionBeginPos != cur.selectionEndPos)
             cur.selectionEndPos = cur.selectionBeginPos = cur.pos = remove(cur.selectionBeginPos, cur.selectionEndPos);
@@ -394,19 +422,22 @@ int TextBox::get_codepoint_location_from_text_position(TextPosition pos) {
     return i;
 }
 
-TextPosition TextBox::get_text_position_from_codepoint_location(int p) {
-    std::string str = get_string();
-    const char* utf8StartPtr = str.c_str();
-    const char* utf8StringEndPtr = str.c_str() + str.size();
+size_t TextBox::get_byte_position_from_codepoint_location_string(const std::string& text, int p) {
+    const char* utf8StartPtr = text.c_str();
+    const char* utf8StringEndPtr = text.c_str() + text.size();
     for(int i = 0; i < p; i++) {
         SkUnichar u = SkUTF::NextUTF8(&utf8StartPtr, utf8StringEndPtr);
         if(u == -1)
-            return move(Movement::HOME, {0, 0});
+            return 0;
         else if(utf8StartPtr == utf8StringEndPtr)
-            return move(Movement::END, {0, 0});
+            return text.size();
     }
-    size_t bytePos = utf8StartPtr - str.c_str();
-    return get_text_pos_from_byte_pos(str, bytePos);
+    size_t bytePos = utf8StartPtr - text.c_str();
+    return bytePos;
+}
+
+TextPosition TextBox::get_text_position_from_codepoint_location(int p) {
+    return get_text_pos_from_byte_pos(get_string(), get_byte_position_from_codepoint_location_string(get_string(), p));
 }
 
 int TextBox::get_utf16_location_from_codepoint_location(int p) {
@@ -1338,15 +1369,41 @@ void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
         pData.p->paint(canvas, 0.0f, pData.heightOffset);
 
     if(paintOpts.cursor.has_value()) {
-        auto& cur = paintOpts.cursor.value();
+        auto cur = paintOpts.cursor.value();
         SkPaint selectionP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
         selectionP.setAntiAlias(paintOpts.skiaAA);
         if(cur.selectionBeginPos != cur.selectionEndPos) {
-            canvas->saveLayerAlphaf(nullptr, 0.5f);
-            rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
-                canvas->drawRect(rect, selectionP);
-            });
-            canvas->restore();
+            if(cur.compose.has_value()) {
+                canvas->saveLayerAlphaf(nullptr, 0.5f);
+                SkPaint compositionUnderlinePaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
+                compositionUnderlinePaint.setStrokeWidth(1.5f);
+                compositionUnderlinePaint.setAntiAlias(paintOpts.skiaAA);
+                rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
+                    canvas->drawLine(rect.BL() - SkPoint{0.0f, 4.0f}, rect.BR() - SkPoint{0.0f, 4.0f}, compositionUnderlinePaint);
+                });
+                auto c = cur.compose.value();
+                if(c.start >= 0 && c.length >= 0) {
+                    size_t startPosInComposeStr = get_byte_position_from_codepoint_location_string(c.composeText, c.start);
+                    TextPosition startPos = {cur.selectionBeginPos.fParagraphIndex, cur.selectionBeginPos.fTextByteIndex + startPosInComposeStr};
+                    if(startPos == cur.selectionBeginPos)
+                        cur.pos = startPos;
+                    else if(startPos != cur.selectionEndPos) {
+                        SkPaint compositionSelectionPaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
+                        compositionSelectionPaint.setAntiAlias(paintOpts.skiaAA);
+                        rects_between_text_positions_func(cur.selectionBeginPos, startPos, [&](const SkRect& rect) {
+                            canvas->drawRect(rect, compositionSelectionPaint);
+                        });
+                    }
+                }
+                canvas->restore();
+            }
+            else {
+                canvas->saveLayerAlphaf(nullptr, 0.5f);
+                rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
+                    canvas->drawRect(rect, selectionP);
+                });
+                canvas->restore();
+            }
         }
         SkPaint cursorP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
         cursorP.setAntiAlias(paintOpts.skiaAA);

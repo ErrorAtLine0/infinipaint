@@ -116,6 +116,7 @@ void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, co
 
     TextBox::PaintOpts paintOpts;
     paintOpts.cursorColor = {0.7f, 0.7f, 1.0f};
+    paintOpts.compositionColor = {0.55f, 1.0f, 0.75f};
     if(d.editing && cursor)
         paintOpts.cursor = *cursor;
     paintOpts.skiaAA = drawData.skiaAA;

@@ -99,6 +99,7 @@ struct Theme {
     SkColor4f backColor2 = {1.0f, 1.0f, 1.0f, 1.0f};
     SkColor4f frontColor1 = {1.0f, 1.0f, 1.0f, 1.0f};
     SkColor4f frontColor2 = {0.9f, 0.9f, 0.9f, 1.0f};
+    SkColor4f composeColor = {0.55f, 1.0f, 0.75f};
 
     SkColor4f errorColor = {1.0f, 0.0f, 0.0f, 1.0f};
     SkColor4f warningColor = {1.0f, 1.0f, 0.0f, 1.0f};

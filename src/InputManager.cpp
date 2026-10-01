@@ -371,8 +371,26 @@ uint32_t InputManager::make_generic_key_mod(SDL_Keymod m) {
     return toRet;
 }
 
+void InputManager::clear_window_composition() {
+#ifndef __ANDROID__
+    SDL_ClearComposition(main.window.sdlWindow);
+#endif
+}
+
+void InputManager::backend_input_text_editing_event(const SDL_TextEditingEvent& edit) {
+    main.input_text_callback(TextCallbackArgs{
+        .isEditingEvent = true,
+        .str = edit.text,
+        .start = edit.start,
+        .length = edit.length
+    });
+}
+
 void InputManager::backend_input_text_event(const std::string& str) {
-    main.input_text_callback(TextCallbackArgs{ .str = str });
+    main.input_text_callback(TextCallbackArgs{
+        .isEditingEvent = false,
+        .str = str
+    });
 }
 
 Vector2f InputManager::backend_cursor_pos_calculation(const Vector2f& cursorPos) {

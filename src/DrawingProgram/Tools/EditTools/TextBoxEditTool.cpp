@@ -44,7 +44,9 @@ using namespace RichText;
 
 TextBoxEditTool::TextBoxEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp):
     DrawingProgramEditToolBase(initDrawP, initComp)
-{}
+{
+    clearTextCompositionFunc = [&] {drawP.world.main.input.clear_window_composition();};
+}
 
 void TextBoxEditTool::commit_update_func_no_android_update() {
     commitUpdate = true;
@@ -581,8 +583,9 @@ void TextBoxEditTool::input_text_key_callback(const InputManager::KeyCallbackArg
 void TextBoxEditTool::input_text_callback(const InputManager::TextCallbackArgs& text) {
     if(userInput && userInput->id == drawP.world.main.input.currentTextboxID.value()) {
         auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
-        userInput->add_text_to_textbox(text.str);
-        set_styles_at_selection(a);
+        userInput->user_input_text_to_textbox(text);
+        if(!text.isEditingEvent)
+            set_styles_at_selection(a);
         commit_update_and_layout_func_no_android_update();
     }
 }
@@ -683,11 +686,11 @@ void TextBoxEditTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
         });
         if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
             drawP.popup_menu_action_button("Copy", "Copy", [&] {
-                input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor));
+                input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor, clearTextCompositionFunc));
             });
             drawP.popup_menu_action_button("Cut", "Cut", [&] {
                 userInput->do_textbox_operation_with_undo([&]() {
-                    input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor));
+                    input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor, clearTextCompositionFunc));
                 });
                 set_styles_at_selection(a);
                 commit_update_and_layout_func_and_android_update();
@@ -784,7 +787,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData, const V
 
     cur = std::make_shared<TextBox::Cursor>();
     Vector2f textSelectPos = a.get_pointer_pos(drawP, pointerPos);
-    textbox->process_mouse_left_button(*cur, textSelectPos, 1, false, false);
+    textbox->process_mouse_left_button(*cur, textSelectPos, 1, false, false, clearTextCompositionFunc);
     prevData = get_all_data(a);
     a.d.editing = true;
 
@@ -795,7 +798,7 @@ void TextBoxEditTool::edit_start(EditTool& editTool, std::any& prevData, const V
 
     commitUpdate = true;
 
-    userInput = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, currentModsPtr);
+    userInput = std::make_unique<RichTextUserInput>(CustomEvents::text_box_get_new_id(), textbox, cur, clearTextCompositionFunc, currentModsPtr);
     CustomEvents::emit_event(CustomEvents::RefreshTextBoxInputEvent{});
 }
 
