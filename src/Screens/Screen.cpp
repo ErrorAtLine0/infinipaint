@@ -77,10 +77,7 @@ void Screen::input_pen_button_callback(const InputManager::PenButtonCallbackArgs
 void Screen::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {}
 void Screen::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {}
 void Screen::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {}
-void Screen::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch) {}
-void Screen::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion) {}
-void Screen::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {}
-void Screen::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {}
+void Screen::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {}
 void Screen::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {}
 void Screen::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {}
 void Screen::input_app_about_to_go_to_background_callback() {}

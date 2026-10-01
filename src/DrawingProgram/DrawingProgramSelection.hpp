@@ -55,15 +55,16 @@ class DrawingProgramSelection {
         void input_key_callback_display_selection(const InputManager::KeyCallbackArgs& key);
         void input_mouse_button_on_canvas_callback_modify_selection(const InputManager::MouseButtonCallbackArgs& button);
         void input_mouse_motion_callback_modify_selection(const InputManager::MouseMotionCallbackArgs& motion);
+        void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
     private:
         bool commitChangeColorUpdate = false;
 
         void phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t);
         void translate_key(unsigned keyPressed, bool pressed);
-        bool mouse_collided_with_selection_aabb();
-        bool mouse_collided_with_scale_point();
-        bool mouse_collided_with_rotate_center_handle_point();
-        bool mouse_collided_with_rotate_handle_point();
+        bool point_collided_with_selection_aabb(const Vector2f& p);
+        bool point_collided_with_scale_point(const Vector2f& p);
+        bool point_collided_with_rotate_center_handle_point(const Vector2f& p);
+        bool point_collided_with_rotate_handle_point(const Vector2f& p);
 
         bool is_empty_transform();
 

@@ -33,11 +33,9 @@ namespace GUIStuff {
     void Element::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) { }
     void Element::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) { }
     void Element::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) { }
-    void Element::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-        input_mouse_button_callback(InputManager::convert_finger_touch_to_mouse_button(touch));
-    }
-    void Element::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-        input_mouse_motion_callback(InputManager::convert_finger_motion_to_mouse_motion(motion));
+    void Element::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+        // Emulate a mouse by default
+        InputManager::convert_touch_to_mouse_input(touch, [&](const auto& b){input_mouse_button_callback(b);}, [&](const auto& m){input_mouse_motion_callback(m);});
     }
     void Element::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
     std::optional<InputManager::TextBoxStartInfo> Element::get_text_box_start_info() { return std::nullopt; }

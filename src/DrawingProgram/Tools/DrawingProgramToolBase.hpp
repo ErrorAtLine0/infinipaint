@@ -68,6 +68,8 @@ class DrawingProgramToolBase {
         virtual void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
         virtual void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
+        virtual void input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch);
+        virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
         virtual bool phone_gui_tool_specific_bottom_toolbar_exists();
         virtual void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t);
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();

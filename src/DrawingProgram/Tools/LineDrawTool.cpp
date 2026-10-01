@@ -28,6 +28,8 @@
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 
+#include <Helpers/Logger.hpp>
+
 LineDrawTool::LineDrawTool(DrawingProgram& initDrawP):
     DrawingProgramToolBase(initDrawP)
 {}
@@ -84,7 +86,7 @@ void LineDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;
-        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited && !drawP.world.main.g.gui.cursor_obstructed()) {
+        if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {
             auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
             if(!relativeWidthResult.first.has_value()) {
                 drawP.world.main.toolConfig.print_relative_width_fail_message(relativeWidthResult.second);
@@ -101,7 +103,7 @@ void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::Mou
             newMeshContainer->coords = drawP.world.drawData.cam.c;
 
             BrushComponentCode::BrushPoint p;
-            p.pos = drawP.world.main.input.mouse.pos;
+            p.pos = button.pos;
             p.width = width;
             brushPoints.emplace_back(p);
             p.pos = ensure_points_have_distance(p.pos, p.pos, 1.0f);
@@ -133,10 +135,22 @@ void LineDrawTool::input_mouse_motion_callback(const InputManager::MouseMotionCa
     }
 }
 
+void LineDrawTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(objInfoBeingEdited) {
+        NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
+        auto& components = containerPtr->parentLayer->get_layer().components;
+        components->erase(components, containerPtr->objInfo);
+        objInfoBeingEdited = nullptr;
+        commitUpdate = false;
+        brushPoints.clear();
+    }
+}
+
 void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     if(objInfoBeingEdited == erasedComp) {
         objInfoBeingEdited = nullptr;
         commitUpdate = false;
+        brushPoints.clear();
     }
 }
 

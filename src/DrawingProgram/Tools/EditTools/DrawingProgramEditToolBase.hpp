@@ -28,7 +28,7 @@ class EditTool;
 class DrawingProgramEditToolBase {
     public:
         DrawingProgramEditToolBase(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
-        virtual void edit_start(EditTool& editTool, std::any& prevData) = 0;
+        virtual void edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) = 0;
         virtual void commit_edit_updates(std::any& prevData) = 0;
         virtual void edit_update() = 0;
         virtual void edit_gui(Toolbar& t) = 0;
@@ -44,6 +44,8 @@ class DrawingProgramEditToolBase {
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key);
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button, bool isDraggingPoint);
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint);
+        virtual void input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint);
+        virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint);
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
         virtual ~DrawingProgramEditToolBase(); 
 

@@ -35,6 +35,7 @@
 #include <Helpers/SCollision.hpp>
 
 #include "CustomEvents.hpp"
+#include "FingerInputTracker.hpp"
 
 using namespace Eigen;
 class MainProgram;
@@ -90,20 +91,6 @@ struct InputManager {
         bool middleDown = false;
     } mouse;
 
-    struct Touch {
-        uint8_t leftClicksSaved = 0;
-        uint8_t fingerTapsSaved = 0;
-        std::chrono::steady_clock::time_point lastLeftClickTime;
-        std::chrono::steady_clock::time_point lastFingerTapTime;
-        std::vector<SDL_TouchFingerEvent> fingers;
-        enum TypeOfTouchEvent {
-            NO_TOUCH_EVENT,
-            ONE_FINGER_EVENT,
-            TWO_FINGER_EVENT,
-            EVENT_DONE
-        } touchEventType = EVENT_DONE;
-    } touch;
-
     struct Pen {
         SDL_PenID activeId = 0;
         bool inProximity = false;
@@ -116,6 +103,8 @@ struct InputManager {
         std::chrono::steady_clock::time_point lastPenLeftClickTime;
         std::array<KeyData, 256> buttons;
     } pen;
+
+    FingerInput::InputTracker fingerTracker;
 
     bool isTouchDevice = true;
 
@@ -264,11 +253,6 @@ struct InputManager {
     uint32_t make_generic_key_mod(SDL_Keymod m);
     void set_key_up(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput);
     void set_key_down(const SDL_KeyboardEvent& e, KeyCode kCode, bool acceptingTextInput);
-    std::vector<Vector2f> get_multiple_finger_positions();
-    std::vector<Vector2f> get_multiple_finger_motions();
-    void touch_finger_do_mouse_down();
-    void touch_finger_do_mouse_up(const SDL_TouchFingerEvent& f);
-    void touch_finger_do_mouse_motion(const SDL_TouchFingerEvent& f);
 
     Vector2f backend_cursor_pos_calculation(const Vector2f& cursorPos);
     Vector2f backend_cursor_delta_calculation(const Vector2f& cursorDelta);
@@ -291,9 +275,8 @@ struct InputManager {
     void backend_pen_motion_update(const SDL_PenMotionEvent& e);
     void backend_pen_axis_update(const SDL_PenAxisEvent& e);
     void end_pen_contact(uint64_t timestamp);
-    void backend_touch_finger_down_update(const SDL_TouchFingerEvent& e);
-    void backend_touch_finger_up_update(const SDL_TouchFingerEvent& e);
-    void backend_touch_finger_motion_update(const SDL_TouchFingerEvent& e);
+    void backend_touch_finger_update(const SDL_TouchFingerEvent& e);
+
     void backend_window_resize_update();
     void backend_window_scale_update(const SDL_WindowEvent& e);
 
@@ -349,6 +332,8 @@ struct InputManager {
         Vector2f pos;
         uint64_t timestamp = 0;
         SDL_PenID penId = 0;
+        const FingerInput::TouchCallbackArgs* optionalTouchData = nullptr;
+
     };
 
     struct MouseMotionCallbackArgs {
@@ -358,6 +343,8 @@ struct InputManager {
         uint64_t timestamp = 0;
         SDL_PenID penId = 0;
         bool penContact = false;
+        const FingerInput::TouchCallbackArgs* optionalTouchData = nullptr;
+
     };
 
     struct MouseWheelCallbackArgs {
@@ -396,34 +383,6 @@ struct InputManager {
         const char* data;
     };
 
-    struct MultiFingerTouchCallbackArgs {
-        bool down;
-        std::vector<Vector2f> pos;
-    };
-
-    struct MultiFingerMotionCallbackArgs {
-        std::vector<Vector2f> pos;
-        std::vector<Vector2f> move;
-    };
-
-    struct FingerTouchCallbackArgs {
-        SDL_FingerID fingerID;
-        bool down;
-        Vector2f pos;
-        size_t fingerDownCount;
-        int fingerTapCount;
-    };
-
-    struct FingerMotionCallbackArgs {
-        SDL_FingerID fingerID;
-        Vector2f pos;
-        Vector2f move;
-        size_t fingerDownCount;
-    };
-
-    static MouseButtonCallbackArgs convert_finger_touch_to_mouse_button(const FingerTouchCallbackArgs& touch);
-    static MouseMotionCallbackArgs convert_finger_motion_to_mouse_motion(const FingerMotionCallbackArgs& motion);
-
     struct WindowResizeCallbackArgs {
         Vector2i size;
         SCollision::AABB<float> safeArea;
@@ -433,6 +392,8 @@ struct InputManager {
     struct WindowScaleCallbackArgs {
         float scale;
     };
+
+    static void convert_touch_to_mouse_input(const FingerInput::TouchCallbackArgs& touch, const std::function<void(const MouseButtonCallbackArgs&)>& buttonFunc, const std::function<void(const MouseMotionCallbackArgs&)>& motionFunc);
 
     std::mutex safeAreaWithoutIMEMutex;
     std::optional<SCollision::AABB<float>> safeAreaWithoutIME;

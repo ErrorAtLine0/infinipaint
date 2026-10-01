@@ -503,25 +503,9 @@ void MainProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArg
     post_callback();
 }
 
-void MainProgram::input_multi_finger_touch_callback(const InputManager::MultiFingerTouchCallbackArgs& touch) {
-    screen->input_multi_finger_touch_callback(touch);
-    post_callback();
-}
-
-void MainProgram::input_multi_finger_motion_callback(const InputManager::MultiFingerMotionCallbackArgs& motion) {
-    screen->input_multi_finger_motion_callback(motion);
-    post_callback();
-}
-
-void MainProgram::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
+void MainProgram::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     g.input_finger_touch_callback(touch);
     screen->input_finger_touch_callback(touch);
-    post_callback();
-}
-
-void MainProgram::input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion) {
-    g.input_finger_motion_callback(motion);
-    screen->input_finger_motion_callback(motion);
     post_callback();
 }
 

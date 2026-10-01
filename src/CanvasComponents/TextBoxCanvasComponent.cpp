@@ -75,7 +75,7 @@ void TextBoxCanvasComponent::load_file(cereal::PortableBinaryInputArchive& a, Ve
         std::string currentText;
         a(loadedEditing, d.p1, d.p2, textColor, textSize, loadedCursor, currentText);
         textBox->insert({0, 0}, currentText);
-        textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<ColorTextStyleModifier>(textColor));
+        textBox->set_initial_text_style_modifier(std::make_shared<ColorTextStyleModifier>(textColor));
         textBox->set_text_style_modifier_between({0, 0}, textBox->move(RichText::TextBox::Movement::END, {0, 0}), std::make_shared<SizeTextStyleModifier>(textSize));
     }
 }
@@ -123,8 +123,8 @@ void TextBoxCanvasComponent::draw(SkCanvas* canvas, const DrawData& drawData, co
     textBox->paint(canvas, paintOpts);
 }
 
-Vector2f TextBoxCanvasComponent::get_mouse_pos(DrawingProgram& drawP) const {
-    return compContainer->coords.get_mouse_pos(drawP.world) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
+Vector2f TextBoxCanvasComponent::get_pointer_pos(DrawingProgram& drawP, const Vector2f& pointerPos) const {
+    return compContainer->coords.from_cam_space_to_this(drawP.world, pointerPos) - d.p1 - Vector2f{TEXTBOX_PADDING, TEXTBOX_PADDING};
 }
 
 void TextBoxCanvasComponent::initialize_draw_data(DrawingProgram& drawP) {

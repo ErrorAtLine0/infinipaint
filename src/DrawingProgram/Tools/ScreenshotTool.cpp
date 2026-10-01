@@ -30,11 +30,12 @@
 
 #include "../../MainProgram.hpp"
 
-
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
 #include "../../GUIStuff/Elements/DropDown.hpp"
+
+#include "../../Screens/PhoneDrawingProgramScreen.hpp"
 
 #define SECTION_SIZE 4000
 #define AA_LEVEL 4
@@ -56,7 +57,7 @@ void ScreenshotTool::gui_toolbox(Toolbar& t) {
     gui.new_id("screenshot tool", [&] {
         text_label_centered(gui, "Screenshot");
         if(controls.selectionMode == ScreenshotControls::SelectionMode::NO_SELECTION)
-            text_label(gui, "Select an area on the canvas...");
+            text_label(gui, "Select canvas area...");
         if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::SVG) {
             input_scalars_field(gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999, {
                 .onEdit = [&] (size_t i) {
@@ -96,7 +97,11 @@ void ScreenshotTool::gui_toolbox(Toolbar& t) {
                         Screen::ExtensionFilter setExtensionFilter;
                         switch(screenshotConfig.selectedType) {
                             case WorldScreenshotInfo::ScreenshotType::JPG:
-                                setExtensionFilter = {"JPEG", "jpg;jpeg"};
+#ifdef __ANDROID__
+                                        setExtensionFilter = {"JPEG", "jpg"};
+#else
+                                        setExtensionFilter = {"JPEG", "jpg;jpeg"};
+#endif
                                 break;
                             case WorldScreenshotInfo::ScreenshotType::PNG:
                                 setExtensionFilter = {"PNG", "png"};
@@ -132,8 +137,105 @@ void ScreenshotTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     using namespace ElementHelpers;
 
     auto& gui = drawP.world.main.g.gui;
-    gui.new_id("screenshot tool", [&] {
-        text_label_centered(gui, "Screenshot");
+    auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
+    gui.element<LayoutElement>("Drawing program tool options gui", [&] (LayoutElement*, const Clay_ElementId& lId) {
+        CLAY(lId, {
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_FIT(200), .height = CLAY_SIZING_FIT(0)},
+                .childGap = gui.io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }
+        }) {
+            text_label_centered(gui, "Export Area");
+            if(controls.selectionMode == ScreenshotControls::SelectionMode::NO_SELECTION)
+                text_label(gui, "Select canvas area...");
+            if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::SVG) {
+                input_scalars_field(gui, "Size", "Size", &controls.imageSize, 2, 0, 999999999, {
+                    .onEdit = [&] (size_t i) {
+                        if(i == 0) {
+                            screenshotConfig.setDimensionSize = controls.imageSize.x();
+                            screenshotConfig.setDimensionIsX = true;
+                            controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
+                        }
+                        else {
+                            screenshotConfig.setDimensionSize = controls.imageSize.y();
+                            screenshotConfig.setDimensionIsX = false;
+                            controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
+                        }
+                        gui.set_to_layout();
+                    }
+                });
+            }
+            if(controls.selectionMode == ScreenshotControls::SelectionMode::SELECTION_EXISTS) {
+                left_to_right_line_layout(gui, [&]() {
+                    text_label(gui, "Type");
+                    gui.element<DropDown<size_t>>("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
+                });
+                if(screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::SVG)
+                    checkbox_boolean_field(gui, "Display Grid", "Display Grid", &controls.displayGrid);
+                else
+                    text_label(gui, "Note: Screenshot will ignore blend\nmodes and layer alpha");
+                if(screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::JPG)
+                    checkbox_boolean_field(gui, "Transparent Background", "Transparent Background", &controls.transparentBackground);
+                left_to_right_line_layout(gui, [&]() {
+                    text_button(gui, "Save Image Button", "Save", {
+                        .wide = true,
+                        .onClick = [&] {
+                            controls.setToShareScreenshot = false;
+                            controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
+                            #ifdef __EMSCRIPTEN__
+                                take_screenshot("a" + world_screenshot_info_get_extension_from_type(screenshotConfig.selectedType), screenshotConfig.selectedType);
+                            #else
+                                // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
+                                Screen::ExtensionFilter setExtensionFilter;
+                                switch(screenshotConfig.selectedType) {
+                                    case WorldScreenshotInfo::ScreenshotType::JPG:
+#ifdef __ANDROID__
+                                        setExtensionFilter = {"JPEG", "jpg"};
+#else
+                                        setExtensionFilter = {"JPEG", "jpg;jpeg"};
+#endif
+                                        break;
+                                    case WorldScreenshotInfo::ScreenshotType::PNG:
+                                        setExtensionFilter = {"PNG", "png"};
+                                        break;
+                                    case WorldScreenshotInfo::ScreenshotType::WEBP:
+                                        setExtensionFilter = {"WEBP", "webp"};
+                                        break;
+                                    case WorldScreenshotInfo::ScreenshotType::SVG:
+                                        setExtensionFilter = {"SVG", "svg"};
+                                        break;
+                                }
+                                t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
+                                    auto world = w.lock();
+                                    if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
+                                        ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
+                                        if(world->main.conf.forceExtensionOnPath)
+                                            screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
+                                        else
+                                            screenshotTool->controls.screenshotSavePath = p;
+                                        screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
+                                        screenshotTool->controls.setToTakeScreenshot = true;
+                                    }
+                                }, "screenshot", true);
+                            #endif
+                        }
+                    });
+#ifdef __ANDROID__
+                    text_button(gui, "Share Image Button", "Share", {
+                        .wide = true,
+                        .onClick = [&] {
+                            controls.setToShareScreenshot = true;
+                            controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
+                            controls.screenshotSaveType = drawP.world.main.toolConfig.screenshot.selectedType;
+                            controls.setToTakeScreenshot = true;
+                        }
+                    });
+#endif
+                });
+            }
+        }
     });
 }
 
@@ -145,7 +247,7 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
     if(button.button == InputManager::MouseButton::LEFT) {
         switch(controls.selectionMode) {
             case ScreenshotControls::SelectionMode::NO_SELECTION: {
-                if(button.down && !drawP.world.main.g.gui.cursor_obstructed()) {
+                if(button.down) {
                     controls.rectX1 = controls.rectX2 = button.pos.x();
                     controls.rectY1 = controls.rectY2 = button.pos.y();
                     controls.coords = drawP.world.drawData.cam.c;
@@ -164,9 +266,9 @@ void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::M
                 break;
             }
             case ScreenshotControls::SelectionMode::SELECTION_EXISTS: {
-                if(button.down && selection_exists_update() && !drawP.world.main.g.gui.cursor_obstructed()) {
+                if(button.down && selection_exists_update()) {
                     for(int i = 0; i < 8; i++)
-                        if(SCollision::collide(controls.circles[i], drawP.world.main.input.mouse.pos))
+                        if(SCollision::collide(controls.circles[i], button.pos))
                             controls.dragType = i;
 
                     if(controls.dragType == -1) {
@@ -321,7 +423,8 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, Worl
         .cameraCoords = controls.coords,
         .imageBounds = {{controls.rectX1, controls.rectY1}, {controls.rectX2, controls.rectY2}},
         .transparentBackground = controls.transparentBackground,
-        .displayGrid = controls.displayGrid
+        .displayGrid = controls.displayGrid,
+        .share = controls.setToShareScreenshot
     });
 }
 

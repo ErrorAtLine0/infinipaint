@@ -23,7 +23,7 @@
     void startNetworkService();
     void stopNetworkService();
     void shareText(java.lang.String);
-    void shareInternalFiles(java.lang.String[], java.lang.String);
+    void shareInternalFiles(java.lang.String[], java.lang.String, boolean);
     java.lang.String getFileNameFromUriString(java.lang.String);
 }
 

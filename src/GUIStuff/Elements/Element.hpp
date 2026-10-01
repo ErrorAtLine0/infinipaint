@@ -51,8 +51,7 @@ namespace GUIStuff {
             virtual void input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button);
             virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
             virtual void input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel);
-            virtual void input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch);
-            virtual void input_finger_motion_callback(const InputManager::FingerMotionCallbackArgs& motion);
+            virtual void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
             virtual void input_key_callback(const InputManager::KeyCallbackArgs& key);
             virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
         protected:

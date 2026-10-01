@@ -46,6 +46,7 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
+        virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
     private:
         void commit_stroke();
         void commit_data(bool final);
