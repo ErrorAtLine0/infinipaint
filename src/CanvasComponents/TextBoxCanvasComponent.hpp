@@ -54,7 +54,7 @@ class TextBoxCanvasComponent : public CanvasComponent {
         virtual bool collides_within_coords_point(const Vector2f& checkAgainst) const override;
         virtual bool collides_within_coords_skpath(const SkPath& checkAgainst) const override;
         void init_text_box(DrawingProgram& drawP);
-        Vector2f get_mouse_pos(DrawingProgram& drawP) const;
+        Vector2f get_pointer_pos(DrawingProgram& drawP, const Vector2f& pointerPos) const;
 
         virtual SCollision::AABB<float> get_obj_coord_bounds() const override;
 

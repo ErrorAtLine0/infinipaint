@@ -80,7 +80,7 @@ namespace AndroidJNICalls {
         return strToRet;
     }
 
-    void shareInternalFiles(const std::vector<std::string>& filePaths, const std::string& mimeType) {
+    void shareInternalFiles(const std::vector<std::string>& filePaths, const std::string& mimeType, bool prependInternalDirPath) {
         if(filePaths.empty())
             return;
         Logger::get().log(Logger::LogType::INFO, "[AndroidJNICalls::shareInternalFile] Share internal files");
@@ -98,9 +98,9 @@ namespace AndroidJNICalls {
             }
 
             jmethodID method_id = env->GetStaticMethodID(clazz, "shareInternalFiles",
-                                                         "([Ljava/lang/String;Ljava/lang/String;)V");
+                                                         "([Ljava/lang/String;Ljava/lang/String;Z)V");
             env->CallStaticVoidMethod(clazz, method_id, jFilePathArray,
-                                      string2jstring(env, mimeType));
+                                      string2jstring(env, mimeType), prependInternalDirPath);
         });
     }
 

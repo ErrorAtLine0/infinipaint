@@ -28,6 +28,7 @@
 #include <Helpers/ConvertVec.hpp>
 #include <Helpers/Logger.hpp>
 #include <limits>
+#include <memory>
 #include <modules/skparagraph/src/ParagraphBuilderImpl.h>
 #include <modules/skparagraph/include/ParagraphStyle.h>
 #include <modules/skparagraph/include/FontCollection.h>
@@ -59,6 +60,8 @@ GUIManager::GUIManager()
     setToLayout = true;
     postCallbackFuncIsHighPriority = false;
     lastInteractionIsTouch = false;
+    mousePointerObstructed = false;
+    touchPointerObstructed = false;
 }
 
 Clay_Dimensions GUIManager::clay_skia_measure_text(Clay_StringSlice str, Clay_TextElementConfig* config, void* userData) {
@@ -711,8 +714,16 @@ bool GUIManager::last_interaction_is_touch() {
     return lastInteractionIsTouch;
 }
 
-bool GUIManager::cursor_obstructed() const {
-    return cursorObstructed;
+bool GUIManager::mouse_pointer_obstructed() const {
+    return mousePointerObstructed;
+}
+
+bool GUIManager::touch_pointer_obstructed() const {
+    return touchPointerObstructed;
+}
+
+bool GUIManager::pointer_action_obstructed() const {
+    return (lastInteractionIsTouch ? touchPointerObstructed : mousePointerObstructed);
 }
 
 void GUIManager::deselect_all() {
@@ -746,38 +757,60 @@ void GUIManager::input_key_callback(const InputManager::KeyCallbackArgs& key) {
 }
 
 void GUIManager::input_mouse_button_callback(InputManager::MouseButtonCallbackArgs button) {
-    if(button.deviceType != InputManager::MouseDeviceType::TOUCH) {
-        lastInteractionIsTouch = false;
-        button.pos /= io.guiScaleMultiplier;
-        mouse_callback(button.pos, [&button] (ElementContainer* e) { e->elem->input_mouse_button_callback(button); });
-    }
+    lastInteractionIsTouch = false;
+    button.pos /= io.guiScaleMultiplier;
+    mouse_callback(button.pos, mousePointerObstructed, [&button] (ElementContainer* e) { e->elem->input_mouse_button_callback(button); });
 }
 
 void GUIManager::input_mouse_motion_callback(InputManager::MouseMotionCallbackArgs motion) {
-    if(motion.deviceType != InputManager::MouseDeviceType::TOUCH) {
-        lastInteractionIsTouch = false;
-        motion.pos /= io.guiScaleMultiplier;
-        motion.move /= io.guiScaleMultiplier;
-        mouse_callback(motion.pos, [&motion] (ElementContainer* e) { e->elem->input_mouse_motion_callback(motion); });
-    }
+    lastInteractionIsTouch = false;
+    motion.pos /= io.guiScaleMultiplier;
+    motion.move /= io.guiScaleMultiplier;
+    mouse_callback(motion.pos, mousePointerObstructed, [&motion] (ElementContainer* e) { e->elem->input_mouse_motion_callback(motion); });
 }
 
 void GUIManager::input_mouse_wheel_callback(InputManager::MouseWheelCallbackArgs wheel) {
+    lastInteractionIsTouch = false;
     wheel.mousePos /= io.guiScaleMultiplier;
-    mouse_callback(wheel.mousePos, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
+    mouse_callback(wheel.mousePos, mousePointerObstructed, [&wheel] (ElementContainer* e) { e->elem->input_mouse_wheel_callback(wheel); });
 }
 
-void GUIManager::input_finger_touch_callback(InputManager::FingerTouchCallbackArgs touch) {
+void GUIManager::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touchInit) {
     lastInteractionIsTouch = true;
-    touch.pos /= io.guiScaleMultiplier;
-    mouse_callback(touch.pos, [&touch] (ElementContainer* e) { e->elem->input_finger_touch_callback(touch); });
-}
-
-void GUIManager::input_finger_motion_callback(InputManager::FingerMotionCallbackArgs motion) {
-    lastInteractionIsTouch = true;
-    motion.pos /= io.guiScaleMultiplier;
-    motion.move /= io.guiScaleMultiplier;
-    mouse_callback(motion.pos, [&motion] (ElementContainer* e) { e->elem->input_finger_motion_callback(motion); });
+    auto touch = touchInit.scaled_clone(io.guiScaleMultiplier);
+    // Don't use tap gesture if it uses more than one finger
+    if(touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::TAP) {
+        if(static_cast<FingerInput::TapGesture&>(*touch.gesture).fingerPositions.size() != 1)
+            touch.gesture = nullptr;
+    }
+    // Mouse hovering calculations will only work when one finger is used
+    if(touch.fingers.size() != 1) {
+        // Still check if touch is obstructed by any finger
+        touchPointerObstructed = false;
+        for(ElementContainer* e : orderedElements) {
+            e->elem->childMouseHovering = false;
+            e->elem->mouseHovering = false;
+            for(const FingerInput::FingerData& f : touch.fingers) {
+                if(e->elem->collides_with_point(f.pos)) {
+                    touchPointerObstructed = true;
+                    break;
+                }
+            }
+            if(touch.gesture) {
+                auto positionsInGesture = touch.gesture->get_all_positions();
+                for(const Vector2f& p : positionsInGesture) {
+                    if(e->elem->collides_with_point(p)) {
+                        touchPointerObstructed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        for(ElementContainer* e : orderedElements)
+            e->elem->input_finger_touch_callback(touch);
+    }
+    else
+        mouse_callback(touch.fingers[0].pos, touchPointerObstructed, [&touch] (ElementContainer* e) { e->elem->input_finger_touch_callback(touch); });
 }
 
 std::optional<InputManager::TextBoxStartInfo> GUIManager::get_text_box_start_info() {
@@ -789,17 +822,17 @@ std::optional<InputManager::TextBoxStartInfo> GUIManager::get_text_box_start_inf
     return std::nullopt;
 }
 
-void GUIManager::mouse_callback(const Vector2f& mousePos, const std::function<void(ElementContainer*)>& f) {
-    cursorObstructed = false;
+void GUIManager::mouse_callback(const Vector2f& mousePos, bool& obstructed, const std::function<void(ElementContainer*)>& f) {
+    obstructed = false;
     int16_t zIndexObstructed = 0;
 
     for(ElementContainer* e : orderedElements)
         e->elem->childMouseHovering = false;
 
     for(ElementContainer* e : orderedElements) {
-        if((!cursorObstructed || zIndexObstructed == e->elem->zIndex) && e->elem->collides_with_point(mousePos)) {
+        if((!obstructed || zIndexObstructed == e->elem->zIndex) && e->elem->collides_with_point(mousePos)) {
             zIndexObstructed = e->elem->zIndex;
-            cursorObstructed = true;
+            obstructed = true;
             e->elem->mouseHovering = true;
             Element* nextParent = e->elem->parent;
             while(nextParent) {

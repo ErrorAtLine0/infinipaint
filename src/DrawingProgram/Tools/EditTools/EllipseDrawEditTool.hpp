@@ -28,7 +28,7 @@ class DrawingProgram;
 class EllipseDrawEditTool : public DrawingProgramEditToolBase {
     public:
         EllipseDrawEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::ObjInfo* initComp);
-        virtual void edit_start(EditTool& editTool, std::any& prevData) override;
+        virtual void edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) override;
         virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
         virtual void commit_edit_updates(std::any& prevData) override;
         virtual void edit_update() override;

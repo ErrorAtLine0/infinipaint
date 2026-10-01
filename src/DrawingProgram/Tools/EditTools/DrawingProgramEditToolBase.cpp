@@ -38,6 +38,20 @@ void DrawingProgramEditToolBase::input_mouse_button_on_canvas_callback(const Inp
 void DrawingProgramEditToolBase::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint) {}
 bool DrawingProgramEditToolBase::phone_gui_tool_specific_bottom_toolbar_exists() { return false; }
 void DrawingProgramEditToolBase::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {}
+void DrawingProgramEditToolBase::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint) {
+    // Emulate a mouse by default
+    InputManager::convert_touch_to_mouse_input(touch, [&](const auto& b){input_mouse_button_on_canvas_callback(b, isDraggingPoint);}, [&](const auto& m){input_mouse_motion_callback(m, isDraggingPoint);});
+}
+void DrawingProgramEditToolBase::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint) {
+    // By default, emulate mouse up action from first finger. Ideally, should properly undo everything that happened when first finger went down
+    InputManager::MouseButtonCallbackArgs mouseArgs;
+    mouseArgs.deviceType = InputManager::MouseDeviceType::TOUCH;
+    mouseArgs.pos = touch.fingers[0].pos;
+    mouseArgs.down = false;
+    mouseArgs.clicks = 0;
+    mouseArgs.button = InputManager::MouseButton::LEFT;
+    input_mouse_button_on_canvas_callback(mouseArgs, isDraggingPoint);
+}
 std::optional<InputManager::TextBoxStartInfo> DrawingProgramEditToolBase::get_text_box_start_info() { return std::nullopt; }
 
 DrawingProgramEditToolBase::~DrawingProgramEditToolBase() {}

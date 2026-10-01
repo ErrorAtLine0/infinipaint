@@ -48,25 +48,23 @@ void RadioButton::update() {
 }
 
 bool RadioButton::is_hovering_animation() {
-    return mouseHovering && (!gui.last_interaction_is_touch() || isHeld);
+    return touchHoverAnim || mouseHoverAnim;
 }
 
 void RadioButton::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down) {
-        gui.set_post_callback_func([&] { if(onClick) onClick(); });
-        isHeld = true;
-    }
-    else
-        isHeld = false;
+    mouseHoverAnim = mouseHovering;
+    if(mouseHovering && button.button == InputManager::MouseButton::LEFT && button.down)
+        gui.set_post_callback_func([&](){if(onClick) onClick();});
 }
 
-void RadioButton::input_finger_touch_callback(const InputManager::FingerTouchCallbackArgs& touch) {
-    if(mouseHovering && touch.down) {
-        gui.set_post_callback_func([&] { if(onClick) onClick(); });
-        isHeld = true;
-    }
-    else
-        isHeld = false;
+void RadioButton::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+    mouseHoverAnim = mouseHovering;
+}
+
+void RadioButton::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    touchHoverAnim = mouseHovering && touch.action.type != FingerInput::ActionType::UP;
+    if(mouseHovering && touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::TAP)
+        gui.set_post_callback_func([&](){if(onClick) onClick();});
 }
 
 void RadioButton::clay_draw(SkCanvas* canvas, UpdateInputData& io, Clay_RenderCommand* command, bool skiaAA) {

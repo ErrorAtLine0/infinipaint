@@ -165,10 +165,6 @@ std::vector<WorldVec> CoordSpaceHelper::from_space_world(const std::vector<World
     return toRet;
 }
 
-Vector2f CoordSpaceHelper::get_mouse_pos(const World& w) const {
-    return to_space(w.drawData.cam.c.from_space(w.main.input.mouse.pos));
-}
-
 Vector2f CoordSpaceHelper::from_cam_space_to_this(const World& w, const Vector2f& coord) const {
     return to_space(w.drawData.cam.c.from_space(coord));
 }

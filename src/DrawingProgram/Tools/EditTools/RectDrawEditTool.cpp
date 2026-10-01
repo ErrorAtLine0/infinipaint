@@ -110,7 +110,7 @@ void RectDrawEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     });
 }
 
-void RectDrawEditTool::edit_start(EditTool& editTool, std::any& prevData) {
+void RectDrawEditTool::edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) {
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     prevData = a.d;
     editTool.add_point_handle({&a.d.p1, nullptr, &a.d.p2});
