@@ -1,0 +1,38 @@
+name: Pen input checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-input:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch and patch the pinned SDL source
+        shell: pwsh
+        run: |
+          python -m pip install conan
+          Invoke-WebRequest https://github.com/libsdl-org/SDL/releases/download/release-3.4.16/SDL3-3.4.16.tar.gz -OutFile sdl.tar.gz
+          if ((Get-FileHash sdl.tar.gz -Algorithm SHA256).Hash.ToLower() -ne '7322236cd12090c3eb40b9728be4d49c76f66ad17d04369584d4ecad5cf77c68') { throw 'SDL checksum mismatch' }
+          tar -xf sdl.tar.gz
+          python tests/check_sdl_recipe.py SDL3-3.4.16
+          if ($LASTEXITCODE) { throw 'SDL patch failed' }
+      - name: Compile patched Windows input and history tests
+        shell: pwsh
+        run: |
+          cmake -S tests -B build-tests -A ${{ matrix.arch }} "-DSDL_SOURCE=$pwd/SDL3-3.4.16"
+          if ($LASTEXITCODE) { throw 'Configure failed' }
+          cmake --build build-tests --config Debug --parallel
+          if ($LASTEXITCODE) { throw 'Build failed' }
+      - name: Run x64 tests
+        if: matrix.arch == 'x64'
+        run: ctest --test-dir build-tests -C Debug --output-on-failure

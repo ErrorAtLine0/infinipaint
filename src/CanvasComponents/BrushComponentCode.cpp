@@ -377,6 +377,8 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     p.pos = button.pos;
     p.width = width;
     genData.prevPointUnaltered = p.pos;
+    genData.deviceType = button.deviceType;
+    genData.penId = button.penId;
     genData.brushPoints.emplace_back(p);
     genData.addedTemporaryPoint = false;
 }
