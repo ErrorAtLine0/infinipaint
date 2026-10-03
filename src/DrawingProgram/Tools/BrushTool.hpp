@@ -48,6 +48,7 @@ class BrushTool : public DrawingProgramToolBase {
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
         virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
     private:
+        void gui_pressure_options();
         void commit_stroke();
         void commit_data(bool final);
 
