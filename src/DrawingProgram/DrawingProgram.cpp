@@ -727,7 +727,9 @@ void DrawingProgram::rebuild_cache() {
 }
 
 void DrawingProgram::update_downloading_dropped_files() {
-    std::erase_if(droppedDownloadingFiles, [&](auto& downFile) {
+    // Iterating backwards so there's no need to modify index when object is erased
+    for(int droppedFileIndex = static_cast<int>(droppedDownloadingFiles.size()) - 1; droppedFileIndex >= 0; droppedFileIndex--) {
+        const auto downFile = droppedDownloadingFiles[droppedFileIndex]; // Not a reference, since data in droppedDownloadingFiles can be erased
         switch(downFile.downData->status) {
             case FileDownloader::DownloadData::Status::SUCCESS: {
                 ImageCanvasComponent& img = static_cast<ImageCanvasComponent&>(downFile.comp->obj->get_comp());
@@ -741,7 +743,7 @@ void DrawingProgram::update_downloading_dropped_files() {
                 if(display->get_type() == ResourceDisplay::Type::FILE) {
                     Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to parse image from URL");
                     auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
-                    parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo);
+                    parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo); // Will erase downFile from droppedDownloadingFiles as well
                 }
                 else {
                     Vector2f imTrueDim = display->get_dimensions();
@@ -754,20 +756,20 @@ void DrawingProgram::update_downloading_dropped_files() {
                     img.d.imageID = imageID;
                     downFile.comp->obj->send_comp_update(*this, true);
                     downFile.comp->obj->commit_update(*this);
+                    droppedDownloadingFiles.erase(droppedDownloadingFiles.begin() + droppedFileIndex);
                 }
-                return true;
+                break;
             }
             case FileDownloader::DownloadData::Status::FAILURE: {
                 Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to download data from URL");
                 auto& parentLayerComponents = downFile.comp->obj->parentLayer->get_layer().components;
-                parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo);
-                return true;
+                parentLayerComponents->erase(parentLayerComponents, downFile.comp->obj->objInfo); // Will erase downFile from droppedDownloadingFiles as well
+                break;
             }
             case FileDownloader::DownloadData::Status::IN_PROGRESS:
-                return false;
+                break;
         }
-        return false;
-    });
+    }
 }
 
 void DrawingProgram::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
