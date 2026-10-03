@@ -2,3 +2,4 @@ conan export %0/../conan-skia/recipes/skia/all/conanfile.py --version=143.202510
 conan export %0/../emsdk/all/conanfile.py --version=4.0.22
 conan export %0/../icu/all/conanfile.py --version=77.1
 conan export %0/../sdl/3.x/conanfile.py --version=3.4.16
+conan export %0/../libdatachannel/all/conanfile.py --version=0.24.0

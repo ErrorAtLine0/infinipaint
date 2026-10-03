@@ -56,6 +56,9 @@
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
 
+std::string World::DOT_FILE_EXTENSION = ".infpnt";
+std::string World::FILE_EXTENSION = "infpnt";
+
 World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo):
     netObjMan(!worldInfo.isClient),
     main(initMain),

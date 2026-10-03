@@ -2,4 +2,4 @@
 cd %~dp0
 cd ..
 call .\conan\export_libs.bat
-conan install . -of=build-x86_64 --build=missing -pr=conan/profiles/win-x86_64
+conan install . -of=build-x86_64 --build=missing -pr=conan/profiles/win-x86_64 --settings=build_type=Release

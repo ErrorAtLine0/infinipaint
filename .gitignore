@@ -1,5 +1,8 @@
 .cache
 build
+build-x86_64
+build-x86_64-debug
+build-arm64
 CMakeUserPresets.json
 compile_commands.json
 bscript

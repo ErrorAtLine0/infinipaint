@@ -43,8 +43,8 @@ struct WorldScreenshotInfo;
 
 class World {
     public:
-        static constexpr std::string DOT_FILE_EXTENSION = ".infpnt";
-        static constexpr std::string FILE_EXTENSION = "infpnt";
+        static std::string DOT_FILE_EXTENSION;
+        static std::string FILE_EXTENSION;
         static constexpr size_t CHAT_SIZE = 10;
 
         World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo);

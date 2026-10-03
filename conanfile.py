@@ -124,7 +124,7 @@ class CompressorRecipe(ConanFile):
             self.requires("onetbb/2023.1.0")
 
         if self.settings.os != "Emscripten":
-            self.requires("libdatachannel/0.24.0")
+            self.requires("libdatachannel-infinipaint/0.24.0")
             self.requires("libcurl/8.20.0")
 
         self.requires("clipper2/2.0.1")
