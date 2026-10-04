@@ -151,6 +151,7 @@ class DrawingProgram {
         DrawingProgramToolType toolTypeAfterTempMove;
 
         struct GlobalControls {
+            InputManager::MouseButtonCallbackArgs leftPress{};
             std::optional<WorldScalar> lockedCameraScale;
 
             DrawingProgramLayerManager::LayerSelector layerSelector = DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED;
