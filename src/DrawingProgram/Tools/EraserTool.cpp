@@ -98,11 +98,19 @@ void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::Mouse
                 erasePath = simplified.value();
             if(eraserChanged)
                 erase_on_path();
-            reset_erasing_stroke();
-            commit_erase();
-            eraserChanged = isErasing = false;
+            finish_erase();
         }
     }
+}
+
+void EraserTool::finish_erase() {
+    reset_erasing_stroke();
+    commit_erase();
+    eraserChanged = isErasing = false;
+}
+
+void EraserTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    finish_erase();
 }
 
 void EraserTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
@@ -277,7 +285,7 @@ void EraserTool::commit_erase() {
 }
 
 void EraserTool::switch_tool(DrawingProgramToolType newTool) {
-    commit_erase();
+    finish_erase();
 }
 
 void EraserTool::commit_data() {

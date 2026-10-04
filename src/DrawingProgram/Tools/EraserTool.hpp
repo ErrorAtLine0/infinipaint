@@ -39,6 +39,7 @@ class EraserTool : public DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) override;
+        virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
 
         struct UpdatedComponentData {
             std::unique_ptr<CanvasComponentContainer::CopyData> copyData;
@@ -51,6 +52,7 @@ class EraserTool : public DrawingProgramToolBase {
 
         BrushComponentCode::BrushStrokeGenerationData genData;
 
+        void finish_erase();
         void reset_erasing_stroke();
         void erase_on_path();
         void commit_erase();

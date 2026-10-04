@@ -93,6 +93,7 @@ namespace NetworkingObjects {
                         client_write_update_func(o, a, finalUpdate);
                 });
             }
+            // NOTE: This function stops the object from sending updates over the network, and stops it from being affected by updates from the network (if lock = true)
             // NOTE: Locked objects will not be erased from the DelayUpdateSerializedClassManager map. Make sure you unlock objects before they're erased
             template <typename T> void set_object_update_lock(const NetworkingObjects::NetObjTemporaryPtr<T>& o, bool lock) {
                 if(o.get_obj_man()->is_connected()) {
