@@ -80,7 +80,6 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
     }
 
     public void updateSelection(int start, int end) {
-        finishComposingText();
         Selection.setSelection(mEditText, start, end);
     }
 

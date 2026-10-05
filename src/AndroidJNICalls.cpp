@@ -285,6 +285,7 @@ namespace AndroidJNICalls {
             }
             case TextInputData::CommandType::SHIFT_CURSOR: {
                 int newCursorPosition = textboxInput.intData.x();
+                auto oldCursor = *cursor;
                 cursor->pos = std::min(cursor->selectionBeginPos, cursor->selectionEndPos);
                 if(newCursorPosition < 0) {
                     for(int i = 0; i < (-newCursorPosition); i++)
@@ -294,16 +295,18 @@ namespace AndroidJNICalls {
                     for(int i = 0; i < newCursorPosition; i++)
                         cursor->selectionBeginPos = cursor->selectionEndPos = cursor->pos = textBox->move(RichText::TextBox::Movement::RIGHT, cursor->pos);
                 }
-                cursorChanged = true;
+                cursorChanged |= (oldCursor != *cursor);
                 break;
             }
             case TextInputData::CommandType::SET_CURSOR: {
+                auto oldCursor = *cursor;
                 cursor->selectionBeginPos = get_cursor_pos_from_android_text_pos(textBox, textboxInput.intData.x());
                 cursor->selectionEndPos = cursor->pos = get_cursor_pos_from_android_text_pos(textBox, textboxInput.intData.y());
-                cursorChanged = true;
+                cursorChanged |= (oldCursor != *cursor);
                 break;
             }
             case TextInputData::CommandType::SET_COMPOSING_REGION: {
+                auto oldCursor = *cursor;
                 if(textboxInput.intData.x() == textboxInput.intData.y())
                     cursor->compose = std::nullopt;
                 else {
@@ -315,7 +318,7 @@ namespace AndroidJNICalls {
                     comp.androidEnd = get_cursor_pos_from_android_text_pos(textBox,
                                                                            textboxInput.intData.y());
                 }
-                cursorChanged = true;
+                cursorChanged |= (oldCursor != *cursor);
                 break;
             }
         }
