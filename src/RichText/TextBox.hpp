@@ -113,9 +113,15 @@ class TextBox {
                 a(pos, selectionBeginPos, selectionEndPos);
             }
             struct ComposingArea {
+                enum class AreaType {
+                    SDL_TYPE,
+                    ANDROID_TYPE
+                } type;
                 int start = -1;
                 int length = -1;
                 std::string composeText;
+                TextPosition androidStart = {0, 0};
+                TextPosition androidEnd = {0, 0};
                 bool operator==(const ComposingArea& o) const = default;
                 bool operator!=(const ComposingArea& o) const = default;
             };
@@ -230,6 +236,10 @@ class TextBox {
         void rebuild_build_run_of_text_with_tabs(std::string_view s, const skia::textlayout::TextStyle& tStyle, skia::textlayout::ParagraphBuilder& a);
 
         int get_line_number_at_from_byte_text_pos(TextPosition pos);
+
+        void paint_compose_region(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end);
+        void paint_compose_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end);
+        void paint_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end);
 
         bool newlinesAllowed = true;
         bool ellipsis = false;

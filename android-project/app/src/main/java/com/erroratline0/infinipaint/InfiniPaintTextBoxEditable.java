@@ -22,6 +22,7 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
+import android.util.Log;
 import android.widget.EditText;
 
 import java.util.stream.IntStream;

@@ -268,10 +268,11 @@ namespace AndroidJNICalls {
         enum class CommandType {
             REPLACE_TEXT,
             SHIFT_CURSOR,
-            SET_CURSOR
+            SET_CURSOR,
+            SET_COMPOSING_REGION
         } command;
         std::string strData;
-        Vector3i intData;
+        Vector2i intData;
     };
 
     void input_android_text_box(const TextInputData& textboxInput) {
@@ -299,6 +300,21 @@ namespace AndroidJNICalls {
             case TextInputData::CommandType::SET_CURSOR: {
                 cursor->selectionBeginPos = get_cursor_pos_from_android_text_pos(textBox, textboxInput.intData.x());
                 cursor->selectionEndPos = cursor->pos = get_cursor_pos_from_android_text_pos(textBox, textboxInput.intData.y());
+                cursorChanged = true;
+                break;
+            }
+            case TextInputData::CommandType::SET_COMPOSING_REGION: {
+                if(textboxInput.intData.x() == textboxInput.intData.y())
+                    cursor->compose = std::nullopt;
+                else {
+                    cursor->compose = RichText::TextBox::Cursor::ComposingArea();
+                    auto& comp = cursor->compose.value();
+                    comp.type = RichText::TextBox::Cursor::ComposingArea::AreaType::ANDROID_TYPE;
+                    comp.androidStart = get_cursor_pos_from_android_text_pos(textBox,
+                                                                             textboxInput.intData.x());
+                    comp.androidEnd = get_cursor_pos_from_android_text_pos(textBox,
+                                                                           textboxInput.intData.y());
+                }
                 cursorChanged = true;
                 break;
             }
@@ -334,7 +350,7 @@ Java_com_erroratline0_infinipaint_InfiniPaintTextBoxEditable_nativeReplace(JNIEn
     input_android_text_box({
                                    .command = TextInputData::CommandType::REPLACE_TEXT,
                                    .strData = jstring2string(env, str),
-                                   .intData = {std::min(st, en), std::max(en, st), 0}
+                                   .intData = {std::min(st, en), std::max(en, st)}
                            });
     CustomEvents::emit_event(
             CustomEvents::AndroidTextBoxInputEvent{
@@ -378,7 +394,7 @@ Java_com_erroratline0_infinipaint_InfiniPaintTextBoxInputConnection_nativeShiftS
     input_android_text_box({
                                    .command = TextInputData::CommandType::SHIFT_CURSOR,
                                    .strData = "",
-                                   .intData = {amount, 0, 0}
+                                   .intData = {amount, 0}
                            });
 
     CustomEvents::emit_event(
@@ -397,7 +413,23 @@ Java_com_erroratline0_infinipaint_InfiniPaintTextBoxInputConnection_nativeSetSel
     std::scoped_lock a{textboxMutex};
     input_android_text_box({
                                    .command = TextInputData::CommandType::SET_CURSOR,
-                                   .intData = {std::min(start, end), std::max(start, end), 0}
+                                   .intData = {std::min(start, end), std::max(start, end)}
+                           });
+
+    CustomEvents::emit_event(
+            CustomEvents::AndroidTextBoxInputEvent{
+                    .command = CustomEvents::AndroidTextBoxInputEvent::CommandType::COMMIT_ALL,
+            });
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_erroratline0_infinipaint_InfiniPaintTextBoxInputConnection_nativeSetComposingRegion(
+        JNIEnv *env, jclass clazz, jlong m_text_box_id, jint start, jint end) {
+    std::scoped_lock a{textboxMutex};
+    input_android_text_box({
+                                   .command = TextInputData::CommandType::SET_COMPOSING_REGION,
+                                   .intData = {std::min(start, end), std::max(start, end)}
                            });
 
     CustomEvents::emit_event(

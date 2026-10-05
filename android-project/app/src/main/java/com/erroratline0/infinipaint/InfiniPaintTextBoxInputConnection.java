@@ -66,6 +66,7 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
     public static native int[] nativeGetSelection(long mTextBoxID);
     public static native void nativeShiftSelection(long mTextBoxID, int amount);
     public static native void nativeSetSelection(long mTextBoxID, int start, int end);
+    public static native void nativeSetComposingRegion(long mTextBoxID, int st, int en);
 
     InfiniPaintTextBoxInputConnection(View targetView, boolean fullEditor) {
         super(targetView, fullEditor);
@@ -79,6 +80,7 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
     }
 
     public void updateSelection(int start, int end) {
+        finishComposingText();
         Selection.setSelection(mEditText, start, end);
     }
 
@@ -189,6 +191,13 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
     }
 
     @Override
+    public boolean finishComposingText() {
+        super.finishComposingText();
+        nativeSetComposingRegion(mTextBoxID, 0, 0);
+        return true;
+    }
+
+    @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
         // Manually do commitText
         int composingTextBegin = getComposingSpanStart(mEditText);
@@ -209,6 +218,16 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
             setSelection(start + newCursorPosition, start + newCursorPosition);
         else
             setSelection(start + text.length() + newCursorPosition - 1, start + text.length() + newCursorPosition - 1);
+
+        finishComposingText();
+
+        return true;
+    }
+
+    @Override
+    public boolean setComposingRegion(int start, int end) {
+        super.setComposingRegion(start, end);
+        nativeSetComposingRegion(mTextBoxID, start, end);
         return true;
     }
 

@@ -275,7 +275,7 @@ void TextBox::process_composing_text_input(Cursor& cur, const std::string& in, i
     }
     else {
         cur.selectionEndPos = cur.pos = insert(cur.pos, in, inputModMap);
-        cur.compose = {editStart, editLength, in};
+        cur.compose = {Cursor::ComposingArea::AreaType::SDL_TYPE, editStart, editLength, in};
     }
     cur.previousX = std::nullopt;
 }
@@ -1370,44 +1370,64 @@ void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
 
     if(paintOpts.cursor.has_value()) {
         auto cur = paintOpts.cursor.value();
-        SkPaint selectionP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
-        selectionP.setAntiAlias(paintOpts.skiaAA);
-        if(cur.selectionBeginPos != cur.selectionEndPos) {
-            if(cur.compose.has_value()) {
-                canvas->saveLayerAlphaf(nullptr, 0.5f);
-                SkPaint compositionUnderlinePaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
-                compositionUnderlinePaint.setStrokeWidth(1.5f);
-                compositionUnderlinePaint.setAntiAlias(paintOpts.skiaAA);
-                rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
-                    canvas->drawLine(rect.BL() - SkPoint{0.0f, 4.0f}, rect.BR() - SkPoint{0.0f, 4.0f}, compositionUnderlinePaint);
-                });
-                auto c = cur.compose.value();
-                if(c.start >= 0 && c.length >= 0) {
-                    size_t startPosInComposeStr = get_byte_position_from_codepoint_location_string(c.composeText, c.start);
-                    TextPosition startPos = {cur.selectionBeginPos.fParagraphIndex, cur.selectionBeginPos.fTextByteIndex + startPosInComposeStr};
-                    if(startPos == cur.selectionBeginPos)
-                        cur.pos = startPos;
-                    else if(startPos != cur.selectionEndPos) {
-                        SkPaint compositionSelectionPaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
-                        compositionSelectionPaint.setAntiAlias(paintOpts.skiaAA);
-                        rects_between_text_positions_func(cur.selectionBeginPos, startPos, [&](const SkRect& rect) {
-                            canvas->drawRect(rect, compositionSelectionPaint);
-                        });
-                    }
-                }
-                canvas->restore();
-            }
-            else {
-                canvas->saveLayerAlphaf(nullptr, 0.5f);
-                rects_between_text_positions_func(cur.selectionBeginPos, cur.selectionEndPos, [&](const SkRect& rect) {
-                    canvas->drawRect(rect, selectionP);
-                });
-                canvas->restore();
+        if(cur.compose.has_value() && cur.compose.value().type == Cursor::ComposingArea::AreaType::SDL_TYPE) {
+            paint_compose_region(canvas, paintOpts, cur.selectionBeginPos, cur.selectionEndPos);
+            auto c = cur.compose.value();
+            if(c.start >= 0 && c.length >= 0) {
+                size_t startPosInComposeStr = get_byte_position_from_codepoint_location_string(c.composeText, c.start);
+                TextPosition startPos = {cur.selectionBeginPos.fParagraphIndex, cur.selectionBeginPos.fTextByteIndex + startPosInComposeStr};
+                if(startPos == cur.selectionBeginPos)
+                    cur.pos = startPos;
+                else if(startPos != cur.selectionEndPos)
+                    paint_compose_selection(canvas, paintOpts, cur.selectionBeginPos, startPos);
             }
         }
+        else if(cur.compose.has_value() && cur.compose.value().type == Cursor::ComposingArea::AreaType::ANDROID_TYPE) {
+            paint_compose_region(canvas, paintOpts, cur.compose.value().androidStart, cur.compose.value().androidEnd);
+            paint_selection(canvas, paintOpts, cur.selectionBeginPos, cur.selectionEndPos);
+        }
+        else
+            paint_selection(canvas, paintOpts, cur.selectionBeginPos, cur.selectionEndPos);
         SkPaint cursorP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
         cursorP.setAntiAlias(paintOpts.skiaAA);
         canvas->drawRect(get_cursor_rect(cur.pos), cursorP);
+    }
+}
+
+void TextBox::paint_compose_region(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end) {
+    if(start != end) {
+        canvas->saveLayerAlphaf(nullptr, 0.5f);
+        SkPaint compositionUnderlinePaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
+        compositionUnderlinePaint.setStrokeWidth(1.5f);
+        compositionUnderlinePaint.setAntiAlias(paintOpts.skiaAA);
+        rects_between_text_positions_func(start, end, [&](const SkRect& rect) {
+            canvas->drawLine(rect.BL() - SkPoint{0.0f, 4.0f}, rect.BR() - SkPoint{0.0f, 4.0f}, compositionUnderlinePaint);
+        });
+        canvas->restore();
+    }
+}
+
+void TextBox::paint_compose_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end) {
+    if(start != end) {
+        canvas->saveLayerAlphaf(nullptr, 0.5f);
+        SkPaint compositionSelectionPaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
+        compositionSelectionPaint.setAntiAlias(paintOpts.skiaAA);
+        rects_between_text_positions_func(start, end, [&](const SkRect& rect) {
+            canvas->drawRect(rect, compositionSelectionPaint);
+        });
+        canvas->restore();
+    }
+}
+
+void TextBox::paint_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end) {
+    if(start != end) {
+        canvas->saveLayerAlphaf(nullptr, 0.5f);
+        SkPaint selectionP{SkColor4f{paintOpts.cursorColor.x(), paintOpts.cursorColor.y(), paintOpts.cursorColor.z(), 1.0f}};
+        selectionP.setAntiAlias(paintOpts.skiaAA);
+        rects_between_text_positions_func(start, end, [&](const SkRect& rect) {
+            canvas->drawRect(rect, selectionP);
+        });
+        canvas->restore();
     }
 }
 
