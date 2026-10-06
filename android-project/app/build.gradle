@@ -4,7 +4,7 @@ plugins {
 
 task conanInstall {
     def conanExecutable = "conan" // define the path to your conan installation
-    def buildDir = new File("app/build")
+    def buildDir = file("build")
     buildDir.mkdirs()
     ["Debug", "Release"].each { String build_type ->
         // ["armv7", "armv8", "x86", "x86_64"]
@@ -29,13 +29,13 @@ task conanInstall {
 android {
     namespace = "com.erroratline0.infinipaint"
     compileSdk 36
-    ndkVersion = "29.0.14206865"
+    ndkVersion = "30.0.16248370" // Must match NDK used in conan profile
     defaultConfig {
-        applicationId 'com.erroratline0.InfiniPaint'
+        applicationId 'com.erroratline0.InfiniPaint' // Considering changing this to all lowercase, but only when transferring files between versions is simple (which it isn't right now)
         minSdkVersion 27
         targetSdk 36
-        versionCode 3
-        versionName "0.6.1"
+        versionCode 4
+        versionName "0.6.2"
         externalNativeBuild {
             cmake {
                 cppFlags "-fexceptions", "-frtti"
@@ -45,8 +45,13 @@ android {
             }
         }
     }
+    buildTypes.configureEach {
+        ext.buildTypeName = null
+    }
     buildTypes {
         release {
+            manifestPlaceholders = [fileProviderAuthority: "com.erroratline0.infinipaint.fileprovider"]
+            buildTypeName = ""
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -59,6 +64,9 @@ android {
             signingConfig signingConfigs.debug
         }
         debug {
+            applicationIdSuffix ".debug"
+            manifestPlaceholders = [fileProviderAuthority: "com.erroratline0.infinipaint.debug.fileprovider"]
+            buildTypeName = " (Debug)"
             minifyEnabled false
             shrinkResources false
             debuggable true
@@ -73,6 +81,7 @@ android {
     applicationVariants.all { variant ->
         tasks["merge${variant.name.capitalize()}Assets"]
             .dependsOn("externalNativeBuild${variant.name.capitalize()}")
+        variant.resValue "string", "app_name", '"' + "InfiniPaint" + variant.buildType.buildTypeName + '"'
     }
 
     sourceSets.main {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="2"
-    android:versionName="0.6.0"
+    android:versionCode="4"
+    android:versionName="0.6.2"
     android:installLocation="auto">
 
     <!-- OpenGL ES 2.0 -->
@@ -91,7 +91,7 @@
 
         <provider
             android:name="com.erroratline0.infinipaint.InfiniPaintFileProvider"
-            android:authorities="com.erroratline0.infinipaint.fileprovider"
+            android:authorities="${fileProviderAuthority}"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

@@ -75,3 +75,23 @@ These commands will generate a javascript file containing the entire program. An
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
+## Android
+Building the android APK has only been tested on a Linux machine. It could probably work on Mac as well, but it won't work on Windows as is because of some issues with conan packages. If you're doing this on Windows, you might need to work in WSL or a Linux VM to get this working, but this hasn't been tested.
+Note that the debug version will not be able to access the project files stored in the release version. For now, the only way to transfer files between the two versions is to share them from the release version to an intermediate application, and then import them through the debug version. In the future, I'll add a feature to save InfiniPaint canvases to an external folder accessible by all applications, so hopefully this should also be more manageable.
+
+After cloning the repository, `cd` into the repo, then update the git submodules:
+```
+git submodule update --init --recursive
+```
+Then run:
+```
+./conan/export_libs.sh
+```
+You'll need Android Studio and the NDK to compile the APK. Follow these steps:
+- Download and install Android Studio from https://developer.android.com/studio
+- In Android Studio, open android-project from the InfiniPaint repository
+- Download the NDK required to build InfiniPaint through android studio by going to Tools > SDK Manager > Languages & Frameworks > Android SDK > SDK Tools. Check "Show Package Details", and check version "30.0.16248370" from "NDK (Side by side)"
+- The android NDK should now be installed. Get the path to the NDK folder by going to the path listed as "Android SDK Location" in the Android SDK window we just opened, go to the folder "ndk", and then the folder "30.0.16248370". Keep note of this path. It could be something like "/home/USER_NAME/Android/Sdk/ndk/30.0.16248370" on Linux
+- Copy the android conan profile file located in the infinipaint repository at conan/profiles/android, to conan's default profile directory. On Linux, this could be at /home/USER_NAME/.conan2/profiles
+- Open the copied profile, and paste the path to the NDK we took note of before in the field "tools.android:ndk_path"
+- After this, you can run the application in any way you want through Android Studio. To build the APK, you can go to Build > Generate App Bundles or APKs > Generate APKs

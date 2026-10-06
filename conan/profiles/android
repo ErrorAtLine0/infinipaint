@@ -11,5 +11,10 @@ compiler.cppstd=23
 
 [conf]
 tools.build:cxxflags=["-fexceptions", "-frtti"]
-# Set your NDK path here
+# Set your NDK path here (Version must match ndkVersion in build.gradle)
 tools.android:ndk_path=/NDK/PATH/HERE
+
+# Uncomment this section if make/ninja aren't available
+#tools.cmake.cmaketoolchain:generator=Ninja
+#[tool_requires]
+#ninja/[*]
