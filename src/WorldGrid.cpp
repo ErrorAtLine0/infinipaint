@@ -240,6 +240,11 @@ std::string WorldGrid::get_display_name() {
 void WorldGrid::scale_up(const WorldScalar& scaleUpAmount) {
     size *= scaleUpAmount;
     offset *= scaleUpAmount;
+    if(bounds.has_value()) {
+        SCollision::AABB<WorldScalar>& boundsVal = bounds.value();
+        boundsVal.min *= scaleUpAmount;
+        boundsVal.max *= scaleUpAmount;
+    }
 }
 
 void WorldGrid::draw(GridManager& gMan, SkCanvas* canvas, const DrawData& drawData) {
