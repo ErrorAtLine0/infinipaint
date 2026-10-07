@@ -114,8 +114,13 @@ public class InfiniPaint extends SDLActivity {
         public void run() {
             if (mTextEdit2 != null) {
                 InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if(mTextEdit2.ic.isComposingText()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                        imm.invalidateInput(mTextEdit2);
+                    else
+                        imm.restartInput(mTextEdit2);
+                }
                 mTextEdit2.ic.updateSelection(mSelectionBegin, mSelectionEnd);
-                imm.invalidateInput(mTextEdit2);
                 imm.updateSelection(mTextEdit2, mSelectionBegin, mSelectionEnd, -1, -1);
             }
         }
@@ -136,8 +141,13 @@ public class InfiniPaint extends SDLActivity {
         public void run() {
             if (mTextEdit2 != null) {
                 InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if(mTextEdit2.ic.isComposingText()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                        imm.invalidateInput(mTextEdit2);
+                    else
+                        imm.restartInput(mTextEdit2);
+                }
                 mTextEdit2.ic.clearAndSetNewTextAndSelection(mStr, mSelectionBegin, mSelectionEnd);
-                imm.invalidateInput(mTextEdit2);
                 imm.updateSelection(mTextEdit2, mSelectionBegin, mSelectionEnd, -1, -1);
             }
         }

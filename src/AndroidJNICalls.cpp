@@ -53,6 +53,16 @@ jstring string2jstring(JNIEnv* env, const std::string& s) {
     return env->NewString((const jchar*)u16str.data(), u16str.length());
 }
 
+std::vector<int32_t> jintArray2vector(JNIEnv* env, jintArray a) {
+    std::vector<int32_t> toRet;
+    jint* aElements = env->GetIntArrayElements(a, nullptr);
+    jsize aLength = env->GetArrayLength(a);
+    for(jsize i = 0; i < aLength; i++)
+        toRet.emplace_back(aElements[i]);
+    env->ReleaseIntArrayElements(a, aElements, 0);
+    return toRet;
+}
+
 namespace AndroidJNICalls {
     InputManager* globalInputManager;
 
@@ -269,10 +279,12 @@ namespace AndroidJNICalls {
             REPLACE_TEXT,
             SHIFT_CURSOR,
             SET_CURSOR,
-            SET_COMPOSING_REGION
+            SET_COMPOSING_REGION,
+            SET_COMPOSING_HIGHLIGHTS
         } command;
         std::string strData;
         Vector2i intData;
+        std::vector<int32_t> intArrayData;
     };
 
     void input_android_text_box(const TextInputData& textboxInput) {
@@ -317,6 +329,26 @@ namespace AndroidJNICalls {
                                                                              textboxInput.intData.x());
                     comp.androidEnd = get_cursor_pos_from_android_text_pos(textBox,
                                                                            textboxInput.intData.y());
+                }
+                cursorChanged |= (oldCursor != *cursor);
+                break;
+            }
+            case TextInputData::CommandType::SET_COMPOSING_HIGHLIGHTS: {
+                auto oldCursor = *cursor;
+                if(cursor->compose.has_value()) {
+                    RichText::TextBox::Cursor::ComposingArea& compArea = cursor->compose.value();
+                    if(textboxInput.intArrayData.size() % 3 == 0) {
+                        for(size_t i = 0; i < textboxInput.intArrayData.size(); i += 3) {
+                            int32_t highlightStart = textboxInput.intArrayData[i];
+                            int32_t highlightEnd = textboxInput.intArrayData[i + 1];
+                            int32_t highlightIntColor = textboxInput.intArrayData[i + 2];
+                            compArea.androidHighlights.emplace_back(
+                                    get_cursor_pos_from_android_text_pos(textBox, highlightStart),
+                                    get_cursor_pos_from_android_text_pos(textBox, highlightEnd),
+                                    static_cast<SkColor>(highlightIntColor)
+                                    );
+                        }
+                    }
                 }
                 cursorChanged |= (oldCursor != *cursor);
                 break;
@@ -430,9 +462,27 @@ JNIEXPORT void JNICALL
 Java_com_erroratline0_infinipaint_InfiniPaintTextBoxInputConnection_nativeSetComposingRegion(
         JNIEnv *env, jclass clazz, jlong m_text_box_id, jint start, jint end) {
     std::scoped_lock a{textboxMutex};
+
     input_android_text_box({
                                    .command = TextInputData::CommandType::SET_COMPOSING_REGION,
                                    .intData = {std::min(start, end), std::max(start, end)}
+                           });
+
+    CustomEvents::emit_event(
+            CustomEvents::AndroidTextBoxInputEvent{
+                    .command = CustomEvents::AndroidTextBoxInputEvent::CommandType::COMMIT_ALL,
+            });
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_erroratline0_infinipaint_InfiniPaintTextBoxInputConnection_nativeSetComposingHighlights(
+        JNIEnv *env, jclass clazz, jlong m_text_box_id, jintArray highlights) {
+    std::scoped_lock a{textboxMutex};
+
+    input_android_text_box({
+                                   .command = TextInputData::CommandType::SET_COMPOSING_HIGHLIGHTS,
+                                   .intArrayData = jintArray2vector(env, highlights)
                            });
 
     CustomEvents::emit_event(

@@ -1379,10 +1379,12 @@ void TextBox::paint(SkCanvas* canvas, const PaintOpts& paintOpts) {
                 if(startPos == cur.selectionBeginPos)
                     cur.pos = startPos;
                 else if(startPos != cur.selectionEndPos)
-                    paint_compose_selection(canvas, paintOpts, cur.selectionBeginPos, startPos);
+                    paint_compose_selection(canvas, paintOpts, cur.selectionBeginPos, startPos, SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f});
             }
         }
         else if(cur.compose.has_value() && cur.compose.value().type == Cursor::ComposingArea::AreaType::ANDROID_TYPE) {
+            for(auto& highlight : cur.compose.value().androidHighlights)
+                paint_compose_selection(canvas, paintOpts, highlight.start, highlight.end, SkColor4f::FromColor(highlight.color));
             paint_compose_region(canvas, paintOpts, cur.compose.value().androidStart, cur.compose.value().androidEnd);
             paint_selection(canvas, paintOpts, cur.selectionBeginPos, cur.selectionEndPos);
         }
@@ -1407,10 +1409,10 @@ void TextBox::paint_compose_region(SkCanvas* canvas, const PaintOpts& paintOpts,
     }
 }
 
-void TextBox::paint_compose_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end) {
+void TextBox::paint_compose_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end, const SkColor4f& c) {
     if(start != end) {
-        canvas->saveLayerAlphaf(nullptr, 0.5f);
-        SkPaint compositionSelectionPaint{SkColor4f{paintOpts.compositionColor.x(), paintOpts.compositionColor.y(), paintOpts.compositionColor.z(), 1.0f}};
+        canvas->saveLayerAlphaf(nullptr, 0.4f * c.fA);
+        SkPaint compositionSelectionPaint{SkColor4f{c.fR, c.fG, c.fB, 1.0f}};
         compositionSelectionPaint.setAntiAlias(paintOpts.skiaAA);
         rects_between_text_positions_func(start, end, [&](const SkRect& rect) {
             canvas->drawRect(rect, compositionSelectionPaint);

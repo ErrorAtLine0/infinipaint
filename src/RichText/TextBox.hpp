@@ -122,6 +122,14 @@ class TextBox {
                 std::string composeText;
                 TextPosition androidStart = {0, 0};
                 TextPosition androidEnd = {0, 0};
+                struct Highlight {
+                    TextPosition start = {0, 0};
+                    TextPosition end = {0, 0};
+                    SkColor color = 0;
+                    bool operator==(const Highlight& o) const = default;
+                    bool operator!=(const Highlight& o) const = default;
+                };
+                std::vector<Highlight> androidHighlights;
                 bool operator==(const ComposingArea& o) const = default;
                 bool operator!=(const ComposingArea& o) const = default;
             };
@@ -238,7 +246,7 @@ class TextBox {
         int get_line_number_at_from_byte_text_pos(TextPosition pos);
 
         void paint_compose_region(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end);
-        void paint_compose_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end);
+        void paint_compose_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end, const SkColor4f& c);
         void paint_selection(SkCanvas* canvas, const PaintOpts& paintOpts, TextPosition start, TextPosition end);
 
         bool newlinesAllowed = true;

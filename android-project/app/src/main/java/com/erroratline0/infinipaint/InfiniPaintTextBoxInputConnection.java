@@ -18,6 +18,7 @@
 
 package com.erroratline0.infinipaint;
 
+import static android.text.Spanned.SPAN_COMPOSING;
 import static android.text.TextUtils.CAP_MODE_SENTENCES;
 
 import android.content.*;
@@ -29,6 +30,7 @@ import android.os.Handler;
 import android.text.Editable;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
@@ -45,6 +47,7 @@ import android.view.inputmethod.TextAttribute;
 import android.view.inputmethod.TextBoundsInfoResult;
 import android.view.inputmethod.TextSnapshot;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -67,6 +70,7 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
     public static native void nativeShiftSelection(long mTextBoxID, int amount);
     public static native void nativeSetSelection(long mTextBoxID, int start, int end);
     public static native void nativeSetComposingRegion(long mTextBoxID, int st, int en);
+    public static native void nativeSetComposingHighlights(long mTextBoxID, int[] highlights);
 
     InfiniPaintTextBoxInputConnection(View targetView, boolean fullEditor) {
         super(targetView, fullEditor);
@@ -88,6 +92,15 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
         mEditText.clear();
         mEditText.replace(0, 0, str);
         Selection.setSelection(mEditText, start, end);
+    }
+
+    public boolean isComposingText() {
+        Editable e = getEditable();
+        if(e == null)
+            return false;
+        int cStart = getComposingSpanStart(e);
+        int cEnd = getComposingSpanEnd(e);
+        return cStart != -1 && cEnd != -1;
     }
 
     @Override
@@ -251,7 +264,32 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
         else
             setSelection(start + text.length() + newCursorPosition - 1, start + text.length() + newCursorPosition - 1);
 
+        ArrayList<Integer> highlights = new ArrayList<>();
+        if(text instanceof Spanned) {
+            Spanned textSpanned = (Spanned)text;
+            Object[] textSpanList = textSpanned.getSpans(0, textSpanned.length(), Object.class);
+            for(Object span : textSpanList) {
+                // https://developer.android.com/reference/android/text/Spanned
+                //
+                int spanStart = textSpanned.getSpanStart(span);
+                int spanEnd = textSpanned.getSpanEnd(span);
+                int flags = textSpanned.getSpanFlags(span);
+
+                if(span instanceof android.text.style.BackgroundColorSpan) {
+                    android.text.style.BackgroundColorSpan backgroundSpan = (android.text.style.BackgroundColorSpan)span;
+                    highlights.add(spanStart + start);
+                    highlights.add(spanEnd + start);
+                    highlights.add(backgroundSpan.getBackgroundColor());
+                }
+            }
+        }
+        int[] highlightArr = new int[highlights.size()];
+        for(int i = 0; i < highlightArr.length; i++) {
+            highlightArr[i] = highlights.get(i);
+        }
+
         setComposingRegion(start, start + text.length());
+        nativeSetComposingHighlights(mTextBoxID, highlightArr);
 
         return true;
     }
