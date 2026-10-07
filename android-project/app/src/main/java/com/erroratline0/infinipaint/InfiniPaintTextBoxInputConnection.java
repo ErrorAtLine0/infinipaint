@@ -269,11 +269,9 @@ public class InfiniPaintTextBoxInputConnection extends BaseInputConnection {
             Spanned textSpanned = (Spanned)text;
             Object[] textSpanList = textSpanned.getSpans(0, textSpanned.length(), Object.class);
             for(Object span : textSpanList) {
-                // https://developer.android.com/reference/android/text/Spanned
-                //
                 int spanStart = textSpanned.getSpanStart(span);
                 int spanEnd = textSpanned.getSpanEnd(span);
-                int flags = textSpanned.getSpanFlags(span);
+                //int flags = textSpanned.getSpanFlags(span);
 
                 if(span instanceof android.text.style.BackgroundColorSpan) {
                     android.text.style.BackgroundColorSpan backgroundSpan = (android.text.style.BackgroundColorSpan)span;

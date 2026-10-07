@@ -100,6 +100,7 @@ class FileSelectScreen : public Screen {
         void menu_black_box();
         void edit_action_bar();
         void about_bottom_bar();
+        void settings_top_bar_buttons();
         void edit_title_bar();
         void title_bar();
         void text_transparent_option_button(const char* id, const char* text, const std::function<void()>& onClick);
@@ -130,6 +131,11 @@ class FileSelectScreen : public Screen {
             SETTINGS,
             ABOUT
         } selectedMenu = SelectedMenu::FILES;
+
+        enum class SettingsMenu {
+            GENERAL,
+            TOUCH
+        } settingsMenu = SettingsMenu::GENERAL;
 
         int selectedLicense = -1;
 

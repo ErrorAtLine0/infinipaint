@@ -476,6 +476,51 @@ void FileSelectScreen::delete_selected_files_in_trash() {
     }
 }
 
+void FileSelectScreen::settings_top_bar_buttons() {
+    auto& gui = main.g.gui;
+    gui.element<LayoutElement>("settings bottom bar", [&](LayoutElement*, const Clay_ElementId& lId) {
+        CLAY(lId, {
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(40)},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            },
+        }) {
+            gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+                .scrollHorizontal = true,
+                .clipHorizontal = true,
+                .scrollbarX = ScrollArea::ScrollbarType::NO_INTERACTION,
+                .innerContent = [&] (auto&) {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                        },
+                    }) {
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                                .padding = CLAY_PADDING_ALL(1)
+                            }
+                        }) {
+                            text_button(gui, "general", "General", {
+                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .isSelected = settingsMenu == SettingsMenu::GENERAL,
+                                .onClick = [&] { settingsMenu = SettingsMenu::GENERAL; }
+                            });
+                            text_button(gui, "touch", "Touch", {
+                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+                                .isSelected = settingsMenu == SettingsMenu::TOUCH,
+                                .onClick = [&] { settingsMenu = SettingsMenu::TOUCH; }
+                            });
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+
 void FileSelectScreen::about_bottom_bar() {
     auto& gui = main.g.gui;
     gui.element<LayoutElement>("about bottom bar fill", [&](LayoutElement*, const Clay_ElementId& lId) {
@@ -681,7 +726,7 @@ void FileSelectScreen::title_bar() {
                             mutable_text_label(gui, "main screen header text connect", "Connect");
                             break;
                         case SelectedMenu::SETTINGS:
-                            mutable_text_label(gui, "main screen header text settings", "Settings");
+                            settings_top_bar_buttons();
                             break;
                         case SelectedMenu::ABOUT:
                             mutable_text_label(gui, "main screen header about", "About");
@@ -1145,42 +1190,50 @@ void FileSelectScreen::settings_view() {
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     },
                 }) {
-                    input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
-                    color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
-                    input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 1.0f, 2.0f, {
-                        .decimalPrecision = 1,
-                        .onEdit = [&] { main.g.window_update(); }
-                    });
-                    input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
-                    checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
-                    checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
-                    slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
-                    slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
-                    checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
-                    checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
-                    text_label(gui, "VSync:");
-                    radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
-                        {"On", 1},
-                        {"Off", 0},
-                        #ifndef __ANDROID__
-                            {"Adaptive", -1}, // Usually doesn't work on android
-                        #endif
-                    }, [&] {
-                        main.set_vsync_value(main.conf.vsyncValue);
-                    });
-                    input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
-                        .onEdit = [&] {
-                            main.update_main_loop_call_rate(main.conf.mainCallbackRate);
+                    switch(settingsMenu) {
+                        case SettingsMenu::GENERAL: {
+                            input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
+                            color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                            input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 1.0f, 2.0f, {
+                                .decimalPrecision = 1,
+                                .onEdit = [&] { main.g.window_update(); }
+                            });
+                            input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
+                            checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
+                            checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                            slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
+                            slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
+                            checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
+                            checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
+                            text_label(gui, "VSync:");
+                            radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
+                                {"On", 1},
+                                {"Off", 0},
+                                #ifndef __ANDROID__
+                                    {"Adaptive", -1}, // Usually doesn't work on android
+                                #endif
+                            }, [&] {
+                                main.set_vsync_value(main.conf.vsyncValue);
+                            });
+                            input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
+                                .onEdit = [&] {
+                                    main.update_main_loop_call_rate(main.conf.mainCallbackRate);
+                                }
+                            });
+                            checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
+                            #ifndef __ANDROID__
+                                input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
+                                checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+                            #endif
+                            #ifndef __EMSCRIPTEN__
+                                checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
+                            #endif
+                            break;
                         }
-                    });
-                    checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
-                    #ifndef __ANDROID__
-                        input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
-                        checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
-                    #endif
-                    #ifndef __EMSCRIPTEN__
-                        checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
-                    #endif
+                        case SettingsMenu::TOUCH: {
+                            text_label(gui, "Touch settings start");
+                        }
+                    }
                 }
             }
         }
@@ -1194,14 +1247,27 @@ void FileSelectScreen::about_view() {
         .scrollVertical = true,
         .clipVertical = true,
         .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
-        .innerContent = [&] (auto&) {
+        .innerContent = [&] (auto& contentDim) {
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                 },
             }) {
-                text_label_size(gui, (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second, 0.8f);
+                RichText::TextData tData;
+
+                auto& par = tData.paragraphs.emplace_back();
+
+                RichText::PositionedTextStyleMod& positionedModInit = tData.tStyleMods.emplace_back();
+                positionedModInit.pos = {0, 0};
+                positionedModInit.mods[RichText::TextStyleModifier::ModifierType::COLOR] = std::make_shared<RichText::ColorTextStyleModifier>(convert_vec4<Vector4f>(gui.io.theme->frontColor1));
+                par.text = (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second;
+
+                gui.element<TextParagraph>("text", TextParagraph::Data{
+                    .text = tData,
+                    .maxGrowX = contentDim.containerDimensions.x(),
+                    .ellipsis = false
+                });
             }
         }
     });
