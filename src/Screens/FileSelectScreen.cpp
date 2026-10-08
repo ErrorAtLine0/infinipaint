@@ -40,7 +40,7 @@
 #include <SDL3/SDL_timer.h>
 #include <algorithm>
 
-#define MAIN_MENU_SIZE 300
+#define SETTINGS_MENU_WIDTH 300
 
 using namespace GUIStuff;
 using namespace ElementHelpers;
@@ -928,7 +928,7 @@ void FileSelectScreen::main_menu() {
                     gui.element<LayoutElement>("inner main menu element", [&] (LayoutElement*, const Clay_ElementId& lId) {
                         CLAY(lId, {
                             .layout = {
-                                .sizing = {.width = CLAY_SIZING_FIXED(200.0f * mainMenuOpenAnim->get_val()), .height = CLAY_SIZING_GROW(0)},
+                                .sizing = {.width = CLAY_SIZING_FIXED(std::min(200.0f, gui.io.windowSize.x()) * mainMenuOpenAnim->get_val()), .height = CLAY_SIZING_GROW(0)},
                                 .padding = CLAY_PADDING_ALL(gui.io.theme->padding1),
                                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
                             },
@@ -1141,7 +1141,7 @@ void FileSelectScreen::connect_view() {
             }) {
                 CLAY_AUTO_ID({
                     .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0, 300), .height = CLAY_SIZING_GROW(0)},
+                        .sizing = {.width = CLAY_SIZING_GROW(0, SETTINGS_MENU_WIDTH), .height = CLAY_SIZING_GROW(0)},
                         .childGap = gui.io.theme->childGap1,
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     },
@@ -1185,7 +1185,7 @@ void FileSelectScreen::settings_view() {
             }) {
                 CLAY_AUTO_ID({
                     .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0, 300), .height = CLAY_SIZING_GROW(0)},
+                        .sizing = {.width = CLAY_SIZING_GROW(0, SETTINGS_MENU_WIDTH), .height = CLAY_SIZING_GROW(0)},
                         .childGap = gui.io.theme->childGap1,
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     },
