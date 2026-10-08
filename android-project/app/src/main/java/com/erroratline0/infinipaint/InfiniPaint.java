@@ -42,6 +42,7 @@ import org.libsdl.app.SDLSurface;
 
 import java.io.File;
 import java.util.ArrayList;
+import com.erroratline0.infinipaint.BuildConfig;
 
 public class InfiniPaint extends SDLActivity {
     protected void onCreate(Bundle savedInstanceState) {
@@ -179,7 +180,7 @@ public class InfiniPaint extends SDLActivity {
             Uri contentUri;
 
             try {
-                contentUri = getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile);
+                contentUri = getUriForFile(getContext(), BuildConfig.FILE_PROVIDER_AUTHORITY, newFile);
             } catch (Exception e) {
                 Log.v("INFO", "[shareInternalFile] Exception " + e);
                 return;
@@ -201,7 +202,7 @@ public class InfiniPaint extends SDLActivity {
                 else
                     newFile = new File(str);
                 try {
-                    arrayList.add(getUriForFile(getContext(), "com.erroratline0.infinipaint.fileprovider", newFile));
+                    arrayList.add(getUriForFile(getContext(), BuildConfig.FILE_PROVIDER_AUTHORITY, newFile));
                 } catch (Exception e) {
                     Log.v("INFO", "[shareInternalFile] Exception " + e);
                     return;
