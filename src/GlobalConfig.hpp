@@ -87,7 +87,26 @@ class GlobalConfig {
             bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;
 
-        bool disableTouchForDrawing = false;
+        struct TouchOptions {
+            enum class SingleFingerAction {
+                NONE,
+                ACTIVE_TOOL,
+                PAN,
+                LASSO
+            } singleFingerAction = SingleFingerAction::ACTIVE_TOOL;
+            bool twoFingerZoom = true;
+            bool twoFingerRotation = true;
+            enum class MultiFingerTapAction {
+                NONE,
+                UNDO,
+                REDO,
+                TOGGLE_INTERFACE
+            };
+            MultiFingerTapAction twoFingerTapAction = MultiFingerTapAction::UNDO;
+            MultiFingerTapAction threeFingerTapAction = MultiFingerTapAction::REDO;
+            MultiFingerTapAction fourFingerTapAction = MultiFingerTapAction::NONE;
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(TouchOptions, singleFingerAction, twoFingerZoom, twoFingerRotation, twoFingerTapAction, threeFingerTapAction, fourFingerTapAction);
+        } touchOptions;
 
         Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;
 
@@ -134,4 +153,18 @@ NLOHMANN_JSON_SERIALIZE_ENUM(GlobalConfig::AntiAliasing, {
     {GlobalConfig::AntiAliasing::NONE, "None"},
     {GlobalConfig::AntiAliasing::SKIA, "Skia"},
     {GlobalConfig::AntiAliasing::DYNAMIC_MSAA, "Dynamic MSAA"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(GlobalConfig::TouchOptions::MultiFingerTapAction, {
+    {GlobalConfig::TouchOptions::MultiFingerTapAction::NONE, "None"},
+    {GlobalConfig::TouchOptions::MultiFingerTapAction::UNDO, "Undo"},
+    {GlobalConfig::TouchOptions::MultiFingerTapAction::REDO, "Redo"},
+    {GlobalConfig::TouchOptions::MultiFingerTapAction::TOGGLE_INTERFACE, "Toggle Interface"}
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(GlobalConfig::TouchOptions::SingleFingerAction, {
+    {GlobalConfig::TouchOptions::SingleFingerAction::NONE, "None"},
+    {GlobalConfig::TouchOptions::SingleFingerAction::ACTIVE_TOOL, "Active Tool"},
+    {GlobalConfig::TouchOptions::SingleFingerAction::PAN, "Pan"},
+    {GlobalConfig::TouchOptions::SingleFingerAction::LASSO, "Lasso"},
 })

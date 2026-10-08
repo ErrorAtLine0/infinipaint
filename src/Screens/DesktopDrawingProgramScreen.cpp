@@ -54,9 +54,9 @@ void DesktopDrawingProgramScreen::input_drop_file_callback(const InputManager::D
 
 void DesktopDrawingProgramScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     switch(key.key) {
-        case InputManager::KEY_NOGUI: {
+        case InputManager::KEY_TOGGLE_INTERFACE: {
             if(key.down && !key.repeat) {
-                toolbar.drawGui = !toolbar.drawGui;
+                main.hideInterface = !main.hideInterface;
                 main.g.gui.set_to_layout();
             }
             break;

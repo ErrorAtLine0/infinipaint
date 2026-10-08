@@ -99,6 +99,7 @@ void DrawingProgramToolBase::cancel_finger_touch_callback(const FingerInput::Tou
     mouseArgs.button = InputManager::MouseButton::LEFT;
     input_mouse_button_on_canvas_callback(mouseArgs);
 }
+bool DrawingProgramToolBase::bypass_touch_restriction() { return false; }
 bool DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar_exists() { return false; }
 void DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {}
 std::optional<InputManager::TextBoxStartInfo> DrawingProgramToolBase::get_text_box_start_info() { return std::nullopt; }

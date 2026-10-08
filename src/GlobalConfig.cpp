@@ -68,7 +68,6 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["defaultCanvasBackgroundColor"] = defaultCanvasBackgroundColor;
     toRet["flipZoomToolDirection"] = flipZoomToolDirection;
     toRet["realTimeEraser"] = realTimeEraser;
-    toRet["disableTouchForDrawing"] = disableTouchForDrawing;
 #ifndef __EMSCRIPTEN__
     toRet["checkForUpdates"] = checkForUpdates;
 #endif
@@ -83,6 +82,8 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     tablet["brushMinimumSize"] = tabletOptions.brushMinimumSize;
     tablet["zoomWhilePenDownAndButtonHeld"] = tabletOptions.zoomWhilePenDownAndButtonHeld;
     toRet["tablet"] = tablet;
+
+    toRet["touchOptions"] = touchOptions;
 
     json debugJson;
     debugJson["mobileUI"] = mobileUI;
@@ -128,7 +129,6 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("scrollZoomSpeed").get_to(scrollZoomSpeed);} catch(...) {}
     try{j.at("mainCallbackRate").get_to(mainCallbackRate);} catch(...) {}
     try{j.at("mainCallbackRateBackground").get_to(mainCallbackRateBackground);} catch(...) {}
-    try{j.at("disableTouchForDrawing").get_to(disableTouchForDrawing);} catch(...) {}
     if(version >= VersionNumber(0, 6, 0))
         try{j.at("vsync").get_to(vsyncValue);} catch(...) {}
 #ifdef ADD_PREFER_X11_OPTION
@@ -160,6 +160,8 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("tablet").at("disableTouchWhenPenInProximity").get_to(tabletOptions.disableTouchWhenPenInProximity);} catch(...) {}
     try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
     try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
+
+    try{j.at("touchOptions").get_to(touchOptions);} catch(...) {}
 
     try{j.at("debug").at("mobileUI").get_to(mobileUI);} catch(...) {}
     try{j.at("debug").at("jumpTransitionEasing").get_to(jumpTransitionEasing);} catch(...) {}

@@ -56,6 +56,7 @@ class EditTool : public DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
         virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
+        virtual bool bypass_touch_restriction() override;
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info() override;
         ~EditTool();
 

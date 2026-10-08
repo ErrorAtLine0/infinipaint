@@ -34,6 +34,7 @@
 #include <chrono>
 #include <filesystem>
 #include "ClientData.hpp"
+#include "GlobalConfig.hpp"
 
 class MainProgram;
 
@@ -148,6 +149,8 @@ class World {
         void ensure_display_name_unique(std::string& displayName);
 
         bool connection_update();
+
+        void multi_finger_tap_action(GlobalConfig::TouchOptions::MultiFingerTapAction action);
 
         TimePoint timeToSendCameraData;
 

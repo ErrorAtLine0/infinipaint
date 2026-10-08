@@ -240,6 +240,10 @@ void GridModifyTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
     });
 }
 
+bool GridModifyTool::bypass_touch_restriction() {
+    return true;
+}
+
 void GridModifyTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
     t.paint_popup(popupPos);
 }

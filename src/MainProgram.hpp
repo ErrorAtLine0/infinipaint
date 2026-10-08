@@ -125,6 +125,8 @@ class MainProgram {
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
         bool setToQuit = false;
+
+        bool hideInterface = false;
         
         void early_destroy();
 
@@ -150,8 +152,6 @@ class MainProgram {
 
         std::filesystem::path homePath;
         std::filesystem::path documentsPath;
-
-        bool drawGui = true;
 
         std::shared_ptr<World> world;
         std::vector<std::shared_ptr<World>> worlds;

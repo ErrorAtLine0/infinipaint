@@ -201,7 +201,7 @@ void Toolbar::layout_run() {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
-    if(drawGui) {
+    if(!main.hideInterface) {
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
@@ -1465,6 +1465,7 @@ void Toolbar::general_settings_inner_gui() {
             category_button("Generalbutton", "General", GSETTINGS_GENERAL);
             category_button("Graphicsbutton", "Graphics", GSETTINGS_GRAPHICS);
             category_button("Tabletbutton", "Tablet", GSETTINGS_TABLET);
+            category_button("Touchbutton", "Touch", GSETTINGS_TOUCH);
             category_button("Themebutton", "Theme", GSETTINGS_THEME);
             category_button("Keybindsbutton", "Keybinds", GSETTINGS_KEYBINDS);
             category_button("Debugbutton", "Debug", GSETTINGS_DEBUG);
@@ -1516,7 +1517,6 @@ void Toolbar::general_settings_inner_gui() {
                         input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
 
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
-                        checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
                         checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
                         #ifdef ADD_PREFER_X11_OPTION
                             checkbox_boolean_field(gui, "prefer x11", "Prefer X11 over Wayland (Requires restart)", &main.conf.preferX11);
@@ -1571,6 +1571,34 @@ void Toolbar::general_settings_inner_gui() {
                             checkbox_boolean_field(gui, "mouse ignore when pen proximity", "Ignore mouse movement when pen in proximity", &main.conf.tabletOptions.ignoreMouseMovementWhenPenInProximity);
                         #endif
                         checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
+                    });
+                    break;
+                }
+                case GSETTINGS_TOUCH: {
+                    general_scroll_area("touch settings", [&] {
+                        std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::SingleFingerAction>> singleFingerOptions = {
+                            {"None", GlobalConfig::TouchOptions::SingleFingerAction::NONE},
+                            {"Active Tool", GlobalConfig::TouchOptions::SingleFingerAction::ACTIVE_TOOL},
+                            {"Pan", GlobalConfig::TouchOptions::SingleFingerAction::PAN},
+                            {"Lasso Select", GlobalConfig::TouchOptions::SingleFingerAction::LASSO}
+                        };
+                        text_label(gui, "Finger action");
+                        radio_button_selector(gui, "Finger action options", &main.conf.touchOptions.singleFingerAction, singleFingerOptions);
+                        text_label(gui, "Two finger move");
+                        checkbox_boolean_field(gui, "two finger rotation", "Enable canvas rotation", &main.conf.touchOptions.twoFingerRotation);
+                        checkbox_boolean_field(gui, "two finger zoom", "Enable canvas zoom", &main.conf.touchOptions.twoFingerZoom);
+                        std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::MultiFingerTapAction>> multiFingerTapOptions = {
+                            {"None", GlobalConfig::TouchOptions::MultiFingerTapAction::NONE},
+                            {"Undo", GlobalConfig::TouchOptions::MultiFingerTapAction::UNDO},
+                            {"Redo", GlobalConfig::TouchOptions::MultiFingerTapAction::REDO},
+                            {"Toggle Interface", GlobalConfig::TouchOptions::MultiFingerTapAction::TOGGLE_INTERFACE}
+                        };
+                        text_label(gui, "Two finger tap");
+                        radio_button_selector(gui, "Two finger tap options", &main.conf.touchOptions.twoFingerTapAction, multiFingerTapOptions);
+                        text_label(gui, "Three finger tap");
+                        radio_button_selector(gui, "Three finger tap options", &main.conf.touchOptions.threeFingerTapAction, multiFingerTapOptions);
+                        text_label(gui, "Four finger tap");
+                        radio_button_selector(gui, "Four finger tap options", &main.conf.touchOptions.fourFingerTapAction, multiFingerTapOptions);
                     });
                     break;
                 }

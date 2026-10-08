@@ -65,7 +65,7 @@ InputManager::InputManager(MainProgram& initMain):
     defaultKeyAssignments[{0, SDLK_DELETE}] = KEY_DRAW_DELETE;
     defaultKeyAssignments[{CTRL_MOD, SDLK_Z}] = KEY_UNDO;
     defaultKeyAssignments[{CTRL_MOD, SDLK_R}] = KEY_REDO;
-    defaultKeyAssignments[{0, SDLK_TAB}] = KEY_NOGUI;
+    defaultKeyAssignments[{0, SDLK_TAB}] = KEY_TOGGLE_INTERFACE;
     defaultKeyAssignments[{0, SDLK_F11}] = KEY_FULLSCREEN;
     defaultKeyAssignments[{CTRL_MOD, SDLK_S}] = KEY_SAVE;
     defaultKeyAssignments[{CTRL_MOD | SDL_KMOD_SHIFT, SDLK_S}] = KEY_SAVE_AS;

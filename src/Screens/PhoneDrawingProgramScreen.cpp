@@ -109,7 +109,7 @@ void PhoneDrawingProgramScreen::main_display() {
             center_message("Connecting to server message", "Connecting to server...");
         }
         else {
-            if(hideGUI)
+            if(main.hideInterface)
                 hidden_gui();
             else {
                 top_toolbar();
@@ -137,7 +137,7 @@ void PhoneDrawingProgramScreen::hidden_gui() {
         svg_icon_button(gui, "show gui button", "data/icons/eyeopen.svg", {
             .isSelected = true,
             .onClick = [&] {
-                hideGUI = false;
+                main.hideInterface = false;
             }
         });
     });
@@ -527,7 +527,7 @@ void PhoneDrawingProgramScreen::top_toolbar_remaining_area() {
             .svgPath = "data/icons/eyeopen.svg",
             .isSelected = false,
             .onClick = [&] {
-                hideGUI = true;
+                main.hideInterface = true;
             }
         },
     };
@@ -1256,8 +1256,8 @@ void PhoneDrawingProgramScreen::bottom_extra_toolbar_gui() {
 }
 
 void PhoneDrawingProgramScreen::input_global_back_button_callback() {
-    if(hideGUI) {
-        hideGUI = false;
+    if(main.hideInterface) {
+        main.hideInterface = false;
         main.g.gui.set_to_layout();
     }
     else {

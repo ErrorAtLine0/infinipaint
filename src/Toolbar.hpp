@@ -80,8 +80,6 @@ class Toolbar {
         void close_chatbox();
         void toggle_player_list();
 
-        bool drawGui = true;
-
         bool app_close_requested();
     private:
         static void sdl_open_file_dialog_callback(void* userData, const char * const * fileList, int filter);
@@ -171,6 +169,7 @@ class Toolbar {
             GSETTINGS_GENERAL = 0,
             GSETTINGS_GRAPHICS,
             GSETTINGS_TABLET,
+            GSETTINGS_TOUCH,
             GSETTINGS_THEME,
             GSETTINGS_KEYBINDS,
             GSETTINGS_DEBUG

@@ -212,6 +212,10 @@ void EditTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs
     drawP.world.main.g.gui.set_to_layout();
 }
 
+bool EditTool::bypass_touch_restriction() {
+    return objInfoBeingEdited != nullptr;
+}
+
 std::optional<InputManager::TextBoxStartInfo> EditTool::get_text_box_start_info() {
     if(objInfoBeingEdited)
         return compEditTool->get_text_box_start_info();

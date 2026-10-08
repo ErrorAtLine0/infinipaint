@@ -1204,7 +1204,6 @@ void FileSelectScreen::settings_view() {
                             slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
                             slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
                             checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
-                            checkbox_boolean_field(gui, "disable touch for drawing", "Disable touch for drawing", &main.conf.disableTouchForDrawing);
                             text_label(gui, "VSync:");
                             radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
                                 {"On", 1},
@@ -1231,7 +1230,30 @@ void FileSelectScreen::settings_view() {
                             break;
                         }
                         case SettingsMenu::TOUCH: {
-                            text_label(gui, "Touch settings start");
+                            std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::SingleFingerAction>> singleFingerOptions = {
+                                {"None", GlobalConfig::TouchOptions::SingleFingerAction::NONE},
+                                {"Active Tool", GlobalConfig::TouchOptions::SingleFingerAction::ACTIVE_TOOL},
+                                {"Pan", GlobalConfig::TouchOptions::SingleFingerAction::PAN},
+                                {"Lasso Select", GlobalConfig::TouchOptions::SingleFingerAction::LASSO}
+                            };
+                            text_label(gui, "Finger action");
+                            radio_button_selector(gui, "Finger action options", &main.conf.touchOptions.singleFingerAction, singleFingerOptions);
+                            text_label(gui, "Two finger move");
+                            checkbox_boolean_field(gui, "two finger rotation", "Enable canvas rotation", &main.conf.touchOptions.twoFingerRotation);
+                            checkbox_boolean_field(gui, "two finger zoom", "Enable canvas zoom", &main.conf.touchOptions.twoFingerZoom);
+                            std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::MultiFingerTapAction>> multiFingerTapOptions = {
+                                {"None", GlobalConfig::TouchOptions::MultiFingerTapAction::NONE},
+                                {"Undo", GlobalConfig::TouchOptions::MultiFingerTapAction::UNDO},
+                                {"Redo", GlobalConfig::TouchOptions::MultiFingerTapAction::REDO},
+                                {"Toggle Interface", GlobalConfig::TouchOptions::MultiFingerTapAction::TOGGLE_INTERFACE}
+                            };
+                            text_label(gui, "Two finger tap");
+                            radio_button_selector(gui, "Two finger tap options", &main.conf.touchOptions.twoFingerTapAction, multiFingerTapOptions);
+                            text_label(gui, "Three finger tap");
+                            radio_button_selector(gui, "Three finger tap options", &main.conf.touchOptions.threeFingerTapAction, multiFingerTapOptions);
+                            text_label(gui, "Four finger tap");
+                            radio_button_selector(gui, "Four finger tap options", &main.conf.touchOptions.fourFingerTapAction, multiFingerTapOptions);
+                            break;
                         }
                     }
                 }

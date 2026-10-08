@@ -82,8 +82,6 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
             PLAYER_LIST
         } topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
 
-        bool hideGUI = false;
-
         Vector4f backgroundColorTemporary;
         Vector4f* colorPickerPtr = nullptr;
         ColorSelectorData colorPickerData;

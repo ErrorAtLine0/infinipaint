@@ -143,12 +143,15 @@ class DrawingProgram {
         void pen_tool_switch_check();
         enum class TemporaryMoveToolSwitch {
             NONE,
-            PAN,
-            ZOOM
+            KEY_PAN,
+            KEY_ZOOM,
+            FINGER_TOOL
         };
         bool temporaryEraser = false;
         TemporaryMoveToolSwitch tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
         DrawingProgramToolType toolTypeAfterTempMove;
+        void temp_tool_switch(TemporaryMoveToolSwitch switchMode, DrawingProgramToolType newToolType);
+        void temp_tool_switch_back();
 
         struct GlobalControls {
             std::optional<WorldScalar> lockedCameraScale;

@@ -39,6 +39,7 @@ class GridModifyTool : public DrawingProgramToolBase {
         virtual void switch_tool(DrawingProgramToolType newTool) override;
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) override;
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) override;
+        virtual bool bypass_touch_restriction() override;
     private:
         WorldGrid oldGrid;
         NetworkingObjects::NetObjWeakPtr<WorldGrid> grid;

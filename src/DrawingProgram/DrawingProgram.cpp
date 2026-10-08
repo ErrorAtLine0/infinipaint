@@ -266,29 +266,17 @@ void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key
             break;
         }
         case InputManager::KEY_HOLD_TO_PAN: {
-            if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
-                toolTypeAfterTempMove = drawTool->get_type();
-                switch_to_tool(DrawingProgramToolType::PAN);
-                tempMoveToolSwitch = TemporaryMoveToolSwitch::PAN;
-            }
-            else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::PAN) {
-                switch_to_tool(toolTypeAfterTempMove);
-                tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
-                pen_tool_switch_check();
-            }
+            if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE)
+                temp_tool_switch(TemporaryMoveToolSwitch::KEY_PAN, DrawingProgramToolType::PAN);
+            else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::KEY_PAN)
+                temp_tool_switch_back();
             break;
         }
         case InputManager::KEY_HOLD_TO_ZOOM: {
-            if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE) {
-                toolTypeAfterTempMove = drawTool->get_type();
-                switch_to_tool(DrawingProgramToolType::ZOOM);
-                tempMoveToolSwitch = TemporaryMoveToolSwitch::ZOOM;
-            }
-            else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::ZOOM) {
-                switch_to_tool(toolTypeAfterTempMove);
-                tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
-                pen_tool_switch_check();
-            }
+            if(key.down && !key.repeat && tempMoveToolSwitch == TemporaryMoveToolSwitch::NONE)
+                temp_tool_switch(TemporaryMoveToolSwitch::KEY_ZOOM, DrawingProgramToolType::ZOOM);
+            else if(!key.down && tempMoveToolSwitch == TemporaryMoveToolSwitch::KEY_ZOOM)
+                temp_tool_switch_back();
             break;
         }
     }
@@ -319,21 +307,50 @@ void DrawingProgram::input_pen_axis_callback(const InputManager::PenAxisCallback
 void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     switch(pointerDown) {
         case PointerDownState::NONE:
-            if(!world.main.conf.disableTouchForDrawing && touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::DOWN && !world.main.g.gui.touch_pointer_obstructed()) {
+            if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::DOWN && !world.main.g.gui.touch_pointer_obstructed()) {
                 clear_right_click_popup();
-                pointerDown = PointerDownState::FINGER;
-                drawTool->input_finger_touch_on_canvas_callback(touch);
+                auto toolFunc = [&] {
+                    pointerDown = PointerDownState::FINGER;
+                    drawTool->input_finger_touch_on_canvas_callback(touch);
+                };
+                if(drawTool->bypass_touch_restriction() || selection.is_something_selected())
+                    toolFunc();
+                else {
+                    switch(world.main.conf.touchOptions.singleFingerAction) {
+                        case GlobalConfig::TouchOptions::SingleFingerAction::NONE:
+                            pointerDown = PointerDownState::FINGER_DISABLED;
+                            break;
+                        case GlobalConfig::TouchOptions::SingleFingerAction::ACTIVE_TOOL:
+                            toolFunc();
+                            break;
+                        case GlobalConfig::TouchOptions::SingleFingerAction::LASSO:
+                            temp_tool_switch(TemporaryMoveToolSwitch::FINGER_TOOL, DrawingProgramToolType::LASSOSELECT);
+                            toolFunc();
+                            break;
+                        case GlobalConfig::TouchOptions::SingleFingerAction::PAN:
+                            temp_tool_switch(TemporaryMoveToolSwitch::FINGER_TOOL, DrawingProgramToolType::PAN);
+                            toolFunc();
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
             break;
         case PointerDownState::FINGER:
             if(touch.fingers.size() > 1) {
                 drawTool->cancel_finger_touch_callback(touch);
                 pointerDown = PointerDownState::FINGER_DISABLED;
+                if(tempMoveToolSwitch == TemporaryMoveToolSwitch::FINGER_TOOL && !(drawTool->bypass_touch_restriction() || selection.is_something_selected()))
+                    temp_tool_switch_back();
             }
             else {
                 drawTool->input_finger_touch_on_canvas_callback(touch);
-                if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::UP)
+                if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::UP) {
                     pointerDown = PointerDownState::NONE;
+                    if(tempMoveToolSwitch == TemporaryMoveToolSwitch::FINGER_TOOL && !(drawTool->bypass_touch_restriction() || selection.is_something_selected()))
+                        temp_tool_switch_back();
+                }
             }
             break;
         case PointerDownState::FINGER_DISABLED:
@@ -644,6 +661,18 @@ void DrawingProgram::pen_tool_switch_check() {
             switch_to_tool(DrawingProgramToolType::BRUSH);
         temporaryEraser = false;
     }
+}
+
+void DrawingProgram::temp_tool_switch(TemporaryMoveToolSwitch switchMode, DrawingProgramToolType newToolType) {
+    toolTypeAfterTempMove = drawTool->get_type();
+    tempMoveToolSwitch = switchMode;
+    switch_to_tool(newToolType);
+}
+
+void DrawingProgram::temp_tool_switch_back() {
+    switch_to_tool(toolTypeAfterTempMove);
+    tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
+    pen_tool_switch_check();
 }
 
 void DrawingProgram::invalidate_cache_at_component(CanvasComponentContainer::ObjInfo* objToCheck) {

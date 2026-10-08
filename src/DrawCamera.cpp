@@ -293,18 +293,22 @@ void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchC
                     c.pos -= c.dir_from_space(newCenter - initialCenter);
                     WorldVec newCenterWorld = c.from_space(newCenter);
 
-                    float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
-                    float newDistance = vec_distance(touch.fingers[0].pos, touch.fingers[1].pos);
-                    float scaleAmount = newDistance / initialDistance;
-                    c.scale_about_double(newCenterWorld, scaleAmount);
+                    if(w.main.conf.touchOptions.twoFingerZoom) {
+                        float initialDistance = vec_distance(touchInitialPositions[0], touchInitialPositions[1]);
+                        float newDistance = vec_distance(touch.fingers[0].pos, touch.fingers[1].pos);
+                        float scaleAmount = newDistance / initialDistance;
+                        c.scale_about_double(newCenterWorld, scaleAmount);
+                    }
 
-                    Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
-                    float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
-                    Vector2f newDiff = touch.fingers[0].pos - newCenter;
-                    float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
-                    float rotateAngle = initialAngle - newAngle;
-                    rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
-                    c.rotate_about(newCenterWorld, rotateAngle);
+                    if(w.main.conf.touchOptions.twoFingerRotation) {
+                        Vector2f initialDiff = touchInitialPositions[0] - initialCenter;
+                        float initialAngle = std::atan2(initialDiff.y(), initialDiff.x()) + std::numbers::pi;
+                        Vector2f newDiff = touch.fingers[0].pos - newCenter;
+                        float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
+                        float rotateAngle = initialAngle - newAngle;
+                        rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
+                        c.rotate_about(newCenterWorld, rotateAngle);
+                    }
 
                     checks_after_input(w);
                 }

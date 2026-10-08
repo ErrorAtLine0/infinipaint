@@ -410,6 +410,10 @@ bool ScreenshotTool::dragging_area_update(const Vector2f& camCursorPos) {
 void ScreenshotTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 
+bool ScreenshotTool::bypass_touch_restriction() {
+    return true;
+}
+
 void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, WorldScreenshotInfo::ScreenshotType screenshotType) {
     if(controls.imageSize.x() <= 0 || controls.imageSize.y() <= 0) {
         std::cout << "[ScreenshotTool::take_screenshot] Image size is 0 or negative" << std::endl;

@@ -28,6 +28,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include "DrawingProgram/Layers/DrawingProgramLayerListItem.hpp"
 #include "FingerInputTracker.hpp"
+#include "GlobalConfig.hpp"
 #include "Helpers/NetworkingObjects/NetObjOrderedList.hpp"
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include "Helpers/NetworkingObjects/NetObjUnorderedSet.hpp"
@@ -380,11 +381,30 @@ void World::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& to
         drawData.cam.input_finger_touch_callback(*this, touch);
         if(touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::TAP) {
             auto& tapGesture = static_cast<FingerInput::TapGesture&>(*touch.gesture);
-            if(tapGesture.numberOfTaps >= 2 && tapGesture.fingerPositions.size() == 2)
-                undo_with_checks();
-            else if(tapGesture.numberOfTaps >= 2 && tapGesture.fingerPositions.size() == 3)
-                redo_with_checks();
+            if(tapGesture.fingerPositions.size() == 2)
+                multi_finger_tap_action(main.conf.touchOptions.twoFingerTapAction);
+            else if(tapGesture.fingerPositions.size() == 3)
+                multi_finger_tap_action(main.conf.touchOptions.threeFingerTapAction);
+            else if(tapGesture.fingerPositions.size() == 4)
+                multi_finger_tap_action(main.conf.touchOptions.fourFingerTapAction);
         }
+    }
+}
+
+void World::multi_finger_tap_action(GlobalConfig::TouchOptions::MultiFingerTapAction action) {
+    switch(action) {
+        case GlobalConfig::TouchOptions::MultiFingerTapAction::NONE:
+            break;
+        case GlobalConfig::TouchOptions::MultiFingerTapAction::UNDO:
+            undo_with_checks();
+            break;
+        case GlobalConfig::TouchOptions::MultiFingerTapAction::REDO:
+            redo_with_checks();
+            break;
+        case GlobalConfig::TouchOptions::MultiFingerTapAction::TOGGLE_INTERFACE:
+            main.hideInterface = !main.hideInterface;
+            main.g.gui.set_to_layout();
+            break;
     }
 }
 
