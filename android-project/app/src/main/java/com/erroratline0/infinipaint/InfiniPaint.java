@@ -180,7 +180,7 @@ public class InfiniPaint extends SDLActivity {
             Uri contentUri;
 
             try {
-                contentUri = getUriForFile(getContext(), BuildConfig.FILE_PROVIDER_AUTHORITY, newFile);
+                contentUri = getUriForFile(getContext(), BuildConfig.APPLICATION_ID + ".fileprovider", newFile);
             } catch (Exception e) {
                 Log.v("INFO", "[shareInternalFile] Exception " + e);
                 return;
@@ -202,7 +202,7 @@ public class InfiniPaint extends SDLActivity {
                 else
                     newFile = new File(str);
                 try {
-                    arrayList.add(getUriForFile(getContext(), BuildConfig.FILE_PROVIDER_AUTHORITY, newFile));
+                    arrayList.add(getUriForFile(getContext(), BuildConfig.APPLICATION_ID + ".fileprovider", newFile));
                 } catch (Exception e) {
                     Log.v("INFO", "[shareInternalFile] Exception " + e);
                     return;

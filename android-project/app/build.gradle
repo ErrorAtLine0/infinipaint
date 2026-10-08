@@ -50,8 +50,6 @@ android {
     }
     buildTypes {
         release {
-            manifestPlaceholders = [fileProviderAuthority: "com.erroratline0.infinipaint.fileprovider"]
-            buildConfigField 'String', 'FILE_PROVIDER_AUTHORITY', '"com.erroratline0.infinipaint.fileprovider"'
             buildTypeName = ""
             minifyEnabled true
             shrinkResources true
@@ -66,8 +64,6 @@ android {
         }
         debug {
             applicationIdSuffix ".debug"
-            manifestPlaceholders = [fileProviderAuthority: "com.erroratline0.infinipaint.debug.fileprovider"]
-            buildConfigField 'String', 'FILE_PROVIDER_AUTHORITY', '"com.erroratline0.infinipaint.debug.fileprovider"'
             buildTypeName = " (Debug)"
             minifyEnabled false
             shrinkResources false
