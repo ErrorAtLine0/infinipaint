@@ -97,7 +97,8 @@ FontData::FontData()
     localFontMgr = SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType());
     defaultFontMgr = SkFontMgr_New_Custom_Directory("data/fonts");
 #endif
-    map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf");
+    //map["Roboto"] = defaultFontMgr->makeFromFile("data/fonts/Roboto-variable.ttf"); // Doesn't work on Android
+    map["Roboto"] = defaultFontMgr->matchFamilyStyle("Roboto", SkFontStyle()); // Works on Android
 
     collection = sk_make_sp<skia::textlayout::FontCollection>();
     collection->setDefaultFontManager(defaultFontMgr, std::vector<SkString>{SkString{"Roboto"}, SkString{"Noto Emoji"}, SkString{"Amiri"}});

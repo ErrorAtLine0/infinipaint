@@ -1317,7 +1317,7 @@ void PhoneDrawingProgramScreen::set_color_picker_data(Vector4f* newColorPickerPt
 
 void PhoneDrawingProgramScreen::draw(SkCanvas* canvas) {
     DrawingProgramScreen::draw(canvas);
-    draw_rotate_position_popup(canvas, 70.0f);
+    draw_rotate_position_popup(canvas, 50.0f);
 }
 
 PhoneDrawingProgramScreen::~PhoneDrawingProgramScreen() {

@@ -115,7 +115,7 @@ void DesktopDrawingProgramScreen::on_tab_close() {
 
 void DesktopDrawingProgramScreen::draw(SkCanvas* canvas) {
     DrawingProgramScreen::draw(canvas);
-    draw_rotate_position_popup(canvas, 70.0f);
+    draw_rotate_position_popup(canvas, 60.0f);
 }
 
 float DesktopDrawingProgramScreen::calculate_gui_scale() {

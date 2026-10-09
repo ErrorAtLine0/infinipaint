@@ -22,6 +22,7 @@
 #include "MainProgram.hpp"
 
 #include <include/core/SkStream.h>
+#include <Helpers/Logger.hpp>
 
 GUIHolder::GUIHolder(MainProgram& m):
     main(m)
