@@ -18,8 +18,8 @@
 
 #include "TimePoint.hpp"
 
-TimePoint::TimePoint():
-    tp(std::chrono::steady_clock::now()),
+TimePoint::TimePoint(std::chrono::steady_clock::time_point initPoint):
+    tp(initPoint),
     timeSince(0.0f)
 {}
 

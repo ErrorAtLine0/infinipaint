@@ -94,6 +94,14 @@ template <typename T> bool is_collision_ray_line_segment(const Vector<T, 2>& ray
     return (t1 >= 0.0 && (t2 >= 0.0 && t2 <= 1.0));
 }
 
+template <typename T> T degrees_to_radians(T a) {
+    return a * (std::numbers::pi / 180.0);
+}
+
+template <typename T> T radians_to_degrees(T a) {
+    return a * (180.0 / std::numbers::pi);
+}
+
 // https://www.geeksforgeeks.org/program-for-point-of-intersection-of-two-lines/
 template <typename T> Vector<T, 2> line_line_intersection(const Vector<T, 2>& a, const Vector<T, 2>& b, const Vector<T, 2>& c, const Vector<T, 2>& d) {
     T a1 = b.y() - a.y();

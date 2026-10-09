@@ -31,6 +31,35 @@ void DrawingProgramScreen::draw(SkCanvas* canvas) {
     main.draw_world(canvas, main.world, main.world->drawData);
 }
 
+void DrawingProgramScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
+    auto& rotationTime = main.world->drawData.cam.lastRotationTime;
+    rotationTime.update_time_since();
+    if(rotationTime < World::ROTATE_POPUP_DISPLAY_TIME) {
+        float a = 1.0f - lerp_time<float>(rotationTime, World::ROTATE_POPUP_DISPLAY_TIME, World::ROTATE_POPUP_FADE_START_TIME);
+        std::stringstream rotateStrStrm;
+        rotateStrStrm << std::fixed << std::setprecision(2) << radians_to_degrees(main.world->drawData.cam.c.rotation) << "°";
+        std::string rotateStr = rotateStrStrm.str();
+        float coordFontSize = main.g.final_gui_scale() * main.g.gui.io.fontSize;
+        SkFont f = main.g.gui.io.get_font(coordFontSize);
+        SkFontMetrics metrics;
+        f.getMetrics(&metrics);
+        float textPixelLength = f.measureText(rotateStr.c_str(), rotateStr.length(), SkTextEncoding::kUTF8, nullptr);
+        float fontHeight = (-metrics.fAscent + metrics.fDescent);
+        SkPaint textBackgroundPaint;
+        textBackgroundPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->backColor1, 0.8f * a));
+        float ROTATE_POPUP_Y_POS = yPos * main.g.final_gui_scale();
+        float ROTATE_POPUP_PADDING = 5.0f * main.g.final_gui_scale();
+        SkRect textBackgroundRect = SkRect::MakeLTRB(main.window.size.x() * 0.5f - textPixelLength * 0.5f - ROTATE_POPUP_PADDING, ROTATE_POPUP_Y_POS, main.window.size.x() * 0.5f + textPixelLength * 0.5f + ROTATE_POPUP_PADDING, ROTATE_POPUP_Y_POS + fontHeight + ROTATE_POPUP_PADDING);
+        SkPaint textPaint;
+        if(main.world->drawData.cam.c.rotation == 0.0)
+            textPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->fillColor1, 1.0f * a));
+        else
+            textPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->frontColor1, 1.0f * a));
+        canvas->drawRect(textBackgroundRect, textBackgroundPaint);
+        canvas->drawSimpleText(rotateStr.c_str(), rotateStr.length(), SkTextEncoding::kUTF8, main.window.size.x() * 0.5f - textPixelLength * 0.5f, ROTATE_POPUP_Y_POS + fontHeight, f, textPaint);
+    }
+}
+
 void DrawingProgramScreen::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
     main.world->input_add_file_to_canvas_callback(addFile);
 }

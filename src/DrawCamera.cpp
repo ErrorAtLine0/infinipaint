@@ -139,6 +139,7 @@ void DrawCamera::update_main(World& w) {
                 .move = {0, 0}
             };
             w.drawProg.drawTool->input_mouse_motion_callback(motion);
+            lastRotationTime.update_time_point();
             w.main.g.gui.set_to_layout();
             checks_after_input(w);
         }
@@ -149,6 +150,7 @@ void DrawCamera::update_main(World& w) {
                 .move = {0, 0}
             };
             w.drawProg.drawTool->input_mouse_motion_callback(motion);
+            lastRotationTime.update_time_point();
             w.main.g.gui.set_to_layout();
             checks_after_input(w);
         }
@@ -308,6 +310,7 @@ void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchC
                         float rotateAngle = initialAngle - newAngle;
                         rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
                         c.rotate_about(newCenterWorld, rotateAngle);
+                        lastRotationTime.update_time_point();
                     }
 
                     checks_after_input(w);

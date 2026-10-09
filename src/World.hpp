@@ -47,6 +47,8 @@ class World {
         static std::string DOT_FILE_EXTENSION;
         static std::string FILE_EXTENSION;
         static constexpr size_t CHAT_SIZE = 10;
+        static constexpr float ROTATE_POPUP_DISPLAY_TIME = 2.0f;
+        static constexpr float ROTATE_POPUP_FADE_START_TIME = 1.0f;
 
         World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo);
 

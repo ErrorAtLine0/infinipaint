@@ -1315,6 +1315,11 @@ void PhoneDrawingProgramScreen::set_color_picker_data(Vector4f* newColorPickerPt
     colorPickerData = initColorPickerData;
 }
 
+void PhoneDrawingProgramScreen::draw(SkCanvas* canvas) {
+    DrawingProgramScreen::draw(canvas);
+    draw_rotate_position_popup(canvas, 70.0f);
+}
+
 PhoneDrawingProgramScreen::~PhoneDrawingProgramScreen() {
 #ifndef __ANDROID__
     save_to_file();

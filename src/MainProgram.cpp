@@ -603,6 +603,10 @@ void MainProgram::close_set_to_close_tabs() {
     }
 }
 
+bool MainProgram::visual_mouse_focus() {
+    return (window.sdlCurrentVideoDriver == "wayland" && window.windowFocus) || window.mouseFocus;
+}
+
 bool MainProgram::network_being_used() {
     for(auto& w : worlds) {
         if(w->netObjMan.is_connected())

@@ -186,7 +186,7 @@ bool BrushTool::prevent_undo_or_redo() {
 }
 
 void BrushTool::draw(SkCanvas* canvas, const DrawData& drawData) {
-    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.mouse_pointer_obstructed() && drawData.main->window.mouseFocus) {
+    if(!drawP.world.main.input.isTouchDevice && !drawData.main->g.gui.mouse_pointer_obstructed() && drawData.main->visual_mouse_focus()) {
         auto relativeWidthResult = drawP.world.main.toolConfig.get_relative_width_stroke_size(drawP, drawP.world.drawData.cam.c.inverseScale);
         if(relativeWidthResult.first.has_value()) {
             float width = relativeWidthResult.first.value();

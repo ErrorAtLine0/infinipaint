@@ -246,6 +246,12 @@ void initialize_sdl(MainStruct& mS) {
     if(!SDL_Init(SDL_INIT_VIDEO))
         throw std::runtime_error("[SDL_Init] " + std::string(SDL_GetError()));
 
+    const char* videoDriver = SDL_GetCurrentVideoDriver();
+    if(videoDriver) {
+        mS.m->window.sdlCurrentVideoDriver = std::string(videoDriver);
+        Logger::get().log(Logger::LogType::INFO, "Current video driver: " + mS.m->window.sdlCurrentVideoDriver);
+    }
+
     Uint32 window_flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 #ifdef USE_BACKEND_VULKAN
     window_flags |= SDL_WINDOW_VULKAN;

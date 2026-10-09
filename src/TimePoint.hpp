@@ -54,12 +54,12 @@ void smooth_two_way_animation_time(float& timeToUpdate, float deltaTime, bool is
 
 class TimePoint {
     public:
-        TimePoint();
+        TimePoint(std::chrono::steady_clock::time_point initPoint = std::chrono::steady_clock::now());
         void update_time_point();
         void update_time_since();
         float get_time_since() const;
         operator float() const;
     private:
-        std::chrono::time_point<std::chrono::steady_clock> tp;
+        std::chrono::steady_clock::time_point tp;
         float timeSince;
 };

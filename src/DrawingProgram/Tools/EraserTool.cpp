@@ -326,7 +326,7 @@ bool EraserTool::prevent_undo_or_redo() {
 void EraserTool::draw(SkCanvas* canvas, const DrawData& drawData) {
     bool touchDeviceRequirement = !drawP.world.main.input.isTouchDevice || (isErasing && !drawP.world.main.conf.realTimeEraser);
     bool overGuiRequirement = !drawData.main->g.gui.mouse_pointer_obstructed() || isErasing;
-    if(touchDeviceRequirement && overGuiRequirement && !erasePath.isEmpty() && drawData.main->window.mouseFocus) {
+    if(touchDeviceRequirement && overGuiRequirement && !erasePath.isEmpty() && drawData.main->visual_mouse_focus()) {
         if(isErasing) {
             CanvasComponentContainer::TransformData drawTransform = CanvasComponentContainer::calculate_draw_transform(drawData.cam.c, genData.coords);
             canvas->save();

@@ -92,6 +92,7 @@ modules:
         - -DSKIA_UNICODE_CORE_LIB=/app/Skia/out/Static/libskunicode_icu.a
         - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
         - -DCMAKE_BUILD_TYPE=Release
+        - -DLINUX_ADD_VIDEO_DRIVER_OPTION=OFF
         - -DGRAPHICS_BACKEND=OpenGL3.3
     sources:
       - type: dir
@@ -113,6 +114,7 @@ modules:
         - -DSKIA_UNICODE_CORE_LIB=/app/Skia/out/Static/libskunicode_icu.a
         - -DSKIA_PARAGRAPH_LIB=/app/Skia/out/Static/libskparagraph.a
         - -DCMAKE_BUILD_TYPE=Release
+        - -DLINUX_ADD_VIDEO_DRIVER_OPTION=OFF
         - -DGRAPHICS_BACKEND=OpenGLES3.0
     sources:
       - type: dir
@@ -133,7 +135,8 @@ cleanup:
         
 finish-args:
   - --share=ipc
-  - --socket=x11 # For now, force X11 since Wayland has issues with tablets
+  - --socket=wayland
+  - --socket=fallback-x11
   - --device=all
   - --share=network
   - --filesystem=home

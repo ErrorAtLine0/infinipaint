@@ -19,6 +19,7 @@
 #include "DesktopDrawingProgramScreen.hpp"
 #include "../MainProgram.hpp"
 #include "DrawingProgramScreen.hpp"
+#include <iomanip>
 
 DesktopDrawingProgramScreen::DesktopDrawingProgramScreen(MainProgram& m):
     DrawingProgramScreen(m),
@@ -110,6 +111,11 @@ void DesktopDrawingProgramScreen::on_tab_close() {
         });
     else if(!main.world)
         main.switch_to_tab(0);
+}
+
+void DesktopDrawingProgramScreen::draw(SkCanvas* canvas) {
+    DrawingProgramScreen::draw(canvas);
+    draw_rotate_position_popup(canvas, 70.0f);
 }
 
 float DesktopDrawingProgramScreen::calculate_gui_scale() {

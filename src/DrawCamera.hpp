@@ -25,6 +25,7 @@
 #include "CoordSpaceHelper.hpp"
 #include <Helpers/VersionNumber.hpp>
 #include "InputManager.hpp"
+#include "TimePoint.hpp"
 
 using namespace Eigen;
 
@@ -61,6 +62,8 @@ class DrawCamera {
         bool set_to_accurate_zoom_touch_control_mode(const Vector2f& touchPos);
         bool set_to_pan_touch_control_mode();
         void clear_control_mode();
+
+        TimePoint lastRotationTime = TimePoint(std::chrono::steady_clock::time_point());
     private:
         struct SmoothMove {
             CoordSpaceHelper start;

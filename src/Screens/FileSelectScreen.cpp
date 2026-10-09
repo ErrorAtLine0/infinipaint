@@ -1344,8 +1344,12 @@ void FileSelectScreen::input_paste_callback(const CustomEvents::PasteEvent& past
 
 void FileSelectScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     main.create_new_tab(openFile);
-    if(main.world)
+    if(main.world) {
+        #ifdef __ANDROID__
+            save_files();
+        #endif
         main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<PhoneDrawingProgramScreen>(main); });
+    }
     else if(!openFile.isClient && openFile.filePathSource.has_value()) // Invalid file, remove it
         SDL_RemovePath(openFile.filePathSource.value().string().c_str());
 }

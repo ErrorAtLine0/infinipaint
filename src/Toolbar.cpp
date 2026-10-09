@@ -394,6 +394,7 @@ void Toolbar::paint_popup(Vector2f popupPos) {
             .palette = main.conf.palettes[paletteData.selectedPalette].colors,
             .onRotate = [&, newRotationAngle] {
                 main.world->drawData.cam.c.rotate_about(main.world->drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), *newRotationAngle - main.world->drawData.cam.c.rotation);
+                main.world->drawData.cam.lastRotationTime.update_time_point();
                 *newRotationAngle = main.world->drawData.cam.c.rotation;
             },
             .onRotateDone = [&] {
@@ -1521,9 +1522,7 @@ void Toolbar::general_settings_inner_gui() {
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                         checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
                         #ifdef LINUX_ADD_VIDEO_DRIVER_OPTION
-                            const char* videoDriver = SDL_GetCurrentVideoDriver();
-                            std::string videoDriverStr = videoDriver ? std::string(videoDriver) : "";
-                            text_label(gui, "Video driver (changes on restart, currently " + videoDriverStr + "):");
+                            text_label(gui, "Video driver (changes on restart, currently " + main.window.sdlCurrentVideoDriver + "):");
                             radio_button_selector(gui, "Video driver selection", &main.conf.videoDriver, {
                                 {"Default", GlobalConfig::VideoDriver::DEFAULT},
                                 {"Prefer X11", GlobalConfig::VideoDriver::X11},

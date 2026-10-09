@@ -100,6 +100,8 @@ class MainProgram {
 
             SDL_Window* sdlWindow;
             bool canCreateSurfaces = false;
+
+            std::string sdlCurrentVideoDriver;
         } window;
 
         struct Clipboard {
@@ -206,6 +208,7 @@ class MainProgram {
         } updateCheckerData;
 
         float calculate_gui_scale();
+        bool visual_mouse_focus();
     private:
         std::unordered_set<World*> tabsToClose;
         void close_set_to_close_tabs();

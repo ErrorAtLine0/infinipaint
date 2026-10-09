@@ -177,6 +177,7 @@ cmake -B $BUILD_AREA/infinipaint-build -DCMAKE_INSTALL_PREFIX=$BUILD_DIR \
   -DSKIA_UNICODE_CORE_LIB=$BUILD_AREA/Skia/out/Static/libskunicode_icu.a \
   -DSKIA_PARAGRAPH_LIB=$BUILD_AREA/Skia/out/Static/libskparagraph.a \
   -DCMAKE_BUILD_TYPE=Release \
+  -DLINUX_ADD_VIDEO_DRIVER_OPTION=ON \
   -DGRAPHICS_BACKEND=OpenGLES3.0
 cd $BUILD_AREA/infinipaint-build
 make -j$(nproc)
