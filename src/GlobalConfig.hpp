@@ -96,6 +96,7 @@ class GlobalConfig {
             } singleFingerAction = SingleFingerAction::ACTIVE_TOOL;
             bool twoFingerZoom = true;
             bool twoFingerRotation = true;
+            bool twoFingerSnapRotation = true;
             enum class MultiFingerTapAction {
                 NONE,
                 UNDO,
@@ -105,7 +106,7 @@ class GlobalConfig {
             MultiFingerTapAction twoFingerTapAction = MultiFingerTapAction::UNDO;
             MultiFingerTapAction threeFingerTapAction = MultiFingerTapAction::REDO;
             MultiFingerTapAction fourFingerTapAction = MultiFingerTapAction::NONE;
-            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(TouchOptions, singleFingerAction, twoFingerZoom, twoFingerRotation, twoFingerTapAction, threeFingerTapAction, fourFingerTapAction);
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(TouchOptions, singleFingerAction, twoFingerZoom, twoFingerRotation, twoFingerSnapRotation, twoFingerTapAction, threeFingerTapAction, fourFingerTapAction);
         } touchOptions;
 
         Vector3f defaultCanvasBackgroundColor = DEFAULT_CANVAS_BACKGROUND_COLOR;

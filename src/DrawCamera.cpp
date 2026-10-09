@@ -26,6 +26,9 @@
 #include "InputManager.hpp"
 #include <Helpers/Logger.hpp>
 
+constexpr float TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTANCE = 0.1;
+constexpr float TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
+
 DrawCamera::DrawCamera():
     c({0, 0}, WorldScalar(1000000), 0.0)
 {}
@@ -309,7 +312,13 @@ void DrawCamera::input_finger_touch_callback(World& w, const FingerInput::TouchC
                         float newAngle = std::atan2(newDiff.y(), newDiff.x()) + std::numbers::pi;
                         float rotateAngle = initialAngle - newAngle;
                         rotateAngle = std::fmod(rotateAngle + std::numbers::pi, std::numbers::pi * 2.0f) - std::numbers::pi;
-                        c.rotate_about(newCenterWorld, rotateAngle);
+                        if(w.main.conf.touchOptions.twoFingerSnapRotation) {
+                            float finalCameraAngle = rotateAngle + c.rotation;
+                            finalCameraAngle = snap_angle_loop(finalCameraAngle, TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTANCE, TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTRIBUTION);
+                            c.rotate_about(newCenterWorld, finalCameraAngle - c.rotation);
+                        }
+                        else
+                            c.rotate_about(newCenterWorld, rotateAngle);
                         lastRotationTime.update_time_point();
                     }
 

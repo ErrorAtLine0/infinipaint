@@ -102,6 +102,9 @@ template <typename T> T radians_to_degrees(T a) {
     return a * (180.0 / std::numbers::pi);
 }
 
+double clamp_angle_to_two_pi(double a);
+double snap_angle_loop(double rotationAngle, double distanceToSnap, double distanceBetweenSnapAngles);
+
 // https://www.geeksforgeeks.org/program-for-point-of-intersection-of-two-lines/
 template <typename T> Vector<T, 2> line_line_intersection(const Vector<T, 2>& a, const Vector<T, 2>& b, const Vector<T, 2>& c, const Vector<T, 2>& d) {
     T a1 = b.y() - a.y();

@@ -491,6 +491,7 @@ void DrawingProgram::toolbar_gui(Toolbar& t) {
                 gui.element<RotateWheel>("Canvas Rotate Wheel", newRotationAngle.get(), [&, newRotationAngle] {
                     world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), *newRotationAngle - world.drawData.cam.c.rotation);
                     *newRotationAngle = world.drawData.cam.c.rotation;
+                    world.drawData.cam.lastRotationTime.update_time_point();
                 });
 
                 t.color_button_left("Foreground color", &world.main.toolConfig.globalConf.foregroundColor);

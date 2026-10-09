@@ -1240,6 +1240,7 @@ void FileSelectScreen::settings_view() {
                             radio_button_selector(gui, "Finger action options", &main.conf.touchOptions.singleFingerAction, singleFingerOptions);
                             text_label(gui, "Two finger move");
                             checkbox_boolean_field(gui, "two finger rotation", "Enable canvas rotation", &main.conf.touchOptions.twoFingerRotation);
+                            checkbox_boolean_field(gui, "two finger rotation snap", "Snap canvas rotation", &main.conf.touchOptions.twoFingerSnapRotation);
                             checkbox_boolean_field(gui, "two finger zoom", "Enable canvas zoom", &main.conf.touchOptions.twoFingerZoom);
                             std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::MultiFingerTapAction>> multiFingerTapOptions = {
                                 {"None", GlobalConfig::TouchOptions::MultiFingerTapAction::NONE},

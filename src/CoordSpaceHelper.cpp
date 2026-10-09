@@ -129,12 +129,7 @@ void CoordSpaceHelper::scale(const WorldScalar& scaleAmount) {
 }
 
 void CoordSpaceHelper::set_rotation(double newRotation) {
-    rotation = newRotation;
-    // using circular fmod caused inaccuracies, so these loops might be a better solution
-    while(rotation >= 2.0 * std::numbers::pi)
-        rotation -= 2.0 * std::numbers::pi;
-    while (rotation < 0.0)
-        rotation += 2.0 * std::numbers::pi;
+    rotation = clamp_angle_to_two_pi(newRotation);
 }
 
 std::vector<Vector2f> CoordSpaceHelper::to_space(const std::vector<WorldVec>& coord) const {

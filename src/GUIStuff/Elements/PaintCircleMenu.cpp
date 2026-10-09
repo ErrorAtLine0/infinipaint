@@ -20,6 +20,7 @@
 #include "Helpers/ConvertVec.hpp"
 #include <include/core/SkPathBuilder.h>
 #include "../GUIManager.hpp"
+#include "Helpers/MathExtras.hpp"
 
 namespace GUIStuff {
 
@@ -93,16 +94,8 @@ void PaintCircleMenu::update_paint_circle_menu_mouse(const Vector2f& p, bool lef
             gui.set_post_callback_func([&, vecFromCenter] {
                 auto& rotationAngle = *d.rotationAngle;
                 rotationAngle = std::atan2(vecFromCenter.y(), -vecFromCenter.x()) + std::numbers::pi;
-                if(dd.isRotateBarHovered) { // If we're hovering over the rotation bar, we should try snapping to specific angles
-                    for(double snapPos = 0.0; snapPos < std::numbers::pi * 2.0 + 0.001; snapPos += ROTATE_BAR_SNAP_DISTRIBUTION) {
-                        if(std::fabs(rotationAngle - snapPos) < ROTATE_BAR_SNAP_DISTANCE) {
-                            rotationAngle = snapPos;
-                            if(rotationAngle >= std::numbers::pi * 2.0 - 0.001) // Set 2pi back to 0
-                                rotationAngle = 0;
-                            break;
-                        }
-                    }
-                }
+                if(dd.isRotateBarHovered) // If we're hovering over the rotation bar, we should try snapping to specific angles
+                    rotationAngle = snap_angle_loop(rotationAngle, ROTATE_BAR_SNAP_DISTANCE, ROTATE_BAR_SNAP_DISTRIBUTION);
                 d.onRotate();
             });
         }
