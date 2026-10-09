@@ -230,9 +230,17 @@ void initialize_sdl(MainStruct& mS) {
     #ifndef __ANDROID__
         SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "composition");
     #endif
-    #ifdef ADD_PREFER_X11_OPTION
-        if(mS.m->conf.preferX11)
-            SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11,wayland");
+    #ifdef LINUX_ADD_VIDEO_DRIVER_OPTION
+        switch(mS.m->conf.videoDriver) {
+            case GlobalConfig::VideoDriver::DEFAULT:
+                break;
+            case GlobalConfig::VideoDriver::WAYLAND:
+                SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland,x11");
+                break;
+            case GlobalConfig::VideoDriver::X11:
+                SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11,wayland");
+                break;
+        }
     #endif
 
     if(!SDL_Init(SDL_INIT_VIDEO))

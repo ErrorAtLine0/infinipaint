@@ -55,9 +55,6 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
     toRet["vsync"] = vsyncValue;
-#ifdef ADD_PREFER_X11_OPTION
-    toRet["preferX11"] = preferX11;
-#endif
 #ifndef __EMSCRIPTEN__
     toRet["applyDisplayScale"] = applyDisplayScale;
 #endif
@@ -71,6 +68,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
 #ifndef __EMSCRIPTEN__
     toRet["checkForUpdates"] = checkForUpdates;
 #endif
+    toRet["videoDriver"] = videoDriver;
 
     json tablet;
     tablet["brushPressureSmoothingFactor"] = tabletOptions.brushPressureSmoothingFactor;
@@ -131,9 +129,6 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("mainCallbackRateBackground").get_to(mainCallbackRateBackground);} catch(...) {}
     if(version >= VersionNumber(0, 6, 0))
         try{j.at("vsync").get_to(vsyncValue);} catch(...) {}
-#ifdef ADD_PREFER_X11_OPTION
-    try{j.at("preferX11").get_to(preferX11);} catch(...) {}
-#endif
 #ifndef __EMSCRIPTEN__
     try{j.at("applyDisplayScale").get_to(applyDisplayScale);} catch(...) {}
 #endif
@@ -151,6 +146,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("checkForUpdates").get_to(checkForUpdates);} catch(...) {}
 #endif
     try{j.at("antialiasing").get_to(antialiasing);} catch(...) {}  
+    try{j.at("videoDriver").get_to(videoDriver);} catch(...) {}
 
     try{j.at("tablet").at("brushPressureSmoothingFactor").get_to(tabletOptions.brushPressureSmoothingFactor);} catch(...) {}
     try{j.at("tablet").at("pressureAffectsBrushWidth").get_to(tabletOptions.pressureAffectsBrushWidth);} catch(...) {}

@@ -128,6 +128,12 @@ class GlobalConfig {
             DYNAMIC_MSAA
         } antialiasing = AntiAliasing::SKIA;
 
+        enum class VideoDriver {
+            DEFAULT,
+            X11,
+            WAYLAND
+        } videoDriver = VideoDriver::DEFAULT;
+
         std::string displayName;
         bool flipZoomToolDirection = false;
 
@@ -167,4 +173,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(GlobalConfig::TouchOptions::SingleFingerAction, {
     {GlobalConfig::TouchOptions::SingleFingerAction::ACTIVE_TOOL, "Active Tool"},
     {GlobalConfig::TouchOptions::SingleFingerAction::PAN, "Pan"},
     {GlobalConfig::TouchOptions::SingleFingerAction::LASSO, "Lasso"},
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(GlobalConfig::VideoDriver, {
+    {GlobalConfig::VideoDriver::DEFAULT, "default"},
+    {GlobalConfig::VideoDriver::X11, "x11"},
+    {GlobalConfig::VideoDriver::WAYLAND, "wayland"}
 })

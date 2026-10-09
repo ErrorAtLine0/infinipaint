@@ -73,6 +73,8 @@
 
 #include "Screens/DesktopDrawingProgramScreen.hpp"
 
+#include <SDL3/SDL_video.h>
+
 #ifdef __EMSCRIPTEN__
     #include <EmscriptenHelpers/emscripten_browser_file.h>
 #endif
@@ -1518,8 +1520,15 @@ void Toolbar::general_settings_inner_gui() {
 
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
                         checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
-                        #ifdef ADD_PREFER_X11_OPTION
-                            checkbox_boolean_field(gui, "prefer x11", "Prefer X11 over Wayland (Requires restart)", &main.conf.preferX11);
+                        #ifdef LINUX_ADD_VIDEO_DRIVER_OPTION
+                            const char* videoDriver = SDL_GetCurrentVideoDriver();
+                            std::string videoDriverStr = videoDriver ? std::string(videoDriver) : "";
+                            text_label(gui, "Video driver (changes on restart, currently " + videoDriverStr + "):");
+                            radio_button_selector(gui, "Video driver selection", &main.conf.videoDriver, {
+                                {"Default", GlobalConfig::VideoDriver::DEFAULT},
+                                {"Prefer X11", GlobalConfig::VideoDriver::X11},
+                                {"Prefer Wayland", GlobalConfig::VideoDriver::WAYLAND}
+                            });
                         #endif
                     });
                     break;
