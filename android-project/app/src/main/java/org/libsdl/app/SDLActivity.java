@@ -63,7 +63,7 @@ public abstract class SDLActivity extends Activity implements View.OnSystemUiVis
     private static final String TAG = "SDL";
     private static final int SDL_MAJOR_VERSION = 3;
     private static final int SDL_MINOR_VERSION = 4;
-    private static final int SDL_MICRO_VERSION = 16;
+    private static final int SDL_MICRO_VERSION = 18;
 /*
     // Display InputType.SOURCE/CLASS of events and devices
     //
@@ -1471,6 +1471,13 @@ public abstract class SDLActivity extends Activity implements View.OnSystemUiVis
     public static boolean handleKeyEvent(View v, int keyCode, KeyEvent event, InputConnection ic) {
         int deviceId = event.getDeviceId();
         int source = event.getSource();
+
+        if ((event.getFlags() & KeyEvent.FLAG_FALLBACK) != 0) {
+            // If this is a fallback event -- e.g., the mouse is being turned into dpad navigational keys 
+            // just eat it, since that's almost never what we actually want to have happen. This will 
+            // happen with Logitech mice on Amazon Fire TV devices and some Samsung devices.
+            return true; 
+        }
 
         if (source == InputDevice.SOURCE_UNKNOWN) {
             InputDevice device = InputDevice.getDevice(deviceId);
