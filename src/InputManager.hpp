@@ -92,6 +92,7 @@ struct InputManager {
     } mouse;
 
     struct Pen {
+        SDL_PenID activeId = 0;
         bool inProximity = false;
         bool isDown = false;
         bool isEraser = false;
@@ -276,7 +277,9 @@ struct InputManager {
     void backend_pen_touch_up_update(const SDL_PenTouchEvent& e);
     void backend_pen_motion_update(const SDL_PenMotionEvent& e);
     void backend_pen_axis_update(const SDL_PenAxisEvent& e);
+    void end_pen_contact(uint64_t timestamp);
     void backend_touch_finger_update(const SDL_TouchFingerEvent& e);
+
     void backend_window_resize_update();
     void backend_window_scale_update(const SDL_WindowEvent& e);
 
@@ -333,14 +336,21 @@ struct InputManager {
         bool down;
         uint8_t clicks;
         Vector2f pos;
+        uint64_t timestamp = 0;
+        SDL_PenID penId = 0;
         const FingerInput::TouchCallbackArgs* optionalTouchData = nullptr;
+
     };
 
     struct MouseMotionCallbackArgs {
         MouseDeviceType deviceType;
         Vector2f pos;
         Vector2f move;
+        uint64_t timestamp = 0;
+        SDL_PenID penId = 0;
+        bool penContact = false;
         const FingerInput::TouchCallbackArgs* optionalTouchData = nullptr;
+
     };
 
     struct MouseWheelCallbackArgs {
@@ -370,6 +380,7 @@ struct InputManager {
         Vector2f pos;
         SDL_PenAxis axis;
         float value;
+        SDL_PenID penId = 0;
     };
 
     struct DropCallbackArgs {
