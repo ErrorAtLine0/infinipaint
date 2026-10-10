@@ -60,6 +60,18 @@
     <launchable type="desktop-id">com.infinipaint.infinipaint.desktop</launchable>
 
     <releases>
+        <release version="0.6.2" date="2026-10-10">
+            <description>
+                <p>Minor update:</p>
+                <ul>
+                    <li>Big improvements to touch support, with addition of touch settings tab</li>
+                    <li>Added rotation angle popup</li>
+                    <li>Fixed crash when loading very old files</li>
+                    <li>Textboxes now show text being composed</li>
+                    <li>Wayland is now used by default</li>
+                </ul>
+            </description>
+        </release>
         <release version="0.6.1" date="2026-09-08">
             <description>
                 <p>Patch update:</p>
