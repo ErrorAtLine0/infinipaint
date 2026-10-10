@@ -139,6 +139,7 @@ class DrawingProgram {
             MOUSE_MIDDLE,
             MOUSE_LEFT
         } pointerDown = PointerDownState::NONE;
+        bool is_pointer_down_mouse_or_none();
 
         void pen_tool_switch_check();
         enum class TemporaryMoveToolSwitch {

@@ -65,8 +65,6 @@ class DrawingProgramToolBase {
         virtual void input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button);
         virtual void input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion);
         virtual void input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button);
-        virtual void input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch);
-        virtual void input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion);
         virtual void input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis);
         virtual void input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch);
         virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);

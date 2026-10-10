@@ -82,8 +82,6 @@ void DrawingProgramToolBase::input_key_callback(const InputManager::KeyCallbackA
 void DrawingProgramToolBase::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {}
 void DrawingProgramToolBase::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {}
 void DrawingProgramToolBase::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {}
-void DrawingProgramToolBase::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {}
-void DrawingProgramToolBase::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {}
 void DrawingProgramToolBase::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {}
 void DrawingProgramToolBase::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) {
     // Emulate a mouse by default

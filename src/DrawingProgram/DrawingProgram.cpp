@@ -200,7 +200,8 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
 }
 
 void DrawingProgram::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    drawTool->input_mouse_motion_callback(motion);
+    if(is_pointer_down_mouse_or_none())
+        drawTool->input_mouse_motion_callback(motion);
 }
 
 void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key) {
@@ -285,23 +286,31 @@ void DrawingProgram::input_key_callback(const InputManager::KeyCallbackArgs& key
 }
 
 void DrawingProgram::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
-    pen_tool_switch_check();
-    drawTool->input_pen_button_callback(button);
+    if(is_pointer_down_mouse_or_none()) {
+        pen_tool_switch_check();
+        drawTool->input_pen_button_callback(button);
+    }
 }
 
 void DrawingProgram::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
-    pen_tool_switch_check();
-    drawTool->input_pen_touch_callback(touch);
+    if(is_pointer_down_mouse_or_none()) // No drawTool call for now, handle pen touch through mouse callback
+        pen_tool_switch_check();
 }
 
 void DrawingProgram::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
-    pen_tool_switch_check();
-    drawTool->input_pen_motion_callback(motion);
+    if(is_pointer_down_mouse_or_none()) // No drawTool call for now, handle pen motion through mouse callback
+        pen_tool_switch_check();
 }
 
 void DrawingProgram::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
-    pen_tool_switch_check();
-    drawTool->input_pen_axis_callback(axis);
+    if(is_pointer_down_mouse_or_none()) {
+        pen_tool_switch_check();
+        drawTool->input_pen_axis_callback(axis);
+    }
+}
+
+bool DrawingProgram::is_pointer_down_mouse_or_none() {
+    return pointerDown == PointerDownState::NONE || pointerDown == PointerDownState::MOUSE_LEFT || pointerDown == PointerDownState::MOUSE_MIDDLE;
 }
 
 void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
