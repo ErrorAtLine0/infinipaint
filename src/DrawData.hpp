@@ -30,6 +30,7 @@ struct DrawData {
     DrawCamera cam;
     ResourceManager* rMan;
     MainProgram* main;
+    SCollision::AABB<float> canvasSafeArea = {{0.0f, 0.0f}, {1.0f, 1.0f}};
     bool takingScreenshot = false;
     bool isSVGRender = false;
     bool drawGrids = true;

@@ -1315,9 +1315,12 @@ void PhoneDrawingProgramScreen::set_color_picker_data(Vector4f* newColorPickerPt
     colorPickerData = initColorPickerData;
 }
 
-void PhoneDrawingProgramScreen::draw(SkCanvas* canvas) {
-    DrawingProgramScreen::draw(canvas);
-    draw_rotate_position_popup(canvas, 50.0f);
+SCollision::AABB<float> PhoneDrawingProgramScreen::canvas_safe_area() {
+    if(main.hideInterface)
+        return main.window.safeArea;
+    else
+        return SCollision::AABB<float>{{main.window.safeArea.min.x(), main.window.safeArea.min.y() + 40.0f * main.g.final_gui_scale()},
+                                       {main.window.safeArea.max.x(), main.window.safeArea.max.y() - 30.0f * main.g.final_gui_scale()}};
 }
 
 PhoneDrawingProgramScreen::~PhoneDrawingProgramScreen() {

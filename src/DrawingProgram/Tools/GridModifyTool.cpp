@@ -234,8 +234,7 @@ void GridModifyTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
                 else
                     g.bounds = std::nullopt;
             });
-            // Very hard to not have a rotated canvas on phone
-            //checkbox_boolean_field(gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
+            checkbox_boolean_field(gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
         }
     });
 }

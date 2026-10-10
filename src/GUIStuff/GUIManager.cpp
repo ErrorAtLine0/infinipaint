@@ -117,9 +117,13 @@ void GUIManager::clip_rect_transform(SkCanvas* canvas, std::vector<SCollision::A
 void GUIManager::draw(SkCanvas* c, bool skiaAA) {
     if(io.redrawSurface) {
         oldRenderCommandMap.clear();
-        setToUpdateInvalidateDrawAreaFromLayout = false;
+        setToUpdateInvalidateDrawAreaFromLayout = true;
     }
+    // When io.redrawSurface is true, call update_invalidated_draw_area_from_layout to keep the render commands updated
+    // However, invalidDrawBB must be set to nullopt in this case, since the entire screen must be redrawn
     update_invalidated_draw_area_from_layout();
+    if(io.redrawSurface)
+        invalidDrawBB = std::nullopt;
     if(io.redrawSurface || invalidDrawBB.has_value()) {
         SkCanvas* canvas = io.surface->getCanvas();
 

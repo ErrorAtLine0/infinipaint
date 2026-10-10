@@ -44,6 +44,7 @@ class DrawingProgramScreen : public Screen {
         virtual void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) override;
         virtual void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) override;
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info() override;
+        virtual SCollision::AABB<float> canvas_safe_area();
     protected:
         void draw_rotate_position_popup(SkCanvas* canvas, float yPos);
 };

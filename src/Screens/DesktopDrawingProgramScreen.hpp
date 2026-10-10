@@ -24,7 +24,6 @@ class DesktopDrawingProgramScreen : public DrawingProgramScreen {
     public:
         DesktopDrawingProgramScreen(MainProgram& m);
         virtual void update() override;
-        virtual void draw(SkCanvas* canvas) override;
         virtual void gui_layout_run() override;
         virtual bool app_close_requested() override;
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
@@ -33,7 +32,7 @@ class DesktopDrawingProgramScreen : public DrawingProgramScreen {
         virtual void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false) override;
         virtual void on_tab_close() override;
         virtual float calculate_gui_scale() override;
-
+        virtual SCollision::AABB<float> canvas_safe_area() override;
     private:
         Toolbar toolbar;
 };

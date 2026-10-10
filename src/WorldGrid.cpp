@@ -382,10 +382,7 @@ void WorldGrid::draw_coordinates(SkCanvas* canvas, const DrawData& drawData, Vec
     if(coordinatesAxisOnBounds)
         boundsCamSpace = SCollision::AABB<float>(drawData.cam.c.to_space(bounds.value().min), drawData.cam.c.to_space(bounds.value().max));
     else {
-        // MAKE SURE THIS IS PORTABLE FOR MOBILE UI AND WHEN UI IS HIDDEN
-        // For mobile, make sure you take window.safeArea into account
-        float toolbarXLength = drawData.main->g.final_gui_scale() * (50.0f + drawData.main->g.gui.io.theme->padding1 * 3.0f);
-        boundsCamSpace = SCollision::AABB<float>({toolbarXLength + axisOffset.x(), 0.0f}, {drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y() - axisOffset.y()});
+        boundsCamSpace = SCollision::AABB<float>({axisOffset.x(), 0.0f}, {drawData.cam.viewingArea.x(), drawData.cam.viewingArea.y() - axisOffset.y()});
         if(boundsCamSpace.width() < 100.0f || boundsCamSpace.height() < 100.0f)
             return;
     }

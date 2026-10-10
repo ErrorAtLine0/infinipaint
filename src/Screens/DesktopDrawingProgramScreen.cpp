@@ -113,13 +113,16 @@ void DesktopDrawingProgramScreen::on_tab_close() {
         main.switch_to_tab(0);
 }
 
-void DesktopDrawingProgramScreen::draw(SkCanvas* canvas) {
-    DrawingProgramScreen::draw(canvas);
-    draw_rotate_position_popup(canvas, 60.0f);
-}
-
 float DesktopDrawingProgramScreen::calculate_gui_scale() {
     Vector2f maxWindowSizeBeforeForcedFit = main.g.final_gui_scale_not_fit() * Vector2f{700.0f, 700.0f};
     Vector2f fitRatio = {main.window.size.x() / maxWindowSizeBeforeForcedFit.x(), main.window.size.y() / maxWindowSizeBeforeForcedFit.y()};
     return main.g.final_gui_scale_not_fit() * std::min(std::min(fitRatio.x(), fitRatio.y()), 1.0f);
+}
+
+SCollision::AABB<float> DesktopDrawingProgramScreen::canvas_safe_area() {
+    if(main.hideInterface)
+        return main.window.safeArea;
+    else
+        return SCollision::AABB<float>{{main.window.safeArea.min.x() + 50.0f * main.g.final_gui_scale(), main.window.safeArea.min.y() + 50.0f * main.g.final_gui_scale()},
+                                       main.window.safeArea.max};
 }

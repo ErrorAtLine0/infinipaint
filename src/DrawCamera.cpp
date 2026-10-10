@@ -26,7 +26,7 @@
 #include "InputManager.hpp"
 #include <Helpers/Logger.hpp>
 
-constexpr float TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTANCE = 0.1;
+constexpr float TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTANCE = 0.15;
 constexpr float TOUCH_CAMERA_ROTATE_BAR_SNAP_DISTRIBUTION = std::numbers::pi * 0.25;
 
 DrawCamera::DrawCamera():

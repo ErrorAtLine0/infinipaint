@@ -28,8 +28,14 @@ void DrawingProgramScreen::update() {
     main.world->focus_update();
 }
 
+SCollision::AABB<float> DrawingProgramScreen::canvas_safe_area() {
+    return main.window.safeArea;
+}
+
 void DrawingProgramScreen::draw(SkCanvas* canvas) {
+    main.world->drawData.canvasSafeArea = canvas_safe_area();
     main.draw_world(canvas, main.world, main.world->drawData);
+    draw_rotate_position_popup(canvas, main.world->drawData.canvasSafeArea.min.y() + 10.0f);
 }
 
 void DrawingProgramScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
@@ -48,16 +54,15 @@ void DrawingProgramScreen::draw_rotate_position_popup(SkCanvas* canvas, float yP
         float fontHeight = (-metrics.fAscent + metrics.fDescent);
         SkPaint textBackgroundPaint;
         textBackgroundPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->backColor1, 0.8f * a));
-        float ROTATE_POPUP_Y_POS = yPos * main.g.final_gui_scale() + main.window.safeArea.min.y();
         float ROTATE_POPUP_PADDING = 5.0f * main.g.final_gui_scale();
-        SkRect textBackgroundRect = SkRect::MakeLTRB(main.window.size.x() * 0.5f - textPixelLength * 0.5f - ROTATE_POPUP_PADDING, ROTATE_POPUP_Y_POS, main.window.size.x() * 0.5f + textPixelLength * 0.5f + ROTATE_POPUP_PADDING, ROTATE_POPUP_Y_POS + fontHeight + ROTATE_POPUP_PADDING);
+        SkRect textBackgroundRect = SkRect::MakeLTRB(main.window.size.x() * 0.5f - textPixelLength * 0.5f - ROTATE_POPUP_PADDING, yPos, main.window.size.x() * 0.5f + textPixelLength * 0.5f + ROTATE_POPUP_PADDING, yPos + fontHeight + ROTATE_POPUP_PADDING);
         SkPaint textPaint;
         if(main.world->drawData.cam.c.rotation == 0.0)
             textPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->fillColor1, 1.0f * a));
         else
             textPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->frontColor1, 1.0f * a));
         canvas->drawRect(textBackgroundRect, textBackgroundPaint);
-        canvas->drawSimpleText(rotateStr.c_str(), rotateStr.length(), SkTextEncoding::kUTF8, main.window.size.x() * 0.5f - textPixelLength * 0.5f, ROTATE_POPUP_Y_POS + fontHeight, f, textPaint);
+        canvas->drawSimpleText(rotateStr.c_str(), rotateStr.length(), SkTextEncoding::kUTF8, main.window.size.x() * 0.5f - textPixelLength * 0.5f, yPos + fontHeight, f, textPaint);
     }
 }
 

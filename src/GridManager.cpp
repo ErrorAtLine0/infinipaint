@@ -215,7 +215,7 @@ void GridManager::draw_front(SkCanvas* canvas, const DrawData& drawData) {
 
 void GridManager::draw_coordinates(SkCanvas* canvas, const DrawData& drawData) {
     if(grids) {
-        Vector2f axisOffset{0.0f, 0.0f};
+        Vector2f axisOffset = {drawData.canvasSafeArea.min.x(), drawData.main->window.size.y() - drawData.canvasSafeArea.max.y()};
         for(uint32_t i = 0; i < grids->size(); i++) {
             auto& g = grids->at(i)->obj;
             if(g->coordinatesWillBeDrawn && g->coordinatesAxisOnBounds) {
