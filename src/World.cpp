@@ -744,7 +744,8 @@ void World::draw(SkCanvas* canvas, const DrawData& calledDrawData) {
         drawProg.draw(canvas, calledDrawData);
         if(calledDrawData.drawGrids) {
             gridMan.draw_front(canvas, calledDrawData);
-            gridMan.draw_coordinates(canvas, calledDrawData);
+            if(!calledDrawData.takingScreenshot)
+                gridMan.draw_coordinates(canvas, calledDrawData);
         }
         if(!calledDrawData.takingScreenshot)
             draw_other_player_cursors(canvas, calledDrawData);
