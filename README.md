@@ -29,6 +29,7 @@ This app was inspired by [Lorien](https://github.com/mbrlabs/Lorien), another gr
   	- Portable version, which is a zip file containing the executable and data files, and stores configuration files next to the executable. Not recommended unless you are specifically looking for a portable version
 - **macOS:** Available in [Releases](https://github.com/erroratline0/infinipaint/releases/latest) page. Only for Apple Silicon
 - **Linux:** It is recommended that you download from [Flathub](https://flathub.org/en/apps/com.infinipaint.infinipaint) to stay updated. Otherwise, there are flatpak bundles available for download on the [Releases](https://github.com/erroratline0/infinipaint/releases/latest) page for both x86_64 and arm64
+- **Android:** APK available in [Releases](https://github.com/erroratline0/infinipaint/releases/latest) page
 
 ## Screenshots/GIFs
 
