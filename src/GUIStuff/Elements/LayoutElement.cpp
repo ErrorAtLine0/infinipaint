@@ -70,6 +70,11 @@ void LayoutElement::input_finger_touch_callback(const FingerInput::TouchCallback
             mouseArgs.pos = touch.action.pos;
             mouseArgs.down = true;
             mouseArgs.clicks = 1;
+            if(touch.gesture && touch.gesture->get_type() == FingerInput::GestureType::PRETAP) {
+                auto& pretapGesture = static_cast<FingerInput::PreTapGesture&>(*touch.gesture.get());
+                if(pretapGesture.fingerPositions.size() == 1)
+                    mouseArgs.clicks = pretapGesture.numberOfTaps;
+            }
             mouseArgs.button = InputManager::MouseButton::LEFT;
             if(c.onClick) c.onClick(this, mouseArgs);
             break;
