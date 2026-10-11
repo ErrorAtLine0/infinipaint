@@ -1268,7 +1268,10 @@ void FileSelectScreen::about_view() {
 
     mainViewScrollArea = gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
         .scrollVertical = true,
+        .scrollHorizontal = true,
+        .clipHorizontal = true,
         .clipVertical = true,
+        .scrollbarX = ScrollArea::ScrollbarType::NORMAL,
         .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
         .innerContent = [&] (auto& contentDim) {
             CLAY_AUTO_ID({
@@ -1277,20 +1280,7 @@ void FileSelectScreen::about_view() {
                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                 },
             }) {
-                RichText::TextData tData;
-
-                auto& par = tData.paragraphs.emplace_back();
-
-                RichText::PositionedTextStyleMod& positionedModInit = tData.tStyleMods.emplace_back();
-                positionedModInit.pos = {0, 0};
-                positionedModInit.mods[RichText::TextStyleModifier::ModifierType::COLOR] = std::make_shared<RichText::ColorTextStyleModifier>(convert_vec4<Vector4f>(gui.io.theme->frontColor1));
-                par.text = (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second;
-
-                gui.element<TextParagraph>("text", TextParagraph::Data{
-                    .text = tData,
-                    .maxGrowX = contentDim.containerDimensions.x(),
-                    .ellipsis = false
-                });
+                text_label_size(gui, (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second, 0.8f);
             }
         }
     });
