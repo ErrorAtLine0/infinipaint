@@ -107,36 +107,57 @@ void DrawingProgramSelection::phone_selection_bottom_toolbar(PhoneDrawingProgram
     using namespace ElementHelpers;
 
     auto& gui = drawP.world.main.g.gui;
+    auto& io = gui.io;
 
     CLAY_AUTO_ID({
         .layout = {
-            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-            .childGap = gui.io.theme->childGap1,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
+            .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0) },
+            .childGap = io.theme->childGap1,
+            .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
         }
     }) {
-        gui.element<LayoutElement>("selection bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
-            CLAY(lId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(gui.io.theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(gui.io.theme->windowCorners1)
-            }) {
-                gui.clipping_element<ScrollArea>("selection tools scroll", ScrollArea::Options{
-                    .scrollHorizontal = true,
-                    .clipHorizontal = true,
-                    .scrollbarX = ScrollArea::ScrollbarType::NONE,
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                    .xAlign = CLAY_ALIGN_X_LEFT,
-                    .yAlign = CLAY_ALIGN_Y_CENTER,
-                    .innerContent = [&](auto&) {
-                        phone_bottom_toolbar_gui(t);
-                    }
-                });
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
+                .childGap = io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
             }
-        });
+        }) {
+            if(strokeColorChangeData.guiColorSelectorData.has_value())
+                t.color_settings_popup(&strokeColorChangeData.newColor, strokeColorChangeData.guiColorSelectorData.value(), nullptr);
+        }
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
+                .childGap = io.theme->childGap1,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            }
+        }) {
+            gui.element<LayoutElement>("selection bottom toolbar", [&](LayoutElement*, const Clay_ElementId& lId) {
+                CLAY(lId, {
+                    .layout = {
+                        .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)}
+                    },
+                    .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
+                    .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
+                }) {
+                    gui.clipping_element<ScrollArea>("selection tools scroll", ScrollArea::Options{
+                        .scrollHorizontal = true,
+                        .clipHorizontal = true,
+                        .scrollbarX = ScrollArea::ScrollbarType::NONE,
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                        .xAlign = CLAY_ALIGN_X_LEFT,
+                        .yAlign = CLAY_ALIGN_Y_CENTER,
+                        .innerContent = [&](auto&) {
+                            phone_bottom_toolbar_gui(t);
+                        }
+                    });
+                }
+            });
+        }
     }
 }
 
@@ -176,6 +197,23 @@ void DrawingProgramSelection::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen
             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
             .onClick = [&] {
                 push_selection_to_back();
+            }
+        });
+        color_button(gui, "Stroke color button", &strokeColorChangeData.newColor, {
+            .isSelected = strokeColorChangeData.guiColorSelectorData.has_value(),
+            .onClick = [&] {
+                if(strokeColorChangeData.guiColorSelectorData.has_value())
+                    strokeColorChangeData.guiColorSelectorData = std::nullopt;
+                else {
+                    if(strokeColorChangeData.newColor.w() == 0.0f)
+                        strokeColorChangeData.newColor.w() = 1.0f;
+                    update_selection_stroke_color();
+                    strokeColorChangeData.guiColorSelectorData = {
+                        .onChange = [&] {
+                            update_selection_stroke_color();
+                        }
+                    };
+                }
             }
         });
     });

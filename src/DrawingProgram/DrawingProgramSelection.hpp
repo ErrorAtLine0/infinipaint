@@ -21,6 +21,7 @@
 #include "Layers/DrawingProgramLayerManager.hpp"
 #include "DrawingProgramCache.hpp"
 #include "../InputManager.hpp"
+#include "../Screens/PhoneDrawingProgramScreen.hpp"
 
 class DrawingProgram;
 class PhoneDrawingProgramScreen;
@@ -79,6 +80,7 @@ class DrawingProgramSelection {
             Vector4f newColor = {1.0f, 1.0f, 1.0f, 0.0f};
             Vector4f oldColor = {1.0f, 1.0f, 1.0f, 0.0f};
             std::unordered_map<NetworkingObjects::NetObjID, Vector4f> oldColorData;
+            std::optional<PhoneDrawingProgramScreen::ColorSelectorData> guiColorSelectorData;
         } strokeColorChangeData;
 
         void set_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection);
