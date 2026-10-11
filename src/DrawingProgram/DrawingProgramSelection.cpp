@@ -692,19 +692,9 @@ void DrawingProgramSelection::input_mouse_motion_callback_modify_selection(const
 }
 
 void DrawingProgramSelection::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
-    if(is_something_selected()) {
-        switch(transformOpHappening) {
-            case TransformOperation::NONE:
-                break;
-            case TransformOperation::TRANSLATE:
-            case TransformOperation::ROTATE:
-            case TransformOperation::SCALE:
-                commit_transform_selection();
-                break;
-            case TransformOperation::ROTATE_RELOCATE_CENTER:
-                transformOpHappening = TransformOperation::NONE;
-                break;
-        }
+    if(is_something_selected() && transformOpHappening != TransformOperation::NONE) {
+        reset_transform_data();
+        calculate_aabb();
     }
 }
 
