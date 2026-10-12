@@ -221,14 +221,14 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
     static std::vector<std::string> validMimetypes;
     if(validMimetypes.empty()) {
         // valid mimetype lookup happens in this order
+#ifdef _WIN32
+        validMimetypes.emplace_back("image/bmp");
+#endif
         validMimetypes.emplace_back("image/png");
         validMimetypes.emplace_back("image/jpeg");
         validMimetypes.emplace_back("image/webp");
         validMimetypes.emplace_back("image/gif");
         validMimetypes.emplace_back("image/svg+xml");
-#ifdef _WIN32
-        validMimetypes.emplace_back("image/bmp");
-#endif
     }
     
     std::unordered_set<std::string> mimeTypesAvailable = get_clipboard_mime_types_SDL();
