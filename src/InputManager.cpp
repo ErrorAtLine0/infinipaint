@@ -236,6 +236,7 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
     if(!mimeTypesAvailable.empty()) {
         for(const std::string& validMimetypeStr : validMimetypes) {
             if(mimeTypesAvailable.contains(validMimetypeStr)) {
+                Logger::get().log(Logger::LogType::INFO, "[InputManager::get_clipboard_image_data_SDL] Pasting image with mimetype: " + validMimetypeStr);
                 if(validMimetypeStr == "image/bmp") {
 #ifdef _WIN32
                     std::vector<uint8_t> result;
