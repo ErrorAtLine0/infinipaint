@@ -89,6 +89,9 @@ class DrawCamera {
             TOUCH_TRANSFORM
         } controlMode = CameraControlMode::NONE;
 
+        void do_pan_action(World& w, const InputManager::MouseMotionCallbackArgs& motion);
+        void do_zoom_action(World& w, const InputManager::MouseMotionCallbackArgs& motion);
+
         void internal_start_accurate_zoom(const Vector2f& p);
         void internal_set_control_mode(CameraControlMode newMode, const ControlModeMouseCallback& mouseCallback);
 

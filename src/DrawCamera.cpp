@@ -218,30 +218,46 @@ void DrawCamera::input_mouse_button_callback(World& w, const InputManager::Mouse
 void DrawCamera::input_mouse_motion_callback(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
     switch(controlMode) {
         case CameraControlMode::PAN:
+            if(motion.deviceType != InputManager::MouseDeviceType::TOUCH)
+                do_pan_action(w, motion);
+            break;
         case CameraControlMode::TOUCH_PAN:
-            c.pos -= c.dir_from_space(motion.move);
-            checks_after_input(w);
+            if(motion.deviceType == InputManager::MouseDeviceType::TOUCH)
+                do_pan_action(w, motion);
             break;
         case CameraControlMode::ACCURATE_ZOOM:
+            if(motion.deviceType != InputManager::MouseDeviceType::TOUCH)
+                do_zoom_action(w, motion);
+            break;
         case CameraControlMode::TOUCH_ACCURATE_ZOOM:
-            if(startZoomVal != WorldScalar(0)) {
-                WorldScalar zoomFactor(std::pow(1.0 + w.main.conf.dragZoomSpeed, w.main.conf.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
-                if(zoomFactor < WorldScalar(0.000001))
-                    zoomFactor = WorldScalar(0.000001);
-
-                c.scale(zoomFactor);
-                if(c.inverseScale < WorldScalar(0.0001))
-                    c.inverseScale = WorldScalar(0.0001);
-                else {
-                    WorldVec mVec = startZoomCameraPos - startZoomMousePos;
-                    WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
-                    c.pos = startZoomMousePos + mVec * mX;
-                }
-
-                checks_after_input(w);
-            }
+            if(motion.deviceType == InputManager::MouseDeviceType::TOUCH)
+                do_zoom_action(w, motion);
             break;
         default: break;
+    }
+}
+
+void DrawCamera::do_pan_action(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
+    c.pos -= c.dir_from_space(motion.move);
+    checks_after_input(w);
+}
+
+void DrawCamera::do_zoom_action(World& w, const InputManager::MouseMotionCallbackArgs& motion) {
+    if(startZoomVal != WorldScalar(0)) {
+        WorldScalar zoomFactor(std::pow(1.0 + w.main.conf.dragZoomSpeed, w.main.conf.flipZoomToolDirection ? motion.move.y() : -motion.move.y()));
+        if(zoomFactor < WorldScalar(0.000001))
+            zoomFactor = WorldScalar(0.000001);
+    
+        c.scale(zoomFactor);
+        if(c.inverseScale < WorldScalar(0.0001))
+            c.inverseScale = WorldScalar(0.0001);
+        else {
+            WorldVec mVec = startZoomCameraPos - startZoomMousePos;
+            WorldScalar mX = static_cast<WorldScalar>(WorldMultiplier(c.inverseScale) / WorldMultiplier(startZoomVal));
+            c.pos = startZoomMousePos + mVec * mX;
+        }
+    
+        checks_after_input(w);
     }
 }
 
