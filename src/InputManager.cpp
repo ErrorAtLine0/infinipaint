@@ -202,25 +202,41 @@ void print_clip_image_spec(const clip::image_spec& spec) {
 }
 #endif
 
+std::unordered_set<std::string> InputManager::get_clipboard_mime_types_SDL() {
+    std::unordered_set<std::string> mimeTypesAvailable;
+#ifndef __EMSCRIPTEN__
+    size_t mimeTypeListSize;
+    char** mimeTypeList = SDL_GetClipboardMimeTypes(&mimeTypeListSize);
+    if(mimeTypeList) {
+        for(size_t i = 0; i < mimeTypeListSize; i++)
+            mimeTypesAvailable.emplace(std::string(mimeTypeList[i]));
+        SDL_free(mimeTypeList);
+    }
+#endif
+    return mimeTypesAvailable;
+}
+
 void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::string_view data)>& callback) {
 #ifndef __EMSCRIPTEN__
-    static std::unordered_set<std::string> validMimetypes;
+    static std::vector<std::string> validMimetypes;
     if(validMimetypes.empty()) {
-        validMimetypes.emplace("image/png");
-        validMimetypes.emplace("image/gif");
-        validMimetypes.emplace("image/jpeg");
-        validMimetypes.emplace("image/svg+xml");
-        validMimetypes.emplace("image/webp");
+        // valid mimetype lookup happens in this order
+        validMimetypes.emplace_back("image/png");
+        validMimetypes.emplace_back("image/jpeg");
+        validMimetypes.emplace_back("image/webp");
+        validMimetypes.emplace_back("image/gif");
+        validMimetypes.emplace_back("image/svg+xml");
 #ifdef _WIN32
-        validMimetypes.emplace("image/bmp");
+        validMimetypes.emplace_back("image/bmp");
 #endif
     }
-    size_t mimeTypeSize;
-    char** mimeTypes = SDL_GetClipboardMimeTypes(&mimeTypeSize);
-    if(mimeTypes) {
-        for(size_t i = 0; i < mimeTypeSize; i++) {
-            if(validMimetypes.contains(mimeTypes[i])) {
-                if(std::string(mimeTypes[i]) == "image/bmp") {
+    
+    std::unordered_set<std::string> mimeTypesAvailable = get_clipboard_mime_types_SDL();
+
+    if(!mimeTypesAvailable.empty()) {
+        for(const std::string& validMimetypeStr : validMimetypes) {
+            if(mimeTypesAvailable.contains(validMimetypeStr)) {
+                if(validMimetypeStr == "image/bmp") {
 #ifdef _WIN32
                     std::vector<uint8_t> result;
                     try {
@@ -277,7 +293,7 @@ void InputManager::get_clipboard_image_data_SDL(const std::function<void(std::st
                 }
                 else {
                     size_t clipboardDataSize;
-                    void* clipboardData = SDL_GetClipboardData(mimeTypes[i], &clipboardDataSize);
+                    void* clipboardData = SDL_GetClipboardData(validMimetypeStr.c_str(), &clipboardDataSize);
                     callback(std::string_view(static_cast<char*>(clipboardData), clipboardDataSize));
                     SDL_free(clipboardData);
                 }
