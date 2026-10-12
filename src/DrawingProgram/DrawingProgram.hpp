@@ -130,6 +130,7 @@ class DrawingProgram {
         DrawingProgramSelection selection;
 
         std::unique_ptr<DrawingProgramToolBase> toolToSwitchToAfterUpdate;
+        bool toolSwitchBackAfterUpdate = false;
         std::unordered_set<CanvasComponentContainer::ObjInfo*> updateableComponents;
 
         enum class PointerDownState {

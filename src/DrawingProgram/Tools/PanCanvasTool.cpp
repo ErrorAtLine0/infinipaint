@@ -53,6 +53,13 @@ void PanCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::Mo
 void PanCanvasTool::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch) {
     if(touch.action.type == FingerInput::ActionType::DOWN)
         drawP.world.drawData.cam.set_to_pan_touch_control_mode();
+    else if(touch.action.type == FingerInput::ActionType::UP && drawP.tempMoveToolSwitch == DrawingProgram::TemporaryMoveToolSwitch::FINGER_TOOL)
+        drawP.toolSwitchBackAfterUpdate = true;
+}
+
+void PanCanvasTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+    if(drawP.tempMoveToolSwitch == DrawingProgram::TemporaryMoveToolSwitch::FINGER_TOOL)
+        drawP.toolSwitchBackAfterUpdate = true;
 }
 
 void PanCanvasTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {

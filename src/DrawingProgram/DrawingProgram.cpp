@@ -193,7 +193,12 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
             break;
     }
 
-    if(toolToSwitchToAfterUpdate) {
+    if(toolSwitchBackAfterUpdate) {
+        temp_tool_switch_back();
+        toolSwitchBackAfterUpdate = false;
+        toolToSwitchToAfterUpdate = nullptr;
+    }
+    else if(toolToSwitchToAfterUpdate) {
         switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
         toolToSwitchToAfterUpdate = nullptr;
     }
@@ -350,16 +355,11 @@ void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbac
             if(touch.fingers.size() > 1) {
                 drawTool->cancel_finger_touch_callback(touch);
                 pointerDown = PointerDownState::FINGER_DISABLED;
-                if(tempMoveToolSwitch == TemporaryMoveToolSwitch::FINGER_TOOL && !(drawTool->bypass_touch_restriction() || selection.is_something_selected()))
-                    temp_tool_switch_back();
             }
             else {
                 drawTool->input_finger_touch_on_canvas_callback(touch);
-                if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::UP) {
+                if(touch.fingers.size() == 1 && touch.action.type == FingerInput::ActionType::UP)
                     pointerDown = PointerDownState::NONE;
-                    if(tempMoveToolSwitch == TemporaryMoveToolSwitch::FINGER_TOOL && !(drawTool->bypass_touch_restriction() || selection.is_something_selected()))
-                        temp_tool_switch_back();
-                }
             }
             break;
         case PointerDownState::FINGER_DISABLED:
@@ -369,7 +369,12 @@ void DrawingProgram::input_finger_touch_callback(const FingerInput::TouchCallbac
         default: break;
     }
 
-    if(toolToSwitchToAfterUpdate) {
+    if(toolSwitchBackAfterUpdate) {
+        temp_tool_switch_back();
+        toolSwitchBackAfterUpdate = false;
+        toolToSwitchToAfterUpdate = nullptr;
+    }
+    else if(toolToSwitchToAfterUpdate) {
         switch_to_tool_ptr(std::move(toolToSwitchToAfterUpdate));
         toolToSwitchToAfterUpdate = nullptr;
     }
@@ -674,14 +679,15 @@ void DrawingProgram::pen_tool_switch_check() {
 }
 
 void DrawingProgram::temp_tool_switch(TemporaryMoveToolSwitch switchMode, DrawingProgramToolType newToolType) {
-    toolTypeAfterTempMove = drawTool->get_type();
-    tempMoveToolSwitch = switchMode;
-    switch_to_tool(newToolType);
+    if(drawTool->get_type() != newToolType) {
+        toolTypeAfterTempMove = drawTool->get_type();
+        switch_to_tool(newToolType);
+        tempMoveToolSwitch = switchMode;
+    }
 }
 
 void DrawingProgram::temp_tool_switch_back() {
     switch_to_tool(toolTypeAfterTempMove);
-    tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
     pen_tool_switch_check();
 }
 
@@ -713,6 +719,7 @@ void DrawingProgram::switch_to_tool_ptr(std::unique_ptr<DrawingProgramToolBase> 
     drawTool = std::move(newTool);
     clear_right_click_popup();
     world.main.g.gui.set_to_layout();
+    tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
 }
 
 void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool force) {
@@ -722,6 +729,7 @@ void DrawingProgram::switch_to_tool(DrawingProgramToolType newToolType, bool for
         clear_right_click_popup();
         world.main.g.gui.set_to_layout();
     }
+    tempMoveToolSwitch = TemporaryMoveToolSwitch::NONE;
 }
 
 bool DrawingProgram::prevent_undo_or_redo() {
