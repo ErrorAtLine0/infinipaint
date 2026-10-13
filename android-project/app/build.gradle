@@ -34,8 +34,8 @@ android {
         applicationId 'com.erroratline0.InfiniPaint' // Considering changing this to all lowercase, but only when transferring files between versions is simple (which it isn't right now)
         minSdkVersion 27
         targetSdk 36
-        versionCode 4
-        versionName "0.6.2"
+        versionCode 5
+        versionName "0.6.3"
         externalNativeBuild {
             cmake {
                 cppFlags "-fexceptions", "-frtti"
