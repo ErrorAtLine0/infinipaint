@@ -17,6 +17,7 @@
  */
 
 #include "CustomEvents.hpp"
+#include "Helpers/MathExtras.hpp"
 #include "Helpers/SCollision.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "Helpers/FileDownloader.hpp"
@@ -294,6 +295,28 @@ void initialize_sdl(MainStruct& mS) {
             mS.m->window.screenSize.y() = sizeD.y();
             std::cout << "Window size from browser canvas: " << vec_pretty(mS.m->window.screenSize) << std::endl;
         }
+    }
+    #else
+    {
+        Vector2i sizeLimit = {DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT};
+        int displayCount = 0;
+        SDL_DisplayID* displayList = SDL_GetDisplays(&displayCount);
+        Logger::get().log(Logger::LogType::INFO, "Display resolutions:");
+        if(displayList) {
+            for(int i = 0; i < displayCount; i++) {
+                const SDL_DisplayMode* displayMode = SDL_GetDesktopDisplayMode(displayList[i]);
+                if(displayMode) {
+                    Vector2i displaySize = {displayMode->w, displayMode->h};
+                    Logger::get().log(Logger::LogType::INFO, "Display " + std::to_string(i) + ": " + vec_pretty(displaySize) + " pixel density: " + std::to_string(displayMode->pixel_density));
+                    sizeLimit = cwise_vec_max(sizeLimit, displaySize);
+                }
+                else
+                    Logger::get().log(Logger::LogType::INFO, "No info on display " + std::to_string(i));
+            }
+            SDL_free(displayList);
+        }
+        Logger::get().log(Logger::LogType::INFO, "Window size " + vec_pretty(mS.m->window.screenSize) + " limited to bounds " + vec_pretty(sizeLimit));
+        mS.m->window.screenSize = cwise_vec_min(mS.m->window.screenSize, sizeLimit);
     }
     #endif
 
