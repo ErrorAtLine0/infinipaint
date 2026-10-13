@@ -174,8 +174,6 @@ struct MainStruct {
     std::chrono::steady_clock::duration frameRefreshDuration = std::chrono::steady_clock::duration::zero();
 } MainData;
 
-std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
-
 bool load_file_to_string(std::string& toRet, std::string_view fileName) {
     // https://nullptr.org/cpp-read-file-into-string/
     std::ifstream file(fileName.data(), std::ios::in | std::ios::binary | std::ios::ate);
@@ -461,6 +459,7 @@ void init_logs(MainStruct& mS) {
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
+    std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
     for(int i = 1; i < argc; i++)
         listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(std::u8string_view(reinterpret_cast<char8_t*>(argv[i])))));
     switch_cwd();
