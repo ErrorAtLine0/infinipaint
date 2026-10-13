@@ -65,7 +65,7 @@ void TextBoxTool::input_mouse_button_on_canvas_callback(const InputManager::Mous
             newTextBox.d.editing = true;
             newTextBox.set_initial_text_color(drawP.world.main.toolConfig.globalConf.foregroundColor);
             newContainer->coords = drawP.world.drawData.cam.c;
-            newContainer->coords.scale_about_double(drawP.world.drawData.cam.c.from_space(startAt), 1.0 / drawP.world.main.get_scale_and_density_factor_gui());
+            newContainer->coords.scale_about_double(drawP.world.drawData.cam.c.from_space(startAt), 1.0 / drawP.world.main.window.wScale);
             objInfoBeingEdited = drawP.layerMan.add_component_to_layer_being_edited(newContainer);
         }
         else if(!button.down && objInfoBeingEdited) {

@@ -382,7 +382,7 @@ struct InputManager {
     struct WindowResizeCallbackArgs {
         Vector2i size;
         SCollision::AABB<float> safeArea;
-        float density;
+        float wDensity;
     };
 
     struct WindowScaleCallbackArgs {

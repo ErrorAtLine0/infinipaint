@@ -174,6 +174,8 @@ struct MainStruct {
     std::chrono::steady_clock::duration frameRefreshDuration = std::chrono::steady_clock::duration::zero();
 } MainData;
 
+std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
+
 bool load_file_to_string(std::string& toRet, std::string_view fileName) {
     // https://nullptr.org/cpp-read-file-into-string/
     std::ifstream file(fileName.data(), std::ios::in | std::ios::binary | std::ios::ate);
@@ -283,21 +285,7 @@ void initialize_sdl(MainStruct& mS) {
     constexpr int DEFAULT_WINDOW_WIDTH = 1000;
     constexpr int DEFAULT_WINDOW_HEIGHT = 900;
 
-    #ifdef __EMSCRIPTEN__
-    {
-        Vector2d sizeD;
-        EMSCRIPTEN_RESULT result = emscripten_get_element_css_size("#canvas", &sizeD.x(), &sizeD.y());
-        if(result != EMSCRIPTEN_RESULT_SUCCESS)
-            std::cout << "Failed to get canvas size" << std::endl;
-        else {
-            mS.m->window.writtenSize.x() = mS.m->window.size.x() = sizeD.x();
-            mS.m->window.writtenSize.y() = mS.m->window.size.y() = sizeD.y();
-            std::cout << "Initial window size: " << vec_pretty(mS.m->window.size) << std::endl;
-        }
-    }
-    #endif
-
-    mS.window = SDL_CreateWindow("InfiniPaint", mS.m->window.size.x() >= 0 ? mS.m->window.size.x() : DEFAULT_WINDOW_WIDTH, mS.m->window.size.y() >= 0 ? mS.m->window.size.y() : DEFAULT_WINDOW_HEIGHT, window_flags);
+    mS.window = SDL_CreateWindow("InfiniPaint", mS.m->window.screenSize.x() >= 0 ? mS.m->window.screenSize.x() : DEFAULT_WINDOW_WIDTH, mS.m->window.screenSize.y() >= 0 ? mS.m->window.screenSize.y() : DEFAULT_WINDOW_HEIGHT, window_flags);
     mS.m->window.sdlWindow = mS.window;
     if(mS.window == nullptr)
         throw std::runtime_error("[SDL_CreateWindow] " + std::string(SDL_GetError()));
@@ -313,8 +301,6 @@ void initialize_sdl(MainStruct& mS) {
             SDL_SetWindowIcon(mS.window, mS.iconSurface);
         }
     }
-
-    SDL_SetWindowPosition(mS.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
 #ifdef USE_BACKEND_OPENGL
     mS.gl_context = SDL_GL_CreateContext(mS.window);
@@ -342,35 +328,18 @@ void initialize_sdl(MainStruct& mS) {
 
         Logger::get().log(Logger::LogType::INFO, "GL Version: " + std::string(reinterpret_cast<const char*>(glGetString(GL_VERSION))));
     #endif
-
 #endif
 
-#ifdef __EMSCRIPTEN__
-    SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
-    SDL_GetWindowPosition(mS.window, &mS.m->window.pos.x(), &mS.m->window.pos.y());
-    mS.m->window.writtenPos.x() = mS.m->window.pos.x();
-    mS.m->window.writtenPos.y() = mS.m->window.pos.y();
-    mS.m->window.writtenSize.x() = mS.m->window.size.x();
-    mS.m->window.writtenSize.y() = mS.m->window.size.y();
-#else
-    if(mS.m->window.pos.x() >= 0 && mS.m->window.pos.y() >= 0 && mS.m->window.size.x() >= 0 && mS.m->window.size.y() >= 0)
-        SDL_SetWindowPosition(mS.window, mS.m->window.pos.x(), mS.m->window.pos.y());
-    else {
-        SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
-        SDL_GetWindowPosition(mS.window, &mS.m->window.pos.x(), &mS.m->window.pos.y());
-        mS.m->window.writtenPos.x() = mS.m->window.pos.x();
-        mS.m->window.writtenPos.y() = mS.m->window.pos.y();
-        mS.m->window.writtenSize.x() = mS.m->window.size.x();
-        mS.m->window.writtenSize.y() = mS.m->window.size.y();
-    }
+    if(mS.m->window.screenPos.x() >= 0 && mS.m->window.screenPos.y() >= 0 && mS.m->window.screenSize.x() >= 0 && mS.m->window.screenSize.y() >= 0)
+        SDL_SetWindowPosition(mS.window, mS.m->window.screenPos.x(), mS.m->window.screenPos.y());
+    else
+        SDL_SetWindowPosition(mS.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
     if(mS.m->window.maximized)
         SDL_MaximizeWindow(mS.window);
 
     if(mS.m->window.fullscreen)
         SDL_SetWindowFullscreen(mS.window, true);
-
-#endif
 
     SDL_ShowWindow(mS.window);
 
@@ -382,12 +351,18 @@ void initialize_sdl(MainStruct& mS) {
     get_refresh_rate(mS);
 
     SDL_SyncWindow(mS.window);
-    // Take maximize and fullscreen into account
-    SDL_GetWindowSize(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
+
+    SDL_GetWindowSize(mS.window, &mS.m->window.screenSize.x(), &mS.m->window.screenSize.y());
+    SDL_GetWindowSizeInPixels(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
+    SDL_GetWindowPosition(mS.window, &mS.m->window.screenPos.x(), &mS.m->window.screenPos.y());
+    Logger::get().log(Logger::LogType::INFO, "Initial window screen position: " + vec_pretty(mS.m->window.screenPos));
+    Logger::get().log(Logger::LogType::INFO, "Initial window screen size: " + vec_pretty(mS.m->window.screenSize));
+    Logger::get().log(Logger::LogType::INFO, "Initial window pixel size: " + vec_pretty(mS.m->window.size));
+
     SDL_WindowFlags f = SDL_GetWindowFlags(mS.window);
     mS.m->window.windowFocus = f & SDL_WINDOW_INPUT_FOCUS;
     mS.m->window.mouseFocus = f & SDL_WINDOW_MOUSE_FOCUS;
-    mS.m->input.update_safe_area();
+
 #ifndef __ANDROID__
     mS.m->update_main_loop_call_rate((mS.m->window.windowFocus || mS.m->window.mouseFocus) ? mS.m->conf.mainCallbackRate : mS.m->conf.mainCallbackRateBackground);
 #else
@@ -470,7 +445,6 @@ void init_logs(MainStruct& mS) {
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
-    std::vector<std::filesystem::path> listOfFilesToOpenFromCommand;
     for(int i = 1; i < argc; i++)
         listOfFilesToOpenFromCommand.emplace_back(std::filesystem::canonical(std::filesystem::path(std::u8string_view(reinterpret_cast<char8_t*>(argv[i])))));
     switch_cwd();
@@ -569,11 +543,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
                 throw std::runtime_error("[GrDirectContexts::MakeGL] Could not make context");
         #endif
 
-#ifdef USE_SKIA_BACKEND_GRAPHITE
-        mS.m->window.recorder = [&]() { return mS.vulkanWindowContext->graphiteRecorder(); };
-#elif USE_SKIA_BACKEND_GANESH
-        mS.m->window.ctx = mS.ctx;
-#endif
+        #ifdef USE_SKIA_BACKEND_GRAPHITE
+            mS.m->window.recorder = [&]() { return mS.vulkanWindowContext->graphiteRecorder(); };
+        #elif USE_SKIA_BACKEND_GANESH
+            mS.m->window.ctx = mS.ctx;
+        #endif
 
         mS.m->window.canCreateSurfaces = true;
         resize_window(mS);
@@ -596,7 +570,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         }
 
         mS.m->update(); // Run update once to make sure that callbacks dont crash
-
 #ifdef NDEBUG
     }
     catch(const std::exception& e) {
@@ -713,21 +686,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 }
                 break;
             case SDL_EVENT_WINDOW_MOVED:
-                mS.m->window.pos.x() = event->window.data1;
-                mS.m->window.pos.y() = event->window.data2;
+                mS.m->window.screenPos.x() = event->window.data1;
+                mS.m->window.screenPos.y() = event->window.data2;
                 if(!mS.m->window.fullscreen && !mS.m->window.maximized) {
-                    mS.m->window.writtenPos.x() = event->window.data1;
-                    mS.m->window.writtenPos.y() = event->window.data2;
+                    mS.m->window.screenPos.x() = event->window.data1;
+                    mS.m->window.screenPos.y() = event->window.data2;
                 }
                 get_refresh_rate(mS);
+                break;
+            case SDL_EVENT_WINDOW_RESIZED: // When user resizes the window, save the new dimensions. This is not the pixel size, and this is only useful for initializing the window on the next run
+                mS.m->window.screenSize.x() = event->window.data1;
+                mS.m->window.screenSize.y() = event->window.data2;
                 break;
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 mS.m->window.size.x() = event->window.data1;
                 mS.m->window.size.y() = event->window.data2;
-                if(!mS.m->window.fullscreen && !mS.m->window.maximized) {
-                    mS.m->window.writtenSize.x() = event->window.data1;
-                    mS.m->window.writtenSize.y() = event->window.data2;
-                }
                 resize_window(mS);
                 mS.m->update_scale_and_density();
                 mS.m->input.backend_window_resize_update();
@@ -884,7 +857,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         return SDL_APP_FAILURE;
     }
 #endif
-
     if(mS.m->setToQuit) {
         #ifdef __ANDROID__
             mS.m->input_app_about_to_go_to_background_callback();

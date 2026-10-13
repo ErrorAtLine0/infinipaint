@@ -144,9 +144,7 @@ class GlobalConfig {
         SDL_DateFormat dateFormat = SDL_DATE_FORMAT_DDMMYYYY;
         SDL_TimeFormat timeFormat = SDL_TIME_FORMAT_12HR;
 
-        #ifndef __EMSCRIPTEN__
-            bool applyDisplayScale = true;
-        #endif
+        bool applyDisplayScale = true;
 
         #ifdef ADD_PREFER_X11_OPTION
             bool preferX11 = false;

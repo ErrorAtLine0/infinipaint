@@ -200,10 +200,10 @@ void MainProgram::save_config() {
 
     j["version"] = VersionConstants::CURRENT_VERSION_STRING;
     j["settings"] = conf.get_config_json(input);
-    j["window"]["pos"] = window.writtenPos;
-    j["window"]["size"] = window.writtenSize;
     j["window"]["maximized"] = window.maximized;
     j["window"]["fullscreen"] = window.fullscreen;
+    j["window"]["screenPos"] = window.screenPos;
+    j["window"]["screenSize"] = window.screenSize;
     j["fileselectorpath"] = conf.currentSearchPath;
     j["toolConfig"] = toolConfig;
 
@@ -237,10 +237,8 @@ void MainProgram::load_config() {
         catch(...) {}
 #ifndef __EMSCRIPTEN__
         try {
-            j.at("window").at("size").get_to(window.size);
-            window.writtenSize = window.size;
-            j.at("window").at("pos").get_to(window.pos);
-            window.writtenPos = window.pos;
+            j.at("window").at("screenPos").get_to(window.screenPos);
+            j.at("window").at("screenSize").get_to(window.screenSize);
             j.at("window").at("maximized").get_to(window.maximized);
             j.at("window").at("fullscreen").get_to(window.fullscreen);
         }
@@ -280,16 +278,8 @@ void MainProgram::set_vsync_value(int vsyncValue) {
 }
 
 void MainProgram::update_scale_and_density() {
-#ifdef __EMSCRIPTEN__
-    window.scale = 1.0f;
-#else
-    window.scale = conf.applyDisplayScale ? SDL_GetWindowDisplayScale(window.sdlWindow) : 1.0f;
-#endif
-    window.density = SDL_GetWindowPixelDensity(window.sdlWindow);
-}
-
-float MainProgram::get_scale_and_density_factor_gui() {
-    return window.scale * window.density;
+    window.wScale = conf.applyDisplayScale ? SDL_GetWindowDisplayScale(window.sdlWindow) : 1.0f;
+    window.wDensity = SDL_GetWindowPixelDensity(window.sdlWindow);
 }
 
 void MainProgram::refresh_draw_surfaces() {

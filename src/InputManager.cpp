@@ -411,11 +411,11 @@ void InputManager::backend_input_text_event(const std::string& str) {
 }
 
 Vector2f InputManager::backend_cursor_pos_calculation(const Vector2f& cursorPos) {
-    return cursorPos * main.window.density - screenOffset;
+    return cursorPos * main.window.wDensity - screenOffset;
 }
 
 Vector2f InputManager::backend_cursor_delta_calculation(const Vector2f& cursorDelta) {
-    return cursorDelta * main.window.density;
+    return cursorDelta * main.window.wDensity;
 }
 
 Vector2f InputManager::backend_touch_cursor_pos_calculation(const Vector2f& cursorPos) {
@@ -752,7 +752,7 @@ void InputManager::update_safe_area() {
 void InputManager::backend_window_resize_update() {
     update_safe_area();
     WindowResizeCallbackArgs w;
-    w.density = main.window.density;
+    w.wDensity = main.window.wDensity;
     w.size = main.window.size;
     w.safeArea = main.window.safeArea;
     main.input_window_resize_callback(w);
@@ -760,7 +760,7 @@ void InputManager::backend_window_resize_update() {
 
 void InputManager::backend_window_scale_update(const SDL_WindowEvent& e) {
     WindowScaleCallbackArgs w;
-    w.scale = main.window.scale;
+    w.scale = main.window.wScale;
     main.input_window_scale_callback(w);
 }
 

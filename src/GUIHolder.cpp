@@ -122,7 +122,7 @@ void GUIHolder::calculate_final_gui_scale() {
 }
 
 float GUIHolder::final_gui_scale_not_fit() {
-    return main.conf.guiScale * main.get_scale_and_density_factor_gui();
+    return main.conf.guiScale * main.window.wScale;
 }
 
 void GUIHolder::delete_cache_surface() {

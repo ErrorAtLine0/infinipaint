@@ -72,17 +72,20 @@ class MainProgram {
 
             SCollision::AABB<float> safeArea;
 
+            // Actual pixel size of window
             Vector2i size = {-1, -1};
-            Vector2i pos = {-1, -1};
-            Vector2i writtenSize = {-1, -1};
-            Vector2i writtenPos = {-1, -1};
+
+            // Information used to position the window on the screen
+            Vector2i screenSize = {-1, -1};
+            Vector2i screenPos = {-1, -1};
+
             bool maximized = false;
             bool fullscreen = false;
             SkColorType defaultColorType;
             SkAlphaType defaultAlphaType;
 
-            float density = 1.0f;
-            float scale = 1.0f;
+            float wDensity = 1.0f; // Scales user input
+            float wScale = 1.0f; // Scales window content
             bool windowFocus = true;
             bool mouseFocus = true;
 
@@ -142,7 +145,6 @@ class MainProgram {
         void init_net_library();
         void set_vsync_value(int vsyncValue);
         void update_scale_and_density();
-        float get_scale_and_density_factor_gui();
         bool app_close_requested();
         void toggle_full_screen();
         void update_main_loop_call_rate(unsigned newCallbackRate);
