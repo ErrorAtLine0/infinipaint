@@ -285,6 +285,20 @@ void initialize_sdl(MainStruct& mS) {
     constexpr int DEFAULT_WINDOW_WIDTH = 1000;
     constexpr int DEFAULT_WINDOW_HEIGHT = 900;
 
+    #ifdef __EMSCRIPTEN__
+    {
+        Vector2d sizeD;
+        EMSCRIPTEN_RESULT result = emscripten_get_element_css_size("#canvas", &sizeD.x(), &sizeD.y());
+        if(result != EMSCRIPTEN_RESULT_SUCCESS)
+            std::cout << "Failed to get browser canvas size" << std::endl;
+        else {
+            mS.m->window.screenSize.x() = sizeD.x();
+            mS.m->window.screenSize.y() = sizeD.y();
+            std::cout << "Window size from browser canvas: " << vec_pretty(mS.m->window.screenSize) << std::endl;
+        }
+    }
+    #endif
+
     mS.window = SDL_CreateWindow("InfiniPaint", mS.m->window.screenSize.x() >= 0 ? mS.m->window.screenSize.x() : DEFAULT_WINDOW_WIDTH, mS.m->window.screenSize.y() >= 0 ? mS.m->window.screenSize.y() : DEFAULT_WINDOW_HEIGHT, window_flags);
     mS.m->window.sdlWindow = mS.window;
     if(mS.window == nullptr)
@@ -310,7 +324,6 @@ void initialize_sdl(MainStruct& mS) {
     SDL_GL_MakeCurrent(mS.window, mS.gl_context);
 
     #ifndef __EMSCRIPTEN__
-
         #ifdef USE_BACKEND_OPENGLES_3_0
             if(!gladLoadGLES2(SDL_GL_GetProcAddress))
                 throw std::runtime_error("[gladLoadGLES2] Failed to load GLAD OpenGLES 3.0 Loader");
@@ -330,6 +343,7 @@ void initialize_sdl(MainStruct& mS) {
     #endif
 #endif
 
+#ifndef __EMSCRIPTEN__
     if(mS.m->window.screenPos.x() >= 0 && mS.m->window.screenPos.y() >= 0 && mS.m->window.screenSize.x() >= 0 && mS.m->window.screenSize.y() >= 0)
         SDL_SetWindowPosition(mS.window, mS.m->window.screenPos.x(), mS.m->window.screenPos.y());
     else
@@ -340,6 +354,7 @@ void initialize_sdl(MainStruct& mS) {
 
     if(mS.m->window.fullscreen)
         SDL_SetWindowFullscreen(mS.window, true);
+#endif
 
     SDL_ShowWindow(mS.window);
 
@@ -350,7 +365,7 @@ void initialize_sdl(MainStruct& mS) {
 
     get_refresh_rate(mS);
 
-    SDL_SyncWindow(mS.window);
+    SDL_SyncWindow(mS.window); // Getting window information (pos, size) AFTER this call gives you the correct information for the current state of the window
 
     SDL_GetWindowSize(mS.window, &mS.m->window.screenSize.x(), &mS.m->window.screenSize.y());
     SDL_GetWindowSizeInPixels(mS.window, &mS.m->window.size.x(), &mS.m->window.size.y());
@@ -362,6 +377,7 @@ void initialize_sdl(MainStruct& mS) {
     SDL_WindowFlags f = SDL_GetWindowFlags(mS.window);
     mS.m->window.windowFocus = f & SDL_WINDOW_INPUT_FOCUS;
     mS.m->window.mouseFocus = f & SDL_WINDOW_MOUSE_FOCUS;
+    mS.m->input.update_safe_area();
 
 #ifndef __ANDROID__
     mS.m->update_main_loop_call_rate((mS.m->window.windowFocus || mS.m->window.mouseFocus) ? mS.m->conf.mainCallbackRate : mS.m->conf.mainCallbackRateBackground);
@@ -685,9 +701,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                         return SDL_APP_SUCCESS;
                 }
                 break;
-            case SDL_EVENT_WINDOW_MOVED:
-                mS.m->window.screenPos.x() = event->window.data1;
-                mS.m->window.screenPos.y() = event->window.data2;
+            case SDL_EVENT_WINDOW_MOVED: // When user moves the window, save the new dimensions. This is only useful for initializing the window on the next run
                 if(!mS.m->window.fullscreen && !mS.m->window.maximized) {
                     mS.m->window.screenPos.x() = event->window.data1;
                     mS.m->window.screenPos.y() = event->window.data2;
