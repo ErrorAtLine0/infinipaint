@@ -739,10 +739,14 @@ void InputManager::convert_touch_to_mouse_input(const FingerInput::TouchCallback
 
 void InputManager::update_safe_area() {
     SDL_Rect safeArea;
-    if(SDL_GetWindowSafeArea(main.window.sdlWindow, &safeArea))
+    if(SDL_GetWindowSafeArea(main.window.sdlWindow, &safeArea)) {
         main.window.safeArea = SCollision::AABB<float>({safeArea.x, safeArea.y}, {safeArea.x + safeArea.w, safeArea.y + safeArea.h});
-    else
+        main.window.safeArea.min *= main.window.wDensity;
+        main.window.safeArea.max *= main.window.wDensity;
+    }
+    else {
         main.window.safeArea = SCollision::AABB<float>({0, 0}, {main.window.size.x(), main.window.size.y()});
+    }
 
     std::scoped_lock a{safeAreaWithoutIMEMutex};
     if(safeAreaWithoutIME.has_value() && excludeIMEFromSafeArea)
