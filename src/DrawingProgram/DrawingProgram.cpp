@@ -163,6 +163,9 @@ void DrawingProgram::mouse_middle_click_callback(const InputManager::MouseButton
 }
 
 void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+    if (pointerDown == PointerDownState::MOUSE_LEFT && button.button == InputManager::MouseButton::LEFT &&
+        (button.deviceType != controls.leftPress.deviceType ||
+         (button.deviceType == InputManager::MouseDeviceType::PEN && button.penId != controls.leftPress.penId))) return;
     switch(button.button) {
         case InputManager::MouseButton::RIGHT:
             if(button.down) {
@@ -175,6 +178,7 @@ void DrawingProgram::input_mouse_button_callback(const InputManager::MouseButton
         case InputManager::MouseButton::LEFT:
             if(button.down && pointerDown == PointerDownState::NONE && !world.main.g.gui.mouse_pointer_obstructed()) {
                 pointerDown = PointerDownState::MOUSE_LEFT;
+                controls.leftPress = button;
                 drawTool->input_mouse_button_on_canvas_callback(button);
             }
             else if(!button.down && pointerDown == PointerDownState::MOUSE_LEFT) {

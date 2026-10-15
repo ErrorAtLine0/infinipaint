@@ -45,6 +45,8 @@ namespace BrushComponentCode {
         bool addedTemporaryPoint = false;
         std::vector<BrushComponentCode::BrushPoint> brushPoints;
         Vector2f prevPointUnaltered = {0, 0};
+        InputManager::MouseDeviceType deviceType = InputManager::MouseDeviceType::MOUSE;
+        SDL_PenID penId = 0;
         float penWidth = 1.0f;
         CoordSpaceHelper coords;
     };
