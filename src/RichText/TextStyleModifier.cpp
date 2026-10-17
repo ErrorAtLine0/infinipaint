@@ -51,6 +51,20 @@ std::shared_ptr<TextStyleModifier> TextStyleModifier::allocate_modifier(Modifier
     return nullptr;
 }
 
+bool TextStyleModifier::equivalent_maps(const ModifierMap& m1, const ModifierMap& m2) {
+    if(m1.size() != m2.size())
+        return false;
+    for(auto& [modifierType, modifier] : m1) {
+        auto equivalentModInOtherMapIt = m2.find(modifierType);
+        if(equivalentModInOtherMapIt == m2.end())
+            return false;
+        TextStyleModifier& equivalentModInOtherMap = *(*equivalentModInOtherMapIt).second;
+        if(!modifier->equivalent(equivalentModInOtherMap))
+            return false;
+    }
+    return true;
+}
+
 std::shared_ptr<TextStyleModifier> TextStyleModifier::get_default_modifier(ModifierType type) {
     auto& defaultMods = get_default_modifiers();
     auto it = defaultMods.find(type);

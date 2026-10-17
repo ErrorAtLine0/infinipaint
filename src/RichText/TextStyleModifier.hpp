@@ -41,6 +41,7 @@ class TextStyleModifier {
         };
 
         typedef std::unordered_map<ModifierType, std::shared_ptr<TextStyleModifier>> ModifierMap;
+        static bool equivalent_maps(const ModifierMap& m1, const ModifierMap& m2);
 
         static std::shared_ptr<TextStyleModifier> allocate_modifier(ModifierType type);
         static std::shared_ptr<TextStyleModifier> get_default_modifier(ModifierType type);

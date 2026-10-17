@@ -55,8 +55,8 @@ struct TextPosition {
 struct PositionedTextStyleMod {
     TextPosition pos;
     TextStyleModifier::ModifierMap mods;
-    bool operator==(const PositionedTextStyleMod& o) const = default;
-    bool operator!=(const PositionedTextStyleMod& o) const = default;
+    bool operator==(const PositionedTextStyleMod& o) const;
+    bool operator!=(const PositionedTextStyleMod& o) const;
 };
 
 typedef std::vector<PositionedTextStyleMod> TextStyleModContainer;

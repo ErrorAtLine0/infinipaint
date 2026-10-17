@@ -101,6 +101,14 @@ std::string TextData::get_plain_text() const {
     return toRet;
 }
 
+bool PositionedTextStyleMod::operator==(const PositionedTextStyleMod& o) const {
+    return pos == o.pos && TextStyleModifier::equivalent_maps(mods, o.mods);
+}
+
+bool PositionedTextStyleMod::operator!=(const PositionedTextStyleMod& o) const {
+    return !(*this == o);
+}
+
 bool TextPosition::operator<(const TextPosition& o) const {
     return (this->fParagraphIndex < o.fParagraphIndex) || (this->fParagraphIndex == o.fParagraphIndex && this->fTextByteIndex < o.fTextByteIndex);
 }
