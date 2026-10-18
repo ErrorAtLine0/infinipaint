@@ -111,7 +111,7 @@ void BrushTool::input_mouse_motion_callback(const InputManager::MouseMotionCallb
     if(objInfoBeingEdited) {
         auto& toolConfig = drawP.world.main.toolConfig;
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
-        BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value());
+        BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, containerPtr->coords.inverseScale).first.value(), drawP.world.main.conf.brushStrokeSmoothingFactor);
         commitUpdate = true;
     }
 }

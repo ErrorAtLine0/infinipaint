@@ -87,6 +87,8 @@ class GlobalConfig {
             bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;
 
+        float brushStrokeSmoothingFactor = 0.5f;
+
         struct TouchOptions {
             enum class SingleFingerAction {
                 NONE,

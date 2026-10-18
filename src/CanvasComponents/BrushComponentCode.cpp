@@ -29,7 +29,6 @@
 #define DEFAULT_SMOOTHNESS 3
 #define MINIMUM_DISTANCE_FROM_FIRST_POINT 3.0f
 #define MINIMUM_DISTANCE_TO_NEXT_POINT 0.002f
-#define DRAW_MINIMUM_LIMIT 1.0f
 
 namespace BrushComponentCode {
 
@@ -381,7 +380,7 @@ void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
     genData.addedTemporaryPoint = false;
 }
 
-void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize) {
+void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, float brushSmoothing) {
     BrushComponentCode::BrushPoint p;
     p.pos = genData.coords.to_space(drawP.world.drawData.cam.c.from_space(motionPos));
     p.width = brushSize * genData.penWidth;
@@ -415,7 +414,7 @@ void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, con
             maxWidthToCompareTo = std::max(genData.brushPoints[genData.brushPoints.size() - 3].width, maxWidthToCompareTo);
 
         // If the temporary point (cursor) is far enough from the point before it, make the temporary point permanent
-        if(distToPrev >= maxWidthToCompareTo * DRAW_MINIMUM_LIMIT) {
+        if(distToPrev >= maxWidthToCompareTo * brushSmoothing) {
             genData.brushPoints.back().pos = p.pos;
             genData.brushPoints.back().width = std::max(genData.brushPoints.back().width, p.width);
             genData.addedTemporaryPoint = false;

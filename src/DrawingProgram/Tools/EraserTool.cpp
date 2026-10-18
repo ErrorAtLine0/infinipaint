@@ -116,7 +116,7 @@ void EraserTool::cancel_finger_touch_callback(const FingerInput::TouchCallbackAr
 void EraserTool::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     if(isErasing) {
         auto& toolConfig = drawP.world.main.toolConfig;
-        BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value());
+        BrushComponentCode::mouse_motion(drawP, genData, motion.pos, toolConfig.get_relative_width_stroke_size(drawP, genData.coords.inverseScale).first.value(), drawP.world.main.conf.brushStrokeSmoothingFactor);
         eraserChanged = true;
     }
 }

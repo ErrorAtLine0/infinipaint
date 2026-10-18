@@ -62,7 +62,7 @@ namespace BrushComponentCode {
     void smooth_out_points(std::vector<BrushPoint>& brushPoints, float smoothFactor);
     void fix_tip(std::vector<BrushPoint>& brushPoints);
     void mouse_button(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const CoordSpaceHelper& strokeCoordSpace, const InputManager::MouseButtonCallbackArgs& button, float brushSize);
-    void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize);
+    void mouse_motion(DrawingProgram& drawP, BrushStrokeGenerationData& genData, const Vector2f& motionPos, float brushSize, float brushSmoothing);
     void pen_pressure(DrawingProgram& drawP, BrushStrokeGenerationData& genData, float brushSize);
     bool extensive_point_checking(const std::vector<BrushPoint>& points, const Vector2f& newPoint, float minimumDistance);
     bool extensive_point_checking_back(const std::vector<BrushPoint>& points, const Vector2f& newPoint);

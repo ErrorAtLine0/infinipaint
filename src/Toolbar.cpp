@@ -1517,6 +1517,7 @@ void Toolbar::general_settings_inner_gui() {
                         slider_scalar_field(gui, "scroll zoom slider", "Scroll zoom speed", &main.conf.scrollZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
                         checkbox_boolean_field(gui, "flip zoom tool direction", "Flip zoom tool direction", &main.conf.flipZoomToolDirection);
                         checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
+                        slider_scalar_field(gui, "brush stroke smoothing factor", "Brush stroke smoothing", &main.conf.brushStrokeSmoothingFactor, 0.3f, 2.0f, {.decimalPrecision = 2});
                         input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
 
                         checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
