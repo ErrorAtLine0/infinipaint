@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.apple import is_apple_os
-from conan.tools.files import get, copy, replace_in_file, rmdir
+from conan.tools.files import get, copy, replace_in_file, rmdir, load, save
 from conan.tools.gnu import PkgConfigDeps
 from conan.tools.microsoft import is_msvc
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout, CMakeDeps
@@ -25,6 +25,7 @@ _subsystems = [
 ]
 
 class SDLConan(ConanFile):
+    exports_sources = "pen_history.inc", "pen_history_helpers.inc"
     name = "sdl-infinipaint"
     description = "A cross-platform development library designed to provide low level access to audio, keyboard, mouse, joystick, and graphics hardware"
     license = "Zlib"
@@ -189,6 +190,33 @@ class SDLConan(ConanFile):
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version], strip_root=True)
+
+        # Patch the pinned SDL source, failing loudly if its layout changes.
+        events_path = os.path.join(self.source_folder, "src", "video", "windows", "SDL_windowsevents.c")
+        events = load(self, events_path)
+        begin = events.index("    case WM_POINTERDOWN:\n    case WM_POINTERUP:\n    case WM_POINTERUPDATE: {")
+        end = events.index("    case WM_MOUSEMOVE:", begin)
+        replacement = load(self, os.path.join(self.export_sources_folder, "pen_history.inc"))
+        events = events[:begin] + replacement + "\n" + events[end:]
+        signature = "LRESULT CALLBACK WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)"
+        if events.count(signature) != 1:
+            raise RuntimeError("SDL Windows event entrypoint changed")
+        helpers = load(self, os.path.join(self.export_sources_folder, "pen_history_helpers.inc"))
+        events = events.replace(signature, helpers + "\n" + signature)
+        save(self, events_path, events)
+
+        # Keep stationary contact reports with their pressure and timestamps.
+        # Other SDL platforms and ordinary hover remain unchanged.
+        pen_path = os.path.join(self.source_folder, "src", "events", "SDL_pen.c")
+        pen_source = load(self, pen_path)
+        condition = "if ((pen->x != x) || (pen->y != y)) {"
+        if pen_source.count(condition) != 1:
+            raise RuntimeError("SDL pen motion entrypoint changed")
+        pen_source = pen_source.replace(condition,
+            'if ((pen->x != x) || (pen->y != y) || (window && '
+            'SDL_GetBooleanProperty(SDL_GetWindowProperties(window), '
+            '"infinipaint.pen.contact_report", false))) {')
+        save(self, pen_path, pen_source)
 
         # Prevent inspecting target properties for libusb to derive the name of the .so/.dll
         # instead, just link the library normally, see
