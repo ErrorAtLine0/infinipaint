@@ -112,7 +112,7 @@ void FontPicker::layout(const Clay_ElementId& id, std::string* newFontName, cons
         });
 
         if(dropdownOpen) {
-            gui.set_z_index(gui.get_z_index() + 1, [&] {
+            gui.set_z_index(gui.get_z_index() + 2, [&] {
                 gui.element<LayoutElement>("DROPDOWN", [&](LayoutElement*, const Clay_ElementId& lId) {
                     Clay_ElementData dropdownElemData = Clay_GetElementData(lId);
                     float calculatedDropdownMaxHeight = 0.0f;

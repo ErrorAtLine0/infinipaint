@@ -38,7 +38,7 @@ template <typename T> void ColorPickerButton<T>::layout(const Clay_ElementId& id
         }
     });
     if(isOpen) {
-        gui.set_z_index(gui.get_z_index() + 1, [&] {
+        gui.set_z_index(gui.get_z_index() + 2, [&] {
             ElementHelpers::attach_to_button_popup_layout(gui, "Color Picker", {
                 .button = button,
                 .clickAwayCallback = [&] { isOpen = false; },

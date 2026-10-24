@@ -91,7 +91,7 @@ template <typename T> class DropDown : public Element {
                 });
 
                 if(isOpen && boundingBox.has_value()) {
-                    gui.set_z_index(gui.get_z_index() + 1, [&] {
+                    gui.set_z_index(gui.get_z_index() + 2, [&] {
                         dropdown_many_element_popup_layout(gui, "DROPDOWN", {
                             .button = this,
                             .clickAwayCallback = [&] { isOpen = false; },

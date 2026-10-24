@@ -46,7 +46,7 @@ void ProgramSettingsGUI::top_tabs_layout(MainProgram& main) {
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
             },
         }) {
-            gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+            gui.clipping_element<ScrollArea>("settings scroll area", ScrollArea::Options{
                 .scrollHorizontal = true,
                 .clipHorizontal = true,
                 .scrollbarX = ScrollArea::ScrollbarType::NO_INTERACTION,
@@ -82,7 +82,7 @@ void ProgramSettingsGUI::side_tabs_layout(MainProgram& main) {
                 .sizing = {.width = CLAY_SIZING_FIT(120), .height = CLAY_SIZING_GROW(0)},
             },
         }) {
-            gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+            gui.clipping_element<ScrollArea>("settings scroll area", ScrollArea::Options{
                 .scrollVertical = true,
                 .clipVertical = true,
                 .scrollbarY = ScrollArea::ScrollbarType::NO_INTERACTION,

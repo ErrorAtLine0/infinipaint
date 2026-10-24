@@ -311,7 +311,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                         settingsMenu.top_tabs_layout(main);
                         settings_popup_close_button();
                     });
-                    gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+                    gui.clipping_element<ScrollArea>("settings scroll area", ScrollArea::Options{
                         .scrollVertical = true,
                         .clipVertical = true,
                         .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
@@ -334,7 +334,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                     text_label_centered(gui, "Settings");
                     left_to_right_line_layout(gui, [&] {
                         settingsMenu.side_tabs_layout(main);
-                        gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+                        gui.clipping_element<ScrollArea>("settings scroll area", ScrollArea::Options{
                             .scrollVertical = true,
                             .clipVertical = true,
                             .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
