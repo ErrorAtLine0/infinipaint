@@ -78,6 +78,15 @@ namespace SCollision {
                     std::clamp(p.y(), min.y(), max.y())
                 };
             }
+            void add_padding_LTRB_with_minimum_distance(T left, T top, T right, T bottom, T minDistance) {
+                min.x() -= left;
+                min.y() -= top;
+                max.x() += right;
+                max.y() += bottom;
+                // Ensures that minimum is not larger than maximum
+                min.x() = std::min(min.x(), max.x() - minDistance);
+                min.y() = std::min(min.y(), max.y() - minDistance);
+            }
             template <typename S> AABB<S> transform(const std::function<Vector<S, 2>(const Vector<T, 2>&)>& transformFunc, const std::function<S(const T&)>& transformLinearFunc) const {
                 Vector<S, 2> aabb1 = transformFunc(min);
                 Vector<S, 2> aabb2 = transformFunc(max);

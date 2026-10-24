@@ -26,7 +26,6 @@
 #include "Bookmarks/BookmarkManager.hpp"
 #include "ResourceManager.hpp"
 #include "DrawingProgram/DrawingProgram.hpp"
-#include "Toolbar.hpp"
 #include "SharedTypes.hpp"
 #include "CanvasTheme.hpp"
 #include "GridManager.hpp"
@@ -66,14 +65,26 @@ class World {
         BookmarkManager bMan;
         GridManager gridMan;
 
-        std::deque<Toolbar::ChatMessage> chatMessages;
+        struct ChatMessage {
+            static constexpr float DISPLAY_TIME = 8.0f;
+            static constexpr float FADE_START_TIME = 7.0f;
+            std::string name;
+            std::string message;
+            enum Type {
+                NORMAL = 0,
+                JOIN 
+            } type;
+            TimePoint time;
+        };
+
+        std::deque<ChatMessage> chatMessages;
 
         std::string netSource;
 
         void start_hosting(const std::string& initNetSource, const std::string& serverLocalID);
 
         void send_chat_message(const std::string& message);
-        void add_chat_message(const std::string& name, const std::string& message, Toolbar::ChatMessage::Type type);
+        void add_chat_message(const std::string& name, const std::string& message, ChatMessage::Type type);
 
         WorldScalar calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize);
 

@@ -16,29 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "DrawingProgramScreen.hpp"
+#include "CanvasScreen.hpp"
 #include "../MainProgram.hpp"
 #include <Helpers/Logger.hpp>
 
-DrawingProgramScreen::DrawingProgramScreen(MainProgram& m):
+CanvasScreen::CanvasScreen(MainProgram& m):
     Screen(m)
 {}
 
-void DrawingProgramScreen::update() {
+void CanvasScreen::update() {
     main.world->focus_update();
 }
 
-SCollision::AABB<float> DrawingProgramScreen::canvas_safe_area() {
+SCollision::AABB<float> CanvasScreen::canvas_safe_area() {
     return main.window.safeArea;
 }
 
-void DrawingProgramScreen::draw(SkCanvas* canvas) {
+void CanvasScreen::draw(SkCanvas* canvas) {
     main.world->drawData.canvasSafeArea = canvas_safe_area();
     main.draw_world(canvas, main.world, main.world->drawData);
     draw_rotate_position_popup(canvas, main.world->drawData.canvasSafeArea.min.y() + 10.0f);
 }
 
-void DrawingProgramScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
+void CanvasScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
     auto& rotationTime = main.world->drawData.cam.lastRotationTime;
     rotationTime.update_time_since();
     if(rotationTime < World::ROTATE_POPUP_DISPLAY_TIME) {
@@ -66,80 +66,80 @@ void DrawingProgramScreen::draw_rotate_position_popup(SkCanvas* canvas, float yP
     }
 }
 
-void DrawingProgramScreen::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
+void CanvasScreen::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
     main.world->input_add_file_to_canvas_callback(addFile);
 }
 
-void DrawingProgramScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
+void CanvasScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
     main.create_new_tab(openFile);
 }
 
-void DrawingProgramScreen::input_paste_callback(const CustomEvents::PasteEvent& paste) {
+void CanvasScreen::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     main.world->input_paste_callback(paste);
 }
 
-void DrawingProgramScreen::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
+void CanvasScreen::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
     main.world->input_android_text_box_input_callback(textboxInput);
 }
 
-void DrawingProgramScreen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
+void CanvasScreen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
     main.world->input_drop_file_callback(drop);
 }
 
-void DrawingProgramScreen::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
+void CanvasScreen::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
     main.world->input_drop_text_callback(drop);
 }
 
-void DrawingProgramScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+void CanvasScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     main.world->input_key_callback(key);
 }
 
-void DrawingProgramScreen::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
+void CanvasScreen::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
     main.world->input_text_key_callback(key);
 }
 
-void DrawingProgramScreen::input_text_callback(const InputManager::TextCallbackArgs& text) {
+void CanvasScreen::input_text_callback(const InputManager::TextCallbackArgs& text) {
     main.world->input_text_callback(text);
 }
 
-void DrawingProgramScreen::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
+void CanvasScreen::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
     main.world->input_mouse_button_callback(button);
 }
 
-void DrawingProgramScreen::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
+void CanvasScreen::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
     main.world->input_mouse_motion_callback(motion);
 }
 
-void DrawingProgramScreen::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
+void CanvasScreen::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
     main.world->input_mouse_wheel_callback(wheel);
 }
 
-void DrawingProgramScreen::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
+void CanvasScreen::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
     main.world->input_pen_button_callback(button);
 }
 
-void DrawingProgramScreen::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
+void CanvasScreen::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
     main.world->input_pen_touch_callback(touch);
 }
 
-void DrawingProgramScreen::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
+void CanvasScreen::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
     main.world->input_pen_motion_callback(motion);
 }
 
-void DrawingProgramScreen::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
+void CanvasScreen::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
     main.world->input_pen_axis_callback(axis);
 }
 
-void DrawingProgramScreen::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
+void CanvasScreen::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
     main.world->input_finger_touch_callback(touch);
 }
 
-void DrawingProgramScreen::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
+void CanvasScreen::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
 }
 
-void DrawingProgramScreen::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {
+void CanvasScreen::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {
 }
 
-std::optional<InputManager::TextBoxStartInfo> DrawingProgramScreen::get_text_box_start_info() {
+std::optional<InputManager::TextBoxStartInfo> CanvasScreen::get_text_box_start_info() {
     return main.world->get_text_box_start_info();
 }

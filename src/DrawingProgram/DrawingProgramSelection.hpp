@@ -21,18 +21,17 @@
 #include "Layers/DrawingProgramLayerManager.hpp"
 #include "DrawingProgramCache.hpp"
 #include "../InputManager.hpp"
-#include "../Screens/PhoneDrawingProgramScreen.hpp"
+#include "../Screens/CanvasEditorScreen.hpp"
 
 class DrawingProgram;
-class PhoneDrawingProgramScreen;
+class CanvasEditorScreen;
 
 class DrawingProgramSelection {
     public:
         DrawingProgramSelection(DrawingProgram& initDrawP);
-        void selection_gui(Toolbar& t);
         Vector4f* color_picker_color(Vector4f* oldColor);
-        void phone_selection_gui(PhoneDrawingProgramScreen& t);
-        void phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t);
+        void phone_selection_gui(CanvasEditorScreen& t);
+        void phone_selection_bottom_toolbar(CanvasEditorScreen& t);
         void add_from_cam_coord_collider_to_selection(const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void remove_from_cam_coord_collider_to_selection(const SkPath& cC, DrawingProgramLayerManager::LayerSelector layerSelector, bool frontObjectOnly);
         void erase_component(CanvasComponentContainer::ObjInfo* objToCheck);
@@ -60,7 +59,7 @@ class DrawingProgramSelection {
     private:
         bool commitChangeColorUpdate = false;
 
-        void phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t);
+        void phone_bottom_toolbar_gui(CanvasEditorScreen& t);
         void translate_key(unsigned keyPressed, bool pressed);
         bool point_collided_with_selection_aabb(const Vector2f& p);
         bool point_collided_with_scale_point(const Vector2f& p);
@@ -80,7 +79,7 @@ class DrawingProgramSelection {
             Vector4f newColor = {1.0f, 1.0f, 1.0f, 0.0f};
             Vector4f oldColor = {1.0f, 1.0f, 1.0f, 0.0f};
             std::unordered_map<NetworkingObjects::NetObjID, Vector4f> oldColorData;
-            std::optional<PhoneDrawingProgramScreen::ColorSelectorData> guiColorSelectorData;
+            std::optional<CanvasEditorScreen::ColorSelectorData> guiColorSelectorData;
         } strokeColorChangeData;
 
         void set_to_selection(const std::vector<CanvasComponentContainer::ObjInfo*>& newSelection);

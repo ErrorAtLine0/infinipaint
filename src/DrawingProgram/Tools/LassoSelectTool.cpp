@@ -37,23 +37,11 @@ DrawingProgramToolType LassoSelectTool::get_type() {
     return DrawingProgramToolType::LASSOSELECT;
 }
 
-void LassoSelectTool::gui_toolbox(Toolbar& t) {
-    auto& gui = drawP.world.main.g.gui;
-    gui.new_id("lasso select tool", [&] {
-        GUIStuff::ElementHelpers::text_label_centered(gui, "Lasso Select");
-        drawP.selection.selection_gui(t);
-    });
-}
-
-void LassoSelectTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void LassoSelectTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("lasso select tool", [&] {
         drawP.selection.phone_selection_gui(t);
     });
-}
-
-void LassoSelectTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    drawP.selection_action_menu(popupPos);
 }
 
 void LassoSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {

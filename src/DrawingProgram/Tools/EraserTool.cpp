@@ -39,24 +39,7 @@ DrawingProgramToolType EraserTool::get_type() {
     return DrawingProgramToolType::ERASER;
 }
 
-void EraserTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-    gui.new_id("eraser tool", [&] {
-        text_label_centered(gui, "Eraser");
-        drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
-        text_label(gui, "Erase from:");
-        radio_button_selector(gui, "layer selector", &drawP.controls.layerSelector, {
-            {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
-            {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
-        });
-        checkbox_boolean_field(gui, "erase details", "Erase details (meshes only)", &drawP.world.main.toolConfig.eraser.eraseDetail);
-    });
-}
-
-void EraserTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void EraserTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -71,10 +54,6 @@ void EraserTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
         });
         checkbox_boolean_field(gui, "erase details", "Erase details (meshes only)", &drawP.world.main.toolConfig.eraser.eraseDetail);
     });
-}
-
-void EraserTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 void EraserTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

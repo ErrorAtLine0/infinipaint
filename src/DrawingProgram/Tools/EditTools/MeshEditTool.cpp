@@ -30,24 +30,7 @@ MeshEditTool::MeshEditTool(DrawingProgram& initDrawP, CanvasComponentContainer::
     DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void MeshEditTool::edit_gui(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& a = static_cast<MeshCanvasComponent&>(comp->obj->get_comp());
-    auto& gui = drawP.world.main.g.gui;
-    auto commit_update_func = [&] { commitUpdate = true; };
-
-    gui.new_id("edit tool mesh", [&] {
-        text_label_centered(gui, "Edit Mesh");
-        left_to_right_line_layout(gui, [&]() {
-            t.color_button_right("Mesh Color", &a.d.color, { .onChange = commit_update_func });
-            text_label(gui, "Mesh Color");
-        });
-    });
-}
-
-void MeshEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void MeshEditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 

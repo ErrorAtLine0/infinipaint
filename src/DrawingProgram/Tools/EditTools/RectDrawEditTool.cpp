@@ -30,42 +30,6 @@ RectDrawEditTool::RectDrawEditTool(DrawingProgram& initDrawP, CanvasComponentCon
     DrawingProgramEditToolBase(initDrawP, initComp)
 {}
 
-void RectDrawEditTool::edit_gui(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
-    auto commit_update_and_layout_func = [&] {
-        commitUpdate = true;
-        drawP.world.main.g.gui.set_to_layout();
-    };
-    auto commit_update_func = [&] { commitUpdate = true; };
-
-    auto& gui = drawP.world.main.g.gui;
-    gui.new_id("edit tool rectangle", [&] {
-        text_label_centered(gui, "Edit Rectangle");
-        slider_scalar_field(gui, "relradiuswidth", "Corner Radius", &a.d.cornerRadius, 0.0f, 40.0f, { .onEdit = commit_update_func });
-        radio_button_selector(gui, "Fill selector", &a.d.fillStrokeMode, {
-            {"Fill only", 0},
-            {"Outline only", 1},
-            {"Fill and outline", 2}
-        }, commit_update_and_layout_func);
-        if(a.d.fillStrokeMode == 0 || a.d.fillStrokeMode == 2) {
-            left_to_right_line_layout(gui, [&] {
-                t.color_button_right("Fill color button", &a.d.fillColor, { .onChange = commit_update_func });
-                text_label(gui, "Fill Color");
-            });
-        }
-        if(a.d.fillStrokeMode == 1 || a.d.fillStrokeMode == 2) {
-            slider_scalar_field(gui, "relstrokewidth", "Outline Size", &a.d.strokeWidth, 3.0f, 40.0f, { .onEdit = commit_update_func });
-            left_to_right_line_layout(gui, [&] {
-                t.color_button_right("Outline color button", &a.d.strokeColor, { .onChange = commit_update_func });
-                text_label(gui, "Outline Color");
-            });
-        }
-    });
-}
-
 Vector4f* RectDrawEditTool::color_picker_color(Vector4f* oldColor) {
     auto& a = static_cast<RectangleCanvasComponent&>(comp->obj->get_comp());
     if(oldColor == &a.d.fillColor)
@@ -75,7 +39,7 @@ Vector4f* RectDrawEditTool::color_picker_color(Vector4f* oldColor) {
     return nullptr;
 }
 
-void RectDrawEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void RectDrawEditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 

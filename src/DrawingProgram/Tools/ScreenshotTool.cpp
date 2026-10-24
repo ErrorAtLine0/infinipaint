@@ -35,7 +35,7 @@
 #include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
 #include "../../GUIStuff/Elements/DropDown.hpp"
 
-#include "../../Screens/PhoneDrawingProgramScreen.hpp"
+#include "../../Screens/CanvasEditorScreen.hpp"
 
 #define SECTION_SIZE 4000
 #define AA_LEVEL 4
@@ -48,91 +48,7 @@ DrawingProgramToolType ScreenshotTool::get_type() {
     return DrawingProgramToolType::SCREENSHOT;
 }
 
-void ScreenshotTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-    auto& screenshotConfig = drawP.world.main.toolConfig.screenshot;
-    gui.new_id("screenshot tool", [&] {
-        text_label_centered(gui, "Screenshot");
-        if(controls.selectionMode == ScreenshotControls::SelectionMode::NO_SELECTION)
-            text_label(gui, "Select canvas area...");
-        if(controls.selectionMode != ScreenshotControls::SelectionMode::NO_SELECTION && screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::SVG) {
-            input_scalars_field(gui, "Image Size", "Image Size", &controls.imageSize, 2, 0, 999999999, {
-                .onEdit = [&] (size_t i) {
-                    if(i == 0) {
-                        screenshotConfig.setDimensionSize = controls.imageSize.x();
-                        screenshotConfig.setDimensionIsX = true;
-                        controls.imageSize.y() = controls.imageSize.x() * (controls.rectY2 - controls.rectY1) / (controls.rectX2 - controls.rectX1);
-                    }
-                    else {
-                        screenshotConfig.setDimensionSize = controls.imageSize.y();
-                        screenshotConfig.setDimensionIsX = false;
-                        controls.imageSize.x() = controls.imageSize.y() * (controls.rectX2 - controls.rectX1) / (controls.rectY2 - controls.rectY1);
-                    }
-                    gui.set_to_layout();
-                }
-            });
-        }
-        if(controls.selectionMode == ScreenshotControls::SelectionMode::SELECTION_EXISTS) {
-            left_to_right_line_layout(gui, [&]() {
-                text_label(gui, "Image Type");
-                gui.element<DropDown<size_t>>("image type select", (size_t*)(&screenshotConfig.selectedType), controls.typeSelections);
-            });
-            if(screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::SVG)
-                checkbox_boolean_field(gui, "Display Grid", "Display Grid", &controls.displayGrid);
-            else
-                text_label(gui, "Note: Screenshot will ignore blend\nmodes and layer alpha");
-            if(screenshotConfig.selectedType != WorldScreenshotInfo::ScreenshotType::JPG)
-                checkbox_boolean_field(gui, "Transparent Background", "Transparent Background", &controls.transparentBackground);
-            text_button(gui, "Take Screenshot", "Take Screenshot", {
-                .wide = true,
-                .onClick = [&] {
-                    controls.selectionMode = ScreenshotControls::SelectionMode::NO_SELECTION;
-                    #ifdef __EMSCRIPTEN__
-                        take_screenshot("a" + world_screenshot_info_get_extension_from_type(screenshotConfig.selectedType), screenshotConfig.selectedType);
-                    #else
-                        // We can't actually use the extension from the callback, so we have to set the extension of choice beforehand
-                        Screen::ExtensionFilter setExtensionFilter;
-                        switch(screenshotConfig.selectedType) {
-                            case WorldScreenshotInfo::ScreenshotType::JPG:
-#ifdef __ANDROID__
-                                        setExtensionFilter = {"JPEG", "jpg"};
-#else
-                                        setExtensionFilter = {"JPEG", "jpg;jpeg"};
-#endif
-                                break;
-                            case WorldScreenshotInfo::ScreenshotType::PNG:
-                                setExtensionFilter = {"PNG", "png"};
-                                break;
-                            case WorldScreenshotInfo::ScreenshotType::WEBP:
-                                setExtensionFilter = {"WEBP", "webp"};
-                                break;
-                            case WorldScreenshotInfo::ScreenshotType::SVG:
-                                setExtensionFilter = {"SVG", "svg"};
-                                break;
-                        }
-                        t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
-                            auto world = w.lock();
-                            if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
-                                ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
-                                if(world->main.conf.forceExtensionOnPath)
-                                    screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
-                                else
-                                    screenshotTool->controls.screenshotSavePath = p;
-                                screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
-                                screenshotTool->controls.setToTakeScreenshot = true;
-                            }
-                        }, "screenshot", true);
-                    #endif
-                }
-            });
-        }
-    });
-}
-
-void ScreenshotTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void ScreenshotTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -237,10 +153,6 @@ void ScreenshotTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
             }
         }
     });
-}
-
-void ScreenshotTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 void ScreenshotTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {

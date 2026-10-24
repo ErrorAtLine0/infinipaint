@@ -21,6 +21,7 @@
 #include "nlohmann/json.hpp"
 #include "../GUIStuff/GUIFloatAnimation.hpp"
 #include "../GUIStuff/Elements/ScrollArea.hpp"
+#include "CanvasEditorUI/ProgramSettingsGUI.hpp"
 
 class FileSelectScreen : public Screen {
     public:
@@ -132,12 +133,9 @@ class FileSelectScreen : public Screen {
             ABOUT
         } selectedMenu = SelectedMenu::FILES;
 
-        enum class SettingsMenu {
-            GENERAL,
-            TOUCH
-        } settingsMenu = SettingsMenu::GENERAL;
-
         int selectedLicense = -1;
+
+        ProgramSettingsGUI settingsGUI;
 
         void start_edit_mode();
         size_t numberOfSelectedEntries;

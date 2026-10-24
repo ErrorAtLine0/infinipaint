@@ -17,14 +17,14 @@
  */
 
 #pragma once
-#include "DrawingProgramScreen.hpp"
-#include "../Toolbar.hpp"
+#include "CanvasEditorUI/CanvasEditorTopToolbar.hpp"
+#include "CanvasScreen.hpp"
 #include "../GUIStuff/Elements/TreeListing.hpp"
 
-class PhoneDrawingProgramScreen : public DrawingProgramScreen {
+class CanvasEditorScreen : public CanvasScreen {
     public:
-        PhoneDrawingProgramScreen(MainProgram& m);
-        ~PhoneDrawingProgramScreen();
+        CanvasEditorScreen(MainProgram& m, bool initMobileUI);
+        ~CanvasEditorScreen();
         virtual void update() override;
         virtual void gui_layout_run() override;
         virtual void input_global_back_button_callback() override;
@@ -57,13 +57,6 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         void color_settings_popup(Vector4f* color, const ColorSelectorData& d, std::function<void()> backOnPaletteButton = nullptr, bool setAlphaToOne = false, bool setToTransparentCancelButton = false);
         void reset_color_picker_popup_data();
     private:
-        std::filesystem::path fileOldPath;
-        struct TopToolbarRemainingAreaButton {
-            std::string name;
-            std::string svgPath;
-            bool isSelected = false;
-            std::function<void()> onClick;
-        };
         enum class SettingsMenuPopup {
             NONE, // No settings open
             SETTINGS, // Tool settings open. If colorPickerPtr isn't null, it'll show that, but the back button can be pressed to go back to settings
@@ -72,38 +65,27 @@ class PhoneDrawingProgramScreen : public DrawingProgramScreen {
         void set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup newSettingsMode, Vector4f* newColorPickerPtr = nullptr, const ColorSelectorData& initColorPickerData = ColorSelectorData());
         void set_color_picker_data(Vector4f* newColorPickerPtr, const ColorSelectorData& initColorPickerData);
 
-        enum class TopToolbarSettingsPopup {
-            NONE,
-            HIDDEN_BUTTONS,
-            BOOKMARKS,
-            LAYERS,
-            GRIDS,
-            HOST,
-            LOBBY_INFO,
-            PLAYER_LIST
-        } topToolbarSettingsPopup = TopToolbarSettingsPopup::NONE;
-
         Vector4f backgroundColorTemporary;
         Vector4f* colorPickerPtr = nullptr;
         ColorSelectorData colorPickerData;
 
-        void global_log();
         void gui_layout_safety_checks();
         void hidden_gui();
         void center_message(const char* id, const std::string& m);
         void default_bottom_toolbar();
         void bottom_toolbar_gui();
         void bottom_extra_toolbar_gui();
-        void save_files();
-        void top_toolbar();
-        void top_toolbar_settings_popup();
-        void top_toolbar_remaining_area();
-        void top_toolbar_hidden_button_popup(GUIStuff::Element* b, std::vector<TopToolbarRemainingAreaButton> l);
         void bottom_toolbar();
         void main_display();
         void tool_settings_popup();
+        void desktop_save_file();
+        void desktop_save_as_file();
         void save_to_file();
+        void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID2);
 
-        std::string serverToConnectTo;
-        std::string serverLocalID;
+        CanvasEditorTopToolbar topToolbar;
+
+        const bool mobileUI;
+
+        friend class CanvasEditorTopToolbar;
 };

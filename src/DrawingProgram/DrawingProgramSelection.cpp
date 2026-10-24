@@ -44,42 +44,13 @@
 #include "../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+#include "../GUIStuff/Elements/ScrollArea.hpp"
 
 DrawingProgramSelection::DrawingProgramSelection(DrawingProgram& initDrawP):
     drawP(initDrawP)
 {}
 
-void DrawingProgramSelection::selection_gui(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-
-    gui.new_id("general selection gui", [&] {
-        text_label(gui, "Select from:");
-        radio_button_selector(gui, "layer selector", &drawP.controls.layerSelector, {
-            {"Layer being edited", DrawingProgramLayerManager::LayerSelector::LAYER_BEING_EDITED},
-            {"All visible layers", DrawingProgramLayerManager::LayerSelector::ALL_VISIBLE_LAYERS}
-        });
-        if(is_something_selected()) {
-            left_to_right_line_layout(gui, [&]() {
-                t.color_button_right("Stroke Color Button", &strokeColorChangeData.newColor, {
-                    .onSelectorButtonClick = [&] {
-                        if(strokeColorChangeData.newColor.w() == 0.0f)
-                            strokeColorChangeData.newColor.w() = 1.0f;
-                        update_selection_stroke_color();
-                    },
-                    .onChange = [&] {
-                        update_selection_stroke_color();
-                    }
-                });
-                text_label(gui, "Stroke Color");
-            });
-        }
-    });
-}
-
-void DrawingProgramSelection::phone_selection_gui(PhoneDrawingProgramScreen& t) {
+void DrawingProgramSelection::phone_selection_gui(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -102,7 +73,7 @@ Vector4f* DrawingProgramSelection::color_picker_color(Vector4f* oldColor) {
     return nullptr;
 }
 
-void DrawingProgramSelection::phone_selection_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+void DrawingProgramSelection::phone_selection_bottom_toolbar(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -161,7 +132,7 @@ void DrawingProgramSelection::phone_selection_bottom_toolbar(PhoneDrawingProgram
     }
 }
 
-void DrawingProgramSelection::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t) {
+void DrawingProgramSelection::phone_bottom_toolbar_gui(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 

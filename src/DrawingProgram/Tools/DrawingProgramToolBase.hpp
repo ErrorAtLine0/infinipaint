@@ -23,7 +23,7 @@
 #include "../../InputManager.hpp"
 
 class DrawingProgram;
-class PhoneDrawingProgramScreen;
+class CanvasEditorScreen;
 
 #define MINIMUM_DISTANCE_BETWEEN_BOUNDS 10.0f
 
@@ -48,10 +48,8 @@ class DrawingProgramToolBase {
     public:
         DrawingProgramToolBase(DrawingProgram& initDrawP);
         virtual DrawingProgramToolType get_type() = 0;
-        virtual void gui_toolbox(Toolbar& t) = 0;
-        virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) = 0;
+        virtual void gui_phone_toolbox(CanvasEditorScreen& t) = 0;
         virtual void erase_component(CanvasComponentContainer::ObjInfo* erasedComp) = 0;
-        virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos) = 0;
         virtual void tool_update() = 0;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) = 0;
         virtual void switch_tool(DrawingProgramToolType newTool) = 0;
@@ -70,7 +68,7 @@ class DrawingProgramToolBase {
         virtual void cancel_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch);
         virtual bool bypass_touch_restriction();
         virtual bool phone_gui_tool_specific_bottom_toolbar_exists();
-        virtual void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t);
+        virtual void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t);
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
         virtual ~DrawingProgramToolBase(); 
         static std::unique_ptr<DrawingProgramToolBase> allocate_tool_type(DrawingProgram& drawP, DrawingProgramToolType t);

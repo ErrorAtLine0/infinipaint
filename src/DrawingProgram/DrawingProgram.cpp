@@ -457,69 +457,6 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
     }
 }
 
-void DrawingProgram::toolbar_gui(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    GUIManager& gui = world.main.g.gui;
-    auto& io = gui.io;
-
-    gui.new_id("Drawing Program Toolbar GUI", [&] {
-        gui.element<LayoutElement>("Drawing Program Toolbar GUI", [&] (LayoutElement*, const Clay_ElementId& lId) {
-            CLAY(lId, {
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)},
-                    .padding = CLAY_PADDING_ALL(static_cast<uint16_t>(io.theme->padding1 / 2)),
-                    .childGap = static_cast<uint16_t>(io.theme->childGap1 / 2), 
-                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_TOP},
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                },
-                .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-                .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-            }) {
-
-                auto tool_button = [&](const char* id, const std::string& svgPath, DrawingProgramToolType toolType) {
-                    svg_icon_button(gui, id, svgPath, {
-                        .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                        .isSelected = drawTool->get_type() == toolType,
-                        .onClick = [&, toolType] {
-                            switch_to_tool(toolType);
-                        }
-                    });
-                };
-
-                tool_button("Brush Toolbar Button", "data/icons/brush.svg", DrawingProgramToolType::BRUSH);
-                tool_button("Eraser Toolbar Button", "data/icons/eraser.svg", DrawingProgramToolType::ERASER);
-                tool_button("Line Toolbar Button", "data/icons/line.svg", DrawingProgramToolType::LINE);
-                tool_button("Text Toolbar Button", "data/icons/text.svg", DrawingProgramToolType::TEXTBOX);
-                tool_button("Ellipse Toolbar Button", "data/icons/circle.svg", DrawingProgramToolType::ELLIPSE);
-                tool_button("Rect Toolbar Button", "data/icons/rectangle.svg", DrawingProgramToolType::RECTANGLE);
-                tool_button("RectSelect Toolbar Button", "data/icons/rectselect.svg", DrawingProgramToolType::RECTSELECT);
-                tool_button("LassoSelect Toolbar Button", "data/icons/lassoselect.svg", DrawingProgramToolType::LASSOSELECT);
-                tool_button("Edit Toolbar Button", "data/icons/cursor.svg", DrawingProgramToolType::EDIT);
-                tool_button("Eyedropper Toolbar Button", "data/icons/eyedropper.svg", DrawingProgramToolType::EYEDROPPER);
-                tool_button("Zoom Canvas Toolbar Button", "data/icons/zoom.svg", DrawingProgramToolType::ZOOM);
-                tool_button("Pan Canvas Toolbar Button", "data/icons/hand.svg", DrawingProgramToolType::PAN);
-
-                std::shared_ptr<double> newRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
-                gui.element<RotateWheel>("Canvas Rotate Wheel", newRotationAngle.get(), [&, newRotationAngle] {
-                    world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(world.main.window.size.cast<float>() * 0.5f), *newRotationAngle - world.drawData.cam.c.rotation);
-                    *newRotationAngle = world.drawData.cam.c.rotation;
-                    world.drawData.cam.lastRotationTime.update_time_point();
-                });
-
-                t.color_button_left("Foreground color", &world.main.toolConfig.globalConf.foregroundColor);
-                t.color_button_left("Background color", &world.main.toolConfig.globalConf.backgroundColor);
-            }
-        });
-    });
-}
-
-void DrawingProgram::right_click_popup_gui(Toolbar& t) {
-    if(rightClickPopupLocation.has_value())
-        drawTool->right_click_popup_gui(t, rightClickPopupLocation.value());
-}
-
 void DrawingProgram::set_right_click_popup_location(const Vector2f& newLoc) {
     if(!rightClickPopupLocation.has_value() || rightClickPopupLocation.value() != newLoc) {
         rightClickPopupLocation = newLoc;
@@ -621,30 +558,6 @@ void DrawingProgram::right_click_action_menu(Vector2f popupPos, const std::funct
                     clear_right_click_popup();
             }
         });
-    });
-}
-
-void DrawingProgram::tool_options_gui(Toolbar& t) {
-    using namespace GUIStuff;
-
-    GUIStuff::GUIManager& gui = world.main.g.gui;
-    auto& io = gui.io;
-
-    float minGUIWidth = drawTool->get_type() == DrawingProgramToolType::SCREENSHOT ? 300 : 200;
-    gui.element<LayoutElement>("Drawing program tool options gui", [&] (LayoutElement*, const Clay_ElementId& lId) {
-        CLAY(lId, {
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_FIT(minGUIWidth), .height = CLAY_SIZING_FIT(0)},
-                .padding = CLAY_PADDING_ALL(io.theme->padding1),
-                .childGap = io.theme->childGap1,
-                .childAlignment = { .x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_TOP},
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            },
-            .backgroundColor = convert_vec4<Clay_Color>(io.theme->backColor1),
-            .cornerRadius = CLAY_CORNER_RADIUS(io.theme->windowCorners1)
-        }) {
-            drawTool->gui_toolbox(t);
-        }
     });
 }
 
@@ -919,7 +832,7 @@ bool DrawingProgram::phone_gui_tool_specific_bottom_toolbar_exists() {
     return drawTool->phone_gui_tool_specific_bottom_toolbar_exists();
 }
 
-void DrawingProgram::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+void DrawingProgram::phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) {
     if(selection.is_something_selected())
         selection.phone_selection_bottom_toolbar(t);
     else

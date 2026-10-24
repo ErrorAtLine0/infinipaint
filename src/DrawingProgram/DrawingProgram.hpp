@@ -44,9 +44,6 @@ class DrawingProgram {
     public:
         DrawingProgram(World& initWorld);
         void server_init_no_file();
-        void toolbar_gui(Toolbar& t);
-        void tool_options_gui(Toolbar& t);
-        void right_click_popup_gui(Toolbar& t);
         void update();
         void scale_up(const WorldScalar& scaleUpAmount);
         void draw(SkCanvas* canvas, const DrawData& drawData);
@@ -60,7 +57,7 @@ class DrawingProgram {
 
         Vector4f* color_picker_color(Vector4f* oldColor);
         bool phone_gui_tool_specific_bottom_toolbar_exists();
-        void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t);
+        void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t);
 
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;

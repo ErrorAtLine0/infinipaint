@@ -99,5 +99,5 @@ void DrawingProgramToolBase::cancel_finger_touch_callback(const FingerInput::Tou
 }
 bool DrawingProgramToolBase::bypass_touch_restriction() { return false; }
 bool DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar_exists() { return false; }
-void DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {}
+void DrawingProgramToolBase::phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) {}
 std::optional<InputManager::TextBoxStartInfo> DrawingProgramToolBase::get_text_box_start_info() { return std::nullopt; }

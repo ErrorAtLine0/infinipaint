@@ -28,6 +28,5 @@ class ImageEditTool : public DrawingProgramEditToolBase {
         virtual void edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) override;
         virtual void commit_edit_updates(std::any& prevData) override;
         virtual void edit_update() override;
-        virtual void edit_gui(Toolbar& t) override;
-        virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
+        virtual void gui_phone_toolbox(CanvasEditorScreen& t) override;
 };

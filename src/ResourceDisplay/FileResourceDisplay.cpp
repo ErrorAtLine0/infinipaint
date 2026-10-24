@@ -20,7 +20,6 @@
 #include "../FontData.hpp"
 #include "../GUIStuff/Elements/Element.hpp"
 #include "../DrawData.hpp"
-#include "../Toolbar.hpp"
 #include "../MainProgram.hpp"
 #include <include/core/SkStream.h>
 #include <include/core/SkPaint.h>

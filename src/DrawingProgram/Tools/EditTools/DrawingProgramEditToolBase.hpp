@@ -20,7 +20,7 @@
 #include <include/core/SkCanvas.h>
 #include "../../../DrawData.hpp"
 #include "../../../CanvasComponents/CanvasComponentContainer.hpp"
-#include "../../../Screens/PhoneDrawingProgramScreen.hpp"
+#include "../../../Screens/CanvasEditorScreen.hpp"
 
 class DrawingProgram;
 class EditTool;
@@ -31,12 +31,10 @@ class DrawingProgramEditToolBase {
         virtual void edit_start(EditTool& editTool, std::any& prevData, const Vector2f& pointerPos) = 0;
         virtual void commit_edit_updates(std::any& prevData) = 0;
         virtual void edit_update() = 0;
-        virtual void edit_gui(Toolbar& t) = 0;
-        virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) = 0;
-        virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos);
+        virtual void gui_phone_toolbox(CanvasEditorScreen& t) = 0;
         virtual Vector4f* color_picker_color(Vector4f* oldColor);
         virtual bool phone_gui_tool_specific_bottom_toolbar_exists();
-        virtual void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t);
+        virtual void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t);
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste);
         virtual void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput);
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key);

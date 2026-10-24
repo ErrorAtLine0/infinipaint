@@ -36,7 +36,6 @@
 #include "Helpers/StringHelpers.hpp"
 #include "MainProgram.hpp"
 #include "SharedTypes.hpp"
-#include "Toolbar.hpp"
 #include "VersionConstants.hpp"
 #include "WorldGrid.hpp"
 #include <cereal/archives/portable_binary.hpp>
@@ -120,11 +119,11 @@ Vector3f World::get_random_cursor_color() {
 
 void World::init_client_data_list_callbacks() {
     clients->set_insert_callback([&](const NetworkingObjects::NetObjOwnerPtr<ClientData>& objPtr) {
-        add_chat_message(objPtr->get_display_name(), "joined", Toolbar::ChatMessage::Type::JOIN);
+        add_chat_message(objPtr->get_display_name(), "joined", ChatMessage::Type::JOIN);
         Logger::get().log(Logger::LogType::PHONE_USERINFO, objPtr->get_display_name() + " joined");
     });
     clients->set_erase_callback([&](const NetworkingObjects::NetObjOwnerPtr<ClientData>& objPtr) {
-        add_chat_message(objPtr->get_display_name(), "left", Toolbar::ChatMessage::Type::JOIN);
+        add_chat_message(objPtr->get_display_name(), "left", ChatMessage::Type::JOIN);
         Logger::get().log(Logger::LogType::PHONE_USERINFO, objPtr->get_display_name() + " left");
     });
 }
@@ -419,9 +418,9 @@ void World::send_chat_message(const std::string& message) {
         ownClientData->send_chat_message(ownClientData, *this, message);
 }
 
-void World::add_chat_message(const std::string& name, const std::string& message, Toolbar::ChatMessage::Type type) {
-    Logger::get().log(Logger::LogType::CHAT, type == Toolbar::ChatMessage::JOIN ? (name + " " + message) : ("[" + name + "] " + message));
-    chatMessages.emplace_front(Toolbar::ChatMessage{name, message, type});
+void World::add_chat_message(const std::string& name, const std::string& message, ChatMessage::Type type) {
+    Logger::get().log(Logger::LogType::CHAT, type == ChatMessage::JOIN ? (name + " " + message) : ("[" + name + "] " + message));
+    chatMessages.emplace_front(ChatMessage{name, message, type});
     if(chatMessages.size() == CHAT_SIZE)
         chatMessages.pop_back();
     set_to_layout_gui_if_focus();

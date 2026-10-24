@@ -37,9 +37,7 @@ class EditTool : public DrawingProgramToolBase {
 
         EditTool(DrawingProgram& initDrawP);
         virtual DrawingProgramToolType get_type() override;
-        virtual void gui_toolbox(Toolbar& t) override;
-        virtual void gui_phone_toolbox(PhoneDrawingProgramScreen& t) override;
-        virtual void right_click_popup_gui(Toolbar& t, Vector2f popupPos) override;
+        virtual void gui_phone_toolbox(CanvasEditorScreen& t) override;
         virtual void tool_update() override;
         virtual void erase_component(CanvasComponentContainer::ObjInfo* erasedComp) override;
         virtual void switch_tool(DrawingProgramToolType newTool) override;
@@ -47,7 +45,7 @@ class EditTool : public DrawingProgramToolBase {
         virtual bool prevent_undo_or_redo() override;
         virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
         virtual bool phone_gui_tool_specific_bottom_toolbar_exists() override;
-        virtual void phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) override;
+        virtual void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) override;
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) override;
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key) override;

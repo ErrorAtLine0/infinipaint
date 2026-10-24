@@ -38,18 +38,6 @@ DrawingProgramToolType LineDrawTool::get_type() {
     return DrawingProgramToolType::LINE;
 }
 
-void LineDrawTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-    auto& gui = drawP.world.main.g.gui;
-    auto& toolConfig = drawP.world.main.toolConfig;
-    gui.new_id("rect draw tool", [&] {
-        text_label_centered(gui, "Draw Line");
-        toolConfig.relative_width_gui(drawP, "Size");
-        checkbox_boolean_field(gui, "hasroundcaps", "Round Caps", &toolConfig.lineDraw.hasRoundCaps);
-    });
-}
-
 void LineDrawTool::commit_data(bool final) {
     if(objInfoBeingEdited) {
         NetworkingObjects::NetObjOwnerPtr<CanvasComponentContainer>& containerPtr = objInfoBeingEdited->obj;
@@ -72,7 +60,7 @@ void LineDrawTool::commit_data(bool final) {
     commitUpdate = false;
 }
 
-void LineDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void LineDrawTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
     auto& gui = drawP.world.main.g.gui;
@@ -152,10 +140,6 @@ void LineDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp
         commitUpdate = false;
         brushPoints.clear();
     }
-}
-
-void LineDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 void LineDrawTool::switch_tool(DrawingProgramToolType newTool) {

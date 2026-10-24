@@ -75,176 +75,6 @@ void TextBoxEditTool::commit_update_and_layout_func_and_android_update() {
         userInput->android_force_update_textbox_and_cursor();
 }
 
-void TextBoxEditTool::edit_gui(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
-    auto& gui = drawP.world.main.g.gui;
-    auto& currentMods = *currentModsPtr;
-
-    gui.new_id("edit tool text", [&] {
-        text_label_centered(gui, "Edit Text");
-
-        left_to_right_line_layout(gui, [&] {
-            text_label(gui, "Font");
-            gui.element<FontPicker>("Font picker", &newFontName, FontPickerData{
-                .onFontChange = [&] {
-                    currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES] = std::make_shared<FontFamiliesTextStyleModifier>(std::vector<SkString>{SkString{newFontName.c_str(), newFontName.size()}});
-                    add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::FONT_FAMILIES]);});
-                    commit_update_func_and_android_update();
-                }
-            });
-        });
-        
-        left_to_right_line_centered_layout(gui, [&] {
-            svg_icon_button(gui, "Bold button", "data/icons/RemixIcon/bold.svg", {
-                .isSelected = newIsBold,
-                .onClick = [&] {
-                    newIsBold = !newIsBold;
-                    currentMods[TextStyleModifier::ModifierType::WEIGHT] = std::make_shared<WeightTextStyleModifier>(newIsBold ? SkFontStyle::Weight::kBold_Weight : SkFontStyle::Weight::kNormal_Weight);
-                    add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::WEIGHT]);});
-                    commit_update_func_and_android_update();
-                }
-            });
-
-            svg_icon_button(gui, "Italic button", "data/icons/RemixIcon/italic.svg", {
-                .isSelected = newIsItalic,
-                .onClick = [&] {
-                    newIsItalic = !newIsItalic;
-                    currentMods[TextStyleModifier::ModifierType::SLANT] = std::make_shared<SlantTextStyleModifier>(newIsItalic ? SkFontStyle::Slant::kItalic_Slant : SkFontStyle::Slant::kUpright_Slant);
-                    add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SLANT]);});
-                    commit_update_func_and_android_update();
-                }
-            });
-
-            auto decorationChange = [&] {
-                currentMods[TextStyleModifier::ModifierType::DECORATION] = std::make_shared<DecorationTextStyleModifier>(get_new_decoration_value());
-                add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::DECORATION]);});
-                commit_update_func_and_android_update();
-            };
-
-            svg_icon_button(gui, "Underline button", "data/icons/RemixIcon/underline.svg", {
-                .isSelected = newIsUnderlined,
-                .onClick = [&, decorationChange] {
-                    newIsUnderlined = !newIsUnderlined;
-                    decorationChange();
-                }
-            });
-
-            svg_icon_button(gui, "Strikethrough button", "data/icons/RemixIcon/strikethrough.svg", {
-                .isSelected = newIsLinethrough,
-                .onClick = [&, decorationChange] {
-                    newIsLinethrough = !newIsLinethrough;
-                    decorationChange();
-                }
-            });
-
-            svg_icon_button(gui, "Overline button", "data/icons/RemixIcon/overline.svg", {
-                .isSelected = newIsOverline,
-                .onClick = [&, decorationChange] {
-                    newIsOverline = !newIsOverline;
-                    decorationChange();
-                }
-            });
-        });
-
-        left_to_right_line_centered_layout(gui, [&]() {
-            auto paragraph_operation_button = [&](const char* id, const char* svgPath, bool isSelected, const std::function<void()>& func) {
-                svg_icon_button(gui, id, svgPath, {
-                    .isSelected = isSelected,
-                    .onClick = [&, func] {
-                        add_undo(func);
-                        commit_update_func_and_android_update();
-                    }
-                });
-            };
-
-            paragraph_operation_button("Align left button", "data/icons/RemixIcon/align-left.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kLeft, [&] {
-                currentPStyle.textAlignment = skia::textlayout::TextAlign::kLeft;
-                a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kLeft);
-            });
-            paragraph_operation_button("Align center button", "data/icons/RemixIcon/align-center.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kCenter, [&] {
-                currentPStyle.textAlignment = skia::textlayout::TextAlign::kCenter;
-                a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kCenter);
-            });
-            paragraph_operation_button("Align right button", "data/icons/RemixIcon/align-right.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kRight, [&] {
-                currentPStyle.textAlignment = skia::textlayout::TextAlign::kRight;
-                a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kRight);
-            });
-            paragraph_operation_button("Align justify button", "data/icons/RemixIcon/align-justify.svg", currentPStyle.textAlignment == skia::textlayout::TextAlign::kJustify, [&] {
-                currentPStyle.textAlignment = skia::textlayout::TextAlign::kJustify;
-                a.textBox->set_text_alignment_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextAlign::kJustify);
-            });
-            paragraph_operation_button("Text direction left button", "data/icons/RemixIcon/text-direction-l.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kLtr, [&] {
-                currentPStyle.textDirection = skia::textlayout::TextDirection::kLtr;
-                a.textBox->set_text_direction_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kLtr);
-            });
-            paragraph_operation_button("Text direction right button", "data/icons/RemixIcon/text-direction-r.svg", currentPStyle.textDirection == skia::textlayout::TextDirection::kRtl, [&] {
-                currentPStyle.textDirection = skia::textlayout::TextDirection::kRtl;
-                a.textBox->set_text_direction_between(a.cursor->selectionBeginPos.fParagraphIndex, a.cursor->selectionEndPos.fParagraphIndex, skia::textlayout::TextDirection::kRtl);
-            });
-        });
-
-        slider_scalar_field<uint32_t>(gui, "Font Size Slider", "Font Size", &newFontSize, 3, 100, TextBoxScalarOptions{
-            .onEdit = [&] {
-                currentMods[TextStyleModifier::ModifierType::SIZE] = std::make_shared<SizeTextStyleModifier>(newFontSize);
-                a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::SIZE]);
-                commit_update_func_and_android_update();
-            },
-            .onSelect = [&] { hold_undo_data("Font Size", a); },
-            .onDeselect = [&] { release_undo_data("Font Size"); }
-        });
-
-        left_to_right_line_layout(gui, [&]() {
-            t.color_button_right("Text Color", &newTextColor, {
-                .onChange = [&] {
-                    currentMods[TextStyleModifier::ModifierType::COLOR] = std::make_shared<ColorTextStyleModifier>(newTextColor);
-                    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::COLOR]);
-                    commit_update_func_and_android_update();
-                },
-                .onSelect = [&] { hold_undo_data("Text Color", a); },
-                .onDeselect = [&] { release_undo_data("Text Color"); }
-            });
-            text_label(gui, "Text Color");
-        });
-
-        left_to_right_line_layout(gui, [&]() {
-            t.color_button_right("Highlight Color", &newHighlightColor, {
-                .onSelectorButtonClick = [&] {
-                    if(newHighlightColor.w() == 0.0f) {
-                        newHighlightColor.w() = 1.0f;
-                        currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
-                        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
-                        commit_update_and_layout_func_and_android_update();
-                    }
-                },
-                .onChange = [&] {
-                    currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
-                    a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);
-                    commit_update_func_and_android_update();
-                },
-                .onSelect = [&] { hold_undo_data("Highlight Color", a); },
-                .onDeselect = [&] {
-                    release_undo_data("Highlight Color");
-                    gui.set_to_layout();
-                }
-            });
-            if(newHighlightColor.w() != 0.0f) {
-                svg_icon_button(gui, "Remove Highlight Color", "data/icons/close.svg", {
-                    .onClick = [&] {
-                        newHighlightColor = {0.0f, 0.0f, 0.0f, 0.0f};
-                        currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR] = std::make_shared<HighlightColorTextStyleModifier>(newHighlightColor);
-                        add_undo_if_selecting_area(a, [&]() {a.textBox->set_text_style_modifier_between(a.cursor->selectionBeginPos, a.cursor->selectionEndPos, currentMods[TextStyleModifier::ModifierType::HIGHLIGHT_COLOR]);});
-                        commit_update_and_layout_func_and_android_update();
-                    }
-                });
-            }
-            text_label(gui, "Highlight Color");
-        });
-    });
-}
-
 Vector4f* TextBoxEditTool::color_picker_color(Vector4f* oldColor) {
     if(oldColor == &newTextColor)
         return oldColor;
@@ -257,7 +87,7 @@ bool TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar_exists() {
     return true;
 }
 
-void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -284,7 +114,7 @@ void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgram
                 case PhoneGUIData::PopupType::NONE:
                     break;
                 case PhoneGUIData::PopupType::TEXT_COLOR: {
-                    if(t.colorPickerPopupData.screenType == PhoneDrawingProgramScreen::ColorPickerPopupData::ScreenType::NORMAL) {
+                    if(t.colorPickerPopupData.screenType == CanvasEditorScreen::ColorPickerPopupData::ScreenType::NORMAL) {
                         CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -295,7 +125,7 @@ void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgram
                     break;
                 }
                 case PhoneGUIData::PopupType::HIGHLIGHT_COLOR: {
-                    if(t.colorPickerPopupData.screenType == PhoneDrawingProgramScreen::ColorPickerPopupData::ScreenType::NORMAL) {
+                    if(t.colorPickerPopupData.screenType == CanvasEditorScreen::ColorPickerPopupData::ScreenType::NORMAL) {
                         CLAY_AUTO_ID({
                             .layout = {
                                 .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
@@ -340,7 +170,7 @@ void TextBoxEditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgram
     }
 }
 
-void TextBoxEditTool::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t) {
+void TextBoxEditTool::phone_bottom_toolbar_gui(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
     auto& gui = drawP.world.main.g.gui;
@@ -545,7 +375,7 @@ void TextBoxEditTool::phone_bottom_toolbar_gui(PhoneDrawingProgramScreen& t) {
     });
 }
 
-void TextBoxEditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void TextBoxEditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
 }
 
 void TextBoxEditTool::input_paste_callback(const CustomEvents::PasteEvent& paste) {
@@ -666,37 +496,6 @@ std::optional<InputManager::TextBoxStartInfo> TextBoxEditTool::get_text_box_star
         };
     }
     return std::nullopt;
-}
-
-void TextBoxEditTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-    auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
-
-    drawP.right_click_action_menu(popupPos, [&] {
-        text_label_light(gui, "Text menu");
-        InputManager& input = drawP.world.main.input;
-        drawP.popup_menu_action_button("Paste", "Paste", [&] {
-            drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = true });
-        });
-        drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
-            drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = false });
-        });
-        if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
-            drawP.popup_menu_action_button("Copy", "Copy", [&] {
-                input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor, clearTextCompositionFunc));
-            });
-            drawP.popup_menu_action_button("Cut", "Cut", [&] {
-                userInput->do_textbox_operation_with_undo([&]() {
-                    input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor, clearTextCompositionFunc));
-                });
-                set_styles_at_selection(a);
-                commit_update_and_layout_func_and_android_update();
-            });
-        }
-    });
 }
 
 void TextBoxEditTool::hold_undo_data(const std::string& undoName, TextBoxCanvasComponent& a) {

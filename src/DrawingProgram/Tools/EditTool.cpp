@@ -43,22 +43,7 @@ DrawingProgramToolType EditTool::get_type() {
     return DrawingProgramToolType::EDIT;
 }
 
-void EditTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-
-    if(objInfoBeingEdited)
-        compEditTool->edit_gui(t);
-    else {
-        gui.new_id("edit tool", [&] {
-            text_label_centered(gui, "Edit");
-        });
-    }
-}
-
-void EditTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void EditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -222,13 +207,6 @@ std::optional<InputManager::TextBoxStartInfo> EditTool::get_text_box_start_info(
     return std::nullopt;
 }
 
-void EditTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    if(objInfoBeingEdited)
-        return compEditTool->right_click_popup_gui(t, popupPos);
-    else
-        return drawP.selection_action_menu(popupPos);
-}
-
 void EditTool::add_point_handle(const HandleData& handle) {
     pointHandles.emplace_back(handle);
 }
@@ -317,7 +295,7 @@ bool EditTool::phone_gui_tool_specific_bottom_toolbar_exists() {
     return false;
 }
 
-void EditTool::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {
+void EditTool::phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) {
     if(objInfoBeingEdited)
         return compEditTool->phone_gui_tool_specific_bottom_toolbar(t);
 }

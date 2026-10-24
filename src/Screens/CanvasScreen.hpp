@@ -19,9 +19,9 @@
 #pragma once
 #include "Screen.hpp"
 
-class DrawingProgramScreen : public Screen {
+class CanvasScreen : public Screen {
     public:
-        DrawingProgramScreen(MainProgram& m);
+        CanvasScreen(MainProgram& m);
         virtual void update() override;
         virtual void draw(SkCanvas* canvas) override;
         virtual void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) override;

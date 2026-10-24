@@ -48,6 +48,7 @@ struct DropDownPopupLayout {
     std::function<void()> clickUpAwayCallback;
     Vector2f entrySize;
     size_t entryCount;
+    std::optional<SCollision::AABB<float>> posLimits;
     std::function<void(size_t i)> entryLayout;
 };
 

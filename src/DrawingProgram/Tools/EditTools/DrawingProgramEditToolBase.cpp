@@ -24,10 +24,6 @@ DrawingProgramEditToolBase::DrawingProgramEditToolBase(DrawingProgram& initDrawP
     comp(initComp)
 {}
 
-void DrawingProgramEditToolBase::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
-}
-
 Vector4f* DrawingProgramEditToolBase::color_picker_color(Vector4f* oldColor) { return nullptr; }
 void DrawingProgramEditToolBase::input_paste_callback(const CustomEvents::PasteEvent& paste) {}
 void DrawingProgramEditToolBase::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {}
@@ -37,7 +33,7 @@ void DrawingProgramEditToolBase::input_key_callback(const InputManager::KeyCallb
 void DrawingProgramEditToolBase::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button, bool isDraggingPoint) {}
 void DrawingProgramEditToolBase::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion, bool isDraggingPoint) {}
 bool DrawingProgramEditToolBase::phone_gui_tool_specific_bottom_toolbar_exists() { return false; }
-void DrawingProgramEditToolBase::phone_gui_tool_specific_bottom_toolbar(PhoneDrawingProgramScreen& t) {}
+void DrawingProgramEditToolBase::phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) {}
 void DrawingProgramEditToolBase::input_finger_touch_on_canvas_callback(const FingerInput::TouchCallbackArgs& touch, bool isDraggingPoint) {
     // Emulate a mouse by default
     InputManager::convert_touch_to_mouse_input(touch, [&](const auto& b){input_mouse_button_on_canvas_callback(b, isDraggingPoint);}, [&](const auto& m){input_mouse_motion_callback(m, isDraggingPoint);});

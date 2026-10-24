@@ -29,7 +29,6 @@
 #include "SharedTypes.hpp"
 #include <Eigen/Dense>
 #include <include/core/SkSurfaceProps.h>
-#include "Toolbar.hpp"
 #include "World.hpp"
 #include "DrawingProgram/ToolConfiguration.hpp"
 #include "GUIHolder.hpp"

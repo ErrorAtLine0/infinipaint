@@ -237,10 +237,12 @@ void bottom_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingEle
 
     float xOffset = bb.center().x() - d.entrySize.x() * 0.5f;
 
-    if(xOffset < 0.0f)
-        xOffset = 0.0f;
-    else if(xOffset + d.entrySize.x() > gui.io.safeWindowRect.max.x())
-        xOffset = gui.io.safeWindowRect.max.x() - d.entrySize.x();
+    SCollision::AABB<float> posLimits = d.posLimits.has_value() ? d.posLimits.value() : gui.io.safeWindowRect;
+
+    if(xOffset < posLimits.min.x())
+        xOffset = posLimits.min.x();
+    else if(xOffset + d.entrySize.x() > posLimits.max.x())
+        xOffset = posLimits.max.x() - d.entrySize.x();
 
     floatConfig = {
         .offset = {
@@ -255,7 +257,7 @@ void bottom_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingEle
         .attachTo = CLAY_ATTACH_TO_ROOT
     };
 
-    maxHeight = std::max(gui.io.safeWindowRect.max.y() - bb.max.y() - d.popupOffset, 0.0f);
+    maxHeight = std::max(posLimits.max.y() - bb.max.y() - d.popupOffset, 0.0f);
 }
 
 void top_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight, const DropDownPopupLayout& d) {
@@ -263,10 +265,12 @@ void top_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElemen
 
     float xOffset = bb.center().x() - d.entrySize.x() * 0.5f;
 
-    if(xOffset < 0.0f)
-        xOffset = 0.0f;
-    else if(xOffset + d.entrySize.x() > gui.io.safeWindowRect.max.x())
-        xOffset = gui.io.safeWindowRect.max.x() - d.entrySize.x();
+    SCollision::AABB<float> posLimits = d.posLimits.has_value() ? d.posLimits.value() : gui.io.safeWindowRect;
+
+    if(xOffset < posLimits.min.x())
+        xOffset = posLimits.min.x();
+    else if(xOffset + d.entrySize.x() > posLimits.max.x())
+        xOffset = posLimits.max.x() - d.entrySize.x();
 
     floatConfig = {
         .offset = {
@@ -281,16 +285,19 @@ void top_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElemen
         .attachTo = CLAY_ATTACH_TO_ROOT
     };
 
-    maxHeight = std::max(bb.min.y() - gui.io.safeWindowRect.min.y() - d.popupOffset, 0.0f);
+    maxHeight = std::max(bb.min.y() - posLimits.min.y() - d.popupOffset, 0.0f);
 }
 
 void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_FloatingElementConfig& floatConfig, float& maxHeight, bool isRightSide, const DropDownPopupLayout& d) {
     auto& bb = d.button->get_bb().value();
     float offsetY = bb.center().y() - dropdownHeight * 0.5f;
-    if(dropdownHeight >= gui.io.safeWindowRect.height() || offsetY < gui.io.safeWindowRect.min.y())
-        offsetY = gui.io.safeWindowRect.min.y();
-    else if(offsetY + dropdownHeight > gui.io.safeWindowRect.max.y())
-        offsetY -= (offsetY + dropdownHeight) - gui.io.safeWindowRect.max.y();
+
+    SCollision::AABB<float> posLimits = d.posLimits.has_value() ? d.posLimits.value() : gui.io.safeWindowRect;
+
+    if(dropdownHeight >= posLimits.height() || offsetY < posLimits.min.y())
+        offsetY = posLimits.min.y();
+    else if(offsetY + dropdownHeight > posLimits.max.y())
+        offsetY -= (offsetY + dropdownHeight) - posLimits.max.y();
     float offsetX = 0.0f;
     if(isRightSide)
         offsetX = bb.max.x() + d.popupOffset;
@@ -308,25 +315,26 @@ void left_right_offset_setup(GUIManager& gui, float dropdownHeight, Clay_Floatin
         },
         .attachTo = CLAY_ATTACH_TO_ROOT
     };
-    maxHeight = gui.io.safeWindowRect.height();
+    maxHeight = posLimits.height();
 }
 
 void dropdown_many_element_popup_layout(GUIManager& gui, const char* id, DropDownPopupLayout d) {
     if(!d.button->get_bb().has_value())
         return;
-    d.entrySize.x() = std::min(d.entrySize.x(), gui.io.safeWindowRect.width());
+    SCollision::AABB<float> posLimits = d.posLimits.has_value() ? d.posLimits.value() : gui.io.safeWindowRect;
+    d.entrySize.x() = std::min(d.entrySize.x(), posLimits.width());
     gui.element<LayoutElement>(id, [&](LayoutElement* l, const Clay_ElementId& lId) {
         float dropdownHeight = d.entrySize.y() * d.entryCount + d.popupOffset;
         Clay_FloatingElementConfig floatConfig;
-        float maxHeight = gui.io.safeWindowRect.height();
+        float maxHeight = posLimits.height();
         auto& buttonBB = d.button->get_bb().value();
-        if(buttonBB.max.y() + dropdownHeight > gui.io.safeWindowRect.max.y()) {
-            float rightSideWidth = gui.io.safeWindowRect.max.x() - buttonBB.max.x();
-            float leftSideWidth = buttonBB.min.x() - gui.io.safeWindowRect.min.x();
+        if(buttonBB.max.y() + dropdownHeight > posLimits.max.y()) {
+            float rightSideWidth = posLimits.max.x() - buttonBB.max.x();
+            float leftSideWidth = buttonBB.min.x() - posLimits.min.x();
             if(rightSideWidth > d.entrySize.x() || leftSideWidth > d.entrySize.x())
                 left_right_offset_setup(gui, dropdownHeight, floatConfig, maxHeight, rightSideWidth >= leftSideWidth, d);
             else {
-                if(gui.io.safeWindowRect.max.y() - buttonBB.max.y() >= buttonBB.min.y() - gui.io.safeWindowRect.min.y())
+                if(posLimits.max.y() - buttonBB.max.y() >= buttonBB.min.y() - posLimits.min.y())
                     bottom_offset_setup(gui, dropdownHeight, floatConfig, maxHeight, d);
                 else
                     top_offset_setup(gui, dropdownHeight, floatConfig, maxHeight, d);

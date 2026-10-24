@@ -35,12 +35,10 @@
 #include "../GUIStuff/ElementHelpers/RadioButtonHelpers.hpp"
 #include "../World.hpp"
 #include "Helpers/StringHelpers.hpp"
-#include "PhoneDrawingProgramScreen.hpp"
+#include "CanvasEditorScreen.hpp"
 #include <SDL3/SDL_time.h>
 #include <SDL3/SDL_timer.h>
 #include <algorithm>
-
-#define SETTINGS_MENU_WIDTH 300
 
 using namespace GUIStuff;
 using namespace ElementHelpers;
@@ -477,48 +475,7 @@ void FileSelectScreen::delete_selected_files_in_trash() {
 }
 
 void FileSelectScreen::settings_top_bar_buttons() {
-    auto& gui = main.g.gui;
-    gui.element<LayoutElement>("settings bottom bar", [&](LayoutElement*, const Clay_ElementId& lId) {
-        CLAY(lId, {
-            .layout = {
-                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(40)},
-                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-            },
-        }) {
-            gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
-                .scrollHorizontal = true,
-                .clipHorizontal = true,
-                .scrollbarX = ScrollArea::ScrollbarType::NO_INTERACTION,
-                .innerContent = [&] (auto&) {
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
-                            .layoutDirection = CLAY_LEFT_TO_RIGHT
-                        },
-                    }) {
-                        CLAY_AUTO_ID({
-                            .layout = {
-                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                .padding = CLAY_PADDING_ALL(1)
-                            }
-                        }) {
-                            text_button(gui, "general", "General", {
-                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                                .isSelected = settingsMenu == SettingsMenu::GENERAL,
-                                .onClick = [&] { settingsMenu = SettingsMenu::GENERAL; }
-                            });
-                            text_button(gui, "touch", "Touch", {
-                                .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                                .isSelected = settingsMenu == SettingsMenu::TOUCH,
-                                .onClick = [&] { settingsMenu = SettingsMenu::TOUCH; }
-                            });
-                        }
-                    }
-                }
-            });
-        }
-    });
+    settingsGUI.top_tabs_layout(main);
 }
 
 void FileSelectScreen::about_bottom_bar() {
@@ -1141,7 +1098,7 @@ void FileSelectScreen::connect_view() {
             }) {
                 CLAY_AUTO_ID({
                     .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0, SETTINGS_MENU_WIDTH), .height = CLAY_SIZING_GROW(0)},
+                        .sizing = {.width = CLAY_SIZING_GROW(0, 300), .height = CLAY_SIZING_GROW(0)},
                         .childGap = gui.io.theme->childGap1,
                         .layoutDirection = CLAY_TOP_TO_BOTTOM
                     },
@@ -1183,82 +1140,7 @@ void FileSelectScreen::settings_view() {
                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                 },
             }) {
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0, SETTINGS_MENU_WIDTH), .height = CLAY_SIZING_GROW(0)},
-                        .childGap = gui.io.theme->childGap1,
-                        .layoutDirection = CLAY_TOP_TO_BOTTOM
-                    },
-                }) {
-                    switch(settingsMenu) {
-                        case SettingsMenu::GENERAL: {
-                            input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
-                            color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
-                            input_scalar_field(gui, "Max GUI Scale", "Max GUI Scale", &main.conf.guiScale, 1.0f, 2.0f, {
-                                .decimalPrecision = 1,
-                                .onEdit = [&] { main.g.window_update(); }
-                            });
-                            input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
-                            checkbox_boolean_field(gui, "disable touch when pen in proximity", "Disable touch when pen in proximity", &main.conf.tabletOptions.disableTouchWhenPenInProximity);
-                            checkbox_boolean_field(gui, "make all tools share same size", "Make all tools share size", &main.toolConfig.globalConf.useGlobalRelativeWidth);
-                            slider_scalar_field(gui, "tablet brush minimum size", "Brush relative minimum size", &main.conf.tabletOptions.brushMinimumSize, 0.0f, 1.0f, {.decimalPrecision = 3});
-                            slider_scalar_field(gui, "tablet brush pressure smoothing factor", "Brush pressure smoothing factor", &main.conf.tabletOptions.brushPressureSmoothingFactor, 0.0f, 1.0f, {.decimalPrecision = 3});
-                            slider_scalar_field(gui, "brush stroke smoothing factor", "Brush stroke smoothing", &main.conf.brushStrokeSmoothingFactor, 0.3f, 2.0f, {.decimalPrecision = 2});
-                            checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
-                            text_label(gui, "VSync:");
-                            radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
-                                {"On", 1},
-                                {"Off", 0},
-                                #ifndef __ANDROID__
-                                    {"Adaptive", -1}, // Usually doesn't work on android
-                                #endif
-                            }, [&] {
-                                main.set_vsync_value(main.conf.vsyncValue);
-                            });
-                            input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
-                                .onEdit = [&] {
-                                    main.update_main_loop_call_rate(main.conf.mainCallbackRate);
-                                }
-                            });
-                            checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
-                            #ifndef __ANDROID__
-                                input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
-                                checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
-                            #endif
-                            #ifndef __EMSCRIPTEN__
-                                checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
-                            #endif
-                            break;
-                        }
-                        case SettingsMenu::TOUCH: {
-                            std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::SingleFingerAction>> singleFingerOptions = {
-                                {"None", GlobalConfig::TouchOptions::SingleFingerAction::NONE},
-                                {"Active Tool", GlobalConfig::TouchOptions::SingleFingerAction::ACTIVE_TOOL},
-                                {"Pan", GlobalConfig::TouchOptions::SingleFingerAction::PAN},
-                                {"Lasso Select", GlobalConfig::TouchOptions::SingleFingerAction::LASSO}
-                            };
-                            text_label(gui, "Finger action");
-                            radio_button_selector(gui, "Finger action options", &main.conf.touchOptions.singleFingerAction, singleFingerOptions);
-                            text_label(gui, "Two finger move");
-                            checkbox_boolean_field(gui, "two finger rotation", "Enable canvas rotation", &main.conf.touchOptions.twoFingerRotation);
-                            checkbox_boolean_field(gui, "two finger rotation snap", "Snap canvas rotation", &main.conf.touchOptions.twoFingerSnapRotation);
-                            checkbox_boolean_field(gui, "two finger zoom", "Enable canvas zoom", &main.conf.touchOptions.twoFingerZoom);
-                            std::vector<std::pair<std::string_view, GlobalConfig::TouchOptions::MultiFingerTapAction>> multiFingerTapOptions = {
-                                {"None", GlobalConfig::TouchOptions::MultiFingerTapAction::NONE},
-                                {"Undo", GlobalConfig::TouchOptions::MultiFingerTapAction::UNDO},
-                                {"Redo", GlobalConfig::TouchOptions::MultiFingerTapAction::REDO},
-                                {"Toggle Interface", GlobalConfig::TouchOptions::MultiFingerTapAction::TOGGLE_INTERFACE}
-                            };
-                            text_label(gui, "Two finger tap");
-                            radio_button_selector(gui, "Two finger tap options", &main.conf.touchOptions.twoFingerTapAction, multiFingerTapOptions);
-                            text_label(gui, "Three finger tap");
-                            radio_button_selector(gui, "Three finger tap options", &main.conf.touchOptions.threeFingerTapAction, multiFingerTapOptions);
-                            text_label(gui, "Four finger tap");
-                            radio_button_selector(gui, "Four finger tap options", &main.conf.touchOptions.fourFingerTapAction, multiFingerTapOptions);
-                            break;
-                        }
-                    }
-                }
+                settingsGUI.inner_layout(main, 300.0f);
             }
         }
     });
@@ -1340,7 +1222,7 @@ void FileSelectScreen::input_open_infinipaint_file_callback(const CustomEvents::
         #ifdef __ANDROID__
             save_files();
         #endif
-        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<PhoneDrawingProgramScreen>(main); });
+        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<CanvasEditorScreen>(main, true); });
     }
     else if(!openFile.isClient && openFile.filePathSource.has_value()) // Invalid file, remove it
         SDL_RemovePath(openFile.filePathSource.value().string().c_str());

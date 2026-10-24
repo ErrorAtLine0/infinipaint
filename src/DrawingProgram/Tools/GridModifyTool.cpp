@@ -23,7 +23,7 @@
 #include "Helpers/NetworkingObjects/NetObjTemporaryPtr.decl.hpp"
 #include <Helpers/NetworkingObjects/NetObjWeakPtr.hpp>
 #include <Helpers/NetworkingObjects/NetObjGenericSerializedClass.hpp>
-#include "../../Screens/PhoneDrawingProgramScreen.hpp"
+#include "../../Screens/CanvasEditorScreen.hpp"
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
@@ -140,57 +140,7 @@ Vector4f* GridModifyTool::color_picker_color(Vector4f* oldColor) {
     return nullptr;
 }
 
-void GridModifyTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-
-    gui.new_id("Grid modify tool", [&] {
-        text_label_centered(gui, "Edit Grid");
-        NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
-        if(gLock) {
-            WorldGrid& g = *gLock;
-            input_text_field(gui, "grid name", "Name", &g.name);
-            checkbox_boolean_field(gui, "Visible", "Visible", &g.visible);
-            checkbox_boolean_field(gui, "Display in Front", "Display in front of canvas", &g.displayInFront);
-            std::vector<std::string> listOfGridTypes = {
-                "Circle Points",
-                "Square Points",
-                "Square Lines",
-                "Horizontal Lines"
-            };
-            left_to_right_line_layout(gui, [&]() {
-                text_label(gui, "Type");
-                gui.element<DropDown<WorldGrid::GridType>>("filepicker select type", &g.gridType, listOfGridTypes);
-            });
-            input_scalar_field<uint32_t>(gui, "Subdivisions", "Subdivisions", &g.subdivisions, 1, 10, {
-                .onEdit = [&] { g.set_subdivisions(g.subdivisions); }
-            });
-            checkbox_boolean_field(gui, "Subdivide outwards", "Subdivide when zooming out", &g.removeDivisionsOutwards, [&] {
-                g.set_remove_divisions_outwards(g.removeDivisionsOutwards);
-            });
-            left_to_right_line_layout(gui, [&]() {
-                t.color_button_right("Grid Color", &g.color);
-                text_label(gui, "Grid Color");
-            });
-            auto bounded = std::make_shared<bool>(g.bounds.has_value());
-            checkbox_boolean_field(gui, "Bounded", "Bounded", bounded.get(), [&, bounded] {
-                if(*bounded) {
-                    SCollision::AABB<WorldScalar> newBounds;
-                    newBounds.min = g.offset - drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
-                    newBounds.max = g.offset + drawP.world.drawData.cam.c.dir_from_space(drawP.world.main.window.size.cast<float>() * 0.3f);
-                    g.bounds = newBounds;
-                }
-                else
-                    g.bounds = std::nullopt;
-            });
-            checkbox_boolean_field(gui, "Show Coordinates", "Show Coordinates (visible\nwhen canvas isn't rotated)", &g.showCoordinates);
-        }
-    });
-}
-
-void GridModifyTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void GridModifyTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -241,10 +191,6 @@ void GridModifyTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
 
 bool GridModifyTool::bypass_touch_restriction() {
     return true;
-}
-
-void GridModifyTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 void GridModifyTool::tool_update() {

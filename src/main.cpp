@@ -21,9 +21,8 @@
 #include "Helpers/SCollision.hpp"
 #include "Helpers/StringHelpers.hpp"
 #include "Helpers/FileDownloader.hpp"
+#include "Screens/CanvasEditorScreen.hpp"
 #include "Screens/FileSelectScreen.hpp"
-#include "Screens/DesktopDrawingProgramScreen.hpp"
-#include "Screens/PhoneDrawingProgramScreen.hpp"
 #include "VersionConstants.hpp"
 #include "include/gpu/GpuTypes.h"
 #include <SDL3/SDL_filesystem.h>
@@ -593,7 +592,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         if(mS.m->conf.mobileUI)
             mS.m->set_first_screen(std::make_unique<FileSelectScreen>(*mS.m));
         else {
-            mS.m->set_first_screen(std::make_unique<DesktopDrawingProgramScreen>(*mS.m));
+            mS.m->set_first_screen(std::make_unique<CanvasEditorScreen>(*mS.m, false));
             for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
                 mS.m->create_new_tab({
                     .isClient = false,

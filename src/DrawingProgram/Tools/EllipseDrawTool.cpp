@@ -38,26 +38,7 @@ DrawingProgramToolType EllipseDrawTool::get_type() {
     return DrawingProgramToolType::ELLIPSE;
 }
 
-void EllipseDrawTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-    auto& toolConfig = drawP.world.main.toolConfig;
-    auto& fillStrokeMode = toolConfig.ellipseDraw.fillStrokeMode;
-    gui.new_id("ellipse draw tool", [&] {
-        text_label_centered(gui, "Draw Ellipse");
-        radio_button_selector(gui, "fill type", &fillStrokeMode, {
-            {"Fill only", 0},
-            {"Outline only", 1},
-            {"Fill and Outline", 2}
-        });
-        if(fillStrokeMode == 1 || fillStrokeMode == 2)
-            toolConfig.relative_width_gui(drawP, "Outline Size");
-    });
-}
-
-void EllipseDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void EllipseDrawTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -138,10 +119,6 @@ void EllipseDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedC
         objInfoBeingEdited = nullptr;
         commitUpdate = false;
     }
-}
-
-void EllipseDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 void EllipseDrawTool::switch_tool(DrawingProgramToolType newTool) {

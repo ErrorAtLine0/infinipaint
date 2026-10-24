@@ -152,20 +152,7 @@ void BrushTool::commit_stroke() {
     }
 }
 
-void BrushTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-
-    gui.new_id("brush tool", [&] {
-        text_label_centered(gui, "Brush");
-        checkbox_boolean_field(gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
-        drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
-    });
-}
-
-void BrushTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void BrushTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -175,10 +162,6 @@ void BrushTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
         checkbox_boolean_field(gui, "hasroundcaps", "Round Caps", &drawP.world.main.toolConfig.brush.hasRoundCaps);
         drawP.world.main.toolConfig.relative_width_gui(drawP, "Size");
     });
-}
-
-void BrushTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 bool BrushTool::prevent_undo_or_redo() {

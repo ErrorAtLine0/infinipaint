@@ -36,28 +36,7 @@ DrawingProgramToolType RectDrawTool::get_type() {
     return DrawingProgramToolType::RECTANGLE;
 }
 
-void RectDrawTool::gui_toolbox(Toolbar& t) {
-    using namespace GUIStuff;
-    using namespace ElementHelpers;
-
-    auto& gui = drawP.world.main.g.gui;
-    auto& toolConfig = drawP.world.main.toolConfig;
-    auto& fillStrokeMode = toolConfig.rectDraw.fillStrokeMode;
-    auto& relativeRadiusWidth = toolConfig.rectDraw.relativeRadiusWidth;
-    gui.new_id("rect draw tool", [&] {
-        text_label_centered(gui, "Draw Rectangle");
-        slider_scalar_field(gui, "relradiuswidth", "Corner Radius", &relativeRadiusWidth, 0.0f, 40.0f);
-        radio_button_selector(gui, "fill type", &fillStrokeMode, {
-            {"Fill only", 0},
-            {"Outline only", 1},
-            {"Fill and Outline", 2}
-        });
-        if(fillStrokeMode == 1 || fillStrokeMode == 2)
-            toolConfig.relative_width_gui(drawP, "Outline Size");
-    });
-}
-
-void RectDrawTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void RectDrawTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -144,10 +123,6 @@ void RectDrawTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp
         objInfoBeingEdited = nullptr;
         commitUpdate = false;
     }
-}
-
-void RectDrawTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    t.paint_popup(popupPos);
 }
 
 void RectDrawTool::switch_tool(DrawingProgramToolType newTool) {

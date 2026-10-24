@@ -34,13 +34,6 @@ DrawingProgramToolType PanCanvasTool::get_type() {
     return DrawingProgramToolType::PAN;
 }
 
-void PanCanvasTool::gui_toolbox(Toolbar& t) {
-    auto& gui = drawP.world.main.g.gui;
-    gui.new_id("Pan canvas tool", [&] {
-        GUIStuff::ElementHelpers::text_label_centered(gui, "Pan tool");
-    });
-}
-
 void PanCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT && button.down) {
         drawP.world.drawData.cam.set_to_pan_control_mode([](World& w, const InputManager::MouseButtonCallbackArgs& b) {
@@ -62,15 +55,11 @@ void PanCanvasTool::cancel_finger_touch_callback(const FingerInput::TouchCallbac
         drawP.toolSwitchBackAfterUpdate = true;
 }
 
-void PanCanvasTool::gui_phone_toolbox(PhoneDrawingProgramScreen& t) {
+void PanCanvasTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     auto& gui = drawP.world.main.g.gui;
     gui.new_id("Pan canvas tool", [&] {
         GUIStuff::ElementHelpers::text_label_centered(gui, "Pan tool");
     });
-}
-
-void PanCanvasTool::right_click_popup_gui(Toolbar& t, Vector2f popupPos) {
-    drawP.selection_action_menu(popupPos);
 }
 
 void PanCanvasTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
