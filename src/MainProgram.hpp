@@ -161,7 +161,6 @@ class MainProgram {
 
         GlobalConfig conf;
 
-        std::optional<unsigned> keybindWaiting;
         void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
         void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
         void input_paste_callback(const CustomEvents::PasteEvent& paste);

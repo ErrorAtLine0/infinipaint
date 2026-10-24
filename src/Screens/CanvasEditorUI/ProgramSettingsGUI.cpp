@@ -35,9 +35,20 @@
 using namespace GUIStuff;
 using namespace ElementHelpers;
 
+#ifdef __ANDROID__
+    #define MAX_GUI_SCALE 2.0f
+    #define MIN_GUI_SCALE 0.5f
+#else
+    #define MAX_GUI_SCALE 5.0f
+    #define MIN_GUI_SCALE 0.5f
+#endif
+
+void ProgramSettingsGUI::on_settings_open() {
+    keybindWaiting = std::nullopt;
+}
+
 void ProgramSettingsGUI::top_tabs_layout(MainProgram& main) {
     auto& gui = main.g.gui;
-
 
     gui.element<LayoutElement>("program settings top bar", [&](LayoutElement*, const Clay_ElementId& lId) {
         CLAY(lId, {
@@ -110,7 +121,10 @@ void ProgramSettingsGUI::tabs_layout(MainProgram& main, bool wideButtons) {
             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
             .isSelected = settingsMenu == setting,
             .wide = wideButtons,
-            .onClick = [&, setting] { settingsMenu = setting; }
+            .onClick = [&, setting] {
+                settingsMenu = setting;
+                keybindWaiting = std::nullopt;
+            }
         });
     };
 
@@ -168,9 +182,24 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
                 break;
             }
             case SettingsMenu::GRAPHICS: {
-                input_scalar_field(gui, "GUI Scale", "GUI Scale", &main.conf.guiScale, 0.5f, 5.0f, {
-                    .decimalPrecision = 1,
-                    .onEdit = [&] { main.g.window_update(); }
+                left_to_right_line_layout(gui, [&] {
+                    text_label(gui, "GUI Scale");
+                    CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0)}}}) {}
+                    svg_icon_button(gui, "subtract gui scale", "data/icons/minus.svg", {
+                        .size = SMALL_BUTTON_SIZE,
+                        .onClick = [&] {
+                            main.conf.guiScale = std::clamp(std::round((main.conf.guiScale - 0.1f) * 10.0f) * 0.1f, MIN_GUI_SCALE, MAX_GUI_SCALE);
+                            main.g.window_update();
+                        }
+                    });
+                    mutable_text_label(gui, "gui scale label", std::format("{:.1f}", main.conf.guiScale));
+                    svg_icon_button(gui, "add gui scale", "data/icons/plus.svg", {
+                        .size = SMALL_BUTTON_SIZE,
+                        .onClick = [&] {
+                            main.conf.guiScale = std::clamp(std::round((main.conf.guiScale + 0.1f) * 10.0f) * 0.1f, MIN_GUI_SCALE, MAX_GUI_SCALE);
+                            main.g.window_update();
+                        }
+                    });
                 });
                 text_label(gui, "Anti-aliasing:");
                 radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
@@ -333,10 +362,10 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
                             });
                             std::string assignedKeystrokeStr = f != main.input.keyAssignments.end() ? main.input.key_assignment_to_str(f->first) : "";
                             text_button(gui, "keybind button", assignedKeystrokeStr, {
-                                .isSelected = main.keybindWaiting.has_value() && main.keybindWaiting.value() == i,
+                                .isSelected = keybindWaiting.has_value() && keybindWaiting.value() == i,
                                 .wide = true,
                                 .onClick = [&, i] {
-                                    main.keybindWaiting = i;
+                                    keybindWaiting = i;
                                 }
                             });
                         }
@@ -366,6 +395,26 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
             }
         }
     }
+}
+
+bool ProgramSettingsGUI::input_keybind_callback(MainProgram& main, const Vector2ui32& newKey) {
+    if(keybindWaiting.has_value()) {
+        auto& input = main.input;
+
+        unsigned v = keybindWaiting.value();
+
+        input.keyAssignments.erase(newKey);
+        auto f = std::find_if(input.keyAssignments.begin(), input.keyAssignments.end(), [&](auto& p) {
+            return p.second == v;
+        });
+        if(f != input.keyAssignments.end())
+            input.keyAssignments.erase(f);
+        input.keyAssignments.emplace(newKey, v);
+        keybindWaiting = std::nullopt;
+        main.g.gui.set_to_layout();
+        return true;
+    }
+    return false;
 }
 
 void ProgramSettingsGUI::text_button_wide(GUIManager& gui, const char* id, const char* str, const std::function<void()>& onClick) {

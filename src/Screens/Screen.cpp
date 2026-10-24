@@ -67,6 +67,7 @@ void Screen::input_android_text_box_input_callback(const CustomEvents::AndroidTe
 void Screen::input_global_back_button_callback() {}
 void Screen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {}
 void Screen::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {}
+bool Screen::input_keybind_callback(const Vector2ui32& newKey) { return false; }
 void Screen::input_key_callback(const InputManager::KeyCallbackArgs& key) {}
 void Screen::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {}
 void Screen::input_text_callback(const InputManager::TextCallbackArgs& text) {}

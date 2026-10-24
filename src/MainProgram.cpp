@@ -405,18 +405,7 @@ void MainProgram::input_global_back_button_callback() {
 }
 
 bool MainProgram::input_keybind_callback(const Vector2ui32& newKey) {
-    if(keybindWaiting.has_value()) {
-        unsigned v = keybindWaiting.value();
-
-        input.keyAssignments.erase(newKey);
-        auto f = std::find_if(input.keyAssignments.begin(), input.keyAssignments.end(), [&](auto& p) {
-            return p.second == v;
-        });
-        if(f != input.keyAssignments.end())
-            input.keyAssignments.erase(f);
-        input.keyAssignments.emplace(newKey, v);
-        keybindWaiting = std::nullopt;
-        g.gui.set_to_layout();
+    if(screen->input_keybind_callback(newKey)) {
         post_callback();
         return true;
     }

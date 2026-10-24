@@ -33,6 +33,7 @@ class FileSelectScreen : public Screen {
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_global_back_button_callback() override;
         virtual void input_app_about_to_go_to_background_callback() override;
+        virtual bool input_keybind_callback(const Vector2ui32& newKey) override;
         virtual void input_mobile_import_canvas_callback(const CustomEvents::MobileImportCanvasEvent& mobileImport) override;
 
         struct TrashInfo {

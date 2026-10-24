@@ -21,6 +21,7 @@
 #include <string>
 #include <optional>
 #include <functional>
+#include <Helpers/Hashes.hpp>
 
 class MainProgram;
 namespace GUIStuff {
@@ -32,6 +33,8 @@ class ProgramSettingsGUI {
         void top_tabs_layout(MainProgram& main);
         void side_tabs_layout(MainProgram& main);
         void inner_layout(MainProgram& main, float maxWidth);
+        bool input_keybind_callback(MainProgram& main, const Vector2ui32& newKey);
+        void on_settings_open();
     private:
         void tabs_layout(MainProgram& main, bool wideButtons);
         void reload_theme_list(MainProgram& main);
@@ -51,4 +54,6 @@ class ProgramSettingsGUI {
             std::optional<size_t> selectedThemeIndex;
             bool openedSaveAsMenu = false;
         } themeData;
+
+        std::optional<unsigned> keybindWaiting;
 };

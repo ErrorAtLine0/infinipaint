@@ -741,6 +741,10 @@ void CanvasEditorScreen::save_to_file() {
         main.world->save_to_file(main.world->filePath);
 }
 
+bool CanvasEditorScreen::input_keybind_callback(const Vector2ui32& newKey) {
+    return topToolbar.input_keybind_callback(main, newKey);
+}
+
 void CanvasEditorScreen::input_app_about_to_go_to_background_callback() {
     save_to_file();
 }

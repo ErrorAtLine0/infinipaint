@@ -149,6 +149,7 @@ void CanvasEditorTopToolbar::desktop_main_menu_popup(GUIStuff::Element* b) {
         .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
         .onClick = [&] {
             settingsPopup = SettingsPopup::MAIN_SETTINGS;
+            settingsMenu.on_settings_open();
         }
     });
     listOfTopToolbarButtons.emplace_back(IconMenuButton{
@@ -733,6 +734,12 @@ void CanvasEditorTopToolbar::icon_menu_dropdown(GUIStuff::Element* b, const char
             }
         });
     });
+}
+
+bool CanvasEditorTopToolbar::input_keybind_callback(MainProgram& main, const Vector2ui32& newKey) {
+    if(settingsPopup == SettingsPopup::MAIN_SETTINGS)
+        return settingsMenu.input_keybind_callback(main, newKey);
+    return false;
 }
 
 void CanvasEditorTopToolbar::settings_popup_close_button_ontop() {

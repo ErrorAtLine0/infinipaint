@@ -49,6 +49,7 @@ class Screen {
         virtual void input_global_back_button_callback();
         virtual void input_drop_file_callback(const InputManager::DropCallbackArgs& drop);
         virtual void input_drop_text_callback(const InputManager::DropCallbackArgs& drop);
+        virtual bool input_keybind_callback(const Vector2ui32& newKey);
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key);
         virtual void input_text_key_callback(const InputManager::KeyCallbackArgs& key);
         virtual void input_text_callback(const InputManager::TextCallbackArgs& text);

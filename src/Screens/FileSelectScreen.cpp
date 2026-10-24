@@ -493,7 +493,7 @@ void FileSelectScreen::about_bottom_bar() {
                             .layoutDirection = CLAY_LEFT_TO_RIGHT
                         }
                     }) {
-                        gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
+                        gui.clipping_element<ScrollArea>("about scroll area", ScrollArea::Options{
                             .scrollHorizontal = true,
                             .clipHorizontal = true,
                             .scrollbarX = ScrollArea::ScrollbarType::NORMAL,
@@ -910,6 +910,7 @@ void FileSelectScreen::main_menu() {
                                 });
                                 icon_text_transparent_option_selected_button("Settings", "data/icons/RemixIcon/settings-3-line.svg", "Settings", selectedMenu == SelectedMenu::SETTINGS, [&] {
                                     selectedMenu = SelectedMenu::SETTINGS;
+                                    settingsGUI.on_settings_open();
                                     mainMenuOpenAnim->animation_trigger_reverse();
                                     if(mainViewScrollArea) mainViewScrollArea->reset_scroll();
                                 });
@@ -1085,7 +1086,7 @@ void FileSelectScreen::file_view() {
 void FileSelectScreen::connect_view() {
     auto& gui = main.g.gui;
 
-    mainViewScrollArea = gui.element<ScrollArea>("connect scroll area", ScrollArea::Options{
+    mainViewScrollArea = gui.clipping_element<ScrollArea>("connect scroll area", ScrollArea::Options{
         .scrollVertical = true,
         .clipVertical = true,
         .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
@@ -1129,7 +1130,7 @@ void FileSelectScreen::connect_view() {
 void FileSelectScreen::settings_view() {
     auto& gui = main.g.gui;
 
-    mainViewScrollArea = gui.element<ScrollArea>("settings scroll area", ScrollArea::Options{
+    mainViewScrollArea = gui.clipping_element<ScrollArea>("settings scroll area", ScrollArea::Options{
         .scrollVertical = true,
         .clipVertical = true,
         .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
@@ -1149,7 +1150,7 @@ void FileSelectScreen::settings_view() {
 void FileSelectScreen::about_view() {
     auto& gui = main.g.gui;
 
-    mainViewScrollArea = gui.element<ScrollArea>("about scroll area", ScrollArea::Options{
+    mainViewScrollArea = gui.clipping_element<ScrollArea>("about scroll area", ScrollArea::Options{
         .scrollVertical = true,
         .scrollHorizontal = true,
         .clipHorizontal = true,
@@ -1273,6 +1274,12 @@ void FileSelectScreen::save_files() {
 
 void FileSelectScreen::input_app_about_to_go_to_background_callback() {
     save_files();
+}
+
+bool FileSelectScreen::input_keybind_callback(const Vector2ui32& newKey) {
+    if(selectedMenu == SelectedMenu::SETTINGS)
+        return settingsGUI.input_keybind_callback(main, newKey);
+    return false;
 }
 
 FileSelectScreen::~FileSelectScreen() {
