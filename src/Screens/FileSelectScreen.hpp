@@ -22,6 +22,7 @@
 #include "../GUIStuff/GUIFloatAnimation.hpp"
 #include "../GUIStuff/Elements/ScrollArea.hpp"
 #include "CanvasEditorUI/ProgramSettingsGUI.hpp"
+#include "CanvasEditorUI/AboutDisplayGUI.hpp"
 
 class FileSelectScreen : public Screen {
     public:
@@ -134,8 +135,7 @@ class FileSelectScreen : public Screen {
             ABOUT
         } selectedMenu = SelectedMenu::FILES;
 
-        int selectedLicense = -1;
-
+        AboutDisplayGUI aboutGUI;
         ProgramSettingsGUI settingsGUI;
 
         void start_edit_mode();

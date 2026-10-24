@@ -20,6 +20,7 @@
 #include <string>
 #include <functional>
 #include "../../GUIStuff/Elements/Element.hpp"
+#include "AboutDisplayGUI.hpp"
 #include "ProgramSettingsGUI.hpp"
 
 class CanvasEditorScreen;
@@ -56,7 +57,8 @@ class CanvasEditorTopToolbar {
             HOST,
             LOBBY_INFO,
             PLAYER_LIST,
-            MAIN_SETTINGS
+            MAIN_SETTINGS,
+            ABOUT
         } settingsPopup = SettingsPopup::NONE;
         void settings_popup_default_layout(const char* layoutElemId, const std::function<void()>& layoutFunc, bool isRightAttached = true, float maxWidth = 300.0f);
         void settings_popup_close_button_ontop();
@@ -70,6 +72,7 @@ class CanvasEditorTopToolbar {
         std::filesystem::path fileOldPath;
 
         ProgramSettingsGUI settingsMenu;
+        AboutDisplayGUI aboutMenu;
 
         CanvasEditorScreen& s;
 };

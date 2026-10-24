@@ -86,9 +86,9 @@ void CanvasEditorTopToolbar::layout_top_toolbar() {
                     else {
                         Element* b = svg_icon_button(gui, "main menu button", "data/icons/menu.svg", {
                             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                            .isSelected = desktopMainMenuPopupOpen || settingsPopup == SettingsPopup::MAIN_SETTINGS,
+                            .isSelected = desktopMainMenuPopupOpen || settingsPopup == SettingsPopup::MAIN_SETTINGS || settingsPopup == SettingsPopup::ABOUT,
                             .onClick = [&] {
-                                if(settingsPopup == SettingsPopup::MAIN_SETTINGS)
+                                if(settingsPopup == SettingsPopup::MAIN_SETTINGS || settingsPopup == SettingsPopup::ABOUT)
                                     settingsPopup = SettingsPopup::NONE;
                                 desktopMainMenuPopupOpen = !desktopMainMenuPopupOpen;
                             }
@@ -150,6 +150,13 @@ void CanvasEditorTopToolbar::desktop_main_menu_popup(GUIStuff::Element* b) {
         .onClick = [&] {
             settingsPopup = SettingsPopup::MAIN_SETTINGS;
             settingsMenu.on_settings_open();
+        }
+    });
+    listOfTopToolbarButtons.emplace_back(IconMenuButton{
+        .name = "About",
+        .svgPath = "data/icons/RemixIcon/question-line.svg",
+        .onClick = [&] {
+            settingsPopup = SettingsPopup::ABOUT;
         }
     });
     listOfTopToolbarButtons.emplace_back(IconMenuButton{
@@ -352,6 +359,26 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                         });
                     });
                 }, false, 450.0f);
+            }
+            break;
+        case SettingsPopup::ABOUT:
+            if(gui.io.safeWindowRect.width() < 1100.0f) {
+                settings_popup_default_layout("about display popup small", [&] {
+                    settings_popup_close_button_ontop();
+                    text_label_centered(gui, "About");
+                    aboutMenu.inner_layout(main);
+                    aboutMenu.bottom_layout(main);
+                }, false, 430.0f);
+            }
+            else {
+                settings_popup_default_layout("about display popup big", [&] {
+                    settings_popup_close_button_ontop();
+                    text_label_centered(gui, "About");
+                    left_to_right_line_layout(gui, [&] {
+                        aboutMenu.side_layout(main);
+                        aboutMenu.inner_layout(main);
+                    });
+                }, false, 550.0f);
             }
             break;
     }

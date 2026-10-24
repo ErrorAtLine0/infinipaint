@@ -486,56 +486,7 @@ void FileSelectScreen::about_bottom_bar() {
                 .dir = WindowFillSideBarConfig::Direction::BOTTOM,
                 .backgroundColor = gui.io.theme->backColor1
             }, [&] {
-                gui.element<LayoutElement>("about bottom bar", [&](LayoutElement*, const Clay_ElementId& lId) {
-                    CLAY(lId, {
-                        .layout = {
-                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(40)},
-                            .layoutDirection = CLAY_LEFT_TO_RIGHT
-                        }
-                    }) {
-                        gui.clipping_element<ScrollArea>("about scroll area", ScrollArea::Options{
-                            .scrollHorizontal = true,
-                            .clipHorizontal = true,
-                            .scrollbarX = ScrollArea::ScrollbarType::NORMAL,
-                            .innerContent = [&] (auto&) {
-                                CLAY_AUTO_ID({
-                                    .layout = {
-                                        .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                                        .layoutDirection = CLAY_LEFT_TO_RIGHT
-                                    },
-                                }) {
-                                    CLAY_AUTO_ID({
-                                        .layout = {
-                                            .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}
-                                        }
-                                    }) {
-                                        text_button(gui, "infinipaintnoticebutton", "InfiniPaint", {
-                                            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                                            .isSelected = selectedLicense == -1,
-                                            .onClick = [&] { selectedLicense = -1; }
-                                        });
-                                    }
-                                    for(int i = 0; i < static_cast<int>(main.conf.thirdPartyLicenses.size()); i++) {
-                                        CLAY_AUTO_ID({
-                                            .layout = {
-                                                .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0) },
-                                                .padding = CLAY_PADDING_ALL(1)
-                                            }
-                                        }) {
-                                            gui.new_id(i, [&] {
-                                                text_button(gui, "noticebutton", main.conf.thirdPartyLicenses[i].first, {
-                                                    .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
-                                                    .isSelected = selectedLicense == i,
-                                                    .onClick = [&, i] { selectedLicense = i; }
-                                                });
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
+                aboutGUI.bottom_layout(main);
             });
         }
     });
@@ -1148,26 +1099,7 @@ void FileSelectScreen::settings_view() {
 }
 
 void FileSelectScreen::about_view() {
-    auto& gui = main.g.gui;
-
-    mainViewScrollArea = gui.clipping_element<ScrollArea>("about scroll area", ScrollArea::Options{
-        .scrollVertical = true,
-        .scrollHorizontal = true,
-        .clipHorizontal = true,
-        .clipVertical = true,
-        .scrollbarX = ScrollArea::ScrollbarType::NORMAL,
-        .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
-        .innerContent = [&] (auto& contentDim) {
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)},
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT
-                },
-            }) {
-                text_label_size(gui, (selectedLicense == -1) ? main.conf.ownLicenseText : main.conf.thirdPartyLicenses[selectedLicense].second, 0.8f);
-            }
-        }
-    });
+    mainViewScrollArea = aboutGUI.inner_layout(main);
 }
 
 void FileSelectScreen::menu_black_box() {
