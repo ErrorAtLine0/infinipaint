@@ -36,13 +36,11 @@ CanvasEditorTopToolbar::CanvasEditorTopToolbar(CanvasEditorScreen& initScreen):
 {}
 
 void CanvasEditorTopToolbar::safety_layout_checks() {
-    auto& main = s.main;
-
-    if(!main.world->netServer) {
+    if(!s.world->netServer) {
         if(settingsPopup == SettingsPopup::LOBBY_INFO)
             settingsPopup = SettingsPopup::NONE;
     }
-    if(!main.world->netClient && !main.world->netServer) {
+    if(!s.world->netClient && !s.world->netServer) {
         if(settingsPopup == SettingsPopup::PLAYER_LIST)
             settingsPopup = SettingsPopup::NONE;
     }
@@ -79,7 +77,7 @@ void CanvasEditorTopToolbar::layout_top_toolbar() {
                             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                             .onClick = [&] {
                                 s.save_to_file();
-                                s.main.set_tab_to_close(s.main.world.get());
+                                s.set_tab_to_close(s.world.get());
                             }
                         });
                     }
@@ -97,7 +95,7 @@ void CanvasEditorTopToolbar::layout_top_toolbar() {
                             desktop_main_menu_popup(b);
                     }
                     global_log();
-                    if(!(s.main.world->netClient && s.main.world->clientStillConnecting)) {
+                    if(!(s.world->netClient && s.world->clientStillConnecting)) {
                         layout_settings_popup();
                         remaining_area();
                     }
@@ -128,7 +126,7 @@ void CanvasEditorTopToolbar::desktop_main_menu_popup(GUIStuff::Element* b) {
             s.open_world_file(false, "", "");
         }
     });
-    if(!s.main.world->clientStillConnecting) {
+    if(!s.world->clientStillConnecting) {
         listOfTopToolbarButtons.emplace_back(IconMenuButton{
             .name = "Save",
             .svgPath = "data/icons/RemixIcon/save-line.svg",
@@ -189,7 +187,7 @@ void CanvasEditorTopToolbar::desktop_main_menu_popup(GUIStuff::Element* b) {
 
 void CanvasEditorTopToolbar::layout_settings_popup() {
     auto& main = s.main;
-    auto& world = *s.main.world;
+    auto& world = *s.world;
     auto& gui = main.g.gui;
 
     switch(settingsPopup) {
@@ -314,7 +312,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
             break;
         case SettingsPopup::MAIN_SETTINGS:
             if(gui.io.safeWindowRect.width() < 1000.0f) {
-                settings_popup_default_layout("main settings top menu", [&] {
+                settings_popup_default_layout("main settings small menu", [&] {
                     left_to_right_line_layout(gui, [&] {
                         settingsMenu.top_tabs_layout(main);
                         settings_popup_close_button();
@@ -330,14 +328,14 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                                 },
                             }) {
-                                settingsMenu.inner_layout(main, 300.0f);
+                                settingsMenu.inner_layout(main, 300.0f, [&] { s.update_display_names(); });
                             }
                         }
                     });
                 }, false, 330.0f);
             }
             else {
-                settings_popup_default_layout("main settings side menu", [&] {
+                settings_popup_default_layout("main settings big menu", [&] {
                     settings_popup_close_button_ontop();
                     text_label_centered(gui, "Settings");
                     left_to_right_line_layout(gui, [&] {
@@ -353,7 +351,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                                     },
                                 }) {
-                                    settingsMenu.inner_layout(main, 300.0f);
+                                    settingsMenu.inner_layout(main, 300.0f, [&] { s.update_display_names(); });
                                 }
                             }
                         });
@@ -482,14 +480,14 @@ void CanvasEditorTopToolbar::remaining_area() {
             .name = "Undo",
             .svgPath = "data/icons/undo.svg",
             .onClick = [&] {
-                main.world->undo_with_checks();
+                s.world->undo_with_checks();
             }
         },
         IconMenuButton{
             .name = "Redo",
             .svgPath = "data/icons/redo.svg",
             .onClick = [&] {
-                main.world->redo_with_checks();
+                s.world->redo_with_checks();
             }
         },
         IconMenuButton{
@@ -577,21 +575,21 @@ void CanvasEditorTopToolbar::mobile_ui_name_fill() {
     auto& main = s.main;
     auto& gui = s.main.g.gui;
 
-    if(main.world->netClient) {
+    if(s.world->netClient) {
         CLAY_AUTO_ID({
             .layout = {.sizing = {.width = CLAY_SIZING_GROW(0)}}
         }) { }
     }
     else {
-        input_text(gui, "world name text", &main.world->name, {
+        input_text(gui, "world name text", &s.world->name, {
             .decorations = false,
             .onSelect = [&] {
-                fileOldPath = main.world->filePath;
+                fileOldPath = s.world->filePath;
             },
             .onDeselect = [&] {
                 std::filesystem::remove(fileOldPath);
                 std::filesystem::remove(fileOldPath.parent_path() / (fileOldPath.stem().string() + ".jpg"));
-                main.world->autosave_to_directory(main.world->filePath.parent_path());
+                s.world->autosave_to_directory(s.world->filePath.parent_path());
             }
         });
     }
@@ -602,25 +600,25 @@ void CanvasEditorTopToolbar::desktop_ui_tabs_fill() {
     auto& gui = s.main.g.gui;
 
     std::vector<MovableTabListData::IconNamePair> tabNames;
-    for(size_t i = 0; i < main.worlds.size(); i++) {
-        auto& w = main.worlds[i];
+    for(size_t i = 0; i < s.worlds.size(); i++) {
+        auto& w = s.worlds[i];
         bool shouldAddStarNextToName = w->should_ask_before_closing() && !w->netServer && !w->netClient;
         tabNames.emplace_back(w->netObjMan.is_connected() ? "data/icons/network.svg" : "", w->name + (shouldAddStarNextToName ? "*" : ""));
     }
 
-    size_t worldIndex = std::find(main.worlds.begin(), main.worlds.end(), main.world) - main.worlds.begin();
+    size_t worldIndex = std::find(s.worlds.begin(), s.worlds.end(), s.world) - s.worlds.begin();
 
     gui.element<MovableTabList>("file tab list", MovableTabListData{
         .tabNames = tabNames,
         .selectedTab = worldIndex,
         .changeSelectedTab = [&] (size_t i) {
-            main.switch_to_tab(i);
+            s.switch_to_tab(i);
         },
         .closeTab = [&] (size_t i) {
             //if(main.worlds[i]->should_ask_before_closing())
             //    add_world_to_close_popup_data(main.worlds[i]);
             //else
-            main.set_tab_to_close(main.worlds[i].get());
+            s.set_tab_to_close(s.worlds[i].get());
         }
     });
 }
@@ -643,7 +641,7 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         }
     });
 
-    if(s.mobileUI && !main.world->netClient) {
+    if(s.mobileUI && !s.world->netClient) {
         l.emplace_back(IconMenuButton{
             .name = "Force Save",
             .svgPath = "data/icons/RemixIcon/save-line.svg",
@@ -669,7 +667,7 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         .name = "Paste",
         .svgPath = "data/icons/RemixIcon/clipboard-line.svg",
         .onClick = [&] {
-            main.world->drawProg.paste_object_clipboard(main.window.safeArea.center());
+            s.world->drawProg.paste_object_clipboard(main.window.safeArea.center());
         }
     });
 
@@ -677,11 +675,11 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         .name = "Export Area",
         .svgPath = "data/icons/RemixIcon/upload-line.svg",
         .onClick = [&] {
-            main.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
+            s.world->drawProg.switch_to_tool(DrawingProgramToolType::SCREENSHOT);
         }
     });
 
-    if(!main.world->netClient && !main.world->netServer) {
+    if(!s.world->netClient && !s.world->netServer) {
         l.emplace_back(IconMenuButton{
             .name = "Host",
             .svgPath = "data/icons/network.svg",
@@ -693,7 +691,7 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         });
     }
 
-    if(main.world->netServer) {
+    if(s.world->netServer) {
         l.emplace_back(IconMenuButton{
             .name = "Lobby Info",
             .svgPath = "data/icons/network.svg",
@@ -703,7 +701,7 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         });
     }
 
-    if(main.world->netClient || main.world->netServer) {
+    if(s.world->netClient || s.world->netServer) {
         l.emplace_back(IconMenuButton{
             .name = "Player List",
             .svgPath = "data/icons/list.svg",
@@ -767,6 +765,11 @@ bool CanvasEditorTopToolbar::input_keybind_callback(MainProgram& main, const Vec
     if(settingsPopup == SettingsPopup::MAIN_SETTINGS)
         return settingsMenu.input_keybind_callback(main, newKey);
     return false;
+}
+
+void CanvasEditorTopToolbar::toggle_player_list(MainProgram& main) {
+    if(s.world->netClient || s.world->netServer)
+        settingsPopup = settingsPopup == SettingsPopup::PLAYER_LIST ? SettingsPopup::NONE : SettingsPopup::PLAYER_LIST;
 }
 
 void CanvasEditorTopToolbar::settings_popup_close_button_ontop() {

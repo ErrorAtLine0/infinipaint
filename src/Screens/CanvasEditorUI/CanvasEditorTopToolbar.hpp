@@ -31,6 +31,7 @@ class CanvasEditorTopToolbar {
         void layout_top_toolbar();
         void layout_settings_popup();
         bool input_keybind_callback(MainProgram& main, const Vector2ui32& newKey);
+        void toggle_player_list(MainProgram& main);
     private:
         struct IconMenuButton {
             std::string name;

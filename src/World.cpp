@@ -100,6 +100,26 @@ World::World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent
     }
 }
 
+std::shared_ptr<World> World::create_world_ptr_from_event(MainProgram& main, const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
+    std::shared_ptr<World> newWorld;
+    try {
+        newWorld = std::make_shared<World>(main, openFile);
+    }
+    catch(const std::runtime_error& e) {
+        newWorld = nullptr;
+#ifdef __ANDROID__
+        Logger::get().log(Logger::LogType::WORLDFATAL, std::string("Failed to open canvas: ") + e.what());
+#else
+        Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
+#endif
+    }
+    return newWorld;
+}
+
+std::weak_ptr<World> World::get_weak_ptr() {
+    return weak_from_this();
+}
+
 void World::init_client_data_list() {
     clients = netObjMan.make_obj<NetworkingObjects::NetObjUnorderedSet<ClientData>>();
     serverClientData = ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{
@@ -171,7 +191,7 @@ void World::init_client(const std::string& serverFullID) {
         drawProg.read_components_client(message);
         canvasTheme.read_create_message(message);
         init_client_data_list_callbacks();
-        drawData.cam.smooth_move_to(*main.world, ownClientData->get_cam_coords(), ownClientData->get_window_size(), true);
+        drawData.cam.smooth_move_to(*this, ownClientData->get_cam_coords(), ownClientData->get_window_size(), true);
 
         #ifdef ENABLE_ORDERED_LIST_TEST
             listDebugTest = netObjMan.read_create_message<NetworkingObjects::NetObjOrderedList<uint16_t>>(message, nullptr);
@@ -220,6 +240,10 @@ void World::focus_update() {
     rMan.update();
 }
 
+bool World::is_connected() {
+    return (netServer && !netServer->is_disconnected()) || (netClient && !netClient->is_disconnected());
+}
+
 bool World::connection_update() {
     if(netServer) {
         if(netServer->is_disconnected()) {
@@ -240,7 +264,6 @@ bool World::connection_update() {
         if(netClient->is_disconnected()) {
             Logger::get().log(Logger::LogType::USERINFO, "Client connection failed");
             netObjMan.disconnect();
-            main.set_tab_to_close(this);
             netClient = nullptr;
             return false;
         }
@@ -253,12 +276,8 @@ bool World::connection_update() {
     return true;
 }
 
-bool World::is_focus() {
-    return main.world.get() == this;
-}
-
 void World::set_to_layout_gui_if_focus() {
-    if(is_focus())
+    if(isFocus && isFocus())
         main.g.gui.set_to_layout();
 }
 
@@ -272,8 +291,8 @@ void World::redo_with_checks() {
         undo.redo();
 }
 
-void World::update() {
-    connection_update();
+bool World::update() {
+    return connection_update();
 }
 
 void World::on_tab_out() {
@@ -426,10 +445,6 @@ void World::add_chat_message(const std::string& name, const std::string& message
     set_to_layout_gui_if_focus();
 }
 
-void World::early_destroy() {
-    //con.early_destroy();
-}
-
 void World::set_name(const std::string& n) {
     if(n.empty())
         name = "New File";
@@ -547,7 +562,7 @@ void World::save_to_file(const std::filesystem::path& filePathToSaveAt) {
                 float imageDim = std::max(main.window.size.x(), main.window.size.y());
                 Vector2f imageDimVec{imageDim * 0.5f, imageDim * 0.5f};
                 SCollision::AABB<float> imageBounds{imageCenter - imageDimVec, imageCenter + imageDimVec};
-                world_take_screenshot(main.world, {
+                world_take_screenshot(*this, {
                     .filePath = filePath.parent_path() / (filePath.stem().string() + ".jpg"),
                     .type = WorldScreenshotInfo::ScreenshotType::JPG,
                     .imageSizePixels = {512, 512},

@@ -124,7 +124,7 @@ class MainProgram {
         MainProgram();
         void update();
         void background_update();
-        void draw_world(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData);
+        void draw_world(SkCanvas* canvas, World& worldToDraw, const DrawData& drawData);
         void draw(SkCanvas* canvas);
         sk_sp<SkSurface> create_native_surface(Vector2i resolution, bool isMSAA);
 
@@ -132,12 +132,6 @@ class MainProgram {
 
         bool hideInterface = false;
         
-        void early_destroy();
-
-        bool network_being_used();
-        bool net_server_hosted();
-        void update_display_names();
-
         void save_config();
         void load_config();
 
@@ -155,9 +149,6 @@ class MainProgram {
 
         std::filesystem::path homePath;
         std::filesystem::path documentsPath;
-
-        std::shared_ptr<World> world;
-        std::vector<std::shared_ptr<World>> worlds;
 
         GlobalConfig conf;
 
@@ -193,10 +184,6 @@ class MainProgram {
 
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 
-        void create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
-        void set_tab_to_close(World* world);
-        void switch_to_tab(size_t wIndex);
-
         ~MainProgram();
 
         void update_notification_check();
@@ -210,8 +197,6 @@ class MainProgram {
         float calculate_gui_scale();
         bool visual_mouse_focus();
     private:
-        std::unordered_set<World*> tabsToClose;
-        void close_set_to_close_tabs();
         void post_callback();
         void run_new_screen_func();
 

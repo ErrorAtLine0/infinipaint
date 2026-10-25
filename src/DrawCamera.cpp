@@ -33,7 +33,7 @@ DrawCamera::DrawCamera():
     c({0, 0}, WorldScalar(1000000), 0.0)
 {}
 
-void DrawCamera::set_based_on_properties(World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate) {
+void DrawCamera::set_based_on_properties(const World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate) {
     c.inverseScale = newZoom;
     c.pos = newPos;
     c.set_rotation(newRotate);
@@ -41,7 +41,7 @@ void DrawCamera::set_based_on_properties(World& w, const WorldVec& newPos, const
     set_viewing_area(w.main.window.size.cast<float>());
 }
 
-void DrawCamera::set_based_on_center(World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate) {
+void DrawCamera::set_based_on_center(const World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate) {
     c.inverseScale = newZoom;
     c.set_rotation(newRotate);
     c.pos = newPos - c.dir_from_space(w.main.window.size.cast<float>() * 0.5f);

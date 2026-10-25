@@ -857,7 +857,7 @@ void DrawingProgram::draw(SkCanvas* canvas, const DrawData& drawData) {
         for(auto& c : updateableComponents) {
             if(c->obj->get_comp().get_type() == CanvasComponentType::IMAGE) {
                 auto& img = static_cast<ImageCanvasComponent&>(c->obj->get_comp());
-                float progress = drawData.main->world->rMan.get_resource_retrieval_progress(img.d.imageID);
+                float progress = world.rMan.get_resource_retrieval_progress(img.d.imageID);
                 img.draw_download_progress_bar(canvas, drawData, progress);
             }
         }

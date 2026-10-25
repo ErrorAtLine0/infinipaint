@@ -1092,7 +1092,7 @@ void FileSelectScreen::settings_view() {
                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                 },
             }) {
-                settingsGUI.inner_layout(main, 300.0f);
+                settingsGUI.inner_layout(main, 300.0f, nullptr);
             }
         }
     });
@@ -1150,14 +1150,14 @@ void FileSelectScreen::input_paste_callback(const CustomEvents::PasteEvent& past
 }
 
 void FileSelectScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
-    main.create_new_tab(openFile);
-    if(main.world) {
+    std::shared_ptr<World> newWorld = World::create_world_ptr_from_event(main, openFile);
+    if(newWorld) {
         #ifdef __ANDROID__
             save_files();
         #endif
-        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<CanvasEditorScreen>(main, true); });
+        main.set_screen([&, newWorld] (std::unique_ptr<Screen>) { return std::make_unique<CanvasEditorScreen>(main, true, std::vector<std::shared_ptr<World>>{newWorld}); });
     }
-    else if(!openFile.isClient && openFile.filePathSource.has_value()) // Invalid file, remove it
+    else
         SDL_RemovePath(openFile.filePathSource.value().string().c_str());
 }
 

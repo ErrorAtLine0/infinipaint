@@ -139,7 +139,7 @@ void ProgramSettingsGUI::tabs_layout(MainProgram& main, bool wideButtons) {
 #endif
 }
 
-void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
+void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth, std::function<void()> onDisplayNameUpdate) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
@@ -153,8 +153,8 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
         switch(settingsMenu) {
             case SettingsMenu::GENERAL: {
                 input_text_field(gui, "display name input", "Display name", &main.conf.displayName, {
-                    .onEdit = [&] {
-                        main.update_display_names();
+                    .onEdit = [&, onDisplayNameUpdate] {
+                        if(onDisplayNameUpdate) onDisplayNameUpdate();
                     }
                 });
                 color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });

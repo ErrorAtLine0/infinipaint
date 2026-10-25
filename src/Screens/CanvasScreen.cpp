@@ -25,7 +25,11 @@ CanvasScreen::CanvasScreen(MainProgram& m):
 {}
 
 void CanvasScreen::update() {
-    main.world->focus_update();
+    world->focus_update();
+}
+
+void CanvasScreen::background_update() {
+    world->update();
 }
 
 SCollision::AABB<float> CanvasScreen::canvas_safe_area() {
@@ -33,18 +37,18 @@ SCollision::AABB<float> CanvasScreen::canvas_safe_area() {
 }
 
 void CanvasScreen::draw(SkCanvas* canvas) {
-    main.world->drawData.canvasSafeArea = canvas_safe_area();
-    main.draw_world(canvas, main.world, main.world->drawData);
-    draw_rotate_position_popup(canvas, main.world->drawData.canvasSafeArea.min.y() + 10.0f);
+    world->drawData.canvasSafeArea = canvas_safe_area();
+    main.draw_world(canvas, *world, world->drawData);
+    draw_rotate_position_popup(canvas, world->drawData.canvasSafeArea.min.y() + 10.0f);
 }
 
 void CanvasScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
-    auto& rotationTime = main.world->drawData.cam.lastRotationTime;
+    auto& rotationTime = world->drawData.cam.lastRotationTime;
     rotationTime.update_time_since();
     if(rotationTime < World::ROTATE_POPUP_DISPLAY_TIME) {
         float a = 1.0f - lerp_time<float>(rotationTime, World::ROTATE_POPUP_DISPLAY_TIME, World::ROTATE_POPUP_FADE_START_TIME);
         std::stringstream rotateStrStrm;
-        rotateStrStrm << std::fixed << std::setprecision(2) << radians_to_degrees(main.world->drawData.cam.c.rotation) << "°";
+        rotateStrStrm << std::fixed << std::setprecision(2) << radians_to_degrees(world->drawData.cam.c.rotation) << "°";
         std::string rotateStr = rotateStrStrm.str();
         float coordFontSize = main.g.final_gui_scale() * main.g.gui.io.fontSize;
         SkFont f = main.g.gui.io.get_font(coordFontSize);
@@ -57,7 +61,7 @@ void CanvasScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
         float ROTATE_POPUP_PADDING = 5.0f * main.g.final_gui_scale();
         SkRect textBackgroundRect = SkRect::MakeLTRB(main.window.size.x() * 0.5f - textPixelLength * 0.5f - ROTATE_POPUP_PADDING, yPos, main.window.size.x() * 0.5f + textPixelLength * 0.5f + ROTATE_POPUP_PADDING, yPos + fontHeight + ROTATE_POPUP_PADDING);
         SkPaint textPaint;
-        if(main.world->drawData.cam.c.rotation == 0.0)
+        if(world->drawData.cam.c.rotation == 0.0)
             textPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->fillColor1, 1.0f * a));
         else
             textPaint.setColor4f(color_mul_alpha(main.g.gui.io.theme->frontColor1, 1.0f * a));
@@ -67,79 +71,85 @@ void CanvasScreen::draw_rotate_position_popup(SkCanvas* canvas, float yPos) {
 }
 
 void CanvasScreen::input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) {
-    main.world->input_add_file_to_canvas_callback(addFile);
-}
-
-void CanvasScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
-    main.create_new_tab(openFile);
+    world->input_add_file_to_canvas_callback(addFile);
 }
 
 void CanvasScreen::input_paste_callback(const CustomEvents::PasteEvent& paste) {
-    main.world->input_paste_callback(paste);
+    world->input_paste_callback(paste);
 }
 
 void CanvasScreen::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {
-    main.world->input_android_text_box_input_callback(textboxInput);
+    world->input_android_text_box_input_callback(textboxInput);
 }
 
 void CanvasScreen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
-    main.world->input_drop_file_callback(drop);
+    world->input_drop_file_callback(drop);
 }
 
 void CanvasScreen::input_drop_text_callback(const InputManager::DropCallbackArgs& drop) {
-    main.world->input_drop_text_callback(drop);
+    world->input_drop_text_callback(drop);
 }
 
 void CanvasScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
-    main.world->input_key_callback(key);
+    world->input_key_callback(key);
 }
 
 void CanvasScreen::input_text_key_callback(const InputManager::KeyCallbackArgs& key) {
-    main.world->input_text_key_callback(key);
+    world->input_text_key_callback(key);
 }
 
 void CanvasScreen::input_text_callback(const InputManager::TextCallbackArgs& text) {
-    main.world->input_text_callback(text);
+    world->input_text_callback(text);
 }
 
 void CanvasScreen::input_mouse_button_callback(const InputManager::MouseButtonCallbackArgs& button) {
-    main.world->input_mouse_button_callback(button);
+    world->input_mouse_button_callback(button);
 }
 
 void CanvasScreen::input_mouse_motion_callback(const InputManager::MouseMotionCallbackArgs& motion) {
-    main.world->input_mouse_motion_callback(motion);
+    world->input_mouse_motion_callback(motion);
 }
 
 void CanvasScreen::input_mouse_wheel_callback(const InputManager::MouseWheelCallbackArgs& wheel) {
-    main.world->input_mouse_wheel_callback(wheel);
+    world->input_mouse_wheel_callback(wheel);
 }
 
 void CanvasScreen::input_pen_button_callback(const InputManager::PenButtonCallbackArgs& button) {
-    main.world->input_pen_button_callback(button);
+    world->input_pen_button_callback(button);
 }
 
 void CanvasScreen::input_pen_touch_callback(const InputManager::PenTouchCallbackArgs& touch) {
-    main.world->input_pen_touch_callback(touch);
+    world->input_pen_touch_callback(touch);
 }
 
 void CanvasScreen::input_pen_motion_callback(const InputManager::PenMotionCallbackArgs& motion) {
-    main.world->input_pen_motion_callback(motion);
+    world->input_pen_motion_callback(motion);
 }
 
 void CanvasScreen::input_pen_axis_callback(const InputManager::PenAxisCallbackArgs& axis) {
-    main.world->input_pen_axis_callback(axis);
+    world->input_pen_axis_callback(axis);
 }
 
 void CanvasScreen::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) {
-    main.world->input_finger_touch_callback(touch);
+    world->input_finger_touch_callback(touch);
 }
 
 void CanvasScreen::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
+    world->drawData.cam.set_viewing_area(main.window.size.cast<float>());
 }
 
 void CanvasScreen::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {
 }
 
+void CanvasScreen::on_config_load() {
+    if(!world->netObjMan.is_connected())
+        world->ownClientData->set_display_name(main.conf.displayName);
+}
+
+bool CanvasScreen::is_using_network() {
+    return world->is_connected();
+}
+
 std::optional<InputManager::TextBoxStartInfo> CanvasScreen::get_text_box_start_info() {
-    return main.world->get_text_box_start_info();
+    return world->get_text_box_start_info();
 }

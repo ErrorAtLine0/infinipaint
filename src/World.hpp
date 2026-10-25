@@ -32,6 +32,7 @@
 #include <Helpers/NetworkingObjects/NetObjManager.hpp>
 #include <chrono>
 #include <filesystem>
+#include <memory>
 #include "ClientData.hpp"
 #include "GlobalConfig.hpp"
 
@@ -41,7 +42,7 @@ class MainProgram;
 
 struct WorldScreenshotInfo;
 
-class World {
+class World : std::enable_shared_from_this<World> {
     public:
         static std::string DOT_FILE_EXTENSION;
         static std::string FILE_EXTENSION;
@@ -50,6 +51,10 @@ class World {
         static constexpr float ROTATE_POPUP_FADE_START_TIME = 1.0f;
 
         World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo);
+
+        static std::shared_ptr<World> create_world_ptr_from_event(MainProgram& main, const CustomEvents::OpenInfiniPaintFileEvent& openFile);
+
+        std::weak_ptr<World> get_weak_ptr();
 
         // NOTE: Keep at the very beginning so that it's destroyed last
         NetworkingObjects::NetObjManager netObjMan;
@@ -89,11 +94,10 @@ class World {
         WorldScalar calculate_zoom_from_uniform_zoom(WorldScalar uniformZoom, WorldVec oldWindowSize);
 
         void focus_update();
-        void update();
+        bool update(); // Return false when world wants to close
         void on_tab_out();
 
         void draw(SkCanvas* canvas, const DrawData& calledDrawData);
-        void early_destroy();
 
         bool clientStillConnecting = false;
 
@@ -116,9 +120,10 @@ class World {
         void scale_up(const WorldScalar& scaleUpAmount); // Should only be called from ClientData
         void scale_up_step(); // Call when scale up step happens
 
+        std::function<bool()> isFocus;
+
         bool should_ask_before_closing();
         void set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal);
-        bool is_focus();
         void set_to_layout_gui_if_focus();
         void send_reliable_multi_command_to_all(const std::function<void()>& captureSendBlock);
 
@@ -126,6 +131,8 @@ class World {
 
         std::shared_ptr<NetServer> netServer;
         std::shared_ptr<NetClient> netClient;
+
+        bool is_connected();
 
         void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile);
         void input_paste_callback(const CustomEvents::PasteEvent& paste);

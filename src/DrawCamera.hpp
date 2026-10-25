@@ -41,8 +41,8 @@ class DrawCamera {
 
         void set_viewing_area(Vector2f viewingAreaNew);
         void smooth_move_to(World& w, const CoordSpaceHelper& c, Vector2f windowSize, bool instantJump = false);
-        void set_based_on_properties(World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate);
-        void set_based_on_center(World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate);
+        void set_based_on_properties(const World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate);
+        void set_based_on_center(const World& w, const WorldVec& newPos, const WorldScalar& newZoom, double newRotate);
         void update_main(World& main);
 
         void scale_up(World& w, const WorldScalar& scaleUpAmount);

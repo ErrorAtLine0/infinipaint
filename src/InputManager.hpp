@@ -423,7 +423,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(InputManager::KeyCodeEnum, {
     {InputManager::KEY_DRAW_TOOL_ELLIPSE, "Ellipse Tool"},
     {InputManager::KEY_DRAW_TOOL_RECTSELECT, "Rect Select Tool"},
     {InputManager::KEY_DRAW_TOOL_EYEDROPPER, "Color Select Tool"},
-    {InputManager::KEY_DRAW_TOOL_SCREENSHOT, "Take Screenshot"},
+    {InputManager::KEY_DRAW_TOOL_SCREENSHOT, "Export Area"},
     {InputManager::KEY_DRAW_TOOL_LINE, "Line Tool"},
     {InputManager::KEY_OPEN_CHAT, "Open Chat"},
     {InputManager::KEY_SHOW_PLAYER_LIST, "Show Player List"},

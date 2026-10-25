@@ -123,7 +123,7 @@ void ScreenshotTool::gui_phone_toolbox(CanvasEditorScreen& t) {
                                         setExtensionFilter = {"SVG", "svg"};
                                         break;
                                 }
-                                t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = make_weak_ptr(drawP.world.main.world)](const std::filesystem::path& p, const auto& e) {
+                                t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = drawP.world.get_weak_ptr()](const std::filesystem::path& p, const auto& e) {
                                     auto world = w.lock();
                                     if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
                                         ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
@@ -332,7 +332,7 @@ void ScreenshotTool::take_screenshot(const std::filesystem::path& filePath, Worl
         return;
     }
 
-    world_take_screenshot(drawP.world.main.world, {
+    world_take_screenshot(drawP.world, {
         .filePath = filePath,
         .type = screenshotType,
         .imageSizePixels = controls.imageSize,

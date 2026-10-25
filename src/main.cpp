@@ -592,18 +592,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         if(mS.m->conf.mobileUI)
             mS.m->set_first_screen(std::make_unique<FileSelectScreen>(*mS.m));
         else {
-            mS.m->set_first_screen(std::make_unique<CanvasEditorScreen>(*mS.m, false));
+            std::vector<std::shared_ptr<World>> initWorlds;
             for(std::filesystem::path& f : listOfFilesToOpenFromCommand) {
-                mS.m->create_new_tab({
+                initWorlds.emplace_back(World::create_world_ptr_from_event(*mS.m, {
                     .isClient = false,
                     .filePathSource = f
-                });
+                }));
             }
-            if(mS.m->worlds.empty()) {
-                mS.m->create_new_tab({
+            if(initWorlds.empty()) {
+                initWorlds.emplace_back(World::create_world_ptr_from_event(*mS.m, {
                     .isClient = false
-                });
+                }));
             }
+            mS.m->set_first_screen(std::make_unique<CanvasEditorScreen>(*mS.m, false, initWorlds));
         }
 
         mS.m->update(); // Run update once to make sure that callbacks dont crash
@@ -909,7 +910,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     MainStruct& mS = *((MainStruct*)appstate);
     try {
         mS.m->save_config();
-        mS.m->early_destroy();
         sdl_terminate(mS);
     }
     catch(const std::exception& e) {

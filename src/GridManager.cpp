@@ -266,28 +266,27 @@ void GridManager::load_file(cereal::PortableBinaryInputArchive& a, VersionNumber
 
 void GridManager::setup_list_gui(const std::function<void()>& onStartModify) {
     auto& gui = world.main.g.gui;
-    auto& main = world.main;
 
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
     auto add_grid = [&, onStartModify] {
         if(!gridMenu.newName.empty()) {
-            main.world->gridMan.add_default_grid(gridMenu.newName);
-            main.world->drawProg.modify_grid(main.world->gridMan.grids->at(main.world->gridMan.grids->size() - 1)->obj);
+            add_default_grid(gridMenu.newName);
+            world.drawProg.modify_grid(grids->at(grids->size() - 1)->obj);
             if(onStartModify) onStartModify();
         }
     };
 
     float ENTRY_HEIGHT = 25.0f;
-    if(main.world->gridMan.grids->empty())
+    if(grids->empty())
         text_label_centered(gui, "No grids exist.");
     gui.element<ManyElementScrollArea>("grid menu entries", ManyElementScrollArea::Options{
         .entryHeight = ENTRY_HEIGHT,
-        .entryCount = main.world->gridMan.grids->size(),
+        .entryCount = grids->size(),
         .clipHorizontal = true,
         .elementContent = [&, onStartModify](size_t i) {
-            auto& grid = main.world->gridMan.grids->at(i)->obj;
+            auto& grid = grids->at(i)->obj;
             bool selectedEntry = gridMenu.selectedGrid == i;
             gui.element<LayoutElement>("elem", [&, onStartModify] (LayoutElement*, const Clay_ElementId& lId2) {
                 CLAY(lId2, {
@@ -322,11 +321,11 @@ void GridManager::setup_list_gui(const std::function<void()>& onStartModify) {
                             NetworkingObjects::generic_serialized_class_send_update_to_all<WorldGrid>(grid);
                         });
                         list_button("edit pencil", "data/icons/pencil.svg", [&, onStartModify] {
-                            main.world->drawProg.modify_grid(grid);
+                            world.drawProg.modify_grid(grid);
                             if(onStartModify) onStartModify();
                         });
                         list_button("delete trash", "data/icons/trash.svg", [&, i] {
-                            main.world->gridMan.remove_grid(i);
+                            remove_grid(i);
                         });
                         // Gap for scroll bar
                         CLAY_AUTO_ID({
@@ -339,7 +338,7 @@ void GridManager::setup_list_gui(const std::function<void()>& onStartModify) {
                     if(l->mouseHovering && button.down && button.button == InputManager::MouseButton::LEFT) {
                         gridMenu.selectedGrid = i;
                         if(button.clicks == 2) {
-                            main.world->drawProg.modify_grid(grid);
+                            world.drawProg.modify_grid(grid);
                             if(onStartModify) onStartModify();
                         }
                         gui.set_to_layout();

@@ -19,13 +19,15 @@
 #pragma once
 #include "Screen.hpp"
 
+class World;
+
 class CanvasScreen : public Screen {
     public:
         CanvasScreen(MainProgram& m);
         virtual void update() override;
+        virtual void background_update() override;
         virtual void draw(SkCanvas* canvas) override;
         virtual void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) override;
-        virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) override;
         virtual void input_drop_file_callback(const InputManager::DropCallbackArgs& drop) override;
@@ -43,8 +45,12 @@ class CanvasScreen : public Screen {
         virtual void input_finger_touch_callback(const FingerInput::TouchCallbackArgs& touch) override;
         virtual void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) override;
         virtual void input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) override;
+        virtual void on_config_load() override;
+        virtual bool is_using_network() override;
         virtual std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info() override;
         virtual SCollision::AABB<float> canvas_safe_area();
     protected:
+        std::shared_ptr<World> world;
+
         void draw_rotate_position_popup(SkCanvas* canvas, float yPos);
 };

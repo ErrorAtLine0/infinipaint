@@ -35,11 +35,14 @@
 using namespace GUIStuff;
 using namespace ElementHelpers;
 
-CanvasEditorScreen::CanvasEditorScreen(MainProgram& m, bool initMobileUI):
+CanvasEditorScreen::CanvasEditorScreen(MainProgram& m, bool initMobileUI, const std::vector<std::shared_ptr<World>>& worldInit):
     CanvasScreen(m),
     topToolbar(*this),
+    worlds(worldInit),
     mobileUI(initMobileUI)
-{}
+{
+    world = worlds.front();
+}
 
 void CanvasEditorScreen::update() {
     std::erase_if(main.logMessages, [&](auto& logM) {
@@ -51,6 +54,50 @@ void CanvasEditorScreen::update() {
         return false;
     });
     CanvasScreen::update();
+}
+
+void CanvasEditorScreen::background_update() {
+    for(auto& w : worlds) {
+        if(!w->update())
+            set_tab_to_close(w.get());
+    }
+}
+
+void CanvasEditorScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
+    switch(key.key) {
+        case InputManager::KEY_TOGGLE_INTERFACE: {
+            if(key.down && !key.repeat) {
+                main.hideInterface = !main.hideInterface;
+                main.g.gui.set_to_layout();
+            }
+            break;
+        }
+        case InputManager::KEY_SAVE: {
+            if(key.down && !key.repeat) {
+                if(mobileUI)
+                    save_to_file();
+                else
+                    desktop_save_file();
+            }
+            break;
+        }
+        case InputManager::KEY_SAVE_AS: {
+            if(key.down && !key.repeat && !mobileUI)
+                desktop_save_as_file();
+            break;
+        }
+        case InputManager::KEY_OPEN_CHAT: {
+            if(key.down && !key.repeat) {
+            }
+            break;
+        }
+        case InputManager::KEY_SHOW_PLAYER_LIST: {
+            if(key.down && !key.repeat)
+                topToolbar.toggle_player_list(main);
+            break;
+        }
+    }
+    CanvasScreen::input_key_callback(key);
 }
 
 void CanvasEditorScreen::center_message(const char* id, const std::string& m) {
@@ -94,7 +141,7 @@ void CanvasEditorScreen::main_display() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
     }) {
-        if(main.world->netClient && main.world->clientStillConnecting) {
+        if(world->netClient && world->clientStillConnecting) {
             topToolbar.layout_top_toolbar();
             center_message("Connecting to server message", "Connecting to server...");
         }
@@ -108,7 +155,7 @@ void CanvasEditorScreen::main_display() {
                 }) {}
                 bottom_toolbar();
             }
-            if(!main.world->drawProg.layerMan.is_a_layer_being_edited())
+            if(!world->drawProg.layerMan.is_a_layer_being_edited())
                 center_message("Select layer to edit message", "Select a layer to edit");
         }
     }
@@ -146,8 +193,8 @@ void CanvasEditorScreen::bottom_toolbar() {
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER}
             }
         }) {
-            if(main.world->drawProg.phone_gui_tool_specific_bottom_toolbar_exists())
-                main.world->drawProg.phone_gui_tool_specific_bottom_toolbar(*this);
+            if(world->drawProg.phone_gui_tool_specific_bottom_toolbar_exists())
+                world->drawProg.phone_gui_tool_specific_bottom_toolbar(*this);
             else
                 default_bottom_toolbar();
         }
@@ -178,7 +225,7 @@ void CanvasEditorScreen::default_bottom_toolbar() {
                     break;
                 case SettingsMenuPopup::SETTINGS:
                     if(colorPickerPtr != &backgroundColorTemporary)
-                        colorPickerPtr = main.world->drawProg.color_picker_color(colorPickerPtr); // Shouldnt use set_color_picker_data here, it'll reset callbacks
+                        colorPickerPtr = world->drawProg.color_picker_color(colorPickerPtr); // Shouldnt use set_color_picker_data here, it'll reset callbacks
                                                                                                   // This function is only used to make sure the color being pointed to still exists
                     if(colorPickerPtr) {
                         if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
@@ -262,7 +309,7 @@ void CanvasEditorScreen::default_bottom_toolbar() {
 
 void CanvasEditorScreen::bottom_toolbar_gui() {
     GUIManager& gui = main.g.gui;
-    auto& drawP = main.world->drawProg;
+    auto& drawP = world->drawProg;
 
     auto tool_button = [&](const char* id, const std::string& svgPath, DrawingProgramToolType toolType) {
         svg_icon_button(gui, id, svgPath, {
@@ -291,7 +338,7 @@ void CanvasEditorScreen::bottom_toolbar_gui() {
 }
 
 void CanvasEditorScreen::tool_settings_popup() {
-    auto& drawP = main.world->drawProg;
+    auto& drawP = world->drawProg;
     auto& gui = main.g.gui;
     auto& io = gui.io;
  
@@ -674,8 +721,26 @@ void CanvasEditorScreen::input_global_back_button_callback() {
     }
     else {
         save_to_file();
-        main.set_tab_to_close(main.world.get());
+        main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
         main.g.gui.set_to_layout();
+    }
+}
+
+void CanvasEditorScreen::on_config_load() {
+    update_display_names();
+}
+
+bool CanvasEditorScreen::is_using_network() {
+    bool isAnyWorldConnected = false;
+    for(auto& w : worlds)
+        isAnyWorldConnected |= w->is_connected();
+    return isAnyWorldConnected;
+}
+
+void CanvasEditorScreen::update_display_names() {
+    for(auto& w : worlds) {
+        if(!w->netObjMan.is_connected())
+            w->ownClientData->set_display_name(main.conf.displayName);
     }
 }
 
@@ -716,10 +781,10 @@ void CanvasEditorScreen::open_world_file(bool isClient, const std::string& netSo
 }
 
 void CanvasEditorScreen::desktop_save_file() {
-    if(main.world->filePath == std::filesystem::path())
+    if(world->filePath == std::filesystem::path())
         desktop_save_as_file();
     else
-        main.world->save_to_file(main.world->filePath);
+        world->save_to_file(world->filePath);
 }
 
 void CanvasEditorScreen::desktop_save_as_file() {
@@ -728,7 +793,7 @@ void CanvasEditorScreen::desktop_save_as_file() {
         optionsMenuType = SET_DOWNLOAD_NAME;
         main.g.gui.set_to_layout();
     #else
-        open_file_selector("Save", {{"InfiniPaint Canvas", World::FILE_EXTENSION}}, [w = make_weak_ptr(main.world)](const std::filesystem::path& p, const auto& e) {
+        open_file_selector("Save", {{"InfiniPaint Canvas", World::FILE_EXTENSION}}, [w = make_weak_ptr(world)](const std::filesystem::path& p, const auto& e) {
             auto world = w.lock();
             if(world)
                 world->save_to_file(p);
@@ -737,20 +802,46 @@ void CanvasEditorScreen::desktop_save_as_file() {
 }
 
 void CanvasEditorScreen::save_to_file() {
-    if(main.world && !main.world->netClient)
-        main.world->save_to_file(main.world->filePath);
+    if(world && !world->netClient)
+        world->save_to_file(world->filePath);
 }
 
 bool CanvasEditorScreen::input_keybind_callback(const Vector2ui32& newKey) {
     return topToolbar.input_keybind_callback(main, newKey);
 }
 
-void CanvasEditorScreen::input_app_about_to_go_to_background_callback() {
-    save_to_file();
+void CanvasEditorScreen::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
+    for(auto& wor : worlds)
+        wor->drawData.cam.set_viewing_area(main.window.size.cast<float>());
 }
 
-void CanvasEditorScreen::on_tab_close() {
-    main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
+void CanvasEditorScreen::post_callback() {
+    if(!tabsToClose.empty()) {
+        std::erase_if(worlds, [&](auto& w) {
+            if(tabsToClose.contains(w.get())) {
+                if(w == world)
+                    world = nullptr;
+                return true;
+            }
+            return false;
+        });
+        tabsToClose.clear();
+        if(mobileUI)
+            main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
+        else {
+            if(worlds.empty())
+                create_new_tab({
+                    .isClient = false
+                });
+            else if(!world)
+                switch_to_tab(0);
+        }
+        main.g.gui.set_to_layout();
+    }
+}
+
+void CanvasEditorScreen::input_app_about_to_go_to_background_callback() {
+    save_to_file();
 }
 
 void CanvasEditorScreen::color_selector(Vector4f* color, const ColorSelectorData& colorSelectorData) {
@@ -776,6 +867,26 @@ void CanvasEditorScreen::color_selector_button(const char* id, Vector4f* color, 
     });
 }
 
+void CanvasEditorScreen::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
+    std::shared_ptr<World> newWorld = World::create_world_ptr_from_event(main, openFile);
+    if(newWorld) {
+        worlds.emplace_back(newWorld);
+        switch_to_tab(worlds.size() - 1);
+        main.g.gui.set_to_layout();
+    }
+}
+
+void CanvasEditorScreen::set_tab_to_close(World* world) {
+    tabsToClose.emplace(world);
+}
+
+void CanvasEditorScreen::input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
+    create_new_tab(openFile);
+}
+
+void CanvasEditorScreen::switch_to_tab(size_t wIndex) {
+    world = worlds[wIndex];
+}
 
 void CanvasEditorScreen::set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup newSettingsMode, Vector4f* newColorPickerPtr, const ColorSelectorData& initColorPickerData) {
     settingsMenuPopup = newSettingsMode;
@@ -794,6 +905,10 @@ SCollision::AABB<float> CanvasEditorScreen::canvas_safe_area() {
     else
         return SCollision::AABB<float>{{main.window.safeArea.min.x(), main.window.safeArea.min.y() + 40.0f * main.g.final_gui_scale()},
                                        {main.window.safeArea.max.x(), main.window.safeArea.max.y() - 30.0f * main.g.final_gui_scale()}};
+}
+
+size_t CanvasEditorScreen::open_world_count() {
+    return worlds.size();
 }
 
 CanvasEditorScreen::~CanvasEditorScreen() {

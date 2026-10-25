@@ -49,10 +49,10 @@
     #include <include/gpu/ganesh/SkSurfaceGanesh.h>
 #endif
 
-void take_screenshot_svg(const std::shared_ptr<World>& w, SkCanvas* canvas, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds);
-void take_screenshot_area_hw(const std::shared_ptr<World>& w, const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds, bool displayGrid);
+void take_screenshot_svg(World& w, SkCanvas* canvas, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds);
+void take_screenshot_area_hw(World& w, const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds, bool displayGrid);
 
-void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreenshotInfo& info) {
+void world_take_screenshot(World& w, const WorldScreenshotInfo& info) {
     if(info.imageSizePixels.x() <= 0 || info.imageSizePixels.y() <= 0) {
         std::cout << "[ScreenshotTool::take_screenshot] Image size is 0 or negative" << std::endl;
         return;
@@ -66,16 +66,16 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
         std::vector<uint8_t> finalImgRawData(imageByteSize);
         SkPixmap finalImgData(finalImgInfo, finalImgRawData.data(), imageRowSize);
         
-        sk_sp<SkSurface> surface = w->main.create_native_surface(w->main.window.size, true);
+        sk_sp<SkSurface> surface = w.main.create_native_surface(w.main.window.size, true);
         SkCanvas* screenshotCanvas = surface->getCanvas();
         if(!screenshotCanvas) {
             Logger::get().log(Logger::LogType::INFO, "[world_take_screenshot] Could not make canvas");
             return;
         }
     
-        for(int i = 0; i < info.imageSizePixels.x(); i += w->main.window.size.x())
-            for(int j = 0; j < info.imageSizePixels.y(); j += w->main.window.size.y())
-                take_screenshot_area_hw(w, surface, screenshotCanvas, finalImgRawData.data(), info.imageSizePixels, Vector2i{i, j}, Vector2i{std::min(w->main.window.size.x(), info.imageSizePixels.x() - i), std::min(w->main.window.size.y(), info.imageSizePixels.y() - j)}, w->main.window.size, info.type != WorldScreenshotInfo::ScreenshotType::JPG && info.transparentBackground, info.cameraCoords, info.imageBounds, info.displayGrid);
+        for(int i = 0; i < info.imageSizePixels.x(); i += w.main.window.size.x())
+            for(int j = 0; j < info.imageSizePixels.y(); j += w.main.window.size.y())
+                take_screenshot_area_hw(w, surface, screenshotCanvas, finalImgRawData.data(), info.imageSizePixels, Vector2i{i, j}, Vector2i{std::min(w.main.window.size.x(), info.imageSizePixels.x() - i), std::min(w.main.window.size.y(), info.imageSizePixels.y() - j)}, w.main.window.size, info.type != WorldScreenshotInfo::ScreenshotType::JPG && info.transparentBackground, info.cameraCoords, info.imageBounds, info.displayGrid);
     
         bool success = false;
         SkDynamicMemoryWStream out;
@@ -164,7 +164,7 @@ void world_take_screenshot(const std::shared_ptr<World>& w, const WorldScreensho
     }
 }
 
-void take_screenshot_svg(const std::shared_ptr<World>& w, SkCanvas* canvas, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds) {
+void take_screenshot_svg(World& w, SkCanvas* canvas, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds) {
     float secRectX1 = imageBounds.min.x();
     float secRectX2 = imageBounds.max.x();
     float secRectY1 = imageBounds.min.y();
@@ -185,18 +185,18 @@ void take_screenshot_svg(const std::shared_ptr<World>& w, SkCanvas* canvas, bool
     vectorZoom.y() = distY / WorldScalar(canvasSize.y() * 0.5);
     WorldScalar newInverseScale = (vectorZoom.x() + vectorZoom.y()) * WorldScalar(0.5);
 
-    DrawData screenshotDrawData = w->drawData;
-    screenshotDrawData.cam.set_based_on_properties(*w, topLeft, newInverseScale, cameraCoords.rotation);
+    DrawData screenshotDrawData = w.drawData;
+    screenshotDrawData.cam.set_based_on_properties(w, topLeft, newInverseScale, cameraCoords.rotation);
     screenshotDrawData.cam.set_viewing_area(canvasSize);
     screenshotDrawData.takingScreenshot = true;
     screenshotDrawData.transparentBackground = transparentBackground;
     screenshotDrawData.drawGrids = false;
     screenshotDrawData.isSVGRender = true;
     screenshotDrawData.refresh_draw_optimizing_values();
-    w->main.draw_world(canvas, w->main.world, screenshotDrawData);
+    w.main.draw_world(canvas, w, screenshotDrawData);
 }
 
-void take_screenshot_area_hw(const std::shared_ptr<World>& w, const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds, bool displayGrid) {
+void take_screenshot_area_hw(World& w, const sk_sp<SkSurface>& surface, SkCanvas* canvas, void* fullImgRawData, const Vector2i& fullImageSize, const Vector2i& sectionImagePos, const Vector2i& sectionImageSize, const Vector2i& canvasSize, bool transparentBackground, const CoordSpaceHelper& cameraCoords, const SCollision::AABB<float>& imageBounds, bool displayGrid) {
     float secRectX1 = imageBounds.min.x() + (imageBounds.max.x() - imageBounds.min.x()) * (sectionImagePos.x() / (double)fullImageSize.x());
     float secRectX2 = imageBounds.min.x() + (imageBounds.max.x() - imageBounds.min.x()) * ((sectionImagePos.x() + canvasSize.x()) / (double)fullImageSize.x());
     float secRectY1 = imageBounds.min.y() + (imageBounds.max.y() - imageBounds.min.y()) * (sectionImagePos.y() / (double)fullImageSize.y());
@@ -215,14 +215,14 @@ void take_screenshot_area_hw(const std::shared_ptr<World>& w, const sk_sp<SkSurf
     vectorZoom.y() = distY / WorldScalar(canvasSize.y() * 0.5);
     WorldScalar newInverseScale = (vectorZoom.x() + vectorZoom.y()) * WorldScalar(0.5);
 
-    DrawData screenshotDrawData = w->drawData;
-    screenshotDrawData.cam.set_based_on_properties(*w, topLeft, newInverseScale, cameraCoords.rotation);
+    DrawData screenshotDrawData = w.drawData;
+    screenshotDrawData.cam.set_based_on_properties(w, topLeft, newInverseScale, cameraCoords.rotation);
     screenshotDrawData.cam.set_viewing_area(sectionImageSize.cast<float>());
     screenshotDrawData.takingScreenshot = true;
     screenshotDrawData.transparentBackground = transparentBackground;
     screenshotDrawData.drawGrids = displayGrid;
     screenshotDrawData.refresh_draw_optimizing_values();
-    w->main.draw_world(canvas, w, screenshotDrawData);
+    w.main.draw_world(canvas, w, screenshotDrawData);
 
     SkImageInfo aaImgInfo = SkImageInfo::Make(sectionImageSize.x(), sectionImageSize.y(), kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     void* fullImgRawDataStartPt = (uint8_t*)fullImgRawData + 4 * (size_t)sectionImagePos.x() + 4 * (size_t)fullImageSize.x() * (size_t)sectionImagePos.y();

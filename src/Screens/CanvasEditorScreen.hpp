@@ -23,15 +23,22 @@
 
 class CanvasEditorScreen : public CanvasScreen {
     public:
-        CanvasEditorScreen(MainProgram& m, bool initMobileUI);
+        CanvasEditorScreen(MainProgram& m, bool initMobileUI, const std::vector<std::shared_ptr<World>>& worldInit);
         ~CanvasEditorScreen();
         virtual void update() override;
+        virtual void background_update() override;
         virtual void gui_layout_run() override;
+        virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual bool input_keybind_callback(const Vector2ui32& newKey) override;
         virtual void input_global_back_button_callback() override;
+        virtual void on_config_load() override;
+        virtual bool is_using_network() override;
+        virtual void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) override;
+        virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_app_about_to_go_to_background_callback() override;
-        virtual void on_tab_close() override;
+        virtual void post_callback() override;
         virtual SCollision::AABB<float> canvas_safe_area() override;
+        size_t open_world_count();
         struct ColorSelectorData {
             std::function<void()> onChange;
             std::function<void()> onSelect;
@@ -84,7 +91,17 @@ class CanvasEditorScreen : public CanvasScreen {
         void save_to_file();
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID2);
 
+        void create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
+        void set_tab_to_close(World* world);
+
+        void update_display_names();
+
+        void switch_to_tab(size_t wIndex);
+
         CanvasEditorTopToolbar topToolbar;
+
+        std::vector<std::shared_ptr<World>> worlds;
+        std::unordered_set<World*> tabsToClose;
 
         const bool mobileUI;
 

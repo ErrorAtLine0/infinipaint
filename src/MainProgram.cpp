@@ -170,24 +170,13 @@ void MainProgram::update_notification_check() {
 }
 
 void MainProgram::background_update() {
-    bool isAnyWorldConnected = false;
-    for(auto& w : worlds) {
-        w->update();
-        isAnyWorldConnected |= ((w->netServer && !w->netServer->is_disconnected()) || (w->netClient && !w->netClient->is_disconnected()));
-    }
-    if(!isAnyWorldConnected)
+    screen->background_update();
+    if(!screen->is_using_network())
         NetThreadManager::get().destroy();
 }
 
 bool MainProgram::app_close_requested() {
     return screen->app_close_requested();
-}
-
-void MainProgram::update_display_names() {
-    for(auto& w : worlds) {
-        if(!w->netObjMan.is_connected())
-            w->ownClientData->set_display_name(conf.displayName);
-    }
 }
 
 void MainProgram::init_net_library() {
@@ -262,7 +251,8 @@ void MainProgram::load_config() {
     NetLibrary::copy_default_p2p_config_to_path(conf.configPath / "p2p.json");
     NetLibrary::init_config(conf.configPath / "p2p.json");
 
-    update_display_names();
+    if(screen)
+        screen->on_config_load();
 }
 
 void MainProgram::set_vsync_value(int vsyncValue) {
@@ -297,11 +287,11 @@ void MainProgram::refresh_draw_surfaces() {
     }
 }
 
-void MainProgram::draw_world(SkCanvas* canvas, std::shared_ptr<World> worldToDraw, const DrawData& drawData) {
-    canvas->clear(drawData.transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : worldToDraw->canvasTheme.get_back_color());
+void MainProgram::draw_world(SkCanvas* canvas, World& worldToDraw, const DrawData& drawData) {
+    canvas->clear(drawData.transparentBackground ? SkColor4f{0.0f, 0.0f, 0.0f, 0.0f} : worldToDraw.canvasTheme.get_back_color());
     DrawData drawDataCopy = drawData;
     drawDataCopy.skiaAA = conf.antialiasing == GlobalConfig::AntiAliasing::SKIA;
-    worldToDraw->draw(canvas, drawDataCopy);
+    worldToDraw.draw(canvas, drawDataCopy);
 }
 
 void MainProgram::draw(SkCanvas* canvas) {
@@ -327,35 +317,9 @@ sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool is
     return nullptr;
 }
 
-void MainProgram::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
-    std::shared_ptr<World> newWorld;
-    try {
-        newWorld = std::make_shared<World>(*this, openFile);
-    }
-    catch(const std::runtime_error& e) {
-#ifdef __ANDROID__
-        Logger::get().log(Logger::LogType::WORLDFATAL, std::string("Failed to open canvas: ") + e.what());
-#else
-        Logger::get().log(Logger::LogType::WORLDFATAL, "Failed to open canvas: " + (openFile.filePathSource.has_value() ? openFile.filePathSource.value().string() : "NO PATH") + " with error: " + e.what());
-#endif
-        return;
-    }
-    worlds.emplace_back(newWorld);
-    switch_to_tab(worlds.size() - 1);
-    g.gui.set_to_layout();
-}
-
-void MainProgram::set_tab_to_close(World* world) {
-    tabsToClose.emplace(world);
-}
-
-void MainProgram::switch_to_tab(size_t wIndex) {
-    world = worlds[wIndex];
-}
-
 void MainProgram::post_callback() {
     g.gui.run_post_callback_func();
-    close_set_to_close_tabs();
+    screen->post_callback();
     run_new_screen_func();
     g.gui.layout_if_necessary();
 }
@@ -489,8 +453,6 @@ void MainProgram::input_finger_touch_callback(const FingerInput::TouchCallbackAr
 }
 
 void MainProgram::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {
-    for(auto& wor : worlds)
-        wor->drawData.cam.set_viewing_area(window.size.cast<float>());
     g.window_update();
     screen->input_window_resize_callback(w);
     post_callback();
@@ -566,45 +528,8 @@ void MainProgram::set_screen(std::function<std::unique_ptr<Screen>(std::unique_p
     newScreenFunc = screenFunc;
 }
 
-void MainProgram::close_set_to_close_tabs() {
-    if(!tabsToClose.empty()) {
-        std::erase_if(worlds, [&](auto& w) {
-            if(tabsToClose.contains(w.get())) {
-                if(w == world)
-                    world = nullptr;
-                return true;
-            }
-            return false;
-        });
-        tabsToClose.clear();
-        screen->on_tab_close();
-        g.gui.set_to_layout();
-    }
-}
-
 bool MainProgram::visual_mouse_focus() {
     return (window.sdlCurrentVideoDriver == "wayland" && window.windowFocus) || window.mouseFocus;
-}
-
-bool MainProgram::network_being_used() {
-    for(auto& w : worlds) {
-        if(w->netObjMan.is_connected())
-            return true;
-    }
-    return false;
-}
-
-bool MainProgram::net_server_hosted() {
-    for(auto& w : worlds) {
-        if(w->netServer)
-            return true;
-    }
-    return false;
-}
-
-void MainProgram::early_destroy() {
-    for(auto& w : worlds)
-        w->early_destroy();
 }
 
 MainProgram::~MainProgram() {
