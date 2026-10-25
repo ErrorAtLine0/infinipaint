@@ -460,6 +460,10 @@ void World::ensure_display_name_unique(std::string& displayName) {
 }
 
 void World::start_hosting(const std::string& initNetSource, const std::string& serverLocalID) {
+    if(is_connected())
+        return;
+
+    ownClientData->set_display_name(main.conf.displayName); // Host might have changed name before hosting, refresh name
     main.init_net_library();
     netServer = std::make_shared<NetServer>(serverLocalID);
     lastKeepAliveSent = std::chrono::steady_clock::now();

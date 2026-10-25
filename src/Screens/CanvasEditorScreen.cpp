@@ -18,6 +18,7 @@
 
 #include "CanvasEditorScreen.hpp"
 #include "../MainProgram.hpp"
+#include "CanvasEditorUI/CanvasEditorCenterPopupGUI.hpp"
 #include "CanvasScreen.hpp"
 #include "Helpers/ConvertVec.hpp"
 #include "../GUIStuff/Elements/GridScrollArea.hpp"
@@ -37,6 +38,7 @@ using namespace ElementHelpers;
 
 CanvasEditorScreen::CanvasEditorScreen(MainProgram& m, bool initMobileUI, const std::vector<std::shared_ptr<World>>& worldInit):
     CanvasScreen(m),
+    centerPopup(*this),
     topToolbar(*this),
     worlds(worldInit),
     mobileUI(initMobileUI)
@@ -133,6 +135,7 @@ void CanvasEditorScreen::gui_layout_run() {
 }
 
 void CanvasEditorScreen::main_display() {
+    centerPopup.layout();
     CLAY_AUTO_ID({
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0) },
@@ -726,22 +729,11 @@ void CanvasEditorScreen::input_global_back_button_callback() {
     }
 }
 
-void CanvasEditorScreen::on_config_load() {
-    update_display_names();
-}
-
 bool CanvasEditorScreen::is_using_network() {
     bool isAnyWorldConnected = false;
     for(auto& w : worlds)
         isAnyWorldConnected |= w->is_connected();
     return isAnyWorldConnected;
-}
-
-void CanvasEditorScreen::update_display_names() {
-    for(auto& w : worlds) {
-        if(!w->netObjMan.is_connected())
-            w->ownClientData->set_display_name(main.conf.displayName);
-    }
 }
 
 void CanvasEditorScreen::open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID2) {
@@ -844,12 +836,30 @@ void CanvasEditorScreen::input_app_about_to_go_to_background_callback() {
     save_to_file();
 }
 
+bool CanvasEditorScreen::app_close_requested() {
+    return centerPopup.app_close_requested();
+}
+
 void CanvasEditorScreen::color_selector(Vector4f* color, const ColorSelectorData& colorSelectorData) {
     if(colorPickerPtr != color)
         set_color_picker_data(color, colorSelectorData);
     else
         set_color_picker_data(nullptr, ColorSelectorData());
     main.g.gui.set_to_layout();
+}
+
+void CanvasEditorScreen::input_drop_file_callback(const InputManager::DropCallbackArgs& drop) {
+    if(!mobileUI && std::filesystem::is_regular_file(drop.data)) {
+        std::filesystem::path droppedFilePath(drop.data);
+        if(droppedFilePath.has_extension() && droppedFilePath.extension().string() == World::DOT_FILE_EXTENSION) {
+            CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+                .isClient = false,
+                .filePathSource = droppedFilePath
+            });
+            return;
+        }
+    }
+    world->input_drop_file_callback(drop);
 }
 
 void CanvasEditorScreen::color_selector_button(const char* id, Vector4f* color, const ColorSelectorButtonData& colorSelectorData) {
@@ -868,11 +878,13 @@ void CanvasEditorScreen::color_selector_button(const char* id, Vector4f* color, 
 }
 
 void CanvasEditorScreen::create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile) {
-    std::shared_ptr<World> newWorld = World::create_world_ptr_from_event(main, openFile);
-    if(newWorld) {
-        worlds.emplace_back(newWorld);
-        switch_to_tab(worlds.size() - 1);
-        main.g.gui.set_to_layout();
+    if(!mobileUI) {
+        std::shared_ptr<World> newWorld = World::create_world_ptr_from_event(main, openFile);
+        if(newWorld) {
+            worlds.emplace_back(newWorld);
+            switch_to_tab(worlds.size() - 1);
+            main.g.gui.set_to_layout();
+        }
     }
 }
 

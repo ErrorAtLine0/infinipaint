@@ -56,6 +56,7 @@ class CanvasEditorTopToolbar {
             LAYERS,
             GRIDS,
             HOST,
+            CLIENT_CONNECT,
             LOBBY_INFO,
             PLAYER_LIST,
             MAIN_SETTINGS,

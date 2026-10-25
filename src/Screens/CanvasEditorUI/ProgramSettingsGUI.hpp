@@ -32,7 +32,7 @@ class ProgramSettingsGUI {
     public:
         void top_tabs_layout(MainProgram& main);
         void side_tabs_layout(MainProgram& main);
-        void inner_layout(MainProgram& main, float maxWidth, std::function<void()> onDisplayNameUpdate);
+        void inner_layout(MainProgram& main, float maxWidth);
         bool input_keybind_callback(MainProgram& main, const Vector2ui32& newKey);
         void on_settings_open();
     private:

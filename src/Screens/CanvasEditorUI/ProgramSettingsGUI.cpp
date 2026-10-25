@@ -139,7 +139,7 @@ void ProgramSettingsGUI::tabs_layout(MainProgram& main, bool wideButtons) {
 #endif
 }
 
-void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth, std::function<void()> onDisplayNameUpdate) {
+void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
@@ -152,11 +152,7 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth, std::fu
     }) {
         switch(settingsMenu) {
             case SettingsMenu::GENERAL: {
-                input_text_field(gui, "display name input", "Display name", &main.conf.displayName, {
-                    .onEdit = [&, onDisplayNameUpdate] {
-                        if(onDisplayNameUpdate) onDisplayNameUpdate();
-                    }
-                });
+                input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
                 color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
                 #ifndef __EMSCRIPTEN__
                     checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);

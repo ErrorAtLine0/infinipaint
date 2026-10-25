@@ -17,6 +17,7 @@
  */
 
 #pragma once
+#include "CanvasEditorUI/CanvasEditorCenterPopupGUI.hpp"
 #include "CanvasEditorUI/CanvasEditorTopToolbar.hpp"
 #include "CanvasScreen.hpp"
 #include "../GUIStuff/Elements/TreeListing.hpp"
@@ -30,12 +31,13 @@ class CanvasEditorScreen : public CanvasScreen {
         virtual void gui_layout_run() override;
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual bool input_keybind_callback(const Vector2ui32& newKey) override;
+        virtual void input_drop_file_callback(const InputManager::DropCallbackArgs& drop) override;
         virtual void input_global_back_button_callback() override;
-        virtual void on_config_load() override;
         virtual bool is_using_network() override;
         virtual void input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) override;
         virtual void input_open_infinipaint_file_callback(const CustomEvents::OpenInfiniPaintFileEvent& openFile) override;
         virtual void input_app_about_to_go_to_background_callback() override;
+        virtual bool app_close_requested() override;
         virtual void post_callback() override;
         virtual SCollision::AABB<float> canvas_safe_area() override;
         size_t open_world_count();
@@ -94,10 +96,9 @@ class CanvasEditorScreen : public CanvasScreen {
         void create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile);
         void set_tab_to_close(World* world);
 
-        void update_display_names();
-
         void switch_to_tab(size_t wIndex);
 
+        CanvasEditorCenterPopupGUI centerPopup;
         CanvasEditorTopToolbar topToolbar;
 
         std::vector<std::shared_ptr<World>> worlds;
@@ -106,4 +107,5 @@ class CanvasEditorScreen : public CanvasScreen {
         const bool mobileUI;
 
         friend class CanvasEditorTopToolbar;
+        friend class CanvasEditorCenterPopupGUI;
 };

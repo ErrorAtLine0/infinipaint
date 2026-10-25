@@ -40,7 +40,7 @@ void CanvasEditorTopToolbar::safety_layout_checks() {
         if(settingsPopup == SettingsPopup::LOBBY_INFO)
             settingsPopup = SettingsPopup::NONE;
     }
-    if(!s.world->netClient && !s.world->netServer) {
+    if(!s.world->is_connected()) {
         if(settingsPopup == SettingsPopup::PLAYER_LIST)
             settingsPopup = SettingsPopup::NONE;
     }
@@ -139,6 +139,14 @@ void CanvasEditorTopToolbar::desktop_main_menu_popup(GUIStuff::Element* b) {
             .svgPath = "data/icons/RemixIcon/save-line.svg",
             .onClick = [&] {
                 s.desktop_save_as_file();
+            }
+        });
+        listOfTopToolbarButtons.emplace_back(IconMenuButton{
+            .name = "Connect",
+            .svgPath = "data/icons/network.svg",
+            .onClick = [&] {
+                serverToConnectTo.clear();
+                settingsPopup = SettingsPopup::CLIENT_CONNECT;
             }
         });
     }
@@ -246,6 +254,32 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                 });
             });
             break;
+        case SettingsPopup::CLIENT_CONNECT:
+            settings_popup_default_layout("connect popup menu", [&] {
+                settings_popup_close_button_ontop();
+                text_label_centered(gui, "Connect");
+
+                input_text_field(gui, "lobby", "Lobby", &serverToConnectTo);
+                left_to_right_line_layout(gui, [&]() {
+                    text_button(gui, "connect", "Connect", {
+                        .wide = true,
+                        .onClick = [&] {
+                            if(serverToConnectTo.length() != (NetLibrary::LOCALID_LEN + NetLibrary::GLOBALID_LEN))
+                                Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Connect issue: Incorrect address length");
+                            else if(serverToConnectTo.substr(0, NetLibrary::GLOBALID_LEN) == NetLibrary::get_global_id())
+                                Logger::get().log(Logger::LogType::DESKTOP_USERINFO, "Connect issue: Can't connect to your own address");
+                            else {
+                                CustomEvents::emit_event<CustomEvents::OpenInfiniPaintFileEvent>({
+                                    .isClient = true,
+                                    .netSource = serverToConnectTo
+                                });
+                                settingsPopup = SettingsPopup::NONE;
+                            }
+                        }
+                    });
+                });
+            }, false);
+            break;
         case SettingsPopup::LOBBY_INFO:
             settings_popup_default_layout("host lobby info menu", [&] {
                 settings_popup_close_button_ontop();
@@ -328,7 +362,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                                 },
                             }) {
-                                settingsMenu.inner_layout(main, 300.0f, [&] { s.update_display_names(); });
+                                settingsMenu.inner_layout(main, 300.0f);
                             }
                         }
                     });
@@ -351,7 +385,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                                     },
                                 }) {
-                                    settingsMenu.inner_layout(main, 300.0f, [&] { s.update_display_names(); });
+                                    settingsMenu.inner_layout(main, 300.0f);
                                 }
                             }
                         });
@@ -615,10 +649,10 @@ void CanvasEditorTopToolbar::desktop_ui_tabs_fill() {
             s.switch_to_tab(i);
         },
         .closeTab = [&] (size_t i) {
-            //if(main.worlds[i]->should_ask_before_closing())
-            //    add_world_to_close_popup_data(main.worlds[i]);
-            //else
-            s.set_tab_to_close(s.worlds[i].get());
+            if(s.worlds[i]->should_ask_before_closing())
+                s.centerPopup.add_world_to_close_popup_data(s.worlds[i]);
+            else
+                s.set_tab_to_close(s.worlds[i].get());
         }
     });
 }
@@ -701,7 +735,7 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         });
     }
 
-    if(s.world->netClient || s.world->netServer) {
+    if(s.world->is_connected()) {
         l.emplace_back(IconMenuButton{
             .name = "Player List",
             .svgPath = "data/icons/list.svg",
@@ -768,8 +802,10 @@ bool CanvasEditorTopToolbar::input_keybind_callback(MainProgram& main, const Vec
 }
 
 void CanvasEditorTopToolbar::toggle_player_list(MainProgram& main) {
-    if(s.world->netClient || s.world->netServer)
+    if(s.world->is_connected()) {
         settingsPopup = settingsPopup == SettingsPopup::PLAYER_LIST ? SettingsPopup::NONE : SettingsPopup::PLAYER_LIST;
+        s.main.g.gui.set_to_layout();
+    }
 }
 
 void CanvasEditorTopToolbar::settings_popup_close_button_ontop() {
