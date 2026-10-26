@@ -131,7 +131,7 @@ void ProgramSettingsGUI::tabs_layout(MainProgram& main, bool wideButtons) {
     category_button("General", SettingsMenu::GENERAL);
     category_button("Graphics", SettingsMenu::GRAPHICS);
     category_button("Interface", SettingsMenu::INTERFACE);
-    category_button("Tablet", SettingsMenu::TABLET);
+    category_button("Pen", SettingsMenu::PEN);
     category_button("Touch", SettingsMenu::TOUCH);
     category_button("Theme", SettingsMenu::THEME);
     category_button("Keybinds", SettingsMenu::KEYBINDS);
@@ -235,6 +235,14 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth, bool mo
                 }, [&] {
                     main.set_vsync_value(main.conf.vsyncValue);
                 });
+                #ifdef __ANDROID__
+                    std::string fullscreenText = "Fullscreen (hide system bars)";
+                #else
+                    std::string fullscreenText = "Fullscreen";
+                #endif
+                checkbox_boolean_field(gui, "fullscreen checkbox", fullscreenText, &main.window.fullscreen, [&] {
+                    main.refresh_fullscreen_state();
+                });
                 input_scalar_field<unsigned>(gui, "FPS cap", "FPS Cap", &main.conf.mainCallbackRate, 10, 100000, {
                     .onEdit = [&] {
                         main.update_main_loop_call_rate(main.conf.mainCallbackRate);
@@ -249,7 +257,7 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth, bool mo
                 #endif
                 break;
             }
-            case SettingsMenu::TABLET: {
+            case SettingsMenu::PEN: {
                 checkbox_boolean_field(gui, "pen pressure width", "Pen pressure affects brush size", &main.conf.tabletOptions.pressureAffectsBrushWidth);
                 input_scalar_field<uint8_t>(gui, "middle click", "Middle click pen button", &main.conf.tabletOptions.middleClickButton, 1, 255);
                 input_scalar_field<uint8_t>(gui, "right click", "Right click pen button", &main.conf.tabletOptions.rightClickButton, 1, 255);

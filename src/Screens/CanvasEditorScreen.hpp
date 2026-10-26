@@ -58,7 +58,6 @@ class CanvasEditorScreen : public CanvasScreen {
                 EXTRA,
                 PALETTES
             } screenType = ScreenType::NORMAL;
-            size_t selectedPalette = 0;
             std::string newPaletteStr;
             std::set<GUIStuff::TreeListingObjIndexList> paletteListSelection;
         } colorPickerPopupData;

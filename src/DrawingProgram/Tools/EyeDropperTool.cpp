@@ -58,6 +58,10 @@ void EyeDropperTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void EyeDropperTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.paint_popup(popupPos);
+}
+
 void EyeDropperTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     auto& toolConfig = drawP.world.main.toolConfig;
     auto& selectingStrokeColor = drawP.world.main.toolConfig.eyeDropper.selectingStrokeColor;

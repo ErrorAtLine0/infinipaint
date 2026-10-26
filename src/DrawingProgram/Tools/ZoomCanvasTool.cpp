@@ -41,6 +41,10 @@ void ZoomCanvasTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void ZoomCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
+}
+
 void ZoomCanvasTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT && button.down) {
         drawP.world.drawData.cam.set_to_accurate_zoom_control_mode(button.pos, [](World& w, const InputManager::MouseButtonCallbackArgs& b) {

@@ -193,6 +193,10 @@ bool GridModifyTool::bypass_touch_restriction() {
     return true;
 }
 
+void GridModifyTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.paint_popup(popupPos);
+}
+
 void GridModifyTool::tool_update() {
     NetworkingObjects::NetObjTemporaryPtr<WorldGrid> gLock = grid.lock();
     if(!gLock)

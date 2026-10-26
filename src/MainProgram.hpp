@@ -140,6 +140,7 @@ class MainProgram {
         void update_scale_and_density();
         bool app_close_requested();
         void toggle_full_screen();
+        void refresh_fullscreen_state();
         void update_main_loop_call_rate(unsigned newCallbackRate);
         
         void set_first_screen(std::unique_ptr<Screen> firstScreen);

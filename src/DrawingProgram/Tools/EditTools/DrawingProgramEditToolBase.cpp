@@ -24,6 +24,10 @@ DrawingProgramEditToolBase::DrawingProgramEditToolBase(DrawingProgram& initDrawP
     comp(initComp)
 {}
 
+void DrawingProgramEditToolBase::right_click_popup_gui(Vector2f popupPos) {
+    drawP.paint_popup(popupPos);
+}
+
 Vector4f* DrawingProgramEditToolBase::color_picker_color(Vector4f* oldColor) { return nullptr; }
 void DrawingProgramEditToolBase::input_paste_callback(const CustomEvents::PasteEvent& paste) {}
 void DrawingProgramEditToolBase::input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) {}

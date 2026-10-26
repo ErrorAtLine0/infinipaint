@@ -58,6 +58,7 @@
 #include "../GUIStuff/Elements/PositionAdjustingPopupMenu.hpp"
 #include "../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
+#include "../GUIStuff/ElementHelpers/PopupHelpers.hpp"
 
 DrawingProgram::DrawingProgram(World& initWorld):
     world(initWorld),
@@ -457,6 +458,11 @@ void DrawingProgram::send_transforms_for(const std::vector<CanvasComponentContai
     }
 }
 
+void DrawingProgram::right_click_popup_gui() {
+    if(rightClickPopupLocation.has_value())
+        drawTool->right_click_popup_gui(rightClickPopupLocation.value());
+}
+
 void DrawingProgram::set_right_click_popup_location(const Vector2f& newLoc) {
     if(!rightClickPopupLocation.has_value() || rightClickPopupLocation.value() != newLoc) {
         rightClickPopupLocation = newLoc;
@@ -475,6 +481,39 @@ void DrawingProgram::paste_object_clipboard(const Vector2f& pos) {
     selection.deselect_all();
     selection.paste_clipboard(pos);
     world.main.g.gui.set_to_layout();
+}
+
+void DrawingProgram::paint_popup(const Vector2f& popupPos) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
+    auto& main = world.main;
+    auto& gui = main.g.gui;
+
+    std::shared_ptr<double> newRotationAngle = std::make_shared<double>(world.drawData.cam.c.rotation);
+
+    gui.set_z_index(-1, [&] {
+        paint_circle_popup_menu(gui, "paint circle popup", popupPos, {
+            .rotationAngle = newRotationAngle.get(),
+            .selectedColor = get_foreground_color_ptr(),
+            .palette = main.conf.palettes[main.conf.selectedPalette].colors,
+            .onRotate = [&, newRotationAngle] {
+                world.drawData.cam.c.rotate_about(world.drawData.cam.c.from_space(main.window.size.cast<float>() * 0.5f), *newRotationAngle - world.drawData.cam.c.rotation);
+                world.drawData.cam.lastRotationTime.update_time_point();
+                *newRotationAngle = world.drawData.cam.c.rotation;
+            },
+            .onRotateDone = [&] {
+                gui.set_to_layout();
+            },
+            .onPaletteClick = [&] {
+                gui.set_to_layout();
+            },
+            .mouseButton = [&](const InputManager::MouseButtonCallbackArgs& button, bool mouseHovering) {
+                if(!mouseHovering && button.down && button.button != InputManager::MouseButton::RIGHT)
+                    clear_right_click_popup();
+            }
+        });
+    });
 }
 
 void DrawingProgram::popup_menu_action_button(const char* id, const char* text, const std::function<void()>& onClick) {

@@ -164,6 +164,10 @@ void BrushTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void BrushTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.paint_popup(popupPos);
+}
+
 bool BrushTool::prevent_undo_or_redo() {
     return objInfoBeingEdited;
 }

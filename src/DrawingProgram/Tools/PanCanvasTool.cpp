@@ -62,6 +62,10 @@ void PanCanvasTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void PanCanvasTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
+}
+
 void PanCanvasTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
 }
 

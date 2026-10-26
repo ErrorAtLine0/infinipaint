@@ -30,6 +30,7 @@ class GridModifyTool : public DrawingProgramToolBase {
         virtual DrawingProgramToolType get_type() override;
         virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
         virtual void gui_phone_toolbox(CanvasEditorScreen& t) override;
+        virtual void right_click_popup_gui(Vector2f popupPos) override;
         virtual void tool_update() override;
         virtual void erase_component(CanvasComponentContainer::ObjInfo* erasedComp) override;
         virtual void draw(SkCanvas* canvas, const DrawData& drawData) override;

@@ -45,7 +45,7 @@ class ProgramSettingsGUI {
             GENERAL,
             GRAPHICS,
             INTERFACE,
-            TABLET,
+            PEN,
             TOUCH,
             THEME,
             KEYBINDS,

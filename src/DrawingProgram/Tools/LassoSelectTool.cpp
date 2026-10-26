@@ -44,6 +44,10 @@ void LassoSelectTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void LassoSelectTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
+}
+
 void LassoSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     drawP.selection.input_key_callback_modify_selection(key);
 }

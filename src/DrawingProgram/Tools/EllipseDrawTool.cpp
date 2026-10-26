@@ -56,6 +56,10 @@ void EllipseDrawTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void EllipseDrawTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.paint_popup(popupPos);
+}
+
 void EllipseDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         if(button.down && drawP.layerMan.is_a_layer_being_edited() && !objInfoBeingEdited) {

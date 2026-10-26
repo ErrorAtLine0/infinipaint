@@ -59,6 +59,8 @@ class DrawingProgram {
         bool phone_gui_tool_specific_bottom_toolbar_exists();
         void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t);
 
+        void right_click_popup_gui();
+
         void load_file(cereal::PortableBinaryInputArchive& a, VersionNumber version);
         void save_file(cereal::PortableBinaryOutputArchive& a) const;
         World& world;
@@ -102,6 +104,8 @@ class DrawingProgram {
         void clear_right_click_popup();
 
         void paste_object_clipboard(const Vector2f& pos);
+
+        void paint_popup(const Vector2f& popupPos);
 
         std::unique_ptr<DrawingProgramToolBase> drawTool;
     private:

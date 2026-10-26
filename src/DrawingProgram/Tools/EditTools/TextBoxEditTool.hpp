@@ -33,6 +33,7 @@ class TextBoxEditTool : public DrawingProgramEditToolBase {
         virtual void commit_edit_updates(std::any& prevData) override;
         virtual void edit_update() override;
         virtual void gui_phone_toolbox(CanvasEditorScreen& t) override;
+        virtual void right_click_popup_gui(Vector2f popupPos) override;
         virtual Vector4f* color_picker_color(Vector4f* oldColor) override;
         virtual bool phone_gui_tool_specific_bottom_toolbar_exists() override;
         virtual void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t) override;

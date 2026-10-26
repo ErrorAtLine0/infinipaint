@@ -58,6 +58,13 @@ void EditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     }
 }
 
+void EditTool::right_click_popup_gui(Vector2f popupPos) {
+    if(objInfoBeingEdited)
+        return compEditTool->right_click_popup_gui(popupPos);
+    else
+        drawP.selection_action_menu(popupPos);
+}
+
 void EditTool::erase_component(CanvasComponentContainer::ObjInfo* erasedComp) {
     if(erasedComp == objInfoBeingEdited)
         switch_tool(get_type());

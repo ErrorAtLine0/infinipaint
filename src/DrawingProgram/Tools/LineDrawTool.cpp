@@ -71,6 +71,10 @@ void LineDrawTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void LineDrawTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.paint_popup(popupPos);
+}
+
 void LineDrawTool::input_mouse_button_on_canvas_callback(const InputManager::MouseButtonCallbackArgs& button) {
     if(button.button == InputManager::MouseButton::LEFT) {
         auto& toolConfig = drawP.world.main.toolConfig;

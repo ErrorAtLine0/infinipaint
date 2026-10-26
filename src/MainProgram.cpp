@@ -499,7 +499,12 @@ std::optional<InputManager::TextBoxStartInfo> MainProgram::get_text_box_start_in
 
 void MainProgram::toggle_full_screen() {
     window.fullscreen = !window.fullscreen;
+    refresh_fullscreen_state();
+}
+
+void MainProgram::refresh_fullscreen_state() {
     SDL_SetWindowFullscreen(window.sdlWindow, window.fullscreen);
+    g.gui.set_to_layout();
 }
 
 void MainProgram::update_main_loop_call_rate(unsigned newCallbackRate) {

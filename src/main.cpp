@@ -372,8 +372,7 @@ void initialize_sdl(MainStruct& mS) {
     if(mS.m->window.maximized)
         SDL_MaximizeWindow(mS.window);
 
-    if(mS.m->window.fullscreen)
-        SDL_SetWindowFullscreen(mS.window, true);
+    mS.m->refresh_fullscreen_state();
 #endif
 
     SDL_ShowWindow(mS.window);

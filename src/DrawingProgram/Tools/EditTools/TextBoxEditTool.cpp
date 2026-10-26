@@ -378,6 +378,37 @@ void TextBoxEditTool::phone_bottom_toolbar_gui(CanvasEditorScreen& t) {
 void TextBoxEditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
 }
 
+void TextBoxEditTool::right_click_popup_gui(Vector2f popupPos) {
+    using namespace GUIStuff;
+    using namespace ElementHelpers;
+
+    auto& gui = drawP.world.main.g.gui;
+    auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());
+
+    drawP.right_click_action_menu(popupPos, [&] {
+        text_label_light(gui, "Text menu");
+        InputManager& input = drawP.world.main.input;
+        drawP.popup_menu_action_button("Paste", "Paste", [&] {
+            drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = true });
+        });
+        drawP.popup_menu_action_button("Paste without formatting", "Paste without formatting", [&] {
+            drawP.world.main.input.call_paste(CustomEvents::PasteEvent::DataType::TEXT, { .allowRichText = false });
+        });
+        if(a.cursor->selectionBeginPos != a.cursor->selectionEndPos) {
+            drawP.popup_menu_action_button("Copy", "Copy", [&] {
+                input.set_clipboard_plain_and_richtext_pair(a.textBox->process_copy(*a.cursor, clearTextCompositionFunc));
+            });
+            drawP.popup_menu_action_button("Cut", "Cut", [&] {
+                userInput->do_textbox_operation_with_undo([&]() {
+                    input.set_clipboard_plain_and_richtext_pair(a.textBox->process_cut(*a.cursor, clearTextCompositionFunc));
+                });
+                set_styles_at_selection(a);
+                commit_update_and_layout_func_and_android_update();
+            });
+        }
+    });
+}
+
 void TextBoxEditTool::input_paste_callback(const CustomEvents::PasteEvent& paste) {
     if(userInput && userInput->id == drawP.world.main.input.currentTextboxID.value()) {
         auto& a = static_cast<TextBoxCanvasComponent&>(comp->obj->get_comp());

@@ -166,6 +166,8 @@ void CanvasEditorScreen::main_display() {
                 center_message("Select layer to edit message", "Select a layer to edit");
         }
     }
+    if(!world->clientStillConnecting)
+        world->drawProg.right_click_popup_gui();
 }
 
 void CanvasEditorScreen::hidden_gui() {
@@ -386,7 +388,7 @@ void CanvasEditorScreen::reset_color_picker_popup_data() {
 
 void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelectorData& d, std::function<void()> backOnPaletteButton, bool setAlphaToOne, bool setToTransparentCancelButton) {
     auto& gui = main.g.gui;
-    auto& palette = main.conf.palettes[colorPickerPopupData.selectedPalette];
+    auto& palette = main.conf.palettes[main.conf.selectedPalette];
 
     int extraColorButtonCount = 1;
     if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::NORMAL) {
@@ -395,7 +397,7 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
         if(setToTransparentCancelButton)
             extraColorButtonCount++;
     }
-    else if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::EXTRA && colorPickerPopupData.selectedPalette != 0)
+    else if(colorPickerPopupData.screenType == ColorPickerPopupData::ScreenType::EXTRA && main.conf.selectedPalette != 0)
         extraColorButtonCount = 3;
 
     auto paletteButtonChange = [d] () {
@@ -472,7 +474,7 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
                     }
                     else if((i - 1) < palette.colors.size())
                         paletteColorPickerGridColorButton(i - 1);
-                    else if(colorPickerPopupData.selectedPalette != 0) {
+                    else if(main.conf.selectedPalette != 0) {
                         switch(i - palette.colors.size() - 1) {
                             case 0:
                                 svg_icon_button(gui, "addcolor", "data/icons/plus.svg", {
@@ -527,7 +529,7 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
             std::vector<std::string> paletteNames;
             for(auto& p : main.conf.palettes)
                 paletteNames.emplace_back(p.name);
-            gui.element<DropDown<size_t>>("paletteselector", &colorPickerPopupData.selectedPalette, paletteNames);
+            gui.element<DropDown<size_t>>("paletteselector", &main.conf.selectedPalette, paletteNames);
             svg_icon_button(gui, "paletteadd", "data/icons/pencil.svg", {
                 .onClick = [&] {
                     reset_color_picker_popup_data();
@@ -590,7 +592,7 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
                                 .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                                 .size = TreeListing::ENTRY_HEIGHT,
                                 .onClick = [&, objIndex] {
-                                    colorPickerPopupData.selectedPalette = 0;
+                                    main.conf.selectedPalette = 0;
                                     main.conf.palettes.erase(main.conf.palettes.begin() + objIndex.back());
                                 }
                             });
@@ -610,7 +612,7 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
                             main.conf.palettes.erase(main.conf.palettes.begin() + p.back());
                         }
                     }
-                    colorPickerPopupData.selectedPalette = 0;
+                    main.conf.selectedPalette = 0;
                     main.conf.palettes.insert(main.conf.palettes.begin() + moveIndex, movedPalettes.begin(), movedPalettes.end());
                 }
             });
@@ -626,7 +628,7 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
                     if(!colorPickerPopupData.newPaletteStr.empty()) {
                         main.conf.palettes.emplace_back();
                         main.conf.palettes.back().name = colorPickerPopupData.newPaletteStr;
-                        colorPickerPopupData.selectedPalette = main.conf.palettes.size() - 1;
+                        main.conf.selectedPalette = main.conf.palettes.size() - 1;
                         colorPickerPopupData.screenType = ColorPickerPopupData::ScreenType::EXTRA;
                         gui.set_to_layout();
                     }

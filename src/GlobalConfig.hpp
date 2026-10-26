@@ -39,6 +39,8 @@ class GlobalConfig {
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Palette, name, colors)
         };
 
+        size_t selectedPalette = 0;
+
         std::vector<Palette> palettes;
 
         std::filesystem::path configPath;

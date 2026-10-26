@@ -43,6 +43,10 @@ void RectSelectTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     });
 }
 
+void RectSelectTool::right_click_popup_gui(Vector2f popupPos) {
+    drawP.selection_action_menu(popupPos);
+}
+
 void RectSelectTool::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     drawP.selection.input_key_callback_modify_selection(key);
 }

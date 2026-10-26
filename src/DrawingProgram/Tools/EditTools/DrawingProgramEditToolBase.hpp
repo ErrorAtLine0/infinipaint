@@ -32,6 +32,7 @@ class DrawingProgramEditToolBase {
         virtual void commit_edit_updates(std::any& prevData) = 0;
         virtual void edit_update() = 0;
         virtual void gui_phone_toolbox(CanvasEditorScreen& t) = 0;
+        virtual void right_click_popup_gui(Vector2f popupPos);
         virtual Vector4f* color_picker_color(Vector4f* oldColor);
         virtual bool phone_gui_tool_specific_bottom_toolbar_exists();
         virtual void phone_gui_tool_specific_bottom_toolbar(CanvasEditorScreen& t);
