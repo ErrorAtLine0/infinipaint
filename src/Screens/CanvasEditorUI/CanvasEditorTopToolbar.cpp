@@ -717,6 +717,16 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
         });
     }
 
+#ifndef __ANDROID__
+    l.emplace_back(IconMenuButton{
+        .name = "Paste Image",
+        .svgPath = "data/icons/RemixIcon/clipboard-line.svg",
+        .onClick = [&] {
+            s.world->drawProg.paste_image_clipboard(main.window.safeArea.center());
+        }
+    });
+#endif
+
     l.emplace_back(IconMenuButton{
         .name = "Paste",
         .svgPath = "data/icons/RemixIcon/clipboard-line.svg",

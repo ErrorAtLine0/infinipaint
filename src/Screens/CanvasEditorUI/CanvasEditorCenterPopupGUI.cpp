@@ -44,8 +44,16 @@ void CanvasEditorCenterPopupGUI::layout() {
         close_popup();
     else if(downloadFilePopup)
         download_file_popup();
+    else if(filePickerGUI.is_open())
+        center_obstructing_window_gui("non native file picker popup gui", CLAY_SIZING_GROW(0, 700), CLAY_SIZING_GROW(0, 600), [&] {
+            filePickerGUI.layout(s.main);
+        });
     else if(!s.mobileUI && s.main.conf.viewWebVersionWelcome)
         web_version_welcome();
+}
+
+void CanvasEditorCenterPopupGUI::open_file_selector_non_native(MainProgram& main, const std::string& initFilePickerName, const std::vector<Screen::ExtensionFilter>& initExtensionFilters, Screen::OpenFileSelectorCallback initPostSelectionFunc, const std::string& initFileName, bool initIsSaving) {
+    filePickerGUI.open_file_selector_non_native(main, initFilePickerName, initExtensionFilters, initPostSelectionFunc, initFileName, initIsSaving);
 }
 
 void CanvasEditorCenterPopupGUI::set_download_file_popup() {

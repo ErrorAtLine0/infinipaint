@@ -479,7 +479,17 @@ void DrawingProgram::clear_right_click_popup() {
 
 void DrawingProgram::paste_object_clipboard(const Vector2f& pos) {
     selection.deselect_all();
+    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
     selection.paste_clipboard(pos);
+    world.main.g.gui.set_to_layout();
+}
+
+void DrawingProgram::paste_image_clipboard(const Vector2f& pos) {
+    selection.deselect_all();
+    switch_to_tool(drawTool->get_type() == DrawingProgramToolType::GRIDMODIFY ? DrawingProgramToolType::EDIT : drawTool->get_type(), true);
+    world.main.input.call_paste(CustomEvents::PasteEvent::DataType::IMAGE, {
+        .pastePosition = pos
+    });
     world.main.g.gui.set_to_layout();
 }
 
@@ -540,15 +550,13 @@ void DrawingProgram::selection_action_menu(Vector2f popupPos) {
     right_click_action_menu(popupPos, [&] {
         text_label_light(gui, "Selection menu");
         popup_menu_action_button("Paste", "Paste", [&, popupPos] {
-            selection.deselect_all();
-            selection.paste_clipboard(popupPos * world.main.g.final_gui_scale());
+            paste_object_clipboard(popupPos * world.main.g.final_gui_scale());
         });
+#ifndef __ANDROID__
         popup_menu_action_button("Paste Image", "Paste Image", [&, popupPos] {
-            selection.deselect_all();
-            world.main.input.call_paste(CustomEvents::PasteEvent::DataType::IMAGE, {
-                .pastePosition = popupPos * world.main.g.final_gui_scale()
-            });
+            paste_image_clipboard(popupPos * world.main.g.final_gui_scale());
         });
+#endif
         if(selection.is_something_selected()) {
             popup_menu_action_button("Copy", "Copy", [&] {
                 selection.selection_to_clipboard();

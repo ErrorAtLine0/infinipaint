@@ -69,6 +69,13 @@ void CanvasEditorScreen::background_update() {
     }
 }
 
+void CanvasEditorScreen::open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName, bool isSaving) {
+    if(main.conf.useNativeFilePicker || mobileUI)
+        Screen::open_file_selector(filePickerName, extensionFilters, postSelectionFunc, fileName, isSaving);
+    else
+        centerPopup.open_file_selector_non_native(main, filePickerName, extensionFilters, postSelectionFunc, fileName, isSaving);
+}
+
 void CanvasEditorScreen::input_key_callback(const InputManager::KeyCallbackArgs& key) {
     switch(key.key) {
         case InputManager::KEY_TOGGLE_INTERFACE: {

@@ -28,6 +28,7 @@ class CanvasEditorScreen : public CanvasScreen {
         ~CanvasEditorScreen();
         virtual void update() override;
         virtual void background_update() override;
+        virtual void open_file_selector(const std::string& filePickerName, const std::vector<ExtensionFilter>& extensionFilters, OpenFileSelectorCallback postSelectionFunc, const std::string& fileName = "", bool isSaving = false) override;
         virtual void gui_layout_run() override;
         virtual void input_key_callback(const InputManager::KeyCallbackArgs& key) override;
         virtual bool input_keybind_callback(const Vector2ui32& newKey) override;

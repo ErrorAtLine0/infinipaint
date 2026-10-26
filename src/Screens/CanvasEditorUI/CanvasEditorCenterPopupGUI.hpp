@@ -21,6 +21,7 @@
 #include <clay.h>
 #include <memory>
 #include <string>
+#include "NonNativeFilePickerGUI.hpp"
 
 class CanvasEditorScreen;
 class World;
@@ -32,6 +33,7 @@ class CanvasEditorCenterPopupGUI {
         void add_world_to_close_popup_data(const std::shared_ptr<World>& w);
         void set_download_file_popup();
         bool app_close_requested();
+        void open_file_selector_non_native(MainProgram& main, const std::string& initFilePickerName, const std::vector<Screen::ExtensionFilter>& initExtensionFilters, Screen::OpenFileSelectorCallback initPostSelectionFunc, const std::string& initFileName, bool initIsSaving);
     private:
         void close_popup();
         void web_version_welcome();
@@ -49,6 +51,8 @@ class CanvasEditorCenterPopupGUI {
             std::vector<CloseWorldData> worldsToClose; // Using a vector to ensure that the worlds are in proper order
             bool closeAppWhenDone = false;
         } closePopupData;
+
+        NonNativeFilePickerGUI filePickerGUI;
 
         CanvasEditorScreen& s;
 };

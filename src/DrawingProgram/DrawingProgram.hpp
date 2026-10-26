@@ -104,6 +104,7 @@ class DrawingProgram {
         void clear_right_click_popup();
 
         void paste_object_clipboard(const Vector2f& pos);
+        void paste_image_clipboard(const Vector2f& pos);
 
         void paint_popup(const Vector2f& popupPos);
 

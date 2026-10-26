@@ -48,11 +48,14 @@ public class InfiniPaint extends SDLActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Window window = this.getWindow();
+        // Deprecated APIs, should find another way of doing this later
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-        window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
-        window.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        //window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        //window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        //window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        //window.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
         // Transparent navigation
         //if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         //    window.setNavigationBarContrastEnforced(false);
