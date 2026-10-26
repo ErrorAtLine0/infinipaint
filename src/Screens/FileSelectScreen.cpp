@@ -1092,7 +1092,7 @@ void FileSelectScreen::settings_view() {
                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                 },
             }) {
-                settingsGUI.inner_layout(main, 300.0f);
+                settingsGUI.inner_layout(main, 300.0f, true, nullptr);
             }
         }
     });

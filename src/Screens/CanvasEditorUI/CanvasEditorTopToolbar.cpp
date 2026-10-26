@@ -25,6 +25,7 @@
 #include "../../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/ColorPickerHelpers.hpp"
 #include "../../GUIStuff/Elements/ScrollArea.hpp"
 #include "Helpers/ConvertVec.hpp"
 
@@ -76,7 +77,7 @@ void CanvasEditorTopToolbar::layout_top_toolbar() {
                         svg_icon_button(gui, "back exit button", "data/icons/RemixIcon/arrow-left-s-line.svg", {
                             .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
                             .onClick = [&] {
-                                s.save_to_file();
+                                s.mobile_save_file();
                                 s.set_tab_to_close(s.world.get());
                             }
                         });
@@ -225,6 +226,17 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                 });
             });
             break;
+        case SettingsPopup::CANVAS_SETTINGS:
+            settings_popup_default_layout("canvas settings popup menu", [&] {
+                settings_popup_close_button_ontop();
+                text_label_centered(gui, "Canvas Settings");
+
+                std::shared_ptr<Vector3f> backgroundColorTemporary = std::make_shared<Vector3f>(convert_vec3<Vector3f>(s.world->canvasTheme.get_back_color()));
+                color_picker_button_field(gui, "currentCanvasBackgroundColor", "Background color", backgroundColorTemporary.get(), { .hasAlpha = false, .onEdit = [&, backgroundColorTemporary] {
+                    s.world->canvasTheme.set_back_color(*backgroundColorTemporary);
+                }});
+            });
+            break;
         case SettingsPopup::HOST:
             settings_popup_default_layout("host popup menu", [&] {
                 settings_popup_close_button_ontop();
@@ -246,7 +258,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                         .wide = true,
                         .onClick = [&] {
                             AndroidJNICalls::shareText(serverToConnectTo);
-                            main.world->start_hosting(serverToConnectTo, serverLocalID);
+                            s.world->start_hosting(serverToConnectTo, serverLocalID);
                             settingsPopup = SettingsPopup::NONE;
                         }
                     });
@@ -344,7 +356,7 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                 }
             });
             break;
-        case SettingsPopup::MAIN_SETTINGS:
+        case SettingsPopup::MAIN_SETTINGS: // mobileUI displays main settings on the right, while desktop is on the left
             if(gui.io.safeWindowRect.width() < 1000.0f) {
                 settings_popup_default_layout("main settings small menu", [&] {
                     left_to_right_line_layout(gui, [&] {
@@ -362,11 +374,11 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                                     .layoutDirection = CLAY_LEFT_TO_RIGHT
                                 },
                             }) {
-                                settingsMenu.inner_layout(main, 300.0f);
+                                settingsMenu.inner_layout(main, 300.0f, s.mobileUI, s.world.get());
                             }
                         }
                     });
-                }, false, 330.0f);
+                }, s.mobileUI, 330.0f);
             }
             else {
                 settings_popup_default_layout("main settings big menu", [&] {
@@ -385,12 +397,12 @@ void CanvasEditorTopToolbar::layout_settings_popup() {
                                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                                     },
                                 }) {
-                                    settingsMenu.inner_layout(main, 300.0f);
+                                    settingsMenu.inner_layout(main, 300.0f, s.mobileUI, s.world.get());
                                 }
                             }
                         });
                     });
-                }, false, 450.0f);
+                }, s.mobileUI, 450.0f);
             }
             break;
         case SettingsPopup::ABOUT:
@@ -680,22 +692,30 @@ void CanvasEditorTopToolbar::hidden_button_popup(GUIStuff::Element* b, std::vect
             .name = "Force Save",
             .svgPath = "data/icons/RemixIcon/save-line.svg",
             .onClick = [&] {
-                s.save_to_file();
+                s.mobile_save_file();
             }
         });
     }
 
-    l.emplace_back(IconMenuButton{
-        .name = "Canvas Color",
-        .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
-        .onClick = [&] {
-            //set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::SETTINGS, &backgroundColorTemporary, {
-            //    .onChange = [&] {
-            //        main.world->canvasTheme.set_back_color({backgroundColorTemporary.x(), backgroundColorTemporary.y(), backgroundColorTemporary.z()});
-            //    }
-            //});
-        }
-    });
+    if(s.mobileUI) {
+        l.emplace_back(IconMenuButton{
+            .name = "Settings",
+            .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
+            .onClick = [&] {
+                settingsPopup = SettingsPopup::MAIN_SETTINGS;
+                settingsMenu.on_settings_open();
+            }
+        });
+    }
+    else {
+        l.emplace_back(IconMenuButton{
+            .name = "Canvas Settings",
+            .svgPath = "data/icons/RemixIcon/settings-3-line.svg",
+            .onClick = [&] {
+                settingsPopup = settingsPopup == SettingsPopup::CANVAS_SETTINGS ? SettingsPopup::NONE : SettingsPopup::CANVAS_SETTINGS;
+            }
+        });
+    }
 
     l.emplace_back(IconMenuButton{
         .name = "Paste",
@@ -760,7 +780,7 @@ void CanvasEditorTopToolbar::icon_menu_dropdown(GUIStuff::Element* b, const char
         dropdown_many_element_popup_layout(gui, id, {
             .button = b,
             .clickAwayCallback = clickCallback,
-            .entrySize = {150.0f, 30.0f},
+            .entrySize = {160.0f, 30.0f},
             .entryCount = l.size(),
             .posLimits = dropdownPosLimits,
             .entryLayout = [&] (size_t i) {

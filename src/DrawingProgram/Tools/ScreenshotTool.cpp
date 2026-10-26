@@ -21,6 +21,7 @@
 #include "../../MainProgram.hpp"
 #include "../../DrawData.hpp"
 #include "DrawingProgramToolBase.hpp"
+#include "Helpers/Networking/NetLibrary.hpp"
 #include "Helpers/SCollision.hpp"
 #include <filesystem>
 #include <include/core/SkPathBuilder.h>
@@ -123,16 +124,19 @@ void ScreenshotTool::gui_phone_toolbox(CanvasEditorScreen& t) {
                                         setExtensionFilter = {"SVG", "svg"};
                                         break;
                                 }
-                                t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, w = drawP.world.get_weak_ptr()](const std::filesystem::path& p, const auto& e) {
-                                    auto world = w.lock();
-                                    if(world && world->drawProg.drawTool->get_type() == DrawingProgramToolType::SCREENSHOT) {
-                                        ScreenshotTool* screenshotTool = static_cast<ScreenshotTool*>(world->drawProg.drawTool.get());
-                                        if(world->main.conf.forceExtensionOnPath)
-                                            screenshotTool->controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
+
+                                screenshotToolPtrPtr = std::make_shared<ScreenshotTool*>(this);
+
+                                t.open_file_selector("Export", {setExtensionFilter}, [setExtensionFilter, screenshotToolPtrPtrWeak = make_weak_ptr(screenshotToolPtrPtr)](const std::filesystem::path& p, const auto& e) {
+                                    auto screenshotToolPtrPtr = screenshotToolPtrPtrWeak.lock();
+                                    if(screenshotToolPtrPtr) {
+                                        ScreenshotTool& s = *static_cast<ScreenshotTool*>(*screenshotToolPtrPtr);
+                                        if(s.drawP.world.main.conf.forceExtensionOnPath)
+                                            s.controls.screenshotSavePath = force_extension_on_path(p, setExtensionFilter.extensions);
                                         else
-                                            screenshotTool->controls.screenshotSavePath = p;
-                                        screenshotTool->controls.screenshotSaveType = world->main.toolConfig.screenshot.selectedType;
-                                        screenshotTool->controls.setToTakeScreenshot = true;
+                                            s.controls.screenshotSavePath = p;
+                                        s.controls.screenshotSaveType = s.drawP.world.main.toolConfig.screenshot.selectedType;
+                                        s.controls.setToTakeScreenshot = true;
                                     }
                                 }, "screenshot", true);
                             #endif

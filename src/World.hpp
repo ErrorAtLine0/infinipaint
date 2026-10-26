@@ -42,7 +42,7 @@ class MainProgram;
 
 struct WorldScreenshotInfo;
 
-class World : std::enable_shared_from_this<World> {
+class World {
     public:
         static std::string DOT_FILE_EXTENSION;
         static std::string FILE_EXTENSION;
@@ -53,8 +53,6 @@ class World : std::enable_shared_from_this<World> {
         World(MainProgram& initMain, const CustomEvents::OpenInfiniPaintFileEvent& worldInfo);
 
         static std::shared_ptr<World> create_world_ptr_from_event(MainProgram& main, const CustomEvents::OpenInfiniPaintFileEvent& openFile);
-
-        std::weak_ptr<World> get_weak_ptr();
 
         // NOTE: Keep at the very beginning so that it's destroyed last
         NetworkingObjects::NetObjManager netObjMan;

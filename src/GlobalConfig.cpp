@@ -46,7 +46,6 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
             jKeybinds[json(static_cast<InputManager::KeyCodeEnum>(i))] = input.key_assignment_to_str(f->first);
     }
     toRet["keybinds"] = jKeybinds;
-    toRet["guiScale"] = guiScale;
     toRet["jumpTransitionTime"] = jumpTransitionTime;
     toRet["mainCallbackRate"] = mainCallbackRate;
     toRet["mainCallbackRateBackground"] = mainCallbackRateBackground;
@@ -55,7 +54,6 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     toRet["dragZoomSpeed"] = dragZoomSpeed;
     toRet["scrollZoomSpeed"] = scrollZoomSpeed;
     toRet["vsync"] = vsyncValue;
-    toRet["applyDisplayScale"] = applyDisplayScale;
     toRet["displayName"] = displayName;
     toRet["antialiasing"] = antialiasing;
     toRet["useNativeFilePicker"] = useNativeFilePicker;
@@ -81,6 +79,7 @@ nlohmann::json GlobalConfig::get_config_json(const InputManager& input) const {
     tablet["zoomWhilePenDownAndButtonHeld"] = tabletOptions.zoomWhilePenDownAndButtonHeld;
     toRet["tablet"] = tablet;
 
+    toRet["guiOptions"] = guiOptions;
     toRet["touchOptions"] = touchOptions;
 
     json debugJson;
@@ -129,8 +128,6 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("mainCallbackRateBackground").get_to(mainCallbackRateBackground);} catch(...) {}
     if(version >= VersionNumber(0, 6, 0))
         try{j.at("vsync").get_to(vsyncValue);} catch(...) {}
-    try{j.at("applyDisplayScale").get_to(applyDisplayScale);} catch(...) {}
-    try{j.at("guiScale").get_to(guiScale);} catch(...) {}
     try{j.at("jumpTransitionTime").get_to(jumpTransitionTime);} catch(...) {}
     try{j.at("disableGraphicsDriverWorkarounds").get_to(disableGraphicsDriverWorkarounds);} catch(...) {}
     try{j.at("viewWebVersionWelcome").get_to(viewWebVersionWelcome);} catch(...) {}
@@ -156,6 +153,7 @@ void GlobalConfig::set_config_json(InputManager& input, const nlohmann::json& j,
     try{j.at("tablet").at("brushMinimumSize").get_to(tabletOptions.brushMinimumSize);} catch(...) {}
     try{j.at("tablet").at("zoomWhilePenDownAndButtonHeld").get_to(tabletOptions.zoomWhilePenDownAndButtonHeld);} catch(...) {}
 
+    try{j.at("guiOptions").get_to(guiOptions);} catch(...) {}
     try{j.at("touchOptions").get_to(touchOptions);} catch(...) {}
 
     try{j.at("debug").at("mobileUI").get_to(mobileUI);} catch(...) {}

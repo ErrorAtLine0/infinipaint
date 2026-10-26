@@ -61,7 +61,6 @@ void ImageEditTool::edit_update() {
 }
 
 void ImageEditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
-    // NOTE: Readd download resource button!
     using namespace GUIStuff;
     using namespace ElementHelpers;
 
@@ -70,8 +69,24 @@ void ImageEditTool::gui_phone_toolbox(CanvasEditorScreen& t) {
     gui.new_id("edit tool image", [&] {
         text_label_centered(gui, "File Properties");
         auto resourceData = drawP.world.netObjMan.get_obj_temporary_ref_from_id<ResourceData>(a.d.imageID);
-        if(resourceData)
+        if(resourceData) {
             text_label(gui, "Name: " + resourceData->name);
+            text_button(gui, "file download", "Download file", {
+                .wide = true,
+                .onClick = [&, resourceData] {
+                    #ifdef __EMSCRIPTEN__
+                        emscripten_browser_file::download(
+                            resourceData->name,
+                            "application/octet-binary",
+                            *resourceData->data
+                        );
+                    #endif
+                    t.open_file_selector("Download File", {{"Any File", "*"}}, [resourceData](const std::filesystem::path& p, const auto& e) {
+                        SDL_SaveFile(p.string().c_str(), resourceData->data->c_str(), resourceData->data->size());
+                    }, resourceData->name, true);
+                }
+            });
+        }
         else
             text_label_centered(gui, "Loading resource...");
     });

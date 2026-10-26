@@ -29,9 +29,13 @@
 #include "../GUIStuff/ElementHelpers/LayoutHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
+#include "../GUIStuff/Elements/RotateWheel.hpp"
 #include "FileSelectScreen.hpp"
 #include "../NetThreadManager.hpp"
 #include <Helpers/Logger.hpp>
+#ifdef __EMSCRIPTEN__
+#include "EmscriptenHelpers/emscripten_browser_file.h"
+#endif
 
 using namespace GUIStuff;
 using namespace ElementHelpers;
@@ -77,7 +81,7 @@ void CanvasEditorScreen::input_key_callback(const InputManager::KeyCallbackArgs&
         case InputManager::KEY_SAVE: {
             if(key.down && !key.repeat) {
                 if(mobileUI)
-                    save_to_file();
+                    mobile_save_file();
                 else
                     desktop_save_file();
             }
@@ -684,6 +688,19 @@ void CanvasEditorScreen::color_settings_popup(Vector4f* color, const ColorSelect
 void CanvasEditorScreen::bottom_extra_toolbar_gui() {
     GUIManager& gui = main.g.gui;
 
+    if(main.conf.guiOptions.showToolbarRotateWheel) {
+        CLAY_AUTO_ID({
+            .layout = {.sizing = {.width = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE), .height = CLAY_SIZING_FIXED(BIG_BUTTON_SIZE)}}
+        }) {
+            std::shared_ptr<double> newRotationAngle = std::make_shared<double>(world->drawData.cam.c.rotation);
+            gui.element<RotateWheel>("Canvas Rotate Wheel", newRotationAngle.get(), [&, newRotationAngle] {
+                world->drawData.cam.c.rotate_about(world->drawData.cam.c.from_space(world->main.window.size.cast<float>() * 0.5f), *newRotationAngle - world->drawData.cam.c.rotation);
+                *newRotationAngle = world->drawData.cam.c.rotation;
+                world->drawData.cam.lastRotationTime.update_time_point();
+            });
+        }
+    }
+
     svg_icon_button(gui, "tool settings", "data/icons/RemixIcon/settings-3-line.svg", {
         .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
         .isSelected = settingsMenuPopup == SettingsMenuPopup::SETTINGS,
@@ -722,8 +739,8 @@ void CanvasEditorScreen::input_global_back_button_callback() {
         main.hideInterface = false;
         main.g.gui.set_to_layout();
     }
-    else {
-        save_to_file();
+    else if(mobileUI) {
+        mobile_save_file();
         main.set_screen([&] (std::unique_ptr<Screen>) { return std::make_unique<FileSelectScreen>(main); });
         main.g.gui.set_to_layout();
     }
@@ -781,9 +798,7 @@ void CanvasEditorScreen::desktop_save_file() {
 
 void CanvasEditorScreen::desktop_save_as_file() {
     #ifdef __EMSCRIPTEN__
-        optionsMenuOpen = true;
-        optionsMenuType = SET_DOWNLOAD_NAME;
-        main.g.gui.set_to_layout();
+        centerPopup.set_download_file_popup();
     #else
         open_file_selector("Save", {{"InfiniPaint Canvas", World::FILE_EXTENSION}}, [w = make_weak_ptr(world)](const std::filesystem::path& p, const auto& e) {
             auto world = w.lock();
@@ -793,7 +808,7 @@ void CanvasEditorScreen::desktop_save_as_file() {
     #endif
 }
 
-void CanvasEditorScreen::save_to_file() {
+void CanvasEditorScreen::mobile_save_file() {
     if(world && !world->netClient)
         world->save_to_file(world->filePath);
 }
@@ -833,7 +848,8 @@ void CanvasEditorScreen::post_callback() {
 }
 
 void CanvasEditorScreen::input_app_about_to_go_to_background_callback() {
-    save_to_file();
+    if(mobileUI)
+        mobile_save_file();
 }
 
 bool CanvasEditorScreen::app_close_requested() {
@@ -925,6 +941,7 @@ size_t CanvasEditorScreen::open_world_count() {
 
 CanvasEditorScreen::~CanvasEditorScreen() {
 #ifndef __ANDROID__
-    save_to_file();
+    if(mobileUI)
+        mobile_save_file();
 #endif
 }

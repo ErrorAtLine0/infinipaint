@@ -55,6 +55,7 @@ class CanvasEditorTopToolbar {
             BOOKMARKS,
             LAYERS,
             GRIDS,
+            CANVAS_SETTINGS,
             HOST,
             CLIENT_CONNECT,
             LOBBY_INFO,

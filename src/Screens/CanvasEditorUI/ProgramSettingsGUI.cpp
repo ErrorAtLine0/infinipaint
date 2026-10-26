@@ -130,6 +130,7 @@ void ProgramSettingsGUI::tabs_layout(MainProgram& main, bool wideButtons) {
 
     category_button("General", SettingsMenu::GENERAL);
     category_button("Graphics", SettingsMenu::GRAPHICS);
+    category_button("Interface", SettingsMenu::INTERFACE);
     category_button("Tablet", SettingsMenu::TABLET);
     category_button("Touch", SettingsMenu::TOUCH);
     category_button("Theme", SettingsMenu::THEME);
@@ -139,7 +140,7 @@ void ProgramSettingsGUI::tabs_layout(MainProgram& main, bool wideButtons) {
 #endif
 }
 
-void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
+void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth, bool mobileUI, World* currentlyOpenWorld) {
     auto& gui = main.g.gui;
     auto& io = gui.io;
 
@@ -152,10 +153,21 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
     }) {
         switch(settingsMenu) {
             case SettingsMenu::GENERAL: {
-                input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
-                color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                if(!mobileUI) input_text_field(gui, "display name input", "Display name", &main.conf.displayName);
+                if(mobileUI && currentlyOpenWorld) {
+                    std::shared_ptr<Vector3f> backgroundColorTemporary = std::make_shared<Vector3f>(convert_vec3<Vector3f>(currentlyOpenWorld->canvasTheme.get_back_color()));
+                    color_picker_button_field(gui, "currentCanvasBackgroundColor", "Canvas background color", backgroundColorTemporary.get(), { .hasAlpha = false, .onEdit = [backgroundColorTemporary, currentlyOpenWorld] {
+                        currentlyOpenWorld->canvasTheme.set_back_color(*backgroundColorTemporary);
+                    }});
+                }
+                else {
+                    color_picker_button_field(gui, "defaultCanvasBackgroundColor", "Default canvas background color", &main.conf.defaultCanvasBackgroundColor, { .hasAlpha = false });
+                }
+
                 #ifndef __EMSCRIPTEN__
-                    checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);
+                    #ifndef __ANDROID__
+                        if(!mobileUI) checkbox_boolean_field(gui, "native file pick", "Use native file picker", &main.conf.useNativeFilePicker);
+                    #endif
                     checkbox_boolean_field(gui, "update notifications enable", "Check for updates on startup", &main.conf.checkForUpdates);
                 #endif
                 slider_scalar_field(gui, "drag zoom slider", "Drag zoom speed", &main.conf.dragZoomSpeed, 0.0, 1.0, {.decimalPrecision = 3});
@@ -166,7 +178,9 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
                 input_scalar_field(gui, "jump transition time", "Jump transition time", &main.conf.jumpTransitionTime, 0.01f, 1000.0f, {.decimalPrecision = 2});
 
                 checkbox_boolean_field(gui, "real time eraser", "Eraser works in real time", &main.conf.realTimeEraser);
-                checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
+                #ifndef __ANDROID__
+                    if(!mobileUI) checkbox_boolean_field(gui, "force extension on path", "Force extension on path when saving files", &main.conf.forceExtensionOnPath);
+                #endif
                 #ifdef LINUX_ADD_VIDEO_DRIVER_OPTION
                     text_label(gui, "Video driver (changes on restart, currently " + main.window.sdlCurrentVideoDriver + "):");
                     radio_button_selector(gui, "Video driver selection", &main.conf.videoDriver, {
@@ -177,34 +191,42 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
                 #endif
                 break;
             }
-            case SettingsMenu::GRAPHICS: {
+            case SettingsMenu::INTERFACE: {
                 left_to_right_line_layout(gui, [&] {
                     text_label(gui, "GUI Scale");
                     CLAY_AUTO_ID({.layout = {.sizing = {.width = CLAY_SIZING_GROW(0)}}}) {}
                     svg_icon_button(gui, "subtract gui scale", "data/icons/minus.svg", {
                         .size = SMALL_BUTTON_SIZE,
                         .onClick = [&] {
-                            main.conf.guiScale = std::clamp(std::round((main.conf.guiScale - 0.1f) * 10.0f) * 0.1f, MIN_GUI_SCALE, MAX_GUI_SCALE);
+                            main.conf.guiOptions.scale = std::clamp(std::round((main.conf.guiOptions.scale - 0.1f) * 10.0f) * 0.1f, MIN_GUI_SCALE, MAX_GUI_SCALE);
                             main.g.window_update();
                         }
                     });
-                    mutable_text_label(gui, "gui scale label", std::format("{:.1f}", main.conf.guiScale));
+                    mutable_text_label(gui, "gui scale label", std::format("{:.1f}", main.conf.guiOptions.scale));
                     svg_icon_button(gui, "add gui scale", "data/icons/plus.svg", {
                         .size = SMALL_BUTTON_SIZE,
                         .onClick = [&] {
-                            main.conf.guiScale = std::clamp(std::round((main.conf.guiScale + 0.1f) * 10.0f) * 0.1f, MIN_GUI_SCALE, MAX_GUI_SCALE);
+                            main.conf.guiOptions.scale = std::clamp(std::round((main.conf.guiOptions.scale + 0.1f) * 10.0f) * 0.1f, MIN_GUI_SCALE, MAX_GUI_SCALE);
                             main.g.window_update();
                         }
                     });
                 });
-                text_label(gui, "Anti-aliasing:");
-                radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
-                    {"None", GlobalConfig::AntiAliasing::NONE},
-                    {"Skia", GlobalConfig::AntiAliasing::SKIA},
-                    {"Dynamic MSAA", GlobalConfig::AntiAliasing::DYNAMIC_MSAA}
-                }, [&] {
-                    main.refresh_draw_surfaces();
+                checkbox_boolean_field(gui, "show toolbar rotate wheel", "Show toolbar rotate wheel", &main.conf.guiOptions.showToolbarRotateWheel, [&] {
+                    main.g.gui.set_to_layout();
                 });
+                break;
+            }
+            case SettingsMenu::GRAPHICS: {
+                #ifndef __ANDROID__
+                    text_label(gui, "Anti-aliasing:");
+                    radio_button_selector(gui, "Antialiasing selector", &main.conf.antialiasing, {
+                        {"None", GlobalConfig::AntiAliasing::NONE},
+                        {"Skia", GlobalConfig::AntiAliasing::SKIA},
+                        {"Dynamic MSAA", GlobalConfig::AntiAliasing::DYNAMIC_MSAA}
+                    }, [&] {
+                        main.refresh_draw_surfaces();
+                    });
+                #endif
                 text_label(gui, "VSync:");
                 radio_button_selector(gui, "VSync selector", &main.conf.vsyncValue, {
                     {"On", 1},
@@ -218,8 +240,10 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
                         main.update_main_loop_call_rate(main.conf.mainCallbackRate);
                     }
                 });
-                input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
-                #ifndef __EMSCRIPTEN__
+                #ifndef __ANDROID__
+                    input_scalar_field<unsigned>(gui, "Background FPS cap", "Background FPS Cap", &main.conf.mainCallbackRateBackground, 1, 100000);
+                #endif
+                #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
                     checkbox_boolean_field(gui, "disable graphics driver workarounds", "Disable graphics driver workarounds (enabling or disabling this might fix some graphical glitches, requires restart)", &main.conf.disableGraphicsDriverWorkarounds);
                     checkbox_boolean_field(gui, "apply display scale", "Apply display scale", &main.conf.applyDisplayScale);
                 #endif
@@ -370,23 +394,25 @@ void ProgramSettingsGUI::inner_layout(MainProgram& main, float maxWidth) {
                 break;
             }
             case SettingsMenu::DEBUG: {
-                #ifndef __EMSCRIPTEN__
-                    checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+                #ifndef __ANDROID__
+                    #ifndef __EMSCRIPTEN__
+                        checkbox_boolean_field(gui, "use mobile UI", "Use mobile UI (requires restart)", &main.conf.mobileUI);
+                    #endif
+                    input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
+                    input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
+                    text_label_light(gui, "Cache related settings");
+                    input_scalar_field<size_t>(gui, "cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
+                    input_scalar_field<size_t>(gui, "max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
+                    size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
+                                                       * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
+                                                       * 4) // 4 Channels per pixel (RGBA)
+                                                       / (1024 * 1024); // Bytes -> Megabytes conversion
+                    text_label_light(gui, "Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
+                    input_scalar_field<size_t>(gui, "max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
+                    input_scalar_field<size_t>(gui, "components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
+                    input_scalar_field<size_t>(gui, "maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
+                    input_scalar_field<size_t>(gui, "minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
                 #endif
-                input_scalars_field(gui, "jump transition easing", "Jump easing", &main.conf.jumpTransitionEasing, 4, -10.0f, 10.0f, { .decimalPrecision = 2 });
-                input_scalar_field<int>(gui, "image load max threads", "Maximum image loading threads", &ImageResourceDisplay::IMAGE_LOAD_THREAD_COUNT_MAX, 1, 10000);
-                text_label_light(gui, "Cache related settings");
-                input_scalar_field<size_t>(gui, "cache node resolution", "Cache node resolution", &DrawingProgramCache::CACHE_NODE_RESOLUTION, 256, 8192);
-                input_scalar_field<size_t>(gui, "max cache nodes", "Maximum cached nodes", &DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES, 2, 10000);
-                size_t cacheVRAMConsumptionInMB =  ( DrawingProgramCache::MAXIMUM_DRAW_CACHE_SURFACES // Number of surfaces
-                                                   * DrawingProgramCache::CACHE_NODE_RESOLUTION * DrawingProgramCache::CACHE_NODE_RESOLUTION // Number of pixels per cache surface
-                                                   * 4) // 4 Channels per pixel (RGBA)
-                                                   / (1024 * 1024); // Bytes -> Megabytes conversion
-                text_label_light(gui, "Cache max VRAM consumption (MB): " + std::to_string(cacheVRAMConsumptionInMB));
-                input_scalar_field<size_t>(gui, "max components in node", "Maximum components in single node", &DrawingProgramCache::MAXIMUM_COMPONENTS_IN_SINGLE_NODE, 2, 10000);
-                input_scalar_field<size_t>(gui, "components to force cache rebuild", "Number of components to force cache rebuild", &DrawingProgramCache::MINIMUM_COMPONENTS_TO_START_REBUILD, 1, 1000000);
-                input_scalar_field<size_t>(gui, "maximum frame time to force cache rebuild", "Maximum frame time to force cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_FRAME_TIME_TO_FORCE_CACHE_REFRESH, 1, 1000000);
-                input_scalar_field<size_t>(gui, "minimum time to force cache rebuild", "Minimum time to check cache rebuild (ms)", &DrawingProgramCache::MILLISECOND_MINIMUM_TIME_TO_CHECK_FORCE_REFRESH, 1, 1000000);
                 break;
             }
         }

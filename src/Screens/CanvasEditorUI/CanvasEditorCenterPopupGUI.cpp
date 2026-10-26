@@ -26,6 +26,7 @@
 #include "../../GUIStuff/ElementHelpers/TextLabelHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/ButtonHelpers.hpp"
 #include "../../GUIStuff/ElementHelpers/CheckBoxHelpers.hpp"
+#include "../../GUIStuff/ElementHelpers/TextBoxHelpers.hpp"
 
 using namespace GUIStuff;
 using namespace ElementHelpers;
@@ -41,8 +42,42 @@ void CanvasEditorCenterPopupGUI::layout() {
 
     if(!closePopupData.worldsToClose.empty())
         close_popup();
-    else if(displayWebWelcome)
+    else if(downloadFilePopup)
+        download_file_popup();
+    else if(!s.mobileUI && s.main.conf.viewWebVersionWelcome)
         web_version_welcome();
+}
+
+void CanvasEditorCenterPopupGUI::set_download_file_popup() {
+    if(!downloadFilePopup) {
+        downloadFilePopup = true;
+        s.main.g.gui.set_to_layout();
+    }
+}
+
+void CanvasEditorCenterPopupGUI::download_file_popup() {
+    auto& main = s.main;
+    auto& gui = main.g.gui;
+    center_obstructing_window_gui("download file popup gui", CLAY_SIZING_GROW(0, 500), CLAY_SIZING_FIT(0, gui.io.safeWindowRect.height()), [&] {
+        input_text_field(gui, "file name", "File Name", &downloadNameSet);
+        left_to_right_line_layout(gui, [&]() {
+            text_button(gui, "save", "Save", {
+                .wide = true,
+                .onClick = [&] {
+                    if(!downloadNameSet.empty()) {
+                        s.world->save_to_file(downloadNameSet);
+                        downloadFilePopup = false;
+                    }
+                }
+            });
+            text_button(gui, "cancel", "Cancel", {
+                .wide = true,
+                .onClick = [&] {
+                    downloadFilePopup = false;
+                }
+            });
+        });
+    });
 }
 
 void CanvasEditorCenterPopupGUI::close_popup() {
@@ -165,10 +200,15 @@ void CanvasEditorCenterPopupGUI::close_popup() {
 void CanvasEditorCenterPopupGUI::web_version_welcome() {
     auto& main = s.main;
     auto& gui = main.g.gui;
-    center_obstructing_window_gui("web version welcome gui", CLAY_SIZING_FIT(700), CLAY_SIZING_FIT(0), [&] {
-        gui.new_id("web version welcome notif", [&] {
-            text_label_centered(gui, "Welcome to the web version of InfiniPaint!");
-            text_label(gui, 
+    center_obstructing_window_gui("web version welcome gui", CLAY_SIZING_GROW(0, 700), CLAY_SIZING_FIT(0, gui.io.safeWindowRect.height()), [&] {
+        gui.clipping_element<ScrollArea>("close file popup gui scroll area", ScrollArea::Options{
+            .scrollVertical = true,
+            .clipVertical = true,
+            .scrollbarY = ScrollArea::ScrollbarType::NORMAL,
+            .xAlign = CLAY_ALIGN_X_CENTER,
+            .innerContent = [&](const ScrollArea::InnerContentParameters& innerDim) {
+                text_label_centered(gui, "Welcome to the web version of InfiniPaint!");
+                text_label(gui, 
 R"(This version contains more known issues than the native version of the app. This includes:
 - Rare crashes
 - If this browser tab is unfocused, or the window is minimized, any InfiniPaint tabs connected online (whether host or client) will be disconnected
@@ -177,12 +217,13 @@ R"(This version contains more known issues than the native version of the app. T
 - Can't access local fonts
 
 If you like this app, consider downloading the native version for your system)");
-            text_button(gui, "got it", "Got It", {
-                .wide = true,
-                .onClick = [&] {
-                    main.conf.viewWebVersionWelcome = false;
-                }
-            });
+            }
+        });
+        text_button(gui, "got it", "Got It", {
+            .wide = true,
+            .onClick = [&] {
+                main.conf.viewWebVersionWelcome = false;
+            }
         });
     });
 }
@@ -209,10 +250,6 @@ bool CanvasEditorCenterPopupGUI::app_close_requested() {
     closePopupData.closeAppWhenDone = true;
     s.main.g.gui.set_to_layout();
     return closePopupData.worldsToClose.empty();
-}
-
-void CanvasEditorCenterPopupGUI::set_display_web_welcome() {
-    displayWebWelcome = true;
 }
 
 void CanvasEditorCenterPopupGUI::center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent) {

@@ -43,12 +43,6 @@ class GlobalConfig {
 
         std::filesystem::path configPath;
 
-        #ifdef __ANDROID__
-            float guiScale = 1.2f;
-        #else
-            float guiScale = 1.0f;
-        #endif
-
         #if defined(__ANDROID__) || defined(__APPLE__)
             bool forceExtensionOnPath = false;
         #else
@@ -86,6 +80,17 @@ class GlobalConfig {
             float brushPressureSmoothingFactor = 0.707f;
             bool zoomWhilePenDownAndButtonHeld = true;
         } tabletOptions;
+
+        struct GUIOptions {
+        #ifdef __ANDROID__
+            float scale = 1.2f;
+            bool showToolbarRotateWheel = false;
+        #else
+            bool showToolbarRotateWheel = true;
+            float scale = 1.0f;
+        #endif
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(GUIOptions, scale, showToolbarRotateWheel);
+        } guiOptions;
 
         float brushStrokeSmoothingFactor = 0.5f;
 

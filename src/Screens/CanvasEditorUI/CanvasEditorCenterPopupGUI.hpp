@@ -20,6 +20,7 @@
 #include <functional>
 #include <clay.h>
 #include <memory>
+#include <string>
 
 class CanvasEditorScreen;
 class World;
@@ -29,14 +30,16 @@ class CanvasEditorCenterPopupGUI {
         CanvasEditorCenterPopupGUI(CanvasEditorScreen& initScreen);
         void layout();
         void add_world_to_close_popup_data(const std::shared_ptr<World>& w);
+        void set_download_file_popup();
         bool app_close_requested();
-        void set_display_web_welcome();
     private:
         void close_popup();
         void web_version_welcome();
+        void download_file_popup();
         void center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent);
 
-        bool displayWebWelcome = false;
+        std::string downloadNameSet;
+        bool downloadFilePopup = false;
 
         struct ClosePopupData {
             struct CloseWorldData {

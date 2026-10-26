@@ -24,6 +24,7 @@
 #include <Helpers/Hashes.hpp>
 
 class MainProgram;
+class World;
 namespace GUIStuff {
     class GUIManager;
 }
@@ -32,7 +33,7 @@ class ProgramSettingsGUI {
     public:
         void top_tabs_layout(MainProgram& main);
         void side_tabs_layout(MainProgram& main);
-        void inner_layout(MainProgram& main, float maxWidth);
+        void inner_layout(MainProgram& main, float maxWidth, bool mobileUI, World* currentlyOpenWorld);
         bool input_keybind_callback(MainProgram& main, const Vector2ui32& newKey);
         void on_settings_open();
     private:
@@ -43,6 +44,7 @@ class ProgramSettingsGUI {
         enum class SettingsMenu {
             GENERAL,
             GRAPHICS,
+            INTERFACE,
             TABLET,
             TOUCH,
             THEME,

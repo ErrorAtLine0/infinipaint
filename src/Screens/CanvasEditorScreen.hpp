@@ -90,7 +90,7 @@ class CanvasEditorScreen : public CanvasScreen {
         void tool_settings_popup();
         void desktop_save_file();
         void desktop_save_as_file();
-        void save_to_file();
+        void mobile_save_file();
         void open_world_file(bool isClient, const std::string& netSource, const std::string& serverLocalID2);
 
         void create_new_tab(const CustomEvents::OpenInfiniPaintFileEvent& openFile);

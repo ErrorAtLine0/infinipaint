@@ -116,10 +116,6 @@ std::shared_ptr<World> World::create_world_ptr_from_event(MainProgram& main, con
     return newWorld;
 }
 
-std::weak_ptr<World> World::get_weak_ptr() {
-    return weak_from_this();
-}
-
 void World::init_client_data_list() {
     clients = netObjMan.make_obj<NetworkingObjects::NetObjUnorderedSet<ClientData>>();
     serverClientData = ownClientData = clients->emplace_direct(clients, ClientData::InitStruct{

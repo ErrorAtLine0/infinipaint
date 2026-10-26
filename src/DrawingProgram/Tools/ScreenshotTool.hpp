@@ -43,6 +43,8 @@ class ScreenshotTool : public DrawingProgramToolBase {
         void commit_rect();
         void take_screenshot(const std::filesystem::path& filePath, WorldScreenshotInfo::ScreenshotType screenshotType);
 
+        std::shared_ptr<ScreenshotTool*> screenshotToolPtrPtr;
+
         struct ScreenshotControls {
             CoordSpaceHelper translateBeginCoords;
             WorldVec translateBeginPos;
