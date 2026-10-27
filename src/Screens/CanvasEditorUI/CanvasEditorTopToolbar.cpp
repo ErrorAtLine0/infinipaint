@@ -481,7 +481,7 @@ void CanvasEditorTopToolbar::global_log() {
                 auto& logM = main.logMessages[i];
                 logM.time.update_time_since();
                 if(logM.time < UserLogMessage::DISPLAY_TIME) {
-                    if(logM.whereToDisplay == UserLogMessage::DISPLAY_DESKTOP_ONLY)
+                    if(!logM.should_display(s.mobileUI))
                         continue;
                     float a = 1.0f - lerp_time<float>(logM.time, UserLogMessage::DISPLAY_TIME, UserLogMessage::FADE_START_TIME);
                     gui.new_id(i, [&] {

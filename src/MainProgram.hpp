@@ -57,6 +57,7 @@ struct UserLogMessage {
         DISPLAY_DESKTOP_ONLY
     } whereToDisplay = DISPLAY_DESKTOP_ONLY;
     TimePoint time;
+    bool should_display(bool isMobileUI) const;
 };
 
 class MainProgram {
@@ -182,6 +183,8 @@ class MainProgram {
         void input_window_mouse_focus_lost();
         void input_window_focus_gained();
         void input_window_focus_lost();
+
+        bool is_world_focus(const World* w);
 
         std::optional<InputManager::TextBoxStartInfo> get_text_box_start_info();
 

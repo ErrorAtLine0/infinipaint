@@ -36,6 +36,7 @@ class CanvasEditorCenterPopupGUI {
         void open_file_selector_non_native(MainProgram& main, const std::string& initFilePickerName, const std::vector<Screen::ExtensionFilter>& initExtensionFilters, Screen::OpenFileSelectorCallback initPostSelectionFunc, const std::string& initFileName, bool initIsSaving);
     private:
         void close_popup();
+        void update_notification_gui();
         void web_version_welcome();
         void download_file_popup();
         void center_obstructing_window_gui(const char* id, Clay_SizingAxis x, Clay_SizingAxis y, const std::function<void()>& innerContent);

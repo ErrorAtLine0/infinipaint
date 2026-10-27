@@ -83,6 +83,7 @@ void Screen::input_finger_touch_callback(const FingerInput::TouchCallbackArgs& t
 void Screen::input_window_resize_callback(const InputManager::WindowResizeCallbackArgs& w) {}
 void Screen::input_window_scale_callback(const InputManager::WindowScaleCallbackArgs& w) {}
 void Screen::input_app_about_to_go_to_background_callback() {}
+bool Screen::is_world_focus(const World* w) { return false; }
 float Screen::calculate_gui_scale() { return main.g.final_gui_scale_not_fit(); }
 void Screen::post_callback() {}
 void Screen::on_config_load() {}

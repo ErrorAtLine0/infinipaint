@@ -48,6 +48,8 @@ void CanvasEditorCenterPopupGUI::layout() {
         center_obstructing_window_gui("non native file picker popup gui", CLAY_SIZING_GROW(0, 700), CLAY_SIZING_GROW(0, 600), [&] {
             filePickerGUI.layout(s.main);
         });
+    else if(!s.mobileUI && s.main.updateCheckerData.showGui)
+        update_notification_gui();
     else if(!s.mobileUI && s.main.conf.viewWebVersionWelcome)
         web_version_welcome();
 }
@@ -201,6 +203,37 @@ void CanvasEditorCenterPopupGUI::close_popup() {
                 closePopupData.worldsToClose.clear();
                 closePopupData.closeAppWhenDone = false;
             }
+        });
+    });
+}
+
+void CanvasEditorCenterPopupGUI::update_notification_gui() {
+    auto& main = s.main;
+    auto& gui = main.g.gui;
+
+    center_obstructing_window_gui("center popup update notifications GUI", CLAY_SIZING_GROW(0, 700), CLAY_SIZING_FIT(0), [&] {
+        gui.new_id("update notification gui", [&] {
+            text_label_centered(gui, "Update v" + main.updateCheckerData.newVersionStr + " available!");
+            text_button(gui, "download", "Open download page in web browser", {
+                .wide = true,
+                .onClick = [&]{
+                    SDL_OpenURL(MainProgram::UPDATE_DOWNLOAD_URL);
+                    main.updateCheckerData.showGui = false;
+                }
+            });
+            text_button(gui, "ignore forever", "Ignore and don't notify again (can be changed in settings)", {
+                .wide = true,
+                .onClick = [&]{
+                    main.conf.checkForUpdates = false;
+                    main.updateCheckerData.showGui = false;
+                }
+            });
+            text_button(gui, "ignore for now", "Ignore for now", {
+                .wide = true,
+                .onClick = [&]{
+                    main.updateCheckerData.showGui = false;
+                }
+            });
         });
     });
 }

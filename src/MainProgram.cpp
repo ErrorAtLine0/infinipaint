@@ -58,6 +58,18 @@
     #define UPDATE_NOTIFICATION_URL "https://infinipaint.com/updateNotificationVersion.txt"
 #endif
 
+bool UserLogMessage::should_display(bool isMobileUI) const {
+    switch(whereToDisplay) {
+        case DISPLAY_PHONE_ONLY:
+            return isMobileUI;
+        case DISPLAY_DESKTOP_ONLY:
+            return !isMobileUI;
+        case DISPLAY_FOR_ALL:
+            return true;
+    }
+    return true;
+}
+
 MainProgram::MainProgram():
     input(*this),
     fonts(std::make_shared<FontData>()),
@@ -297,6 +309,10 @@ void MainProgram::draw_world(SkCanvas* canvas, World& worldToDraw, const DrawDat
 void MainProgram::draw(SkCanvas* canvas) {
     screen->draw(canvas);
     g.draw(canvas, conf.antialiasing == GlobalConfig::AntiAliasing::SKIA);
+}
+
+bool MainProgram::is_world_focus(const World* w) {
+    return (screen && screen->is_world_focus(w));
 }
 
 sk_sp<SkSurface> MainProgram::create_native_surface(Vector2i resolution, bool isMSAA) {

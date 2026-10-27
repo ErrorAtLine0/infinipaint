@@ -273,7 +273,7 @@ bool World::connection_update() {
 }
 
 void World::set_to_layout_gui_if_focus() {
-    if(isFocus && isFocus())
+    if(main.is_world_focus(this))
         main.g.gui.set_to_layout();
 }
 

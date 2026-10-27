@@ -31,6 +31,7 @@ constexpr float SCROLL_DAMPING = 0.15f; // Damping on the scroll area velocity w
 constexpr float SCROLL_MINIMUM_MOTION = 0.15f; // When the scroll area is scrolling on its own, this is the minimum velocity required for it to continue
 constexpr float SCROLL_MAX_DAMPING = 0.0001f; // Damping on the scrollAreaMotionMax variable
 constexpr float SCROLL_MINIMUM_MOTION_TO_START_MOVE = 1.0f; // Right after releasing touch, this is the minimum velocity for the area to start scrolling on its own
+constexpr float EPSILON_TO_DISPLAY_SCROLLBAR = 0.001f;
 
 ScrollArea::ScrollArea(GUIManager& gui): Element(gui) {}
 
@@ -51,7 +52,10 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
             auto& bb = boundingBox.value();
             clamp_scroll();
 
-            if((contentDimensions.y() > bb.height() && opts.scrollVertical) || (contentDimensions.x() > bb.width() && opts.scrollHorizontal)) {
+            bool displayYScroll = contentDimensions.y() > bb.height() + EPSILON_TO_DISPLAY_SCROLLBAR;
+            bool displayXScroll = contentDimensions.x() > bb.width() + EPSILON_TO_DISPLAY_SCROLLBAR;
+
+            if((displayYScroll && opts.scrollVertical) || (displayXScroll && opts.scrollHorizontal)) {
                 gui.in_dynamic_area([&] {
                     opts.innerContent({.contentDimensions = contentDimensions, .containerDimensions = bb.dim(), .scrollOffset = &scrollOffset});
                 });
@@ -61,14 +65,14 @@ void ScrollArea::layout(const Clay_ElementId& id, const Options& options) {
 
             clamp_scroll();
 
-            if(contentDimensions.y() > bb.height() && opts.scrollVertical && opts.scrollbarY != ScrollbarType::NONE)
+            if(displayYScroll && opts.scrollVertical && opts.scrollbarY != ScrollbarType::NONE)
                 y_scroll_bar();
             else {
                 yScrollbar.scroller = nullptr;
                 yScrollbar.scrollbar = nullptr;
             }
 
-            if(contentDimensions.x() > bb.width() && opts.scrollHorizontal && opts.scrollbarX != ScrollbarType::NONE)
+            if(displayXScroll && opts.scrollHorizontal && opts.scrollbarX != ScrollbarType::NONE)
                 x_scroll_bar();
             else {
                 xScrollbar.scroller = nullptr;

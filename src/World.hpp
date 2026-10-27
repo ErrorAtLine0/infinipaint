@@ -118,8 +118,6 @@ class World {
         void scale_up(const WorldScalar& scaleUpAmount); // Should only be called from ClientData
         void scale_up_step(); // Call when scale up step happens
 
-        std::function<bool()> isFocus;
-
         bool should_ask_before_closing();
         void set_has_unsaved_local_changes(bool newHasUnsavedLocalChangesVal);
         void set_to_layout_gui_if_focus();

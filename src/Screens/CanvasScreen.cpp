@@ -32,6 +32,10 @@ void CanvasScreen::background_update() {
     world->update();
 }
 
+bool CanvasScreen::is_world_focus(const World* w) {
+    return w == world.get();
+}
+
 SCollision::AABB<float> CanvasScreen::canvas_safe_area() {
     return main.window.safeArea;
 }

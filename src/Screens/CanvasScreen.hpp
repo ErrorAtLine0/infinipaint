@@ -27,6 +27,7 @@ class CanvasScreen : public Screen {
         virtual void update() override;
         virtual void background_update() override;
         virtual void draw(SkCanvas* canvas) override;
+        virtual bool is_world_focus(const World* w) override;
         virtual void input_add_file_to_canvas_callback(const CustomEvents::AddFileToCanvasEvent& addFile) override;
         virtual void input_paste_callback(const CustomEvents::PasteEvent& paste) override;
         virtual void input_android_text_box_input_callback(const CustomEvents::AndroidTextBoxInputEvent& textboxInput) override;
