@@ -42,6 +42,7 @@ using namespace ElementHelpers;
 
 CanvasEditorScreen::CanvasEditorScreen(MainProgram& m, bool initMobileUI, const std::vector<std::shared_ptr<World>>& worldInit):
     CanvasScreen(m),
+    chatGUI(*this),
     centerPopup(*this),
     topToolbar(*this),
     worlds(worldInit),
@@ -59,6 +60,7 @@ void CanvasEditorScreen::update() {
         }
         return false;
     });
+    chatGUI.update();
     CanvasScreen::update();
 }
 
@@ -100,8 +102,8 @@ void CanvasEditorScreen::input_key_callback(const InputManager::KeyCallbackArgs&
             break;
         }
         case InputManager::KEY_OPEN_CHAT: {
-            if(key.down && !key.repeat) {
-            }
+            if(key.down && !key.repeat && world->is_connected())
+                chatGUI.set_open(!chatGUI.is_open());
             break;
         }
         case InputManager::KEY_SHOW_PLAYER_LIST: {
@@ -213,6 +215,7 @@ void CanvasEditorScreen::bottom_toolbar() {
                 world->drawProg.phone_gui_tool_specific_bottom_toolbar(*this);
             else
                 default_bottom_toolbar();
+            chatGUI.layout({10, 0}, {.element = CLAY_ATTACH_POINT_LEFT_BOTTOM, .parent = CLAY_ATTACH_POINT_LEFT_TOP});
         }
     });
 }
@@ -741,6 +744,16 @@ void CanvasEditorScreen::bottom_extra_toolbar_gui() {
                 set_settings_menu_popup_mode_with_color_picker_data(SettingsMenuPopup::COLOR_CHANGE, &main.toolConfig.globalConf.backgroundColor);
         }
     });
+
+    if(world->is_connected()) {
+        svg_icon_button(gui, "toggle chat box button", "data/icons/chat.svg", {
+            .drawType = SelectableButton::DrawType::TRANSPARENT_ALL,
+            .isSelected = chatGUI.is_open(),
+            .onClick = [&] {
+                chatGUI.set_open(!chatGUI.is_open());
+            }
+        });
+    }
 }
 
 void CanvasEditorScreen::input_global_back_button_callback() {

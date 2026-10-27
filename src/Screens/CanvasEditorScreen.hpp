@@ -19,6 +19,7 @@
 #pragma once
 #include "CanvasEditorUI/CanvasEditorCenterPopupGUI.hpp"
 #include "CanvasEditorUI/CanvasEditorTopToolbar.hpp"
+#include "CanvasEditorUI/ChatMessageGUI.hpp"
 #include "CanvasScreen.hpp"
 #include "../GUIStuff/Elements/TreeListing.hpp"
 
@@ -98,6 +99,7 @@ class CanvasEditorScreen : public CanvasScreen {
 
         void switch_to_tab(size_t wIndex);
 
+        ChatMessageGUI chatGUI;
         CanvasEditorCenterPopupGUI centerPopup;
         CanvasEditorTopToolbar topToolbar;
 
@@ -108,4 +110,5 @@ class CanvasEditorScreen : public CanvasScreen {
 
         friend class CanvasEditorTopToolbar;
         friend class CanvasEditorCenterPopupGUI;
+        friend class ChatMessageGUI;
 };
